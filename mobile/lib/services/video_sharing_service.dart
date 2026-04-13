@@ -3,9 +3,9 @@
 
 import 'dart:async';
 
+import 'package:dm_repository/dm_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';

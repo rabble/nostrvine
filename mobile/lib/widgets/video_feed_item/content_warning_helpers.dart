@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -47,8 +48,8 @@ Future<void> hideContentWarningsLikeThese({
   if (matchedLabels.isEmpty) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('No saved filter for this warning yet.'),
+      SnackBar(
+        content: Text(context.l10n.contentWarningNoFilterYet),
       ),
     );
     return;
@@ -60,8 +61,8 @@ Future<void> hideContentWarningsLikeThese({
 
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text("We'll hide posts like this from now on."),
+    SnackBar(
+      content: Text(context.l10n.contentWarningHiddenConfirmation),
     ),
   );
 }
@@ -103,9 +104,9 @@ class ContentWarningBlurOverlay extends StatelessWidget {
                     size: 48,
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Sensitive Content',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.contentWarningSensitiveContent,
+                    style: const TextStyle(
                       color: VineTheme.whiteText,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -113,7 +114,11 @@ class ContentWarningBlurOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    labels.map(humanizeContentLabel).join(', '),
+                    labels
+                        .map(
+                          (l) => humanizeContentLabel(context, l),
+                        )
+                        .join(', '),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: VineTheme.secondaryText,
@@ -122,14 +127,14 @@ class ContentWarningBlurOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   DivineButton(
-                    label: 'View Anyway',
+                    label: context.l10n.contentWarningViewAnyway,
                     type: DivineButtonType.tertiary,
                     onPressed: onReveal,
                   ),
                   if (onHideSimilar != null) ...[
                     const SizedBox(height: 12),
                     DivineButton(
-                      label: 'Hide all content like this',
+                      label: context.l10n.contentWarningHideAllLikeThis,
                       type: DivineButtonType.ghost,
                       onPressed: onHideSimilar,
                     ),
@@ -144,40 +149,42 @@ class ContentWarningBlurOverlay extends StatelessWidget {
   );
 }
 
-/// Convert a NIP-32 content-warning label value to a human-readable string.
-String humanizeContentLabel(String label) {
+/// Convert a NIP-32 content-warning label value to a localized
+/// human-readable string.
+String humanizeContentLabel(BuildContext context, String label) {
+  final l10n = context.l10n;
   switch (label) {
     case 'nudity':
-      return 'Nudity';
+      return l10n.contentWarningNudity;
     case 'sexual':
-      return 'Sexual Content';
+      return l10n.contentWarningSexualContent;
     case 'porn':
-      return 'Pornography';
+      return l10n.contentWarningPornography;
     case 'graphic-media':
-      return 'Graphic Media';
+      return l10n.contentWarningGraphicMedia;
     case 'violence':
-      return 'Violence';
+      return l10n.contentWarningViolence;
     case 'self-harm':
-      return 'Self-Harm';
+      return l10n.contentWarningSelfHarm;
     case 'drugs':
-      return 'Drug Use';
+      return l10n.contentWarningDrugUse;
     case 'alcohol':
-      return 'Alcohol';
+      return l10n.contentWarningAlcohol;
     case 'tobacco':
-      return 'Tobacco';
+      return l10n.contentWarningTobacco;
     case 'gambling':
-      return 'Gambling';
+      return l10n.contentWarningGambling;
     case 'profanity':
-      return 'Profanity';
+      return l10n.contentWarningProfanity;
     case 'flashing-lights':
-      return 'Flashing Lights';
+      return l10n.contentWarningFlashingLights;
     case 'ai-generated':
-      return 'AI-Generated';
+      return l10n.contentWarningAiGenerated;
     case 'spoiler':
-      return 'Spoiler';
+      return l10n.contentWarningSpoiler;
     case 'content-warning':
-      return 'Sensitive Content';
+      return l10n.contentWarningSensitiveContent;
     default:
-      return 'Content Warning';
+      return l10n.contentWarningLabel;
   }
 }

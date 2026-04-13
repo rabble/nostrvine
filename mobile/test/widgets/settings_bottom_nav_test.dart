@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
@@ -14,7 +15,13 @@ void main() {
   group('Settings Screens Scaffold Consistency', () {
     testWidgets('SettingsScreen has bottom navigation bar', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(child: MaterialApp(home: SettingsScreen())),
+        const ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettingsScreen(),
+          ),
+        ),
       );
 
       // Should have BottomNavigationBar widget
@@ -30,7 +37,13 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const ProviderScope(child: MaterialApp(home: RelaySettingsScreen())),
+        const ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: RelaySettingsScreen(),
+          ),
+        ),
       );
 
       expect(find.byType(BottomNavigationBar), findsOneWidget);
@@ -45,7 +58,13 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const ProviderScope(child: MaterialApp(home: BlossomSettingsScreen())),
+        const ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BlossomSettingsScreen(),
+          ),
+        ),
       );
 
       expect(find.byType(BottomNavigationBar), findsOneWidget);
@@ -61,7 +80,11 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const ProviderScope(
-          child: MaterialApp(home: NotificationSettingsScreen()),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NotificationSettingsScreen(),
+          ),
         ),
       );
 
@@ -79,7 +102,13 @@ void main() {
 
       for (final screen in screens) {
         await tester.pumpWidget(
-          ProviderScope(child: MaterialApp(home: screen)),
+          ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: screen,
+            ),
+          ),
         );
 
         expect(

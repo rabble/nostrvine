@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as models;
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
@@ -62,7 +63,11 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const MaterialApp(home: VideoMetadataScreen()),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
+            ),
           ),
         );
         await tester.pumpAndSettle();
@@ -84,7 +89,11 @@ void main() {
                 () => _MockClipManagerNotifier([testClip]),
               ),
             ],
-            child: const MaterialApp(home: VideoMetadataScreen()),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
+            ),
           ),
         );
         await tester.pumpAndSettle();

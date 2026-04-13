@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +31,8 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoEditorColorPickerSheet(
               selectedColor: selectedColor,

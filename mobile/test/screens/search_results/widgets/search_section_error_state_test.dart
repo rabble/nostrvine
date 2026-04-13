@@ -1,12 +1,15 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 
 void main() {
   group(SearchSectionErrorState, () {
     Widget buildSubject({required VoidCallback onRetry}) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CustomScrollView(
             slivers: [SearchSectionErrorState(onRetry: onRetry)],

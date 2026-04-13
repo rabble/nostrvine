@@ -37,7 +37,11 @@ class VineBottomSheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 24, right: 24, top: 8),
+          padding: const EdgeInsetsDirectional.only(
+            start: 24,
+            end: 24,
+            top: 8,
+          ),
           child: Column(
             children: [
               // Drag handle

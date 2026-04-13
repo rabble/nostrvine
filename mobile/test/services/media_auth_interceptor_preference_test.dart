@@ -1,11 +1,11 @@
 // ABOUTME: TDD tests for MediaAuthInterceptor respecting AdultContentPreference
 // ABOUTME: Tests neverShow filtering, alwaysShow auto-auth, and askEachTime dialog flow
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 
 class MockAgeVerificationService extends Mock

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
@@ -51,6 +52,8 @@ void main() {
             hashtagServiceProvider.overrideWithValue(mockHashtagService),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: HashtagFeedScreen(hashtag: 'funny', embedded: true),
             ),
@@ -80,7 +83,11 @@ void main() {
             videoEventServiceProvider.overrideWithValue(mockVideoService),
             hashtagServiceProvider.overrideWithValue(mockHashtagService),
           ],
-          child: const MaterialApp(home: HashtagFeedScreen(hashtag: 'funny')),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: HashtagFeedScreen(hashtag: 'funny'),
+          ),
         ),
       );
 
@@ -105,6 +112,8 @@ void main() {
             hashtagServiceProvider.overrideWithValue(mockHashtagService),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: HashtagFeedScreen(hashtag: 'empty', embedded: true),
             ),

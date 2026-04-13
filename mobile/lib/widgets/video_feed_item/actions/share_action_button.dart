@@ -12,6 +12,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -74,7 +75,7 @@ class ShareActionButton extends StatelessWidget {
     return VideoActionButton(
       icon: .shareFatDuo,
       semanticIdentifier: 'share_button',
-      semanticLabel: 'Share video',
+      semanticLabel: context.l10n.shareVideoLabel,
       onPressed: () {
         Log.info(
           'Share button tapped for ${video.id}',
@@ -177,17 +178,24 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       case ShareSheetSendSuccess(:final recipientName, :final shouldDismiss):
         if (shouldDismiss) _safePop(context);
         messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar('Post shared with $recipientName'),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.sharePostSharedWith(recipientName),
+          ),
         );
       case ShareSheetSendFailure():
         messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar('Failed to send video', error: true),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.shareFailedToSend,
+            error: true,
+          ),
         );
       case ShareSheetSaveResult(:final succeeded):
         _safePop(context);
         messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(
-            succeeded ? 'Added to bookmarks' : 'Failed to add bookmark',
+            succeeded
+                ? context.l10n.shareAddedToBookmarks
+                : context.l10n.shareFailedToAddBookmark,
             error: !succeeded,
           ),
         );
@@ -212,7 +220,10 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         );
       case ShareSheetActionFailure():
         messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar('Action failed', error: true),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.shareActionFailed,
+            error: true,
+          ),
         );
     }
   }

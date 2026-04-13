@@ -2,8 +2,8 @@
 // ABOUTME: Loads message count and resolves participant pubkeys from the DB.
 
 import 'package:bloc/bloc.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 
 enum RequestPreviewStatus { loading, loaded, error }
 

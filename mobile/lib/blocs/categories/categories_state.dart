@@ -20,7 +20,6 @@ final class CategoriesState extends Equatable {
     this.hasMoreVideos = false,
     this.isLoadingMore = false,
     this.sortOrder = 'trending',
-    this.errorMessage,
   });
 
   /// Status of the categories list fetch.
@@ -47,9 +46,6 @@ final class CategoriesState extends Equatable {
   /// Current sort order for category videos.
   final String sortOrder;
 
-  /// Error message if any.
-  final String? errorMessage;
-
   CategoriesState copyWith({
     CategoriesStatus? categoriesStatus,
     List<VideoCategory>? categories,
@@ -60,7 +56,6 @@ final class CategoriesState extends Equatable {
     bool? hasMoreVideos,
     bool? isLoadingMore,
     String? sortOrder,
-    String? errorMessage,
   }) {
     return CategoriesState(
       categoriesStatus: categoriesStatus ?? this.categoriesStatus,
@@ -73,7 +68,6 @@ final class CategoriesState extends Equatable {
       hasMoreVideos: hasMoreVideos ?? this.hasMoreVideos,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       sortOrder: sortOrder ?? this.sortOrder,
-      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 
@@ -87,6 +81,5 @@ final class CategoriesState extends Equatable {
     hasMoreVideos,
     isLoadingMore,
     sortOrder,
-    errorMessage,
   ];
 }

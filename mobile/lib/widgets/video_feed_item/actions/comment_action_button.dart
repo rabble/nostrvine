@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
@@ -117,7 +118,7 @@ class _ActionButton extends StatelessWidget {
     return VideoActionButton(
       icon: .chatDuo,
       semanticIdentifier: 'comments_button',
-      semanticLabel: 'View comments',
+      semanticLabel: context.l10n.videoActionViewComments,
       isLoading: isCommentsInProgress,
       count: totalComments,
       onPressed: onPressed,

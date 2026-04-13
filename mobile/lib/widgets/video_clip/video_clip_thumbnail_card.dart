@@ -174,8 +174,8 @@ class _DurationBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: 8,
+    return PositionedDirectional(
+      start: 8,
       bottom: 8,
       child: Container(
         padding: const .symmetric(horizontal: 4),
@@ -210,8 +210,16 @@ class _SelectionOverlay extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Positioned(
-          right: 8,
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: .circular(4),
+              border: .all(color: VineTheme.tabIndicatorGreen, width: 4),
+            ),
+          ),
+        ),
+        PositionedDirectional(
+          end: 8,
           top: 6,
           child: Container(
             constraints: const BoxConstraints(minHeight: 32, minWidth: 32),

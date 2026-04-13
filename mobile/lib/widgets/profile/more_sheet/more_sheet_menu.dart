@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Menu widget for the More sheet with copy, unfollow, and block actions.
 class MoreSheetMenu extends StatelessWidget {
@@ -60,7 +61,7 @@ class MoreSheetMenu extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 Text(
-                  'Copy public key (npub)',
+                  context.l10n.profileCopyPublicKey,
                   style: VineTheme.titleMediumFont(),
                 ),
               ],
@@ -86,7 +87,7 @@ class MoreSheetMenu extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   Text(
-                    'Unfollow $displayName',
+                    context.l10n.profileUnfollowDisplayName(displayName),
                     style: VineTheme.titleMediumFont(),
                   ),
                 ],
@@ -113,7 +114,9 @@ class MoreSheetMenu extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 Text(
-                  isBlocked ? 'Unblock $displayName' : 'Block $displayName',
+                  isBlocked
+                      ? context.l10n.profileUnblockDisplayName(displayName)
+                      : context.l10n.profileBlockDisplayName(displayName),
                   style: VineTheme.titleMediumFont(
                     color: isBlocked ? VineTheme.onSurface : VineTheme.error,
                   ),

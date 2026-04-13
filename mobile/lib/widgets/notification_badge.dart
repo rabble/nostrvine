@@ -29,8 +29,8 @@ class NotificationBadge extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         child,
-        Positioned(
-          right: -8,
+        PositionedDirectional(
+          end: -8,
           top: -8,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -150,8 +150,8 @@ class _AnimatedNotificationBadgeState extends State<AnimatedNotificationBadge>
       clipBehavior: Clip.none,
       children: [
         widget.child,
-        Positioned(
-          right: -8,
+        PositionedDirectional(
+          end: -8,
           top: -8,
           child: AnimatedBuilder(
             animation: _scaleAnimation,

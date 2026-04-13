@@ -5,11 +5,11 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 

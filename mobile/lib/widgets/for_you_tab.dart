@@ -525,7 +525,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
 
   Widget _buildFutureFeatureItem(String text) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 8),
+      padding: const EdgeInsetsDirectional.only(start: 8, bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
@@ -116,6 +117,8 @@ void main() {
     return ProviderScope(
       overrides: [relayNotificationsProvider.overrideWith(notifierFactory)],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData.dark(),
         home: BlocProvider<InviteStatusCubit>.value(
           value: mockInviteCubit,

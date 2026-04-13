@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/auth/forgot_password_dialog.dart';
 
 void main() {
@@ -17,6 +18,8 @@ void main() {
 
     Widget createTestWidget({String initialEmail = ''}) {
       return MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         routerConfig: GoRouter(
           routes: [

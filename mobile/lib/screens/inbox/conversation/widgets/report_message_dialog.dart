@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_moderation_service.dart';
@@ -112,7 +113,10 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
       ),
     ),
     actions: [
-      TextButton(onPressed: context.pop, child: const Text('Cancel')),
+      TextButton(
+        onPressed: context.pop,
+        child: Text(context.l10n.reportDialogCancel),
+      ),
       TextButton(
         onPressed: _isSubmitting ? null : _handleSubmitReport,
         child: _isSubmitting
@@ -121,7 +125,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Text('Report'),
+            : Text(context.l10n.reportDialogReport),
       ),
     ],
   );

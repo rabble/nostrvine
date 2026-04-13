@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show AndroidPlugin;
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
@@ -143,8 +144,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
     if (!isInstalled) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Amber app is not installed'),
+        SnackBar(
+          content: Text(context.l10n.authAmberNotInstalled),
           backgroundColor: VineTheme.error,
         ),
       );
@@ -165,7 +166,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              result.errorMessage ?? 'Failed to connect with Amber',
+              result.errorMessage ?? context.l10n.authAmberConnectionFailed,
             ),
             backgroundColor: VineTheme.error,
           ),
@@ -188,16 +189,14 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
         await context.read<DivineAuthCubit>().sendPasswordResetEmail(email);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               padding: EdgeInsets.zero,
               backgroundColor: VineTheme.transparent,
               elevation: 0,
               behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 3),
               content: DivineSnackbarContainer(
-                label:
-                    'If an account exists with that email, '
-                    'a password reset link has been sent.',
+                label: context.l10n.authPasswordResetSent,
               ),
             ),
           );
@@ -244,9 +243,9 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 const SizedBox(height: 32),
 
                 // Title
-                const Text(
-                  'Sign in',
-                  style: TextStyle(
+                Text(
+                  context.l10n.authSignInTitle,
+                  style: const TextStyle(
                     fontFamily: VineTheme.fontFamilyBricolage,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -267,7 +266,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                         DivineAuthTextField(
                           controller: _emailController,
                           focusNode: _emailFocusNode,
-                          label: 'Email',
+                          label: context.l10n.authEmailLabel,
                           keyboardType: TextInputType.emailAddress,
                           autofillHints: const [AutofillHints.email],
                           textInputAction: .next,
@@ -284,7 +283,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                         DivineAuthTextField(
                           controller: _passwordController,
                           focusNode: _passwordFocusNode,
-                          label: 'Password',
+                          label: context.l10n.authPasswordLabel,
                           obscureText: true,
                           autofillHints: const [AutofillHints.password],
                           textInputAction: .done,
@@ -313,7 +312,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 // Sign in button
                 DivineButton(
                   expanded: true,
-                  label: 'Sign in',
+                  label: context.l10n.authSignInButton,
                   isLoading: isSubmitting,
                   onPressed: isDisabled
                       ? null
@@ -326,9 +325,9 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 Center(
                   child: GestureDetector(
                     onTap: isDisabled ? null : _showForgotPasswordDialog,
-                    child: const Text(
-                      'Forgot password?',
-                      style: TextStyle(
+                    child: Text(
+                      context.l10n.authForgotPassword,
+                      style: const TextStyle(
                         color: VineTheme.whiteText,
                         fontSize: 14,
                         decoration: TextDecoration.underline,
@@ -346,7 +345,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 DivineButton(
                   type: .secondary,
                   expanded: true,
-                  label: 'Import Nostr key',
+                  label: context.l10n.authImportNostrKey,
                   onPressed: isDisabled
                       ? null
                       : () => context.push(KeyImportScreen.path),
@@ -357,7 +356,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 DivineButton(
                   type: .secondary,
                   expanded: true,
-                  label: 'Connect with a signer app',
+                  label: context.l10n.authConnectSignerApp,
                   onPressed: isDisabled
                       ? null
                       : () => context.push(NostrConnectScreen.path),
@@ -369,7 +368,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                   DivineButton(
                     type: .secondary,
                     expanded: true,
-                    label: 'Sign in with Amber',
+                    label: context.l10n.authSignInWithAmber,
                     isLoading: _isConnectingAmber,
                     onPressed: isDisabled ? null : _connectWithAmber,
                   ),
@@ -388,7 +387,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
 void _showInfoSheet(BuildContext context) {
   VineBottomSheet.show<void>(
     context: context,
-    title: const Text('Sign-in options'),
+    title: Text(context.l10n.authSignInOptionsTitle),
     buildScrollBody: (scrollController) => Builder(
       builder: (sheetContext) => ListView(
         controller: scrollController,
@@ -399,33 +398,25 @@ void _showInfoSheet(BuildContext context) {
           32 + MediaQuery.viewPaddingOf(sheetContext).bottom,
         ),
         children: [
-          const _InfoItem(
-            title: 'Email & Password',
-            description:
-                'Sign in with your Divine account. If you registered '
-                'with an email and password, use them here.',
+          _InfoItem(
+            title: sheetContext.l10n.authInfoEmailPasswordTitle,
+            description: sheetContext.l10n.authInfoEmailPasswordDescription,
           ),
           const SizedBox(height: 16),
-          const _InfoItem(
-            title: 'Import Nostr key',
-            description:
-                'Already have a Nostr identity? Import your nsec '
-                'private key from another client.',
+          _InfoItem(
+            title: sheetContext.l10n.authImportNostrKey,
+            description: sheetContext.l10n.authInfoImportNostrKeyDescription,
           ),
           const SizedBox(height: 16),
-          const _InfoItem(
-            title: 'Signer App',
-            description:
-                'Connect using a NIP-46 compatible remote signer '
-                'like nsecBunker for enhanced key security.',
+          _InfoItem(
+            title: sheetContext.l10n.authInfoSignerAppTitle,
+            description: sheetContext.l10n.authInfoSignerAppDescription,
           ),
           if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
             const SizedBox(height: 16),
-            const _InfoItem(
-              title: 'Amber',
-              description:
-                  'Use the Amber signer app on Android to manage '
-                  'your Nostr keys securely.',
+            _InfoItem(
+              title: sheetContext.l10n.authInfoAmberTitle,
+              description: sheetContext.l10n.authInfoAmberDescription,
             ),
           ],
         ],

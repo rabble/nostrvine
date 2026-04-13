@@ -35,6 +35,9 @@ part 'profile_feed_provider.g.dart';
 /// ```
 @Riverpod(keepAlive: true) // Keep alive to prevent reload on tab switches
 class ProfileFeed extends _$ProfileFeed {
+  /// Timeout for funnelcake REST API calls to prevent indefinite loading.
+  static const _restApiTimeout = Duration(seconds: 10);
+
   // REST API mode state
   bool _usingRestApi = false;
   int? _nextOffset; // Offset for REST API pagination
@@ -102,9 +105,9 @@ class ProfileFeed extends _$ProfileFeed {
       );
 
       try {
-        final result = await funnelcakeClient.getVideosByAuthor(
-          pubkey: userId,
-        );
+        final result = await funnelcakeClient
+            .getVideosByAuthor(pubkey: userId)
+            .timeout(_restApiTimeout);
         final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
         restPageCount = apiVideos.length;
         _totalVideoCount = result.totalCount;
@@ -461,9 +464,9 @@ class ProfileFeed extends _$ProfileFeed {
   Future<void> _refreshFromRestApi() async {
     try {
       final client = ref.read(funnelcakeApiClientProvider);
-      final result = await client.getVideosByAuthor(
-        pubkey: userId,
-      );
+      final result = await client
+          .getVideosByAuthor(pubkey: userId)
+          .timeout(_restApiTimeout);
       final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
 
       if (!ref.mounted) return;
@@ -763,9 +766,9 @@ class ProfileFeed extends _$ProfileFeed {
     if (funnelcakeAvailable) {
       try {
         final client = ref.read(funnelcakeApiClientProvider);
-        final result = await client.getVideosByAuthor(
-          pubkey: userId,
-        );
+        final result = await client
+            .getVideosByAuthor(pubkey: userId)
+            .timeout(_restApiTimeout);
         final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;

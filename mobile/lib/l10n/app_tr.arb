@@ -1,0 +1,2434 @@
+{
+    "@@locale": "tr",
+    "appTitle": "Divine",
+    "@appTitle": {
+        "description": "App title shown in task switcher"
+    },
+    "settingsTitle": "Ayarlar",
+    "@settingsTitle": {
+        "description": "Settings screen app bar title"
+    },
+    "settingsSecureAccount": "Hesabını Güvenceye Al",
+    "settingsSessionExpired": "Oturum Sona Erdi",
+    "settingsSessionExpiredSubtitle": "Tam erişimi geri almak için tekrar giriş yap",
+    "settingsCreatorAnalytics": "İçerik Üretici Analitikleri",
+    "settingsSupportCenter": "Destek Merkezi",
+    "settingsNotifications": "Bildirimler",
+    "settingsContentPreferences": "İçerik Tercihleri",
+    "settingsModerationControls": "Moderasyon Kontrolleri",
+    "settingsBlueskyPublishing": "Bluesky Yayınlama",
+    "settingsBlueskyPublishingSubtitle": "Bluesky'a çapraz paylaşımı yönet",
+    "settingsNostrSettings": "Nostr Ayarları",
+    "settingsIntegratedApps": "Entegre Uygulamalar",
+    "settingsIntegratedAppsSubtitle": "Divine içinde çalışan onaylı üçüncü taraf uygulamalar",
+    "settingsExperimentalFeatures": "Deneysel Özellikler",
+    "settingsExperimentalFeaturesSubtitle": "Takılabilecek düzenlemeler—meraklıysan deneyebilirsin.",
+    "settingsLegal": "Yasal",
+    "settingsIntegrationPermissions": "Entegrasyon İzinleri",
+    "settingsIntegrationPermissionsSubtitle": "Hatırlanan entegrasyon onaylarını gözden geçir ve iptal et",
+    "settingsVersion": "Sürüm {version}",
+    "@settingsVersion": {
+        "description": "App version label in settings footer",
+        "placeholders": {
+            "version": {
+                "type": "String"
+            }
+        }
+    },
+    "settingsVersionEmpty": "Sürüm",
+    "@settingsVersionEmpty": {
+        "description": "Version label when version string is not yet loaded"
+    },
+    "settingsDeveloperModeAlreadyEnabled": "Geliştirici modu zaten etkin",
+    "settingsDeveloperModeEnabled": "Geliştirici modu etkinleştirildi!",
+    "settingsDeveloperModeTapsRemaining": "Geliştirici modunu etkinleştirmek için {count} dokunuş daha",
+    "@settingsDeveloperModeTapsRemaining": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "settingsInvites": "Davetler",
+    "settingsSwitchAccount": "Hesap değiştir",
+    "settingsAddAnotherAccount": "Başka hesap ekle",
+    "settingsUnsavedDraftsTitle": "Kaydedilmemiş Taslaklar",
+    "settingsUnsavedDraftsMessage": "{count} kaydedilmemiş taslağınız var. Hesap değiştirmek taslağınızı saklayacaktır, ancak önce yayınlamak veya gözden geçirmek isteyebilirsiniz.",
+    "@settingsUnsavedDraftsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "settingsCancel": "İptal",
+    "settingsSwitchAnyway": "Yine de Değiştir",
+    "settingsAppVersionLabel": "Uygulama sürümü",
+    "settingsAppLanguage": "Uygulama Dili",
+    "settingsAppLanguageDeviceDefault": "{language} (cihaz varsayılanı)",
+    "@settingsAppLanguageDeviceDefault": {
+        "description": "Subtitle for app language tile when using device default",
+        "placeholders": {
+            "language": {
+                "type": "String"
+            }
+        }
+    },
+    "settingsAppLanguageTitle": "Uygulama Dili",
+    "@settingsAppLanguageTitle": {
+        "description": "Title shown at top of locale picker bottom sheet"
+    },
+    "settingsAppLanguageDescription": "Uygulama arayüzü için dili seç",
+    "settingsAppLanguageUseDeviceLanguage": "Cihaz dilini kullan",
+    "contentPreferencesTitle": "İçerik Tercihleri",
+    "@contentPreferencesTitle": {
+        "description": "Content preferences screen app bar title"
+    },
+    "contentPreferencesContentFilters": "İçerik Filtreleri",
+    "contentPreferencesContentFiltersSubtitle": "İçerik uyarı filtrelerini yönet",
+    "contentPreferencesContentLanguage": "İçerik Dili",
+    "contentPreferencesContentLanguageDeviceDefault": "{language} (cihaz varsayılanı)",
+    "@contentPreferencesContentLanguageDeviceDefault": {
+        "placeholders": {
+            "language": {
+                "type": "String"
+            }
+        }
+    },
+    "contentPreferencesTagYourVideos": "İzleyicilerin içeriği filtreleyebilmesi için videolarını bir dille etiketle.",
+    "contentPreferencesUseDeviceLanguage": "Cihaz dilini kullan (varsayılan)",
+    "contentPreferencesAudioSharing": "Sesimi yeniden kullanıma aç",
+    "contentPreferencesAudioSharingSubtitle": "Etkinleştirildiğinde başkaları videolarındaki sesi kullanabilir",
+    "contentPreferencesAccountLabels": "Hesap Etiketleri",
+    "contentPreferencesAccountLabelsEmpty": "İçeriğini kendin etiketle",
+    "contentPreferencesAccountContentLabels": "Hesap İçerik Etiketleri",
+    "contentPreferencesClearAll": "Tümünü Temizle",
+    "contentPreferencesSelectAllThatApply": "Hesabın için geçerli olanların hepsini seç",
+    "contentPreferencesDoneNoLabels": "Bitti (Etiket Yok)",
+    "contentPreferencesDoneCount": "Bitti ({count} seçildi)",
+    "@contentPreferencesDoneCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "contentPreferencesAudioInputDevice": "Ses Giriş Cihazı",
+    "contentPreferencesAutoRecommended": "Otomatik (önerilen)",
+    "contentPreferencesAutoSelectsBest": "En iyi mikrofonu otomatik olarak seçer",
+    "contentPreferencesSelectAudioInput": "Ses Girişi Seç",
+    "contentPreferencesUnknownMicrophone": "Bilinmeyen Mikrofon",
+    "profileBlockedAccountNotAvailable": "Bu hesap kullanılamıyor",
+    "profileErrorPrefix": "Hata: {error}",
+    "@profileErrorPrefix": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileInvalidId": "Geçersiz profil kimliği",
+    "profileShareText": "{displayName} adlı kişiye Divine'de göz at!\n\nhttps://divine.video/profile/{npub}",
+    "@profileShareText": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            },
+            "npub": {
+                "type": "String"
+            }
+        }
+    },
+    "profileShareSubject": "Divine'de {displayName}",
+    "@profileShareSubject": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileShareFailed": "Profil paylaşılamadı: {error}",
+    "@profileShareFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileEditProfile": "Profili düzenle",
+    "profileCreatorAnalytics": "İçerik üretici analitikleri",
+    "profileShareProfile": "Profili paylaş",
+    "profileCopyPublicKey": "Açık anahtarı (npub) kopyala",
+    "profileGetEmbedCode": "Gömme kodunu al",
+    "profilePublicKeyCopied": "Açık anahtar panoya kopyalandı",
+    "profileEmbedCodeCopied": "Gömme kodu panoya kopyalandı",
+    "profileRefreshTooltip": "Yenile",
+    "profileRefreshSemanticLabel": "Profili yenile",
+    "profileMoreTooltip": "Daha fazla",
+    "profileMoreSemanticLabel": "Daha fazla seçenek",
+    "profileFollowingLabel": "Takip ediliyor",
+    "profileFollowLabel": "Takip et",
+    "profileBlockedLabel": "Engellendi",
+    "profileFollowersLabel": "Takipçiler",
+    "profileFollowingStatLabel": "Takip edilen",
+    "profileVideosLabel": "Videolar",
+    "profileFollowerCountUsers": "{count} kullanıcı",
+    "@profileFollowerCountUsers": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "profileBlockTitle": "{displayName} engellensin mi?",
+    "@profileBlockTitle": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileBlockExplanation": "Bir kullanıcıyı engellediğinde:",
+    "profileBlockBulletHidePosts": "Gönderileri akışında görünmeyecek.",
+    "profileBlockBulletCantView": "Profilini görüntüleyemeyecek, seni takip edemeyecek veya gönderilerini göremeyecek.",
+    "profileBlockBulletNoNotify": "Bu değişiklik hakkında bilgilendirilmeyecek.",
+    "profileBlockBulletYouCanView": "Onun profilini görüntülemeye devam edebileceksin.",
+    "profileBlockConfirmButton": "{displayName} engelle",
+    "@profileBlockConfirmButton": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileCancelButton": "İptal",
+    "profileLearnMore": "Daha Fazla Bilgi",
+    "profileUnblockTitle": "{displayName} engeli kaldırılsın mı?",
+    "@profileUnblockTitle": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockExplanation": "Bu kullanıcının engelini kaldırdığında:",
+    "profileUnblockBulletShowPosts": "Gönderileri akışında görünecek.",
+    "profileUnblockBulletCanView": "Profilini görüntüleyebilecek, seni takip edebilecek ve gönderilerini görebilecek.",
+    "profileUnblockBulletNoNotify": "Bu değişiklik hakkında bilgilendirilmeyecek.",
+    "profileLearnMoreAt": "Daha fazla bilgi: ",
+    "profileUnblockButton": "Engeli kaldır",
+    "profileUnfollowDisplayName": "{displayName} takipten çık",
+    "@profileUnfollowDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileBlockDisplayName": "{displayName} engelle",
+    "@profileBlockDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockDisplayName": "{displayName} engelini kaldır",
+    "@profileUnblockDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUserBlockedTitle": "Kullanıcı Engellendi",
+    "profileUserBlockedContent": "Bu kullanıcının içeriğini artık akışında görmeyeceksin.",
+    "profileUserBlockedUnblockHint": "Profilinden veya Ayarlar > Güvenlik'ten istediğin zaman engelini kaldırabilirsin.",
+    "profileCloseButton": "Kapat",
+    "profileNoCollabsTitle": "Henüz İşbirliği Yok",
+    "profileCollabsOwnEmpty": "İşbirliği yaptığın videolar burada görünecek",
+    "profileCollabsOtherEmpty": "İşbirliği yaptıkları videolar burada görünecek",
+    "profileErrorLoadingCollabs": "İşbirliği videoları yüklenirken hata",
+    "profileNoCommentsOwnTitle": "Henüz Yorum Yok",
+    "profileNoCommentsOtherTitle": "Yorum Yok",
+    "profileCommentsOwnEmpty": "Yorumların ve yanıtların burada görünecek",
+    "profileCommentsOtherEmpty": "Yorumları ve yanıtları burada görünecek",
+    "profileErrorLoadingComments": "Yorumlar yüklenirken hata",
+    "profileVideoRepliesSection": "Video Yanıtları",
+    "profileCommentsSection": "Yorumlar",
+    "profileEditLabel": "Düzenle",
+    "profileLibraryLabel": "Kütüphane",
+    "profileNoLikedVideosTitle": "Henüz Beğenilen Video Yok",
+    "profileLikedOwnEmpty": "Beğendiğin videolar burada görünecek",
+    "profileLikedOtherEmpty": "Beğendikleri videolar burada görünecek",
+    "profileErrorLoadingLiked": "Beğenilen videolar yüklenirken hata",
+    "profileNoRepostsTitle": "Henüz Yeniden Paylaşım Yok",
+    "profileRepostsOwnEmpty": "Yeniden paylaştığın videolar burada görünecek",
+    "profileRepostsOtherEmpty": "Yeniden paylaştıkları videolar burada görünecek",
+    "profileErrorLoadingReposts": "Yeniden paylaşılan videolar yüklenirken hata",
+    "profileLoadingTitle": "Profil yükleniyor...",
+    "profileLoadingSubtitle": "Bu birkaç saniye sürebilir",
+    "profileLoadingVideos": "Videolar yükleniyor...",
+    "profileNoVideosTitle": "Henüz Video Yok",
+    "profileNoVideosOwnSubtitle": "İlk videonu paylaş ki burada görelim",
+    "profileNoVideosOtherSubtitle": "Bu kullanıcı henüz video paylaşmadı",
+    "profileVideoThumbnailLabel": "Video küçük resmi {number}",
+    "@profileVideoThumbnailLabel": {
+        "placeholders": {
+            "number": {
+                "type": "int"
+            }
+        }
+    },
+    "profileShowMore": "Daha fazla göster",
+    "profileShowLess": "Daha az göster",
+    "profileCompleteYourProfile": "Profilini Tamamla",
+    "profileCompleteSubtitle": "Başlamak için adını, biyografini ve resmini ekle",
+    "profileSetUpButton": "Ayarla",
+    "profileVerifyingEmail": "E-posta Doğrulanıyor...",
+    "profileCheckEmailVerification": "Doğrulama bağlantısı için {email} adresini kontrol et",
+    "@profileCheckEmailVerification": {
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "profileWaitingForVerification": "E-posta doğrulaması bekleniyor",
+    "profileVerificationFailed": "Doğrulama Başarısız",
+    "profilePleaseTryAgain": "Lütfen tekrar dene",
+    "profileSecureYourAccount": "Hesabını Güvenceye Al",
+    "profileSecureSubtitle": "Hesabını her cihazdan kurtarmak için e-posta ve parola ekle",
+    "profileRetryButton": "Tekrar Dene",
+    "profileRegisterButton": "Kaydol",
+    "profileSessionExpired": "Oturum Sona Erdi",
+    "profileSignInToRestore": "Tam erişimi geri almak için tekrar giriş yap",
+    "profileSignInButton": "Giriş yap",
+    "profileDismissTooltip": "Kapat",
+    "profileLinkCopied": "Profil bağlantısı kopyalandı",
+    "profileSetupEditProfileTitle": "Profili Düzenle",
+    "profileSetupBackLabel": "Geri",
+    "profileSetupAboutNostr": "Nostr Hakkında",
+    "profileSetupProfilePublished": "Profil başarıyla yayınlandı!",
+    "profileSetupCreateNewProfile": "Yeni profil oluşturulsun mu?",
+    "profileSetupNoExistingProfile": "Rölelerinizde mevcut bir profil bulamadık. Yayınlamak yeni bir profil oluşturacak. Devam edilsin mi?",
+    "profileSetupPublishButton": "Yayınla",
+    "profileSetupUsernameTaken": "Kullanıcı adı az önce alındı. Lütfen başka birini seç.",
+    "profileSetupClaimFailed": "Kullanıcı adı alınamadı. Lütfen tekrar dene.",
+    "profileSetupPublishFailed": "Profil yayınlanamadı. Lütfen tekrar dene.",
+    "profileSetupDisplayNameLabel": "Görünen Ad",
+    "profileSetupDisplayNameHint": "Seni nasıl tanısınlar?",
+    "profileSetupDisplayNameHelper": "İstediğin herhangi bir ad veya etiket. Benzersiz olması gerekmez.",
+    "profileSetupDisplayNameRequired": "Lütfen bir görünen ad gir",
+    "profileSetupBioLabel": "Biyografi (Opsiyonel)",
+    "profileSetupBioHint": "İnsanlara kendinden bahset...",
+    "profileSetupPublicKeyLabel": "Açık anahtar (npub)",
+    "profileSetupUsernameLabel": "Kullanıcı Adı (Opsiyonel)",
+    "profileSetupUsernameHint": "kullanıcıadı",
+    "profileSetupUsernameHelper": "Divine'deki benzersiz kimliğin",
+    "profileSetupProfileColorLabel": "Profil Rengi (Opsiyonel)",
+    "profileSetupSaveButton": "Kaydet",
+    "profileSetupSavingButton": "Kaydediliyor...",
+    "profileSetupImageUrlTitle": "Görsel URL'si ekle",
+    "profileSetupPictureUploaded": "Profil resmi başarıyla yüklendi!",
+    "profileSetupImageSelectionFailed": "Görsel seçimi başarısız oldu. Lütfen aşağıya bir görsel URL'si yapıştır.",
+    "profileSetupCameraAccessFailed": "Kamera erişimi başarısız: {error}",
+    "@profileSetupCameraAccessFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileSetupGotItButton": "Anlaşıldı",
+    "profileSetupUploadFailedGeneric": "Görsel yüklenemedi: {error}",
+    "@profileSetupUploadFailedGeneric": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileSetupUploadNetworkError": "Ağ hatası: Lütfen internet bağlantını kontrol et ve tekrar dene.",
+    "profileSetupUploadAuthError": "Kimlik doğrulama hatası: Lütfen çıkış yapıp tekrar giriş yap.",
+    "profileSetupUploadFileTooLarge": "Dosya çok büyük: Lütfen daha küçük bir görsel seç (maks. 10MB).",
+    "profileSetupUsernameChecking": "Uygunluk kontrol ediliyor...",
+    "profileSetupUsernameAvailable": "Kullanıcı adı uygun!",
+    "profileSetupUsernameTakenIndicator": "Kullanıcı adı zaten alınmış",
+    "profileSetupUsernameReserved": "Kullanıcı adı ayrılmış",
+    "profileSetupContactSupport": "Destek ile iletişime geç",
+    "profileSetupCheckAgain": "Tekrar kontrol et",
+    "profileSetupUsernameBurned": "Bu kullanıcı adı artık kullanılamıyor",
+    "profileSetupUsernameInvalidFormat": "Sadece harfler, rakamlar ve tire kullanılabilir",
+    "profileSetupUsernameInvalidLength": "Kullanıcı adı 3-20 karakter olmalı",
+    "profileSetupUsernameNetworkError": "Uygunluk kontrol edilemedi. Lütfen tekrar dene.",
+    "profileSetupUsernameInvalidFormatGeneric": "Geçersiz kullanıcı adı formatı",
+    "profileSetupUsernameCheckFailed": "Uygunluk kontrolü başarısız",
+    "profileSetupUsernameReservedTitle": "Kullanıcı adı ayrılmış",
+    "profileSetupUsernameReservedBody": "{username} adı ayrılmış. Neden senin olması gerektiğini anlat.",
+    "@profileSetupUsernameReservedBody": {
+        "placeholders": {
+            "username": {
+                "type": "String"
+            }
+        }
+    },
+    "profileSetupUsernameReservedHint": "örn. Marka adım, sahne adım vb.",
+    "profileSetupUsernameReservedCheckHint": "Desteğe zaten başvurdun mu? Sana verilip verilmediğini görmek için \"Tekrar kontrol et\"e dokun.",
+    "profileSetupSupportRequestSent": "Destek talebi gönderildi! Kısa sürede döneriz.",
+    "profileSetupCouldntOpenEmail": "E-posta açılamadı. Şuraya gönder: names@divine.video",
+    "profileSetupSendRequest": "Talebi gönder",
+    "profileSetupPickColorTitle": "Bir renk seç",
+    "profileSetupSelectButton": "Seç",
+    "profileSetupUseOwnNip05": "Kendi NIP-05 adresini kullan",
+    "profileSetupNip05AddressLabel": "NIP-05 Adresi",
+    "profileSetupProfilePicturePreview": "Profil resmi önizlemesi",
+    "nostrInfoIntroBuiltOn": "DiVine Nostr üzerine kuruludur,",
+    "nostrInfoIntroDescription": " tek bir şirkete veya platforma bağlı kalmadan insanların çevrimiçi iletişim kurmasını sağlayan, sansüre dayanıklı açık bir protokoldür. ",
+    "nostrInfoIntroIdentity": "Divine'e kaydolduğunda yeni bir Nostr kimliği alırsın.",
+    "nostrInfoOwnership": "Nostr, içeriğine, kimliğine ve sosyal grafiğine sahip olmana izin verir ve bunları birçok uygulamada kullanabilirsin. Sonuç: daha fazla seçenek, daha az kilitlenme ve daha sağlıklı, dayanıklı bir sosyal internet.",
+    "nostrInfoLingo": "Nostr terimleri:",
+    "nostrInfoNpubLabel": "npub:",
+    "nostrInfoNpubDescription": " Genel Nostr adresin. Paylaşmak güvenlidir; başkalarının seni bulmasını, takip etmesini veya mesaj göndermesini sağlar.",
+    "nostrInfoNsecLabel": "nsec:",
+    "nostrInfoNsecDescription": " Özel anahtarın ve sahiplik kanıtın. Nostr kimliğin üzerinde tam kontrol verir, bu yüzden ",
+    "nostrInfoNsecWarning": "her zaman gizli tut!",
+    "nostrInfoUsernameLabel": "Nostr kullanıcı adı:",
+    "nostrInfoUsernameDescription": " Npub'ına bağlanan insan tarafından okunabilir bir ad (örneğin @ad.divine.video). Nostr kimliğini tanımayı ve doğrulamayı kolaylaştırır, tıpkı bir e-posta adresi gibi.",
+    "nostrInfoLearnMoreAt": "Daha fazla bilgi: ",
+    "nostrInfoGotIt": "Anlaşıldı!",
+    "profileTabRefreshTooltip": "Yenile",
+    "videoGridRefreshLabel": "Daha fazla video aranıyor",
+    "videoGridOptionsTitle": "Video Seçenekleri",
+    "videoGridEditVideo": "Videoyu Düzenle",
+    "videoGridEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
+    "videoGridDeleteVideo": "Videoyu Sil",
+    "videoGridDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
+    "videoGridDeleteConfirmTitle": "Videoyu Sil",
+    "videoGridDeleteConfirmMessage": "Bu videoyu silmek istediğinden emin misin?",
+    "videoGridDeleteConfirmNote": "Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.",
+    "videoGridDeleteCancel": "İptal",
+    "videoGridDeleteConfirm": "Sil",
+    "videoGridDeletingContent": "İçerik siliniyor...",
+    "videoGridDeleteSuccess": "Silme isteği başarıyla gönderildi",
+    "videoGridDeleteFailure": "İçerik silinemedi: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreTabClassics": "Klasikler",
+    "exploreTabNew": "Yeni",
+    "exploreTabPopular": "Popüler",
+    "exploreTabCategories": "Kategoriler",
+    "exploreTabForYou": "Sana Özel",
+    "exploreTabLists": "Listeler",
+    "exploreTabIntegratedApps": "Entegre Uygulamalar",
+    "exploreNoVideosAvailable": "Hiç video yok",
+    "exploreErrorPrefix": "Hata: {error}",
+    "@exploreErrorPrefix": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreDiscoverLists": "Listeleri Keşfet",
+    "exploreAboutLists": "Listeler Hakkında",
+    "exploreAboutListsDescription": "Listeler, Divine içeriğini iki şekilde düzenlemene ve derlemene yardımcı olur:",
+    "explorePeopleLists": "Kişi Listeleri",
+    "explorePeopleListsDescription": "İçerik üretici gruplarını takip et ve en son videolarını gör",
+    "exploreVideoLists": "Video Listeleri",
+    "exploreVideoListsDescription": "Sonra izlemek için favori videolarından oynatma listeleri oluştur",
+    "exploreMyLists": "Listelerim",
+    "exploreSubscribedLists": "Abone Olunan Listeler",
+    "exploreErrorLoadingLists": "Listeler yüklenirken hata: {error}",
+    "@exploreErrorLoadingLists": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreNewVideosCount": "{count, plural, one{1 yeni video} other{{count} yeni video}}",
+    "@exploreNewVideosCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "exploreLoadNewVideosLabel": "{count} yeni video yükle",
+    "@exploreLoadNewVideosLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "videoPlayerLoadingVideo": "Video yükleniyor...",
+    "videoPlayerPlayVideo": "Videoyu oynat",
+    "videoPlayerEditVideo": "Videoyu düzenle",
+    "videoPlayerEditVideoTooltip": "Videoyu düzenle",
+    "contentWarningLabel": "İçerik Uyarısı",
+    "contentWarningNudity": "Çıplaklık",
+    "contentWarningSexualContent": "Cinsel İçerik",
+    "contentWarningPornography": "Pornografi",
+    "contentWarningGraphicMedia": "Açık Görüntüler",
+    "contentWarningViolence": "Şiddet",
+    "contentWarningSelfHarm": "Kendine Zarar Verme",
+    "contentWarningDrugUse": "Uyuşturucu Kullanımı",
+    "contentWarningAlcohol": "Alkol",
+    "contentWarningTobacco": "Tütün",
+    "contentWarningGambling": "Kumar",
+    "contentWarningProfanity": "Küfür",
+    "contentWarningFlashingLights": "Yanıp Sönen Işıklar",
+    "contentWarningAiGenerated": "Yapay Zeka Üretimi",
+    "contentWarningSpoiler": "Spoiler",
+    "contentWarningSensitiveContent": "Hassas İçerik",
+    "contentWarningDescNudity": "Çıplaklık veya kısmi çıplaklık içerir",
+    "contentWarningDescSexual": "Cinsel içerik barındırır",
+    "contentWarningDescPorn": "Açık pornografik içerik barındırır",
+    "contentWarningDescGraphicMedia": "Açık veya rahatsız edici görüntüler içerir",
+    "contentWarningDescViolence": "Şiddet içeriği barındırır",
+    "contentWarningDescSelfHarm": "Kendine zarar verme referansları içerir",
+    "contentWarningDescDrugs": "Uyuşturucuyla ilgili içerik barındırır",
+    "contentWarningDescAlcohol": "Alkolle ilgili içerik barındırır",
+    "contentWarningDescTobacco": "Tütünle ilgili içerik barındırır",
+    "contentWarningDescGambling": "Kumarla ilgili içerik barındırır",
+    "contentWarningDescProfanity": "Ağır dil içerir",
+    "contentWarningDescFlashingLights": "Yanıp sönen ışıklar içerir (fotosensitivite uyarısı)",
+    "contentWarningDescAiGenerated": "Bu içerik yapay zeka tarafından oluşturulmuştur",
+    "contentWarningDescSpoiler": "Spoiler içerir",
+    "contentWarningDescContentWarning": "İçerik üretici bunu hassas olarak işaretledi",
+    "contentWarningDescDefault": "İçerik üretici bu içeriği işaretledi",
+    "contentWarningDetailsTitle": "İçerik Uyarıları",
+    "contentWarningDetailsSubtitle": "İçerik üretici bu etiketleri uyguladı:",
+    "contentWarningManageFilters": "İçerik filtrelerini yönet",
+    "contentWarningViewAnyway": "Yine de Görüntüle",
+    "contentWarningHideAllLikeThis": "Bunun gibi tüm içerikleri gizle",
+    "contentWarningNoFilterYet": "Bu uyarı için henüz kayıtlı filtre yok.",
+    "contentWarningHiddenConfirmation": "Bundan sonra böyle gönderileri gizleyeceğiz.",
+    "videoErrorNotFound": "Video bulunamadı",
+    "videoErrorNetwork": "Ağ hatası",
+    "videoErrorTimeout": "Yükleme zaman aşımı",
+    "videoErrorFormat": "Video format hatası\n(Tekrar dene veya farklı tarayıcı kullan)",
+    "videoErrorUnsupportedFormat": "Desteklenmeyen video formatı",
+    "videoErrorPlayback": "Video oynatma hatası",
+    "videoErrorAgeRestricted": "Yaş kısıtlamalı içerik",
+    "videoErrorVerifyAge": "Yaşı Doğrula",
+    "videoErrorRetry": "Tekrar Dene",
+    "videoErrorContentRestricted": "İçerik kısıtlandı",
+    "videoErrorContentRestrictedBody": "Bu video röle tarafından kısıtlanmış.",
+    "videoErrorVerifyAgeBody": "Bu videoyu görüntülemek için yaşını doğrula.",
+    "videoErrorSkip": "Atla",
+    "videoErrorVerifyAgeButton": "Yaşı doğrula",
+    "videoFollowButtonFollowing": "Takip ediliyor",
+    "videoFollowButtonFollow": "Takip et",
+    "audioAttributionOriginalSound": "Orijinal ses",
+    "videoInspiredByAttribution": "@{creatorName} tarafından ilham alındı",
+    "@videoInspiredByAttribution": {
+        "placeholders": {
+            "creatorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoCollaboratorWithOne": "@{name} ile",
+    "@videoCollaboratorWithOne": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoCollaboratorWithMore": "@{name} +{count} ile",
+    "@videoCollaboratorWithMore": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "videoCollaboratorCountLabel": "{count, plural, one{1 işbirlikçi} other{{count} işbirlikçi}}. Profili görmek için dokun.",
+    "@videoCollaboratorCountLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listAttributionFallback": "Liste",
+    "shareVideoLabel": "Videoyu paylaş",
+    "sharePostSharedWith": "Gönderi {recipientName} ile paylaşıldı",
+    "@sharePostSharedWith": {
+        "placeholders": {
+            "recipientName": {
+                "type": "String"
+            }
+        }
+    },
+    "shareFailedToSend": "Video gönderilemedi",
+    "shareAddedToBookmarks": "Yer imlerine eklendi",
+    "shareFailedToAddBookmark": "Yer imi eklenemedi",
+    "shareActionFailed": "İşlem başarısız",
+    "shareWithTitle": "Şununla paylaş",
+    "shareFindPeople": "Kişi bul",
+    "shareFindPeopleMultiline": "Kişi\nbul",
+    "shareSent": "Gönderildi",
+    "shareContactFallback": "Kişi",
+    "shareUserFallback": "Kullanıcı",
+    "shareSendingTo": "{name} kişisine gönderiliyor",
+    "@shareSendingTo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMessageHint": "Opsiyonel mesaj ekle...",
+    "videoActionUnlike": "Beğenmekten vazgeç",
+    "videoActionLike": "Videoyu beğen",
+    "videoActionRemoveRepost": "Yeniden paylaşımı kaldır",
+    "videoActionRepost": "Videoyu yeniden paylaş",
+    "videoActionViewComments": "Yorumları görüntüle",
+    "videoActionMoreOptions": "Daha fazla seçenek",
+    "videoActionHideSubtitles": "Altyazıları gizle",
+    "videoActionShowSubtitles": "Altyazıları göster",
+    "videoDescriptionLoops": "{count} döngü",
+    "@videoDescriptionLoops": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "metadataBadgeNotDivine": "Divine Değil",
+    "metadataBadgeHumanMade": "İnsan Yapımı",
+    "metadataSoundsLabel": "Sesler",
+    "metadataOriginalSound": "Orijinal ses",
+    "metadataVerificationLabel": "Doğrulama",
+    "metadataDeviceAttestation": "Cihaz tasdik",
+    "metadataProofManifest": "Kanıt manifestosu",
+    "metadataCreatorLabel": "İçerik üretici",
+    "metadataCollaboratorsLabel": "İşbirlikçiler",
+    "metadataInspiredByLabel": "İlham alındı",
+    "metadataRepostedByLabel": "Yeniden paylaşan",
+    "metadataLoopsLabel": "Döngüler",
+    "metadataLikesLabel": "Beğeniler",
+    "metadataCommentsLabel": "Yorumlar",
+    "metadataRepostsLabel": "Yeniden Paylaşımlar",
+    "devOptionsTitle": "Geliştirici Seçenekleri",
+    "@devOptionsTitle": {
+        "description": "Developer options screen app bar title"
+    },
+    "devOptionsPageLoadTimes": "Sayfa Yükleme Süreleri",
+    "devOptionsNoPageLoads": "Henüz sayfa yüklemesi kaydedilmedi.\nZamanlama verisini görmek için uygulamada gezin.",
+    "devOptionsPageLoadVisible": "Görünür: {visibleMs}ms  |  Veri: {dataMs}ms",
+    "@devOptionsPageLoadVisible": {
+        "placeholders": {
+            "visibleMs": {
+                "type": "String"
+            },
+            "dataMs": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsSlowestScreens": "En Yavaş Ekranlar",
+    "devOptionsVideoPlaybackFormat": "Video Oynatma Formatı",
+    "devOptionsSwitchEnvironmentTitle": "Ortam Değiştirilsin mi?",
+    "devOptionsSwitchEnvironmentMessage": "{envName} ortamına geçilsin mi?\n\nBu işlem önbelleğe alınmış video verisini temizleyecek ve yeni röleye bağlanacaktır.",
+    "@devOptionsSwitchEnvironmentMessage": {
+        "placeholders": {
+            "envName": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsCancel": "İptal",
+    "devOptionsSwitch": "Değiştir",
+    "devOptionsSwitchedTo": "{envName} ortamına geçildi",
+    "@devOptionsSwitchedTo": {
+        "placeholders": {
+            "envName": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsSwitchedFormat": "{formatName} formatına geçildi — önbellek temizlendi",
+    "@devOptionsSwitchedFormat": {
+        "placeholders": {
+            "formatName": {
+                "type": "String"
+            }
+        }
+    },
+    "featureFlagTitle": "Özellik Bayrakları",
+    "@featureFlagTitle": {
+        "description": "Feature flags screen app bar title"
+    },
+    "featureFlagResetAllTooltip": "Tüm bayrakları varsayılanlara sıfırla",
+    "featureFlagResetToDefault": "Varsayılana sıfırla",
+    "featureFlagAppRecovery": "Uygulama Kurtarma",
+    "featureFlagAppRecoveryDescription": "Uygulama çöküyor veya tuhaf davranıyorsa, önbelleği temizlemeyi dene.",
+    "featureFlagClearAllCache": "Tüm Önbelleği Temizle",
+    "featureFlagCacheInfo": "Önbellek Bilgisi",
+    "featureFlagClearCacheTitle": "Tüm Önbellek Temizlensin mi?",
+    "featureFlagClearCacheMessage": "Bu işlem önbelleğe alınmış tüm verileri temizleyecektir:\n• Bildirimler\n• Kullanıcı profilleri\n• Yer imleri\n• Geçici dosyalar\n\nTekrar giriş yapman gerekecek. Devam edilsin mi?",
+    "featureFlagClearCache": "Önbelleği Temizle",
+    "featureFlagClearingCache": "Önbellek temizleniyor...",
+    "featureFlagSuccess": "Başarılı",
+    "featureFlagError": "Hata",
+    "featureFlagClearCacheSuccess": "Önbellek başarıyla temizlendi. Lütfen uygulamayı yeniden başlat.",
+    "featureFlagClearCacheFailure": "Bazı önbellek öğeleri temizlenemedi. Ayrıntılar için günlükleri kontrol et.",
+    "featureFlagOk": "Tamam",
+    "featureFlagCacheInformation": "Önbellek Bilgisi",
+    "featureFlagTotalCacheSize": "Toplam önbellek boyutu: {size}",
+    "@featureFlagTotalCacheSize": {
+        "placeholders": {
+            "size": {
+                "type": "String"
+            }
+        }
+    },
+    "featureFlagCacheIncludes": "Önbellek şunları içerir:\n• Bildirim geçmişi\n• Kullanıcı profil verileri\n• Video küçük resimleri\n• Geçici dosyalar\n• Veritabanı dizinleri",
+    "relaySettingsTitle": "Röleler",
+    "@relaySettingsTitle": {
+        "description": "Relay settings screen app bar title"
+    },
+    "relaySettingsInfoTitle": "Divine açık bir sistemdir - bağlantılarını sen kontrol edersin",
+    "relaySettingsInfoDescription": "Bu röleler içeriğini merkeziyetsiz Nostr ağı üzerinde dağıtır. İstediğin kadar röle ekleyebilir veya kaldırabilirsin.",
+    "relaySettingsLearnMoreNostr": "Nostr hakkında daha fazla bilgi →",
+    "relaySettingsFindPublicRelays": "Herkese açık röleleri nostr.co.uk adresinde bul →",
+    "relaySettingsAppNotFunctional": "Uygulama Çalışmıyor",
+    "relaySettingsRequiresRelay": "Divine, videoları yüklemek, içerik paylaşmak ve veriyi senkronize etmek için en az bir röleye ihtiyaç duyar.",
+    "relaySettingsRestoreDefaultRelay": "Varsayılan Röleyi Geri Yükle",
+    "relaySettingsAddCustomRelay": "Özel Röle Ekle",
+    "relaySettingsAddRelay": "Röle Ekle",
+    "relaySettingsRetry": "Tekrar Dene",
+    "relaySettingsNoStats": "Henüz istatistik mevcut değil",
+    "relaySettingsConnection": "Bağlantı",
+    "relaySettingsConnected": "Bağlı",
+    "relaySettingsDisconnected": "Bağlantı Kesildi",
+    "relaySettingsSessionDuration": "Oturum Süresi",
+    "relaySettingsLastConnected": "Son Bağlantı",
+    "relaySettingsDisconnectedLabel": "Bağlantı Kesildi",
+    "relaySettingsReason": "Sebep",
+    "relaySettingsActiveSubscriptions": "Aktif Abonelikler",
+    "relaySettingsTotalSubscriptions": "Toplam Abonelikler",
+    "relaySettingsEventsReceived": "Alınan Olaylar",
+    "relaySettingsEventsSent": "Gönderilen Olaylar",
+    "relaySettingsRequestsThisSession": "Bu Oturumdaki İstekler",
+    "relaySettingsFailedRequests": "Başarısız İstekler",
+    "relaySettingsLastError": "Son Hata: {error}",
+    "@relaySettingsLastError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsLoadingRelayInfo": "Röle bilgisi yükleniyor...",
+    "relaySettingsAboutRelay": "Röle Hakkında",
+    "relaySettingsSupportedNips": "Desteklenen NIP'ler",
+    "relaySettingsSoftware": "Yazılım",
+    "relaySettingsViewWebsite": "Web Sitesini Görüntüle",
+    "relaySettingsRemoveRelayTitle": "Röle Kaldırılsın mı?",
+    "relaySettingsRemoveRelayMessage": "Bu röleyi kaldırmak istediğinden emin misin?\n\n{relayUrl}",
+    "@relaySettingsRemoveRelayMessage": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsCancel": "İptal",
+    "relaySettingsRemove": "Kaldır",
+    "relaySettingsRemovedRelay": "Röle kaldırıldı: {relayUrl}",
+    "@relaySettingsRemovedRelay": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToRemoveRelay": "Röle kaldırılamadı",
+    "relaySettingsForcingReconnection": "Röle yeniden bağlantısı zorlanıyor...",
+    "relaySettingsConnectedToRelays": "{count} röleye bağlandı!",
+    "@relaySettingsConnectedToRelays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsFailedToConnectCheck": "Rölelere bağlanılamadı. Lütfen ağ bağlantını kontrol et.",
+    "relaySettingsAddRelayTitle": "Röle Ekle",
+    "relaySettingsAddRelayPrompt": "Eklemek istediğin rölenin WebSocket URL'sini gir:",
+    "relaySettingsBrowsePublicRelays": "Herkese açık rölelere nostr.co.uk adresinden göz at",
+    "relaySettingsAdd": "Ekle",
+    "relaySettingsAddedRelay": "Röle eklendi: {relayUrl}",
+    "@relaySettingsAddedRelay": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToAddRelay": "Röle eklenemedi. Lütfen URL'yi kontrol et ve tekrar dene.",
+    "relaySettingsInvalidUrl": "Röle URL'si wss:// veya ws:// ile başlamalı",
+    "relaySettingsRestoredDefault": "Varsayılan röle geri yüklendi: {defaultRelay}",
+    "@relaySettingsRestoredDefault": {
+        "placeholders": {
+            "defaultRelay": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToRestoreDefault": "Varsayılan röle geri yüklenemedi. Lütfen ağ bağlantını kontrol et.",
+    "relaySettingsCouldNotOpenBrowser": "Tarayıcı açılamadı",
+    "relaySettingsFailedToOpenLink": "Bağlantı açılamadı",
+    "relayDiagnosticTitle": "Röle Tanılamaları",
+    "@relayDiagnosticTitle": {
+        "description": "Relay diagnostics screen app bar title"
+    },
+    "relayDiagnosticRefreshTooltip": "Tanılamaları yenile",
+    "relayDiagnosticLastRefresh": "Son yenileme: {time}",
+    "@relayDiagnosticLastRefresh": {
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticRelayStatus": "Röle Durumu",
+    "relayDiagnosticInitialized": "Başlatıldı",
+    "relayDiagnosticReady": "Hazır",
+    "relayDiagnosticNotInitialized": "Başlatılmadı",
+    "relayDiagnosticDatabaseEvents": "Veritabanı Olayları",
+    "relayDiagnosticActiveSubscriptions": "Aktif Abonelikler",
+    "relayDiagnosticExternalRelays": "Harici Röleler",
+    "relayDiagnosticConfigured": "Yapılandırıldı",
+    "relayDiagnosticRelayCount": "{count} röle",
+    "@relayDiagnosticRelayCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticConnectedLabel": "Bağlı",
+    "relayDiagnosticConnectedRatio": "{connected}/{total}",
+    "@relayDiagnosticConnectedRatio": {
+        "placeholders": {
+            "connected": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticVideoEvents": "Video Olayları",
+    "relayDiagnosticHomeFeed": "Ana Akış",
+    "relayDiagnosticVideosCount": "{count} video",
+    "@relayDiagnosticVideosCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticDiscovery": "Keşif",
+    "relayDiagnosticLoading": "Yükleniyor",
+    "relayDiagnosticYes": "Evet",
+    "relayDiagnosticNo": "Hayır",
+    "relayDiagnosticTestDirectQuery": "Doğrudan Sorguyu Test Et",
+    "relayDiagnosticNetworkConnectivity": "Ağ Bağlantısı",
+    "relayDiagnosticRunNetworkTest": "Ağ Testini Çalıştır",
+    "relayDiagnosticBlossomServer": "Blossom Sunucusu",
+    "relayDiagnosticTestAllEndpoints": "Tüm Uç Noktaları Test Et",
+    "relayDiagnosticStatus": "Durum",
+    "relayDiagnosticUrl": "URL",
+    "relayDiagnosticError": "Hata",
+    "relayDiagnosticFunnelCakeApi": "FunnelCake API",
+    "relayDiagnosticBaseUrl": "Temel URL",
+    "relayDiagnosticSummary": "Özet",
+    "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} başarılı (ort. {avgMs}ms)",
+    "@relayDiagnosticEndpointSummary": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "totalCount": {
+                "type": "int"
+            },
+            "avgMs": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticRetestAll": "Hepsini Yeniden Test Et",
+    "relayDiagnosticRetrying": "Yeniden deneniyor...",
+    "relayDiagnosticRetryConnection": "Bağlantıyı Yeniden Dene",
+    "relayDiagnosticTroubleshooting": "Sorun Giderme",
+    "relayDiagnosticTroubleshootingGuide": "• Yeşil durum = Bağlı ve çalışıyor\n• Kırmızı durum = Bağlantı başarısız\n• Ağ testi başarısız olursa, internet bağlantısını kontrol et\n• Röleler yapılandırılmış ancak bağlı değilse \"Bağlantıyı Yeniden Dene\"ye dokun\n• Hata ayıklama için bu ekranın ekran görüntüsünü al",
+    "relayDiagnosticAllEndpointsHealthy": "Tüm REST uç noktaları sağlıklı!",
+    "relayDiagnosticSomeEndpointsFailed": "Bazı REST uç noktaları başarısız oldu - ayrıntıları yukarıda gör",
+    "relayDiagnosticFoundVideoEvents": "Veritabanında {count} video olayı bulundu",
+    "@relayDiagnosticFoundVideoEvents": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticQueryFailed": "Sorgu başarısız: {error}",
+    "@relayDiagnosticQueryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticConnectedToRelays": "{count} röleye bağlandı!",
+    "@relayDiagnosticConnectedToRelays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticFailedToConnect": "Hiçbir röleye bağlanılamadı",
+    "relayDiagnosticConnectionRetryFailed": "Bağlantı yeniden denemesi başarısız: {error}",
+    "@relayDiagnosticConnectionRetryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticConnectedAuthenticated": "Bağlı ve Kimlik Doğrulandı",
+    "relayDiagnosticConnectedOnly": "Bağlı",
+    "relayDiagnosticNotConnected": "Bağlı değil",
+    "relayDiagnosticNoRelaysConfigured": "Yapılandırılmış röle yok",
+    "relayDiagnosticFailed": "Başarısız",
+    "notificationSettingsTitle": "Bildirimler",
+    "@notificationSettingsTitle": {
+        "description": "Notification settings screen app bar title"
+    },
+    "notificationSettingsResetTooltip": "Varsayılanlara sıfırla",
+    "notificationSettingsTypes": "Bildirim Türleri",
+    "notificationSettingsLikes": "Beğeniler",
+    "notificationSettingsLikesSubtitle": "Biri videolarını beğendiğinde",
+    "notificationSettingsComments": "Yorumlar",
+    "notificationSettingsCommentsSubtitle": "Biri videolarına yorum yaptığında",
+    "notificationSettingsFollows": "Takipler",
+    "notificationSettingsFollowsSubtitle": "Biri seni takip ettiğinde",
+    "notificationSettingsMentions": "Bahsetmeler",
+    "notificationSettingsMentionsSubtitle": "Senden bahsedildiğinde",
+    "notificationSettingsReposts": "Yeniden Paylaşımlar",
+    "notificationSettingsRepostsSubtitle": "Biri videolarını yeniden paylaştığında",
+    "notificationSettingsSystem": "Sistem",
+    "notificationSettingsSystemSubtitle": "Uygulama güncellemeleri ve sistem mesajları",
+    "notificationSettingsPushNotificationsSection": "Anlık Bildirimler",
+    "notificationSettingsPushNotifications": "Anlık Bildirimler",
+    "notificationSettingsPushNotificationsSubtitle": "Uygulama kapalıyken bildirim al",
+    "notificationSettingsSound": "Ses",
+    "notificationSettingsSoundSubtitle": "Bildirimler için ses çal",
+    "notificationSettingsVibration": "Titreşim",
+    "notificationSettingsVibrationSubtitle": "Bildirimler için titreşim",
+    "notificationSettingsActions": "İşlemler",
+    "notificationSettingsMarkAllAsRead": "Tümünü Okundu Olarak İşaretle",
+    "notificationSettingsMarkAllAsReadSubtitle": "Tüm bildirimleri okundu olarak işaretle",
+    "notificationSettingsAllMarkedAsRead": "Tüm bildirimler okundu olarak işaretlendi",
+    "notificationSettingsResetToDefaults": "Ayarlar varsayılanlara sıfırlandı",
+    "notificationSettingsAbout": "Bildirimler Hakkında",
+    "notificationSettingsAboutDescription": "Bildirimler Nostr protokolüyle desteklenir. Gerçek zamanlı güncellemeler Nostr rölelerine olan bağlantına bağlıdır. Bazı bildirimler gecikebilir.",
+    "safetySettingsTitle": "Güvenlik ve Gizlilik",
+    "@safetySettingsTitle": {
+        "description": "Safety settings screen app bar title"
+    },
+    "safetySettingsLabel": "AYARLAR",
+    "safetySettingsShowDivineHostedOnly": "Yalnızca Divine'de barındırılan videoları göster",
+    "safetySettingsShowDivineHostedOnlySubtitle": "Diğer medya sunucularından sunulan videoları gizle",
+    "safetySettingsModeration": "MODERASYON",
+    "safetySettingsBlockedUsers": "ENGELLENEN KULLANICILAR",
+    "safetySettingsAgeVerification": "YAŞ DOĞRULAMA",
+    "safetySettingsAgeConfirmation": "18 yaş veya üzerinde olduğumu onaylıyorum",
+    "safetySettingsAgeRequired": "Yetişkin içeriği görüntülemek için gereklidir",
+    "safetySettingsDivine": "Divine",
+    "safetySettingsDivineSubtitle": "Resmi moderasyon hizmeti (varsayılan olarak açık)",
+    "safetySettingsPeopleIFollow": "Takip ettiğim kişiler",
+    "safetySettingsPeopleIFollowSubtitle": "Takip ettiğin kişilerin etiketlerine abone ol",
+    "safetySettingsAddCustomLabeler": "Özel Etiketleyici Ekle",
+    "safetySettingsAddCustomLabelerHint": "npub gir...",
+    "safetySettingsAddCustomLabelerListTitle": "Özel etiketleyici ekle",
+    "safetySettingsAddCustomLabelerListSubtitle": "npub adresi gir",
+    "safetySettingsNoBlockedUsers": "Engellenmiş kullanıcı yok",
+    "safetySettingsUnblock": "Engeli kaldır",
+    "safetySettingsUserUnblocked": "Kullanıcının engeli kaldırıldı",
+    "safetySettingsCancel": "İptal",
+    "safetySettingsAdd": "Ekle",
+    "analyticsTitle": "İçerik Üretici Analitikleri",
+    "@analyticsTitle": {
+        "description": "Creator analytics screen app bar title"
+    },
+    "analyticsDiagnosticsTooltip": "Tanılamalar",
+    "analyticsDiagnosticsSemanticLabel": "Tanılamaları aç/kapat",
+    "analyticsRetry": "Tekrar Dene",
+    "analyticsUnableToLoad": "Analitikler yüklenemiyor.",
+    "analyticsSignInRequired": "İçerik üretici analitiklerini görmek için giriş yap.",
+    "analyticsViewDataUnavailable": "Görüntüleme verileri bu gönderiler için röleden şu anda alınamıyor. Beğeni/yorum/yeniden paylaşım metrikleri hala doğrudur.",
+    "analyticsViewDataTitle": "Görüntüleme Verileri",
+    "analyticsUpdatedTimestamp": "Güncellendi {time} • Skorlar mümkün olduğunda Funnelcake'ten gelen beğeni, yorum, yeniden paylaşım ve görüntüleme/döngü verilerini kullanır.",
+    "@analyticsUpdatedTimestamp": {
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsVideos": "Videolar",
+    "analyticsViews": "Görüntülenme",
+    "analyticsInteractions": "Etkileşimler",
+    "analyticsEngagement": "Etkileşim Oranı",
+    "analyticsFollowers": "Takipçiler",
+    "analyticsAvgPerPost": "Gönderi Ort.",
+    "analyticsInteractionMix": "Etkileşim Dağılımı",
+    "analyticsLikes": "Beğeniler",
+    "analyticsComments": "Yorumlar",
+    "analyticsReposts": "Yeniden Paylaşımlar",
+    "analyticsPerformanceHighlights": "Performans Öne Çıkanları",
+    "analyticsMostViewed": "En çok görüntülenen",
+    "analyticsMostDiscussed": "En çok tartışılan",
+    "analyticsMostReposted": "En çok yeniden paylaşılan",
+    "analyticsNoVideosYet": "Henüz video yok",
+    "analyticsViewDataUnavailableShort": "Görüntüleme verileri yok",
+    "analyticsViewsCount": "{count} görüntülenme",
+    "@analyticsViewsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsCommentsCount": "{count} yorum",
+    "@analyticsCommentsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsRepostsCount": "{count} yeniden paylaşım",
+    "@analyticsRepostsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsTopContent": "En İyi İçerik",
+    "analyticsPublishPrompt": "Sıralamaları görmek için birkaç video yayınla.",
+    "analyticsEngagementRateExplainer": "Sağ taraftaki % = Etkileşim Oranı (etkileşimlerin görüntülenmeye bölümü).",
+    "analyticsEngagementRateNoViews": "Etkileşim Oranı görüntüleme verisi gerektirir; değerler görüntüleme mevcut olana kadar Yok olarak görünür.",
+    "analyticsEngagementLabel": "Etkileşim",
+    "analyticsViewsUnavailable": "görüntüleme yok",
+    "analyticsInteractionsCount": "{count} etkileşim",
+    "@analyticsInteractionsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsPostAnalytics": "Gönderi Analitikleri",
+    "analyticsOpenPost": "Gönderiyi Aç",
+    "analyticsRecentDailyInteractions": "Son Günlük Etkileşimler",
+    "analyticsNoActivityYet": "Bu aralıkta henüz etkinlik yok.",
+    "analyticsDailyInteractionsExplainer": "Etkileşimler = gönderi tarihine göre beğeni + yorum + yeniden paylaşım.",
+    "analyticsDailyBarExplainer": "Çubuk uzunluğu bu penceredeki en yüksek gününe göredir.",
+    "analyticsAudienceSnapshot": "Kitle Özeti",
+    "analyticsFollowersCount": "Takipçiler: {count}",
+    "@analyticsFollowersCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsFollowingCount": "Takip edilenler: {count}",
+    "@analyticsFollowingCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsAudiencePlaceholder": "Kaynak/coğrafya/zaman ayrıntıları, Funnelcake kitle analitik uç noktalarını ekledikçe doldurulacak.",
+    "analyticsRetention": "Elde Tutma",
+    "analyticsRetentionWithViews": "Elde tutma eğrisi ve izleme süresi dağılımı, Funnelcake'ten saniye/kova başına elde tutma geldiğinde görünecek.",
+    "analyticsRetentionWithoutViews": "Elde tutma verileri, Funnelcake tarafından görüntüleme + izleme süresi analitikleri dönene kadar mevcut değildir.",
+    "analyticsDiagnostics": "Tanılamalar",
+    "analyticsDiagnosticsTotalVideos": "Toplam video: {count}",
+    "@analyticsDiagnosticsTotalVideos": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsWithViews": "Görüntülenmeli: {count}",
+    "@analyticsDiagnosticsWithViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsMissingViews": "Görüntülenme eksik: {count}",
+    "@analyticsDiagnosticsMissingViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsHydratedBulk": "Beslenmiş (toplu): {count}",
+    "@analyticsDiagnosticsHydratedBulk": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsHydratedViews": "Beslenmiş (/views): {count}",
+    "@analyticsDiagnosticsHydratedViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsSources": "Kaynaklar: {sources}",
+    "@analyticsDiagnosticsSources": {
+        "placeholders": {
+            "sources": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsDiagnosticsUseFixture": "Sabit test verisini kullan",
+    "analyticsNa": "Yok",
+    "authCreateNewAccount": "Yeni bir Divine hesabı oluştur",
+    "authSignInDifferentAccount": "Farklı bir hesapla giriş yap",
+    "authSignBackIn": "Tekrar giriş yap",
+    "authTermsPrefix": "Yukarıdaki bir seçeneği seçerek en az 16 yaşında olduğunu onayladığını ve ",
+    "authTermsOfService": "Hizmet Şartları",
+    "authPrivacyPolicy": "Gizlilik Politikası",
+    "authTermsAnd": " ve ",
+    "authSafetyStandards": "Güvenlik Standartları",
+    "authAmberNotInstalled": "Amber uygulaması yüklü değil",
+    "authAmberConnectionFailed": "Amber ile bağlanılamadı",
+    "authPasswordResetSent": "Bu e-posta ile bir hesap varsa, bir parola sıfırlama bağlantısı gönderildi.",
+    "authSignInTitle": "Giriş yap",
+    "authEmailLabel": "E-posta",
+    "authPasswordLabel": "Parola",
+    "authForgotPassword": "Parolanı mı unuttun?",
+    "authImportNostrKey": "Nostr anahtarını içe aktar",
+    "authConnectSignerApp": "Bir imzalama uygulaması ile bağlan",
+    "authSignInWithAmber": "Amber ile giriş yap",
+    "authSignInOptionsTitle": "Giriş seçenekleri",
+    "authInfoEmailPasswordTitle": "E-posta ve Parola",
+    "authInfoEmailPasswordDescription": "Divine hesabınla giriş yap. E-posta ve parolayla kaydoldunsa onları burada kullan.",
+    "authInfoImportNostrKeyDescription": "Zaten bir Nostr kimliğin var mı? nsec özel anahtarını başka bir istemciden içe aktar.",
+    "authInfoSignerAppTitle": "İmzalama Uygulaması",
+    "authInfoSignerAppDescription": "Geliştirilmiş anahtar güvenliği için nsecBunker gibi NIP-46 uyumlu bir uzaktan imzalayıcı kullanarak bağlan.",
+    "authInfoAmberTitle": "Amber",
+    "authInfoAmberDescription": "Nostr anahtarlarını güvenli şekilde yönetmek için Android'deki Amber imzalama uygulamasını kullan.",
+    "authCreateAccountTitle": "Hesap oluştur",
+    "authBackToInviteCode": "Davet koduna geri dön",
+    "authUseDivineNoBackup": "Yedek olmadan Divine kullan",
+    "authSkipConfirmTitle": "Son bir şey...",
+    "authSkipConfirmKeyCreated": "İçerisin! Divine hesabını güçlendirecek güvenli bir anahtar oluşturalım.",
+    "authSkipConfirmKeyOnly": "E-posta olmadan, anahtarın Divine'ın bu hesabın sana ait olduğunu anlayabileceği tek yoldur.",
+    "authSkipConfirmRecommendEmail": "Anahtarına uygulama içinden ulaşabilirsin, ancak teknik değilsen şimdi bir e-posta ve parola eklemeni öneririz. Bu cihazı kaybeder veya sıfırlarsan hesabına giriş yapmayı ve geri yüklemeyi kolaylaştırır.",
+    "authAddEmailPassword": "E-posta ve parola ekle",
+    "authUseThisDeviceOnly": "Yalnızca bu cihazı kullan",
+    "authCompleteRegistration": "Kaydını tamamla",
+    "authVerifying": "Doğrulanıyor...",
+    "authVerificationLinkSent": "Şu adrese doğrulama bağlantısı gönderdik:",
+    "authClickVerificationLink": "Kaydı tamamlamak için\nlütfen e-postandaki bağlantıya tıkla.",
+    "authPleaseWaitVerifying": "Lütfen e-postan doğrulanırken bekle...",
+    "authWaitingForVerification": "Doğrulama bekleniyor",
+    "authOpenEmailApp": "E-posta uygulamasını aç",
+    "authWelcomeToDivine": "Divine'a Hoş Geldin!",
+    "authEmailVerified": "E-postan doğrulandı.",
+    "authSigningYouIn": "Giriş yapılıyor",
+    "authErrorTitle": "Olamaz.",
+    "authVerificationFailed": "E-postanı doğrulayamadık.\nLütfen tekrar dene.",
+    "authStartOver": "Baştan başla",
+    "authEmailVerifiedLogin": "E-posta doğrulandı! Devam etmek için giriş yap.",
+    "authVerificationLinkExpired": "Bu doğrulama bağlantısı artık geçerli değil.",
+    "authVerificationConnectionError": "E-posta doğrulanamıyor. Lütfen bağlantını kontrol et ve tekrar dene.",
+    "authWaitlistConfirmTitle": "İçerisin!",
+    "authWaitlistUpdatesAt": "Güncellemeleri {email} adresine göndereceğiz.\nDaha fazla davet kodu çıktığında sana göndereceğiz.",
+    "@authWaitlistUpdatesAt": {
+        "description": "Waitlist confirmation message with email",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authOk": "Tamam",
+    "authInviteUnavailable": "Davet erişimi geçici olarak kullanılamıyor.",
+    "authInviteUnavailableBody": "Biraz sonra tekrar dene veya yardım gerekiyorsa destek ile iletişime geç.",
+    "authTryAgain": "Tekrar dene",
+    "authContactSupport": "Destekle iletişime geç",
+    "authCouldNotOpenEmail": "{email} açılamadı",
+    "@authCouldNotOpenEmail": {
+        "description": "Error when email client cannot be opened",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authAddInviteCode": "Davet kodunu ekle",
+    "authInviteCodeLabel": "Davet kodu",
+    "authEnterYourCode": "Kodunu gir",
+    "authNext": "İleri",
+    "authJoinWaitlist": "Bekleme listesine katıl",
+    "authJoinWaitlistTitle": "Bekleme listesine katıl",
+    "authJoinWaitlistDescription": "E-postanı paylaş, erişim açıldıkça güncelleme gönderelim.",
+    "authInviteAccessHelp": "Davet erişimi yardımı",
+    "authGeneratingConnection": "Bağlantı oluşturuluyor...",
+    "authConnectedAuthenticating": "Bağlandı! Kimlik doğrulanıyor...",
+    "authConnectionTimedOut": "Bağlantı zaman aşımı",
+    "authApproveConnection": "İmzalama uygulamanda bağlantıyı onayladığından emin ol.",
+    "authConnectionCancelled": "Bağlantı iptal edildi",
+    "authConnectionCancelledMessage": "Bağlantı iptal edildi.",
+    "authConnectionFailed": "Bağlantı başarısız",
+    "authUnknownError": "Bilinmeyen bir hata oluştu.",
+    "authUrlCopied": "URL panoya kopyalandı",
+    "authConnectToDivine": "Divine'a Bağlan",
+    "authPasteBunkerUrl": "bunker:// URL'sini yapıştır",
+    "authBunkerUrlHint": "bunker:// URL",
+    "authInvalidBunkerUrl": "Geçersiz bunker URL'si. bunker:// ile başlamalıdır",
+    "authScanSignerApp": "Bağlanmak için\nimzalama uygulamanla tara.",
+    "authWaitingForConnection": "Bağlantı bekleniyor... {seconds}sn",
+    "@authWaitingForConnection": {
+        "description": "Waiting indicator with elapsed seconds",
+        "placeholders": {
+            "seconds": {
+                "type": "int"
+            }
+        }
+    },
+    "authCopyUrl": "URL'yi Kopyala",
+    "authShare": "Paylaş",
+    "authAddBunker": "Bunker ekle",
+    "authCompatibleSignerApps": "Uyumlu imzalama uygulamaları",
+    "authFailedToConnect": "Bağlanılamadı",
+    "authResetPasswordTitle": "Parolayı Sıfırla",
+    "authResetPasswordSubtitle": "Lütfen yeni parolanı gir. En az 8 karakter olmalıdır.",
+    "authNewPasswordLabel": "Yeni Parola",
+    "authPasswordTooShort": "Parola en az 8 karakter olmalı",
+    "authPasswordResetSuccess": "Parola sıfırlama başarılı. Lütfen giriş yap.",
+    "authPasswordResetFailed": "Parola sıfırlama başarısız",
+    "authUnexpectedError": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene.",
+    "authUpdatePassword": "Parolayı güncelle",
+    "authSecureAccountTitle": "Güvenli hesap",
+    "authUnableToAccessKeys": "Anahtarlarına erişilemiyor. Lütfen tekrar dene.",
+    "authRegistrationFailed": "Kayıt başarısız",
+    "authRegistrationComplete": "Kayıt tamamlandı. Lütfen e-postanı kontrol et.",
+    "authVerificationFailedTitle": "Doğrulama Başarısız",
+    "authClose": "Kapat",
+    "authAccountSecured": "Hesap Güvenceye Alındı!",
+    "authAccountLinkedToEmail": "Hesabın artık e-postana bağlı.",
+    "authVerifyYourEmail": "E-Postanı Doğrula",
+    "authClickLinkContinue": "Kaydı tamamlamak için e-postandaki bağlantıya tıkla. Bu arada uygulamayı kullanmaya devam edebilirsin.",
+    "authWaitingForVerificationEllipsis": "Doğrulama bekleniyor...",
+    "authContinueToApp": "Uygulamaya Devam Et",
+    "authResetPassword": "Parolayı sıfırla",
+    "authResetPasswordDescription": "E-posta adresini gir, parolanı sıfırlamak için sana bir bağlantı gönderelim.",
+    "authFailedToSendResetEmail": "Sıfırlama e-postası gönderilemedi.",
+    "authUnexpectedErrorShort": "Beklenmeyen bir hata oluştu.",
+    "authSending": "Gönderiliyor...",
+    "authSendResetLink": "Sıfırlama bağlantısı gönder",
+    "authEmailSent": "E-posta gönderildi!",
+    "authResetLinkSentTo": "{email} adresine bir parola sıfırlama bağlantısı gönderdik. Parolanı güncellemek için lütfen e-postandaki bağlantıya tıkla.",
+    "@authResetLinkSentTo": {
+        "description": "Confirmation message after reset link sent",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authSignInButton": "Giriş yap",
+    "authVerificationErrorTimeout": "Doğrulama zaman aşımına uğradı. Lütfen tekrar kaydolmayı dene.",
+    "authVerificationErrorMissingCode": "Doğrulama başarısız — yetkilendirme kodu eksik.",
+    "authVerificationErrorPollFailed": "Doğrulama başarısız. Lütfen tekrar dene.",
+    "authVerificationErrorNetworkExchange": "Giriş sırasında ağ hatası. Lütfen tekrar dene.",
+    "authVerificationErrorOAuthExchange": "Doğrulama başarısız. Lütfen tekrar kaydolmayı dene.",
+    "authVerificationErrorSignInFailed": "Giriş başarısız. Lütfen manuel olarak giriş yapmayı dene.",
+    "authInviteErrorAlreadyUsed": "Bu davet kodu artık kullanılamıyor. Davet koduna geri dön, bekleme listesine katıl veya destekle iletişime geç.",
+    "authInviteErrorInvalid": "Bu davet kodu şu anda kullanılamıyor. Davet koduna geri dön, bekleme listesine katıl veya destekle iletişime geç.",
+    "authInviteErrorTemporary": "Davetini şu anda doğrulayamadık. Davet koduna geri dönüp tekrar dene veya destekle iletişime geç.",
+    "authInviteErrorUnknown": "Davetini etkinleştiremedik. Davet koduna geri dön, bekleme listesine katıl veya destekle iletişime geç.",
+    "shareSheetSave": "Kaydet",
+    "shareSheetSaveToGallery": "Galeriye Kaydet",
+    "shareSheetSaveWithWatermark": "Filigranlı Kaydet",
+    "shareSheetSaveVideo": "Videoyu Kaydet",
+    "shareSheetAddToList": "Listeye Ekle",
+    "shareSheetCopy": "Kopyala",
+    "shareSheetShareVia": "Şununla paylaş",
+    "shareSheetReport": "Bildir",
+    "shareSheetEventJson": "Olay JSON'u",
+    "shareSheetEventId": "Olay Kimliği",
+    "shareSheetMoreActions": "Daha fazla işlem",
+    "watermarkDownloadSavedToCameraRoll": "Kamera Rulosuna Kaydedildi",
+    "watermarkDownloadShare": "Paylaş",
+    "watermarkDownloadDone": "Bitti",
+    "watermarkDownloadPhotosAccessNeeded": "Fotoğraf Erişimi Gerekiyor",
+    "watermarkDownloadPhotosAccessDescription": "Videoları kaydetmek için Ayarlar'dan Fotoğraf erişimine izin ver.",
+    "watermarkDownloadOpenSettings": "Ayarları Aç",
+    "watermarkDownloadNotNow": "Şimdi Değil",
+    "watermarkDownloadFailed": "İndirme Başarısız",
+    "watermarkDownloadDismiss": "Kapat",
+    "watermarkDownloadStageDownloading": "Video İndiriliyor",
+    "watermarkDownloadStageWatermarking": "Filigran Ekleniyor",
+    "watermarkDownloadStageSaving": "Kamera Rulosuna Kaydediliyor",
+    "watermarkDownloadStageDownloadingDesc": "Video ağdan alınıyor...",
+    "watermarkDownloadStageWatermarkingDesc": "Divine filigranı uygulanıyor...",
+    "watermarkDownloadStageSavingDesc": "Filigranlı video kamera rulosuna kaydediliyor...",
+    "uploadProgressVideoUpload": "Video Yüklemesi",
+    "uploadProgressPause": "Duraklat",
+    "uploadProgressResume": "Devam Et",
+    "uploadProgressGoBack": "Geri Dön",
+    "uploadProgressRetryWithCount": "Tekrar Dene ({count} kaldı)",
+    "@uploadProgressRetryWithCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressDelete": "Sil",
+    "uploadProgressDaysAgo": "{count}g önce",
+    "@uploadProgressDaysAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressHoursAgo": "{count}sa önce",
+    "@uploadProgressHoursAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressMinutesAgo": "{count}dk önce",
+    "@uploadProgressMinutesAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressJustNow": "Az önce",
+    "uploadProgressUploadingPercent": "Yükleniyor %{percent}",
+    "@uploadProgressUploadingPercent": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressPausedPercent": "Duraklatıldı %{percent}",
+    "@uploadProgressPausedPercent": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationClose": "Kapat",
+    "badgeExplanationOriginalVineArchive": "Orijinal Vine Arşivi",
+    "badgeExplanationCameraProof": "Kamera Kanıtı",
+    "badgeExplanationAuthenticitySignals": "Gerceklik Sinyalleri",
+    "badgeExplanationVineArchiveIntro": "Bu video, Internet Archive'dan kurtarılmış orijinal bir Vine'dır.",
+    "badgeExplanationVineArchiveHistory": "Vine 2017'de kapanmadan önce, ArchiveTeam ve Internet Archive milyonlarca Vine'ı gelecek için korumak amacıyla çalıştı. Bu içerik, o tarihi koruma çabasının bir parçasıdır.",
+    "badgeExplanationOriginalStats": "Orijinal istatistikler: {loops} döngü",
+    "@badgeExplanationOriginalStats": {
+        "placeholders": {
+            "loops": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationLearnVineArchive": "Vine arşivi koruması hakkında daha fazla bilgi",
+    "badgeExplanationLearnProofmode": "Proofmode doğrulaması hakkında daha fazla bilgi",
+    "badgeExplanationLearnAuthenticity": "Divine gerçeklik sinyalleri hakkında daha fazla bilgi",
+    "badgeExplanationInspectProofCheck": "ProofCheck Aracı ile İncele",
+    "badgeExplanationInspectMedia": "Medya ayrıntılarını incele",
+    "badgeExplanationProofmodeVerified": "Bu videonun orijinalliği Proofmode teknolojisi ile doğrulandı.",
+    "badgeExplanationDivineHostedHumanMade": "Bu video Divine'de barındırılıyor ve yapay zeka tespiti muhtemelen insan yapımı olduğunu gösteriyor, ancak kriptografik kamera doğrulama verisi içermiyor.",
+    "badgeExplanationHumanMadeNoCrypto": "Yapay zeka tespiti bu videonun muhtemelen insan yapımı olduğunu gösteriyor, ancak kriptografik kamera doğrulama verisi içermiyor.",
+    "badgeExplanationDivineHostedNoCrypto": "Bu video Divine'de barındırılıyor, ancak henüz kriptografik kamera doğrulama verisi içermiyor.",
+    "badgeExplanationExternalNoCrypto": "Bu video Divine dışında barındırılıyor ve kriptografik kamera doğrulama verisi içermiyor.",
+    "badgeExplanationDeviceAttestation": "Cihaz tasdik",
+    "badgeExplanationPgpSignature": "PGP imzası",
+    "badgeExplanationC2paCredentials": "C2PA İçerik Kimlik Bilgileri",
+    "badgeExplanationProofManifest": "Kanıt manifestosu",
+    "badgeExplanationAiDetection": "Yapay Zeka Tespiti",
+    "badgeExplanationAiNotScanned": "Yapay zeka taraması: Henüz taranmadı",
+    "badgeExplanationNoScanResults": "Henüz tarama sonucu mevcut değil.",
+    "badgeExplanationCheckAiGenerated": "Yapay zeka üretimi mi kontrol et",
+    "badgeExplanationAiLikelihood": "Yapay zeka üretimi olma olasılığı %{percentage}",
+    "@badgeExplanationAiLikelihood": {
+        "placeholders": {
+            "percentage": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationScannedBy": "Tarayıcı: {source}",
+    "@badgeExplanationScannedBy": {
+        "placeholders": {
+            "source": {
+                "type": "String"
+            }
+        }
+    },
+    "badgeExplanationVerifiedByModerator": "İnsan moderatör tarafından doğrulandı",
+    "badgeExplanationVerificationPlatinum": "Platin: Cihaz donanımı tasdik, kriptografik imzalar, İçerik Kimlik Bilgileri (C2PA) ve yapay zeka taraması insan kökenini doğrular.",
+    "badgeExplanationVerificationGold": "Altın: Donanım tasdik, kriptografik imzalar ve İçerik Kimlik Bilgileri (C2PA) ile gerçek bir cihazda çekildi.",
+    "badgeExplanationVerificationSilver": "Gümüş: Kriptografik imzalar bu videonun kayıttan bu yana değiştirilmediğini kanıtlar.",
+    "badgeExplanationVerificationBronze": "Bronz: Temel meta veri imzaları mevcut.",
+    "badgeExplanationVerificationSilverAiScan": "Gümüş: Yapay zeka taraması bu videonun muhtemelen insan tarafından oluşturulduğunu doğrular.",
+    "badgeExplanationNoVerification": "Bu video için doğrulama verisi mevcut değil.",
+    "shareMenuTitle": "Videoyu Paylaş",
+    "shareMenuReportAiContent": "Yapay Zeka İçeriği Bildir",
+    "shareMenuReportAiContentSubtitle": "Şüpheli yapay zeka üretimi içeriği hızlı bildir",
+    "shareMenuReportingAiContent": "Yapay zeka içeriği bildiriliyor...",
+    "shareMenuFailedToReportContent": "İçerik bildirilemedi: {error}",
+    "@shareMenuFailedToReportContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuFailedToReportAiContent": "Yapay zeka içeriği bildirilemedi: {error}",
+    "@shareMenuFailedToReportAiContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuVideoStatus": "Video Durumu",
+    "shareMenuViewAllLists": "Tüm listeleri görüntüle →",
+    "shareMenuShareWith": "Şununla Paylaş",
+    "shareMenuShareViaOtherApps": "Diğer uygulamalar üzerinden paylaş",
+    "shareMenuShareViaOtherAppsSubtitle": "Diğer uygulamalar ile paylaş veya bağlantıyı kopyala",
+    "shareMenuSaveToGallery": "Galeriye Kaydet",
+    "shareMenuSaveOriginalSubtitle": "Orijinal videoyu kamera rulosuna kaydet",
+    "shareMenuSaveWithWatermark": "Filigranlı Kaydet",
+    "shareMenuSaveVideo": "Videoyu Kaydet",
+    "shareMenuDownloadWithWatermark": "Divine filigranı ile indir",
+    "shareMenuSaveVideoSubtitle": "Videoyu kamera rulosuna kaydet",
+    "shareMenuLists": "Listeler",
+    "shareMenuAddToList": "Listeye Ekle",
+    "shareMenuAddToListSubtitle": "Derlenmiş listelerine ekle",
+    "shareMenuCreateNewList": "Yeni Liste Oluştur",
+    "shareMenuCreateNewListSubtitle": "Yeni bir derleme başlat",
+    "shareMenuRemovedFromList": "Listeden kaldırıldı",
+    "shareMenuFailedToRemoveFromList": "Listeden kaldırılamadı",
+    "shareMenuBookmarks": "Yer İmleri",
+    "shareMenuAddToBookmarks": "Yer İmlerine Ekle",
+    "shareMenuAddToBookmarksSubtitle": "Sonra izlemek için kaydet",
+    "shareMenuAddToBookmarkSet": "Yer İmi Setine Ekle",
+    "shareMenuAddToBookmarkSetSubtitle": "Koleksiyonlar halinde düzenle",
+    "shareMenuFollowSets": "Takip Setleri",
+    "shareMenuCreateFollowSet": "Takip Seti Oluştur",
+    "shareMenuCreateFollowSetSubtitle": "Bu üretici ile yeni koleksiyon başlat",
+    "shareMenuAddToFollowSet": "Takip Setine Ekle",
+    "shareMenuFollowSetsAvailable": "{count} takip seti mevcut",
+    "@shareMenuFollowSetsAvailable": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuAddedToBookmarks": "Yer imlerine eklendi!",
+    "shareMenuFailedToAddBookmark": "Yer imi eklenemedi",
+    "shareMenuCreatedListAndAddedVideo": "\"{name}\" listesi oluşturuldu ve video eklendi",
+    "@shareMenuCreatedListAndAddedVideo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuManageContent": "İçeriği Yönet",
+    "shareMenuEditVideo": "Videoyu Düzenle",
+    "shareMenuEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
+    "shareMenuDeleteVideo": "Videoyu Sil",
+    "shareMenuDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
+    "shareMenuVideoInTheseLists": "Video şu listelerde:",
+    "shareMenuVideoCount": "{count} video",
+    "@shareMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuClose": "Kapat",
+    "shareMenuDeleteConfirmation": "Bu videoyu silmek istediğinden emin misin?",
+    "shareMenuDeleteWarning": "Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.",
+    "shareMenuCancel": "İptal",
+    "shareMenuDelete": "Sil",
+    "shareMenuDeletingContent": "İçerik siliniyor...",
+    "shareMenuDeleteRequestSent": "Silme isteği başarıyla gönderildi",
+    "shareMenuFailedToDeleteContent": "İçerik silinemedi: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuFollowSetName": "Takip Seti Adı",
+    "shareMenuFollowSetNameHint": "örn. İçerik Üreticileri, Müzisyenler vb.",
+    "shareMenuDescriptionOptional": "Açıklama (opsiyonel)",
+    "shareMenuCreate": "Oluştur",
+    "shareMenuCreatedFollowSetAndAddedCreator": "\"{name}\" takip seti oluşturuldu ve üretici eklendi",
+    "@shareMenuCreatedFollowSetAndAddedCreator": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuDone": "Bitti",
+    "shareMenuEditTitle": "Başlık",
+    "shareMenuEditTitleHint": "Video başlığını gir",
+    "shareMenuEditDescription": "Açıklama",
+    "shareMenuEditDescriptionHint": "Video açıklamasını gir",
+    "shareMenuEditHashtags": "Etiketler",
+    "shareMenuEditHashtagsHint": "virgülle, ayırılmış, etiketler",
+    "shareMenuEditMetadataNote": "Not: Yalnızca meta veriler düzenlenebilir. Video içeriği değiştirilemez.",
+    "shareMenuDeleting": "Siliniyor...",
+    "shareMenuUpdate": "Güncelle",
+    "shareMenuVideoUpdated": "Video başarıyla güncellendi",
+    "shareMenuFailedToUpdateVideo": "Video güncellenemedi: {error}",
+    "@shareMenuFailedToUpdateVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
+    "shareMenuDeleteRelayWarning": "Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.",
+    "shareMenuVideoDeletionRequested": "Video silme isteği alındı",
+    "shareMenuFailedToDeleteVideo": "Video silinemedi: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuContentLabels": "İçerik etiketleri",
+    "shareMenuAddContentLabels": "İçerik etiketleri ekle",
+    "shareMenuClearAll": "Tümünü temizle",
+    "shareMenuCollaborators": "İşbirlikçiler",
+    "shareMenuAddCollaborator": "İşbirlikçi ekle",
+    "shareMenuMutualFollowRequired": "{name} kişisini işbirlikçi olarak eklemek için karşılıklı takip etmeniz gerekir.",
+    "@shareMenuMutualFollowRequired": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuLoading": "Yükleniyor...",
+    "shareMenuInspiredBy": "İlham alındı",
+    "shareMenuAddInspirationCredit": "İlham kaynağı ekle",
+    "shareMenuCreatorCannotBeReferenced": "Bu üreticiye referans verilemez.",
+    "shareMenuUnknown": "Bilinmeyen",
+    "shareMenuCreateBookmarkSet": "Yer İmi Seti Oluştur",
+    "shareMenuSetName": "Set Adı",
+    "shareMenuSetNameHint": "örn. Favoriler, Sonra İzle vb.",
+    "shareMenuCreateNewSet": "Yeni Set Oluştur",
+    "shareMenuStartNewBookmarkCollection": "Yeni bir yer imi koleksiyonu başlat",
+    "shareMenuNoBookmarkSets": "Henüz yer imi seti yok. İlk setini oluştur!",
+    "shareMenuError": "Hata",
+    "shareMenuFailedToLoadBookmarkSets": "Yer imi setleri yüklenemedi",
+    "shareMenuCreatedSetAndAddedVideo": "\"{name}\" oluşturuldu ve video eklendi",
+    "@shareMenuCreatedSetAndAddedVideo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuUseThisSound": "Bu sesi kullan",
+    "shareMenuOriginalSound": "Orijinal ses",
+    "authSessionExpired": "Oturumun sona erdi. Lütfen tekrar giriş yap.",
+    "authSignInFailed": "Giriş başarısız. Lütfen tekrar dene.",
+    "localeAppLanguage": "Uygulama Dili",
+    "localeDeviceDefault": "Cihaz varsayılanı",
+    "localeSelectLanguage": "Dil Seç",
+    "webAuthNotSupportedSecureMode": "Web kimlik doğrulaması güvenli modda desteklenmiyor. Güvenli anahtar yönetimi için lütfen mobil uygulamayı kullan.",
+    "webAuthIntegrationFailed": "Kimlik doğrulama entegrasyonu başarısız: {error}",
+    "@webAuthIntegrationFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "webAuthUnexpectedError": "Beklenmeyen hata: {error}",
+    "@webAuthUnexpectedError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "webAuthEnterBunkerUri": "Lütfen bir bunker URI'si gir",
+    "webAuthConnectTitle": "Divine'a Bağlan",
+    "webAuthChooseMethod": "Tercih ettiğin Nostr kimlik doğrulama yöntemini seç",
+    "webAuthBrowserExtension": "Tarayıcı Uzantısı",
+    "webAuthRecommended": "ÖNERİLEN",
+    "webAuthNsecBunker": "nsec bunker",
+    "webAuthConnectRemoteSigner": "Uzak bir imzalayıcıya bağlan",
+    "webAuthBunkerHint": "bunker://pubkey?relay=wss://...",
+    "webAuthPasteFromClipboard": "Panodan yapıştır",
+    "webAuthConnectToBunker": "Bunker'a Bağlan",
+    "webAuthNewToNostr": "Nostr'da yeni misin?",
+    "webAuthNostrHelp": "En kolay deneyim için Alby veya nos2x gibi bir tarayıcı uzantısı yükle veya güvenli uzaktan imzalama için nsec bunker kullan.",
+    "soundsTitle": "Sesler",
+    "soundsSearchHint": "Ses ara...",
+    "soundsPreviewUnavailable": "Ses önizlenemiyor - ses mevcut değil",
+    "soundsPreviewFailed": "Önizleme oynatılamadı: {error}",
+    "@soundsPreviewFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "soundsFeaturedSounds": "Öne Çıkan Sesler",
+    "soundsTrendingSounds": "Trend Sesler",
+    "soundsAllSounds": "Tüm Sesler",
+    "soundsSearchResults": "Arama Sonuçları",
+    "soundsNoSoundsAvailable": "Hiç ses yok",
+    "soundsNoSoundsDescription": "İçerik üreticiler ses paylaştığında burada görünecek",
+    "soundsNoSoundsFound": "Hiç ses bulunamadı",
+    "soundsNoSoundsFoundDescription": "Farklı bir arama terimi dene",
+    "soundsFailedToLoad": "Sesler yüklenemedi",
+    "soundsRetry": "Tekrar Dene",
+    "soundsScreenLabel": "Sesler ekranı",
+    "profileTitle": "Profil",
+    "profileRefresh": "Yenile",
+    "profileRefreshLabel": "Profili yenile",
+    "profileMoreOptions": "Daha fazla seçenek",
+    "profileBlockedUser": "{name} engellendi",
+    "@profileBlockedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockedUser": "{name} engeli kaldırıldı",
+    "@profileUnblockedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnfollowedUser": "{name} takipten çıkarıldı",
+    "@profileUnfollowedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileError": "Hata: {error}",
+    "@profileError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsTabAll": "Tümü",
+    "notificationsTabLikes": "Beğeniler",
+    "notificationsTabComments": "Yorumlar",
+    "notificationsTabFollows": "Takipler",
+    "notificationsTabReposts": "Yeniden Paylaşımlar",
+    "notificationsFailedToLoad": "Bildirimler yüklenemedi",
+    "notificationsRetry": "Tekrar Dene",
+    "notificationsCheckingNew": "yeni bildirimler kontrol ediliyor",
+    "notificationsNoneYet": "Henüz bildirim yok",
+    "notificationsNoneForType": "{type} bildirimi yok",
+    "@notificationsNoneForType": {
+        "placeholders": {
+            "type": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsEmptyDescription": "İnsanlar içeriğinle etkileşime geçtiğinde burada göreceksin",
+    "notificationsLoadingType": "{type} bildirimleri yükleniyor...",
+    "@notificationsLoadingType": {
+        "placeholders": {
+            "type": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsInviteSingular": "Bir arkadaşınla paylaşacak 1 davetin var!",
+    "notificationsInvitePlural": "Arkadaşlarınla paylaşacak {count} davetin var!",
+    "@notificationsInvitePlural": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "notificationsVideoNotFound": "Video bulunamadı",
+    "notificationsVideoUnavailable": "Video kullanılamıyor",
+    "notificationsFromNotification": "Bildirimden",
+    "feedFailedToLoadVideos": "Videolar yüklenemedi",
+    "feedRetry": "Tekrar Dene",
+    "feedNoFollowedUsers": "Takip edilen kullanıcı yok.\nVideolarını burada görmek için birini takip et.",
+    "feedNoVideosForMode": "{mode} akışı için video bulunamadı.",
+    "@feedNoVideosForMode": {
+        "placeholders": {
+            "mode": {
+                "type": "String"
+            }
+        }
+    },
+    "feedExploreVideos": "Videoları Keşfet",
+    "feedExternalVideoSlow": "Harici video yavaş yükleniyor",
+    "feedSkip": "Atla",
+    "uploadWaitingToUpload": "Yüklemek için bekleniyor",
+    "uploadUploadingVideo": "Video yükleniyor",
+    "uploadProcessingVideo": "Video işleniyor",
+    "uploadProcessingComplete": "İşleme tamamlandı",
+    "uploadPublishedSuccessfully": "Başarıyla yayınlandı",
+    "uploadFailed": "Yükleme başarısız",
+    "uploadRetrying": "Yükleme yeniden deneniyor",
+    "uploadPaused": "Yükleme duraklatıldı",
+    "uploadPercentComplete": "%{percent} tamamlandı",
+    "@uploadPercentComplete": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadQueuedMessage": "Videon yükleme kuyruğunda",
+    "uploadUploadingMessage": "Sunucuya yükleniyor...",
+    "uploadProcessingMessage": "Video işleniyor - bu birkaç dakika sürebilir",
+    "uploadReadyToPublishMessage": "Video başarıyla işlendi ve yayınlamaya hazır",
+    "uploadPublishedMessage": "Video profiline yayınlandı",
+    "uploadFailedMessage": "Yükleme başarısız - lütfen tekrar dene",
+    "uploadRetryingMessage": "Yükleme yeniden deneniyor...",
+    "uploadPausedMessage": "Yükleme kullanıcı tarafından duraklatıldı",
+    "uploadRetryButton": "YENİDEN DENE",
+    "uploadRetryFailed": "Yükleme yeniden denenemedi: {error}",
+    "@uploadRetryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "userSearchPrompt": "Kullanıcı ara",
+    "userSearchNoResults": "Kullanıcı bulunamadı",
+    "userSearchFailed": "Arama başarısız",
+    "forgotPasswordTitle": "Parolayı Sıfırla",
+    "forgotPasswordDescription": "E-posta adresini gir, parolanı sıfırlamak için sana bir bağlantı gönderelim.",
+    "forgotPasswordEmailLabel": "E-posta Adresi",
+    "forgotPasswordCancel": "İptal",
+    "forgotPasswordSendLink": "Sıfırlama Bağlantısı Gönder",
+    "ageVerificationContentWarning": "İçerik Uyarısı",
+    "ageVerificationTitle": "Yaş Doğrulama",
+    "ageVerificationAdultDescription": "Bu içerik potansiyel olarak yetişkin içeriği barındırmak üzere işaretlendi. Görüntülemek için 18 yaş veya üzerinde olmalısın.",
+    "ageVerificationCreationDescription": "Kamerayı kullanmak ve içerik oluşturmak için en az 16 yaşında olmalısın.",
+    "ageVerificationAdultQuestion": "18 yaşında veya üzerinde misin?",
+    "ageVerificationCreationQuestion": "16 yaşında veya üzerinde misin?",
+    "ageVerificationNo": "Hayır",
+    "ageVerificationYes": "Evet",
+    "shareLinkCopied": "Bağlantı panoya kopyalandı",
+    "shareFailedToCopy": "Bağlantı kopyalanamadı",
+    "shareVideoSubject": "Divine'deki bu videoya bir göz at",
+    "shareFailedToShare": "Paylaşılamadı",
+    "shareVideoTitle": "Videoyu Paylaş",
+    "shareToApps": "Uygulamalarla Paylaş",
+    "shareToAppsSubtitle": "Mesajlaşma, sosyal uygulamalarla paylaş",
+    "shareCopyWebLink": "Web Bağlantısını Kopyala",
+    "shareCopyWebLinkSubtitle": "Paylaşılabilir web bağlantısını kopyala",
+    "shareCopyNostrLink": "Nostr Bağlantısını Kopyala",
+    "shareCopyNostrLinkSubtitle": "Nostr istemcileri için nevent bağlantısını kopyala",
+    "navHome": "Ana Sayfa",
+    "navExplore": "Keşfet",
+    "navInbox": "Gelen Kutusu",
+    "navProfile": "Profil",
+    "navMyProfile": "Profilim",
+    "navSearch": "Ara",
+    "navNotifications": "Bildirimler",
+    "navSearchTooltip": "Ara",
+    "navOpenCamera": "Kamerayı aç",
+    "navUnknown": "Bilinmeyen",
+    "navExploreClassics": "Klasikler",
+    "navExploreNewVideos": "Yeni Videolar",
+    "navExploreTrending": "Trend",
+    "navExploreForYou": "Sana Özel",
+    "navExploreLists": "Listeler",
+    "routeErrorTitle": "Hata",
+    "routeInvalidHashtag": "Geçersiz etiket",
+    "routeInvalidConversationId": "Geçersiz sohbet kimliği",
+    "routeInvalidRequestId": "Geçersiz istek kimliği",
+    "routeInvalidListId": "Geçersiz liste kimliği",
+    "routeInvalidUserId": "Geçersiz kullanıcı kimliği",
+    "routeInvalidVideoId": "Geçersiz video kimliği",
+    "routeInvalidSoundId": "Geçersiz ses kimliği",
+    "routeInvalidCategory": "Geçersiz kategori",
+    "routeNoVideosToDisplay": "Gösterilecek video yok",
+    "routeInvalidProfileId": "Geçersiz profil kimliği",
+    "routeDefaultListName": "Liste",
+    "supportTitle": "Destek Merkezi",
+    "supportContactSupport": "Destekle İletişime Geç",
+    "supportContactSupportSubtitle": "Bir sohbet başlat veya geçmiş mesajları gör",
+    "supportReportBug": "Hata Bildir",
+    "supportReportBugSubtitle": "Uygulamayla ilgili teknik sorunlar",
+    "supportRequestFeature": "Özellik İste",
+    "supportRequestFeatureSubtitle": "Bir iyileştirme veya yeni özellik öner",
+    "supportSaveLogs": "Günlükleri Kaydet",
+    "supportSaveLogsSubtitle": "Manuel göndermek için günlükleri dosyaya aktar",
+    "supportFaq": "SSS",
+    "supportFaqSubtitle": "Sık sorulan sorular ve cevapları",
+    "supportProofMode": "ProofMode",
+    "supportProofModeSubtitle": "Doğrulama ve gerçeklik hakkında bilgi edin",
+    "supportLoginRequired": "Destekle iletişime geçmek için giriş yap",
+    "supportExportingLogs": "Günlükler dışa aktarılıyor...",
+    "supportExportLogsFailed": "Günlükler dışa aktarılamadı",
+    "supportChatNotAvailable": "Destek sohbeti kullanılamıyor",
+    "supportCouldNotOpenMessages": "Destek mesajları açılamadı",
+    "supportCouldNotOpenPage": "{pageName} açılamadı",
+    "@supportCouldNotOpenPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            }
+        }
+    },
+    "supportErrorOpeningPage": "{pageName} açılırken hata: {error}",
+    "@supportErrorOpeningPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            },
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "reportTitle": "İçeriği Bildir",
+    "reportWhyReporting": "Bu içeriği neden bildiriyorsun?",
+    "reportPolicyNotice": "Divine, içerik bildirimlerine 24 saat içinde içeriği kaldırarak ve söz konusu içeriği sağlayan kullanıcıyı çıkararak işlem yapar.",
+    "reportAdditionalDetails": "Ek ayrıntılar (opsiyonel)",
+    "reportBlockUser": "Bu kullanıcıyı engelle",
+    "reportCancel": "İptal",
+    "reportSubmit": "Bildir",
+    "reportSelectReason": "Lütfen bu içeriği bildirmek için bir sebep seç",
+    "reportReasonSpam": "Spam veya İstenmeyen İçerik",
+    "reportReasonHarassment": "Taciz, Zorbalık veya Tehdit",
+    "reportReasonViolence": "Şiddet veya Aşırı İçerik",
+    "reportReasonSexualContent": "Cinsel veya Yetişkin İçerik",
+    "reportReasonCopyright": "Telif Hakkı İhlali",
+    "reportReasonFalseInfo": "Yanlış Bilgi",
+    "reportReasonCsam": "Çocuk Güvenliği İhlali",
+    "reportReasonAiGenerated": "Yapay Zeka Üretimi İçerik",
+    "reportReasonOther": "Diğer Politika İhlali",
+    "reportFailed": "İçerik bildirilemedi: {error}",
+    "@reportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "reportReceivedTitle": "Bildirim Alındı",
+    "reportReceivedThankYou": "Divine'ı güvenli tutmaya yardımcı olduğun için teşekkürler.",
+    "reportReceivedReviewNotice": "Ekibimiz bildirimini inceleyecek ve uygun adımı atacak. Direkt mesaj yoluyla güncelleme alabilirsin.",
+    "reportLearnMore": "Daha Fazla Bilgi",
+    "reportSafetyUrl": "divine.video/safety",
+    "reportClose": "Kapat",
+    "listAddToList": "Listeye Ekle",
+    "listVideoCount": "{count} video",
+    "@listVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listNewList": "Yeni Liste",
+    "listDone": "Bitti",
+    "listErrorLoading": "Listeler yüklenirken hata",
+    "listRemovedFrom": "{name} listesinden kaldırıldı",
+    "@listRemovedFrom": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listAddedTo": "{name} listesine eklendi",
+    "@listAddedTo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listCreateNewList": "Yeni Liste Oluştur",
+    "listNameLabel": "Liste Adı",
+    "listDescriptionLabel": "Açıklama (opsiyonel)",
+    "listPublicList": "Herkese Açık Liste",
+    "listPublicListSubtitle": "Diğerleri bu listeyi takip edebilir ve görebilir",
+    "listCancel": "İptal",
+    "listCreate": "Oluştur",
+    "listCreateFailed": "Liste oluşturulamadı",
+    "keyManagementTitle": "Nostr Anahtarları",
+    "keyManagementWhatAreKeys": "Nostr anahtarları nedir?",
+    "keyManagementExplanation": "Nostr kimliğin bir kriptografik anahtar çiftidir:\n\n• Açık anahtarın (npub) kullanıcı adın gibidir - gönül rahatlığıyla paylaş\n• Özel anahtarın (nsec) parolan gibidir - gizli tut!\n\nnsec'in herhangi bir Nostr uygulamasında hesabına erişmeni sağlar.",
+    "keyManagementImportTitle": "Mevcut Anahtarı İçe Aktar",
+    "keyManagementImportSubtitle": "Zaten bir Nostr hesabın mı var? Özel anahtarını (nsec) yapıştırarak burada eriş.",
+    "keyManagementImportButton": "Anahtarı İçe Aktar",
+    "keyManagementImportWarning": "Bu mevcut anahtarını değiştirecek!",
+    "keyManagementBackupTitle": "Anahtarını Yedekle",
+    "keyManagementBackupSubtitle": "Hesabını diğer Nostr uygulamalarında kullanmak için özel anahtarını (nsec) kaydet.",
+    "keyManagementCopyNsec": "Özel Anahtarımı (nsec) Kopyala",
+    "keyManagementNeverShare": "nsec'ini asla kimseyle paylaşma!",
+    "keyManagementPasteKey": "Lütfen özel anahtarını yapıştır",
+    "keyManagementInvalidFormat": "Geçersiz anahtar formatı. \"nsec1\" ile başlamalı",
+    "keyManagementConfirmImportTitle": "Bu Anahtar İçe Aktarılsın mı?",
+    "keyManagementConfirmImportBody": "Bu mevcut kimliğini içe aktarılan kimlikle değiştirecek.\n\nÖnce yedeklemediysen mevcut anahtarın kaybolacak.",
+    "keyManagementImportConfirm": "İçe Aktar",
+    "keyManagementImportSuccess": "Anahtar başarıyla içe aktarıldı!",
+    "keyManagementImportFailed": "Anahtar içe aktarılamadı: {error}",
+    "@keyManagementImportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "keyManagementExportSuccess": "Özel anahtar panoya kopyalandı!\n\nGüvenli bir yerde sakla.",
+    "keyManagementExportFailed": "Anahtar dışa aktarılamadı: {error}",
+    "@keyManagementExportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "saveOriginalSavedToCameraRoll": "Kamera Rulosuna Kaydedildi",
+    "saveOriginalShare": "Paylaş",
+    "saveOriginalDone": "Bitti",
+    "saveOriginalPhotosAccessNeeded": "Fotoğraf Erişimi Gerekiyor",
+    "saveOriginalPhotosAccessMessage": "Videoları kaydetmek için Ayarlar'dan Fotoğraf erişimine izin ver.",
+    "saveOriginalOpenSettings": "Ayarları Aç",
+    "saveOriginalNotNow": "Şimdi Değil",
+    "saveOriginalDownloadFailed": "İndirme Başarısız",
+    "saveOriginalDismiss": "Kapat",
+    "saveOriginalDownloadingVideo": "Video İndiriliyor",
+    "saveOriginalSavingToCameraRoll": "Kamera Rulosuna Kaydediliyor",
+    "saveOriginalFetchingVideo": "Video ağdan alınıyor...",
+    "saveOriginalSavingVideo": "Orijinal video kamera rulosuna kaydediliyor...",
+    "soundTitle": "Ses",
+    "soundOriginalSound": "Orijinal ses",
+    "soundVideosUsingThisSound": "Bu sesi kullanan videolar",
+    "soundSourceVideo": "Kaynak video",
+    "soundNoVideosYet": "Henüz video yok",
+    "soundBeFirstToUse": "Bu sesi kullanan ilk kişi ol!",
+    "soundFailedToLoadVideos": "Videolar yüklenemedi",
+    "soundRetry": "Tekrar Dene",
+    "soundVideosUnavailable": "Videolar kullanılamıyor",
+    "soundCouldNotLoadDetails": "Video ayrıntıları yüklenemedi",
+    "soundPreview": "Önizleme",
+    "soundStop": "Durdur",
+    "soundUseSound": "Sesi Kullan",
+    "soundNoVideoCount": "Henüz video yok",
+    "soundOneVideo": "1 video",
+    "soundVideoCount": "{count} video",
+    "@soundVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "soundUnableToPreview": "Ses önizlenemiyor - ses mevcut değil",
+    "soundPreviewFailed": "Önizleme oynatılamadı: {error}",
+    "@soundPreviewFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "soundViewSource": "Kaynağı gör",
+    "soundCloseTooltip": "Kapat",
+    "exploreNotExploreRoute": "Keşif rotası değil",
+    "legalTitle": "Yasal",
+    "legalTermsOfService": "Hizmet Şartları",
+    "legalTermsOfServiceSubtitle": "Kullanım şartları ve koşulları",
+    "legalPrivacyPolicy": "Gizlilik Politikası",
+    "legalPrivacyPolicySubtitle": "Verilerini nasıl ele alıyoruz",
+    "legalSafetyStandards": "Güvenlik Standartları",
+    "legalSafetyStandardsSubtitle": "Topluluk kuralları ve güvenlik",
+    "legalDmca": "DMCA",
+    "legalDmcaSubtitle": "Telif hakkı ve kaldırma politikası",
+    "legalOpenSourceLicenses": "Açık Kaynak Lisansları",
+    "legalOpenSourceLicensesSubtitle": "Üçüncü taraf paket atıfları",
+    "legalAppName": "Divine",
+    "legalCouldNotOpenPage": "{pageName} açılamadı",
+    "@legalCouldNotOpenPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            }
+        }
+    },
+    "legalErrorOpeningPage": "{pageName} açılırken hata: {error}",
+    "@legalErrorOpeningPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            },
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "categoryAction": "Aksiyon",
+    "categoryAdventure": "Macera",
+    "categoryAnimals": "Hayvanlar",
+    "categoryAnimation": "Animasyon",
+    "categoryArchitecture": "Mimari",
+    "categoryArt": "Sanat",
+    "categoryAutomotive": "Otomotiv",
+    "categoryAwardShow": "Ödül Töreni",
+    "categoryAwards": "Ödüller",
+    "categoryBaseball": "Beyzbol",
+    "categoryBasketball": "Basketbol",
+    "categoryBeauty": "Güzellik",
+    "categoryBeverage": "İçecek",
+    "categoryCars": "Arabalar",
+    "categoryCelebration": "Kutlama",
+    "categoryCelebrities": "Ünlüler",
+    "categoryCelebrity": "Ünlü",
+    "categoryCityscape": "Şehir Manzarası",
+    "categoryComedy": "Komedi",
+    "categoryConcert": "Konser",
+    "categoryCooking": "Yemek Pişirme",
+    "categoryCostume": "Kostüm",
+    "categoryCrafts": "El Sanatları",
+    "categoryCrime": "Suç",
+    "categoryCulture": "Kültür",
+    "categoryDance": "Dans",
+    "categoryDiy": "Kendin Yap",
+    "categoryDrama": "Dram",
+    "categoryEducation": "Eğitim",
+    "categoryEmotional": "Duygusal",
+    "categoryEmotions": "Duygular",
+    "categoryEntertainment": "Eğlence",
+    "categoryEvent": "Etkinlik",
+    "categoryFamily": "Aile",
+    "categoryFans": "Hayranlar",
+    "categoryFantasy": "Fantastik",
+    "categoryFashion": "Moda",
+    "categoryFestival": "Festival",
+    "categoryFilm": "Film",
+    "categoryFitness": "Fitness",
+    "categoryFood": "Yemek",
+    "categoryFootball": "Amerikan Futbolu",
+    "categoryFurniture": "Mobilya",
+    "categoryGaming": "Oyun",
+    "categoryGolf": "Golf",
+    "categoryGrooming": "Bakım",
+    "categoryGuitar": "Gitar",
+    "categoryHalloween": "Cadılar Bayramı",
+    "categoryHealth": "Sağlık",
+    "categoryHockey": "Hokey",
+    "categoryHoliday": "Tatil",
+    "categoryHome": "Ev",
+    "categoryHomeImprovement": "Ev Tadilatı",
+    "categoryHorror": "Korku",
+    "categoryHospital": "Hastane",
+    "categoryHumor": "Mizah",
+    "categoryInteriorDesign": "İç Tasarım",
+    "categoryInterview": "Röportaj",
+    "categoryKids": "Çocuklar",
+    "categoryLifestyle": "Yaşam Tarzı",
+    "categoryMagic": "Sihir",
+    "categoryMakeup": "Makyaj",
+    "categoryMedical": "Tıbbi",
+    "categoryMusic": "Müzik",
+    "categoryMystery": "Gizem",
+    "categoryNature": "Doğa",
+    "categoryNews": "Haberler",
+    "categoryOutdoor": "Açık Hava",
+    "categoryParty": "Parti",
+    "categoryPeople": "İnsanlar",
+    "categoryPerformance": "Performans",
+    "categoryPets": "Evcil Hayvanlar",
+    "categoryPolitics": "Siyaset",
+    "categoryPrank": "Şaka",
+    "categoryPranks": "Şakalar",
+    "categoryRealityShow": "Reality Şov",
+    "categoryRelationship": "İlişki",
+    "categoryRelationships": "İlişkiler",
+    "categoryRomance": "Romantik",
+    "categorySchool": "Okul",
+    "categoryScienceFiction": "Bilim Kurgu",
+    "categorySelfie": "Selfie",
+    "categoryShopping": "Alışveriş",
+    "categorySkateboarding": "Kaykay",
+    "categorySkincare": "Cilt Bakımı",
+    "categorySoccer": "Futbol",
+    "categorySocialGathering": "Sosyal Toplantı",
+    "categorySocialMedia": "Sosyal Medya",
+    "categorySports": "Spor",
+    "categoryTalkShow": "Talk Şov",
+    "categoryTech": "Tek",
+    "categoryTechnology": "Teknoloji",
+    "categoryTelevision": "Televizyon",
+    "categoryToys": "Oyuncaklar",
+    "categoryTransportation": "Ulaşım",
+    "categoryTravel": "Seyahat",
+    "categoryUrban": "Şehir",
+    "categoryViolence": "Şiddet",
+    "categoryVlog": "Vlog",
+    "categoryVlogging": "Vlog",
+    "categoryWrestling": "Güreş",
+    "blossomFailedToSaveSettings": "Ayarlar kaydedilemedi: {error}",
+    "@blossomFailedToSaveSettings": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "blueskyFailedToUpdateCrosspost": "Çapraz gönderi ayarı güncellenemedi",
+    "cameraAgeRestriction": "İçerik oluşturmak için 16 yaşında veya daha büyük olmalısın",
+    "categoriesCouldNotLoadCategories": "Kategoriler yüklenemedi",
+    "categoryGalleryCouldNotLoadVideos": "Videolar yüklenemedi",
+    "classicVinersTitle": "OG Viners",
+    "commonCancel": "İptal",
+    "commonDelete": "Sil",
+    "commonRetry": "Tekrar dene",
+    "discoverListsFailedToUpdateSubscription": "Abonelik güncellenemedi: {error}",
+    "@discoverListsFailedToUpdateSubscription": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreVideoCounter": "Video {current}/{total}",
+    "@exploreVideoCounter": {
+        "placeholders": {
+            "current": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "exploreVideoId": "ID: {id}",
+    "@exploreVideoId": {
+        "placeholders": {
+            "id": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreVideoTitle": "Başlık: {title}",
+    "@exploreVideoTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestCancel": "İptal",
+    "followersFailedToLoadList": "Takipçi listesi yüklenemedi",
+    "followingFailedToLoadList": "Takip edilen listesi yüklenemedi",
+    "inboxBlockedUser": "{displayName} engellendi",
+    "@inboxBlockedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemovedConversation": "Sohbet kaldırıldı",
+    "inboxReportedUser": "{displayName} bildirildi",
+    "@inboxReportedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxUnblockedUser": "{displayName} engeli kaldırıldı",
+    "@inboxUnblockedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesTitle": "Arkadaşları Davet Et",
+    "keyImportError": "Hata: {error}",
+    "@keyImportError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteConfirm": "Sil",
+    "notificationFollowBack": "Geri takip et",
+    "profileSetupUploadSuccess": "Profil fotoğrafı başarıyla yüklendi!",
+    "proofmodeCheckAiGenerated": "Yapay zeka ile oluşturulup oluşturulmadığını kontrol et",
+    "reportDialogCancel": "İptal",
+    "reportDialogReport": "Bildir",
+    "routerInvalidCreator": "Geçersiz içerik üretici",
+    "routerInvalidHashtagRoute": "Geçersiz hashtag rotası",
+    "searchFindCuratedVideoLists": "Küratörlü video listelerini bul",
+    "searchForLists": "Liste ara",
+    "searchSomethingWentWrong": "Bir şeyler ters gitti",
+    "searchTryAgain": "Tekrar dene",
+    "trendingTitle": "Gündemde",
+    "videoEditorLayers": "Katmanlar",
+    "videoEditorStickers": "Çıkartmalar",
+    "videoMetadataContentWarnings": "İçerik Uyarıları",
+    "videoMetadataExpiration": "Son Kullanma",
+    "videoMetadataTags": "Etiketler",
+    "contentLabelAiGenerated": "Yapay Zekâ Üretimi",
+    "contentLabelAlcohol": "Alkol",
+    "contentLabelDeepfake": "Deepfake",
+    "contentLabelDrugUse": "Uyuşturucu Kullanımı",
+    "contentLabelFlashingLights": "Yanıp Sönen Işıklar",
+    "contentLabelGambling": "Kumar",
+    "contentLabelGraphicMedia": "Rahatsız Edici İçerik",
+    "contentLabelHarassment": "Taciz",
+    "contentLabelHateSpeech": "Nefret Söylemi",
+    "contentLabelMisleading": "Yanıltıcı",
+    "contentLabelNudity": "Çıplaklık",
+    "contentLabelPornography": "Pornografi",
+    "contentLabelProfanity": "Küfür",
+    "contentLabelScam": "Dolandırıcılık",
+    "contentLabelSelfHarm": "Kendine Zarar Verme/İntihar",
+    "contentLabelSensitiveContent": "Hassas İçerik",
+    "contentLabelSexualContent": "Cinsel İçerik",
+    "contentLabelSpam": "Spam",
+    "contentLabelSpoiler": "Spoiler",
+    "contentLabelTobacco": "Tütün/Sigara",
+    "contentLabelViolence": "Şiddet",
+    "contentWarningNone": "Yok",
+    "draftTimeJustNow": "Az önce",
+    "@draftTimeJustNow": {
+        "description": "Draft age label for less than one minute (capitalized)"
+    },
+    "draftUntitled": "Başlıksız",
+    "notificationCommentedOnYourVideo": "{actorName} videona yorum yaptı",
+    "@notificationCommentedOnYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationLikedYourVideo": "{actorName} videonu beğendi",
+    "@notificationLikedYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationMentionedYou": "{actorName} senden bahsetti",
+    "@notificationMentionedYou": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationRepostedYourVideo": "{actorName} videonu paylaştı",
+    "@notificationRepostedYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationStartedFollowing": "{actorName} seni takip etmeye başladı",
+    "@notificationStartedFollowing": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "textAlignCenter": "Ortala",
+    "textAlignLeft": "Sol",
+    "textAlignRight": "Sağ",
+    "textBackgroundHighlight": "Vurgulama",
+    "textBackgroundNone": "Yok",
+    "textBackgroundSolid": "Opak",
+    "textBackgroundTransparent": "Saydam",
+    "timeAgo": "{time} önce",
+    "@timeAgo": {
+        "description": "Verbose relative time with ago suffix, e.g. 3m ago",
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "timeDaysAgo": "{count}g önce",
+    "@timeDaysAgo": {
+        "description": "Relative time in days with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeHoursAgo": "{count}sa önce",
+    "@timeHoursAgo": {
+        "description": "Relative time in hours with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeJustNow": "az önce",
+    "@timeJustNow": {
+        "description": "Verbose relative time for less than one minute (lowercase)"
+    },
+    "timeMinutesAgo": "{count}dk önce",
+    "@timeMinutesAgo": {
+        "description": "Relative time in minutes with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeNow": "şimdi",
+    "@timeNow": {
+        "description": "Relative time label for less than one minute ago (short form)"
+    },
+    "timeShortDays": "{count}g",
+    "@timeShortDays": {
+        "description": "Short relative time in days, e.g. 3d",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortHours": "{count}sa",
+    "@timeShortHours": {
+        "description": "Short relative time in hours, e.g. 2h",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortMinutes": "{count}dk",
+    "@timeShortMinutes": {
+        "description": "Short relative time in minutes, e.g. 3m",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortMonths": "{count}ay",
+    "@timeShortMonths": {
+        "description": "Short relative time in months, e.g. 1mo",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortWeeks": "{count}hf",
+    "@timeShortWeeks": {
+        "description": "Short relative time in weeks, e.g. 2w",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortYears": "{count}yıl",
+    "@timeShortYears": {
+        "description": "Short relative time in years, e.g. 1y",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeToday": "Bugün",
+    "@timeToday": {
+        "description": "Date label for today"
+    },
+    "timeVerboseNow": "Şimdi",
+    "@timeVerboseNow": {
+        "description": "Verbose relative time label for less than one minute ago"
+    },
+    "timeYesterday": "Dün",
+    "@timeYesterday": {
+        "description": "Date label for yesterday"
+    }
+}

@@ -111,8 +111,9 @@ class FunnelcakeApiClient {
     int limit = 50,
     String? cursor,
   }) {
+    // Server timestamps are Unix seconds, not milliseconds.
     final effectiveBefore =
-        cursor ?? DateTime.now().millisecondsSinceEpoch.toString();
+        cursor ?? (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
     final queryParams = <String, String>{
       'limit': '$limit',
       'before': effectiveBefore,

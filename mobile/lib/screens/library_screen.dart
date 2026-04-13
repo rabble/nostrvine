@@ -32,6 +32,12 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// Path for clips route.
   static const clipsPath = '/clips';
 
+  /// Route name for sounds path.
+  static const soundsRouteName = 'sounds';
+
+  /// Path for sounds route.
+  static const soundsPath = '/sounds';
+
   const LibraryScreen({
     super.key,
     this.initialTabIndex = 0,
@@ -42,7 +48,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
   /// Index of the tab to show when the screen opens.
   ///
-  /// `0` = Drafts, `1` = Clips.
+  /// `0` = Drafts, `1` = Clips, `2` = Sounds.
   final int initialTabIndex;
 
   /// When true, enables multi-select mode for adding clips to the editor.
@@ -73,7 +79,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 2,
+      length: 3,
       initialIndex: widget.initialTabIndex,
       vsync: this,
     );
@@ -386,6 +392,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
             tabs: const [
               Tab(text: 'Drafts'),
               Tab(text: 'Clips'),
+              Tab(text: 'Sounds'),
             ],
           ),
         );
@@ -444,6 +451,7 @@ class _TabBody extends StatelessWidget {
           targetAspectRatio: targetAspectRatio,
           showRecordButton: false,
         ),
+        const SoundsTab(),
       ],
     );
   }

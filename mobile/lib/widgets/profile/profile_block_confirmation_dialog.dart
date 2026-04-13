@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Confirmation dialog shown after successfully blocking a user
@@ -13,25 +14,28 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: VineTheme.cardBackground,
-    title: const Row(
+    title: Row(
       children: [
-        Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
-        SizedBox(width: 12),
-        Text('User Blocked', style: TextStyle(color: VineTheme.whiteText)),
+        const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
+        const SizedBox(width: 12),
+        Text(
+          context.l10n.profileUserBlockedTitle,
+          style: const TextStyle(color: VineTheme.whiteText),
+        ),
       ],
     ),
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "You won't see content from this user in your feeds.",
-          style: TextStyle(color: VineTheme.whiteText, fontSize: 16),
+        Text(
+          context.l10n.profileUserBlockedContent,
+          style: const TextStyle(color: VineTheme.whiteText, fontSize: 16),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'You can unblock them anytime from their profile or in Settings > Safety.',
-          style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+        Text(
+          context.l10n.profileUserBlockedUnblockHint,
+          style: const TextStyle(color: VineTheme.secondaryText, fontSize: 14),
         ),
         const SizedBox(height: 20),
         InkWell(
@@ -48,23 +52,27 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: VineTheme.vineGreen),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.info_outline, color: VineTheme.vineGreen, size: 20),
-                SizedBox(width: 8),
+                const Icon(
+                  Icons.info_outline,
+                  color: VineTheme.vineGreen,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Learn More',
-                        style: TextStyle(
+                        context.l10n.profileLearnMore,
+                        style: const TextStyle(
                           color: VineTheme.whiteText,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Text(
+                      const Text(
                         'divine.video/safety',
                         style: TextStyle(
                           color: VineTheme.vineGreen,
@@ -74,7 +82,11 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.open_in_new, color: VineTheme.vineGreen, size: 18),
+                const Icon(
+                  Icons.open_in_new,
+                  color: VineTheme.vineGreen,
+                  size: 18,
+                ),
               ],
             ),
           ),
@@ -84,9 +96,9 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
     actions: [
       TextButton(
         onPressed: context.pop,
-        child: const Text(
-          'Close',
-          style: TextStyle(color: VineTheme.vineGreen),
+        child: Text(
+          context.l10n.profileCloseButton,
+          style: const TextStyle(color: VineTheme.vineGreen),
         ),
       ),
     ],

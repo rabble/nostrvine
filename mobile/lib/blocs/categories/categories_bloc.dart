@@ -51,20 +51,12 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
           categories: categories,
         ),
       );
-    } on FunnelcakeException catch (e) {
-      emit(
-        state.copyWith(
-          categoriesStatus: CategoriesStatus.error,
-          errorMessage: e.toString(),
-        ),
-      );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          categoriesStatus: CategoriesStatus.error,
-          errorMessage: 'Failed to load categories: $e',
-        ),
-      );
+    } on FunnelcakeException catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(categoriesStatus: CategoriesStatus.error));
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(categoriesStatus: CategoriesStatus.error));
     }
   }
 
@@ -87,20 +79,12 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
         category: event.category,
         sortOrder: state.sortOrder,
       );
-    } on FunnelcakeException catch (e) {
-      emit(
-        state.copyWith(
-          videosStatus: CategoriesVideosStatus.error,
-          errorMessage: e.toString(),
-        ),
-      );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          videosStatus: CategoriesVideosStatus.error,
-          errorMessage: 'Failed to load category videos: $e',
-        ),
-      );
+    } on FunnelcakeException catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(videosStatus: CategoriesVideosStatus.error));
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(videosStatus: CategoriesVideosStatus.error));
     }
   }
 
@@ -170,13 +154,9 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
         category: state.selectedCategory!,
         sortOrder: event.sort,
       );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          videosStatus: CategoriesVideosStatus.error,
-          errorMessage: 'Failed to load videos: $e',
-        ),
-      );
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(videosStatus: CategoriesVideosStatus.error));
     }
   }
 

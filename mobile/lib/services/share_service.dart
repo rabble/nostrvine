@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -58,9 +59,9 @@ class ShareService {
       await Clipboard.setData(ClipboardData(text: text));
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Link copied to clipboard'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.shareLinkCopied),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -72,9 +73,9 @@ class ShareService {
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to copy link'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.shareFailedToCopy),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -86,7 +87,10 @@ class ShareService {
     try {
       final shareText = generateShareText(video);
       await SharePlus.instance.share(
-        ShareParams(text: shareText, subject: 'Check out this video on Divine'),
+        ShareParams(
+          text: shareText,
+          subject: context.l10n.shareVideoSubject,
+        ),
       );
     } catch (e) {
       Log.error(
@@ -96,9 +100,9 @@ class ShareService {
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to share'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.shareFailedToShare),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -145,9 +149,12 @@ class _ShareOptionsBottomSheet extends StatelessWidget {
         const SizedBox(height: 20),
 
         // Title
-        const Text(
-          'Share Video',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          context.l10n.shareVideoTitle,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 20),
 
@@ -155,8 +162,8 @@ class _ShareOptionsBottomSheet extends StatelessWidget {
         _buildShareOption(
           context,
           icon: Icons.share,
-          title: 'Share to Apps',
-          subtitle: 'Share via messaging, social apps',
+          title: context.l10n.shareToApps,
+          subtitle: context.l10n.shareToAppsSubtitle,
           onTap: () {
             context.pop();
             shareService.shareViaSheet(video, context);
@@ -166,8 +173,8 @@ class _ShareOptionsBottomSheet extends StatelessWidget {
         _buildShareOption(
           context,
           icon: Icons.link,
-          title: 'Copy Web Link',
-          subtitle: 'Copy shareable web link',
+          title: context.l10n.shareCopyWebLink,
+          subtitle: context.l10n.shareCopyWebLinkSubtitle,
           onTap: () {
             context.pop();
             final webLink = shareService.generateWebLink(video);
@@ -178,8 +185,8 @@ class _ShareOptionsBottomSheet extends StatelessWidget {
         _buildShareOption(
           context,
           icon: Icons.bolt,
-          title: 'Copy Nostr Link',
-          subtitle: 'Copy nevent link for Nostr clients',
+          title: context.l10n.shareCopyNostrLink,
+          subtitle: context.l10n.shareCopyNostrLinkSubtitle,
           onTap: () {
             context.pop();
             final nostrLink = shareService.generateNostrEventLink(video);

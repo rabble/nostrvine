@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -86,6 +87,8 @@ void main() {
         databaseProvider.overrideWithValue(mockDb),
       ],
       child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         routerConfig: GoRouter(
           initialLocation: WelcomeScreen.path,

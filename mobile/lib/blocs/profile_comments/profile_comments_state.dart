@@ -26,7 +26,6 @@ final class ProfileCommentsState extends Equatable {
     this.status = ProfileCommentsStatus.initial,
     this.videoReplies = const [],
     this.textComments = const [],
-    this.error,
     this.isLoadingMore = false,
     this.hasMoreContent = true,
     this.paginationCursor,
@@ -40,9 +39,6 @@ final class ProfileCommentsState extends Equatable {
 
   /// Comments that are text-only (hasVideo == false).
   final List<Comment> textComments;
-
-  /// Error message if loading failed.
-  final String? error;
 
   /// Whether more comments are being loaded (pagination).
   final bool isLoadingMore;
@@ -67,8 +63,6 @@ final class ProfileCommentsState extends Equatable {
     ProfileCommentsStatus? status,
     List<Comment>? videoReplies,
     List<Comment>? textComments,
-    String? error,
-    bool clearError = false,
     bool? isLoadingMore,
     bool? hasMoreContent,
     DateTime? paginationCursor,
@@ -77,7 +71,6 @@ final class ProfileCommentsState extends Equatable {
       status: status ?? this.status,
       videoReplies: videoReplies ?? this.videoReplies,
       textComments: textComments ?? this.textComments,
-      error: clearError ? null : (error ?? this.error),
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
       paginationCursor: paginationCursor ?? this.paginationCursor,
@@ -89,7 +82,6 @@ final class ProfileCommentsState extends Equatable {
     status,
     videoReplies,
     textComments,
-    error,
     isLoadingMore,
     hasMoreContent,
     paginationCursor,

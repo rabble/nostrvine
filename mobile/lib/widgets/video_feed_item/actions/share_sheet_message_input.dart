@@ -36,7 +36,9 @@ class _MessageInput extends StatelessWidget {
                   size: 24,
                 ),
                 Text(
-                  'Sending to ${recipient.displayName ?? 'user'}',
+                  context.l10n.shareSendingTo(
+                    recipient.displayName ?? context.l10n.shareUserFallback,
+                  ),
                   style: const TextStyle(
                     color: VineTheme.secondaryText,
                     fontSize: 13,
@@ -56,7 +58,7 @@ class _MessageInput extends StatelessWidget {
                     fontSize: 14,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Add optional message...',
+                    hintText: context.l10n.shareMessageHint,
                     hintStyle: const TextStyle(color: VineTheme.secondaryText),
                     filled: true,
                     fillColor: VineTheme.containerLow,

@@ -2,10 +2,10 @@
 // ABOUTME: and remove-all actions for message requests.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 

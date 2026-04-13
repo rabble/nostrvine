@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -67,7 +68,11 @@ void main() {
 
   Widget shell(ProviderContainer c) => UncontrolledProviderScope(
     container: c,
-    child: MaterialApp.router(routerConfig: c.read(goRouterProvider)),
+    child: MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: c.read(goRouterProvider),
+    ),
   );
 
   final now = DateTime.now();
@@ -383,6 +388,8 @@ void main() {
           child: BlocProvider<BackgroundPublishBloc>.value(
             value: backgroundPublishBloc,
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: ProfileVideosGrid(
                   videos: videos,
@@ -446,6 +453,8 @@ void main() {
             child: BlocProvider<BackgroundPublishBloc>.value(
               value: backgroundPublishBloc,
               child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: Scaffold(
                   body: NestedScrollView(
                     headerSliverBuilder: (context, innerBoxIsScrolled) => [
@@ -516,6 +525,8 @@ void main() {
             child: BlocProvider<BackgroundPublishBloc>.value(
               value: backgroundPublishBloc,
               child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: Scaffold(
                   body: NestedScrollView(
                     headerSliverBuilder: (context, innerBoxIsScrolled) => [

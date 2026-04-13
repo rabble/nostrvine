@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/theme/app_theme.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -138,8 +139,8 @@ class NotificationListItem extends StatelessWidget {
             ),
 
             // Type icon overlay
-            Positioned(
-              right: 0,
+            PositionedDirectional(
+              end: 0,
               bottom: 0,
               child: Container(
                 width: 20,
@@ -179,7 +180,7 @@ class NotificationListItem extends StatelessWidget {
 
   Widget _buildMessage(BuildContext context) {
     final textStyle = VineTheme.bodyMediumFont();
-    final message = _displayMessage();
+    final message = _displayMessage(context);
 
     final actorName = notification.actorName;
     if (_messageStartsWithActorName(actorName, message)) {
@@ -204,17 +205,30 @@ class NotificationListItem extends StatelessWidget {
     return Text(message, style: textStyle);
   }
 
-  String _displayMessage() {
-    if (notification.type != NotificationType.follow) {
-      return notification.message;
-    }
-
+  String _displayMessage(BuildContext context) {
     final actorName = notification.actorName;
     final displayName = actorName?.isNotEmpty == true
         ? actorName!
         : UserProfile.defaultDisplayNameFor(notification.actorPubkey);
 
-    return '$displayName started following you';
+    return switch (notification.type) {
+      NotificationType.like => context.l10n.notificationLikedYourVideo(
+        displayName,
+      ),
+      NotificationType.comment => context.l10n.notificationCommentedOnYourVideo(
+        displayName,
+      ),
+      NotificationType.follow => context.l10n.notificationStartedFollowing(
+        displayName,
+      ),
+      NotificationType.mention => context.l10n.notificationMentionedYou(
+        displayName,
+      ),
+      NotificationType.repost => context.l10n.notificationRepostedYourVideo(
+        displayName,
+      ),
+      NotificationType.system => notification.message,
+    };
   }
 
   bool _messageStartsWithActorName(String? actorName, String message) {
@@ -261,7 +275,7 @@ class NotificationListItem extends StatelessWidget {
   }
 
   Widget _buildVideoThumbnail() => Padding(
-    padding: const EdgeInsets.only(left: 8),
+    padding: const EdgeInsetsDirectional.only(start: 8),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: VineCachedImage(

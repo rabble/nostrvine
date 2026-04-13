@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_bubble.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -25,6 +26,8 @@ void main() {
       testWidgets('renders message text', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message: 'Hello there',
@@ -43,6 +46,8 @@ void main() {
         (tester) async {
           await tester.pumpWidget(
             const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: MessageBubble(
                   message: 'Hello there',
@@ -62,6 +67,8 @@ void main() {
         (tester) async {
           await tester.pumpWidget(
             const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: MessageBubble(
                   message: 'Hello there',
@@ -80,6 +87,8 @@ void main() {
       testWidgets('aligns right for sent messages', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message: 'Sent message',
@@ -92,12 +101,17 @@ void main() {
 
         final align = tester.widget<Align>(find.byType(Align));
 
-        expect(align.alignment, equals(Alignment.centerRight));
+        expect(
+          align.alignment,
+          equals(AlignmentDirectional.centerEnd),
+        );
       });
 
       testWidgets('aligns left for received messages', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message: 'Received message',
@@ -110,7 +124,10 @@ void main() {
 
         final align = tester.widget<Align>(find.byType(Align));
 
-        expect(align.alignment, equals(Alignment.centerLeft));
+        expect(
+          align.alignment,
+          equals(AlignmentDirectional.centerStart),
+        );
       });
     });
 
@@ -118,6 +135,8 @@ void main() {
       testWidgets('renders plain text without $RichText', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message: 'No links here',
@@ -134,6 +153,8 @@ void main() {
       testWidgets('renders URL as tappable rich text', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message: 'Check https://divine.video/terms',
@@ -155,6 +176,8 @@ void main() {
       testWidgets('URL span has $TapGestureRecognizer', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message: 'Visit https://example.com today',
@@ -191,6 +214,8 @@ void main() {
       testWidgets('renders multiple URLs in one message', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message:
@@ -224,6 +249,8 @@ void main() {
       testWidgets('renders bare domain as tappable link', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message: 'Visit google.com for info',
@@ -260,6 +287,8 @@ void main() {
         (tester) async {
           await tester.pumpWidget(
             const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: MessageBubble(
                   message: 'Check example.com/page today',
@@ -297,6 +326,8 @@ void main() {
         (tester) async {
           await tester.pumpWidget(
             const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: MessageBubble(
                   message: 'Email me at user@example.com please',
@@ -332,6 +363,8 @@ void main() {
       testWidgets('URL-only message renders as link', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message: 'https://example.com/some-page',
@@ -518,6 +551,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message: 'Long press me',
@@ -538,6 +573,8 @@ void main() {
       testWidgets('does not crash when onLongPress is null', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageBubble(
                 message: 'No callback',

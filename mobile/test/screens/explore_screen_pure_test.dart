@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
 
@@ -149,7 +150,11 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: testContainer,
-            child: const MaterialApp(home: ExploreScreen()),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: ExploreScreen(),
+            ),
           ),
         );
 

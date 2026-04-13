@@ -19,7 +19,11 @@ class DiVineAppBarLeading extends StatelessWidget {
     required this.onLeadingPressed,
     required this.style,
     this.backButtonSemanticLabel,
+    this.backButtonTooltip = 'Back',
     this.backButtonHeroTag,
+    this.menuButtonSemanticLabel = 'Open menu',
+    this.menuButtonTooltip = 'Menu',
+    this.leadingActionSemanticLabel = 'Leading action',
     super.key,
   });
 
@@ -47,8 +51,28 @@ class DiVineAppBarLeading extends StatelessWidget {
   /// tooltip to avoid iOS merging both into the accessibility text.
   final String? backButtonSemanticLabel;
 
+  /// Tooltip for the back button.
+  ///
+  /// Shown when [backButtonSemanticLabel] is null. Defaults to `'Back'`.
+  final String backButtonTooltip;
+
   /// Optional hero tag to wrap the back button in a [Hero] widget.
   final Object? backButtonHeroTag;
+
+  /// Semantic label for the menu button.
+  ///
+  /// Defaults to `'Open menu'`. Pass a localized string to override.
+  final String menuButtonSemanticLabel;
+
+  /// Tooltip for the menu button.
+  ///
+  /// Defaults to `'Menu'`. Pass a localized string to override.
+  final String menuButtonTooltip;
+
+  /// Semantic label for a custom leading icon.
+  ///
+  /// Defaults to `'Leading action'`. Pass a localized string to override.
+  final String leadingActionSemanticLabel;
 
   /// Style configuration.
   final DiVineAppBarStyle style;
@@ -66,7 +90,7 @@ class DiVineAppBarLeading extends StatelessWidget {
         icon: const SvgIconSource(backIconAsset),
         onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
         semanticLabel: backButtonSemanticLabel ?? 'Go back',
-        tooltip: backButtonSemanticLabel == null ? 'Back' : null,
+        tooltip: backButtonSemanticLabel == null ? backButtonTooltip : null,
         style: style,
       );
       if (backButtonHeroTag != null) {
@@ -79,8 +103,8 @@ class DiVineAppBarLeading extends StatelessWidget {
       return _LeadingIconButton(
         icon: const SvgIconSource(menuIconAsset),
         onPressed: onMenuPressed,
-        semanticLabel: 'Open menu',
-        tooltip: 'Menu',
+        semanticLabel: menuButtonSemanticLabel,
+        tooltip: menuButtonTooltip,
         style: style,
       );
     }
@@ -89,7 +113,7 @@ class DiVineAppBarLeading extends StatelessWidget {
       return _LeadingIconButton(
         icon: leadingIcon!,
         onPressed: onLeadingPressed,
-        semanticLabel: 'Leading action',
+        semanticLabel: leadingActionSemanticLabel,
         style: style,
       );
     }
@@ -117,9 +141,9 @@ class _LeadingIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: Padding(
-        padding: EdgeInsets.only(left: style.horizontalPadding),
+        padding: EdgeInsetsDirectional.only(start: style.horizontalPadding),
         child: DiVineAppBarIconButton(
           icon: icon,
           onPressed: onPressed,

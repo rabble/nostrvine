@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/comments/comments.dart';
 
 void main() {
@@ -10,6 +11,8 @@ void main() {
     testWidgets('displays "Comments" title', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: CommentsHeader(onClose: () {})),
         ),
       );
@@ -26,6 +29,8 @@ void main() {
     testWidgets('displays close button with correct icon', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: CommentsHeader(onClose: () {})),
         ),
       );
@@ -42,6 +47,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: CommentsHeader(onClose: () => closeCallCount++)),
         ),
       );
@@ -56,6 +63,8 @@ void main() {
     testWidgets('has correct layout structure', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: CommentsHeader(onClose: () {})),
         ),
       );

@@ -1,5 +1,5 @@
-// ABOUTME: Tests for VideoEvent audio reference parsing from e-tags with "audio" marker
-// ABOUTME: Verifies support for Kind 1063 audio event references in Kind 34236 video events
+// ABOUTME: Tests for VideoEvent audio reference parsing from e-tags.
+// ABOUTME: Covers "audio" marker, bundled sound prefix detection, and edge cases.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -267,5 +267,103 @@ void main() {
       expect(videoEvent.audioEventId, isNull);
       expect(videoEvent.hasAudioReference, isFalse);
     });
+
+    test(
+      'should detect bundled sound from e-tag without audio marker',
+      () {
+        // Arrange - bundled sound ID in e-tag without "audio" marker
+        // (backward compat for events published before the marker
+        // was added)
+        final nostrEvent = Event(
+          testPubkey,
+          34236,
+          [
+            ['d', 'test-vine-id'],
+            ['url', 'https://example.com/video.mp4'],
+            ['e', 'bundled_freesound_vibrant_energy'],
+          ],
+          'Video with bundled sound',
+          createdAt: 1757385263,
+        );
+
+        // Act
+        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+        // Assert
+        expect(
+          videoEvent.audioEventId,
+          equals('bundled_freesound_vibrant_energy'),
+        );
+        expect(videoEvent.hasAudioReference, isTrue);
+      },
+    );
+
+    test(
+      'should detect bundled sound from e-tag with relay but no marker',
+      () {
+        final nostrEvent = Event(
+          testPubkey,
+          34236,
+          [
+            ['d', 'test-vine-id'],
+            ['url', 'https://example.com/video.mp4'],
+            [
+              'e',
+              'bundled_classic_vine_beat',
+              'wss://relay.divine.video',
+            ],
+          ],
+          'Video with bundled sound and relay',
+          createdAt: 1757385263,
+        );
+
+        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+        expect(
+          videoEvent.audioEventId,
+          equals('bundled_classic_vine_beat'),
+        );
+        expect(
+          videoEvent.audioEventRelay,
+          equals('wss://relay.divine.video'),
+        );
+        expect(videoEvent.hasAudioReference, isTrue);
+      },
+    );
+
+    test(
+      'should prefer audio marker over bundled prefix detection',
+      () {
+        // If the tag has the "audio" marker, that path should win
+        final nostrEvent = Event(
+          testPubkey,
+          34236,
+          [
+            ['d', 'test-vine-id'],
+            ['url', 'https://example.com/video.mp4'],
+            [
+              'e',
+              'bundled_freesound_vibrant_energy',
+              'wss://relay.divine.video',
+              'audio',
+            ],
+          ],
+          'Video with properly tagged bundled sound',
+          createdAt: 1757385263,
+        );
+
+        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+        expect(
+          videoEvent.audioEventId,
+          equals('bundled_freesound_vibrant_energy'),
+        );
+        expect(
+          videoEvent.audioEventRelay,
+          equals('wss://relay.divine.video'),
+        );
+        expect(videoEvent.hasAudioReference, isTrue);
+      },
+    );
   });
 }

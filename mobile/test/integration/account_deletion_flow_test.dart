@@ -9,6 +9,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/account_deletion_service.dart';
@@ -93,7 +94,11 @@ void main() {
             accountDeletionServiceProvider.overrideWithValue(deletionService),
             authServiceProvider.overrideWithValue(mockAuthService),
           ],
-          child: const MaterialApp(home: SettingsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettingsScreen(),
+          ),
         ),
       );
 
@@ -147,7 +152,11 @@ void main() {
             accountDeletionServiceProvider.overrideWithValue(deletionService),
             authServiceProvider.overrideWithValue(mockAuthService),
           ],
-          child: const MaterialApp(home: SettingsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettingsScreen(),
+          ),
         ),
       );
 

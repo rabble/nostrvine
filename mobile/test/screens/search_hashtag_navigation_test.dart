@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import '../helpers/test_provider_overrides.dart';
 
@@ -13,7 +14,11 @@ void main() {
     ) async {
       await tester.pumpWidget(
         testProviderScope(
-          child: const MaterialApp(home: Scaffold(body: SearchScreenPure())),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: SearchScreenPure()),
+          ),
         ),
       );
 

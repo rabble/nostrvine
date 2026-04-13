@@ -316,6 +316,34 @@ class VideoFeedController extends ChangeNotifier {
   /// real position change.
   int? _initialPositionMs;
 
+  /// Wall-clock time (ms since epoch) when the slow-playback rate check
+  /// window started for the current video. See [_checkPlaybackRate].
+  int? _rateCheckWallStartMs;
+
+  /// Position (ms) at the start of the current slow-playback rate window.
+  int? _rateCheckPositionStartMs;
+
+  /// Wall-clock time (ms since epoch) of the last `player_state_snapshot`
+  /// log line. Used to throttle snapshots to roughly one per interval.
+  int? _lastStateSnapshotWallMs;
+
+  /// Rate check window duration in ms. Playback rate is evaluated over
+  /// windows of this length; see [_checkPlaybackRate].
+  static const _playbackRateWindowMs = 2000;
+
+  /// Minimum `positionDelta / wallDelta` ratio (as a percentage) below
+  /// which playback is considered slow. 50% = half real-time.
+  static const _slowPlaybackRateThresholdPct = 50;
+
+  /// Minimum position advance (in ms) before a rate check is allowed
+  /// to flag the window as slow. If position didn't advance at all,
+  /// the existing stale-position watchdog handles it; the slow-playback
+  /// check is specifically for the "crawling forward" case.
+  static const _slowPlaybackMinAdvanceMs = 50;
+
+  /// Minimum interval between `player_state_snapshot` log lines, in ms.
+  static const _stateSnapshotIntervalMs = 2000;
+
   /// Number of consecutive stale heartbeats before triggering recovery.
   /// With a 100ms heartbeat interval, this means ~800ms of confirmed
   /// frozen video before recovery kicks in.
@@ -1621,6 +1649,11 @@ class VideoFeedController extends ChangeNotifier {
     _staleGraceHeartbeats = _staleGraceAfterPlay;
     _positionHasAdvanced = false;
     _initialPositionMs = null;
+    // Reset slow-playback rate check and state-snapshot windows. The
+    // next timer tick will establish new start values.
+    _rateCheckWallStartMs = null;
+    _rateCheckPositionStartMs = null;
+    _lastStateSnapshotWallMs = null;
 
     // Use the shorter of the caller's interval and the stale-detection
     // interval so both position callbacks and recovery work correctly.
@@ -1634,14 +1667,24 @@ class VideoFeedController extends ChangeNotifier {
       final player = _loadedPlayers[index]?.player;
       if (player == null) return;
 
+      // Read position ONCE per tick and share it across all the
+      // diagnostics + stale watchdog. Reading it multiple times via
+      // `player.state.position` would waste cycles in production AND
+      // burn through test mocks whose `thenAnswer` callbacks advance
+      // state on each call.
+      final positionMs = player.state.position.inMilliseconds;
+
+      // Playback diagnostics for the current video. These run on
+      // every heartbeat but throttle their log output internally.
+      if (kPlaybackDiagnosticsEnabled && index == _currentIndex) {
+        _emitStateSnapshotIfDue(index, player, positionMs);
+        _checkPlaybackRate(index, player, positionMs);
+      }
+
       // Stale-position watchdog: detect and recover from mpv decoder
       // stalls caused by B-frame encoded videos.
       if (index == _currentIndex) {
-        _checkStalePosition(
-          index,
-          player,
-          player.state.position.inMilliseconds,
-        );
+        _checkStalePosition(index, player, positionMs);
       }
 
       // Loop enforcement: seek back to zero when position exceeds
@@ -1662,6 +1705,111 @@ class VideoFeedController extends ChangeNotifier {
         positionCallback?.call(index, player.state.position);
       }
     });
+  }
+
+  /// Detects slowly-advancing playback — the "crawling forward" case
+  /// that the existing [_checkStalePosition] watchdog misses because
+  /// it only flags fully-frozen positions (`positionMs ==
+  /// _lastHeartbeatPositionMs` at exact equality).
+  ///
+  /// Motivation: on iOS via media_kit/mpv a video can enter a state
+  /// where it reports `playing=true buffering=false` but position
+  /// advances at a fraction of wall-clock rate — e.g. 533ms of
+  /// position over 13 seconds of wall time (~4% real-time). The
+  /// stale-position watchdog silently misses this because position
+  /// *is* technically changing between heartbeats, so
+  /// `_staleHeartbeatCount` never increments. To the user it looks
+  /// like the video is frozen.
+  ///
+  /// This method evaluates the position-advance rate over
+  /// [_playbackRateWindowMs] wall-clock windows and logs
+  /// `slow_playback_detected` when the rate drops below
+  /// [_slowPlaybackRateThresholdPct]. The window resets after every
+  /// evaluation so recurring slowness keeps being reported.
+  ///
+  /// Only runs when [kPlaybackDiagnosticsEnabled] is true. Only runs
+  /// for the current video; preloaded background players are
+  /// expected to be paused so their position does not advance.
+  ///
+  /// [positionMs] is the already-read position for this heartbeat
+  /// tick, passed in so we don't read `player.state.position` a
+  /// second time.
+  void _checkPlaybackRate(int index, Player player, int positionMs) {
+    // Don't evaluate rate while buffering or while paused — those are
+    // expected to have zero position advance and would always look
+    // "slow".
+    if (!player.state.playing || player.state.buffering) {
+      _rateCheckWallStartMs = null;
+      _rateCheckPositionStartMs = null;
+      return;
+    }
+
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+    if (_rateCheckWallStartMs == null) {
+      _rateCheckWallStartMs = nowMs;
+      _rateCheckPositionStartMs = positionMs;
+      return;
+    }
+
+    final wallDelta = nowMs - _rateCheckWallStartMs!;
+    if (wallDelta < _playbackRateWindowMs) return;
+
+    final positionDelta = positionMs - _rateCheckPositionStartMs!;
+
+    // If position hasn't advanced at all, that's the stale watchdog's
+    // job. Only log here for the "slow but advancing" case.
+    if (positionDelta > _slowPlaybackMinAdvanceMs) {
+      final ratePct = wallDelta > 0 ? (positionDelta * 100) ~/ wallDelta : 0;
+      if (ratePct < _slowPlaybackRateThresholdPct) {
+        _logWarning(
+          'slow_playback_detected ${_videoDebugDetails(index)} '
+          'positionDeltaMs=$positionDelta '
+          'wallDeltaMs=$wallDelta '
+          'ratePct=$ratePct '
+          'currentPositionMs=$positionMs '
+          'sourceKind=${_sourceKindLabelOrNone(_openedSources[index])}',
+        );
+      }
+    }
+
+    // Start a new window whether we logged or not, so the next window
+    // measures fresh deltas.
+    _rateCheckWallStartMs = nowMs;
+    _rateCheckPositionStartMs = positionMs;
+  }
+
+  /// Emits a periodic `player_state_snapshot` log line that dumps the
+  /// raw `player.state` values regardless of whether the stream
+  /// listeners have fired. Lets us see divergence between what the
+  /// stream last reported (which drives the Dart-side cached state)
+  /// and what mpv actually believes now — e.g. mpv setting
+  /// `core-idle` without emitting a matching `buffering=true` event.
+  ///
+  /// Throttled to [_stateSnapshotIntervalMs] to keep production log
+  /// volume reasonable (~1 line every 2 seconds per active video).
+  ///
+  /// Only runs when [kPlaybackDiagnosticsEnabled] is true.
+  ///
+  /// [positionMs] is the already-read position for this heartbeat
+  /// tick, passed in so we don't read `player.state.position` a
+  /// second time.
+  void _emitStateSnapshotIfDue(int index, Player player, int positionMs) {
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (_lastStateSnapshotWallMs != null &&
+        nowMs - _lastStateSnapshotWallMs! < _stateSnapshotIntervalMs) {
+      return;
+    }
+    _lastStateSnapshotWallMs = nowMs;
+
+    _logDebug(
+      'player_state_snapshot ${_videoDebugDetails(index)} '
+      'playing=${player.state.playing} '
+      'buffering=${player.state.buffering} '
+      'positionMs=$positionMs '
+      'completed=${player.state.completed} '
+      'sourceKind=${_sourceKindLabelOrNone(_openedSources[index])}',
+    );
   }
 
   /// Checks whether the current video's position has stalled. If the position

@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/models/blossom_resumable_upload_session.dart';
 import 'package:openvine/models/pending_upload.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

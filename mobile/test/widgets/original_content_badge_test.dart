@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
@@ -28,6 +29,8 @@ void main() {
       // Arrange & Act
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: OriginalContentBadge(size: BadgeSize.medium)),
         ),
       );
@@ -156,6 +159,8 @@ void main() {
         // Act
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ProofModeBadgeRow(video: videoEvent)),
           ),
         );
@@ -212,6 +217,8 @@ void main() {
               ),
             ],
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: ProofModeBadgeRow(video: videoEvent)),
             ),
           ),
@@ -244,6 +251,8 @@ void main() {
         // Act
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ProofModeBadgeRow(video: videoEvent)),
           ),
         );

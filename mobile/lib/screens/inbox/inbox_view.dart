@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,11 +14,11 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
 import 'package:openvine/screens/inbox/message_requests/widgets/message_requests_banner.dart';
@@ -180,8 +181,8 @@ class _MessagesContent extends ConsumerWidget {
             ],
           ),
           // FAB positioned bottom-right
-          Positioned(
-            right: 16,
+          PositionedDirectional(
+            end: 16,
             bottom: 16,
             child: InboxFab(
               onPressed: () => _onNewConversation(context, ref),
@@ -439,7 +440,9 @@ class _ConversationListState extends ConsumerState<_ConversationList>
         final reported = await actionsCubit.reportUser(otherPubkey);
         if (context.mounted && reported) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Reported $displayName')),
+            SnackBar(
+              content: Text(context.l10n.inboxReportedUser(displayName)),
+            ),
           );
         }
 
@@ -453,7 +456,9 @@ class _ConversationListState extends ConsumerState<_ConversationList>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                isBlocked ? 'Unblocked $displayName' : 'Blocked $displayName',
+                isBlocked
+                    ? context.l10n.inboxUnblockedUser(displayName)
+                    : context.l10n.inboxBlockedUser(displayName),
               ),
             ),
           );
@@ -468,7 +473,9 @@ class _ConversationListState extends ConsumerState<_ConversationList>
           );
           if (context.mounted && removed) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Removed conversation')),
+              SnackBar(
+                content: Text(context.l10n.inboxRemovedConversation),
+              ),
             );
           }
         }

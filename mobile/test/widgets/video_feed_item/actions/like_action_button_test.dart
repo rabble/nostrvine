@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
@@ -36,6 +37,8 @@ void main() {
     VideoInteractionsBloc? bloc,
   }) {
     final widget = MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: LikeActionButton(video: video, isPreviewMode: isPreviewMode),
       ),

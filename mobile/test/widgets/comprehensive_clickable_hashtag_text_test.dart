@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 
 class _MockNavigatorObserver extends Mock implements NavigatorObserver {}
@@ -32,6 +33,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClickableHashtagText(text: plainText)),
           ),
         );
@@ -49,6 +52,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClickableHashtagText(text: textWithHashtag)),
           ),
         );
@@ -71,6 +76,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClickableHashtagText(text: textWithHashtag)),
           ),
         );
@@ -103,6 +110,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClickableHashtagText(text: textWithHashtags)),
           ),
         );
@@ -125,6 +134,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ClickableHashtagText(text: 'Plain text', style: testStyle),
             ),
@@ -140,6 +151,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ClickableHashtagText(
                 text: 'Text with #hashtag',
@@ -164,6 +177,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ClickableHashtagText(text: 'Text with #hashtag'),
             ),
@@ -189,6 +204,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: SizedBox(
                 width: 200, // Force text wrapping
@@ -211,6 +228,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             navigatorObservers: [mockObserver],
             home: Scaffold(
               body: ClickableHashtagText(
@@ -242,6 +261,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             navigatorObservers: [mockObserver],
             home: const Scaffold(
               body: ClickableHashtagText(text: 'Check out #test'),
@@ -272,6 +293,8 @@ void main() {
         // Mock the navigation to capture hashtag values
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             navigatorObservers: [mockObserver],
             home: Scaffold(
               body: ClickableHashtagText(
@@ -314,6 +337,8 @@ void main() {
       testWidgets('handles empty text', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClickableHashtagText(text: '')),
           ),
         );
@@ -325,6 +350,8 @@ void main() {
       testWidgets('handles text with only spaces', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClickableHashtagText(text: '   ')),
           ),
         );
@@ -338,6 +365,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ClickableHashtagText(text: 'Test #vine_2024 and #test_123'),
             ),
@@ -355,6 +384,8 @@ void main() {
       testWidgets('handles consecutive hashtags', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ClickableHashtagText(text: '#first#second hashtags'),
             ),
@@ -372,6 +403,8 @@ void main() {
       testWidgets('ignores hashtags in URLs', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ClickableHashtagText(
                 text: 'Visit https://example.com/#anchor not a hashtag',
@@ -393,6 +426,8 @@ void main() {
       testWidgets('handles single hashtag character', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ClickableHashtagText(text: 'Just a # character'),
             ),
@@ -419,6 +454,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClickableHashtagText(text: textWithHashtags)),
           ),
         );

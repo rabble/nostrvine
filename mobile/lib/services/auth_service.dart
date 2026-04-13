@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
@@ -738,6 +739,13 @@ class AuthService implements BackgroundAwareService {
 
       // Set state synchronously to prevent loading screen deadlock
       _setAuthState(AuthState.unauthenticated);
+    } finally {
+      // Release the native splash that was preserved at startup. This is
+      // idempotent — safe if the 5s timeout guard in main.dart fires first.
+      // Calling remove() here (synchronously after the terminal auth state is
+      // set) ensures GoRouter's refreshListenable has already been notified,
+      // so the next frame the platform sees is the correct route. See #2749.
+      FlutterNativeSplash.remove();
     }
   }
 
