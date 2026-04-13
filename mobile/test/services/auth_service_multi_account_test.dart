@@ -885,6 +885,60 @@ void main() {
     });
 
     test(
+      'rejects legacy OAuth session with null userPubkey in signInForAccount',
+      () async {
+        // Legacy sessions (created before userPubkey binding) have
+        // user_pubkey=null. signInForAccount must NOT accept them
+        // because the session's identity is unverifiable — it could
+        // belong to a different account.
+        final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        // Archived session has userPubkey bound (would pass restore)
+        final archivedSessionJson = jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'archived_token',
+          'scope': 'policy:full',
+          'user_pubkey': pubkeyHex,
+        });
+        when(
+          () => mockSecureStorage.read(key: 'keycast_session_$pubkeyHex'),
+        ).thenAnswer((_) async => archivedSessionJson);
+
+        // But the GLOBAL session slot holds a legacy session (no pubkey)
+        final legacySessionJson = jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'legacy_global_token',
+          'scope': 'policy:full',
+          // No user_pubkey — legacy
+        });
+        when(
+          () => mockSecureStorage.read(key: 'keycast_session'),
+        ).thenAnswer((_) async => legacySessionJson);
+
+        // No local keys fallback
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // The legacy session should be rejected (no userPubkey match),
+        // refresh should be skipped (userPubkey != pubkeyHex), and
+        // the method should throw SessionExpiredException.
+        await expectLater(
+          _ignoringDiscoveryErrors(
+            () => authService.signInForAccount(
+              pubkeyHex,
+              AuthenticationSource.divineOAuth,
+            ),
+          ),
+          throwsA(isA<SessionExpiredException>()),
+        );
+      },
+    );
+
+    test(
       'deletes corrupt OAuth archive when userPubkey does not match',
       () async {
         // Reproduces the state observed on device: an archive for

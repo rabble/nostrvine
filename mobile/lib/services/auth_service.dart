@@ -1653,7 +1653,7 @@ class AuthService implements BackgroundAwareService {
         final sessionMatchesAccount =
             session != null &&
             session.hasRpcAccess &&
-            (session.userPubkey == null || session.userPubkey == pubkeyHex);
+            session.userPubkey == pubkeyHex;
         if (sessionMatchesAccount) {
           await signInWithDivineOAuth(session);
         } else {
@@ -1674,8 +1674,7 @@ class AuthService implements BackgroundAwareService {
           // requested account — refreshing a different account's token
           // would sign in as the wrong identity.
           final canRefresh =
-              _oauthClient != null &&
-              (session?.userPubkey == null || session?.userPubkey == pubkeyHex);
+              _oauthClient != null && session?.userPubkey == pubkeyHex;
           if (canRefresh) {
             final refreshed = await _tryRefreshOAuthSession(
               caller: 'signInForAccount',
