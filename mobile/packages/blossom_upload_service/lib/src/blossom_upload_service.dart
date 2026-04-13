@@ -376,20 +376,18 @@ class BlossomUploadService {
     };
   }
 
-  // coverage:ignore-start
   bool _isTransientCapabilityDiscoveryError(DioException error) {
     final statusCode = error.response?.statusCode;
     if (statusCode != null && statusCode >= 500) return true;
 
     return switch (error.type) {
       DioExceptionType.connectionTimeout ||
-      DioExceptionType.sendTimeout ||
-      DioExceptionType.receiveTimeout ||
-      DioExceptionType.connectionError => true,
+      DioExceptionType.sendTimeout || // coverage:ignore-line
+      DioExceptionType.receiveTimeout || // coverage:ignore-line
+      DioExceptionType.connectionError => true, // coverage:ignore-line
       _ => false,
     };
   }
-  // coverage:ignore-end
 
   bool _isDivineOwnedUploadHost(String serverUrl) {
     final host = Uri.tryParse(serverUrl)?.host.toLowerCase();
@@ -455,7 +453,7 @@ class BlossomUploadService {
       return DateTime.fromMillisecondsSinceEpoch(epochMillis, isUtc: true);
     }
 
-    return DateTime.tryParse(value); // coverage:ignore-line
+    return DateTime.tryParse(value);
   }
 
   int? _parseUploadOffset(Headers headers) {
@@ -522,8 +520,7 @@ class BlossomUploadService {
       if (_isDivineOwnedUploadHost(serverUrl) &&
           _isTransientCapabilityDiscoveryError(error)) {
         final fallback = cached?.capability.supportsResumable == true
-            ? cached!
-                  .capability // coverage:ignore-line
+            ? cached!.capability
             : const _DivineUploadCapability(supportsResumable: true);
 
         Log.warning(
@@ -732,7 +729,7 @@ class BlossomUploadService {
         if (response.statusCode != 200 &&
             response.statusCode != 201 &&
             response.statusCode != 204) {
-          final xReason = // coverage:ignore-line
+          final xReason =
               response.headers.value('X-Reason') ??
               response.headers.value('x-reason'); // coverage:ignore-line
           throw BlossomResumableUploadException(
@@ -915,7 +912,7 @@ class BlossomUploadService {
 
     if (response.statusCode == 409) {
       final existingUrl = '$_defaultServerUrl/$fileHash';
-      onProgress?.call(1); // coverage:ignore-line
+      onProgress?.call(1);
 
       return BlossomUploadResult(
         success: true,
@@ -1499,7 +1496,6 @@ class BlossomUploadService {
             success: false,
             errorMessage: 'All servers failed',
           );
-      // coverage:ignore-start
     } on Object catch (e) {
       Log.error(
         'Image upload exception: $e',
@@ -1511,7 +1507,6 @@ class BlossomUploadService {
         errorMessage: 'Image upload failed: $e',
       );
     }
-    // coverage:ignore-end
   }
 
   /// Upload a bug report file (text/plain) to the configured
@@ -1626,7 +1621,6 @@ class BlossomUploadService {
       );
 
       return null;
-      // coverage:ignore-start
     } on Object catch (e) {
       Log.error(
         'Bug report upload error: $e',
@@ -1635,7 +1629,6 @@ class BlossomUploadService {
       );
       return null;
     }
-    // coverage:ignore-end
   }
 
   /// Add ProofMode headers to upload request.
@@ -1833,7 +1826,6 @@ class BlossomUploadService {
             success: false,
             errorMessage: 'All servers failed',
           );
-      // coverage:ignore-start
     } on Object catch (e) {
       Log.error(
         'Audio upload error: $e',
@@ -1845,7 +1837,6 @@ class BlossomUploadService {
         errorMessage: 'Audio upload failed: $e',
       );
     }
-    // coverage:ignore-end
   }
 
   /// Test connection to a Blossom server
