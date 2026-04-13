@@ -53,11 +53,15 @@ class VideoAudioEditorTimingScreen extends StatefulWidget {
   /// Creates the audio timing screen.
   const VideoAudioEditorTimingScreen({
     required this.sound,
+    this.enableDeleteButton = true,
     super.key,
   });
 
   /// The sound to edit timing for.
   final AudioEvent sound;
+
+  /// Whether the delete button is shown in the toolbar.
+  final bool enableDeleteButton;
 
   /// Route name for navigation.
   static const routeName = 'video-audio-timing';
@@ -218,11 +222,17 @@ class _VideoAudioEditorTimingScreenState
                   children: [
                     // Top bar
                     VideoEditorToolbar(
-                      closeIcon: DivineIconName.trash,
-                      closeType: DivineIconButtonType.error,
-                      closeSemanticLabel: 'Remove audio',
+                      closeIcon: widget.enableDeleteButton ? .trash : .x,
+                      closeType: widget.enableDeleteButton
+                          ? .error
+                          : .ghostSecondary,
+                      closeSemanticLabel: widget.enableDeleteButton
+                          ? 'Remove audio'
+                          : 'Close',
                       doneSemanticLabel: 'Confirm audio selection',
-                      onClose: _deleteAudio,
+                      onClose: widget.enableDeleteButton
+                          ? _deleteAudio
+                          : context.pop,
                       onDone: _confirmSelection,
                       center: Flexible(
                         child: IgnorePointer(

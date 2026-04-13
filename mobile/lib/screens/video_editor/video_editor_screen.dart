@@ -16,6 +16,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -341,28 +342,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
           AudioSelectionBottomSheet(scrollController: scrollController),
     );
 
-    if (!mounted) return;
+    if (!mounted || result == null) return;
 
-    // Open timing screen and wait for result
-    final timingResult = await Navigator.of(context).push<AudioTimingResult>(
-      PageRouteBuilder(
-        opaque: false,
-        barrierColor: VineTheme.transparent,
-        pageBuilder: (_, _, _) => VideoAudioEditorTimingScreen(
-          sound: result!,
-        ),
-      ),
-    );
-
-    // Handle timing screen result
-    if (timingResult != null) {
-      switch (timingResult) {
-        case AudioTimingConfirmed(:final sound):
-        /*    onSoundChanged(sound); */
-        case AudioTimingDeleted():
-        /*     onSoundChanged(null); */
-      }
-    }
+    // handle result
   }
 
   @override
