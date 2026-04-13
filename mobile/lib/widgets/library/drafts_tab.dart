@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,25 +52,65 @@ class DraftsTab extends ConsumerWidget {
           DraftsLibraryInitial() || DraftsLibraryLoading() => const Center(
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
           ),
-          DraftsLibraryError(:final message) => Center(
-            child: Text(
-              message,
-              style: const TextStyle(color: VineTheme.error),
+          DraftsLibraryError() => Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Couldn't load drafts",
+                    textAlign: TextAlign.center,
+                    style: VineTheme.titleMediumFont(),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Something went wrong while opening your library. '
+                    'You can try again.',
+                    textAlign: TextAlign.center,
+                    style: VineTheme.bodyLargeFont(
+                      color: VineTheme.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  DivineButton(
+                    label: 'Try again',
+                    type: DivineButtonType.secondary,
+                    onPressed: () => context.read<DraftsLibraryBloc>().add(
+                      const DraftsLibraryLoadRequested(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           DraftsLibraryLoaded(:final drafts) ||
           DraftsLibraryDraftDeleted(:final drafts) ||
           DraftsLibraryDeleteFailed(
             :final drafts,
-          ) when drafts.isEmpty => const EmptyLibraryState(
-            icon: DivineIconName.pencilSimple,
-            // TODO(l10n): Replace with context.l10n when localization is
-            // added.
-            title: 'No Drafts Yet',
-            // TODO(l10n): Replace with context.l10n when localization is
-            // added.
-            subtitle: 'Videos you save as draft will appear here',
-          ),
+          ) when drafts.isEmpty =>
+            kIsWeb
+                ? const EmptyLibraryState(
+                    icon: DivineIconName.pencilSimple,
+                    // TODO(l10n): Replace with context.l10n when
+                    // localization is added.
+                    title: 'No drafts in the browser',
+                    // TODO(l10n): Replace with context.l10n when
+                    // localization is added.
+                    subtitle:
+                        'Drafts you save on the mobile app stay on your device. '
+                        'Open Divine on your phone to edit them.',
+                    showRecordButton: false,
+                  )
+                : const EmptyLibraryState(
+                    icon: DivineIconName.pencilSimple,
+                    // TODO(l10n): Replace with context.l10n when
+                    // localization is added.
+                    title: 'No Drafts Yet',
+                    // TODO(l10n): Replace with context.l10n when
+                    // localization is added.
+                    subtitle: 'Videos you save as draft will appear here',
+                  ),
           DraftsLibraryLoaded(:final drafts) ||
           DraftsLibraryDraftDeleted(:final drafts) ||
           DraftsLibraryDeleteFailed(:final drafts) => ListView.builder(
@@ -181,10 +222,14 @@ class DraftsTab extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
+        // TODO(l10n): Replace with context.l10n when localization
+        // is added.
         title: const Text(
           'Delete Draft',
           style: TextStyle(color: VineTheme.whiteText),
         ),
+        // TODO(l10n): Replace with context.l10n when localization
+        // is added.
         content: Text(
           'Are you sure you want to delete '
           '"${draft.title.isEmpty ? "Untitled" : draft.title}"?',

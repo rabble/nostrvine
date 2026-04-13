@@ -2,6 +2,7 @@
 // ABOUTME: Displays a masonry grid of video clip thumbnails with selection support
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -46,14 +47,58 @@ class ClipsTab extends StatelessWidget {
           );
         }
 
+        if (state.status == ClipsLibraryStatus.error) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    // TODO(l10n): Replace with context.l10n when localization
+                    // is added.
+                    "Couldn't load clips",
+                    textAlign: TextAlign.center,
+                    style: VineTheme.titleMediumFont(),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    // TODO(l10n): Replace with context.l10n when localization
+                    // is added.
+                    'Something went wrong while opening your library. '
+                    'You can try again.',
+                    textAlign: TextAlign.center,
+                    style: VineTheme.bodyLargeFont(
+                      color: VineTheme.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  DivineButton(
+                    // TODO(l10n): Replace with context.l10n when localization
+                    // is added.
+                    label: 'Try again',
+                    type: DivineButtonType.secondary,
+                    onPressed: () => context.read<ClipsLibraryBloc>().add(
+                      const ClipsLibraryLoadRequested(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         if (state.clips.isEmpty) {
           return EmptyLibraryState(
             icon: DivineIconName.filmSlate,
             // TODO(l10n): Replace with context.l10n when localization is added.
-            title: 'No Clips Yet',
+            title: kIsWeb ? 'No clips in the browser' : 'No Clips Yet',
             // TODO(l10n): Replace with context.l10n when localization is added.
-            subtitle: 'Your recorded video clips will appear here',
-            showRecordButton: !isSelectionMode,
+            subtitle: kIsWeb
+                ? 'Recorded clips live in the mobile app. '
+                      'Use Divine on your phone to record and manage them.'
+                : 'Your recorded video clips will appear here',
+            showRecordButton: !isSelectionMode && !kIsWeb,
           );
         }
 
