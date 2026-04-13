@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/library/clips_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
@@ -49,6 +50,8 @@ void main() {
       double? targetAspectRatio,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: Scaffold(
           body: BlocProvider<ClipsLibraryBloc>.value(
@@ -148,6 +151,8 @@ void main() {
       VoidCallback? onCreate,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: Scaffold(
           body: BlocProvider<ClipsLibraryBloc>.value(

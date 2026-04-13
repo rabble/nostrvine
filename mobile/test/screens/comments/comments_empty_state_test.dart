@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/comments/comments.dart';
 
 void main() {
@@ -11,6 +12,8 @@ void main() {
       testWidgets('displays "No comments yet" message', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: CommentsEmptyState(isClassicVine: false)),
           ),
         );
@@ -24,6 +27,8 @@ void main() {
         (tester) async {
           await tester.pumpWidget(
             const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: CommentsEmptyState(isClassicVine: false)),
             ),
           );
@@ -36,6 +41,8 @@ void main() {
       testWidgets('is centered on screen', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: CommentsEmptyState(isClassicVine: false)),
           ),
         );
@@ -50,6 +57,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: CommentsEmptyState(isClassicVine: true)),
           ),
         );
@@ -63,6 +72,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: CommentsEmptyState(isClassicVine: true)),
           ),
         );
@@ -81,6 +92,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: CommentsEmptyState(isClassicVine: true)),
           ),
         );
@@ -96,6 +109,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: CommentsEmptyState(isClassicVine: true)),
           ),
         );

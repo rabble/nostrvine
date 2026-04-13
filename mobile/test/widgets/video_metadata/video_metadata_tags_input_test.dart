@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_tags_input.dart';
@@ -11,7 +12,11 @@ void main() {
     testWidgets('displays empty state initially', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
-          child: MaterialApp(home: Scaffold(body: VideoMetadataTagsInput())),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoMetadataTagsInput()),
+          ),
         ),
       );
 
@@ -37,6 +42,8 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataTagsInput()),
           ),
         ),
@@ -65,6 +72,8 @@ void main() {
         ProviderScope(
           overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataTagsInput()),
           ),
         ),
@@ -88,6 +97,8 @@ void main() {
         ProviderScope(
           overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataTagsInput()),
           ),
         ),
@@ -111,6 +122,8 @@ void main() {
         ProviderScope(
           overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataTagsInput()),
           ),
         ),
@@ -134,6 +147,8 @@ void main() {
         ProviderScope(
           overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataTagsInput()),
           ),
         ),
@@ -158,6 +173,8 @@ void main() {
         ProviderScope(
           overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataTagsInput()),
           ),
         ),
@@ -195,6 +212,8 @@ void main() {
               ),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: VideoMetadataTagsInput()),
             ),
           ),
@@ -222,6 +241,8 @@ void main() {
         ProviderScope(
           overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataTagsInput()),
           ),
         ),
@@ -238,7 +259,11 @@ void main() {
     testWidgets('focuses input when tapped outside', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
-          child: MaterialApp(home: Scaffold(body: VideoMetadataTagsInput())),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoMetadataTagsInput()),
+          ),
         ),
       );
 
@@ -264,6 +289,8 @@ void main() {
         ProviderScope(
           overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataTagsInput()),
           ),
         ),

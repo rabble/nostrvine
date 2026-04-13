@@ -1,0 +1,2434 @@
+{
+    "@@locale": "ja",
+    "appTitle": "Divine",
+    "@appTitle": {
+        "description": "App title shown in task switcher"
+    },
+    "settingsTitle": "設定",
+    "@settingsTitle": {
+        "description": "Settings screen app bar title"
+    },
+    "settingsSecureAccount": "アカウントを守る",
+    "settingsSessionExpired": "セッション切れちゃった",
+    "settingsSessionExpiredSubtitle": "もう一回サインインして、フルアクセスを取り戻そう",
+    "settingsCreatorAnalytics": "クリエイター分析",
+    "settingsSupportCenter": "サポート",
+    "settingsNotifications": "通知",
+    "settingsContentPreferences": "コンテンツ設定",
+    "settingsModerationControls": "モデレーション設定",
+    "settingsBlueskyPublishing": "Bluesky 公開",
+    "settingsBlueskyPublishingSubtitle": "Bluesky へのクロス投稿を管理",
+    "settingsNostrSettings": "Nostr 設定",
+    "settingsIntegratedApps": "連携アプリ",
+    "settingsIntegratedAppsSubtitle": "Divine で使える承認済みサードパーティアプリ",
+    "settingsExperimentalFeatures": "実験的機能",
+    "settingsExperimentalFeaturesSubtitle": "バグるかもしれないけど、気になったら試してみて。",
+    "settingsLegal": "法的情報",
+    "settingsIntegrationPermissions": "連携の権限",
+    "settingsIntegrationPermissionsSubtitle": "記憶された連携の承認を確認・取り消しできるよ",
+    "settingsVersion": "バージョン {version}",
+    "@settingsVersion": {
+        "description": "App version label in settings footer",
+        "placeholders": {
+            "version": {
+                "type": "String"
+            }
+        }
+    },
+    "settingsVersionEmpty": "バージョン",
+    "@settingsVersionEmpty": {
+        "description": "Version label when version string is not yet loaded"
+    },
+    "settingsDeveloperModeAlreadyEnabled": "開発者モードはもう有効だよ",
+    "settingsDeveloperModeEnabled": "開発者モード、オン！",
+    "settingsDeveloperModeTapsRemaining": "あと{count}回タップで開発者モードが開くよ",
+    "@settingsDeveloperModeTapsRemaining": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "settingsInvites": "招待",
+    "settingsSwitchAccount": "アカウントを切り替え",
+    "settingsAddAnotherAccount": "別のアカウントを追加",
+    "settingsUnsavedDraftsTitle": "未保存の下書きがあるよ",
+    "settingsUnsavedDraftsMessage": "未保存の下書きが{count}件あるよ。切り替えても下書きは残るけど、先に公開か確認しておくのがおすすめ。",
+    "@settingsUnsavedDraftsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "settingsCancel": "キャンセル",
+    "settingsSwitchAnyway": "それでも切り替える",
+    "settingsAppVersionLabel": "アプリのバージョン",
+    "settingsAppLanguage": "アプリの言語",
+    "settingsAppLanguageDeviceDefault": "{language} (デバイスの既定)",
+    "@settingsAppLanguageDeviceDefault": {
+        "description": "Subtitle for app language tile when using device default",
+        "placeholders": {
+            "language": {
+                "type": "String"
+            }
+        }
+    },
+    "settingsAppLanguageTitle": "アプリの言語",
+    "@settingsAppLanguageTitle": {
+        "description": "Title shown at top of locale picker bottom sheet"
+    },
+    "settingsAppLanguageDescription": "インターフェースの言語を選んでね",
+    "settingsAppLanguageUseDeviceLanguage": "デバイスの言語を使う",
+    "contentPreferencesTitle": "コンテンツ設定",
+    "@contentPreferencesTitle": {
+        "description": "Content preferences screen app bar title"
+    },
+    "contentPreferencesContentFilters": "コンテンツフィルター",
+    "contentPreferencesContentFiltersSubtitle": "コンテンツ警告フィルターを管理",
+    "contentPreferencesContentLanguage": "コンテンツの言語",
+    "contentPreferencesContentLanguageDeviceDefault": "{language} (デバイスの既定)",
+    "@contentPreferencesContentLanguageDeviceDefault": {
+        "placeholders": {
+            "language": {
+                "type": "String"
+            }
+        }
+    },
+    "contentPreferencesTagYourVideos": "動画に言語タグを付けると、視聴者がコンテンツをフィルターできるよ。",
+    "contentPreferencesUseDeviceLanguage": "デバイスの言語を使う (既定)",
+    "contentPreferencesAudioSharing": "自分の音声を再利用可能にする",
+    "contentPreferencesAudioSharingSubtitle": "オンにすると、他の人があなたの動画の音声を使えるよ",
+    "contentPreferencesAccountLabels": "アカウントラベル",
+    "contentPreferencesAccountLabelsEmpty": "自分のコンテンツにラベルを付けよう",
+    "contentPreferencesAccountContentLabels": "アカウントのコンテンツラベル",
+    "contentPreferencesClearAll": "すべてクリア",
+    "contentPreferencesSelectAllThatApply": "あなたのアカウントに当てはまるものを全部選んでね",
+    "contentPreferencesDoneNoLabels": "完了 (ラベルなし)",
+    "contentPreferencesDoneCount": "完了 ({count}件選択)",
+    "@contentPreferencesDoneCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "contentPreferencesAudioInputDevice": "音声入力デバイス",
+    "contentPreferencesAutoRecommended": "自動 (おすすめ)",
+    "contentPreferencesAutoSelectsBest": "最適なマイクを自動で選ぶよ",
+    "contentPreferencesSelectAudioInput": "音声入力を選ぶ",
+    "contentPreferencesUnknownMicrophone": "不明なマイク",
+    "profileBlockedAccountNotAvailable": "このアカウントは見れないよ",
+    "profileErrorPrefix": "エラー: {error}",
+    "@profileErrorPrefix": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileInvalidId": "無効なプロフィール ID",
+    "profileShareText": "Divine の {displayName} をチェックしてみて!\n\nhttps://divine.video/profile/{npub}",
+    "@profileShareText": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            },
+            "npub": {
+                "type": "String"
+            }
+        }
+    },
+    "profileShareSubject": "Divine の {displayName}",
+    "@profileShareSubject": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileShareFailed": "プロフィールの共有がうまくいかなかった: {error}",
+    "@profileShareFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileEditProfile": "プロフィールを編集",
+    "profileCreatorAnalytics": "クリエイター分析",
+    "profileShareProfile": "プロフィールを共有",
+    "profileCopyPublicKey": "公開鍵 (npub) をコピー",
+    "profileGetEmbedCode": "埋め込みコードを取得",
+    "profilePublicKeyCopied": "公開鍵をコピーしたよ",
+    "profileEmbedCodeCopied": "埋め込みコードをコピーしたよ",
+    "profileRefreshTooltip": "更新",
+    "profileRefreshSemanticLabel": "プロフィールを更新",
+    "profileMoreTooltip": "その他",
+    "profileMoreSemanticLabel": "その他のオプション",
+    "profileFollowingLabel": "フォロー中",
+    "profileFollowLabel": "フォロー",
+    "profileBlockedLabel": "ブロック済み",
+    "profileFollowersLabel": "フォロワー",
+    "profileFollowingStatLabel": "フォロー中",
+    "profileVideosLabel": "動画",
+    "profileFollowerCountUsers": "{count}人",
+    "@profileFollowerCountUsers": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "profileBlockTitle": "{displayName}をブロックする?",
+    "@profileBlockTitle": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileBlockExplanation": "ブロックするとこうなるよ:",
+    "profileBlockBulletHidePosts": "その人の投稿はフィードに出なくなる。",
+    "profileBlockBulletCantView": "その人はあなたのプロフィール閲覧、フォロー、投稿の閲覧ができなくなる。",
+    "profileBlockBulletNoNotify": "相手には通知されないよ。",
+    "profileBlockBulletYouCanView": "あなたはその人のプロフィールを引き続き見れるよ。",
+    "profileBlockConfirmButton": "{displayName}をブロック",
+    "@profileBlockConfirmButton": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileCancelButton": "キャンセル",
+    "profileLearnMore": "もっと詳しく",
+    "profileUnblockTitle": "{displayName}のブロックを解除する?",
+    "@profileUnblockTitle": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockExplanation": "ブロックを解除するとこうなるよ:",
+    "profileUnblockBulletShowPosts": "その人の投稿がフィードに表示されるようになる。",
+    "profileUnblockBulletCanView": "その人はあなたのプロフィール閲覧、フォロー、投稿の閲覧ができるようになる。",
+    "profileUnblockBulletNoNotify": "相手には通知されないよ。",
+    "profileLearnMoreAt": "詳しくはこちら: ",
+    "profileUnblockButton": "ブロック解除",
+    "profileUnfollowDisplayName": "{displayName}のフォローを解除",
+    "@profileUnfollowDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileBlockDisplayName": "{displayName}をブロック",
+    "@profileBlockDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockDisplayName": "{displayName}のブロックを解除",
+    "@profileUnblockDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUserBlockedTitle": "ブロックしたよ",
+    "profileUserBlockedContent": "このユーザーのコンテンツはフィードに出なくなるよ。",
+    "profileUserBlockedUnblockHint": "いつでもプロフィールか [設定] > [安全] からブロック解除できるよ。",
+    "profileCloseButton": "閉じる",
+    "profileNoCollabsTitle": "コラボ動画はまだないよ",
+    "profileCollabsOwnEmpty": "あなたがコラボした動画がここに表示されるよ",
+    "profileCollabsOtherEmpty": "この人がコラボした動画がここに表示されるよ",
+    "profileErrorLoadingCollabs": "コラボ動画の読み込みに失敗",
+    "profileNoCommentsOwnTitle": "コメントはまだないよ",
+    "profileNoCommentsOtherTitle": "コメントなし",
+    "profileCommentsOwnEmpty": "あなたのコメントと返信がここに出るよ",
+    "profileCommentsOtherEmpty": "この人のコメントと返信がここに出るよ",
+    "profileErrorLoadingComments": "コメントの読み込みに失敗",
+    "profileVideoRepliesSection": "動画の返信",
+    "profileCommentsSection": "コメント",
+    "profileEditLabel": "編集",
+    "profileLibraryLabel": "ライブラリ",
+    "profileNoLikedVideosTitle": "いいねした動画はまだないよ",
+    "profileLikedOwnEmpty": "あなたがいいねした動画がここに出るよ",
+    "profileLikedOtherEmpty": "この人がいいねした動画がここに出るよ",
+    "profileErrorLoadingLiked": "いいね動画の読み込みに失敗",
+    "profileNoRepostsTitle": "リポストはまだないよ",
+    "profileRepostsOwnEmpty": "あなたがリポストした動画がここに出るよ",
+    "profileRepostsOtherEmpty": "この人がリポストした動画がここに出るよ",
+    "profileErrorLoadingReposts": "リポスト動画の読み込みに失敗",
+    "profileLoadingTitle": "プロフィールを読み込み中...",
+    "profileLoadingSubtitle": "ちょっと待ってね",
+    "profileLoadingVideos": "動画を読み込み中...",
+    "profileNoVideosTitle": "動画はまだないよ",
+    "profileNoVideosOwnSubtitle": "最初の動画を投稿してここに表示しよう",
+    "profileNoVideosOtherSubtitle": "このユーザーはまだ動画を投稿してないよ",
+    "profileVideoThumbnailLabel": "動画サムネイル {number}",
+    "@profileVideoThumbnailLabel": {
+        "placeholders": {
+            "number": {
+                "type": "int"
+            }
+        }
+    },
+    "profileShowMore": "もっと見る",
+    "profileShowLess": "閉じる",
+    "profileCompleteYourProfile": "プロフィールを完成させよう",
+    "profileCompleteSubtitle": "名前、自己紹介、画像を追加して始めよう",
+    "profileSetUpButton": "設定する",
+    "profileVerifyingEmail": "メールを確認中...",
+    "profileCheckEmailVerification": "{email} に届いた認証リンクを確認してね",
+    "@profileCheckEmailVerification": {
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "profileWaitingForVerification": "メール認証を待ってるよ",
+    "profileVerificationFailed": "認証がうまくいかなかった",
+    "profilePleaseTryAgain": "もう一回試してみて",
+    "profileSecureYourAccount": "アカウントを守ろう",
+    "profileSecureSubtitle": "メールとパスワードを追加すれば、どのデバイスからでもアカウントを復元できるよ",
+    "profileRetryButton": "もう一回",
+    "profileRegisterButton": "登録",
+    "profileSessionExpired": "セッション切れちゃった",
+    "profileSignInToRestore": "もう一回サインインして、フルアクセスを取り戻そう",
+    "profileSignInButton": "サインイン",
+    "profileDismissTooltip": "閉じる",
+    "profileLinkCopied": "プロフィールのリンクをコピーしたよ",
+    "profileSetupEditProfileTitle": "プロフィールを編集",
+    "profileSetupBackLabel": "戻る",
+    "profileSetupAboutNostr": "Nostr について",
+    "profileSetupProfilePublished": "プロフィールを公開したよ！",
+    "profileSetupCreateNewProfile": "新しいプロフィールを作る?",
+    "profileSetupNoExistingProfile": "リレーに既存のプロフィールが見つからなかった。公開すると新しいプロフィールが作られるよ。続ける?",
+    "profileSetupPublishButton": "公開",
+    "profileSetupUsernameTaken": "そのユーザー名はたった今取られちゃった。別の名前にしてみて。",
+    "profileSetupClaimFailed": "ユーザー名の取得がうまくいかなかった。もう一回試してみて。",
+    "profileSetupPublishFailed": "プロフィールの公開がうまくいかなかった。もう一回試してみて。",
+    "profileSetupDisplayNameLabel": "表示名",
+    "profileSetupDisplayNameHint": "みんなに何て呼ばれたい?",
+    "profileSetupDisplayNameHelper": "好きな名前やラベルを使ってOK。一意じゃなくて大丈夫。",
+    "profileSetupDisplayNameRequired": "表示名を入力してね",
+    "profileSetupBioLabel": "自己紹介 (任意)",
+    "profileSetupBioHint": "あなたのことを書いてみて...",
+    "profileSetupPublicKeyLabel": "公開鍵 (npub)",
+    "profileSetupUsernameLabel": "ユーザー名 (任意)",
+    "profileSetupUsernameHint": "ユーザー名",
+    "profileSetupUsernameHelper": "Divine での固有の ID だよ",
+    "profileSetupProfileColorLabel": "プロフィールカラー (任意)",
+    "profileSetupSaveButton": "保存",
+    "profileSetupSavingButton": "保存中...",
+    "profileSetupImageUrlTitle": "画像 URL を追加",
+    "profileSetupPictureUploaded": "プロフィール画像をアップロードしたよ！",
+    "profileSetupImageSelectionFailed": "画像の選択がうまくいかなかった。代わりに下に画像 URL を貼り付けてね。",
+    "profileSetupCameraAccessFailed": "カメラにアクセスできなかった: {error}",
+    "@profileSetupCameraAccessFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileSetupGotItButton": "了解！",
+    "profileSetupUploadFailedGeneric": "画像のアップロードがうまくいかなかった: {error}",
+    "@profileSetupUploadFailedGeneric": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileSetupUploadNetworkError": "ネットワークエラー: ネット接続を確認してもう一回試してみて。",
+    "profileSetupUploadAuthError": "認証エラー: 一度ログアウトしてもう一回ログインしてみて。",
+    "profileSetupUploadFileTooLarge": "ファイルが大きすぎる: もっと小さい画像を選んでね (最大 10MB)。",
+    "profileSetupUsernameChecking": "使えるか確認中...",
+    "profileSetupUsernameAvailable": "このユーザー名、使えるよ！",
+    "profileSetupUsernameTakenIndicator": "このユーザー名はもう使われてる",
+    "profileSetupUsernameReserved": "このユーザー名は予約済み",
+    "profileSetupContactSupport": "サポートに連絡",
+    "profileSetupCheckAgain": "もう一回確認",
+    "profileSetupUsernameBurned": "このユーザー名はもう使えないよ",
+    "profileSetupUsernameInvalidFormat": "使えるのは英数字とハイフンだけだよ",
+    "profileSetupUsernameInvalidLength": "ユーザー名は3〜20文字にしてね",
+    "profileSetupUsernameNetworkError": "使えるか確認できなかった。もう一回試してみて。",
+    "profileSetupUsernameInvalidFormatGeneric": "ユーザー名の形式が正しくないよ",
+    "profileSetupUsernameCheckFailed": "使えるか確認できなかった",
+    "profileSetupUsernameReservedTitle": "予約済みのユーザー名",
+    "profileSetupUsernameReservedBody": "{username} は予約済みだよ。なぜあなたのものかを教えてね。",
+    "@profileSetupUsernameReservedBody": {
+        "placeholders": {
+            "username": {
+                "type": "String"
+            }
+        }
+    },
+    "profileSetupUsernameReservedHint": "例: ブランド名、アーティスト名など。",
+    "profileSetupUsernameReservedCheckHint": "もうサポートに連絡した? [もう一度確認] をタップして、解放されたか見てみてね。",
+    "profileSetupSupportRequestSent": "サポートリクエストを送ったよ！ すぐに連絡するね。",
+    "profileSetupCouldntOpenEmail": "メールアプリが開けなかった。送信先: names@divine.video",
+    "profileSetupSendRequest": "リクエストを送る",
+    "profileSetupPickColorTitle": "色を選ぼう",
+    "profileSetupSelectButton": "選択",
+    "profileSetupUseOwnNip05": "自分の NIP-05 アドレスを使う",
+    "profileSetupNip05AddressLabel": "NIP-05 アドレス",
+    "profileSetupProfilePicturePreview": "プロフィール画像のプレビュー",
+    "nostrInfoIntroBuiltOn": "DiVine は Nostr の上に作られてるよ。",
+    "nostrInfoIntroDescription": " 検閲に強いオープンなプロトコルで、特定の企業やプラットフォームに縛られずにコミュニケーションできるんだ。 ",
+    "nostrInfoIntroIdentity": "Divine にサインアップすると、新しい Nostr ID が作られるよ。",
+    "nostrInfoOwnership": "Nostr なら自分のコンテンツ、ID、ソーシャルグラフを自分のものにできて、いろんなアプリで使い回せる。選択肢が増えてロックインが減って、もっと健全なソーシャルインターネットになるんだ。",
+    "nostrInfoLingo": "Nostr 用語:",
+    "nostrInfoNpubLabel": "npub:",
+    "nostrInfoNpubDescription": " あなたの公開 Nostr アドレス。共有しても安全で、他の Nostr アプリであなたを見つけたり、フォローしたり、メッセージを送れるようになるよ。",
+    "nostrInfoNsecLabel": "nsec:",
+    "nostrInfoNsecDescription": " あなたの秘密鍵で、所有権の証明。これで Nostr ID を完全にコントロールできるから、",
+    "nostrInfoNsecWarning": "絶対に秘密にしておいて！",
+    "nostrInfoUsernameLabel": "Nostr ユーザー名:",
+    "nostrInfoUsernameDescription": " 人間が読める名前 (例: @name.divine.video) で、npub にリンクしてる。メールアドレスみたいに、Nostr ID を認識・確認しやすくしてくれるよ。",
+    "nostrInfoLearnMoreAt": "もっと詳しく: ",
+    "nostrInfoGotIt": "了解！",
+    "profileTabRefreshTooltip": "更新",
+    "videoGridRefreshLabel": "さらに動画を探し中",
+    "videoGridOptionsTitle": "動画オプション",
+    "videoGridEditVideo": "動画を編集",
+    "videoGridEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
+    "videoGridDeleteVideo": "動画を削除",
+    "videoGridDeleteVideoSubtitle": "このコンテンツを完全に削除する",
+    "videoGridDeleteConfirmTitle": "動画を削除",
+    "videoGridDeleteConfirmMessage": "この動画を本当に削除する?",
+    "videoGridDeleteConfirmNote": "すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではコンテンツが残ることもあるよ。",
+    "videoGridDeleteCancel": "キャンセル",
+    "videoGridDeleteConfirm": "削除",
+    "videoGridDeletingContent": "コンテンツを削除中...",
+    "videoGridDeleteSuccess": "削除リクエストを送ったよ",
+    "videoGridDeleteFailure": "コンテンツの削除がうまくいかなかった: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreTabClassics": "クラシック",
+    "exploreTabNew": "新着",
+    "exploreTabPopular": "人気",
+    "exploreTabCategories": "カテゴリ",
+    "exploreTabForYou": "おすすめ",
+    "exploreTabLists": "リスト",
+    "exploreTabIntegratedApps": "連携アプリ",
+    "exploreNoVideosAvailable": "動画がないよ",
+    "exploreErrorPrefix": "エラー: {error}",
+    "@exploreErrorPrefix": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreDiscoverLists": "リストを見つけよう",
+    "exploreAboutLists": "リストについて",
+    "exploreAboutListsDescription": "リストを使うと、Divine のコンテンツを2つの方法で整理・キュレーションできるよ:",
+    "explorePeopleLists": "ピープルリスト",
+    "explorePeopleListsDescription": "クリエイターのグループをフォローして、最新の動画をチェックしよう",
+    "exploreVideoLists": "ビデオリスト",
+    "exploreVideoListsDescription": "お気に入りの動画をプレイリストにまとめて、あとで見よう",
+    "exploreMyLists": "マイリスト",
+    "exploreSubscribedLists": "購読中のリスト",
+    "exploreErrorLoadingLists": "リストの読み込みに失敗: {error}",
+    "@exploreErrorLoadingLists": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreNewVideosCount": "{count, plural, other{{count}本の新着動画}}",
+    "@exploreNewVideosCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "exploreLoadNewVideosLabel": "{count}本の新着動画を読み込む",
+    "@exploreLoadNewVideosLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "videoPlayerLoadingVideo": "動画を読み込み中...",
+    "videoPlayerPlayVideo": "動画を再生",
+    "videoPlayerEditVideo": "動画を編集",
+    "videoPlayerEditVideoTooltip": "動画を編集",
+    "contentWarningLabel": "コンテンツ警告",
+    "contentWarningNudity": "ヌード",
+    "contentWarningSexualContent": "性的コンテンツ",
+    "contentWarningPornography": "ポルノ",
+    "contentWarningGraphicMedia": "刺激的なメディア",
+    "contentWarningViolence": "暴力",
+    "contentWarningSelfHarm": "自傷行為",
+    "contentWarningDrugUse": "薬物使用",
+    "contentWarningAlcohol": "アルコール",
+    "contentWarningTobacco": "タバコ",
+    "contentWarningGambling": "ギャンブル",
+    "contentWarningProfanity": "汚い言葉",
+    "contentWarningFlashingLights": "点滅する光",
+    "contentWarningAiGenerated": "AI 生成",
+    "contentWarningSpoiler": "ネタバレ",
+    "contentWarningSensitiveContent": "センシティブなコンテンツ",
+    "contentWarningDescNudity": "ヌードや部分的なヌードが含まれてるよ",
+    "contentWarningDescSexual": "性的なコンテンツが含まれてるよ",
+    "contentWarningDescPorn": "露骨なポルノコンテンツが含まれてるよ",
+    "contentWarningDescGraphicMedia": "刺激的・不快な映像が含まれてるよ",
+    "contentWarningDescViolence": "暴力的なコンテンツが含まれてるよ",
+    "contentWarningDescSelfHarm": "自傷行為への言及が含まれてるよ",
+    "contentWarningDescDrugs": "薬物関連のコンテンツが含まれてるよ",
+    "contentWarningDescAlcohol": "アルコール関連のコンテンツが含まれてるよ",
+    "contentWarningDescTobacco": "タバコ関連のコンテンツが含まれてるよ",
+    "contentWarningDescGambling": "ギャンブル関連のコンテンツが含まれてるよ",
+    "contentWarningDescProfanity": "強い表現が含まれてるよ",
+    "contentWarningDescFlashingLights": "点滅する光が含まれてるよ (光過敏症注意)",
+    "contentWarningDescAiGenerated": "このコンテンツは AI で作られたよ",
+    "contentWarningDescSpoiler": "ネタバレが含まれてるよ",
+    "contentWarningDescContentWarning": "クリエイターがセンシティブとしてマークしたよ",
+    "contentWarningDescDefault": "クリエイターがこのコンテンツにフラグを付けたよ",
+    "contentWarningDetailsTitle": "コンテンツ警告",
+    "contentWarningDetailsSubtitle": "クリエイターが付けたラベル:",
+    "contentWarningManageFilters": "コンテンツフィルターを管理",
+    "contentWarningViewAnyway": "それでも見る",
+    "contentWarningHideAllLikeThis": "こういうの全部隠す",
+    "contentWarningNoFilterYet": "この警告のフィルターはまだ保存されてないよ。",
+    "contentWarningHiddenConfirmation": "これからはこういう投稿を隠すね。",
+    "videoErrorNotFound": "動画が見つからない",
+    "videoErrorNetwork": "ネットワークエラー",
+    "videoErrorTimeout": "読み込みがタイムアウトした",
+    "videoErrorFormat": "動画フォーマットエラー\n(もう一回試すか、別のブラウザを使ってみて)",
+    "videoErrorUnsupportedFormat": "対応してない動画フォーマット",
+    "videoErrorPlayback": "動画の再生エラー",
+    "videoErrorAgeRestricted": "年齢制限のあるコンテンツ",
+    "videoErrorVerifyAge": "年齢を確認",
+    "videoErrorRetry": "もう一回",
+    "videoErrorContentRestricted": "コンテンツが制限されてる",
+    "videoErrorContentRestrictedBody": "この動画はリレーによって制限されたよ。",
+    "videoErrorVerifyAgeBody": "この動画を見るには年齢確認が必要だよ。",
+    "videoErrorSkip": "スキップ",
+    "videoErrorVerifyAgeButton": "年齢を確認",
+    "videoFollowButtonFollowing": "フォロー中",
+    "videoFollowButtonFollow": "フォロー",
+    "audioAttributionOriginalSound": "オリジナルサウンド",
+    "videoInspiredByAttribution": "@{creatorName} にインスパイアされた",
+    "@videoInspiredByAttribution": {
+        "placeholders": {
+            "creatorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoCollaboratorWithOne": "@{name} と",
+    "@videoCollaboratorWithOne": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoCollaboratorWithMore": "@{name} 他 +{count}人と",
+    "@videoCollaboratorWithMore": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "videoCollaboratorCountLabel": "{count, plural, other{{count}人のコラボレーター}}。タップしてプロフィールを見てね。",
+    "@videoCollaboratorCountLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listAttributionFallback": "リスト",
+    "shareVideoLabel": "動画を共有",
+    "sharePostSharedWith": "{recipientName}に投稿を共有したよ",
+    "@sharePostSharedWith": {
+        "placeholders": {
+            "recipientName": {
+                "type": "String"
+            }
+        }
+    },
+    "shareFailedToSend": "動画の送信がうまくいかなかった",
+    "shareAddedToBookmarks": "ブックマークに追加したよ",
+    "shareFailedToAddBookmark": "ブックマークの追加がうまくいかなかった",
+    "shareActionFailed": "操作がうまくいかなかった",
+    "shareWithTitle": "共有先",
+    "shareFindPeople": "ユーザーを検索",
+    "shareFindPeopleMultiline": "ユーザーを\n検索",
+    "shareSent": "送信済み",
+    "shareContactFallback": "連絡先",
+    "shareUserFallback": "ユーザー",
+    "shareSendingTo": "{name}に送信中",
+    "@shareSendingTo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMessageHint": "メッセージを追加 (任意)...",
+    "videoActionUnlike": "いいねを取り消す",
+    "videoActionLike": "いいね",
+    "videoActionRemoveRepost": "リポストを取り消す",
+    "videoActionRepost": "リポスト",
+    "videoActionViewComments": "コメントを見る",
+    "videoActionMoreOptions": "その他のオプション",
+    "videoActionHideSubtitles": "字幕を隠す",
+    "videoActionShowSubtitles": "字幕を表示",
+    "videoDescriptionLoops": "{count}ループ",
+    "@videoDescriptionLoops": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "metadataBadgeNotDivine": "Divine 以外",
+    "metadataBadgeHumanMade": "人間が制作",
+    "metadataSoundsLabel": "サウンド",
+    "metadataOriginalSound": "オリジナルサウンド",
+    "metadataVerificationLabel": "認証",
+    "metadataDeviceAttestation": "デバイスの認証",
+    "metadataProofManifest": "証明マニフェスト",
+    "metadataCreatorLabel": "クリエイター",
+    "metadataCollaboratorsLabel": "コラボレーター",
+    "metadataInspiredByLabel": "インスパイア元",
+    "metadataRepostedByLabel": "リポスト元",
+    "metadataLoopsLabel": "ループ",
+    "metadataLikesLabel": "いいね",
+    "metadataCommentsLabel": "コメント",
+    "metadataRepostsLabel": "リポスト",
+    "devOptionsTitle": "開発者オプション",
+    "@devOptionsTitle": {
+        "description": "Developer options screen app bar title"
+    },
+    "devOptionsPageLoadTimes": "ページ読み込み時間",
+    "devOptionsNoPageLoads": "まだページ読み込みの記録がないよ。\nアプリ内を移動するとタイミングデータが出るよ。",
+    "devOptionsPageLoadVisible": "表示: {visibleMs}ms  |  データ: {dataMs}ms",
+    "@devOptionsPageLoadVisible": {
+        "placeholders": {
+            "visibleMs": {
+                "type": "String"
+            },
+            "dataMs": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsSlowestScreens": "最も遅い画面",
+    "devOptionsVideoPlaybackFormat": "動画再生フォーマット",
+    "devOptionsSwitchEnvironmentTitle": "環境を切り替える?",
+    "devOptionsSwitchEnvironmentMessage": "{envName}に切り替える?\n\nキャッシュされた動画データがクリアされて、新しいリレーに再接続するよ。",
+    "@devOptionsSwitchEnvironmentMessage": {
+        "placeholders": {
+            "envName": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsCancel": "キャンセル",
+    "devOptionsSwitch": "切り替え",
+    "devOptionsSwitchedTo": "{envName}に切り替えたよ",
+    "@devOptionsSwitchedTo": {
+        "placeholders": {
+            "envName": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsSwitchedFormat": "{formatName}に切り替えた — キャッシュもクリアしたよ",
+    "@devOptionsSwitchedFormat": {
+        "placeholders": {
+            "formatName": {
+                "type": "String"
+            }
+        }
+    },
+    "featureFlagTitle": "機能フラグ",
+    "@featureFlagTitle": {
+        "description": "Feature flags screen app bar title"
+    },
+    "featureFlagResetAllTooltip": "すべてのフラグを既定値にリセット",
+    "featureFlagResetToDefault": "既定にリセット",
+    "featureFlagAppRecovery": "アプリ復旧",
+    "featureFlagAppRecoveryDescription": "アプリがクラッシュしたりおかしい時は、キャッシュのクリアを試してみて。",
+    "featureFlagClearAllCache": "すべてのキャッシュをクリア",
+    "featureFlagCacheInfo": "キャッシュ情報",
+    "featureFlagClearCacheTitle": "すべてのキャッシュをクリアする?",
+    "featureFlagClearCacheMessage": "次のキャッシュデータを全部クリアするよ:\n• 通知\n• ユーザープロフィール\n• ブックマーク\n• 一時ファイル\n\n再度ログインが必要になるけど、続ける?",
+    "featureFlagClearCache": "キャッシュをクリア",
+    "featureFlagClearingCache": "キャッシュをクリア中...",
+    "featureFlagSuccess": "成功！",
+    "featureFlagError": "エラー",
+    "featureFlagClearCacheSuccess": "キャッシュをクリアしたよ。アプリを再起動してね。",
+    "featureFlagClearCacheFailure": "一部のキャッシュ項目のクリアがうまくいかなかった。ログを確認してみて。",
+    "featureFlagOk": "OK",
+    "featureFlagCacheInformation": "キャッシュ情報",
+    "featureFlagTotalCacheSize": "キャッシュ合計: {size}",
+    "@featureFlagTotalCacheSize": {
+        "placeholders": {
+            "size": {
+                "type": "String"
+            }
+        }
+    },
+    "featureFlagCacheIncludes": "キャッシュに含まれるもの:\n• 通知履歴\n• ユーザープロフィールデータ\n• 動画サムネイル\n• 一時ファイル\n• データベースインデックス",
+    "relaySettingsTitle": "リレー",
+    "@relaySettingsTitle": {
+        "description": "Relay settings screen app bar title"
+    },
+    "relaySettingsInfoTitle": "Divine はオープンなシステム——接続はあなたがコントロールできるよ",
+    "relaySettingsInfoDescription": "これらのリレーが、あなたのコンテンツを分散型の Nostr ネットワークに届けてくれる。リレーは自由に追加・削除できるよ。",
+    "relaySettingsLearnMoreNostr": "Nostr についてもっと詳しく →",
+    "relaySettingsFindPublicRelays": "nostr.co.uk でパブリックリレーを探す →",
+    "relaySettingsAppNotFunctional": "アプリが動かないよ",
+    "relaySettingsRequiresRelay": "Divine では、動画の読み込み、コンテンツの投稿、データの同期に少なくとも1つのリレーが必要だよ。",
+    "relaySettingsRestoreDefaultRelay": "既定のリレーを復元",
+    "relaySettingsAddCustomRelay": "カスタムリレーを追加",
+    "relaySettingsAddRelay": "リレーを追加",
+    "relaySettingsRetry": "もう一回",
+    "relaySettingsNoStats": "まだ統計情報がないよ",
+    "relaySettingsConnection": "接続",
+    "relaySettingsConnected": "接続済み",
+    "relaySettingsDisconnected": "切断",
+    "relaySettingsSessionDuration": "セッション時間",
+    "relaySettingsLastConnected": "最終接続",
+    "relaySettingsDisconnectedLabel": "切断",
+    "relaySettingsReason": "理由",
+    "relaySettingsActiveSubscriptions": "アクティブなサブスクリプション",
+    "relaySettingsTotalSubscriptions": "サブスクリプション合計",
+    "relaySettingsEventsReceived": "受信したイベント",
+    "relaySettingsEventsSent": "送信したイベント",
+    "relaySettingsRequestsThisSession": "このセッションのリクエスト",
+    "relaySettingsFailedRequests": "失敗したリクエスト",
+    "relaySettingsLastError": "最後のエラー: {error}",
+    "@relaySettingsLastError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsLoadingRelayInfo": "リレー情報を読み込み中...",
+    "relaySettingsAboutRelay": "リレーについて",
+    "relaySettingsSupportedNips": "対応 NIP",
+    "relaySettingsSoftware": "ソフトウェア",
+    "relaySettingsViewWebsite": "ウェブサイトを見る",
+    "relaySettingsRemoveRelayTitle": "リレーを削除する?",
+    "relaySettingsRemoveRelayMessage": "このリレーを本当に削除する?\n\n{relayUrl}",
+    "@relaySettingsRemoveRelayMessage": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsCancel": "キャンセル",
+    "relaySettingsRemove": "削除",
+    "relaySettingsRemovedRelay": "リレーを削除したよ: {relayUrl}",
+    "@relaySettingsRemovedRelay": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToRemoveRelay": "リレーの削除がうまくいかなかった",
+    "relaySettingsForcingReconnection": "リレーに再接続中...",
+    "relaySettingsConnectedToRelays": "{count}個のリレーに接続したよ！",
+    "@relaySettingsConnectedToRelays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsFailedToConnectCheck": "リレーに接続できなかった。ネット接続を確認してみて。",
+    "relaySettingsAddRelayTitle": "リレーを追加",
+    "relaySettingsAddRelayPrompt": "追加したいリレーの WebSocket URL を入力してね:",
+    "relaySettingsBrowsePublicRelays": "nostr.co.uk でパブリックリレーを見る",
+    "relaySettingsAdd": "追加",
+    "relaySettingsAddedRelay": "リレーを追加したよ: {relayUrl}",
+    "@relaySettingsAddedRelay": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToAddRelay": "リレーの追加がうまくいかなかった。URL を確認してもう一回試してみて。",
+    "relaySettingsInvalidUrl": "リレー URL は wss:// か ws:// で始める必要があるよ",
+    "relaySettingsRestoredDefault": "既定のリレーを復元したよ: {defaultRelay}",
+    "@relaySettingsRestoredDefault": {
+        "placeholders": {
+            "defaultRelay": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToRestoreDefault": "既定リレーの復元がうまくいかなかった。ネット接続を確認してみて。",
+    "relaySettingsCouldNotOpenBrowser": "ブラウザが開けなかった",
+    "relaySettingsFailedToOpenLink": "リンクが開けなかった",
+    "relayDiagnosticTitle": "リレー診断",
+    "@relayDiagnosticTitle": {
+        "description": "Relay diagnostics screen app bar title"
+    },
+    "relayDiagnosticRefreshTooltip": "診断を更新",
+    "relayDiagnosticLastRefresh": "最終更新: {time}",
+    "@relayDiagnosticLastRefresh": {
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticRelayStatus": "リレーの状態",
+    "relayDiagnosticInitialized": "初期化済み",
+    "relayDiagnosticReady": "準備OK",
+    "relayDiagnosticNotInitialized": "未初期化",
+    "relayDiagnosticDatabaseEvents": "データベースイベント",
+    "relayDiagnosticActiveSubscriptions": "アクティブなサブスクリプション",
+    "relayDiagnosticExternalRelays": "外部リレー",
+    "relayDiagnosticConfigured": "設定済み",
+    "relayDiagnosticRelayCount": "{count}個のリレー",
+    "@relayDiagnosticRelayCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticConnectedLabel": "接続済み",
+    "relayDiagnosticConnectedRatio": "{connected}/{total}",
+    "@relayDiagnosticConnectedRatio": {
+        "placeholders": {
+            "connected": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticVideoEvents": "動画イベント",
+    "relayDiagnosticHomeFeed": "ホームフィード",
+    "relayDiagnosticVideosCount": "{count}本の動画",
+    "@relayDiagnosticVideosCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticDiscovery": "発見",
+    "relayDiagnosticLoading": "読み込み中",
+    "relayDiagnosticYes": "はい",
+    "relayDiagnosticNo": "いいえ",
+    "relayDiagnosticTestDirectQuery": "ダイレクトクエリをテスト",
+    "relayDiagnosticNetworkConnectivity": "ネットワーク接続",
+    "relayDiagnosticRunNetworkTest": "ネットワークテストを実行",
+    "relayDiagnosticBlossomServer": "Blossom サーバー",
+    "relayDiagnosticTestAllEndpoints": "すべてのエンドポイントをテスト",
+    "relayDiagnosticStatus": "ステータス",
+    "relayDiagnosticUrl": "URL",
+    "relayDiagnosticError": "エラー",
+    "relayDiagnosticFunnelCakeApi": "FunnelCake API",
+    "relayDiagnosticBaseUrl": "ベース URL",
+    "relayDiagnosticSummary": "サマリー",
+    "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} OK (平均 {avgMs}ms)",
+    "@relayDiagnosticEndpointSummary": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "totalCount": {
+                "type": "int"
+            },
+            "avgMs": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticRetestAll": "すべて再テスト",
+    "relayDiagnosticRetrying": "再試行中...",
+    "relayDiagnosticRetryConnection": "接続を再試行",
+    "relayDiagnosticTroubleshooting": "トラブルシューティング",
+    "relayDiagnosticTroubleshootingGuide": "• 緑 = 接続済み・動いてるよ\n• 赤 = 接続に失敗\n• ネットワークテストが失敗するなら、ネット接続を確認してね\n• リレーが設定されてるのに繋がらないなら [接続を再試行] をタップしてみて\n• デバッグ用にこの画面をスクショしておくといいよ",
+    "relayDiagnosticAllEndpointsHealthy": "すべての REST エンドポイントが正常だよ！",
+    "relayDiagnosticSomeEndpointsFailed": "一部の REST エンドポイントが失敗してる - 上の詳細を見てね",
+    "relayDiagnosticFoundVideoEvents": "データベースで{count}件の動画イベントが見つかったよ",
+    "@relayDiagnosticFoundVideoEvents": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticQueryFailed": "クエリがうまくいかなかった: {error}",
+    "@relayDiagnosticQueryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticConnectedToRelays": "{count}個のリレーに接続したよ！",
+    "@relayDiagnosticConnectedToRelays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticFailedToConnect": "どのリレーにも接続できなかった",
+    "relayDiagnosticConnectionRetryFailed": "接続の再試行がうまくいかなかった: {error}",
+    "@relayDiagnosticConnectionRetryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticConnectedAuthenticated": "接続・認証済み",
+    "relayDiagnosticConnectedOnly": "接続済み",
+    "relayDiagnosticNotConnected": "未接続",
+    "relayDiagnosticNoRelaysConfigured": "リレーが設定されてないよ",
+    "relayDiagnosticFailed": "失敗",
+    "notificationSettingsTitle": "通知",
+    "@notificationSettingsTitle": {
+        "description": "Notification settings screen app bar title"
+    },
+    "notificationSettingsResetTooltip": "既定値にリセット",
+    "notificationSettingsTypes": "通知の種類",
+    "notificationSettingsLikes": "いいね",
+    "notificationSettingsLikesSubtitle": "誰かがあなたの動画にいいねした時",
+    "notificationSettingsComments": "コメント",
+    "notificationSettingsCommentsSubtitle": "誰かがあなたの動画にコメントした時",
+    "notificationSettingsFollows": "フォロー",
+    "notificationSettingsFollowsSubtitle": "誰かがあなたをフォローした時",
+    "notificationSettingsMentions": "メンション",
+    "notificationSettingsMentionsSubtitle": "あなたがメンションされた時",
+    "notificationSettingsReposts": "リポスト",
+    "notificationSettingsRepostsSubtitle": "誰かがあなたの動画をリポストした時",
+    "notificationSettingsSystem": "システム",
+    "notificationSettingsSystemSubtitle": "アプリのアップデートとシステムメッセージ",
+    "notificationSettingsPushNotificationsSection": "プッシュ通知",
+    "notificationSettingsPushNotifications": "プッシュ通知",
+    "notificationSettingsPushNotificationsSubtitle": "アプリを閉じてても通知を受け取る",
+    "notificationSettingsSound": "サウンド",
+    "notificationSettingsSoundSubtitle": "通知音を鳴らす",
+    "notificationSettingsVibration": "バイブレーション",
+    "notificationSettingsVibrationSubtitle": "通知の時にブルッとする",
+    "notificationSettingsActions": "アクション",
+    "notificationSettingsMarkAllAsRead": "すべて既読にする",
+    "notificationSettingsMarkAllAsReadSubtitle": "すべての通知を既読にするよ",
+    "notificationSettingsAllMarkedAsRead": "すべての通知を既読にしたよ",
+    "notificationSettingsResetToDefaults": "設定を既定値にリセットしたよ",
+    "notificationSettingsAbout": "通知について",
+    "notificationSettingsAboutDescription": "通知は Nostr プロトコルで動いてるよ。リアルタイム更新は Nostr リレーへの接続に依存するから、遅れることもあるよ。",
+    "safetySettingsTitle": "安全とプライバシー",
+    "@safetySettingsTitle": {
+        "description": "Safety settings screen app bar title"
+    },
+    "safetySettingsLabel": "設定",
+    "safetySettingsShowDivineHostedOnly": "Divine ホスト動画だけ表示",
+    "safetySettingsShowDivineHostedOnlySubtitle": "他のメディアホストの動画を隠す",
+    "safetySettingsModeration": "モデレーション",
+    "safetySettingsBlockedUsers": "ブロック済みユーザー",
+    "safetySettingsAgeVerification": "年齢確認",
+    "safetySettingsAgeConfirmation": "18歳以上であることを確認する",
+    "safetySettingsAgeRequired": "アダルトコンテンツの閲覧に必要だよ",
+    "safetySettingsDivine": "Divine",
+    "safetySettingsDivineSubtitle": "公式モデレーションサービス (既定でオン)",
+    "safetySettingsPeopleIFollow": "フォロー中のユーザー",
+    "safetySettingsPeopleIFollowSubtitle": "フォローしてる人のラベルを購読",
+    "safetySettingsAddCustomLabeler": "カスタムラベラーを追加",
+    "safetySettingsAddCustomLabelerHint": "npub を入力...",
+    "safetySettingsAddCustomLabelerListTitle": "カスタムラベラーを追加",
+    "safetySettingsAddCustomLabelerListSubtitle": "npub アドレスを入力してね",
+    "safetySettingsNoBlockedUsers": "ブロック済みユーザーはいないよ",
+    "safetySettingsUnblock": "ブロック解除",
+    "safetySettingsUserUnblocked": "ブロックを解除したよ",
+    "safetySettingsCancel": "キャンセル",
+    "safetySettingsAdd": "追加",
+    "analyticsTitle": "クリエイター分析",
+    "@analyticsTitle": {
+        "description": "Creator analytics screen app bar title"
+    },
+    "analyticsDiagnosticsTooltip": "診断",
+    "analyticsDiagnosticsSemanticLabel": "診断を切り替え",
+    "analyticsRetry": "もう一回",
+    "analyticsUnableToLoad": "分析データを読み込めなかった。",
+    "analyticsSignInRequired": "クリエイター分析を見るにはサインインしてね。",
+    "analyticsViewDataUnavailable": "これらの投稿の視聴データは今のところリレーから取得できないよ。いいね・コメント・リポストの数値は正確だよ。",
+    "analyticsViewDataTitle": "視聴データ",
+    "analyticsUpdatedTimestamp": "更新 {time} • スコアは Funnelcake で利用可能な場合、いいね、コメント、リポスト、視聴/ループを使ってるよ。",
+    "@analyticsUpdatedTimestamp": {
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsVideos": "動画",
+    "analyticsViews": "視聴",
+    "analyticsInteractions": "インタラクション",
+    "analyticsEngagement": "エンゲージメント",
+    "analyticsFollowers": "フォロワー",
+    "analyticsAvgPerPost": "投稿あたり平均",
+    "analyticsInteractionMix": "インタラクション構成",
+    "analyticsLikes": "いいね",
+    "analyticsComments": "コメント",
+    "analyticsReposts": "リポスト",
+    "analyticsPerformanceHighlights": "パフォーマンスハイライト",
+    "analyticsMostViewed": "最も見られた",
+    "analyticsMostDiscussed": "最も話題になった",
+    "analyticsMostReposted": "最もリポストされた",
+    "analyticsNoVideosYet": "動画はまだないよ",
+    "analyticsViewDataUnavailableShort": "視聴データなし",
+    "analyticsViewsCount": "{count}回視聴",
+    "@analyticsViewsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsCommentsCount": "{count}件のコメント",
+    "@analyticsCommentsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsRepostsCount": "{count}件のリポスト",
+    "@analyticsRepostsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsTopContent": "トップコンテンツ",
+    "analyticsPublishPrompt": "ランキングを見るには動画をいくつか公開してみて。",
+    "analyticsEngagementRateExplainer": "右の % = エンゲージメント率 (インタラクション数 ÷ 視聴数)。",
+    "analyticsEngagementRateNoViews": "エンゲージメント率には視聴データが必要。視聴データが揃うまで N/A と出るよ。",
+    "analyticsEngagementLabel": "エンゲージメント",
+    "analyticsViewsUnavailable": "視聴データなし",
+    "analyticsInteractionsCount": "{count}件のインタラクション",
+    "@analyticsInteractionsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsPostAnalytics": "投稿の分析",
+    "analyticsOpenPost": "投稿を開く",
+    "analyticsRecentDailyInteractions": "最近の日別インタラクション",
+    "analyticsNoActivityYet": "この期間のアクティビティはまだないよ。",
+    "analyticsDailyInteractionsExplainer": "インタラクション = 投稿日ごとの いいね + コメント + リポスト。",
+    "analyticsDailyBarExplainer": "バーの長さはこの期間で最も多かった日を基準にした相対値だよ。",
+    "analyticsAudienceSnapshot": "オーディエンスの概要",
+    "analyticsFollowersCount": "フォロワー: {count}",
+    "@analyticsFollowersCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsFollowingCount": "フォロー中: {count}",
+    "@analyticsFollowingCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsAudiencePlaceholder": "Funnelcake がオーディエンス分析エンドポイントを追加したら、ソース/地域/時間帯の内訳がここに入るよ。",
+    "analyticsRetention": "リテンション",
+    "analyticsRetentionWithViews": "Funnelcake からリテンションデータが届いたら、リテンションカーブと視聴時間の内訳がここに出るよ。",
+    "analyticsRetentionWithoutViews": "Funnelcake から視聴+視聴時間の分析が返されるまで、リテンションデータは使えないよ。",
+    "analyticsDiagnostics": "診断",
+    "analyticsDiagnosticsTotalVideos": "動画合計: {count}",
+    "@analyticsDiagnosticsTotalVideos": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsWithViews": "視聴ありの動画: {count}",
+    "@analyticsDiagnosticsWithViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsMissingViews": "視聴なしの動画: {count}",
+    "@analyticsDiagnosticsMissingViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsHydratedBulk": "取得済み (bulk): {count}",
+    "@analyticsDiagnosticsHydratedBulk": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsHydratedViews": "取得済み (/views): {count}",
+    "@analyticsDiagnosticsHydratedViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsSources": "ソース: {sources}",
+    "@analyticsDiagnosticsSources": {
+        "placeholders": {
+            "sources": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsDiagnosticsUseFixture": "フィクスチャデータを使う",
+    "analyticsNa": "N/A",
+    "authCreateNewAccount": "新しい Divine アカウントを作ろう",
+    "authSignInDifferentAccount": "別のアカウントでサインイン",
+    "authSignBackIn": "もう一回サインイン",
+    "authTermsPrefix": "上のオプションを選ぶと、16歳以上であることを確認し、次に同意したことになるよ: ",
+    "authTermsOfService": "利用規約",
+    "authPrivacyPolicy": "プライバシーポリシー",
+    "authTermsAnd": "、そして ",
+    "authSafetyStandards": "安全基準",
+    "authAmberNotInstalled": "Amber アプリがインストールされてないよ",
+    "authAmberConnectionFailed": "Amber との接続がうまくいかなかった",
+    "authPasswordResetSent": "そのメールアドレスのアカウントがあれば、パスワードリセットリンクを送ったよ。",
+    "authSignInTitle": "サインイン",
+    "authEmailLabel": "メールアドレス",
+    "authPasswordLabel": "パスワード",
+    "authForgotPassword": "パスワードを忘れた?",
+    "authImportNostrKey": "Nostr 鍵をインポート",
+    "authConnectSignerApp": "署名アプリで接続",
+    "authSignInWithAmber": "Amber でサインイン",
+    "authSignInOptionsTitle": "サインインオプション",
+    "authInfoEmailPasswordTitle": "メールとパスワード",
+    "authInfoEmailPasswordDescription": "Divine アカウントでサインインするよ。メールとパスワードで登録した人はそれを使ってね。",
+    "authInfoImportNostrKeyDescription": "もう Nostr ID を持ってる? 別のクライアントから nsec 秘密鍵をインポートしてね。",
+    "authInfoSignerAppTitle": "署名アプリ",
+    "authInfoSignerAppDescription": "nsecBunker みたいな NIP-46 対応のリモート署名アプリで接続すれば、鍵のセキュリティを強化できるよ。",
+    "authInfoAmberTitle": "Amber",
+    "authInfoAmberDescription": "Android 向けの Amber 署名アプリで、Nostr 鍵を安全に管理できるよ。",
+    "authCreateAccountTitle": "アカウントを作ろう",
+    "authBackToInviteCode": "招待コードに戻る",
+    "authUseDivineNoBackup": "バックアップなしで Divine を使う",
+    "authSkipConfirmTitle": "最後にひとつだけ...",
+    "authSkipConfirmKeyCreated": "やった！ Divine アカウントを動かす安全な鍵を作るよ。",
+    "authSkipConfirmKeyOnly": "メールなしだと、この鍵がアカウントがあなたのものだと知る唯一の手段になるよ。",
+    "authSkipConfirmRecommendEmail": "アプリ内で鍵にアクセスできるけど、技術に詳しくないなら今すぐメールとパスワードを追加するのがおすすめ。サインインが楽になるし、デバイスを失くしたりリセットした時にアカウントを復元しやすくなるよ。",
+    "authAddEmailPassword": "メールとパスワードを追加",
+    "authUseThisDeviceOnly": "このデバイスのみ使う",
+    "authCompleteRegistration": "登録を完了",
+    "authVerifying": "確認中...",
+    "authVerificationLinkSent": "認証リンクを送ったよ:",
+    "authClickVerificationLink": "登録を完了するには、メール内のリンクをクリックしてね。",
+    "authPleaseWaitVerifying": "メールを確認中。ちょっと待ってね...",
+    "authWaitingForVerification": "認証を待ってるよ",
+    "authOpenEmailApp": "メールアプリを開く",
+    "authWelcomeToDivine": "やった！入れたよ！",
+    "authEmailVerified": "メールアドレスを確認したよ。",
+    "authSigningYouIn": "サインイン中",
+    "authErrorTitle": "おっと。",
+    "authVerificationFailed": "メールの確認がうまくいかなかった。\nもう一回試してみて。",
+    "authStartOver": "最初からやり直す",
+    "authEmailVerifiedLogin": "メールを確認したよ！ ログインして続けてね。",
+    "authVerificationLinkExpired": "この認証リンクはもう使えないよ。",
+    "authVerificationConnectionError": "メールを確認できなかった。接続を確認してもう一回試してみて。",
+    "authWaitlistConfirmTitle": "登録完了！",
+    "authWaitlistUpdatesAt": "アップデートは {email} に送るね。\n招待コードが使えるようになったら、すぐお知らせするよ。",
+    "@authWaitlistUpdatesAt": {
+        "description": "Waitlist confirmation message with email",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authOk": "OK",
+    "authInviteUnavailable": "招待アクセスが一時的に使えないよ。",
+    "authInviteUnavailableBody": "少し待ってからもう一回試してみて。参加で困ったらサポートに連絡してね。",
+    "authTryAgain": "もう一回",
+    "authContactSupport": "サポートに連絡",
+    "authCouldNotOpenEmail": "{email} が開けなかった",
+    "@authCouldNotOpenEmail": {
+        "description": "Error when email client cannot be opened",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authAddInviteCode": "招待コードを入力",
+    "authInviteCodeLabel": "招待コード",
+    "authEnterYourCode": "コードを入力",
+    "authNext": "次へ",
+    "authJoinWaitlist": "ウェイトリストに参加",
+    "authJoinWaitlistTitle": "ウェイトリストに参加",
+    "authJoinWaitlistDescription": "メールアドレスを教えてね。アクセス開放に合わせてアップデートを送るよ。",
+    "authInviteAccessHelp": "招待アクセスのヘルプ",
+    "authGeneratingConnection": "接続を生成中...",
+    "authConnectedAuthenticating": "接続OK！認証中...",
+    "authConnectionTimedOut": "接続がタイムアウトした",
+    "authApproveConnection": "署名アプリで接続を承認したか確認してね。",
+    "authConnectionCancelled": "接続がキャンセルされた",
+    "authConnectionCancelledMessage": "接続はキャンセルされたよ。",
+    "authConnectionFailed": "接続がうまくいかなかった",
+    "authUnknownError": "不明なエラーが起きた。",
+    "authUrlCopied": "URL をコピーしたよ",
+    "authConnectToDivine": "Divine に接続",
+    "authPasteBunkerUrl": "bunker:// URL を貼り付け",
+    "authBunkerUrlHint": "bunker:// URL",
+    "authInvalidBunkerUrl": "無効な bunker URL だよ。bunker:// で始めてね",
+    "authScanSignerApp": "署名アプリで\nスキャンして接続してね。",
+    "authWaitingForConnection": "接続を待ってるよ... {seconds}秒",
+    "@authWaitingForConnection": {
+        "description": "Waiting indicator with elapsed seconds",
+        "placeholders": {
+            "seconds": {
+                "type": "int"
+            }
+        }
+    },
+    "authCopyUrl": "URL をコピー",
+    "authShare": "共有",
+    "authAddBunker": "bunker を追加",
+    "authCompatibleSignerApps": "対応する署名アプリ",
+    "authFailedToConnect": "接続がうまくいかなかった",
+    "authResetPasswordTitle": "パスワードをリセット",
+    "authResetPasswordSubtitle": "新しいパスワードを入れてね。8文字以上にしてね。",
+    "authNewPasswordLabel": "新しいパスワード",
+    "authPasswordTooShort": "パスワードは8文字以上にしてね",
+    "authPasswordResetSuccess": "パスワードをリセットしたよ。ログインしてね。",
+    "authPasswordResetFailed": "パスワードのリセットがうまくいかなかった",
+    "authUnexpectedError": "予期しないエラーが起きた。もう一回試してみて。",
+    "authUpdatePassword": "パスワードを更新",
+    "authSecureAccountTitle": "アカウントを守ろう",
+    "authUnableToAccessKeys": "鍵にアクセスできなかった。もう一回試してみて。",
+    "authRegistrationFailed": "登録がうまくいかなかった",
+    "authRegistrationComplete": "登録完了。メールを確認してね。",
+    "authVerificationFailedTitle": "認証がうまくいかなかった",
+    "authClose": "閉じる",
+    "authAccountSecured": "アカウントを守ったよ！",
+    "authAccountLinkedToEmail": "アカウントがメールアドレスに紐づいたよ。",
+    "authVerifyYourEmail": "メールアドレスを確認してね",
+    "authClickLinkContinue": "メール内のリンクをクリックして登録を完了してね。その間もアプリは使えるよ。",
+    "authWaitingForVerificationEllipsis": "認証を待ってるよ...",
+    "authContinueToApp": "アプリに進む",
+    "authResetPassword": "パスワードをリセット",
+    "authResetPasswordDescription": "メールアドレスを入れてね。パスワードをリセットするリンクを送るよ。",
+    "authFailedToSendResetEmail": "リセットメールの送信がうまくいかなかった。",
+    "authUnexpectedErrorShort": "予期しないエラーが起きた。",
+    "authSending": "送信中...",
+    "authSendResetLink": "リセットリンクを送る",
+    "authEmailSent": "メールを送ったよ！",
+    "authResetLinkSentTo": "{email} にパスワードリセットリンクを送ったよ。メール内のリンクをクリックしてパスワードを更新してね。",
+    "@authResetLinkSentTo": {
+        "description": "Confirmation message after reset link sent",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authSignInButton": "サインイン",
+    "authVerificationErrorTimeout": "認証がタイムアウトした。もう一回登録を試してみて。",
+    "authVerificationErrorMissingCode": "認証がうまくいかなかった — 認可コードがないよ。",
+    "authVerificationErrorPollFailed": "認証がうまくいかなかった。もう一回試してみて。",
+    "authVerificationErrorNetworkExchange": "サインイン中にネットワークエラーが起きた。もう一回試してみて。",
+    "authVerificationErrorOAuthExchange": "認証がうまくいかなかった。もう一回登録を試してみて。",
+    "authVerificationErrorSignInFailed": "サインインがうまくいかなかった。手動でログインしてみて。",
+    "authInviteErrorAlreadyUsed": "その招待コードはもう使えないよ。招待コードに戻るか、ウェイトリストに参加するか、サポートに連絡してね。",
+    "authInviteErrorInvalid": "その招待コードは今は使えないよ。招待コードに戻るか、ウェイトリストに参加するか、サポートに連絡してね。",
+    "authInviteErrorTemporary": "今は招待を確認できなかった。招待コードに戻ってもう一回試すか、サポートに連絡してね。",
+    "authInviteErrorUnknown": "招待を有効にできなかった。招待コードに戻るか、ウェイトリストに参加するか、サポートに連絡してね。",
+    "shareSheetSave": "保存",
+    "shareSheetSaveToGallery": "ギャラリーに保存",
+    "shareSheetSaveWithWatermark": "ウォーターマーク付きで保存",
+    "shareSheetSaveVideo": "動画を保存",
+    "shareSheetAddToList": "リストに追加",
+    "shareSheetCopy": "コピー",
+    "shareSheetShareVia": "他のアプリで共有",
+    "shareSheetReport": "報告",
+    "shareSheetEventJson": "イベント JSON",
+    "shareSheetEventId": "イベント ID",
+    "shareSheetMoreActions": "その他のアクション",
+    "watermarkDownloadSavedToCameraRoll": "カメラロールに保存したよ",
+    "watermarkDownloadShare": "共有",
+    "watermarkDownloadDone": "完了",
+    "watermarkDownloadPhotosAccessNeeded": "写真へのアクセスが必要",
+    "watermarkDownloadPhotosAccessDescription": "動画を保存するには、設定で写真へのアクセスを許可してね。",
+    "watermarkDownloadOpenSettings": "設定を開く",
+    "watermarkDownloadNotNow": "今はいい",
+    "watermarkDownloadFailed": "ダウンロードがうまくいかなかった",
+    "watermarkDownloadDismiss": "閉じる",
+    "watermarkDownloadStageDownloading": "動画をダウンロード中",
+    "watermarkDownloadStageWatermarking": "ウォーターマークを追加中",
+    "watermarkDownloadStageSaving": "カメラロールに保存中",
+    "watermarkDownloadStageDownloadingDesc": "ネットワークから動画を取ってるよ...",
+    "watermarkDownloadStageWatermarkingDesc": "Divine ウォーターマークを追加してるよ...",
+    "watermarkDownloadStageSavingDesc": "ウォーターマーク付き動画をカメラロールに保存してるよ...",
+    "uploadProgressVideoUpload": "動画アップロード",
+    "uploadProgressPause": "一時停止",
+    "uploadProgressResume": "再開",
+    "uploadProgressGoBack": "戻る",
+    "uploadProgressRetryWithCount": "もう一回 (残り{count}回)",
+    "@uploadProgressRetryWithCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressDelete": "削除",
+    "uploadProgressDaysAgo": "{count}日前",
+    "@uploadProgressDaysAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressHoursAgo": "{count}時間前",
+    "@uploadProgressHoursAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressMinutesAgo": "{count}分前",
+    "@uploadProgressMinutesAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressJustNow": "たった今",
+    "uploadProgressUploadingPercent": "アップロード中 {percent}%",
+    "@uploadProgressUploadingPercent": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressPausedPercent": "一時停止 {percent}%",
+    "@uploadProgressPausedPercent": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationClose": "閉じる",
+    "badgeExplanationOriginalVineArchive": "オリジナル Vine アーカイブ",
+    "badgeExplanationCameraProof": "カメラ証明",
+    "badgeExplanationAuthenticitySignals": "真正性シグナル",
+    "badgeExplanationVineArchiveIntro": "この動画はインターネットアーカイブから復元されたオリジナルの Vine だよ。",
+    "badgeExplanationVineArchiveHistory": "2017年に Vine が終了する前、ArchiveTeam とインターネットアーカイブが数百万もの Vine を後世のために保存してたんだ。このコンテンツはその歴史的な保存活動の一部だよ。",
+    "badgeExplanationOriginalStats": "オリジナルの数値: {loops}ループ",
+    "@badgeExplanationOriginalStats": {
+        "placeholders": {
+            "loops": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationLearnVineArchive": "Vine アーカイブの保存についてもっと詳しく",
+    "badgeExplanationLearnProofmode": "Proofmode による認証についてもっと詳しく",
+    "badgeExplanationLearnAuthenticity": "Divine の真正性シグナルについてもっと詳しく",
+    "badgeExplanationInspectProofCheck": "ProofCheck ツールで調査",
+    "badgeExplanationInspectMedia": "メディアの詳細を確認",
+    "badgeExplanationProofmodeVerified": "この動画の真正性は Proofmode 技術で検証されてるよ。",
+    "badgeExplanationDivineHostedHumanMade": "この動画は Divine でホストされてて、AI 検出では人間が作った可能性が高いけど、暗号学的なカメラ検証データはないよ。",
+    "badgeExplanationHumanMadeNoCrypto": "AI 検出では人間が作った可能性が高いけど、暗号学的なカメラ検証データはないよ。",
+    "badgeExplanationDivineHostedNoCrypto": "この動画は Divine でホストされてるけど、まだ暗号学的なカメラ検証データはないよ。",
+    "badgeExplanationExternalNoCrypto": "この動画は Divine の外部でホストされてて、暗号学的なカメラ検証データはないよ。",
+    "badgeExplanationDeviceAttestation": "デバイスの認証",
+    "badgeExplanationPgpSignature": "PGP 署名",
+    "badgeExplanationC2paCredentials": "C2PA コンテンツ認証情報",
+    "badgeExplanationProofManifest": "証明マニフェスト",
+    "badgeExplanationAiDetection": "AI 検出",
+    "badgeExplanationAiNotScanned": "AI スキャン: 未スキャン",
+    "badgeExplanationNoScanResults": "まだスキャン結果がないよ。",
+    "badgeExplanationCheckAiGenerated": "AI 生成かチェック",
+    "badgeExplanationAiLikelihood": "AI 生成の可能性 {percentage}%",
+    "@badgeExplanationAiLikelihood": {
+        "placeholders": {
+            "percentage": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationScannedBy": "スキャン元: {source}",
+    "@badgeExplanationScannedBy": {
+        "placeholders": {
+            "source": {
+                "type": "String"
+            }
+        }
+    },
+    "badgeExplanationVerifiedByModerator": "人間のモデレーターが検証済み",
+    "badgeExplanationVerificationPlatinum": "プラチナ: デバイスのハードウェア認証、暗号署名、コンテンツ認証 (C2PA)、AI スキャンで人間の作成を確認。",
+    "badgeExplanationVerificationGold": "ゴールド: ハードウェア認証、暗号署名、コンテンツ認証 (C2PA) 付きの実機で撮影。",
+    "badgeExplanationVerificationSilver": "シルバー: 暗号署名で、この動画が録画以降改変されてないことを証明。",
+    "badgeExplanationVerificationBronze": "ブロンズ: 基本的なメタデータ署名あり。",
+    "badgeExplanationVerificationSilverAiScan": "シルバー: AI スキャンで、人間が作った可能性が高いと判定。",
+    "badgeExplanationNoVerification": "この動画には検証データがないよ。",
+    "shareMenuTitle": "動画を共有",
+    "shareMenuReportAiContent": "AI コンテンツを報告",
+    "shareMenuReportAiContentSubtitle": "AI 生成の疑いがあるコンテンツをサクッと報告",
+    "shareMenuReportingAiContent": "AI コンテンツを報告中...",
+    "shareMenuFailedToReportContent": "コンテンツの報告がうまくいかなかった: {error}",
+    "@shareMenuFailedToReportContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuFailedToReportAiContent": "AI コンテンツの報告がうまくいかなかった: {error}",
+    "@shareMenuFailedToReportAiContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuVideoStatus": "動画のステータス",
+    "shareMenuViewAllLists": "すべてのリストを見る →",
+    "shareMenuShareWith": "共有相手",
+    "shareMenuShareViaOtherApps": "他のアプリで共有",
+    "shareMenuShareViaOtherAppsSubtitle": "他のアプリで共有するかリンクをコピー",
+    "shareMenuSaveToGallery": "ギャラリーに保存",
+    "shareMenuSaveOriginalSubtitle": "オリジナル動画をカメラロールに保存",
+    "shareMenuSaveWithWatermark": "ウォーターマーク付きで保存",
+    "shareMenuSaveVideo": "動画を保存",
+    "shareMenuDownloadWithWatermark": "Divine ウォーターマーク付きでダウンロード",
+    "shareMenuSaveVideoSubtitle": "動画をカメラロールに保存",
+    "shareMenuLists": "リスト",
+    "shareMenuAddToList": "リストに追加",
+    "shareMenuAddToListSubtitle": "キュレートしたリストに追加",
+    "shareMenuCreateNewList": "新しいリストを作る",
+    "shareMenuCreateNewListSubtitle": "新しいキュレーションコレクションを始めよう",
+    "shareMenuRemovedFromList": "リストから削除したよ",
+    "shareMenuFailedToRemoveFromList": "リストからの削除がうまくいかなかった",
+    "shareMenuBookmarks": "ブックマーク",
+    "shareMenuAddToBookmarks": "ブックマークに追加",
+    "shareMenuAddToBookmarksSubtitle": "あとで見るために保存",
+    "shareMenuAddToBookmarkSet": "ブックマークセットに追加",
+    "shareMenuAddToBookmarkSetSubtitle": "コレクションに整理",
+    "shareMenuFollowSets": "フォローセット",
+    "shareMenuCreateFollowSet": "フォローセットを作る",
+    "shareMenuCreateFollowSetSubtitle": "このクリエイターで新しいコレクションを始めよう",
+    "shareMenuAddToFollowSet": "フォローセットに追加",
+    "shareMenuFollowSetsAvailable": "フォローセット{count}個あるよ",
+    "@shareMenuFollowSetsAvailable": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuAddedToBookmarks": "ブックマークに追加したよ！",
+    "shareMenuFailedToAddBookmark": "ブックマークの追加がうまくいかなかった",
+    "shareMenuCreatedListAndAddedVideo": "リスト「{name}」を作って動画を追加したよ",
+    "@shareMenuCreatedListAndAddedVideo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuManageContent": "コンテンツを管理",
+    "shareMenuEditVideo": "動画を編集",
+    "shareMenuEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
+    "shareMenuDeleteVideo": "動画を削除",
+    "shareMenuDeleteVideoSubtitle": "このコンテンツを完全に削除",
+    "shareMenuVideoInTheseLists": "この動画が入ってるリスト:",
+    "shareMenuVideoCount": "{count}本の動画",
+    "@shareMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuClose": "閉じる",
+    "shareMenuDeleteConfirmation": "この動画を本当に削除する?",
+    "shareMenuDeleteWarning": "すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではキャッシュが残ることもあるよ。",
+    "shareMenuCancel": "キャンセル",
+    "shareMenuDelete": "削除",
+    "shareMenuDeletingContent": "コンテンツを削除中...",
+    "shareMenuDeleteRequestSent": "削除リクエストを送ったよ",
+    "shareMenuFailedToDeleteContent": "コンテンツの削除がうまくいかなかった: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuFollowSetName": "フォローセット名",
+    "shareMenuFollowSetNameHint": "例: クリエイター、ミュージシャンなど",
+    "shareMenuDescriptionOptional": "説明 (任意)",
+    "shareMenuCreate": "作成",
+    "shareMenuCreatedFollowSetAndAddedCreator": "フォローセット「{name}」を作ってクリエイターを追加したよ",
+    "@shareMenuCreatedFollowSetAndAddedCreator": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuDone": "完了",
+    "shareMenuEditTitle": "タイトル",
+    "shareMenuEditTitleHint": "動画のタイトルを入れてね",
+    "shareMenuEditDescription": "説明",
+    "shareMenuEditDescriptionHint": "動画の説明を入れてね",
+    "shareMenuEditHashtags": "ハッシュタグ",
+    "shareMenuEditHashtagsHint": "カンマ, 区切り, ハッシュタグ",
+    "shareMenuEditMetadataNote": "注意: 編集できるのはメタデータだけだよ。動画の中身は変えられないよ。",
+    "shareMenuDeleting": "削除中...",
+    "shareMenuUpdate": "更新",
+    "shareMenuVideoUpdated": "動画を更新したよ",
+    "shareMenuFailedToUpdateVideo": "動画の更新がうまくいかなかった: {error}",
+    "@shareMenuFailedToUpdateVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuDeleteVideoQuestion": "動画を削除する?",
+    "shareMenuDeleteRelayWarning": "リレーに削除リクエストを送るよ。注意: 一部のリレーにはキャッシュが残ることもあるよ。",
+    "shareMenuVideoDeletionRequested": "動画の削除をリクエストしたよ",
+    "shareMenuFailedToDeleteVideo": "動画の削除がうまくいかなかった: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuContentLabels": "コンテンツラベル",
+    "shareMenuAddContentLabels": "コンテンツラベルを追加",
+    "shareMenuClearAll": "すべてクリア",
+    "shareMenuCollaborators": "コラボレーター",
+    "shareMenuAddCollaborator": "コラボレーターを追加",
+    "shareMenuMutualFollowRequired": "コラボレーターとして追加するには、{name}と相互フォローになってる必要があるよ。",
+    "@shareMenuMutualFollowRequired": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuLoading": "読み込み中...",
+    "shareMenuInspiredBy": "インスパイア元",
+    "shareMenuAddInspirationCredit": "インスピレーションクレジットを追加",
+    "shareMenuCreatorCannotBeReferenced": "このクリエイターは参照できないよ。",
+    "shareMenuUnknown": "不明",
+    "shareMenuCreateBookmarkSet": "ブックマークセットを作る",
+    "shareMenuSetName": "セット名",
+    "shareMenuSetNameHint": "例: お気に入り、あとで見るなど",
+    "shareMenuCreateNewSet": "新しいセットを作る",
+    "shareMenuStartNewBookmarkCollection": "新しいブックマークコレクションを始めよう",
+    "shareMenuNoBookmarkSets": "ブックマークセットはまだないよ。最初のセットを作ろう！",
+    "shareMenuError": "エラー",
+    "shareMenuFailedToLoadBookmarkSets": "ブックマークセットの読み込みがうまくいかなかった",
+    "shareMenuCreatedSetAndAddedVideo": "「{name}」を作って動画を追加したよ",
+    "@shareMenuCreatedSetAndAddedVideo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuUseThisSound": "このサウンドを使う",
+    "shareMenuOriginalSound": "オリジナルサウンド",
+    "authSessionExpired": "セッションが切れちゃった。もう一回サインインしてね。",
+    "authSignInFailed": "サインインがうまくいかなかった。もう一回試してみて。",
+    "localeAppLanguage": "アプリの言語",
+    "localeDeviceDefault": "デバイスの既定",
+    "localeSelectLanguage": "言語を選ぶ",
+    "webAuthNotSupportedSecureMode": "セキュアモードではウェブ認証は対応してないよ。安全な鍵管理にはモバイルアプリを使ってね。",
+    "webAuthIntegrationFailed": "認証連携がうまくいかなかった: {error}",
+    "@webAuthIntegrationFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "webAuthUnexpectedError": "予期しないエラー: {error}",
+    "@webAuthUnexpectedError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "webAuthEnterBunkerUri": "bunker URI を入れてね",
+    "webAuthConnectTitle": "Divine に接続",
+    "webAuthChooseMethod": "Nostr 認証方法を選んでね",
+    "webAuthBrowserExtension": "ブラウザ拡張機能",
+    "webAuthRecommended": "おすすめ",
+    "webAuthNsecBunker": "nsec bunker",
+    "webAuthConnectRemoteSigner": "リモート署名に接続",
+    "webAuthBunkerHint": "bunker://pubkey?relay=wss://...",
+    "webAuthPasteFromClipboard": "クリップボードから貼り付け",
+    "webAuthConnectToBunker": "Bunker に接続",
+    "webAuthNewToNostr": "Nostr は初めて?",
+    "webAuthNostrHelp": "一番簡単なのは Alby や nos2x みたいなブラウザ拡張をインストールする方法だよ。安全なリモート署名なら nsec bunker を使ってね。",
+    "soundsTitle": "サウンド",
+    "soundsSearchHint": "サウンドを検索...",
+    "soundsPreviewUnavailable": "サウンドをプレビューできない - 音声がないよ",
+    "soundsPreviewFailed": "プレビューの再生がうまくいかなかった: {error}",
+    "@soundsPreviewFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "soundsFeaturedSounds": "注目のサウンド",
+    "soundsTrendingSounds": "トレンドのサウンド",
+    "soundsAllSounds": "すべてのサウンド",
+    "soundsSearchResults": "検索結果",
+    "soundsNoSoundsAvailable": "使えるサウンドがないよ",
+    "soundsNoSoundsDescription": "クリエイターが音声を共有するとここに出るよ",
+    "soundsNoSoundsFound": "サウンドが見つからない",
+    "soundsNoSoundsFoundDescription": "別のキーワードで検索してみて",
+    "soundsFailedToLoad": "サウンドの読み込みがうまくいかなかった",
+    "soundsRetry": "もう一回",
+    "soundsScreenLabel": "サウンド画面",
+    "profileTitle": "プロフィール",
+    "profileRefresh": "更新",
+    "profileRefreshLabel": "プロフィールを更新",
+    "profileMoreOptions": "その他のオプション",
+    "profileBlockedUser": "{name}をブロックしたよ",
+    "@profileBlockedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockedUser": "{name}のブロックを解除したよ",
+    "@profileUnblockedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnfollowedUser": "{name}のフォローを解除したよ",
+    "@profileUnfollowedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileError": "エラー: {error}",
+    "@profileError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsTabAll": "すべて",
+    "notificationsTabLikes": "いいね",
+    "notificationsTabComments": "コメント",
+    "notificationsTabFollows": "フォロー",
+    "notificationsTabReposts": "リポスト",
+    "notificationsFailedToLoad": "通知の読み込みがうまくいかなかった",
+    "notificationsRetry": "もう一回",
+    "notificationsCheckingNew": "新しい通知をチェック中",
+    "notificationsNoneYet": "通知はまだないよ",
+    "notificationsNoneForType": "{type}の通知はないよ",
+    "@notificationsNoneForType": {
+        "placeholders": {
+            "type": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsEmptyDescription": "誰かがあなたのコンテンツに反応したらここに出るよ",
+    "notificationsLoadingType": "{type}の通知を読み込み中...",
+    "@notificationsLoadingType": {
+        "placeholders": {
+            "type": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsInviteSingular": "友達に送れる招待が1つあるよ！",
+    "notificationsInvitePlural": "友達に送れる招待が{count}個あるよ！",
+    "@notificationsInvitePlural": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "notificationsVideoNotFound": "動画が見つからない",
+    "notificationsVideoUnavailable": "動画を見れないよ",
+    "notificationsFromNotification": "通知から",
+    "feedFailedToLoadVideos": "動画の読み込みがうまくいかなかった",
+    "feedRetry": "もう一回",
+    "feedNoFollowedUsers": "まだ誰もフォローしてないよ。\n誰かをフォローすると、ここに動画が出るよ。",
+    "feedNoVideosForMode": "{mode}フィードの動画が見つからない。",
+    "@feedNoVideosForMode": {
+        "placeholders": {
+            "mode": {
+                "type": "String"
+            }
+        }
+    },
+    "feedExploreVideos": "動画を探しに行こう",
+    "feedExternalVideoSlow": "外部動画の読み込みに時間がかかってる",
+    "feedSkip": "スキップ",
+    "uploadWaitingToUpload": "アップロード待ち",
+    "uploadUploadingVideo": "動画をアップロード中",
+    "uploadProcessingVideo": "動画を処理中",
+    "uploadProcessingComplete": "処理完了",
+    "uploadPublishedSuccessfully": "公開したよ",
+    "uploadFailed": "アップロードがうまくいかなかった",
+    "uploadRetrying": "アップロードを再試行中",
+    "uploadPaused": "アップロード一時停止",
+    "uploadPercentComplete": "{percent}% 完了",
+    "@uploadPercentComplete": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadQueuedMessage": "動画はアップロード待ちだよ",
+    "uploadUploadingMessage": "サーバーにアップロード中...",
+    "uploadProcessingMessage": "動画を処理中 - 数分かかるかも",
+    "uploadReadyToPublishMessage": "動画の処理が完了、公開の準備OKだよ",
+    "uploadPublishedMessage": "動画をプロフィールに公開したよ",
+    "uploadFailedMessage": "アップロードがうまくいかなかった - もう一回試してみて",
+    "uploadRetryingMessage": "アップロードを再試行中...",
+    "uploadPausedMessage": "アップロードを一時停止したよ",
+    "uploadRetryButton": "もう一回",
+    "uploadRetryFailed": "アップロードの再試行がうまくいかなかった: {error}",
+    "@uploadRetryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "userSearchPrompt": "ユーザーを検索",
+    "userSearchNoResults": "ユーザーが見つからない",
+    "userSearchFailed": "検索がうまくいかなかった",
+    "forgotPasswordTitle": "パスワードをリセット",
+    "forgotPasswordDescription": "メールアドレスを入れてね。パスワードをリセットするリンクを送るよ。",
+    "forgotPasswordEmailLabel": "メールアドレス",
+    "forgotPasswordCancel": "キャンセル",
+    "forgotPasswordSendLink": "リセットリンクを送る",
+    "ageVerificationContentWarning": "コンテンツ警告",
+    "ageVerificationTitle": "年齢確認",
+    "ageVerificationAdultDescription": "このコンテンツは成人向け素材が含まれる可能性があるよ。閲覧には18歳以上である必要があるよ。",
+    "ageVerificationCreationDescription": "カメラでコンテンツを作るには、16歳以上である必要があるよ。",
+    "ageVerificationAdultQuestion": "18歳以上?",
+    "ageVerificationCreationQuestion": "16歳以上?",
+    "ageVerificationNo": "いいえ",
+    "ageVerificationYes": "はい",
+    "shareLinkCopied": "リンクをコピーしたよ",
+    "shareFailedToCopy": "リンクのコピーがうまくいかなかった",
+    "shareVideoSubject": "Divine でこの動画見てみて",
+    "shareFailedToShare": "共有がうまくいかなかった",
+    "shareVideoTitle": "動画を共有",
+    "shareToApps": "アプリで共有",
+    "shareToAppsSubtitle": "メッセージアプリや SNS で共有",
+    "shareCopyWebLink": "ウェブリンクをコピー",
+    "shareCopyWebLinkSubtitle": "共有できるウェブリンクをコピー",
+    "shareCopyNostrLink": "Nostr リンクをコピー",
+    "shareCopyNostrLinkSubtitle": "Nostr クライアント用の nevent リンクをコピー",
+    "navHome": "ホーム",
+    "navExplore": "探索",
+    "navInbox": "受信箱",
+    "navProfile": "プロフィール",
+    "navMyProfile": "マイプロフィール",
+    "navSearch": "検索",
+    "navNotifications": "通知",
+    "navSearchTooltip": "検索",
+    "navOpenCamera": "カメラを開く",
+    "navUnknown": "不明",
+    "navExploreClassics": "クラシック",
+    "navExploreNewVideos": "新着動画",
+    "navExploreTrending": "トレンド",
+    "navExploreForYou": "おすすめ",
+    "navExploreLists": "リスト",
+    "routeErrorTitle": "エラー",
+    "routeInvalidHashtag": "無効なハッシュタグ",
+    "routeInvalidConversationId": "無効な会話 ID",
+    "routeInvalidRequestId": "無効なリクエスト ID",
+    "routeInvalidListId": "無効なリスト ID",
+    "routeInvalidUserId": "無効なユーザー ID",
+    "routeInvalidVideoId": "無効な動画 ID",
+    "routeInvalidSoundId": "無効なサウンド ID",
+    "routeInvalidCategory": "無効なカテゴリ",
+    "routeNoVideosToDisplay": "表示する動画がないよ",
+    "routeInvalidProfileId": "無効なプロフィール ID",
+    "routeDefaultListName": "リスト",
+    "supportTitle": "サポート",
+    "supportContactSupport": "サポートに連絡",
+    "supportContactSupportSubtitle": "会話を始めたり、過去のメッセージを確認するよ",
+    "supportReportBug": "バグを報告",
+    "supportReportBugSubtitle": "アプリの技術的な問題",
+    "supportRequestFeature": "機能リクエスト",
+    "supportRequestFeatureSubtitle": "改善や新機能の提案",
+    "supportSaveLogs": "ログを保存",
+    "supportSaveLogsSubtitle": "手動送信用にログをファイルにエクスポート",
+    "supportFaq": "よくある質問",
+    "supportFaqSubtitle": "よくある質問と回答",
+    "supportProofMode": "ProofMode",
+    "supportProofModeSubtitle": "検証と真正性について学ぼう",
+    "supportLoginRequired": "サポートに連絡するにはログインしてね",
+    "supportExportingLogs": "ログをエクスポート中...",
+    "supportExportLogsFailed": "ログのエクスポートがうまくいかなかった",
+    "supportChatNotAvailable": "サポートチャットは今使えないよ",
+    "supportCouldNotOpenMessages": "サポートメッセージが開けなかった",
+    "supportCouldNotOpenPage": "{pageName}が開けなかった",
+    "@supportCouldNotOpenPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            }
+        }
+    },
+    "supportErrorOpeningPage": "{pageName}を開く時にエラー: {error}",
+    "@supportErrorOpeningPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            },
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "reportTitle": "コンテンツを報告",
+    "reportWhyReporting": "このコンテンツを報告する理由は?",
+    "reportPolicyNotice": "Divine はコンテンツの報告に24時間以内に対応して、問題のあるコンテンツを削除し、違反ユーザーを排除するよ。",
+    "reportAdditionalDetails": "追加の詳細 (任意)",
+    "reportBlockUser": "このユーザーをブロック",
+    "reportCancel": "キャンセル",
+    "reportSubmit": "報告",
+    "reportSelectReason": "報告する理由を選んでね",
+    "reportReasonSpam": "スパムや迷惑なコンテンツ",
+    "reportReasonHarassment": "嫌がらせ、いじめ、脅迫",
+    "reportReasonViolence": "暴力的・過激なコンテンツ",
+    "reportReasonSexualContent": "性的・成人向けコンテンツ",
+    "reportReasonCopyright": "著作権侵害",
+    "reportReasonFalseInfo": "虚偽の情報",
+    "reportReasonCsam": "子どもの安全に関する違反",
+    "reportReasonAiGenerated": "AI 生成コンテンツ",
+    "reportReasonOther": "その他のポリシー違反",
+    "reportFailed": "コンテンツの報告がうまくいかなかった: {error}",
+    "@reportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "reportReceivedTitle": "報告を受け付けたよ",
+    "reportReceivedThankYou": "Divine を安全に保つために協力してくれてありがとう。",
+    "reportReceivedReviewNotice": "チームが報告を確認して、適切に対応するね。ダイレクトメッセージでアップデートが届くかも。",
+    "reportLearnMore": "もっと詳しく",
+    "reportSafetyUrl": "divine.video/safety",
+    "reportClose": "閉じる",
+    "listAddToList": "リストに追加",
+    "listVideoCount": "{count}本の動画",
+    "@listVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listNewList": "新しいリスト",
+    "listDone": "完了",
+    "listErrorLoading": "リストの読み込みに失敗",
+    "listRemovedFrom": "{name}から削除したよ",
+    "@listRemovedFrom": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listAddedTo": "{name}に追加したよ",
+    "@listAddedTo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listCreateNewList": "新しいリストを作る",
+    "listNameLabel": "リスト名",
+    "listDescriptionLabel": "説明 (任意)",
+    "listPublicList": "公開リスト",
+    "listPublicListSubtitle": "みんながフォロー・閲覧できるよ",
+    "listCancel": "キャンセル",
+    "listCreate": "作成",
+    "listCreateFailed": "リストの作成がうまくいかなかった",
+    "keyManagementTitle": "Nostr 鍵",
+    "keyManagementWhatAreKeys": "Nostr 鍵って何?",
+    "keyManagementExplanation": "あなたの Nostr ID は暗号鍵のペアだよ:\n\n• 公開鍵 (npub) はユーザー名みたいなもの - 自由に共有してOK\n• 秘密鍵 (nsec) はパスワードみたいなもの - 秘密にしておいて！\n\nnsec があれば、どの Nostr アプリでもあなたのアカウントにアクセスできるよ。",
+    "keyManagementImportTitle": "既存の鍵をインポート",
+    "keyManagementImportSubtitle": "もう Nostr アカウントを持ってる? 秘密鍵 (nsec) を貼り付けてここからアクセスしてね。",
+    "keyManagementImportButton": "鍵をインポート",
+    "keyManagementImportWarning": "現在の鍵が置き換えられるよ！",
+    "keyManagementBackupTitle": "鍵をバックアップ",
+    "keyManagementBackupSubtitle": "秘密鍵 (nsec) を保存して、他の Nostr アプリでもこのアカウントを使えるようにしよう。",
+    "keyManagementCopyNsec": "秘密鍵 (nsec) をコピー",
+    "keyManagementNeverShare": "nsec は誰にも共有しないで！",
+    "keyManagementPasteKey": "秘密鍵を貼り付けてね",
+    "keyManagementInvalidFormat": "鍵の形式が正しくないよ。「nsec1」で始める必要があるよ",
+    "keyManagementConfirmImportTitle": "この鍵をインポートする?",
+    "keyManagementConfirmImportBody": "現在のアイデンティティがインポートした鍵に置き換わるよ。\n\n先にバックアップしておかないと、現在の鍵がなくなっちゃうよ。",
+    "keyManagementImportConfirm": "インポート",
+    "keyManagementImportSuccess": "鍵をインポートしたよ！",
+    "keyManagementImportFailed": "鍵のインポートがうまくいかなかった: {error}",
+    "@keyManagementImportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "keyManagementExportSuccess": "秘密鍵をコピーしたよ！\n\n安全な場所に保管してね。",
+    "keyManagementExportFailed": "鍵のエクスポートがうまくいかなかった: {error}",
+    "@keyManagementExportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "saveOriginalSavedToCameraRoll": "カメラロールに保存したよ",
+    "saveOriginalShare": "共有",
+    "saveOriginalDone": "完了",
+    "saveOriginalPhotosAccessNeeded": "写真へのアクセスが必要",
+    "saveOriginalPhotosAccessMessage": "動画を保存するには、設定で写真へのアクセスを許可してね。",
+    "saveOriginalOpenSettings": "設定を開く",
+    "saveOriginalNotNow": "今はいい",
+    "saveOriginalDownloadFailed": "ダウンロードがうまくいかなかった",
+    "saveOriginalDismiss": "閉じる",
+    "saveOriginalDownloadingVideo": "動画をダウンロード中",
+    "saveOriginalSavingToCameraRoll": "カメラロールに保存中",
+    "saveOriginalFetchingVideo": "ネットワークから動画を取ってるよ...",
+    "saveOriginalSavingVideo": "オリジナル動画をカメラロールに保存してるよ...",
+    "soundTitle": "サウンド",
+    "soundOriginalSound": "オリジナルサウンド",
+    "soundVideosUsingThisSound": "このサウンドを使ってる動画",
+    "soundSourceVideo": "元動画",
+    "soundNoVideosYet": "動画はまだないよ",
+    "soundBeFirstToUse": "このサウンドを最初に使おう！",
+    "soundFailedToLoadVideos": "動画の読み込みがうまくいかなかった",
+    "soundRetry": "もう一回",
+    "soundVideosUnavailable": "動画を見れないよ",
+    "soundCouldNotLoadDetails": "動画の詳細を読み込めなかった",
+    "soundPreview": "プレビュー",
+    "soundStop": "停止",
+    "soundUseSound": "サウンドを使う",
+    "soundNoVideoCount": "動画はまだないよ",
+    "soundOneVideo": "1本の動画",
+    "soundVideoCount": "{count}本の動画",
+    "@soundVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "soundUnableToPreview": "サウンドをプレビューできない - 音声がないよ",
+    "soundPreviewFailed": "プレビューの再生がうまくいかなかった: {error}",
+    "@soundPreviewFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "soundViewSource": "元動画を見る",
+    "soundCloseTooltip": "閉じる",
+    "exploreNotExploreRoute": "探索ルートじゃないよ",
+    "legalTitle": "法的情報",
+    "legalTermsOfService": "利用規約",
+    "legalTermsOfServiceSubtitle": "ご利用条件",
+    "legalPrivacyPolicy": "プライバシーポリシー",
+    "legalPrivacyPolicySubtitle": "データの取り扱いについて",
+    "legalSafetyStandards": "安全基準",
+    "legalSafetyStandardsSubtitle": "コミュニティガイドラインと安全について",
+    "legalDmca": "DMCA",
+    "legalDmcaSubtitle": "著作権とテイクダウンポリシー",
+    "legalOpenSourceLicenses": "オープンソースライセンス",
+    "legalOpenSourceLicensesSubtitle": "サードパーティパッケージのクレジット",
+    "legalAppName": "Divine",
+    "legalCouldNotOpenPage": "{pageName}が開けなかった",
+    "@legalCouldNotOpenPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            }
+        }
+    },
+    "legalErrorOpeningPage": "{pageName}を開く時にエラー: {error}",
+    "@legalErrorOpeningPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            },
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "categoryAction": "アクション",
+    "categoryAdventure": "アドベンチャー",
+    "categoryAnimals": "動物",
+    "categoryAnimation": "アニメ",
+    "categoryArchitecture": "建築",
+    "categoryArt": "アート",
+    "categoryAutomotive": "自動車",
+    "categoryAwardShow": "授賞式",
+    "categoryAwards": "アワード",
+    "categoryBaseball": "野球",
+    "categoryBasketball": "バスケ",
+    "categoryBeauty": "美容",
+    "categoryBeverage": "飲み物",
+    "categoryCars": "車",
+    "categoryCelebration": "お祝い",
+    "categoryCelebrities": "セレブ",
+    "categoryCelebrity": "セレブ",
+    "categoryCityscape": "街並み",
+    "categoryComedy": "コメディ",
+    "categoryConcert": "コンサート",
+    "categoryCooking": "料理",
+    "categoryCostume": "コスチューム",
+    "categoryCrafts": "クラフト",
+    "categoryCrime": "犯罪",
+    "categoryCulture": "文化",
+    "categoryDance": "ダンス",
+    "categoryDiy": "DIY",
+    "categoryDrama": "ドラマ",
+    "categoryEducation": "教育",
+    "categoryEmotional": "感動",
+    "categoryEmotions": "感情",
+    "categoryEntertainment": "エンタメ",
+    "categoryEvent": "イベント",
+    "categoryFamily": "家族",
+    "categoryFans": "ファン",
+    "categoryFantasy": "ファンタジー",
+    "categoryFashion": "ファッション",
+    "categoryFestival": "フェス",
+    "categoryFilm": "映画",
+    "categoryFitness": "フィットネス",
+    "categoryFood": "料理",
+    "categoryFootball": "フットボール",
+    "categoryFurniture": "家具",
+    "categoryGaming": "ゲーム",
+    "categoryGolf": "ゴルフ",
+    "categoryGrooming": "身だしなみ",
+    "categoryGuitar": "ギター",
+    "categoryHalloween": "ハロウィン",
+    "categoryHealth": "健康",
+    "categoryHockey": "ホッケー",
+    "categoryHoliday": "休日",
+    "categoryHome": "ホーム",
+    "categoryHomeImprovement": "DIYリフォーム",
+    "categoryHorror": "ホラー",
+    "categoryHospital": "病院",
+    "categoryHumor": "ユーモア",
+    "categoryInteriorDesign": "インテリア",
+    "categoryInterview": "インタビュー",
+    "categoryKids": "キッズ",
+    "categoryLifestyle": "ライフスタイル",
+    "categoryMagic": "マジック",
+    "categoryMakeup": "メイク",
+    "categoryMedical": "医療",
+    "categoryMusic": "音楽",
+    "categoryMystery": "ミステリー",
+    "categoryNature": "自然",
+    "categoryNews": "ニュース",
+    "categoryOutdoor": "アウトドア",
+    "categoryParty": "パーティー",
+    "categoryPeople": "人物",
+    "categoryPerformance": "パフォーマンス",
+    "categoryPets": "ペット",
+    "categoryPolitics": "政治",
+    "categoryPrank": "ドッキリ",
+    "categoryPranks": "ドッキリ",
+    "categoryRealityShow": "リアリティ番組",
+    "categoryRelationship": "関係",
+    "categoryRelationships": "人間関係",
+    "categoryRomance": "ロマンス",
+    "categorySchool": "学校",
+    "categoryScienceFiction": "SF",
+    "categorySelfie": "自撮り",
+    "categoryShopping": "ショッピング",
+    "categorySkateboarding": "スケボー",
+    "categorySkincare": "スキンケア",
+    "categorySoccer": "サッカー",
+    "categorySocialGathering": "集まり",
+    "categorySocialMedia": "SNS",
+    "categorySports": "スポーツ",
+    "categoryTalkShow": "トークショー",
+    "categoryTech": "テック",
+    "categoryTechnology": "テクノロジー",
+    "categoryTelevision": "テレビ",
+    "categoryToys": "おもちゃ",
+    "categoryTransportation": "交通",
+    "categoryTravel": "旅行",
+    "categoryUrban": "都市",
+    "categoryViolence": "暴力",
+    "categoryVlog": "ブイログ",
+    "categoryVlogging": "ブイログ",
+    "categoryWrestling": "プロレス",
+    "blossomFailedToSaveSettings": "設定の保存がうまくいかなかった: {error}",
+    "@blossomFailedToSaveSettings": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "blueskyFailedToUpdateCrosspost": "クロスポスト設定の更新がうまくいかなかった",
+    "cameraAgeRestriction": "コンテンツを作るには16歳以上である必要があるよ",
+    "categoriesCouldNotLoadCategories": "カテゴリを読み込めなかった",
+    "categoryGalleryCouldNotLoadVideos": "動画を読み込めなかった",
+    "classicVinersTitle": "OG Viners",
+    "commonCancel": "キャンセル",
+    "commonDelete": "削除",
+    "commonRetry": "もう一回",
+    "discoverListsFailedToUpdateSubscription": "サブスクリプションの更新がうまくいかなかった: {error}",
+    "@discoverListsFailedToUpdateSubscription": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreVideoCounter": "動画 {current}/{total}",
+    "@exploreVideoCounter": {
+        "placeholders": {
+            "current": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "exploreVideoId": "ID: {id}",
+    "@exploreVideoId": {
+        "placeholders": {
+            "id": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreVideoTitle": "タイトル: {title}",
+    "@exploreVideoTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestCancel": "キャンセル",
+    "followersFailedToLoadList": "フォロワーリストの読み込みがうまくいかなかった",
+    "followingFailedToLoadList": "フォロー中リストの読み込みがうまくいかなかった",
+    "inboxBlockedUser": "{displayName}をブロックしたよ",
+    "@inboxBlockedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemovedConversation": "会話を削除したよ",
+    "inboxReportedUser": "{displayName}を報告したよ",
+    "@inboxReportedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxUnblockedUser": "{displayName}のブロックを解除したよ",
+    "@inboxUnblockedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesTitle": "友達を招待しよう",
+    "keyImportError": "エラー: {error}",
+    "@keyImportError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteConfirm": "削除",
+    "notificationFollowBack": "フォローバック",
+    "profileSetupUploadSuccess": "プロフィール写真をアップロードしたよ！",
+    "proofmodeCheckAiGenerated": "AI生成かチェック",
+    "reportDialogCancel": "キャンセル",
+    "reportDialogReport": "報告",
+    "routerInvalidCreator": "無効なクリエイター",
+    "routerInvalidHashtagRoute": "無効なハッシュタグルート",
+    "searchFindCuratedVideoLists": "キュレーションされた動画リストを探そう",
+    "searchForLists": "リストを検索",
+    "searchSomethingWentWrong": "なんかうまくいかなかった",
+    "searchTryAgain": "もう一回",
+    "trendingTitle": "トレンド",
+    "videoEditorLayers": "レイヤー",
+    "videoEditorStickers": "ステッカー",
+    "videoMetadataContentWarnings": "コンテンツ警告",
+    "videoMetadataExpiration": "有効期限",
+    "videoMetadataTags": "タグ",
+    "contentLabelAiGenerated": "AI生成",
+    "contentLabelAlcohol": "アルコール",
+    "contentLabelDeepfake": "ディープフェイク",
+    "contentLabelDrugUse": "薬物使用",
+    "contentLabelFlashingLights": "点滅する光",
+    "contentLabelGambling": "ギャンブル",
+    "contentLabelGraphicMedia": "過激なメディア",
+    "contentLabelHarassment": "ハラスメント",
+    "contentLabelHateSpeech": "ヘイトスピーチ",
+    "contentLabelMisleading": "誤解を招く内容",
+    "contentLabelNudity": "ヌード",
+    "contentLabelPornography": "ポルノ",
+    "contentLabelProfanity": "不適切な言葉",
+    "contentLabelScam": "詐欺",
+    "contentLabelSelfHarm": "自傷行為/自殺",
+    "contentLabelSensitiveContent": "センシティブな内容",
+    "contentLabelSexualContent": "性的な内容",
+    "contentLabelSpam": "スパム",
+    "contentLabelSpoiler": "ネタバレ",
+    "contentLabelTobacco": "タバコ/喫煙",
+    "contentLabelViolence": "暴力",
+    "contentWarningNone": "なし",
+    "draftTimeJustNow": "たった今",
+    "@draftTimeJustNow": {
+        "description": "Draft age label for less than one minute (capitalized)"
+    },
+    "draftUntitled": "無題",
+    "notificationCommentedOnYourVideo": "{actorName}さんがあなたの動画にコメントしました",
+    "@notificationCommentedOnYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationLikedYourVideo": "{actorName}さんがあなたの動画にいいねしました",
+    "@notificationLikedYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationMentionedYou": "{actorName}さんがあなたをメンションしました",
+    "@notificationMentionedYou": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationRepostedYourVideo": "{actorName}さんがあなたの動画をリポストしました",
+    "@notificationRepostedYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationStartedFollowing": "{actorName}さんがあなたをフォローしました",
+    "@notificationStartedFollowing": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "textAlignCenter": "中央",
+    "textAlignLeft": "左",
+    "textAlignRight": "右",
+    "textBackgroundHighlight": "ハイライト",
+    "textBackgroundNone": "なし",
+    "textBackgroundSolid": "塗りつぶし",
+    "textBackgroundTransparent": "透明",
+    "timeAgo": "{time}前",
+    "@timeAgo": {
+        "description": "Verbose relative time with ago suffix, e.g. 3m ago",
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "timeDaysAgo": "{count}日前",
+    "@timeDaysAgo": {
+        "description": "Relative time in days with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeHoursAgo": "{count}時間前",
+    "@timeHoursAgo": {
+        "description": "Relative time in hours with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeJustNow": "たった今",
+    "@timeJustNow": {
+        "description": "Verbose relative time for less than one minute (lowercase)"
+    },
+    "timeMinutesAgo": "{count}分前",
+    "@timeMinutesAgo": {
+        "description": "Relative time in minutes with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeNow": "今",
+    "@timeNow": {
+        "description": "Relative time label for less than one minute ago (short form)"
+    },
+    "timeShortDays": "{count}日",
+    "@timeShortDays": {
+        "description": "Short relative time in days, e.g. 3d",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortHours": "{count}時間",
+    "@timeShortHours": {
+        "description": "Short relative time in hours, e.g. 2h",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortMinutes": "{count}分",
+    "@timeShortMinutes": {
+        "description": "Short relative time in minutes, e.g. 3m",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortMonths": "{count}ヶ月",
+    "@timeShortMonths": {
+        "description": "Short relative time in months, e.g. 1mo",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortWeeks": "{count}週",
+    "@timeShortWeeks": {
+        "description": "Short relative time in weeks, e.g. 2w",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortYears": "{count}年",
+    "@timeShortYears": {
+        "description": "Short relative time in years, e.g. 1y",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeToday": "今日",
+    "@timeToday": {
+        "description": "Date label for today"
+    },
+    "timeVerboseNow": "今",
+    "@timeVerboseNow": {
+        "description": "Verbose relative time label for less than one minute ago"
+    },
+    "timeYesterday": "昨日",
+    "@timeYesterday": {
+        "description": "Date label for yesterday"
+    }
+}

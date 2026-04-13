@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -60,6 +61,8 @@ void main() {
         child: MockGoRouterProvider(
           goRouter: mockGoRouter,
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: VideoClipPreview(clip: testClip, onDelete: onDelete),
             ),

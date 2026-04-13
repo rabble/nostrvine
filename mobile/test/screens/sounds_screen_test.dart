@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
@@ -78,7 +79,12 @@ class MockTrendingSoundsErrorNotifier extends TrendingSounds {
 Widget createTestWidget({required Widget child, List<dynamic>? overrides}) {
   return ProviderScope(
     overrides: [...?overrides],
-    child: MaterialApp(theme: VineTheme.theme, home: child),
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: VineTheme.theme,
+      home: child,
+    ),
   );
 }
 
@@ -795,6 +801,8 @@ void main() {
             child: MockGoRouterProvider(
               goRouter: mockGoRouter,
               child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 theme: VineTheme.theme,
                 home: const SoundsScreen(),
               ),
@@ -848,6 +856,8 @@ void main() {
             child: MockGoRouterProvider(
               goRouter: mockGoRouter,
               child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 theme: VineTheme.theme,
                 home: const SoundsScreen(),
               ),

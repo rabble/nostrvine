@@ -320,7 +320,6 @@ void main() {
           const WelcomeState(
             status: WelcomeStatus.error,
             previousAccounts: [_testPreviousAccount],
-            error: 'Failed to continue: Exception: Network error',
           ),
         ],
       );
@@ -346,14 +345,12 @@ void main() {
             signingInPubkeyHex: _testPubkeyHex,
           ),
           const WelcomeState(
-            status: WelcomeStatus.error,
+            status: WelcomeStatus.sessionExpired,
             previousAccounts: [_testPreviousAccount],
-            error: 'Your session has expired. Please sign in again.',
           ),
           const WelcomeState(
             status: WelcomeStatus.navigatingToLoginOptions,
             previousAccounts: [_testPreviousAccount],
-            error: 'Your session has expired. Please sign in again.',
           ),
           const WelcomeState(
             status: WelcomeStatus.loaded,
@@ -485,13 +482,12 @@ void main() {
       expect(cleared.signingInPubkeyHex, isNull);
     });
 
-    test('copyWith clearError removes error', () {
+    test('copyWith status resets from error', () {
       const state = WelcomeState(
         status: WelcomeStatus.error,
-        error: 'some error',
       );
-      final cleared = state.copyWith(clearError: true);
-      expect(cleared.error, isNull);
+      final cleared = state.copyWith(status: WelcomeStatus.loaded);
+      expect(cleared.status, equals(WelcomeStatus.loaded));
     });
   });
 }

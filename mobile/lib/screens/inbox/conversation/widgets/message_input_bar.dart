@@ -100,7 +100,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
               // Send button
               if (_hasText)
                 Padding(
-                  padding: const EdgeInsets.only(right: 4),
+                  padding: const EdgeInsetsDirectional.only(end: 4),
                   child: GestureDetector(
                     onTap: _handleSend,
                     child: Container(

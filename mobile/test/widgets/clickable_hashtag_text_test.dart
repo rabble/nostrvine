@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 
 void main() {
@@ -11,6 +12,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClickableHashtagText(text: plainText)),
         ),
       );
@@ -24,6 +27,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClickableHashtagText(text: textWithHashtag)),
         ),
       );
@@ -38,6 +43,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClickableHashtagText(text: textWithHashtags)),
         ),
       );
@@ -51,6 +58,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClickableHashtagText(text: textWithTrailingHashtag),
           ),
@@ -68,6 +77,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClickableHashtagText(text: textWithComplexHashtags),
           ),
@@ -87,6 +98,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClickableHashtagText(text: longText, maxLines: 2),
           ),
@@ -100,6 +113,8 @@ void main() {
     testWidgets('handles empty text', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClickableHashtagText(text: '')),
         ),
       );
@@ -112,6 +127,8 @@ void main() {
     testWidgets('handles text with only spaces', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClickableHashtagText(text: '   ')),
         ),
       );
@@ -140,6 +157,8 @@ void main() {
       for (final testText in testCases) {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClickableHashtagText(text: testText)),
           ),
         );

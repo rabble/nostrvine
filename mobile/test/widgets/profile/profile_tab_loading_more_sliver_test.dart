@@ -1,12 +1,15 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
 
 void main() {
   group(ProfileTabLoadingMoreSliver, () {
     Widget buildSubject() {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: const Scaffold(
           body: CustomScrollView(

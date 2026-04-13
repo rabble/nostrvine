@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 void main() {
@@ -8,6 +9,8 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: UserAvatar(
             imageUrl: 'https://invalid.example.invalid/nonexistent.jpg',
@@ -30,6 +33,8 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: UserAvatar(name: 'Test User', size: 40)),
       ),
     );
@@ -45,6 +50,8 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: UserAvatar(imageUrl: '', name: 'Test User', size: 40),
         ),
@@ -59,7 +66,11 @@ void main() {
 
   testWidgets('UserAvatar has rounded border decoration', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: UserAvatar(size: 40))),
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: UserAvatar(size: 40)),
+      ),
     );
 
     await tester.pump();

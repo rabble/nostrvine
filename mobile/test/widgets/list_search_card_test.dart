@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide AspectRatio;
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/list_search_card.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
@@ -32,6 +33,8 @@ void main() {
     VoidCallback? onTap,
   }) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Align(
           alignment: Alignment.topLeft,
@@ -110,7 +113,7 @@ void main() {
           ),
         );
 
-        expect(find.text('9.1k'), findsOneWidget);
+        expect(find.text('9.1K'), findsOneWidget);
       });
     });
 

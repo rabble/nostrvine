@@ -3,10 +3,10 @@
 
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show BugReportData, LogEntry, LogLevel;
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}

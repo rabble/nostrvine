@@ -102,11 +102,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: ClipsLibraryStatus.error,
-        ),
-      );
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
   }
 
@@ -186,11 +182,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: ClipsLibraryStatus.error,
-        ),
-      );
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
   }
 
@@ -236,11 +228,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: ClipsLibraryStatus.error,
-        ),
-      );
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
   }
 

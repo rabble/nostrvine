@@ -3010,7 +3010,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'5eb08600816786c7447419fa0202c5532dd24678';
+String _$followRepositoryHash() => r'a94622f52c4a1e843f707fa192b08ba65c75d6c2';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -3426,7 +3426,7 @@ final class BlossomAuthServiceProvider
 }
 
 String _$blossomAuthServiceHash() =>
-    r'e64f2eebfd131f289245c69c1c7dd4f0575bf85d';
+    r'18b397ce487844dd002ada34930c6ce08f0566f8';
 
 /// Media authentication interceptor for handling 401 unauthorized responses
 
@@ -3532,7 +3532,7 @@ final class BlossomUploadServiceProvider
 }
 
 String _$blossomUploadServiceHash() =>
-    r'dd7f21326fc6c7cbc8ea291e9e9ca7c337da54f4';
+    r'8b83e68824cc146d304111a8d88e5ea8fadb2cc7';
 
 /// Upload manager uses only Blossom upload service
 

@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -23,7 +24,7 @@ class MoreActionButton extends StatelessWidget {
       container: true,
       explicitChildNodes: true,
       button: true,
-      label: 'More options',
+      label: context.l10n.videoActionMoreOptions,
       child: GestureDetector(
         onTap: () {
           Log.info(

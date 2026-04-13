@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/widgets/user_avatar.dart';
@@ -395,6 +396,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: ProviderScope(
               overrides: [
                 authServiceProvider.overrideWithValue(testAuthService),
@@ -425,6 +428,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: ProviderScope(
               overrides: [
                 authServiceProvider.overrideWithValue(testAuthService),
@@ -586,6 +591,8 @@ Widget _buildTestWidget(
   Widget child,
 ) {
   return MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: testProviderScope(
       additionalOverrides: [
         authServiceProvider.overrideWithValue(authService),

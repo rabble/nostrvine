@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
 import 'package:openvine/notifications/widgets/notification_list_item.dart';
 
@@ -42,6 +43,8 @@ void main() {
     VoidCallback? onFollowBack,
   }) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: NotificationListItem(
           notification: notification,

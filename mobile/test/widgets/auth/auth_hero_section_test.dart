@@ -5,12 +5,15 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
 
 void main() {
   group(AuthHeroSection, () {
     Widget createTestWidget() {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: const Scaffold(
           body: SingleChildScrollView(child: AuthHeroSection()),

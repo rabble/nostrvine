@@ -375,6 +375,11 @@ class DivineVideoDraft {
 
   Set<ContentLabel> get contentWarnings => ContentLabel.fromCsv(contentWarning);
 
+  /// Returns a hardcoded English age string.
+  ///
+  /// Prefer [localizedDisplayDuration] in UI code where
+  /// [AppLocalizations] is available.
+  @Deprecated('Use localizedDisplayDuration with AppLocalizations instead')
   String get displayDuration {
     final duration = DateTime.now().difference(createdAt);
     if (duration.inDays > 0) {

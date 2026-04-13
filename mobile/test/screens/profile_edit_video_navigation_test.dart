@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -19,7 +20,11 @@ void main() {
     final router = customRouter ?? c.read(goRouterProvider);
     return UncontrolledProviderScope(
       container: c,
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
     );
   }
 

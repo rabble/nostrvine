@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -88,6 +89,8 @@ void main() {
         child: BlocProvider<BackgroundPublishBloc>.value(
           value: mockBloc,
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ProfileVideosGrid(
                 videos: videos,
@@ -415,6 +418,9 @@ void main() {
               child: BlocProvider<BackgroundPublishBloc>.value(
                 value: mockBloc,
                 child: MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
                   home: Scaffold(
                     body: NestedScrollView(
                       headerSliverBuilder: (context, innerBoxIsScrolled) => [
@@ -455,6 +461,9 @@ void main() {
               child: BlocProvider<BackgroundPublishBloc>.value(
                 value: mockBloc,
                 child: MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
                   home: Scaffold(
                     body: NestedScrollView(
                       headerSliverBuilder: (context, innerBoxIsScrolled) => [

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
@@ -37,7 +38,10 @@ class BadgeExplanationModal extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: context.pop,
-          child: const Text('Close', style: TextStyle(color: VineTheme.info)),
+          child: Text(
+            context.l10n.badgeExplanationClose,
+            style: const TextStyle(color: VineTheme.info),
+          ),
         ),
       ],
     );
@@ -66,10 +70,10 @@ class _BadgeModalTitle extends StatelessWidget {
         Expanded(
           child: Text(
             isVineArchive
-                ? 'Original Vine Archive'
+                ? context.l10n.badgeExplanationOriginalVineArchive
                 : hasProofModeVerification
-                ? 'Camera Proof'
-                : 'Authenticity Signals',
+                ? context.l10n.badgeExplanationCameraProof
+                : context.l10n.badgeExplanationAuthenticitySignals,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -94,26 +98,28 @@ class _VineArchiveExplanation extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'This video is an original Vine recovered from the Internet '
-          'Archive.',
-          style: TextStyle(
+        Text(
+          context.l10n.badgeExplanationVineArchiveIntro,
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: VineTheme.whiteText,
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
-          'Before Vine shut down in 2017, ArchiveTeam and the Internet '
-          'Archive worked to preserve millions of Vines for posterity. '
-          'This content is part of that historic preservation effort.',
-          style: TextStyle(fontSize: 13, color: VineTheme.onSurfaceVariant),
+        Text(
+          context.l10n.badgeExplanationVineArchiveHistory,
+          style: const TextStyle(
+            fontSize: 13,
+            color: VineTheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 12),
         if (video.originalLoops != null && video.originalLoops! > 0) ...[
           Text(
-            'Original stats: ${video.originalLoops} loops',
+            context.l10n.badgeExplanationOriginalStats(
+              video.originalLoops!,
+            ),
             style: const TextStyle(
               fontSize: 12,
               fontStyle: FontStyle.italic,
@@ -122,9 +128,9 @@ class _VineArchiveExplanation extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-        const _ExternalLink(
+        _ExternalLink(
           url: 'https://divine.video/dmca',
-          label: 'Learn more about the Vine archive preservation',
+          label: context.l10n.badgeExplanationLearnVineArchive,
         ),
       ],
     );
@@ -178,7 +184,7 @@ class _ProofModeExplanationState extends ConsumerState<_ProofModeExplanation> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _getIntroText(aiResult),
+          _getIntroText(context, aiResult),
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -197,15 +203,15 @@ class _ProofModeExplanationState extends ConsumerState<_ProofModeExplanation> {
         _ExternalLink(
           url: 'https://divine.video/proofmode',
           label: video.hasProofMode
-              ? 'Learn more about Proofmode verification'
-              : 'Learn more about Divine authenticity signals',
+              ? context.l10n.badgeExplanationLearnProofmode
+              : context.l10n.badgeExplanationLearnAuthenticity,
         ),
         if (video.videoUrl != null && video.videoUrl!.isNotEmpty)
           _ExternalLink(
             url: 'https://check.proofmode.org/#${video.videoUrl}',
             label: video.hasProofMode
-                ? 'Inspect with ProofCheck Tool'
-                : 'Inspect media details',
+                ? context.l10n.badgeExplanationInspectProofCheck
+                : context.l10n.badgeExplanationInspectMedia,
           ),
       ],
     );
@@ -229,28 +235,22 @@ class _ProofModeExplanationState extends ConsumerState<_ProofModeExplanation> {
     return null;
   }
 
-  String _getIntroText(AIDetectionResult? aiResult) {
+  String _getIntroText(BuildContext context, AIDetectionResult? aiResult) {
     final video = widget.video;
 
     if (video.hasProofMode) {
-      return "This video's authenticity is verified using Proofmode "
-          'technology.';
+      return context.l10n.badgeExplanationProofmodeVerified;
     }
     if (aiResult != null && aiResult.score < 0.5) {
       if (video.isFromDivineServer) {
-        return 'This video is hosted on Divine and AI detection indicates it '
-            'is likely human-made, but it does not include cryptographic '
-            'camera-verification data.';
+        return context.l10n.badgeExplanationDivineHostedHumanMade;
       }
-      return 'AI detection indicates this video is likely human-made, though '
-          'it does not include cryptographic camera-verification data.';
+      return context.l10n.badgeExplanationHumanMadeNoCrypto;
     }
     if (video.isFromDivineServer) {
-      return 'This video is hosted on Divine, but it does not include '
-          'cryptographic camera-verification data yet.';
+      return context.l10n.badgeExplanationDivineHostedNoCrypto;
     }
-    return 'This video is hosted outside Divine and does not include '
-        'cryptographic camera-verification data.';
+    return context.l10n.badgeExplanationExternalNoCrypto;
   }
 }
 
@@ -271,7 +271,9 @@ class _ProofModeDetailsSection extends StatelessWidget {
       children: [
         _SectionHeader(
           icon: Icons.verified_user,
-          title: video.hasProofMode ? 'Camera Proof' : 'Authenticity Signals',
+          title: video.hasProofMode
+              ? context.l10n.badgeExplanationCameraProof
+              : context.l10n.badgeExplanationAuthenticitySignals,
         ),
         const SizedBox(height: 8),
         _VerificationLevelCard(video: video, aiResult: aiResult),
@@ -294,19 +296,19 @@ class _ProofCheckList extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _ProofCheckItem(
-          label: 'Device attestation',
+          label: context.l10n.badgeExplanationDeviceAttestation,
           passed: video.proofModeDeviceAttestation != null,
         ),
         _ProofCheckItem(
-          label: 'PGP signature',
+          label: context.l10n.badgeExplanationPgpSignature,
           passed: video.proofModePgpFingerprint != null,
         ),
         _ProofCheckItem(
-          label: 'C2PA Content Credentials',
+          label: context.l10n.badgeExplanationC2paCredentials,
           passed: video.proofModeC2paManifestId != null,
         ),
         _ProofCheckItem(
-          label: 'Proof manifest',
+          label: context.l10n.badgeExplanationProofManifest,
           passed: video.proofModeManifest != null,
         ),
       ],
@@ -442,7 +444,10 @@ class _AIDetectionSectionState extends ConsumerState<_AIDetectionSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(icon: Icons.psychology, title: 'AI Detection'),
+        _SectionHeader(
+          icon: Icons.psychology,
+          title: context.l10n.badgeExplanationAiDetection,
+        ),
         const SizedBox(height: 8),
         if (result != null)
           _AIDetectionResultCard(result: result)
@@ -463,9 +468,9 @@ class _AIDetectionSectionState extends ConsumerState<_AIDetectionSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'AI scan: Not yet scanned',
-            style: TextStyle(
+          Text(
+            context.l10n.badgeExplanationAiNotScanned,
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: VineTheme.onSurfaceMuted,
@@ -487,9 +492,9 @@ class _AIDetectionSectionState extends ConsumerState<_AIDetectionSection> {
               ),
             )
           else if (_checkedAndEmpty)
-            const Text(
-              'No scan results available yet.',
-              style: TextStyle(
+            Text(
+              context.l10n.badgeExplanationNoScanResults,
+              style: const TextStyle(
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
                 color: VineTheme.onSurfaceMuted,
@@ -501,7 +506,7 @@ class _AIDetectionSectionState extends ConsumerState<_AIDetectionSection> {
               child: OutlinedButton.icon(
                 onPressed: _checkForResults,
                 icon: const Icon(Icons.search, size: 16),
-                label: const Text('Check if AI-generated'),
+                label: Text(context.l10n.badgeExplanationCheckAiGenerated),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: VineTheme.onSurfaceVariant,
                   side: const BorderSide(color: VineTheme.onSurfaceMuted),
@@ -549,7 +554,7 @@ class _AIDetectionResultCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '$percentage% likelihood of being AI-generated',
+                  context.l10n.badgeExplanationAiLikelihood(percentage),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -574,7 +579,7 @@ class _AIDetectionResultCard extends StatelessWidget {
           if (result.source != null) ...[
             const SizedBox(height: 6),
             Text(
-              'Scanned by: ${result.source}',
+              context.l10n.badgeExplanationScannedBy(result.source!),
               style: const TextStyle(
                 fontSize: 11,
                 color: VineTheme.onSurfaceMuted,
@@ -583,13 +588,13 @@ class _AIDetectionResultCard extends StatelessWidget {
           ],
           if (result.isVerified) ...[
             const SizedBox(height: 4),
-            const Row(
+            Row(
               children: [
-                Icon(Icons.verified, size: 12, color: VineTheme.info),
-                SizedBox(width: 4),
+                const Icon(Icons.verified, size: 12, color: VineTheme.info),
+                const SizedBox(width: 4),
                 Text(
-                  'Verified by human moderator',
-                  style: TextStyle(fontSize: 11, color: VineTheme.info),
+                  context.l10n.badgeExplanationVerifiedByModerator,
+                  style: const TextStyle(fontSize: 11, color: VineTheme.info),
                 ),
               ],
             ),
@@ -638,7 +643,7 @@ class _VerificationLevelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _getVerificationConfig(video, aiResult);
+    final config = _getVerificationConfig(context, video, aiResult);
 
     return Row(
       children: [
@@ -658,54 +663,47 @@ class _VerificationLevelCard extends StatelessWidget {
   }
 
   _VerificationConfig _getVerificationConfig(
+    BuildContext context,
     VideoEvent video,
     AIDetectionResult? aiResult,
   ) {
     final hasHumanAIScan = aiResult != null && aiResult.score < 0.5;
 
     if (video.isVerifiedMobile && hasHumanAIScan) {
-      return const _VerificationConfig(
+      return _VerificationConfig(
         icon: Icons.verified,
-        color: Color(0xFFE5E4E2), // Platinum
-        description:
-            'Platinum: Device hardware attestation, cryptographic '
-            'signatures, Content Credentials (C2PA), and AI scan '
-            'confirms human origin.',
+        color: const Color(0xFFE5E4E2), // Platinum
+        description: context.l10n.badgeExplanationVerificationPlatinum,
       );
     } else if (video.isVerifiedMobile) {
-      return const _VerificationConfig(
+      return _VerificationConfig(
         icon: Icons.verified,
-        color: Color(0xFFFFD700), // Gold
-        description:
-            'Gold: Captured on a real device with hardware attestation, '
-            'cryptographic signatures, and Content Credentials (C2PA).',
+        color: const Color(0xFFFFD700), // Gold
+        description: context.l10n.badgeExplanationVerificationGold,
       );
     } else if (video.isVerifiedWeb) {
-      return const _VerificationConfig(
+      return _VerificationConfig(
         icon: Icons.verified_outlined,
-        color: Color(0xFFC0C0C0), // Silver
-        description:
-            "Silver: Cryptographic signatures prove this video hasn't "
-            'been altered since recording.',
+        color: const Color(0xFFC0C0C0), // Silver
+        description: context.l10n.badgeExplanationVerificationSilver,
       );
     } else if (video.hasBasicProof) {
-      return const _VerificationConfig(
+      return _VerificationConfig(
         icon: Icons.verified_outlined,
-        color: Color(0xFFCD7F32), // Bronze
-        description: 'Bronze: Basic metadata signatures are present.',
+        color: const Color(0xFFCD7F32), // Bronze
+        description: context.l10n.badgeExplanationVerificationBronze,
       );
     } else if (hasHumanAIScan) {
-      return const _VerificationConfig(
+      return _VerificationConfig(
         icon: Icons.verified_outlined,
-        color: Color(0xFFC0C0C0), // Silver
-        description:
-            'Silver: AI scan confirms this video is likely human-created.',
+        color: const Color(0xFFC0C0C0), // Silver
+        description: context.l10n.badgeExplanationVerificationSilverAiScan,
       );
     } else {
-      return const _VerificationConfig(
+      return _VerificationConfig(
         icon: Icons.shield_outlined,
         color: VineTheme.lightText,
-        description: 'No verification data available for this video.',
+        description: context.l10n.badgeExplanationNoVerification,
       );
     }
   }

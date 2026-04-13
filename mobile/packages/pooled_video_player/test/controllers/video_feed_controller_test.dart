@@ -5377,6 +5377,203 @@ void main() {
     );
   });
 
+  group('slow_playback_detected and player_state_snapshot', () {
+    // Diagnostic instruments added after the iOS repro showed a video
+    // whose position advanced at ~4% real-time for 13.5 seconds with
+    // zero existing log events — the stale watchdog only catches
+    // *frozen* position, not *slowly-advancing* position. These new
+    // logs close that gap. See journal entry:
+    // 2026-04-10-flutter-mpv-silent-slow-playback-invisible-to-freeze
+    // -watchdog.md
+    late TestablePlayerPool pool;
+    late Map<String, MockPlayerSetup> playerSetups;
+
+    setUp(() {
+      playerSetups = {};
+      pool = TestablePlayerPool(
+        maxPlayers: 10,
+        mockPlayerFactory: (url) {
+          final setup = createMockPlayerSetup();
+          playerSetups[url] = setup;
+          final mockPooledPlayer = _MockPooledPlayer();
+          when(() => mockPooledPlayer.player).thenReturn(setup.player);
+          when(
+            () => mockPooledPlayer.videoController,
+          ).thenReturn(createMockVideoController());
+          when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+          when(() => mockPooledPlayer.wasRecycled).thenReturn(false);
+          when(mockPooledPlayer.clearRecycled).thenReturn(null);
+          when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+          return mockPooledPlayer;
+        },
+      );
+    });
+
+    tearDown(() async {
+      for (final setup in playerSetups.values) {
+        await setup.dispose();
+      }
+      await pool.dispose();
+    });
+
+    test(
+      'slow_playback_detected fires when position advances at '
+      'well below real-time rate',
+      () async {
+        final logs = <String>[];
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 1),
+          pool: pool,
+          onLog: (level, message) => logs.add(message),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        final url = createTestVideos()[0].url;
+        final setup = playerSetups[url]!;
+
+        when(() => setup.state.playing).thenReturn(true);
+        when(() => setup.state.buffering).thenReturn(false);
+        when(
+          () => setup.state.position,
+        ).thenReturn(const Duration(milliseconds: 1000));
+
+        // Trigger buffer ready to start the heartbeat timer. The first
+        // rate-check tick will anchor the window at positionStart=1000,
+        // wallStart=now.
+        setup.bufferingController.add(false);
+
+        // After ~1s of wall time with the same position (1000), nudge
+        // position forward by only 100ms. This means the 2s rate-check
+        // window that fires around T+2.2s will see:
+        //   positionDelta ≈ 100ms over wallDelta ≈ 2100ms
+        //   ratePct ≈ 4–5 (well under the 50% threshold)
+        // Simulates the iOS "position crawls at ~4% real-time" bug.
+        await Future<void>.delayed(const Duration(milliseconds: 1000));
+        when(
+          () => setup.state.position,
+        ).thenReturn(const Duration(milliseconds: 1100));
+
+        // Wait past the 2s rate-check window boundary so the heartbeat
+        // tick that evaluates the window sees position=1100.
+        await Future<void>.delayed(const Duration(milliseconds: 1400));
+
+        final slowLogs = logs
+            .where((m) => m.startsWith('slow_playback_detected'))
+            .toList();
+
+        expect(
+          slowLogs,
+          isNotEmpty,
+          reason:
+              'Expected slow_playback_detected when position advanced '
+              'only ~100ms over ~2.4s of wall time (~4% real-time). '
+              'All logs: $logs',
+        );
+        // Sanity: the log line should include the rate so we can grep
+        // for it in production and filter by severity.
+        expect(slowLogs.first, contains('ratePct='));
+        expect(slowLogs.first, contains('positionDeltaMs='));
+        expect(slowLogs.first, contains('wallDeltaMs='));
+
+        controller.dispose();
+      },
+    );
+
+    test(
+      'slow_playback_detected does NOT fire at normal real-time rate',
+      () async {
+        final logs = <String>[];
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 1),
+          pool: pool,
+          onLog: (level, message) => logs.add(message),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        final url = createTestVideos()[0].url;
+        final setup = playerSetups[url]!;
+
+        when(() => setup.state.playing).thenReturn(true);
+        when(() => setup.state.buffering).thenReturn(false);
+        when(
+          () => setup.state.position,
+        ).thenReturn(const Duration(milliseconds: 1000));
+        setup.bufferingController.add(false);
+
+        // Advance position by 2000ms in ~1.5s of wall time (~133%
+        // real-time — a bit fast but comfortably above the 50%
+        // slow-playback threshold).
+        await Future<void>.delayed(const Duration(milliseconds: 1500));
+        when(
+          () => setup.state.position,
+        ).thenReturn(const Duration(milliseconds: 3000));
+
+        // Wait past the 2s rate-check window boundary so the check
+        // evaluates with positionDelta ≈ 2000, wallDelta ≈ 2100,
+        // ratePct ≈ 95.
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+
+        expect(
+          logs.where((m) => m.startsWith('slow_playback_detected')),
+          isEmpty,
+          reason:
+              'slow_playback_detected should only fire when playback is '
+              'measurably slower than real-time, not for normal speed. '
+              'All logs: $logs',
+        );
+
+        controller.dispose();
+      },
+    );
+
+    test(
+      'player_state_snapshot fires periodically for current video',
+      () async {
+        final logs = <String>[];
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 1),
+          pool: pool,
+          onLog: (level, message) => logs.add(message),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        final url = createTestVideos()[0].url;
+        final setup = playerSetups[url]!;
+
+        when(() => setup.state.playing).thenReturn(true);
+        when(() => setup.state.buffering).thenReturn(false);
+        when(
+          () => setup.state.position,
+        ).thenReturn(const Duration(milliseconds: 500));
+        setup.bufferingController.add(false);
+
+        // Wait longer than the snapshot interval (2s) to guarantee at
+        // least one snapshot fires.
+        await Future<void>.delayed(const Duration(milliseconds: 2300));
+
+        final snapshotLogs = logs
+            .where((m) => m.startsWith('player_state_snapshot'))
+            .toList();
+
+        expect(
+          snapshotLogs,
+          isNotEmpty,
+          reason:
+              'Expected player_state_snapshot to fire at least once '
+              'within ~2.3s. All logs: $logs',
+        );
+        // The snapshot should include enough fields to diagnose mpv
+        // state divergence in production logs.
+        expect(snapshotLogs.first, contains('playing='));
+        expect(snapshotLogs.first, contains('buffering='));
+        expect(snapshotLogs.first, contains('positionMs='));
+        expect(snapshotLogs.first, contains('index=0'));
+
+        controller.dispose();
+      },
+    );
+  });
+
   group('classifyPlaybackSourceKind', () {
     const hash =
         'a1b2c3d4e5f6071828394a5b6c7d8e9f0a1b2c3d4e5f6071828394a5b6c7d8e9';

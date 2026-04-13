@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/welcome/welcome_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
@@ -114,17 +115,25 @@ class _WelcomeView extends StatelessWidget {
       listenWhen: (prev, current) =>
           current.status == WelcomeStatus.navigatingToLoginOptions ||
           current.status == WelcomeStatus.navigatingToCreateAccount ||
-          (current.status == WelcomeStatus.error && current.error != null),
+          current.status == WelcomeStatus.error ||
+          current.status == WelcomeStatus.sessionExpired,
       listener: (context, state) {
         switch (state.status) {
           case WelcomeStatus.navigatingToCreateAccount:
             context.push(WelcomeScreen.inviteGatePath);
           case WelcomeStatus.navigatingToLoginOptions:
             context.push(WelcomeScreen.loginOptionsPath);
-          case WelcomeStatus.error when state.error != null:
+          case WelcomeStatus.sessionExpired:
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.error!),
+                content: Text(context.l10n.authSessionExpired),
+                backgroundColor: VineTheme.error,
+              ),
+            );
+          case WelcomeStatus.error:
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(context.l10n.authSignInFailed),
                 backgroundColor: VineTheme.error,
               ),
             );
@@ -199,7 +208,7 @@ class _NewUserLayout extends StatelessWidget {
 
         if (!isLoading) ...[
           DivineButton(
-            label: 'Create a new Divine account',
+            label: context.l10n.authCreateNewAccount,
             expanded: true,
             onPressed: () => context.read<WelcomeBloc>().add(
               const WelcomeCreateAccountRequested(),
@@ -209,7 +218,7 @@ class _NewUserLayout extends StatelessWidget {
           const SizedBox(height: 12),
 
           DivineButton(
-            label: 'Sign in with a different account',
+            label: context.l10n.authSignInDifferentAccount,
             expanded: true,
             type: .secondary,
             onPressed: () => context.read<WelcomeBloc>().add(
@@ -265,7 +274,7 @@ class _ReturningUserLayout extends StatelessWidget {
 
               // Sign back in button (primary)
               DivineButton(
-                label: 'Sign back in',
+                label: context.l10n.authSignBackIn,
                 isLoading: isLoading,
                 expanded: true,
                 onPressed: () => context.read<WelcomeBloc>().add(
@@ -277,7 +286,7 @@ class _ReturningUserLayout extends StatelessWidget {
 
               // Login with different account (secondary)
               DivineButton(
-                label: 'Sign in with a different account',
+                label: context.l10n.authSignInDifferentAccount,
                 expanded: true,
                 type: .secondary,
                 onPressed: isLoading
@@ -291,7 +300,7 @@ class _ReturningUserLayout extends StatelessWidget {
 
               // Create new account (tertiary)
               DivineButton(
-                label: 'Create a new Divine account',
+                label: context.l10n.authCreateNewAccount,
                 expanded: true,
                 type: .secondary,
                 onPressed: isLoading
@@ -432,25 +441,23 @@ class _TermsNoticeState extends State<_TermsNotice> {
       text: TextSpan(
         style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
         children: [
-          const TextSpan(
-            text:
-                'By selecting an option above, you confirm you are '
-                'at least 16 years old and agree to the ',
+          TextSpan(
+            text: context.l10n.authTermsPrefix,
           ),
           TextSpan(
-            text: 'Terms of Service',
+            text: context.l10n.authTermsOfService,
             style: linkStyle,
             recognizer: _termsRecognizer,
           ),
           const TextSpan(text: ', '),
           TextSpan(
-            text: 'Privacy Policy',
+            text: context.l10n.authPrivacyPolicy,
             style: linkStyle,
             recognizer: _privacyRecognizer,
           ),
-          const TextSpan(text: ', and '),
+          TextSpan(text: context.l10n.authTermsAnd),
           TextSpan(
-            text: 'Safety Standards',
+            text: context.l10n.authSafetyStandards,
             style: linkStyle,
             recognizer: _safetyRecognizer,
           ),

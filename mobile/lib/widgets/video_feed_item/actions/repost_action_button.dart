@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
 /// Repost action button with count display for video overlay.
@@ -70,7 +71,9 @@ class _ActionButton extends StatelessWidget {
     return VideoActionButton(
       icon: .repeatDuo,
       semanticIdentifier: 'repost_button',
-      semanticLabel: isReposted ? 'Remove repost' : 'Repost video',
+      semanticLabel: isReposted
+          ? context.l10n.videoActionRemoveRepost
+          : context.l10n.videoActionRepost,
       iconColor: isReposted ? VineTheme.vineGreen : VineTheme.whiteText,
       isLoading: isRepostInProgress,
       count: totalReposts,

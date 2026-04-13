@@ -59,11 +59,15 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showBackButton = false,
     this.onBackPressed,
     this.backButtonSemanticLabel,
+    this.backButtonTooltip = 'Back',
     this.backButtonHeroTag,
     this.showMenuButton = false,
     this.onMenuPressed,
+    this.menuButtonSemanticLabel = 'Open menu',
+    this.menuButtonTooltip = 'Menu',
     this.leadingIcon,
     this.onLeadingPressed,
+    this.leadingActionSemanticLabel = 'Leading action',
     this.actions = const [],
     this.backgroundMode = DiVineAppBarBackgroundMode.solid,
     this.gradient,
@@ -156,6 +160,11 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// tooltip to avoid iOS merging both into the accessibility text.
   final String? backButtonSemanticLabel;
 
+  /// Tooltip for the back button.
+  ///
+  /// Shown when [backButtonSemanticLabel] is null. Defaults to `'Back'`.
+  final String backButtonTooltip;
+
   /// Optional hero tag to wrap the back button in a [Hero] animation.
   ///
   /// When provided, the back button leading widget is wrapped in a Hero
@@ -170,6 +179,16 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Called when the menu button is tapped.
   final VoidCallback? onMenuPressed;
 
+  /// Semantic label for the menu button.
+  ///
+  /// Defaults to `'Open menu'`. Pass a localized string to override.
+  final String menuButtonSemanticLabel;
+
+  /// Tooltip for the menu button.
+  ///
+  /// Defaults to `'Menu'`. Pass a localized string to override.
+  final String menuButtonTooltip;
+
   /// Custom leading icon.
   ///
   /// Cannot be set if [showBackButton] or [showMenuButton] is true.
@@ -179,6 +198,11 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
   ///
   /// Required when [leadingIcon] is provided.
   final VoidCallback? onLeadingPressed;
+
+  /// Semantic label for a custom leading icon.
+  ///
+  /// Defaults to `'Leading action'`. Pass a localized string to override.
+  final String leadingActionSemanticLabel;
 
   /// Action buttons displayed on the right side.
   ///
@@ -259,11 +283,15 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
               showBackButton: showBackButton,
               onBackPressed: onBackPressed,
               backButtonSemanticLabel: backButtonSemanticLabel,
+              backButtonTooltip: backButtonTooltip,
               backButtonHeroTag: backButtonHeroTag,
               showMenuButton: showMenuButton,
               onMenuPressed: onMenuPressed,
+              menuButtonSemanticLabel: menuButtonSemanticLabel,
+              menuButtonTooltip: menuButtonTooltip,
               leadingIcon: leadingIcon,
               onLeadingPressed: onLeadingPressed,
+              leadingActionSemanticLabel: leadingActionSemanticLabel,
               style: effectiveStyle,
             )
           : null,

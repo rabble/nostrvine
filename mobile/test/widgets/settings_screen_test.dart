@@ -9,8 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -33,6 +35,8 @@ class _MockDraftStorageService extends Mock implements DraftStorageService {}
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
 
+class _MockLocaleCubit extends MockCubit<LocaleState> implements LocaleCubit {}
+
 _MockInviteStatusCubit _createMockInviteCubit() {
   final cubit = _MockInviteStatusCubit();
   when(() => cubit.state).thenReturn(const InviteStatusState());
@@ -43,6 +47,7 @@ void main() {
   group(SettingsScreen, () {
     late _MockAuthService mockAuthService;
     late _MockDraftStorageService mockDraftStorageService;
+    late _MockLocaleCubit mockLocaleCubit;
     late SharedPreferences sharedPreferences;
 
     setUp(() async {
@@ -50,6 +55,8 @@ void main() {
       sharedPreferences = await SharedPreferences.getInstance();
       mockAuthService = _MockAuthService();
       mockDraftStorageService = _MockDraftStorageService();
+      mockLocaleCubit = _MockLocaleCubit();
+      when(() => mockLocaleCubit.state).thenReturn(const LocaleState());
 
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.isAnonymous).thenReturn(false);
@@ -100,8 +107,15 @@ void main() {
           ),
         ],
         child: MaterialApp(
-          home: BlocProvider<InviteStatusCubit>.value(
-            value: mockInviteCubit,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<InviteStatusCubit>.value(
+                value: mockInviteCubit,
+              ),
+              BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
+            ],
             child: const SettingsScreen(),
           ),
         ),
@@ -258,8 +272,17 @@ void main() {
           child: MockGoRouterProvider(
             goRouter: mockGoRouter,
             child: MaterialApp(
-              home: BlocProvider<InviteStatusCubit>.value(
-                value: _createMockInviteCubit(),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<InviteStatusCubit>.value(
+                    value: _createMockInviteCubit(),
+                  ),
+                  BlocProvider<LocaleCubit>.value(
+                    value: mockLocaleCubit,
+                  ),
+                ],
                 child: const SettingsScreen(),
               ),
             ),
@@ -271,9 +294,10 @@ void main() {
       final scrollable = find.byType(Scrollable);
       await tester.scrollUntilVisible(
         find.text('Integrated Apps'),
-        100,
+        200,
         scrollable: scrollable,
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Integrated Apps'));
       await tester.pumpAndSettle();
 
@@ -336,8 +360,17 @@ void main() {
               ),
             ],
             child: MaterialApp(
-              home: BlocProvider<InviteStatusCubit>.value(
-                value: _createMockInviteCubit(),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<InviteStatusCubit>.value(
+                    value: _createMockInviteCubit(),
+                  ),
+                  BlocProvider<LocaleCubit>.value(
+                    value: mockLocaleCubit,
+                  ),
+                ],
                 child: const SettingsScreen(),
               ),
             ),
@@ -417,8 +450,17 @@ void main() {
               ).overrideWith((ref) => true),
             ],
             child: MaterialApp(
-              home: BlocProvider<InviteStatusCubit>.value(
-                value: _createMockInviteCubit(),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<InviteStatusCubit>.value(
+                    value: _createMockInviteCubit(),
+                  ),
+                  BlocProvider<LocaleCubit>.value(
+                    value: mockLocaleCubit,
+                  ),
+                ],
                 child: const SettingsScreen(),
               ),
             ),

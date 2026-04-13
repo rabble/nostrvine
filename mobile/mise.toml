@@ -56,6 +56,10 @@ docker compose -f ../local_stack/docker-compose.yml exec keycast-postgres \
 description = "Show keycast container logs (useful after refresh token tests)"
 run = "docker compose -f ../e2e/docker-compose.yml logs keycast --tail=200"
 
+[tasks.gen_l10n]
+description = "Generate localization files from ARB"
+run = "flutter gen-l10n"
+
 [tasks.setup_hooks]
 description = "Install git hooks (pre-commit + pre-push) for local CI checks"
 run = "bash ../scripts/install-hooks.sh"

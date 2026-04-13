@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_category.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
 
@@ -17,6 +18,8 @@ void main() {
     Widget? galleryOverride,
   }) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: CategoryGalleryView(
           category: category,

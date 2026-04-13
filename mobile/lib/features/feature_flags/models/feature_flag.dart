@@ -37,6 +37,10 @@ enum FeatureFlag {
   integratedApps(
     'Integrated Apps',
     'Enable the integrated Nostr apps directory and sandbox',
+  ),
+  newSearch(
+    'New Search',
+    'Unified search bar on Explore',
   )
   ;
 

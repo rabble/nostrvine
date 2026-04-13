@@ -9,14 +9,14 @@ import 'dart:html'
     as html;
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart'
     show BugReportData, BugReportResult, LogEntry;
 import 'package:openvine/config/bug_report_config.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
-import 'package:openvine/services/nip17_message_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';

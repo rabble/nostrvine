@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
@@ -54,6 +55,8 @@ void main() {
         curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: SelectListDialog(video: testVideo)),
       ),
     );
@@ -269,6 +272,8 @@ void main() {
         curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: CreateListDialog(video: testVideo)),
       ),
     );

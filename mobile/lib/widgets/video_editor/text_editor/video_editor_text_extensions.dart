@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/painting.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// Extension on [TextFont] for text editor UI purposes.
@@ -29,12 +30,11 @@ extension TextEditorTextAlign on TextAlign {
     _ => .textAlignCenter,
   };
 
-  /// Returns the accessibility name for this alignment.
-  // TODO(l10n): Replace with localized strings when localization is added.
-  String get accessibilityName => switch (this) {
-    TextAlign.left || TextAlign.start => 'Left',
-    TextAlign.right || TextAlign.end => 'Right',
-    _ => 'Center',
+  /// Returns the localized accessibility name for this alignment.
+  String localizedAccessibilityName(AppLocalizations l10n) => switch (this) {
+    TextAlign.left || TextAlign.start => l10n.textAlignLeft,
+    TextAlign.right || TextAlign.end => l10n.textAlignRight,
+    _ => l10n.textAlignCenter,
   };
 }
 
@@ -48,12 +48,12 @@ extension TextEditorBackgroundMode on LayerBackgroundMode {
     LayerBackgroundMode.backgroundAndColorWithOpacity => .textBgTransparent,
   };
 
-  /// Returns the accessibility name for this background mode.
-  // TODO(l10n): Replace with localized strings when localization is added.
-  String get accessibilityName => switch (this) {
-    LayerBackgroundMode.onlyColor => 'None',
-    LayerBackgroundMode.backgroundAndColor => 'Solid',
-    LayerBackgroundMode.background => 'Highlight',
-    LayerBackgroundMode.backgroundAndColorWithOpacity => 'Transparent',
+  /// Returns the localized accessibility name for this background mode.
+  String localizedAccessibilityName(AppLocalizations l10n) => switch (this) {
+    LayerBackgroundMode.onlyColor => l10n.textBackgroundNone,
+    LayerBackgroundMode.backgroundAndColor => l10n.textBackgroundSolid,
+    LayerBackgroundMode.background => l10n.textBackgroundHighlight,
+    LayerBackgroundMode.backgroundAndColorWithOpacity =>
+      l10n.textBackgroundTransparent,
   };
 }

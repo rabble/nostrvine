@@ -4,7 +4,7 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/repositories/follow_repository.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 

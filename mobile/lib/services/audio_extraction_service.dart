@@ -3,7 +3,7 @@
 
 import 'dart:io';
 
-import 'package:openvine/utils/hash_util.dart';
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';

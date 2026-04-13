@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/age_verification_dialog.dart';
 
 /// Helper to create a test widget with GoRouter for dialog interaction tests.
@@ -28,14 +29,22 @@ Widget _createDialogTestApp({ValueChanged<bool?>? onResult}) {
       ),
     ],
   );
-  return MaterialApp.router(routerConfig: router);
+  return MaterialApp.router(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    routerConfig: router,
+  );
 }
 
 void main() {
   group(AgeVerificationDialog, () {
     testWidgets('should display all required elements', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: AgeVerificationDialog()),
+        ),
       );
 
       expect(find.byIcon(Icons.person_outline), findsOneWidget);
@@ -107,7 +116,11 @@ void main() {
 
     testWidgets('should use $VineTheme colors', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: AgeVerificationDialog()),
+        ),
       );
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.person_outline));
@@ -124,7 +137,11 @@ void main() {
 
     testWidgets('should have proper dialog constraints', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: AgeVerificationDialog()),
+        ),
       );
 
       final dialog = tester.widget<Dialog>(find.byType(Dialog));

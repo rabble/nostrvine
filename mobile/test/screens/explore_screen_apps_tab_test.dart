@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -85,7 +86,11 @@ void main() {
               FeatureFlag.integratedApps,
             ).overrideWithValue(true),
           ],
-          child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: ExploreScreen()),
+          ),
         ),
       );
 
@@ -124,7 +129,11 @@ void main() {
               FeatureFlag.integratedApps,
             ).overrideWithValue(false),
           ],
-          child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: ExploreScreen()),
+          ),
         ),
       );
 

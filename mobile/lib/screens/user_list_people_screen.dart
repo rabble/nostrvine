@@ -347,7 +347,11 @@ class _PeopleCarousel extends StatelessWidget {
         height: 100,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
+          padding: const EdgeInsetsDirectional.only(
+            start: 16,
+            end: 16,
+            top: 12,
+          ),
           itemCount: pubkeys.length,
           itemBuilder: (context, index) =>
               _PeopleAvatarItem(pubkey: pubkeys[index]),
@@ -377,7 +381,7 @@ class _PeopleAvatarItem extends ConsumerWidget {
           context.push(OtherProfileScreen.pathForNpub(npub));
         },
         child: Padding(
-          padding: const EdgeInsets.only(right: 12),
+          padding: const EdgeInsetsDirectional.only(end: 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

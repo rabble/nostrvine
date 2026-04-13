@@ -4,14 +4,37 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/service_init_helper.dart';
+
+class _BlossomAuthAdapter implements BlossomAuthProvider {
+  _BlossomAuthAdapter(this._authService);
+  final AuthService _authService;
+
+  @override
+  bool get isAuthenticated => _authService.isAuthenticated;
+
+  @override
+  Future<BlossomSignedEvent?> createAndSignEvent({
+    required int kind,
+    required String content,
+    required List<List<String>> tags,
+  }) async {
+    final event = await _authService.createAndSignEvent(
+      kind: kind,
+      content: content,
+      tags: tags,
+    );
+    if (event == null) return null;
+    return BlossomSignedEvent(json: event.toJson());
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +81,9 @@ void main() {
       );
       await authService.initialize();
 
-      blossomService = BlossomUploadService(authService: authService);
+      blossomService = BlossomUploadService(
+        authProvider: _BlossomAuthAdapter(authService),
+      );
 
       // Configure to use staging server
       await blossomService.setBlossomServer(stagingServer);

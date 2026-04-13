@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
@@ -41,10 +42,7 @@ class CollaboratorAvatarRow extends ConsumerWidget {
       child: Semantics(
         identifier: 'collaborator_avatar_row',
         button: true,
-        label:
-            '${pubkeys.length} collaborator'
-            '${pubkeys.length > 1 ? 's' : ''}. '
-            'Tap to view profile.',
+        label: context.l10n.videoCollaboratorCountLabel(pubkeys.length),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -148,8 +146,11 @@ class _CollaboratorLabel extends ConsumerWidget {
         UserProfile.defaultDisplayNameFor(pubkeys.first);
 
     final label = pubkeys.length == 1
-        ? 'with @$firstName'
-        : 'with @$firstName +${pubkeys.length - 1}';
+        ? context.l10n.videoCollaboratorWithOne(firstName)
+        : context.l10n.videoCollaboratorWithMore(
+            firstName,
+            pubkeys.length - 1,
+          );
 
     return Text(
       label,
