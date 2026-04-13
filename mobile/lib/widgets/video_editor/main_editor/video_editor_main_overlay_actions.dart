@@ -53,11 +53,21 @@ class _TopActions extends ConsumerWidget {
     return VideoEditorToolbar(
       closeIcon: .caretLeft,
       doneIcon: .caretRight,
-      onClose: () => _onClosePressed(
-        context: context,
-        ref: ref,
-        closeSubEditor: scope.editor?.closeSubEditor,
-      ),
+      onClose: () {
+        final isAutosavedDraft = ref
+            .read(videoEditorProvider.notifier)
+            .isAutosavedDraft;
+
+        if (isAutosavedDraft) {
+          _onClosePressed(
+            context: context,
+            ref: ref,
+            closeSubEditor: scope.editor?.closeSubEditor,
+          );
+        } else {
+          context.pop();
+        }
+      },
       onDone: () => scope.editor?.doneEditing(),
     );
   }
