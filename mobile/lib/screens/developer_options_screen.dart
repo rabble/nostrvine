@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -116,7 +117,7 @@ class _DeveloperOptionsScreenState
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Developer Options',
+        title: context.l10n.devOptionsTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -160,11 +161,11 @@ class _DeveloperOptionsScreenState
           const Divider(color: VineTheme.outlineVariant, height: 32),
 
           // Page Load Times section header
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              'Page Load Times',
-              style: TextStyle(
+              context.l10n.devOptionsPageLoadTimes,
+              style: const TextStyle(
                 color: VineTheme.vineGreen,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -174,12 +175,14 @@ class _DeveloperOptionsScreenState
 
           // Recent page load records
           if (recentRecords.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Text(
-                'No page loads recorded yet.\n'
-                'Navigate around the app to see timing data.',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+                context.l10n.devOptionsNoPageLoads,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 14,
+                ),
               ),
             )
           else
@@ -194,9 +197,10 @@ class _DeveloperOptionsScreenState
                   ),
                 ),
                 subtitle: Text(
-                  'Visible: ${record.contentVisibleMs ?? "\u2014"}ms'
-                  '  |  '
-                  'Data: ${record.dataLoadedMs ?? "\u2014"}ms',
+                  context.l10n.devOptionsPageLoadVisible(
+                    record.contentVisibleMs?.toString() ?? '\u2014',
+                    record.dataLoadedMs?.toString() ?? '\u2014',
+                  ),
                   style: const TextStyle(
                     color: VineTheme.secondaryText,
                     fontSize: 12,
@@ -216,11 +220,11 @@ class _DeveloperOptionsScreenState
           // Slowest Screens subsection
           if (slowestRecords.isNotEmpty) ...[
             const Divider(color: VineTheme.outlineVariant, height: 32),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Text(
-                'Slowest Screens',
-                style: TextStyle(
+                context.l10n.devOptionsSlowestScreens,
+                style: const TextStyle(
                   color: VineTheme.vineGreen,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -256,11 +260,11 @@ class _DeveloperOptionsScreenState
 
           const Divider(color: VineTheme.outlineVariant, height: 32),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              'Video Playback Format',
-              style: TextStyle(
+              context.l10n.devOptionsVideoPlaybackFormat,
+              style: const TextStyle(
                 color: VineTheme.vineGreen,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -310,21 +314,22 @@ class _DeveloperOptionsScreenState
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: const Text(
-          'Switch Environment?',
-          style: TextStyle(color: VineTheme.primaryText),
+        title: Text(
+          context.l10n.devOptionsSwitchEnvironmentTitle,
+          style: const TextStyle(color: VineTheme.primaryText),
         ),
         content: Text(
-          'Switch to ${newConfig.displayName}?\n\n'
-          'This will clear cached video data and reconnect to the new relay.',
+          context.l10n.devOptionsSwitchEnvironmentMessage(
+            newConfig.displayName,
+          ),
           style: const TextStyle(color: VineTheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: VineTheme.onSurfaceVariant),
+            child: Text(
+              context.l10n.devOptionsCancel,
+              style: const TextStyle(color: VineTheme.onSurfaceVariant),
             ),
           ),
           ElevatedButton(
@@ -332,9 +337,9 @@ class _DeveloperOptionsScreenState
             style: ElevatedButton.styleFrom(
               backgroundColor: VineTheme.vineGreen,
             ),
-            child: const Text(
-              'Switch',
-              style: TextStyle(color: VineTheme.primaryText),
+            child: Text(
+              context.l10n.devOptionsSwitch,
+              style: const TextStyle(color: VineTheme.primaryText),
             ),
           ),
         ],
@@ -366,7 +371,9 @@ class _DeveloperOptionsScreenState
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Switched to ${newConfig.displayName}'),
+          content: Text(
+            context.l10n.devOptionsSwitchedTo(newConfig.displayName),
+          ),
           backgroundColor: Color(newConfig.indicatorColorValue),
         ),
       );
@@ -387,7 +394,9 @@ class _DeveloperOptionsScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Switched to ${format?.name ?? "HLS (default)"} — cache cleared',
+          context.l10n.devOptionsSwitchedFormat(
+            format?.name ?? 'HLS (default)',
+          ),
         ),
         backgroundColor: VineTheme.vineGreen,
       ),

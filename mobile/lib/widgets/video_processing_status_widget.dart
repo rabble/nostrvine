@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -31,11 +32,11 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildStatusHeader(upload),
+            _buildStatusHeader(context, upload),
             const SizedBox(height: 12),
-            _buildProgressIndicator(upload),
+            _buildProgressIndicator(context, upload),
             const SizedBox(height: 8),
-            _buildStatusMessage(upload),
+            _buildStatusMessage(context, upload),
             if (upload.status == UploadStatus.failed) ...[
               const SizedBox(height: 12),
               _buildRetryButton(context, ref),
@@ -46,44 +47,45 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusHeader(PendingUpload upload) {
+  Widget _buildStatusHeader(BuildContext context, PendingUpload upload) {
     IconData icon;
     Color color;
     String title;
+    final l10n = context.l10n;
 
     switch (upload.status) {
       case UploadStatus.pending:
         icon = Icons.schedule;
         color = VineTheme.warning;
-        title = 'Waiting to upload';
+        title = l10n.uploadWaitingToUpload;
       case UploadStatus.uploading:
         icon = Icons.cloud_upload;
         color = VineTheme.vineGreen;
-        title = 'Uploading video';
+        title = l10n.uploadUploadingVideo;
       case UploadStatus.processing:
         icon = Icons.hourglass_empty;
         color = VineTheme.info;
-        title = 'Processing video';
+        title = l10n.uploadProcessingVideo;
       case UploadStatus.readyToPublish:
         icon = Icons.check_circle;
         color = VineTheme.success;
-        title = 'Processing complete';
+        title = l10n.uploadProcessingComplete;
       case UploadStatus.published:
         icon = Icons.check_circle;
         color = VineTheme.success;
-        title = 'Published successfully';
+        title = l10n.uploadPublishedSuccessfully;
       case UploadStatus.failed:
         icon = Icons.error;
         color = VineTheme.error;
-        title = 'Upload failed';
+        title = l10n.uploadFailed;
       case UploadStatus.retrying:
         icon = Icons.refresh;
         color = VineTheme.warning;
-        title = 'Retrying upload';
+        title = l10n.uploadRetrying;
       case UploadStatus.paused:
         icon = Icons.pause;
         color = VineTheme.lightText;
-        title = 'Upload paused';
+        title = l10n.uploadPaused;
     }
 
     return Row(
@@ -107,7 +109,7 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildProgressIndicator(PendingUpload upload) {
+  Widget _buildProgressIndicator(BuildContext context, PendingUpload upload) {
     final progress = upload.uploadProgress ?? 0.0;
 
     if (upload.status == UploadStatus.failed ||
@@ -128,38 +130,39 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          '${(progress * 100).toInt()}% complete',
+          context.l10n.uploadPercentComplete((progress * 100).toInt()),
           style: const TextStyle(fontSize: 12, color: VineTheme.lightText),
         ),
       ],
     );
   }
 
-  Widget _buildStatusMessage(PendingUpload upload) {
+  Widget _buildStatusMessage(BuildContext context, PendingUpload upload) {
     String message;
     Color? textColor;
+    final l10n = context.l10n;
 
     switch (upload.status) {
       case UploadStatus.pending:
-        message = 'Your video is queued for upload';
+        message = l10n.uploadQueuedMessage;
       case UploadStatus.uploading:
-        message = 'Uploading to server...';
+        message = l10n.uploadUploadingMessage;
       case UploadStatus.processing:
-        message = 'Processing video - this may take a few minutes';
+        message = l10n.uploadProcessingMessage;
         textColor = VineTheme.info;
       case UploadStatus.readyToPublish:
-        message = 'Video processed successfully and ready to publish';
+        message = l10n.uploadReadyToPublishMessage;
         textColor = VineTheme.success;
       case UploadStatus.published:
-        message = 'Video published to your profile';
+        message = l10n.uploadPublishedMessage;
         textColor = VineTheme.success;
       case UploadStatus.failed:
-        message = upload.errorMessage ?? 'Upload failed - please try again';
+        message = upload.errorMessage ?? l10n.uploadFailedMessage;
         textColor = VineTheme.error;
       case UploadStatus.retrying:
-        message = 'Retrying upload...';
+        message = l10n.uploadRetryingMessage;
       case UploadStatus.paused:
-        message = 'Upload paused by user';
+        message = l10n.uploadPausedMessage;
     }
 
     return Text(
@@ -195,7 +198,7 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Failed to retry upload: $e'),
+                  content: Text(context.l10n.uploadRetryFailed('$e')),
                   backgroundColor: VineTheme.error,
                 ),
               );
@@ -206,7 +209,7 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
           backgroundColor: VineTheme.vineGreen,
           foregroundColor: VineTheme.whiteText,
         ),
-        child: const Text('RETRY'),
+        child: Text(context.l10n.uploadRetryButton),
       ),
     );
   }

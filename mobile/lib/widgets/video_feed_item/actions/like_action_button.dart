@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
 /// Like action button with count display for video overlay.
@@ -65,7 +66,9 @@ class _ActionButton extends StatelessWidget {
     return VideoActionButton(
       icon: .heartDuo,
       semanticIdentifier: 'like_button',
-      semanticLabel: isLiked ? 'Unlike video' : 'Like video',
+      semanticLabel: isLiked
+          ? context.l10n.videoActionUnlike
+          : context.l10n.videoActionLike,
       iconColor: isLiked ? VineTheme.likeRed : VineTheme.whiteText,
       isLoading: isLikeInProgress,
       count: totalLikes,

@@ -2,12 +2,12 @@
 // ABOUTME: Sets up ConversationBloc from DmRepository for a specific
 // ABOUTME: conversation ID derived from participant pubkeys.
 
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 
 /// Conversation detail page (single DM thread).

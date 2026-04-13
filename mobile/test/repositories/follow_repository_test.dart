@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -200,6 +201,97 @@ void main() {
         expect(repository.isInitialized, isTrue);
         expect(repository.followingCount, 0);
       });
+
+      test(
+        'skips PersonalEventCache when it has fewer follows than '
+        'LocalStorage',
+        () async {
+          // Seed LocalStorage with 10 follows
+          final localPubkeys = List.generate(
+            10,
+            (i) => i.toRadixString(16).padLeft(64, '0'),
+          );
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey':
+                '[${localPubkeys.map((p) => '"$p"').join(',')}]',
+          });
+
+          // PersonalEventCache returns a stale event with only 3 pubkeys
+          final stalePubkeys = localPubkeys.take(3).toList();
+          final staleEvent = Event(
+            testCurrentUserPubkey,
+            3,
+            stalePubkeys.map((p) => ['p', p]).toList(),
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 - 100,
+          );
+          when(() => mockPersonalEventCache.isInitialized).thenReturn(true);
+          when(
+            () => mockPersonalEventCache.getEventsByKind(3),
+          ).thenReturn([staleEvent]);
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            personalEventCache: mockPersonalEventCache,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.initialize();
+
+          // Should keep the 10 from LocalStorage, not the 3 from cache
+          expect(repository.followingCount, 10);
+          for (final pk in localPubkeys) {
+            expect(repository.followingPubkeys, contains(pk));
+          }
+        },
+      );
+
+      test(
+        'accepts PersonalEventCache when it has more follows than '
+        'LocalStorage',
+        () async {
+          // Seed LocalStorage with 3 follows
+          final localPubkeys = List.generate(
+            3,
+            (i) => i.toRadixString(16).padLeft(64, '0'),
+          );
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey':
+                '[${localPubkeys.map((p) => '"$p"').join(',')}]',
+          });
+
+          // PersonalEventCache returns a newer event with 5 pubkeys
+          final cachePubkeys = List.generate(
+            5,
+            (i) => (i + 10).toRadixString(16).padLeft(64, '0'),
+          );
+          final cacheEvent = Event(
+            testCurrentUserPubkey,
+            3,
+            cachePubkeys.map((p) => ['p', p]).toList(),
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+          );
+          when(() => mockPersonalEventCache.isInitialized).thenReturn(true);
+          when(
+            () => mockPersonalEventCache.getEventsByKind(3),
+          ).thenReturn([cacheEvent]);
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            personalEventCache: mockPersonalEventCache,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.initialize();
+
+          // Should use the 5 from PersonalEventCache
+          expect(repository.followingCount, 5);
+          for (final pk in cachePubkeys) {
+            expect(repository.followingPubkeys, contains(pk));
+          }
+        },
+      );
 
       test('does not reinitialize if already initialized', () async {
         await repository.initialize();
@@ -799,23 +891,25 @@ void main() {
         expect(filters.first.p, contains(testTargetPubkey));
       });
 
-      test(
-        'returns empty list on timeout',
-        () async {
+      test('returns empty list on timeout', () {
+        fakeAsync((async) {
           // Simulate a slow query that exceeds the repository's internal
-          // timeout. The delay must be longer than the repo timeout (5s) but
-          // shorter than the test timeout so cleanup completes cleanly.
+          // 8-second timeout.
           when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
-            await Future<void>.delayed(const Duration(seconds: 7));
+            await Future<void>.delayed(const Duration(seconds: 15));
             return [];
           });
 
-          final followers = await repository.getFollowers(testTargetPubkey);
+          List<String>? followers;
+          repository.getFollowers(testTargetPubkey).then((r) => followers = r);
+
+          // Advance past the 8s _fetchFollowersTimeout
+          async.elapse(const Duration(seconds: 9));
+          async.flushMicrotasks();
 
           expect(followers, isEmpty);
-        },
-        timeout: const Timeout(Duration(seconds: 15)),
-      );
+        });
+      });
     });
 
     group('getMyFollowers', () {
@@ -970,7 +1064,10 @@ void main() {
       setUp(() {
         realTimeStreamController = StreamController<Event>.broadcast();
 
-        // Override the default subscribe mock to use the stream controller
+        // Override subscribe to distinguish initialization from real-time:
+        //   - Init relay query (no subscriptionId) → empty stream so it
+        //     completes immediately instead of waiting 5s fallback timeout
+        //   - Real-time sync (with subscriptionId) → broadcast stream
         when(
           () => mockNostrClient.subscribe(
             any(),
@@ -981,7 +1078,14 @@ void main() {
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
           ),
-        ).thenAnswer((_) => realTimeStreamController.stream);
+        ).thenAnswer((invocation) {
+          final subscriptionId =
+              invocation.namedArguments[#subscriptionId] as String?;
+          if (subscriptionId == null) {
+            return const Stream<Event>.empty();
+          }
+          return realTimeStreamController.stream;
+        });
       });
 
       tearDown(() async {
@@ -1008,7 +1112,7 @@ void main() {
         );
 
         realTimeStreamController.add(remoteEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         expect(repository.followingPubkeys, contains(testTargetPubkey));
         expect(repository.followingCount, 1);
@@ -1029,7 +1133,7 @@ void main() {
         );
 
         realTimeStreamController.add(remoteEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         expect(repository.followingPubkeys, contains(testTargetPubkey));
         expect(repository.followingPubkeys, contains(testTargetPubkey2));
@@ -1050,7 +1154,7 @@ void main() {
           createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         );
         realTimeStreamController.add(recentEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         expect(repository.followingCount, 1);
 
@@ -1065,7 +1169,7 @@ void main() {
         );
 
         realTimeStreamController.add(oldEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         // Should still have the original following list
         expect(repository.followingPubkeys, contains(testTargetPubkey));
@@ -1090,7 +1194,7 @@ void main() {
         );
 
         realTimeStreamController.add(otherUserEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         // Should not update following list
         expect(repository.followingPubkeys, isEmpty);
@@ -1111,7 +1215,7 @@ void main() {
         );
 
         realTimeStreamController.add(textNoteEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         // Should not update following list
         expect(repository.followingPubkeys, isEmpty);
@@ -1137,7 +1241,7 @@ void main() {
         );
 
         realTimeStreamController.add(remoteEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         expect(emittedLists.length, greaterThanOrEqualTo(1));
         expect(emittedLists.last, contains(testTargetPubkey));
@@ -1195,7 +1299,7 @@ void main() {
           );
 
           realTimeStreamController.add(remoteEvent);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await Future<void>.delayed(Duration.zero);
 
           // Should have merged: all 12 original + 1 new = 13
           expect(repository.followingCount, 13);
@@ -1244,7 +1348,7 @@ void main() {
           );
 
           realTimeStreamController.add(remoteEvent);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await Future<void>.delayed(Duration.zero);
 
           // Should accept as-is (not merge) because no new pubkeys
           expect(repository.followingCount, 3);
@@ -1284,7 +1388,7 @@ void main() {
           );
 
           realTimeStreamController.add(remoteEvent);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await Future<void>.delayed(Duration.zero);
 
           // Should accept the remote event as-is (8 follows)
           expect(repository.followingCount, 8);
@@ -1325,7 +1429,7 @@ void main() {
         );
 
         realTimeStreamController.add(remoteEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         // Should accept the larger list
         expect(repository.followingCount, 10);
@@ -1334,9 +1438,112 @@ void main() {
       test(
         'skips merge protection when local list is below threshold',
         () async {
-          // Seed with 5 follows (below _mergeMinFollows of 10)
+          // Seed with 1 follow (below _mergeMinFollows of 2)
+          final seededPubkeys = [
+            '0'.padLeft(64, '0'),
+          ];
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey':
+                '[${seededPubkeys.map((p) => '"$p"').join(',')}]',
+          });
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            personalEventCache: mockPersonalEventCache,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.initialize();
+          expect(repository.followingCount, 1);
+
+          // Remote event with a different follow — drastic but below threshold
+          final remoteEvent = Event(
+            testCurrentUserPubkey,
+            3,
+            [
+              ['p', testTargetPubkey],
+            ],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+          );
+
+          realTimeStreamController.add(remoteEvent);
+          await Future<void>.delayed(Duration.zero);
+
+          // Should replace (not merge) because local list is below threshold
+          expect(repository.followingCount, 1);
+          expect(repository.followingPubkeys, equals([testTargetPubkey]));
+        },
+      );
+
+      test(
+        'merges when small list (above threshold) receives buggy event with '
+        'new pubkey',
+        () async {
+          // Seed with 3 follows (above _mergeMinFollows of 2)
           final seededPubkeys = List.generate(
-            5,
+            3,
+            (i) => i.toRadixString(16).padLeft(64, '0'),
+          );
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey':
+                '[${seededPubkeys.map((p) => '"$p"').join(',')}]',
+          });
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            personalEventCache: mockPersonalEventCache,
+            indexerRelayUrls: const [],
+          );
+
+          // Mock sendContactList for the merge re-broadcast
+          when(
+            () => mockNostrClient.sendContactList(any(), any()),
+          ).thenAnswer(
+            (_) async => Event(
+              testCurrentUserPubkey,
+              3,
+              [],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 200,
+            ),
+          );
+
+          await repository.initialize();
+          expect(repository.followingCount, 3);
+
+          // Remote event with 1 new follow — drastic reduction + new pubkey
+          final remoteEvent = Event(
+            testCurrentUserPubkey,
+            3,
+            [
+              ['p', testTargetPubkey],
+            ],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+          );
+
+          realTimeStreamController.add(remoteEvent);
+          await Future<void>.delayed(Duration.zero);
+
+          // Should merge: all 3 original + 1 new = 4
+          expect(repository.followingCount, 4);
+          expect(repository.followingPubkeys, contains(testTargetPubkey));
+          for (final pk in seededPubkeys) {
+            expect(repository.followingPubkeys, contains(pk));
+          }
+
+          // Verify re-broadcast was triggered
+          verify(() => mockNostrClient.sendContactList(any(), any())).called(1);
+        },
+      );
+
+      test(
+        'accepts legitimate unfollow on small list (subset, no new pubkeys)',
+        () async {
+          // Seed with 3 follows (above _mergeMinFollows of 2)
+          final seededPubkeys = List.generate(
+            3,
             (i) => i.toRadixString(16).padLeft(64, '0'),
           );
           SharedPreferences.setMockInitialValues({
@@ -1351,25 +1558,25 @@ void main() {
           );
 
           await repository.initialize();
-          expect(repository.followingCount, 5);
+          expect(repository.followingCount, 3);
 
-          // Remote event with only 1 follow — drastic but below threshold
+          // Remote event with 1 of the original 3 — legitimate unfollow
           final remoteEvent = Event(
             testCurrentUserPubkey,
             3,
             [
-              ['p', testTargetPubkey],
+              ['p', seededPubkeys.first],
             ],
             '',
             createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
           );
 
           realTimeStreamController.add(remoteEvent);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await Future<void>.delayed(Duration.zero);
 
-          // Should replace (not merge) because local list is below threshold
+          // Should accept as-is: no new pubkeys → legitimate mass unfollow
           expect(repository.followingCount, 1);
-          expect(repository.followingPubkeys, equals([testTargetPubkey]));
+          expect(repository.followingPubkeys, equals([seededPubkeys.first]));
         },
       );
 
@@ -1391,7 +1598,7 @@ void main() {
 
         // This should not throw or cause any updates
         realTimeStreamController.add(remoteEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
 
         // Following list should remain empty (disposed before event processed)
         expect(repository.followingPubkeys, isEmpty);

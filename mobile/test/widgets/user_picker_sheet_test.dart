@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
@@ -83,6 +84,8 @@ void main() {
               ),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.allUsers,
@@ -107,6 +110,8 @@ void main() {
               ),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.allUsers,
@@ -133,6 +138,8 @@ void main() {
               ),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.allUsers,
@@ -161,6 +168,8 @@ void main() {
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,
@@ -188,6 +197,8 @@ void main() {
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,
@@ -217,6 +228,8 @@ void main() {
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,
@@ -272,6 +285,8 @@ void main() {
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,
@@ -317,6 +332,8 @@ void main() {
                 followRepositoryProvider.overrideWithValue(mockFollowRepo),
               ],
               child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: Scaffold(
                   body: UserPickerSheet(
                     filterMode: UserPickerFilterMode.mutualFollowsOnly,
@@ -348,6 +365,8 @@ void main() {
               ),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.allUsers,
@@ -375,6 +394,8 @@ void main() {
               ),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.allUsers,
@@ -405,6 +426,8 @@ void main() {
               ),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.allUsers,
@@ -431,6 +454,8 @@ void main() {
               ),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.allUsers,
@@ -486,6 +511,8 @@ void main() {
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,

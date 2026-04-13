@@ -5,11 +5,11 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:db_client/db_client.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

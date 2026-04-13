@@ -13,6 +13,7 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -67,6 +68,8 @@ void main() {
         child: BlocProvider(
           create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             theme: VineTheme.theme,
             home: const CreateAccountScreen(),
           ),

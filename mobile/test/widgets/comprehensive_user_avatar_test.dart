@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 import '../helpers/golden_test_devices.dart';
@@ -115,7 +116,11 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: UserAvatar())),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: UserAvatar()),
+          ),
         );
 
         expect(find.byType(Semantics), findsWidgets);
@@ -132,6 +137,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: UserAvatar(onTap: () {})),
           ),
         );
@@ -146,6 +153,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: UserAvatar(size: customSize)),
           ),
         );
@@ -164,6 +173,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: UserAvatar(imageUrl: testImageUrl)),
           ),
         );
@@ -183,6 +194,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: UserAvatar(name: 'Test User')),
           ),
         );
@@ -197,6 +210,8 @@ void main() {
       ) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(imageUrl: '', name: 'Test User'),
             ),
@@ -215,6 +230,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(imageProvider: provider, name: 'Local User'),
             ),
@@ -243,6 +260,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(
                 placeholderTone: UserAvatarPlaceholderTone.blue,
@@ -263,6 +282,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(imageUrl: failingImageUrl, name: 'Test User'),
             ),
@@ -282,6 +303,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(imageUrl: testImageUrl, name: 'Test User'),
             ),
@@ -301,6 +324,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: UserAvatar(onTap: () => tapped = true)),
           ),
         );
@@ -315,7 +340,11 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: UserAvatar())),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: UserAvatar()),
+          ),
         );
 
         await tester.tap(find.byType(UserAvatar));
@@ -327,6 +356,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(
                 imageUrl: 'https://example.com/avatar.jpg',
@@ -347,6 +378,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(name: 'Test User', onTap: () => tapped = true),
             ),
@@ -368,6 +401,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(size: smallSize, name: 'Test'),
             ),
@@ -386,6 +421,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(size: largeSize, name: 'Test'),
             ),
@@ -404,6 +441,8 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(size: customSize, imageUrl: testImageUrl),
             ),
@@ -418,6 +457,8 @@ void main() {
       testWidgets('provides correct semantics with name', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: UserAvatar(name: 'Test User', size: 50)),
           ),
         );
@@ -427,7 +468,11 @@ void main() {
 
       testWidgets('provides default semantics without name', (tester) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: UserAvatar(size: 50))),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: UserAvatar(size: 50)),
+          ),
         );
 
         expect(find.bySemanticsLabel('User avatar'), findsOneWidget);
@@ -436,6 +481,8 @@ void main() {
       testWidgets('uses custom semantic label when provided', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(
                 name: 'Test User',
@@ -452,7 +499,11 @@ void main() {
     group('Edge Cases and Robustness', () {
       testWidgets('handles zero size gracefully', (tester) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: UserAvatar(size: 0))),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: UserAvatar(size: 0)),
+          ),
         );
 
         expect(find.byType(UserAvatar), findsOneWidget);
@@ -461,6 +512,8 @@ void main() {
       testWidgets('handles names with special characters', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: UserAvatar(name: 'José María')),
           ),
         );
@@ -473,6 +526,8 @@ void main() {
       testWidgets('handles names with numbers', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: UserAvatar(name: 'User123 Test456')),
           ),
         );
@@ -485,6 +540,8 @@ void main() {
       testWidgets('handles whitespace-only names', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: UserAvatar(name: '   ')),
           ),
         );
@@ -497,6 +554,8 @@ void main() {
       testWidgets('handles malformed URLs gracefully', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: UserAvatar(
                 imageUrl: 'not-a-valid-url',
@@ -515,6 +574,8 @@ void main() {
       testWidgets('renders multiple avatars correctly', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: Column(
                 children: [

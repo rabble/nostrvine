@@ -2,11 +2,11 @@
 // ABOUTME: Verifies message count loading and participant pubkey resolution.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 

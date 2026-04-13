@@ -1,0 +1,2434 @@
+{
+    "@@locale": "ro",
+    "appTitle": "Divine",
+    "@appTitle": {
+        "description": "App title shown in task switcher"
+    },
+    "settingsTitle": "Setări",
+    "@settingsTitle": {
+        "description": "Settings screen app bar title"
+    },
+    "settingsSecureAccount": "Securizează-ți contul",
+    "settingsSessionExpired": "Sesiune expirată",
+    "settingsSessionExpiredSubtitle": "Autentifică-te din nou ca să recapeți acces complet",
+    "settingsCreatorAnalytics": "Statistici pentru creatori",
+    "settingsSupportCenter": "Centru de asistență",
+    "settingsNotifications": "Notificări",
+    "settingsContentPreferences": "Preferințe de conținut",
+    "settingsModerationControls": "Controale de moderare",
+    "settingsBlueskyPublishing": "Publicare pe Bluesky",
+    "settingsBlueskyPublishingSubtitle": "Gestionează postarea încrucișată pe Bluesky",
+    "settingsNostrSettings": "Setări Nostr",
+    "settingsIntegratedApps": "Aplicații integrate",
+    "settingsIntegratedAppsSubtitle": "Aplicații terțe aprobate care rulează în Divine",
+    "settingsExperimentalFeatures": "Funcții experimentale",
+    "settingsExperimentalFeaturesSubtitle": "Chestii care s-ar putea să sughițe—încearcă-le dacă ești curios.",
+    "settingsLegal": "Legal",
+    "settingsIntegrationPermissions": "Permisiuni de integrare",
+    "settingsIntegrationPermissionsSubtitle": "Verifică și revocă aprobările memorate pentru integrări",
+    "settingsVersion": "Versiunea {version}",
+    "@settingsVersion": {
+        "description": "App version label in settings footer",
+        "placeholders": {
+            "version": {
+                "type": "String"
+            }
+        }
+    },
+    "settingsVersionEmpty": "Versiune",
+    "@settingsVersionEmpty": {
+        "description": "Version label when version string is not yet loaded"
+    },
+    "settingsDeveloperModeAlreadyEnabled": "Modul dezvoltator e deja activat",
+    "settingsDeveloperModeEnabled": "Mod dezvoltator activat!",
+    "settingsDeveloperModeTapsRemaining": "Încă {count, plural, one{o atingere} few{{count} atingeri} other{{count} de atingeri}} ca să activezi modul dezvoltator",
+    "@settingsDeveloperModeTapsRemaining": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "settingsInvites": "Invitații",
+    "settingsSwitchAccount": "Schimbă contul",
+    "settingsAddAnotherAccount": "Adaugă alt cont",
+    "settingsUnsavedDraftsTitle": "Ciorne nesalvate",
+    "settingsUnsavedDraftsMessage": "Ai {count} {count, plural, =1{ciornă} other{ciorne}} nesalvate. Schimbarea contului âți va păstra {count, plural, =1{ciorna} other{ciornele}}, dar poate vrei să {count, plural, =1{o} other{le}} publici sau să {count, plural, =1{o} other{le}} revizuiîi întâi.",
+    "@settingsUnsavedDraftsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "settingsCancel": "Anulează",
+    "settingsSwitchAnyway": "Schimbă oricum",
+    "settingsAppVersionLabel": "Versiunea aplicației",
+    "settingsAppLanguage": "Limba aplicației",
+    "settingsAppLanguageDeviceDefault": "{language} (implicit pe dispozitiv)",
+    "@settingsAppLanguageDeviceDefault": {
+        "description": "Subtitle for app language tile when using device default",
+        "placeholders": {
+            "language": {
+                "type": "String"
+            }
+        }
+    },
+    "settingsAppLanguageTitle": "Limba aplicației",
+    "@settingsAppLanguageTitle": {
+        "description": "Title shown at top of locale picker bottom sheet"
+    },
+    "settingsAppLanguageDescription": "Alege limba pentru interfața aplicației",
+    "settingsAppLanguageUseDeviceLanguage": "Folosește limba dispozitivului",
+    "contentPreferencesTitle": "Preferințe de conținut",
+    "@contentPreferencesTitle": {
+        "description": "Content preferences screen app bar title"
+    },
+    "contentPreferencesContentFilters": "Filtre de conținut",
+    "contentPreferencesContentFiltersSubtitle": "Gestionează filtrele pentru atenționări de conținut",
+    "contentPreferencesContentLanguage": "Limba conținutului",
+    "contentPreferencesContentLanguageDeviceDefault": "{language} (implicit pe dispozitiv)",
+    "@contentPreferencesContentLanguageDeviceDefault": {
+        "placeholders": {
+            "language": {
+                "type": "String"
+            }
+        }
+    },
+    "contentPreferencesTagYourVideos": "Etichetează-ți videoclipurile cu o limbă, ca privitorii să poată filtra conținutul.",
+    "contentPreferencesUseDeviceLanguage": "Folosește limba dispozitivului (implicit)",
+    "contentPreferencesAudioSharing": "Fă audio-ul meu disponibil pentru refolosire",
+    "contentPreferencesAudioSharingSubtitle": "Când e activat, alții pot folosi audio din videoclipurile tale",
+    "contentPreferencesAccountLabels": "Etichete de cont",
+    "contentPreferencesAccountLabelsEmpty": "Auto-etichetează-ți conținutul",
+    "contentPreferencesAccountContentLabels": "Etichete de conținut pentru cont",
+    "contentPreferencesClearAll": "Șterge tot",
+    "contentPreferencesSelectAllThatApply": "Selectează tot ce se potrivește contului tău",
+    "contentPreferencesDoneNoLabels": "Gata (fără etichete)",
+    "contentPreferencesDoneCount": "Gata ({count} selectate)",
+    "@contentPreferencesDoneCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "contentPreferencesAudioInputDevice": "Dispozitiv de intrare audio",
+    "contentPreferencesAutoRecommended": "Automat (recomandat)",
+    "contentPreferencesAutoSelectsBest": "Alege automat cel mai bun microfon",
+    "contentPreferencesSelectAudioInput": "Alege intrarea audio",
+    "contentPreferencesUnknownMicrophone": "Microfon necunoscut",
+    "profileBlockedAccountNotAvailable": "Acest cont nu e disponibil",
+    "profileErrorPrefix": "Eroare: {error}",
+    "@profileErrorPrefix": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileInvalidId": "ID de profil invalid",
+    "profileShareText": "Aruncă o privire la {displayName} pe Divine!\n\nhttps://divine.video/profile/{npub}",
+    "@profileShareText": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            },
+            "npub": {
+                "type": "String"
+            }
+        }
+    },
+    "profileShareSubject": "{displayName} pe Divine",
+    "@profileShareSubject": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileShareFailed": "Nu am putut partaja profilul: {error}",
+    "@profileShareFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileEditProfile": "Editează profilul",
+    "profileCreatorAnalytics": "Statistici creator",
+    "profileShareProfile": "Partajează profilul",
+    "profileCopyPublicKey": "Copiază cheia publică (npub)",
+    "profileGetEmbedCode": "Obține codul de încorporare",
+    "profilePublicKeyCopied": "Cheia publică a fost copiată",
+    "profileEmbedCodeCopied": "Codul de încorporare a fost copiat",
+    "profileRefreshTooltip": "Reîncarcă",
+    "profileRefreshSemanticLabel": "Reîncarcă profilul",
+    "profileMoreTooltip": "Mai multe",
+    "profileMoreSemanticLabel": "Mai multe opțiuni",
+    "profileFollowingLabel": "Urmărit",
+    "profileFollowLabel": "Urmărește",
+    "profileBlockedLabel": "Blocat",
+    "profileFollowersLabel": "Urmăritori",
+    "profileFollowingStatLabel": "Urmăriți",
+    "profileVideosLabel": "Videoclipuri",
+    "profileFollowerCountUsers": "{count, plural, one{1 utilizator} few{{count} utilizatori} other{{count} de utilizatori}}",
+    "@profileFollowerCountUsers": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "profileBlockTitle": "Blochezi pe {displayName}?",
+    "@profileBlockTitle": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileBlockExplanation": "Când blochezi un utilizator:",
+    "profileBlockBulletHidePosts": "Postările lui nu vor mai apărea în feedurile tale.",
+    "profileBlockBulletCantView": "Nu va putea să-ți vadă profilul, să te urmărească sau să-ți vadă postările.",
+    "profileBlockBulletNoNotify": "Nu va fi notificat despre această schimbare.",
+    "profileBlockBulletYouCanView": "Tu încă vei putea să-i vezi profilul.",
+    "profileBlockConfirmButton": "Blochează pe {displayName}",
+    "@profileBlockConfirmButton": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileCancelButton": "Anulează",
+    "profileLearnMore": "Află mai multe",
+    "profileUnblockTitle": "Deblochezi pe {displayName}?",
+    "@profileUnblockTitle": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockExplanation": "Când deblochezi acest utilizator:",
+    "profileUnblockBulletShowPosts": "Postările lui vor apărea în feedurile tale.",
+    "profileUnblockBulletCanView": "Va putea să-ți vadă profilul, să te urmărească și să-ți vadă postările.",
+    "profileUnblockBulletNoNotify": "Nu va fi notificat despre această schimbare.",
+    "profileLearnMoreAt": "Află mai multe la ",
+    "profileUnblockButton": "Deblochează",
+    "profileUnfollowDisplayName": "Nu mai urmări pe {displayName}",
+    "@profileUnfollowDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileBlockDisplayName": "Blochează pe {displayName}",
+    "@profileBlockDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockDisplayName": "Deblochează pe {displayName}",
+    "@profileUnblockDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUserBlockedTitle": "Utilizator blocat",
+    "profileUserBlockedContent": "Nu vei mai vedea conținut de la acest utilizator în feedurile tale.",
+    "profileUserBlockedUnblockHint": "Îl poți debloca oricând din profilul lui sau din Setări > Siguranță.",
+    "profileCloseButton": "Închide",
+    "profileNoCollabsTitle": "Încă nicio colaborare",
+    "profileCollabsOwnEmpty": "Videoclipurile la care colaborezi vor apărea aici",
+    "profileCollabsOtherEmpty": "Videoclipurile la care colaborează vor apărea aici",
+    "profileErrorLoadingCollabs": "Eroare la încărcarea colaborărilor",
+    "profileNoCommentsOwnTitle": "Încă niciun comentariu",
+    "profileNoCommentsOtherTitle": "Fără comentarii",
+    "profileCommentsOwnEmpty": "Comentariile și răspunsurile tale vor apărea aici",
+    "profileCommentsOtherEmpty": "Comentariile și răspunsurile lui vor apărea aici",
+    "profileErrorLoadingComments": "Eroare la încărcarea comentariilor",
+    "profileVideoRepliesSection": "Răspunsuri video",
+    "profileCommentsSection": "Comentarii",
+    "profileEditLabel": "Editează",
+    "profileLibraryLabel": "Bibliotecă",
+    "profileNoLikedVideosTitle": "Încă niciun videoclip apreciat",
+    "profileLikedOwnEmpty": "Videoclipurile pe care le apreciezi vor apărea aici",
+    "profileLikedOtherEmpty": "Videoclipurile pe care le apreciază vor apărea aici",
+    "profileErrorLoadingLiked": "Eroare la încărcarea videoclipurilor apreciate",
+    "profileNoRepostsTitle": "Încă nicio redistribuire",
+    "profileRepostsOwnEmpty": "Videoclipurile pe care le redistribui vor apărea aici",
+    "profileRepostsOtherEmpty": "Videoclipurile pe care le redistribuie vor apărea aici",
+    "profileErrorLoadingReposts": "Eroare la încărcarea videoclipurilor redistribuite",
+    "profileLoadingTitle": "Se încarcă profilul...",
+    "profileLoadingSubtitle": "Poate dura câteva momente",
+    "profileLoadingVideos": "Se încarcă videoclipurile...",
+    "profileNoVideosTitle": "Încă niciun videoclip",
+    "profileNoVideosOwnSubtitle": "Distribuie primul tău videoclip ca să-l vezi aici",
+    "profileNoVideosOtherSubtitle": "Acest utilizator încă n-a distribuit niciun videoclip",
+    "profileVideoThumbnailLabel": "Miniatură videoclip {number}",
+    "@profileVideoThumbnailLabel": {
+        "placeholders": {
+            "number": {
+                "type": "int"
+            }
+        }
+    },
+    "profileShowMore": "Arată mai mult",
+    "profileShowLess": "Arată mai puțin",
+    "profileCompleteYourProfile": "Completează-ți profilul",
+    "profileCompleteSubtitle": "Adaugă numele, bio și poza ca să începi",
+    "profileSetUpButton": "Configurează",
+    "profileVerifyingEmail": "Se verifică emailul...",
+    "profileCheckEmailVerification": "Verifică {email} pentru linkul de confirmare",
+    "@profileCheckEmailVerification": {
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "profileWaitingForVerification": "Se așteaptă verificarea emailului",
+    "profileVerificationFailed": "Verificare eșuată",
+    "profilePleaseTryAgain": "Încearcă din nou",
+    "profileSecureYourAccount": "Securizează-ți contul",
+    "profileSecureSubtitle": "Adaugă email și parolă ca să-ți recuperezi contul pe orice dispozitiv",
+    "profileRetryButton": "Reîncearcă",
+    "profileRegisterButton": "Înscrie-te",
+    "profileSessionExpired": "Sesiune expirată",
+    "profileSignInToRestore": "Autentifică-te din nou ca să recapeți acces complet",
+    "profileSignInButton": "Autentificare",
+    "profileDismissTooltip": "Respinge",
+    "profileLinkCopied": "Linkul profilului a fost copiat",
+    "profileSetupEditProfileTitle": "Editează profilul",
+    "profileSetupBackLabel": "Înapoi",
+    "profileSetupAboutNostr": "Despre Nostr",
+    "profileSetupProfilePublished": "Profil publicat cu succes!",
+    "profileSetupCreateNewProfile": "Creezi un profil nou?",
+    "profileSetupNoExistingProfile": "N-am găsit un profil existent pe relay-urile tale. Publicarea va crea un profil nou. Continuăm?",
+    "profileSetupPublishButton": "Publică",
+    "profileSetupUsernameTaken": "Numele tocmai a fost luat. Alege altul.",
+    "profileSetupClaimFailed": "N-am putut revendica numele. Încearcă din nou.",
+    "profileSetupPublishFailed": "N-am putut publica profilul. Încearcă din nou.",
+    "profileSetupDisplayNameLabel": "Nume afișat",
+    "profileSetupDisplayNameHint": "Cum să te știe oamenii?",
+    "profileSetupDisplayNameHelper": "Orice nume sau etichetă vrei. Nu trebuie să fie unic.",
+    "profileSetupDisplayNameRequired": "Introdu un nume afișat",
+    "profileSetupBioLabel": "Bio (opțional)",
+    "profileSetupBioHint": "Spune-le oamenilor despre tine...",
+    "profileSetupPublicKeyLabel": "Cheie publică (npub)",
+    "profileSetupUsernameLabel": "Nume de utilizator (opțional)",
+    "profileSetupUsernameHint": "nume-utilizator",
+    "profileSetupUsernameHelper": "Identitatea ta unică pe Divine",
+    "profileSetupProfileColorLabel": "Culoarea profilului (opțional)",
+    "profileSetupSaveButton": "Salvează",
+    "profileSetupSavingButton": "Se salvează...",
+    "profileSetupImageUrlTitle": "Adaugă URL de imagine",
+    "profileSetupPictureUploaded": "Poză de profil încărcată cu succes!",
+    "profileSetupImageSelectionFailed": "Selectarea imaginii a eșuat. Lipește mai jos un URL de imagine.",
+    "profileSetupCameraAccessFailed": "Accesul la cameră a eșuat: {error}",
+    "@profileSetupCameraAccessFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileSetupGotItButton": "Am înțeles",
+    "profileSetupUploadFailedGeneric": "Încărcarea imaginii a eșuat: {error}",
+    "@profileSetupUploadFailedGeneric": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileSetupUploadNetworkError": "Eroare de rețea: verifică conexiunea la internet și încearcă din nou.",
+    "profileSetupUploadAuthError": "Eroare de autentificare: deconectează-te și autentifică-te din nou.",
+    "profileSetupUploadFileTooLarge": "Fișier prea mare: alege o imagine mai mică (maxim 10MB).",
+    "profileSetupUsernameChecking": "Se verifică disponibilitatea...",
+    "profileSetupUsernameAvailable": "Numele e disponibil!",
+    "profileSetupUsernameTakenIndicator": "Numele e deja luat",
+    "profileSetupUsernameReserved": "Numele e rezervat",
+    "profileSetupContactSupport": "Contactează asistența",
+    "profileSetupCheckAgain": "Verifică din nou",
+    "profileSetupUsernameBurned": "Acest nume nu mai e disponibil",
+    "profileSetupUsernameInvalidFormat": "Sunt permise doar litere, cifre și cratime",
+    "profileSetupUsernameInvalidLength": "Numele trebuie să aibă 3-20 de caractere",
+    "profileSetupUsernameNetworkError": "N-am putut verifica disponibilitatea. Încearcă din nou.",
+    "profileSetupUsernameInvalidFormatGeneric": "Format invalid de nume",
+    "profileSetupUsernameCheckFailed": "N-am putut verifica disponibilitatea",
+    "profileSetupUsernameReservedTitle": "Nume rezervat",
+    "profileSetupUsernameReservedBody": "Numele {username} e rezervat. Spune-ne de ce ar trebui să fie al tău.",
+    "@profileSetupUsernameReservedBody": {
+        "placeholders": {
+            "username": {
+                "type": "String"
+            }
+        }
+    },
+    "profileSetupUsernameReservedHint": "ex. E brandul meu, numele de scenă etc.",
+    "profileSetupUsernameReservedCheckHint": "Ai contactat deja asistența? Apasă pe \"Verifică din nou\" ca să vezi dacă ți-a fost eliberat.",
+    "profileSetupSupportRequestSent": "Cerere de asistență trimisă! Revenim la tine curând.",
+    "profileSetupCouldntOpenEmail": "N-am putut deschide emailul. Trimite la: names@divine.video",
+    "profileSetupSendRequest": "Trimite cererea",
+    "profileSetupPickColorTitle": "Alege o culoare",
+    "profileSetupSelectButton": "Selectează",
+    "profileSetupUseOwnNip05": "Folosește propria ta adresă NIP-05",
+    "profileSetupNip05AddressLabel": "Adresă NIP-05",
+    "profileSetupProfilePicturePreview": "Previzualizare poză de profil",
+    "nostrInfoIntroBuiltOn": "DiVine e construit pe Nostr,",
+    "nostrInfoIntroDescription": " un protocol deschis și rezistent la cenzură care permite oamenilor să comunice online fără să depindă de o singură companie sau platformă. ",
+    "nostrInfoIntroIdentity": "Când te înscrii pe Divine, primești o identitate Nostr nouă.",
+    "nostrInfoOwnership": "Nostr țiţi lasă în posesie conținutul, identitatea și graful social, pe care le poți folosi în multe aplicații. Rezultă mai multă alegere, mai puțină dependență și un internet social mai sănătos și mai rezilient.",
+    "nostrInfoLingo": "Jargon Nostr:",
+    "nostrInfoNpubLabel": "npub:",
+    "nostrInfoNpubDescription": " Adresa ta publică Nostr. E sigur s-o distribui și le permite altora să te găsească, să te urmărească sau să-ți trimită mesaje pe aplicații Nostr.",
+    "nostrInfoNsecLabel": "nsec:",
+    "nostrInfoNsecDescription": " Cheia ta privată și dovada de proprietate. Îți dă control total asupra identității tale Nostr, așa că ",
+    "nostrInfoNsecWarning": "ține-o mereu secretă!",
+    "nostrInfoUsernameLabel": "Nume de utilizator Nostr:",
+    "nostrInfoUsernameDescription": " Un nume ușor de citit (gen @nume.divine.video) care duce la npub-ul tău. Face identitatea ta Nostr mai ușor de recunoscut și verificat, ca o adresă de email.",
+    "nostrInfoLearnMoreAt": "Află mai multe la ",
+    "nostrInfoGotIt": "Am înțeles!",
+    "profileTabRefreshTooltip": "Reîncarcă",
+    "videoGridRefreshLabel": "Se caută mai multe videoclipuri",
+    "videoGridOptionsTitle": "Opțiuni video",
+    "videoGridEditVideo": "Editează videoclipul",
+    "videoGridEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
+    "videoGridDeleteVideo": "Șterge videoclipul",
+    "videoGridDeleteVideoSubtitle": "Elimină definitiv acest conținut",
+    "videoGridDeleteConfirmTitle": "Șterge videoclipul",
+    "videoGridDeleteConfirmMessage": "Sigur vrei să ștergi acest videoclip?",
+    "videoGridDeleteConfirmNote": "Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.",
+    "videoGridDeleteCancel": "Anulează",
+    "videoGridDeleteConfirm": "Șterge",
+    "videoGridDeletingContent": "Se șterge conținutul...",
+    "videoGridDeleteSuccess": "Cererea de ștergere a fost trimisă cu succes",
+    "videoGridDeleteFailure": "N-am putut șterge conținutul: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreTabClassics": "Clasice",
+    "exploreTabNew": "Noi",
+    "exploreTabPopular": "Populare",
+    "exploreTabCategories": "Categorii",
+    "exploreTabForYou": "Pentru tine",
+    "exploreTabLists": "Liste",
+    "exploreTabIntegratedApps": "Aplicații integrate",
+    "exploreNoVideosAvailable": "Niciun videoclip disponibil",
+    "exploreErrorPrefix": "Eroare: {error}",
+    "@exploreErrorPrefix": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreDiscoverLists": "Descoperă liste",
+    "exploreAboutLists": "Despre liste",
+    "exploreAboutListsDescription": "Listele te ajută să organizezi și să curaâezi conținutul Divine în două feluri:",
+    "explorePeopleLists": "Liste de oameni",
+    "explorePeopleListsDescription": "Urmărește grupuri de creatori și vezi cele mai noi videoclipuri ale lor",
+    "exploreVideoLists": "Liste de videoclipuri",
+    "exploreVideoListsDescription": "Creează playlisturi cu videoclipurile preferate ca să le vezi mai târziu",
+    "exploreMyLists": "Listele mele",
+    "exploreSubscribedLists": "Liste la care ești abonat",
+    "exploreErrorLoadingLists": "Eroare la încărcarea listelor: {error}",
+    "@exploreErrorLoadingLists": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreNewVideosCount": "{count, plural, =1{1 videoclip nou} other{{count} videoclipuri noi}}",
+    "@exploreNewVideosCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "exploreLoadNewVideosLabel": "Încarcă {count} {count, plural, =1{videoclip nou} other{videoclipuri noi}}",
+    "@exploreLoadNewVideosLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "videoPlayerLoadingVideo": "Se încarcă videoclipul...",
+    "videoPlayerPlayVideo": "Redă videoclipul",
+    "videoPlayerEditVideo": "Editează videoclipul",
+    "videoPlayerEditVideoTooltip": "Editează videoclipul",
+    "contentWarningLabel": "Atenționare de conținut",
+    "contentWarningNudity": "Nuditate",
+    "contentWarningSexualContent": "Conținut sexual",
+    "contentWarningPornography": "Pornografie",
+    "contentWarningGraphicMedia": "Imagini explicite",
+    "contentWarningViolence": "Violență",
+    "contentWarningSelfHarm": "Auto-vătămare",
+    "contentWarningDrugUse": "Consum de droguri",
+    "contentWarningAlcohol": "Alcool",
+    "contentWarningTobacco": "Tutun",
+    "contentWarningGambling": "Jocuri de noroc",
+    "contentWarningProfanity": "Limbaj vulgar",
+    "contentWarningFlashingLights": "Lumini care clipesc",
+    "contentWarningAiGenerated": "Generat de AI",
+    "contentWarningSpoiler": "Spoiler",
+    "contentWarningSensitiveContent": "Conținut sensibil",
+    "contentWarningDescNudity": "Conține nuditate sau nuditate parțială",
+    "contentWarningDescSexual": "Conține conținut sexual",
+    "contentWarningDescPorn": "Conține conținut pornografic explicit",
+    "contentWarningDescGraphicMedia": "Conține imagini explicite sau tulburătoare",
+    "contentWarningDescViolence": "Conține conținut violent",
+    "contentWarningDescSelfHarm": "Conține referințe la auto-vătămare",
+    "contentWarningDescDrugs": "Conține conținut legat de droguri",
+    "contentWarningDescAlcohol": "Conține conținut legat de alcool",
+    "contentWarningDescTobacco": "Conține conținut legat de tutun",
+    "contentWarningDescGambling": "Conține conținut legat de jocuri de noroc",
+    "contentWarningDescProfanity": "Conține limbaj vulgar",
+    "contentWarningDescFlashingLights": "Conține lumini care clipesc (avertisment de fotosensibilitate)",
+    "contentWarningDescAiGenerated": "Acest conținut a fost generat de AI",
+    "contentWarningDescSpoiler": "Conține spoilere",
+    "contentWarningDescContentWarning": "Creatorul a marcat asta ca sensibil",
+    "contentWarningDescDefault": "Creatorul a semnalat acest conținut",
+    "contentWarningDetailsTitle": "Atenționări de conținut",
+    "contentWarningDetailsSubtitle": "Creatorul a aplicat aceste etichete:",
+    "contentWarningManageFilters": "Gestionează filtrele de conținut",
+    "contentWarningViewAnyway": "Vezi oricum",
+    "contentWarningHideAllLikeThis": "Ascunde tot conținutul de genul ăsta",
+    "contentWarningNoFilterYet": "Încă n-ai un filtru salvat pentru această atenționare.",
+    "contentWarningHiddenConfirmation": "De acum înainte ascundem postările de genul ăsta.",
+    "videoErrorNotFound": "Videoclipul n-a fost găsit",
+    "videoErrorNetwork": "Eroare de rețea",
+    "videoErrorTimeout": "Timpul de încărcare a expirat",
+    "videoErrorFormat": "Eroare de format video\n(Încearcă din nou sau folosește alt browser)",
+    "videoErrorUnsupportedFormat": "Format video nesuportat",
+    "videoErrorPlayback": "Eroare de redare video",
+    "videoErrorAgeRestricted": "Conținut cu restricție de vârstă",
+    "videoErrorVerifyAge": "Verifică vârsta",
+    "videoErrorRetry": "Reîncearcă",
+    "videoErrorContentRestricted": "Conținut restricționat",
+    "videoErrorContentRestrictedBody": "Acest videoclip a fost restricționat de relay.",
+    "videoErrorVerifyAgeBody": "Verifică-ți vârsta ca să vezi acest videoclip.",
+    "videoErrorSkip": "Sari peste",
+    "videoErrorVerifyAgeButton": "Verifică vârsta",
+    "videoFollowButtonFollowing": "Urmărit",
+    "videoFollowButtonFollow": "Urmărește",
+    "audioAttributionOriginalSound": "Sunet original",
+    "videoInspiredByAttribution": "Inspirat de @{creatorName}",
+    "@videoInspiredByAttribution": {
+        "placeholders": {
+            "creatorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoCollaboratorWithOne": "cu @{name}",
+    "@videoCollaboratorWithOne": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoCollaboratorWithMore": "cu @{name} +{count}",
+    "@videoCollaboratorWithMore": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "videoCollaboratorCountLabel": "{count, plural, =1{1 colaborator} other{{count} colaboratori}}. Atinge pentru a vedea profilul.",
+    "@videoCollaboratorCountLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listAttributionFallback": "Listă",
+    "shareVideoLabel": "Partajează videoclipul",
+    "sharePostSharedWith": "Postare partajată cu {recipientName}",
+    "@sharePostSharedWith": {
+        "placeholders": {
+            "recipientName": {
+                "type": "String"
+            }
+        }
+    },
+    "shareFailedToSend": "N-am putut trimite videoclipul",
+    "shareAddedToBookmarks": "Adăugat la semne de carte",
+    "shareFailedToAddBookmark": "N-am putut adăuga semnul de carte",
+    "shareActionFailed": "Acțiunea a eșuat",
+    "shareWithTitle": "Partajează cu",
+    "shareFindPeople": "Găsește oameni",
+    "shareFindPeopleMultiline": "Găsește\noameni",
+    "shareSent": "Trimis",
+    "shareContactFallback": "Contact",
+    "shareUserFallback": "Utilizator",
+    "shareSendingTo": "Se trimite către {name}",
+    "@shareSendingTo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMessageHint": "Adaugă un mesaj opțional...",
+    "videoActionUnlike": "Retrage aprecierea",
+    "videoActionLike": "Apreciază videoclipul",
+    "videoActionRemoveRepost": "Elimină redistribuirea",
+    "videoActionRepost": "Redistribuie videoclipul",
+    "videoActionViewComments": "Vezi comentariile",
+    "videoActionMoreOptions": "Mai multe opțiuni",
+    "videoActionHideSubtitles": "Ascunde subtitrările",
+    "videoActionShowSubtitles": "Arată subtitrările",
+    "videoDescriptionLoops": "{count} bucle",
+    "@videoDescriptionLoops": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "metadataBadgeNotDivine": "Nu e Divine",
+    "metadataBadgeHumanMade": "Făcut de om",
+    "metadataSoundsLabel": "Sunete",
+    "metadataOriginalSound": "Sunet original",
+    "metadataVerificationLabel": "Verificare",
+    "metadataDeviceAttestation": "Atestare de dispozitiv",
+    "metadataProofManifest": "Manifest de dovezi",
+    "metadataCreatorLabel": "Creator",
+    "metadataCollaboratorsLabel": "Colaboratori",
+    "metadataInspiredByLabel": "Inspirat de",
+    "metadataRepostedByLabel": "Redistribuit de",
+    "metadataLoopsLabel": "Bucle",
+    "metadataLikesLabel": "Aprecieri",
+    "metadataCommentsLabel": "Comentarii",
+    "metadataRepostsLabel": "Redistribuiri",
+    "devOptionsTitle": "Opțiuni dezvoltator",
+    "@devOptionsTitle": {
+        "description": "Developer options screen app bar title"
+    },
+    "devOptionsPageLoadTimes": "Timpi de încărcare a paginilor",
+    "devOptionsNoPageLoads": "Nicio încărcare de pagină înregistrată încă.\nNavighează prin aplicație ca să vezi datele de timing.",
+    "devOptionsPageLoadVisible": "Vizibil: {visibleMs}ms  |  Date: {dataMs}ms",
+    "@devOptionsPageLoadVisible": {
+        "placeholders": {
+            "visibleMs": {
+                "type": "String"
+            },
+            "dataMs": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsSlowestScreens": "Cele mai lente ecrane",
+    "devOptionsVideoPlaybackFormat": "Format de redare video",
+    "devOptionsSwitchEnvironmentTitle": "Schimbi mediul?",
+    "devOptionsSwitchEnvironmentMessage": "Schimbi la {envName}?\n\nAsta va șterge datele video din cache și se va reconecta la noul relay.",
+    "@devOptionsSwitchEnvironmentMessage": {
+        "placeholders": {
+            "envName": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsCancel": "Anulează",
+    "devOptionsSwitch": "Schimbă",
+    "devOptionsSwitchedTo": "Schimbat la {envName}",
+    "@devOptionsSwitchedTo": {
+        "placeholders": {
+            "envName": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsSwitchedFormat": "Schimbat la {formatName} — cache șters",
+    "@devOptionsSwitchedFormat": {
+        "placeholders": {
+            "formatName": {
+                "type": "String"
+            }
+        }
+    },
+    "featureFlagTitle": "Indicatoare de funcții",
+    "@featureFlagTitle": {
+        "description": "Feature flags screen app bar title"
+    },
+    "featureFlagResetAllTooltip": "Resetează toate indicatoarele la valorile implicite",
+    "featureFlagResetToDefault": "Resetează la valoarea implicită",
+    "featureFlagAppRecovery": "Recuperare aplicație",
+    "featureFlagAppRecoveryDescription": "Dacă aplicația se blochează sau se comportă ciudat, încearcă să goli cache-ul.",
+    "featureFlagClearAllCache": "Golește tot cache-ul",
+    "featureFlagCacheInfo": "Informații cache",
+    "featureFlagClearCacheTitle": "Golești tot cache-ul?",
+    "featureFlagClearCacheMessage": "Asta va șterge toate datele din cache, inclusiv:\n• Notificări\n• Profiluri de utilizator\n• Semne de carte\n• Fișiere temporare\n\nVa trebui să te autentifici din nou. Continuăm?",
+    "featureFlagClearCache": "Golește cache-ul",
+    "featureFlagClearingCache": "Se golește cache-ul...",
+    "featureFlagSuccess": "Succes",
+    "featureFlagError": "Eroare",
+    "featureFlagClearCacheSuccess": "Cache-ul a fost golit cu succes. Repornește aplicația.",
+    "featureFlagClearCacheFailure": "Unele elemente din cache n-au putut fi șterse. Verifică jurnalele pentru detalii.",
+    "featureFlagOk": "OK",
+    "featureFlagCacheInformation": "Informații despre cache",
+    "featureFlagTotalCacheSize": "Dimensiunea totală a cache-ului: {size}",
+    "@featureFlagTotalCacheSize": {
+        "placeholders": {
+            "size": {
+                "type": "String"
+            }
+        }
+    },
+    "featureFlagCacheIncludes": "Cache-ul include:\n• Istoricul notificărilor\n• Datele profilurilor de utilizator\n• Miniaturi video\n• Fișiere temporare\n• Indexuri de baze de date",
+    "relaySettingsTitle": "Relay-uri",
+    "@relaySettingsTitle": {
+        "description": "Relay settings screen app bar title"
+    },
+    "relaySettingsInfoTitle": "Divine e un sistem deschis - tu âți controlezi conexiunile",
+    "relaySettingsInfoDescription": "Aceste relay-uri distribuie conținutul tău prin rețeaua descentralizată Nostr. Poți adăuga sau elimina relay-uri după cum vrei.",
+    "relaySettingsLearnMoreNostr": "Află mai multe despre Nostr →",
+    "relaySettingsFindPublicRelays": "Găsește relay-uri publice la nostr.co.uk →",
+    "relaySettingsAppNotFunctional": "Aplicația nu e funcțională",
+    "relaySettingsRequiresRelay": "Divine are nevoie de cel puțin un relay ca să încarce videoclipuri, să publice conținut și să sincronizeze date.",
+    "relaySettingsRestoreDefaultRelay": "Restabilește relay-ul implicit",
+    "relaySettingsAddCustomRelay": "Adaugă relay personalizat",
+    "relaySettingsAddRelay": "Adaugă relay",
+    "relaySettingsRetry": "Reîncearcă",
+    "relaySettingsNoStats": "Încă nicio statistică disponibilă",
+    "relaySettingsConnection": "Conexiune",
+    "relaySettingsConnected": "Conectat",
+    "relaySettingsDisconnected": "Deconectat",
+    "relaySettingsSessionDuration": "Durata sesiunii",
+    "relaySettingsLastConnected": "Ultima conectare",
+    "relaySettingsDisconnectedLabel": "Deconectat",
+    "relaySettingsReason": "Motiv",
+    "relaySettingsActiveSubscriptions": "Abonări active",
+    "relaySettingsTotalSubscriptions": "Total abonări",
+    "relaySettingsEventsReceived": "Evenimente primite",
+    "relaySettingsEventsSent": "Evenimente trimise",
+    "relaySettingsRequestsThisSession": "Cereri în această sesiune",
+    "relaySettingsFailedRequests": "Cereri eșuate",
+    "relaySettingsLastError": "Ultima eroare: {error}",
+    "@relaySettingsLastError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsLoadingRelayInfo": "Se încarcă informațiile despre relay...",
+    "relaySettingsAboutRelay": "Despre relay",
+    "relaySettingsSupportedNips": "NIP-uri suportate",
+    "relaySettingsSoftware": "Software",
+    "relaySettingsViewWebsite": "Vezi site-ul",
+    "relaySettingsRemoveRelayTitle": "Elimini relay-ul?",
+    "relaySettingsRemoveRelayMessage": "Sigur vrei să elimini acest relay?\n\n{relayUrl}",
+    "@relaySettingsRemoveRelayMessage": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsCancel": "Anulează",
+    "relaySettingsRemove": "Elimină",
+    "relaySettingsRemovedRelay": "Relay eliminat: {relayUrl}",
+    "@relaySettingsRemovedRelay": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToRemoveRelay": "N-am putut elimina relay-ul",
+    "relaySettingsForcingReconnection": "Se forțează reconectarea la relay...",
+    "relaySettingsConnectedToRelays": "Conectat la {count, plural, one{1 relay} few{{count} relay-uri} other{{count} de relay-uri}}!",
+    "@relaySettingsConnectedToRelays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsFailedToConnectCheck": "N-am putut conecta la relay-uri. Verifică-ți conexiunea la rețea.",
+    "relaySettingsAddRelayTitle": "Adaugă relay",
+    "relaySettingsAddRelayPrompt": "Introdu URL-ul WebSocket al relay-ului pe care vrei să-l adaugi:",
+    "relaySettingsBrowsePublicRelays": "Răsfoiește relay-urile publice la nostr.co.uk",
+    "relaySettingsAdd": "Adaugă",
+    "relaySettingsAddedRelay": "Relay adăugat: {relayUrl}",
+    "@relaySettingsAddedRelay": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToAddRelay": "N-am putut adăuga relay-ul. Verifică URL-ul și încearcă din nou.",
+    "relaySettingsInvalidUrl": "URL-ul relay-ului trebuie să înceapă cu wss:// sau ws://",
+    "relaySettingsRestoredDefault": "Relay-ul implicit a fost restabilit: {defaultRelay}",
+    "@relaySettingsRestoredDefault": {
+        "placeholders": {
+            "defaultRelay": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToRestoreDefault": "N-am putut restabili relay-ul implicit. Verifică-ți conexiunea la rețea.",
+    "relaySettingsCouldNotOpenBrowser": "N-am putut deschide browserul",
+    "relaySettingsFailedToOpenLink": "N-am putut deschide linkul",
+    "relayDiagnosticTitle": "Diagnostice relay",
+    "@relayDiagnosticTitle": {
+        "description": "Relay diagnostics screen app bar title"
+    },
+    "relayDiagnosticRefreshTooltip": "Reîncarcă diagnosticele",
+    "relayDiagnosticLastRefresh": "Ultima reîncarcare: {time}",
+    "@relayDiagnosticLastRefresh": {
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticRelayStatus": "Stare relay",
+    "relayDiagnosticInitialized": "Inițializat",
+    "relayDiagnosticReady": "Gata",
+    "relayDiagnosticNotInitialized": "Neinițializat",
+    "relayDiagnosticDatabaseEvents": "Evenimente din baza de date",
+    "relayDiagnosticActiveSubscriptions": "Abonări active",
+    "relayDiagnosticExternalRelays": "Relay-uri externe",
+    "relayDiagnosticConfigured": "Configurat",
+    "relayDiagnosticRelayCount": "{count, plural, one{1 relay} few{{count} relay-uri} other{{count} de relay-uri}}",
+    "@relayDiagnosticRelayCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticConnectedLabel": "Conectat",
+    "relayDiagnosticConnectedRatio": "{connected}/{total}",
+    "@relayDiagnosticConnectedRatio": {
+        "placeholders": {
+            "connected": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticVideoEvents": "Evenimente video",
+    "relayDiagnosticHomeFeed": "Feed principal",
+    "relayDiagnosticVideosCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
+    "@relayDiagnosticVideosCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticDiscovery": "Descoperire",
+    "relayDiagnosticLoading": "Se încarcă",
+    "relayDiagnosticYes": "Da",
+    "relayDiagnosticNo": "Nu",
+    "relayDiagnosticTestDirectQuery": "Testează interogarea directă",
+    "relayDiagnosticNetworkConnectivity": "Conectivitate rețea",
+    "relayDiagnosticRunNetworkTest": "Rulează testul de rețea",
+    "relayDiagnosticBlossomServer": "Server Blossom",
+    "relayDiagnosticTestAllEndpoints": "Testează toate endpoint-urile",
+    "relayDiagnosticStatus": "Stare",
+    "relayDiagnosticUrl": "URL",
+    "relayDiagnosticError": "Eroare",
+    "relayDiagnosticFunnelCakeApi": "API FunnelCake",
+    "relayDiagnosticBaseUrl": "URL de bază",
+    "relayDiagnosticSummary": "Sumar",
+    "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} OK (medie {avgMs}ms)",
+    "@relayDiagnosticEndpointSummary": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "totalCount": {
+                "type": "int"
+            },
+            "avgMs": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticRetestAll": "Retestează tot",
+    "relayDiagnosticRetrying": "Se reîncearcă...",
+    "relayDiagnosticRetryConnection": "Reîncearcă conexiunea",
+    "relayDiagnosticTroubleshooting": "Depanare",
+    "relayDiagnosticTroubleshootingGuide": "• Stare verde = Conectat și funcțional\n• Stare roșie = Conexiunea a eșuat\n• Dacă testul de rețea eșuează, verifică conexiunea la internet\n• Dacă relay-urile sunt configurate dar neconectate, apasă \"Reîncearcă conexiunea\"\n• Fă o captură de ecran pentru depanare",
+    "relayDiagnosticAllEndpointsHealthy": "Toate endpoint-urile REST sunt sănătoase!",
+    "relayDiagnosticSomeEndpointsFailed": "Unele endpoint-uri REST au eșuat - vezi detaliile mai sus",
+    "relayDiagnosticFoundVideoEvents": "Am găsit {count, plural, one{1 eveniment video} few{{count} evenimente video} other{{count} de evenimente video}} în baza de date",
+    "@relayDiagnosticFoundVideoEvents": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticQueryFailed": "Interogarea a eșuat: {error}",
+    "@relayDiagnosticQueryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticConnectedToRelays": "Conectat la {count, plural, one{1 relay} few{{count} relay-uri} other{{count} de relay-uri}}!",
+    "@relayDiagnosticConnectedToRelays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticFailedToConnect": "N-am putut conecta la niciun relay",
+    "relayDiagnosticConnectionRetryFailed": "Reîncercarea conexiunii a eșuat: {error}",
+    "@relayDiagnosticConnectionRetryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticConnectedAuthenticated": "Conectat și autentificat",
+    "relayDiagnosticConnectedOnly": "Conectat",
+    "relayDiagnosticNotConnected": "Neconectat",
+    "relayDiagnosticNoRelaysConfigured": "Niciun relay configurat",
+    "relayDiagnosticFailed": "Eșuat",
+    "notificationSettingsTitle": "Notificări",
+    "@notificationSettingsTitle": {
+        "description": "Notification settings screen app bar title"
+    },
+    "notificationSettingsResetTooltip": "Resetează la valorile implicite",
+    "notificationSettingsTypes": "Tipuri de notificări",
+    "notificationSettingsLikes": "Aprecieri",
+    "notificationSettingsLikesSubtitle": "Când cineva âți apreciază videoclipurile",
+    "notificationSettingsComments": "Comentarii",
+    "notificationSettingsCommentsSubtitle": "Când cineva comentează la videoclipurile tale",
+    "notificationSettingsFollows": "Urmăriri",
+    "notificationSettingsFollowsSubtitle": "Când cineva te urmărește",
+    "notificationSettingsMentions": "Menționări",
+    "notificationSettingsMentionsSubtitle": "Când ești menționat",
+    "notificationSettingsReposts": "Redistribuiri",
+    "notificationSettingsRepostsSubtitle": "Când cineva âți redistribuie videoclipurile",
+    "notificationSettingsSystem": "Sistem",
+    "notificationSettingsSystemSubtitle": "Actualizări de aplicație și mesaje de sistem",
+    "notificationSettingsPushNotificationsSection": "Notificări push",
+    "notificationSettingsPushNotifications": "Notificări push",
+    "notificationSettingsPushNotificationsSubtitle": "Primește notificări când aplicația e închisă",
+    "notificationSettingsSound": "Sunet",
+    "notificationSettingsSoundSubtitle": "Redă sunet pentru notificări",
+    "notificationSettingsVibration": "Vibrație",
+    "notificationSettingsVibrationSubtitle": "Vibrează pentru notificări",
+    "notificationSettingsActions": "Acțiuni",
+    "notificationSettingsMarkAllAsRead": "Marchează toate ca citite",
+    "notificationSettingsMarkAllAsReadSubtitle": "Marchează toate notificările ca citite",
+    "notificationSettingsAllMarkedAsRead": "Toate notificările au fost marcate ca citite",
+    "notificationSettingsResetToDefaults": "Setările au fost resetate la valorile implicite",
+    "notificationSettingsAbout": "Despre notificări",
+    "notificationSettingsAboutDescription": "Notificările sunt alimentate de protocolul Nostr. Actualizările în timp real depind de conexiunea ta la relay-urile Nostr. Unele notificări pot avea întârzieri.",
+    "safetySettingsTitle": "Siguranță și confidențialitate",
+    "@safetySettingsTitle": {
+        "description": "Safety settings screen app bar title"
+    },
+    "safetySettingsLabel": "SETĂRI",
+    "safetySettingsShowDivineHostedOnly": "Arată doar videoclipurile găzduite de Divine",
+    "safetySettingsShowDivineHostedOnlySubtitle": "Ascunde videoclipurile servite de alte găzduiri media",
+    "safetySettingsModeration": "MODERARE",
+    "safetySettingsBlockedUsers": "UTILIZATORI BLOCAȚI",
+    "safetySettingsAgeVerification": "VERIFICARE VÂRSTĂ",
+    "safetySettingsAgeConfirmation": "Confirm că am 18 ani sau mai mult",
+    "safetySettingsAgeRequired": "Necesar pentru a vedea conținut pentru adulți",
+    "safetySettingsDivine": "Divine",
+    "safetySettingsDivineSubtitle": "Serviciu oficial de moderare (activat implicit)",
+    "safetySettingsPeopleIFollow": "Oameni pe care âi urmăresc",
+    "safetySettingsPeopleIFollowSubtitle": "Abonează-te la etichete de la oameni pe care âi urmărești",
+    "safetySettingsAddCustomLabeler": "Adaugă etichetator personalizat",
+    "safetySettingsAddCustomLabelerHint": "Introdu npub...",
+    "safetySettingsAddCustomLabelerListTitle": "Adaugă etichetator personalizat",
+    "safetySettingsAddCustomLabelerListSubtitle": "Introdu adresa npub",
+    "safetySettingsNoBlockedUsers": "Niciun utilizator blocat",
+    "safetySettingsUnblock": "Deblochează",
+    "safetySettingsUserUnblocked": "Utilizator deblocat",
+    "safetySettingsCancel": "Anulează",
+    "safetySettingsAdd": "Adaugă",
+    "analyticsTitle": "Statistici creator",
+    "@analyticsTitle": {
+        "description": "Creator analytics screen app bar title"
+    },
+    "analyticsDiagnosticsTooltip": "Diagnostice",
+    "analyticsDiagnosticsSemanticLabel": "Comută diagnosticele",
+    "analyticsRetry": "Reîncearcă",
+    "analyticsUnableToLoad": "Nu am putut încărca statisticile.",
+    "analyticsSignInRequired": "Autentifică-te ca să vezi statisticile pentru creatori.",
+    "analyticsViewDataUnavailable": "Vizualizările nu sunt disponibile momentan de la relay pentru aceste postări. Metricile de aprecieri/comentarii/redistribuiri sunt totuși corecte.",
+    "analyticsViewDataTitle": "Date vizualizări",
+    "analyticsUpdatedTimestamp": "Actualizat {time} • Scorurile folosesc aprecieri, comentarii, redistribuiri și vizualizări/bucle de la Funnelcake când sunt disponibile.",
+    "@analyticsUpdatedTimestamp": {
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsVideos": "Videoclipuri",
+    "analyticsViews": "Vizualizări",
+    "analyticsInteractions": "Interacțiuni",
+    "analyticsEngagement": "Implicare",
+    "analyticsFollowers": "Urmăritori",
+    "analyticsAvgPerPost": "Medie/Postare",
+    "analyticsInteractionMix": "Mixul interacțiunilor",
+    "analyticsLikes": "Aprecieri",
+    "analyticsComments": "Comentarii",
+    "analyticsReposts": "Redistribuiri",
+    "analyticsPerformanceHighlights": "Repere de performanță",
+    "analyticsMostViewed": "Cele mai vizualizate",
+    "analyticsMostDiscussed": "Cele mai discutate",
+    "analyticsMostReposted": "Cele mai redistribuite",
+    "analyticsNoVideosYet": "Încă niciun videoclip",
+    "analyticsViewDataUnavailableShort": "Date de vizualizare indisponibile",
+    "analyticsViewsCount": "{count} vizualizări",
+    "@analyticsViewsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsCommentsCount": "{count} comentarii",
+    "@analyticsCommentsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsRepostsCount": "{count} redistribuiri",
+    "@analyticsRepostsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsTopContent": "Conținut de top",
+    "analyticsPublishPrompt": "Publică câteva videoclipuri ca să vezi clasamentele.",
+    "analyticsEngagementRateExplainer": "Procentul din dreapta = Rata de implicare (interacțiuni împărțite la vizualizări).",
+    "analyticsEngagementRateNoViews": "Rata de implicare are nevoie de date de vizualizare; valorile apar ca N/A până când sunt disponibile vizualizările.",
+    "analyticsEngagementLabel": "Implicare",
+    "analyticsViewsUnavailable": "vizualizări indisponibile",
+    "analyticsInteractionsCount": "{count} interacțiuni",
+    "@analyticsInteractionsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsPostAnalytics": "Statistici postare",
+    "analyticsOpenPost": "Deschide postarea",
+    "analyticsRecentDailyInteractions": "Interacțiuni zilnice recente",
+    "analyticsNoActivityYet": "Încă nicio activitate în acest interval.",
+    "analyticsDailyInteractionsExplainer": "Interacțiuni = aprecieri + comentarii + redistribuiri după data postării.",
+    "analyticsDailyBarExplainer": "Lungimea barei e relativă la cea mai bună zi a ta din această fereastră.",
+    "analyticsAudienceSnapshot": "Instantaneu audiență",
+    "analyticsFollowersCount": "Urmăritori: {count}",
+    "@analyticsFollowersCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsFollowingCount": "Urmăriți: {count}",
+    "@analyticsFollowingCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsAudiencePlaceholder": "Detaliile despre sursa/geografia/timpul audienței se vor popula pe măsură ce Funnelcake adaugă endpoint-uri de statistici de audiență.",
+    "analyticsRetention": "Retenție",
+    "analyticsRetentionWithViews": "Curba de retenție și defalcarea timpului de vizionare vor apărea odată ce retenția per secundă/bucketă ajunge de la Funnelcake.",
+    "analyticsRetentionWithoutViews": "Datele de retenție sunt indisponibile până când statisticile de vizualizări+timp de vizionare sunt returnate de Funnelcake.",
+    "analyticsDiagnostics": "Diagnostice",
+    "analyticsDiagnosticsTotalVideos": "Total videoclipuri: {count}",
+    "@analyticsDiagnosticsTotalVideos": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsWithViews": "Cu vizualizări: {count}",
+    "@analyticsDiagnosticsWithViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsMissingViews": "Fără vizualizări: {count}",
+    "@analyticsDiagnosticsMissingViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsHydratedBulk": "Hidratate (bulk): {count}",
+    "@analyticsDiagnosticsHydratedBulk": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsHydratedViews": "Hidratate (/views): {count}",
+    "@analyticsDiagnosticsHydratedViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsSources": "Surse: {sources}",
+    "@analyticsDiagnosticsSources": {
+        "placeholders": {
+            "sources": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsDiagnosticsUseFixture": "Folosește date de test",
+    "analyticsNa": "N/A",
+    "authCreateNewAccount": "Creează un cont Divine nou",
+    "authSignInDifferentAccount": "Autentifică-te cu un alt cont",
+    "authSignBackIn": "Reautentifică-te",
+    "authTermsPrefix": "Selecționând o opțiune de mai sus, confirmi că ai cel puțin 16 ani și ești de acord cu ",
+    "authTermsOfService": "Termenii serviciului",
+    "authPrivacyPolicy": "Politica de confidențialitate",
+    "authTermsAnd": ", și ",
+    "authSafetyStandards": "Standardele de siguranță",
+    "authAmberNotInstalled": "Aplicația Amber nu e instalată",
+    "authAmberConnectionFailed": "N-am putut conecta cu Amber",
+    "authPasswordResetSent": "Dacă există un cont cu acel email, am trimis un link de resetare a parolei.",
+    "authSignInTitle": "Autentificare",
+    "authEmailLabel": "Email",
+    "authPasswordLabel": "Parolă",
+    "authForgotPassword": "Ai uitat parola?",
+    "authImportNostrKey": "Importă cheia Nostr",
+    "authConnectSignerApp": "Conectează o aplicație de semnare",
+    "authSignInWithAmber": "Autentifică-te cu Amber",
+    "authSignInOptionsTitle": "Opțiuni de autentificare",
+    "authInfoEmailPasswordTitle": "Email și parolă",
+    "authInfoEmailPasswordDescription": "Autentifică-te cu contul tău Divine. Dacă te-ai înregistrat cu email și parolă, folosește-le aici.",
+    "authInfoImportNostrKeyDescription": "Ai deja o identitate Nostr? Importă cheia ta privată nsec dintr-un alt client.",
+    "authInfoSignerAppTitle": "Aplicație de semnare",
+    "authInfoSignerAppDescription": "Conectează-te cu un semnatar la distanță compatibil NIP-46 cum ar fi nsecBunker pentru securitate sporită a cheilor.",
+    "authInfoAmberTitle": "Amber",
+    "authInfoAmberDescription": "Folosește aplicația de semnare Amber pe Android ca să gestionezi cheile tale Nostr în siguranță.",
+    "authCreateAccountTitle": "Creează cont",
+    "authBackToInviteCode": "Înapoi la codul de invitație",
+    "authUseDivineNoBackup": "Folosește Divine fără backup",
+    "authSkipConfirmTitle": "Un ultim lucru...",
+    "authSkipConfirmKeyCreated": "Ești înăuntru! Creăm o cheie sigură care va alimenta contul tău Divine.",
+    "authSkipConfirmKeyOnly": "Fără email, cheia ta e singurul mod prin care Divine știe că acest cont e al tău.",
+    "authSkipConfirmRecommendEmail": "Poți accesa cheia în aplicație, dar, dacă nu ești tehnic, recomandăm să adaugi un email și o parolă acum. Face mai ușoară autentificarea și restabilirea contului dacă pierzi sau resetezi dispozitivul.",
+    "authAddEmailPassword": "Adaugă email și parolă",
+    "authUseThisDeviceOnly": "Folosește doar acest dispozitiv",
+    "authCompleteRegistration": "Finalizează-ți înregistrarea",
+    "authVerifying": "Se verifică...",
+    "authVerificationLinkSent": "Am trimis un link de verificare la:",
+    "authClickVerificationLink": "Apasă linkul din email ca\nsă finalizezi înregistrarea.",
+    "authPleaseWaitVerifying": "Te rugăm să aștepți cât âți verificăm emailul...",
+    "authWaitingForVerification": "Se așteaptă verificarea",
+    "authOpenEmailApp": "Deschide aplicația de email",
+    "authWelcomeToDivine": "Bun venit pe Divine!",
+    "authEmailVerified": "Emailul tău a fost verificat.",
+    "authSigningYouIn": "Te autentificăm",
+    "authErrorTitle": "Ups.",
+    "authVerificationFailed": "N-am reușit să-ți verificăm emailul.\nÎncearcă din nou.",
+    "authStartOver": "Începe din nou",
+    "authEmailVerifiedLogin": "Email verificat! Autentifică-te ca să continui.",
+    "authVerificationLinkExpired": "Acest link de verificare nu mai e valid.",
+    "authVerificationConnectionError": "Nu am putut verifica emailul. Verifică-ți conexiunea și încearcă din nou.",
+    "authWaitlistConfirmTitle": "Ești înăuntru!",
+    "authWaitlistUpdatesAt": "Vom da noutăți la {email}.\nCând apar mai multe coduri de invitație, ți le trimitem.",
+    "@authWaitlistUpdatesAt": {
+        "description": "Waitlist confirmation message with email",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authOk": "OK",
+    "authInviteUnavailable": "Accesul prin invitație e temporar indisponibil.",
+    "authInviteUnavailableBody": "Încearcă din nou într-un moment, sau contactează asistența dacă ai nevoie de ajutor ca să intri.",
+    "authTryAgain": "Încearcă din nou",
+    "authContactSupport": "Contactează asistența",
+    "authCouldNotOpenEmail": "N-am putut deschide {email}",
+    "@authCouldNotOpenEmail": {
+        "description": "Error when email client cannot be opened",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authAddInviteCode": "Adaugă codul de invitație",
+    "authInviteCodeLabel": "Cod de invitație",
+    "authEnterYourCode": "Introdu codul tău",
+    "authNext": "Mai departe",
+    "authJoinWaitlist": "Alătură-te listei de așteptare",
+    "authJoinWaitlistTitle": "Alătură-te listei de așteptare",
+    "authJoinWaitlistDescription": "Dă-ne emailul tău și âți vom trimite noutăți pe măsură ce se deschide accesul.",
+    "authInviteAccessHelp": "Ajutor pentru accesul prin invitație",
+    "authGeneratingConnection": "Se generează conexiunea...",
+    "authConnectedAuthenticating": "Conectat! Se autentifică...",
+    "authConnectionTimedOut": "Conexiunea a expirat",
+    "authApproveConnection": "Asigură-te că ai aprobat conexiunea în aplicația ta de semnare.",
+    "authConnectionCancelled": "Conexiune anulată",
+    "authConnectionCancelledMessage": "Conexiunea a fost anulată.",
+    "authConnectionFailed": "Conexiunea a eșuat",
+    "authUnknownError": "A apărut o eroare necunoscută.",
+    "authUrlCopied": "URL copiat în clipboard",
+    "authConnectToDivine": "Conectează-te la Divine",
+    "authPasteBunkerUrl": "Lipește URL-ul bunker://",
+    "authBunkerUrlHint": "URL bunker://",
+    "authInvalidBunkerUrl": "URL bunker invalid. Ar trebui să înceapă cu bunker://",
+    "authScanSignerApp": "Scanează cu aplicația ta\nde semnare ca să te conectezi.",
+    "authWaitingForConnection": "Se așteaptă conexiunea... {seconds}s",
+    "@authWaitingForConnection": {
+        "description": "Waiting indicator with elapsed seconds",
+        "placeholders": {
+            "seconds": {
+                "type": "int"
+            }
+        }
+    },
+    "authCopyUrl": "Copiază URL-ul",
+    "authShare": "Partajează",
+    "authAddBunker": "Adaugă bunker",
+    "authCompatibleSignerApps": "Aplicații de semnare compatibile",
+    "authFailedToConnect": "N-am putut conecta",
+    "authResetPasswordTitle": "Resetează parola",
+    "authResetPasswordSubtitle": "Introdu parola nouă. Trebuie să aibă cel puțin 8 caractere.",
+    "authNewPasswordLabel": "Parolă nouă",
+    "authPasswordTooShort": "Parola trebuie să aibă cel puțin 8 caractere",
+    "authPasswordResetSuccess": "Parola a fost resetată cu succes. Autentifică-te.",
+    "authPasswordResetFailed": "Resetarea parolei a eșuat",
+    "authUnexpectedError": "A apărut o eroare neașteptată. Încearcă din nou.",
+    "authUpdatePassword": "Actualizează parola",
+    "authSecureAccountTitle": "Securizează contul",
+    "authUnableToAccessKeys": "Nu am putut accesa cheile tale. Încearcă din nou.",
+    "authRegistrationFailed": "Înscrierea a eșuat",
+    "authRegistrationComplete": "Înscriere finalizată. Verifică-ți emailul.",
+    "authVerificationFailedTitle": "Verificare eșuată",
+    "authClose": "Închide",
+    "authAccountSecured": "Cont securizat!",
+    "authAccountLinkedToEmail": "Contul tău e acum legat de emailul tău.",
+    "authVerifyYourEmail": "Verifică-ți emailul",
+    "authClickLinkContinue": "Apasă linkul din email ca să finalizezi înregistrarea. Poți continua să folosești aplicația între timp.",
+    "authWaitingForVerificationEllipsis": "Se așteaptă verificarea...",
+    "authContinueToApp": "Continuă în aplicație",
+    "authResetPassword": "Resetează parola",
+    "authResetPasswordDescription": "Introdu adresa ta de email și âți trimitem un link de resetare a parolei.",
+    "authFailedToSendResetEmail": "N-am putut trimite emailul de resetare.",
+    "authUnexpectedErrorShort": "A apărut o eroare neașteptată.",
+    "authSending": "Se trimite...",
+    "authSendResetLink": "Trimite linkul de resetare",
+    "authEmailSent": "Email trimis!",
+    "authResetLinkSentTo": "Am trimis un link de resetare a parolei la {email}. Apasă linkul din email ca să-ți actualizezi parola.",
+    "@authResetLinkSentTo": {
+        "description": "Confirmation message after reset link sent",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authSignInButton": "Autentificare",
+    "authVerificationErrorTimeout": "Verificarea a expirat. Încearcă să te înregistrezi din nou.",
+    "authVerificationErrorMissingCode": "Verificare eșuată — cod de autorizare lipsă.",
+    "authVerificationErrorPollFailed": "Verificare eșuată. Încearcă din nou.",
+    "authVerificationErrorNetworkExchange": "Eroare de rețea la autentificare. Încearcă din nou.",
+    "authVerificationErrorOAuthExchange": "Verificare eșuată. Încearcă să te înregistrezi din nou.",
+    "authVerificationErrorSignInFailed": "Autentificarea a eșuat. Încearcă să te conectezi manual.",
+    "authInviteErrorAlreadyUsed": "Acest cod de invitație nu mai e disponibil. Întoarce-te la codul tău, alătură-te listei de așteptare sau contactează asistența.",
+    "authInviteErrorInvalid": "Acest cod de invitație nu poate fi folosit acum. Întoarce-te la codul tău, alătură-te listei de așteptare sau contactează asistența.",
+    "authInviteErrorTemporary": "N-am putut confirma invitația ta acum. Întoarce-te la codul tău și încearcă din nou, sau contactează asistența.",
+    "authInviteErrorUnknown": "N-am putut activa invitația ta. Întoarce-te la codul tău, alătură-te listei de așteptare sau contactează asistența.",
+    "shareSheetSave": "Salvează",
+    "shareSheetSaveToGallery": "Salvează în galerie",
+    "shareSheetSaveWithWatermark": "Salvează cu filigran",
+    "shareSheetSaveVideo": "Salvează videoclipul",
+    "shareSheetAddToList": "Adaugă la listă",
+    "shareSheetCopy": "Copiază",
+    "shareSheetShareVia": "Partajează prin",
+    "shareSheetReport": "Raportează",
+    "shareSheetEventJson": "JSON eveniment",
+    "shareSheetEventId": "ID eveniment",
+    "shareSheetMoreActions": "Mai multe acțiuni",
+    "watermarkDownloadSavedToCameraRoll": "Salvat în galerie",
+    "watermarkDownloadShare": "Partajează",
+    "watermarkDownloadDone": "Gata",
+    "watermarkDownloadPhotosAccessNeeded": "E nevoie de acces la Poze",
+    "watermarkDownloadPhotosAccessDescription": "Pentru a salva videoclipuri, permite accesul la Poze în Setări.",
+    "watermarkDownloadOpenSettings": "Deschide setările",
+    "watermarkDownloadNotNow": "Nu acum",
+    "watermarkDownloadFailed": "Descărcare eșuată",
+    "watermarkDownloadDismiss": "Respinge",
+    "watermarkDownloadStageDownloading": "Se descarcă videoclipul",
+    "watermarkDownloadStageWatermarking": "Se adaugă filigranul",
+    "watermarkDownloadStageSaving": "Se salvează în galerie",
+    "watermarkDownloadStageDownloadingDesc": "Se aduce videoclipul din rețea...",
+    "watermarkDownloadStageWatermarkingDesc": "Se aplică filigranul Divine...",
+    "watermarkDownloadStageSavingDesc": "Se salvează videoclipul cu filigran în galeria ta...",
+    "uploadProgressVideoUpload": "Încărcare videoclip",
+    "uploadProgressPause": "Pauză",
+    "uploadProgressResume": "Reia",
+    "uploadProgressGoBack": "Înapoi",
+    "uploadProgressRetryWithCount": "Reîncearcă ({count} rămase)",
+    "@uploadProgressRetryWithCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressDelete": "Șterge",
+    "uploadProgressDaysAgo": "acum {count}z",
+    "@uploadProgressDaysAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressHoursAgo": "acum {count}h",
+    "@uploadProgressHoursAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressMinutesAgo": "acum {count}m",
+    "@uploadProgressMinutesAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressJustNow": "Chiar acum",
+    "uploadProgressUploadingPercent": "Se încarcă {percent}%",
+    "@uploadProgressUploadingPercent": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressPausedPercent": "Pauză la {percent}%",
+    "@uploadProgressPausedPercent": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationClose": "Închide",
+    "badgeExplanationOriginalVineArchive": "Arhivă Vine originală",
+    "badgeExplanationCameraProof": "Dovadă de cameră",
+    "badgeExplanationAuthenticitySignals": "Semnale de autenticitate",
+    "badgeExplanationVineArchiveIntro": "Acest videoclip e un Vine original recuperat din Internet Archive.",
+    "badgeExplanationVineArchiveHistory": "Înainte ca Vine să se închidă în 2017, ArchiveTeam și Internet Archive au lucrat ca să păstreze milioane de Vine-uri pentru posteritate. Acest conținut face parte din acel efort istoric de conservare.",
+    "badgeExplanationOriginalStats": "Statistici originale: {loops} bucle",
+    "@badgeExplanationOriginalStats": {
+        "placeholders": {
+            "loops": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationLearnVineArchive": "Află mai multe despre conservarea arhivei Vine",
+    "badgeExplanationLearnProofmode": "Află mai multe despre verificarea Proofmode",
+    "badgeExplanationLearnAuthenticity": "Află mai multe despre semnalele de autenticitate Divine",
+    "badgeExplanationInspectProofCheck": "Inspectează cu unealta ProofCheck",
+    "badgeExplanationInspectMedia": "Inspectează detaliile media",
+    "badgeExplanationProofmodeVerified": "Autenticitatea acestui videoclip e verificată cu tehnologia Proofmode.",
+    "badgeExplanationDivineHostedHumanMade": "Acest videoclip e găzduit pe Divine și detecția AI indică că e probabil făcut de om, dar nu include date criptografice de verificare a camerei.",
+    "badgeExplanationHumanMadeNoCrypto": "Detecția AI indică că acest videoclip e probabil făcut de om, deși nu include date criptografice de verificare a camerei.",
+    "badgeExplanationDivineHostedNoCrypto": "Acest videoclip e găzduit pe Divine, dar încă nu include date criptografice de verificare a camerei.",
+    "badgeExplanationExternalNoCrypto": "Acest videoclip e găzduit în afara Divine și nu include date criptografice de verificare a camerei.",
+    "badgeExplanationDeviceAttestation": "Atestare dispozitiv",
+    "badgeExplanationPgpSignature": "Semnătură PGP",
+    "badgeExplanationC2paCredentials": "Credentiale de conținut C2PA",
+    "badgeExplanationProofManifest": "Manifest de dovezi",
+    "badgeExplanationAiDetection": "Detecție AI",
+    "badgeExplanationAiNotScanned": "Scanare AI: Încă nescanat",
+    "badgeExplanationNoScanResults": "Încă nu sunt rezultate de scanare disponibile.",
+    "badgeExplanationCheckAiGenerated": "Verifică dacă e generat de AI",
+    "badgeExplanationAiLikelihood": "{percentage}% probabilitate să fie generat de AI",
+    "@badgeExplanationAiLikelihood": {
+        "placeholders": {
+            "percentage": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationScannedBy": "Scanat de: {source}",
+    "@badgeExplanationScannedBy": {
+        "placeholders": {
+            "source": {
+                "type": "String"
+            }
+        }
+    },
+    "badgeExplanationVerifiedByModerator": "Verificat de un moderator uman",
+    "badgeExplanationVerificationPlatinum": "Platină: Atestare hardware de dispozitiv, semnături criptografice, credentiale de conținut (C2PA) și scanare AI confirmă originea umană.",
+    "badgeExplanationVerificationGold": "Aur: Capturat pe un dispozitiv real cu atestare hardware, semnături criptografice și credentiale de conținut (C2PA).",
+    "badgeExplanationVerificationSilver": "Argint: Semnăturile criptografice dovedesc că acest videoclip n-a fost modificat de la înregistrare.",
+    "badgeExplanationVerificationBronze": "Bronz: Sunt prezente semnături de metadate de bază.",
+    "badgeExplanationVerificationSilverAiScan": "Argint: Scanarea AI confirmă că acest videoclip e probabil creat de om.",
+    "badgeExplanationNoVerification": "Nu sunt date de verificare disponibile pentru acest videoclip.",
+    "shareMenuTitle": "Partajează videoclipul",
+    "shareMenuReportAiContent": "Raportează conținut AI",
+    "shareMenuReportAiContentSubtitle": "Raportează rapid conținut suspect de a fi generat de AI",
+    "shareMenuReportingAiContent": "Se raportează conținutul AI...",
+    "shareMenuFailedToReportContent": "N-am putut raporta conținutul: {error}",
+    "@shareMenuFailedToReportContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuFailedToReportAiContent": "N-am putut raporta conținutul AI: {error}",
+    "@shareMenuFailedToReportAiContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuVideoStatus": "Stare videoclip",
+    "shareMenuViewAllLists": "Vezi toate listele →",
+    "shareMenuShareWith": "Partajează cu",
+    "shareMenuShareViaOtherApps": "Partajează prin alte aplicații",
+    "shareMenuShareViaOtherAppsSubtitle": "Partajează prin alte aplicații sau copiază linkul",
+    "shareMenuSaveToGallery": "Salvează în galerie",
+    "shareMenuSaveOriginalSubtitle": "Salvează videoclipul original în galerie",
+    "shareMenuSaveWithWatermark": "Salvează cu filigran",
+    "shareMenuSaveVideo": "Salvează videoclipul",
+    "shareMenuDownloadWithWatermark": "Descarcă cu filigran Divine",
+    "shareMenuSaveVideoSubtitle": "Salvează videoclipul în galerie",
+    "shareMenuLists": "Liste",
+    "shareMenuAddToList": "Adaugă la listă",
+    "shareMenuAddToListSubtitle": "Adaugă la listele tale curate",
+    "shareMenuCreateNewList": "Creează o listă nouă",
+    "shareMenuCreateNewListSubtitle": "Începe o nouă colecție curată",
+    "shareMenuRemovedFromList": "Eliminat din listă",
+    "shareMenuFailedToRemoveFromList": "N-am putut elimina din listă",
+    "shareMenuBookmarks": "Semne de carte",
+    "shareMenuAddToBookmarks": "Adaugă la semne de carte",
+    "shareMenuAddToBookmarksSubtitle": "Salvează pentru vizualizare ulterioară",
+    "shareMenuAddToBookmarkSet": "Adaugă la set de semne de carte",
+    "shareMenuAddToBookmarkSetSubtitle": "Organizează în colecții",
+    "shareMenuFollowSets": "Seturi de urmărire",
+    "shareMenuCreateFollowSet": "Creează un set de urmărire",
+    "shareMenuCreateFollowSetSubtitle": "Începe o colecție nouă cu acest creator",
+    "shareMenuAddToFollowSet": "Adaugă la setul de urmărire",
+    "shareMenuFollowSetsAvailable": "{count, plural, one{1 set de urmărire disponibil} few{{count} seturi de urmărire disponibile} other{{count} de seturi de urmărire disponibile}}",
+    "@shareMenuFollowSetsAvailable": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuAddedToBookmarks": "Adăugat la semnele de carte!",
+    "shareMenuFailedToAddBookmark": "N-am putut adăuga semnul de carte",
+    "shareMenuCreatedListAndAddedVideo": "Lista \"{name}\" creată și videoclipul adăugat",
+    "@shareMenuCreatedListAndAddedVideo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuManageContent": "Gestionează conținutul",
+    "shareMenuEditVideo": "Editează videoclipul",
+    "shareMenuEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
+    "shareMenuDeleteVideo": "Șterge videoclipul",
+    "shareMenuDeleteVideoSubtitle": "Elimină definitiv acest conținut",
+    "shareMenuVideoInTheseLists": "Videoclipul e în aceste liste:",
+    "shareMenuVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
+    "@shareMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuClose": "Închide",
+    "shareMenuDeleteConfirmation": "Sigur vrei să ștergi acest videoclip?",
+    "shareMenuDeleteWarning": "Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.",
+    "shareMenuCancel": "Anulează",
+    "shareMenuDelete": "Șterge",
+    "shareMenuDeletingContent": "Se șterge conținutul...",
+    "shareMenuDeleteRequestSent": "Cererea de ștergere a fost trimisă cu succes",
+    "shareMenuFailedToDeleteContent": "N-am putut șterge conținutul: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuFollowSetName": "Numele setului de urmărire",
+    "shareMenuFollowSetNameHint": "ex. Creatori de conținut, Muzicieni etc.",
+    "shareMenuDescriptionOptional": "Descriere (opțional)",
+    "shareMenuCreate": "Creează",
+    "shareMenuCreatedFollowSetAndAddedCreator": "Set de urmărire \"{name}\" creat și creatorul adăugat",
+    "@shareMenuCreatedFollowSetAndAddedCreator": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuDone": "Gata",
+    "shareMenuEditTitle": "Titlu",
+    "shareMenuEditTitleHint": "Introdu titlul videoclipului",
+    "shareMenuEditDescription": "Descriere",
+    "shareMenuEditDescriptionHint": "Introdu descrierea videoclipului",
+    "shareMenuEditHashtags": "Hashtaguri",
+    "shareMenuEditHashtagsHint": "hashtaguri, separate, prin virgulă",
+    "shareMenuEditMetadataNote": "Notă: Doar metadatele pot fi editate. Conținutul video nu poate fi schimbat.",
+    "shareMenuDeleting": "Se șterge...",
+    "shareMenuUpdate": "Actualizează",
+    "shareMenuVideoUpdated": "Videoclip actualizat cu succes",
+    "shareMenuFailedToUpdateVideo": "N-am putut actualiza videoclipul: {error}",
+    "@shareMenuFailedToUpdateVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuDeleteVideoQuestion": "Ștergi videoclipul?",
+    "shareMenuDeleteRelayWarning": "Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.",
+    "shareMenuVideoDeletionRequested": "Cerere de ștergere a videoclipului trimisă",
+    "shareMenuFailedToDeleteVideo": "N-am putut șterge videoclipul: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuContentLabels": "Etichete de conținut",
+    "shareMenuAddContentLabels": "Adaugă etichete de conținut",
+    "shareMenuClearAll": "Șterge tot",
+    "shareMenuCollaborators": "Colaboratori",
+    "shareMenuAddCollaborator": "Adaugă colaborator",
+    "shareMenuMutualFollowRequired": "Trebuie să te urmărești reciproc cu {name} ca să-l adaugi drept colaborator.",
+    "@shareMenuMutualFollowRequired": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuLoading": "Se încarcă...",
+    "shareMenuInspiredBy": "Inspirat de",
+    "shareMenuAddInspirationCredit": "Adaugă credit pentru inspirație",
+    "shareMenuCreatorCannotBeReferenced": "Acest creator nu poate fi referit.",
+    "shareMenuUnknown": "Necunoscut",
+    "shareMenuCreateBookmarkSet": "Creează un set de semne de carte",
+    "shareMenuSetName": "Numele setului",
+    "shareMenuSetNameHint": "ex. Preferate, De vizionat mai târziu etc.",
+    "shareMenuCreateNewSet": "Creează un set nou",
+    "shareMenuStartNewBookmarkCollection": "Începe o colecție nouă de semne de carte",
+    "shareMenuNoBookmarkSets": "Încă nu ai seturi de semne de carte. Creează-l pe primul!",
+    "shareMenuError": "Eroare",
+    "shareMenuFailedToLoadBookmarkSets": "N-am putut încărca seturile de semne de carte",
+    "shareMenuCreatedSetAndAddedVideo": "Set \"{name}\" creat și videoclipul adăugat",
+    "@shareMenuCreatedSetAndAddedVideo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuUseThisSound": "Folosește acest sunet",
+    "shareMenuOriginalSound": "Sunet original",
+    "authSessionExpired": "Sesiunea ta a expirat. Autentifică-te din nou.",
+    "authSignInFailed": "N-am putut autentifica. Încearcă din nou.",
+    "localeAppLanguage": "Limba aplicației",
+    "localeDeviceDefault": "Implicit dispozitiv",
+    "localeSelectLanguage": "Alege limba",
+    "webAuthNotSupportedSecureMode": "Autentificarea web nu e suportată în modul sigur. Folosește aplicația mobilă pentru gestionarea sigură a cheilor.",
+    "webAuthIntegrationFailed": "Integrarea de autentificare a eșuat: {error}",
+    "@webAuthIntegrationFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "webAuthUnexpectedError": "Eroare neașteptată: {error}",
+    "@webAuthUnexpectedError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "webAuthEnterBunkerUri": "Introdu un URI bunker",
+    "webAuthConnectTitle": "Conectează-te la Divine",
+    "webAuthChooseMethod": "Alege metoda ta preferată de autentificare Nostr",
+    "webAuthBrowserExtension": "Extensie de browser",
+    "webAuthRecommended": "RECOMANDAT",
+    "webAuthNsecBunker": "nsec bunker",
+    "webAuthConnectRemoteSigner": "Conectează-te la un semnatar la distanță",
+    "webAuthBunkerHint": "bunker://pubkey?relay=wss://...",
+    "webAuthPasteFromClipboard": "Lipește din clipboard",
+    "webAuthConnectToBunker": "Conectează-te la Bunker",
+    "webAuthNewToNostr": "Ești nou pe Nostr?",
+    "webAuthNostrHelp": "Instalează o extensie de browser ca Alby sau nos2x pentru cea mai ușoară experiență, sau folosește nsec bunker pentru semnare la distanță sigură.",
+    "soundsTitle": "Sunete",
+    "soundsSearchHint": "Caută sunete...",
+    "soundsPreviewUnavailable": "Nu pot previzualiza sunetul - niciun audio disponibil",
+    "soundsPreviewFailed": "N-am putut reda previzualizarea: {error}",
+    "@soundsPreviewFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "soundsFeaturedSounds": "Sunete recomandate",
+    "soundsTrendingSounds": "Sunete în trend",
+    "soundsAllSounds": "Toate sunetele",
+    "soundsSearchResults": "Rezultatele căutării",
+    "soundsNoSoundsAvailable": "Niciun sunet disponibil",
+    "soundsNoSoundsDescription": "Sunetele vor apărea aici când creatorii distribuie audio",
+    "soundsNoSoundsFound": "Niciun sunet găsit",
+    "soundsNoSoundsFoundDescription": "Încearcă alt termen de căutare",
+    "soundsFailedToLoad": "N-am putut încărca sunetele",
+    "soundsRetry": "Reîncearcă",
+    "soundsScreenLabel": "Ecranul sunetelor",
+    "profileTitle": "Profil",
+    "profileRefresh": "Reîncarcă",
+    "profileRefreshLabel": "Reîncarcă profilul",
+    "profileMoreOptions": "Mai multe opțiuni",
+    "profileBlockedUser": "L-ai blocat pe {name}",
+    "@profileBlockedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockedUser": "L-ai deblocat pe {name}",
+    "@profileUnblockedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnfollowedUser": "Nu-l mai urmărești pe {name}",
+    "@profileUnfollowedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileError": "Eroare: {error}",
+    "@profileError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsTabAll": "Toate",
+    "notificationsTabLikes": "Aprecieri",
+    "notificationsTabComments": "Comentarii",
+    "notificationsTabFollows": "Urmăriri",
+    "notificationsTabReposts": "Redistribuiri",
+    "notificationsFailedToLoad": "N-am putut încărca notificările",
+    "notificationsRetry": "Reîncearcă",
+    "notificationsCheckingNew": "se verifică notificări noi",
+    "notificationsNoneYet": "Încă nicio notificare",
+    "notificationsNoneForType": "Nicio notificare de tip {type}",
+    "@notificationsNoneForType": {
+        "placeholders": {
+            "type": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsEmptyDescription": "Când oamenii interacționează cu conținutul tău, vei vedea asta aici",
+    "notificationsLoadingType": "Se încarcă notificările de tip {type}...",
+    "@notificationsLoadingType": {
+        "placeholders": {
+            "type": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsInviteSingular": "Ai 1 invitație de împărțit cu un prieten!",
+    "notificationsInvitePlural": "Ai {count, plural, one{1 invitație} few{{count} invitații} other{{count} de invitații}} de împărțit cu prietenii!",
+    "@notificationsInvitePlural": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "notificationsVideoNotFound": "Videoclipul n-a fost găsit",
+    "notificationsVideoUnavailable": "Videoclip indisponibil",
+    "notificationsFromNotification": "Din notificare",
+    "feedFailedToLoadVideos": "N-am putut încărca videoclipurile",
+    "feedRetry": "Reîncearcă",
+    "feedNoFollowedUsers": "Niciun utilizator urmărit.\nUrmărește pe cineva ca să-i vezi videoclipurile aici.",
+    "feedNoVideosForMode": "Niciun videoclip găsit pentru feedul {mode}.",
+    "@feedNoVideosForMode": {
+        "placeholders": {
+            "mode": {
+                "type": "String"
+            }
+        }
+    },
+    "feedExploreVideos": "Explorează videoclipuri",
+    "feedExternalVideoSlow": "Videoclipul extern se încarcă încet",
+    "feedSkip": "Sari peste",
+    "uploadWaitingToUpload": "Se așteaptă încărcarea",
+    "uploadUploadingVideo": "Se încarcă videoclipul",
+    "uploadProcessingVideo": "Se procesează videoclipul",
+    "uploadProcessingComplete": "Procesare finalizată",
+    "uploadPublishedSuccessfully": "Publicat cu succes",
+    "uploadFailed": "Încărcare eșuată",
+    "uploadRetrying": "Se reîncearcă încărcarea",
+    "uploadPaused": "Încărcare în pauză",
+    "uploadPercentComplete": "{percent}% finalizat",
+    "@uploadPercentComplete": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadQueuedMessage": "Videoclipul tău e în așteptare pentru încărcare",
+    "uploadUploadingMessage": "Se încarcă pe server...",
+    "uploadProcessingMessage": "Se procesează videoclipul - poate dura câteva minute",
+    "uploadReadyToPublishMessage": "Videoclip procesat cu succes și gata de publicare",
+    "uploadPublishedMessage": "Videoclip publicat pe profilul tău",
+    "uploadFailedMessage": "Încărcarea a eșuat - încearcă din nou",
+    "uploadRetryingMessage": "Se reîncearcă încărcarea...",
+    "uploadPausedMessage": "Încărcare oprită de utilizator",
+    "uploadRetryButton": "REÎNCEARCĂ",
+    "uploadRetryFailed": "N-am putut reîncerca încărcarea: {error}",
+    "@uploadRetryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "userSearchPrompt": "Caută utilizatori",
+    "userSearchNoResults": "Niciun utilizator găsit",
+    "userSearchFailed": "Căutarea a eșuat",
+    "forgotPasswordTitle": "Resetează parola",
+    "forgotPasswordDescription": "Introdu adresa ta de email și âți trimitem un link de resetare a parolei.",
+    "forgotPasswordEmailLabel": "Adresă de email",
+    "forgotPasswordCancel": "Anulează",
+    "forgotPasswordSendLink": "Trimite linkul de resetare",
+    "ageVerificationContentWarning": "Atenționare de conținut",
+    "ageVerificationTitle": "Verificare vârstă",
+    "ageVerificationAdultDescription": "Acest conținut a fost marcat ca putând conține material pentru adulți. Trebuie să ai 18 ani sau mai mult ca să-l vezi.",
+    "ageVerificationCreationDescription": "Ca să folosești camera și să creezi conținut, trebuie să ai cel puțin 16 ani.",
+    "ageVerificationAdultQuestion": "Ai 18 ani sau mai mult?",
+    "ageVerificationCreationQuestion": "Ai 16 ani sau mai mult?",
+    "ageVerificationNo": "Nu",
+    "ageVerificationYes": "Da",
+    "shareLinkCopied": "Link copiat în clipboard",
+    "shareFailedToCopy": "N-am putut copia linkul",
+    "shareVideoSubject": "Vezi acest videoclip pe Divine",
+    "shareFailedToShare": "N-am putut partaja",
+    "shareVideoTitle": "Partajează videoclipul",
+    "shareToApps": "Partajează în aplicații",
+    "shareToAppsSubtitle": "Partajează prin aplicații de mesagerie sau sociale",
+    "shareCopyWebLink": "Copiază linkul web",
+    "shareCopyWebLinkSubtitle": "Copiază un link web de partajat",
+    "shareCopyNostrLink": "Copiază linkul Nostr",
+    "shareCopyNostrLinkSubtitle": "Copiază linkul nevent pentru clienții Nostr",
+    "navHome": "Acasă",
+    "navExplore": "Explorează",
+    "navInbox": "Mesaje",
+    "navProfile": "Profil",
+    "navMyProfile": "Profilul meu",
+    "navSearch": "Caută",
+    "navNotifications": "Notificări",
+    "navSearchTooltip": "Caută",
+    "navOpenCamera": "Deschide camera",
+    "navUnknown": "Necunoscut",
+    "navExploreClassics": "Clasice",
+    "navExploreNewVideos": "Videoclipuri noi",
+    "navExploreTrending": "În trend",
+    "navExploreForYou": "Pentru tine",
+    "navExploreLists": "Liste",
+    "routeErrorTitle": "Eroare",
+    "routeInvalidHashtag": "Hashtag invalid",
+    "routeInvalidConversationId": "ID de conversație invalid",
+    "routeInvalidRequestId": "ID de cerere invalid",
+    "routeInvalidListId": "ID de listă invalid",
+    "routeInvalidUserId": "ID de utilizator invalid",
+    "routeInvalidVideoId": "ID de videoclip invalid",
+    "routeInvalidSoundId": "ID de sunet invalid",
+    "routeInvalidCategory": "Categorie invalidă",
+    "routeNoVideosToDisplay": "Niciun videoclip de afișat",
+    "routeInvalidProfileId": "ID de profil invalid",
+    "routeDefaultListName": "Listă",
+    "supportTitle": "Centru de asistență",
+    "supportContactSupport": "Contactează asistența",
+    "supportContactSupportSubtitle": "Începe o conversație sau vezi mesajele trecute",
+    "supportReportBug": "Raportează un bug",
+    "supportReportBugSubtitle": "Probleme tehnice cu aplicația",
+    "supportRequestFeature": "Cere o funcție",
+    "supportRequestFeatureSubtitle": "Sugerează o îmbunătățire sau o funcție nouă",
+    "supportSaveLogs": "Salvează jurnalele",
+    "supportSaveLogsSubtitle": "Exportă jurnalele într-un fișier pentru trimitere manuală",
+    "supportFaq": "Întrebări frecvente",
+    "supportFaqSubtitle": "Întrebări și răspunsuri comune",
+    "supportProofMode": "ProofMode",
+    "supportProofModeSubtitle": "Află despre verificare și autenticitate",
+    "supportLoginRequired": "Autentifică-te ca să contactezi asistența",
+    "supportExportingLogs": "Se exportă jurnalele...",
+    "supportExportLogsFailed": "N-am putut exporta jurnalele",
+    "supportChatNotAvailable": "Chatul de asistență nu e disponibil",
+    "supportCouldNotOpenMessages": "N-am putut deschide mesajele de asistență",
+    "supportCouldNotOpenPage": "N-am putut deschide {pageName}",
+    "@supportCouldNotOpenPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            }
+        }
+    },
+    "supportErrorOpeningPage": "Eroare la deschiderea {pageName}: {error}",
+    "@supportErrorOpeningPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            },
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "reportTitle": "Raportează conținut",
+    "reportWhyReporting": "De ce raportezi acest conținut?",
+    "reportPolicyNotice": "Divine va acționa asupra rapoartelor de conținut în 24 de ore eliminând conținutul și excluțând utilizatorul care a furnizat conținutul ofensator.",
+    "reportAdditionalDetails": "Detalii suplimentare (opțional)",
+    "reportBlockUser": "Blochează acest utilizator",
+    "reportCancel": "Anulează",
+    "reportSubmit": "Raportează",
+    "reportSelectReason": "Alege un motiv pentru raportarea acestui conținut",
+    "reportReasonSpam": "Spam sau conținut nedorit",
+    "reportReasonHarassment": "Hărțuire, bullying sau amenințări",
+    "reportReasonViolence": "Conținut violent sau extremist",
+    "reportReasonSexualContent": "Conținut sexual sau pentru adulți",
+    "reportReasonCopyright": "Încălcarea dreptului de autor",
+    "reportReasonFalseInfo": "Informații false",
+    "reportReasonCsam": "Încălcarea siguranței copiilor",
+    "reportReasonAiGenerated": "Conținut generat de AI",
+    "reportReasonOther": "Altă încălcare a politicii",
+    "reportFailed": "N-am putut raporta conținutul: {error}",
+    "@reportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "reportReceivedTitle": "Raport primit",
+    "reportReceivedThankYou": "Mersi că ne ajuți să păstrăm Divine în siguranță.",
+    "reportReceivedReviewNotice": "Echipa noastră âți va revizui raportul și va lua măsuri corespunzătoare. S-ar putea să primești actualizări prin mesaj direct.",
+    "reportLearnMore": "Află mai multe",
+    "reportSafetyUrl": "divine.video/safety",
+    "reportClose": "Închide",
+    "listAddToList": "Adaugă la listă",
+    "listVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
+    "@listVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listNewList": "Listă nouă",
+    "listDone": "Gata",
+    "listErrorLoading": "Eroare la încărcarea listelor",
+    "listRemovedFrom": "Eliminat din {name}",
+    "@listRemovedFrom": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listAddedTo": "Adăugat la {name}",
+    "@listAddedTo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listCreateNewList": "Creează o listă nouă",
+    "listNameLabel": "Numele listei",
+    "listDescriptionLabel": "Descriere (opțional)",
+    "listPublicList": "Listă publică",
+    "listPublicListSubtitle": "Alții pot urmări și vedea această listă",
+    "listCancel": "Anulează",
+    "listCreate": "Creează",
+    "listCreateFailed": "N-am putut crea lista",
+    "keyManagementTitle": "Chei Nostr",
+    "keyManagementWhatAreKeys": "Ce sunt cheile Nostr?",
+    "keyManagementExplanation": "Identitatea ta Nostr e o pereche de chei criptografice:\n\n• Cheia publică (npub) e ca numele tău de utilizator - distribuie-o liber\n• Cheia privată (nsec) e ca parola ta - păstreaz-o secretă!\n\nNsec-ul âți permite să accesezi contul pe orice aplicație Nostr.",
+    "keyManagementImportTitle": "Importă cheie existentă",
+    "keyManagementImportSubtitle": "Ai deja un cont Nostr? Lipește cheia privată (nsec) ca să-l accesezi aici.",
+    "keyManagementImportButton": "Importă cheia",
+    "keyManagementImportWarning": "Asta âți va înlocui cheia curentă!",
+    "keyManagementBackupTitle": "Fă backup la cheia ta",
+    "keyManagementBackupSubtitle": "Salvează cheia privată (nsec) ca să-ți folosești contul în alte aplicații Nostr.",
+    "keyManagementCopyNsec": "Copiază cheia mea privată (nsec)",
+    "keyManagementNeverShare": "Nu împărți niciodată nsec-ul cu nimeni!",
+    "keyManagementPasteKey": "Lipește cheia ta privată",
+    "keyManagementInvalidFormat": "Format de cheie invalid. Trebuie să înceapă cu \"nsec1\"",
+    "keyManagementConfirmImportTitle": "Importăm această cheie?",
+    "keyManagementConfirmImportBody": "Asta âți va înlocui identitatea curentă cu cea importată.\n\nCheia ta curentă va fi pierdută dacă n-ai făcut backup mai întâi.",
+    "keyManagementImportConfirm": "Importă",
+    "keyManagementImportSuccess": "Cheie importată cu succes!",
+    "keyManagementImportFailed": "N-am putut importa cheia: {error}",
+    "@keyManagementImportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "keyManagementExportSuccess": "Cheia privată a fost copiată în clipboard!\n\nȚine-o într-un loc sigur.",
+    "keyManagementExportFailed": "N-am putut exporta cheia: {error}",
+    "@keyManagementExportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "saveOriginalSavedToCameraRoll": "Salvat în galerie",
+    "saveOriginalShare": "Partajează",
+    "saveOriginalDone": "Gata",
+    "saveOriginalPhotosAccessNeeded": "E nevoie de acces la Poze",
+    "saveOriginalPhotosAccessMessage": "Pentru a salva videoclipuri, permite accesul la Poze în Setări.",
+    "saveOriginalOpenSettings": "Deschide setările",
+    "saveOriginalNotNow": "Nu acum",
+    "saveOriginalDownloadFailed": "Descărcare eșuată",
+    "saveOriginalDismiss": "Respinge",
+    "saveOriginalDownloadingVideo": "Se descarcă videoclipul",
+    "saveOriginalSavingToCameraRoll": "Se salvează în galerie",
+    "saveOriginalFetchingVideo": "Se aduce videoclipul din rețea...",
+    "saveOriginalSavingVideo": "Se salvează videoclipul original în galeria ta...",
+    "soundTitle": "Sunet",
+    "soundOriginalSound": "Sunet original",
+    "soundVideosUsingThisSound": "Videoclipuri care folosesc acest sunet",
+    "soundSourceVideo": "Videoclip sursă",
+    "soundNoVideosYet": "Încă niciun videoclip",
+    "soundBeFirstToUse": "Fii primul care folosește acest sunet!",
+    "soundFailedToLoadVideos": "N-am putut încărca videoclipurile",
+    "soundRetry": "Reîncearcă",
+    "soundVideosUnavailable": "Videoclipuri indisponibile",
+    "soundCouldNotLoadDetails": "N-am putut încărca detaliile videoclipului",
+    "soundPreview": "Previzualizare",
+    "soundStop": "Oprește",
+    "soundUseSound": "Folosește sunetul",
+    "soundNoVideoCount": "Încă niciun videoclip",
+    "soundOneVideo": "1 videoclip",
+    "soundVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
+    "@soundVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "soundUnableToPreview": "Nu pot previzualiza sunetul - niciun audio disponibil",
+    "soundPreviewFailed": "N-am putut reda previzualizarea: {error}",
+    "@soundPreviewFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "soundViewSource": "Vezi sursa",
+    "soundCloseTooltip": "Închide",
+    "exploreNotExploreRoute": "Nu e o rută de explorare",
+    "legalTitle": "Legal",
+    "legalTermsOfService": "Termenii serviciului",
+    "legalTermsOfServiceSubtitle": "Termeni și condiții de utilizare",
+    "legalPrivacyPolicy": "Politica de confidențialitate",
+    "legalPrivacyPolicySubtitle": "Cum gestionăm datele tale",
+    "legalSafetyStandards": "Standarde de siguranță",
+    "legalSafetyStandardsSubtitle": "Ghiduri comunitare și siguranță",
+    "legalDmca": "DMCA",
+    "legalDmcaSubtitle": "Politica de drepturi de autor și de eliminare",
+    "legalOpenSourceLicenses": "Licențe open source",
+    "legalOpenSourceLicensesSubtitle": "Atribuiri pentru pachetele terțe",
+    "legalAppName": "Divine",
+    "legalCouldNotOpenPage": "N-am putut deschide {pageName}",
+    "@legalCouldNotOpenPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            }
+        }
+    },
+    "legalErrorOpeningPage": "Eroare la deschiderea {pageName}: {error}",
+    "@legalErrorOpeningPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            },
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "categoryAction": "Acțiune",
+    "categoryAdventure": "Aventură",
+    "categoryAnimals": "Animale",
+    "categoryAnimation": "Animație",
+    "categoryArchitecture": "Arhitectură",
+    "categoryArt": "Artă",
+    "categoryAutomotive": "Auto",
+    "categoryAwardShow": "Gală de premii",
+    "categoryAwards": "Premii",
+    "categoryBaseball": "Baseball",
+    "categoryBasketball": "Baschet",
+    "categoryBeauty": "Frumusețe",
+    "categoryBeverage": "Băuturi",
+    "categoryCars": "Mașini",
+    "categoryCelebration": "Sărbătoare",
+    "categoryCelebrities": "Vedete",
+    "categoryCelebrity": "Vedetă",
+    "categoryCityscape": "Peisaj urban",
+    "categoryComedy": "Comedie",
+    "categoryConcert": "Concert",
+    "categoryCooking": "Gătit",
+    "categoryCostume": "Costum",
+    "categoryCrafts": "Meșteșuguri",
+    "categoryCrime": "Crimă",
+    "categoryCulture": "Cultură",
+    "categoryDance": "Dans",
+    "categoryDiy": "DIY",
+    "categoryDrama": "Dramă",
+    "categoryEducation": "Educație",
+    "categoryEmotional": "Emoțional",
+    "categoryEmotions": "Emoții",
+    "categoryEntertainment": "Divertisment",
+    "categoryEvent": "Eveniment",
+    "categoryFamily": "Familie",
+    "categoryFans": "Fani",
+    "categoryFantasy": "Fantastic",
+    "categoryFashion": "Modă",
+    "categoryFestival": "Festival",
+    "categoryFilm": "Film",
+    "categoryFitness": "Fitness",
+    "categoryFood": "Mâncare",
+    "categoryFootball": "Fotbal american",
+    "categoryFurniture": "Mobilier",
+    "categoryGaming": "Gaming",
+    "categoryGolf": "Golf",
+    "categoryGrooming": "Îngrijire",
+    "categoryGuitar": "Chitară",
+    "categoryHalloween": "Halloween",
+    "categoryHealth": "Sănătate",
+    "categoryHockey": "Hochei",
+    "categoryHoliday": "Vacanță",
+    "categoryHome": "Acasă",
+    "categoryHomeImprovement": "Renovări",
+    "categoryHorror": "Horror",
+    "categoryHospital": "Spital",
+    "categoryHumor": "Umor",
+    "categoryInteriorDesign": "Design interior",
+    "categoryInterview": "Interviu",
+    "categoryKids": "Copii",
+    "categoryLifestyle": "Stil de viață",
+    "categoryMagic": "Magie",
+    "categoryMakeup": "Machiaj",
+    "categoryMedical": "Medical",
+    "categoryMusic": "Muzică",
+    "categoryMystery": "Mister",
+    "categoryNature": "Natură",
+    "categoryNews": "Știri",
+    "categoryOutdoor": "În aer liber",
+    "categoryParty": "Petrecere",
+    "categoryPeople": "Oameni",
+    "categoryPerformance": "Spectacol",
+    "categoryPets": "Animale de companie",
+    "categoryPolitics": "Politică",
+    "categoryPrank": "Farsă",
+    "categoryPranks": "Farse",
+    "categoryRealityShow": "Reality show",
+    "categoryRelationship": "Relație",
+    "categoryRelationships": "Relații",
+    "categoryRomance": "Romantic",
+    "categorySchool": "Școală",
+    "categoryScienceFiction": "Science-fiction",
+    "categorySelfie": "Selfie",
+    "categoryShopping": "Cumpărături",
+    "categorySkateboarding": "Skateboarding",
+    "categorySkincare": "Îngrijirea pielii",
+    "categorySoccer": "Fotbal",
+    "categorySocialGathering": "Reuniune",
+    "categorySocialMedia": "Social media",
+    "categorySports": "Sport",
+    "categoryTalkShow": "Talk show",
+    "categoryTech": "Tech",
+    "categoryTechnology": "Tehnologie",
+    "categoryTelevision": "Televiziune",
+    "categoryToys": "Jucării",
+    "categoryTransportation": "Transport",
+    "categoryTravel": "Călătorii",
+    "categoryUrban": "Urban",
+    "categoryViolence": "Violență",
+    "categoryVlog": "Vlog",
+    "categoryVlogging": "Vlogging",
+    "categoryWrestling": "Wrestling",
+    "blossomFailedToSaveSettings": "Nu s-au putut salva setările: {error}",
+    "@blossomFailedToSaveSettings": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "blueskyFailedToUpdateCrosspost": "Nu s-a putut actualiza setarea de crosspost",
+    "cameraAgeRestriction": "Trebuie să ai cel puțin 16 ani pentru a crea conținut",
+    "categoriesCouldNotLoadCategories": "Nu s-au putut încărca categoriile",
+    "categoryGalleryCouldNotLoadVideos": "Nu s-au putut încărca videoclipurile",
+    "classicVinersTitle": "OG Viners",
+    "commonCancel": "Anulează",
+    "commonDelete": "Șterge",
+    "commonRetry": "Reîncearcă",
+    "discoverListsFailedToUpdateSubscription": "Nu s-a putut actualiza abonamentul: {error}",
+    "@discoverListsFailedToUpdateSubscription": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreVideoCounter": "Video {current}/{total}",
+    "@exploreVideoCounter": {
+        "placeholders": {
+            "current": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "exploreVideoId": "ID: {id}",
+    "@exploreVideoId": {
+        "placeholders": {
+            "id": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreVideoTitle": "Titlu: {title}",
+    "@exploreVideoTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestCancel": "Anulează",
+    "followersFailedToLoadList": "Nu s-a putut încărca lista de urmăritori",
+    "followingFailedToLoadList": "Nu s-a putut încărca lista de urmăriți",
+    "inboxBlockedUser": "{displayName} a fost blocat(ă)",
+    "@inboxBlockedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemovedConversation": "Conversație eliminată",
+    "inboxReportedUser": "{displayName} a fost raportat(ă)",
+    "@inboxReportedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxUnblockedUser": "{displayName} a fost deblocat(ă)",
+    "@inboxUnblockedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesTitle": "Invită prieteni",
+    "keyImportError": "Eroare: {error}",
+    "@keyImportError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteConfirm": "Șterge",
+    "notificationFollowBack": "Urmărește înapoi",
+    "profileSetupUploadSuccess": "Fotografia de profil a fost încărcată cu succes!",
+    "proofmodeCheckAiGenerated": "Verifică dacă este generat de AI",
+    "reportDialogCancel": "Anulează",
+    "reportDialogReport": "Raportează",
+    "routerInvalidCreator": "Creator invalid",
+    "routerInvalidHashtagRoute": "Rută hashtag invalidă",
+    "searchFindCuratedVideoLists": "Găsește liste de videoclipuri selectate",
+    "searchForLists": "Caută liste",
+    "searchSomethingWentWrong": "Ceva nu a mers bine",
+    "searchTryAgain": "Încearcă din nou",
+    "trendingTitle": "În tendințe",
+    "videoEditorLayers": "Straturi",
+    "videoEditorStickers": "Stickere",
+    "videoMetadataContentWarnings": "Avertismente de conținut",
+    "videoMetadataExpiration": "Expirare",
+    "videoMetadataTags": "Etichete",
+    "contentLabelAiGenerated": "Generat de AI",
+    "contentLabelAlcohol": "Alcool",
+    "contentLabelDeepfake": "Deepfake",
+    "contentLabelDrugUse": "Consum de droguri",
+    "contentLabelFlashingLights": "Lumini intermitente",
+    "contentLabelGambling": "Jocuri de noroc",
+    "contentLabelGraphicMedia": "Conținut grafic",
+    "contentLabelHarassment": "Hărțuire",
+    "contentLabelHateSpeech": "Discurs instigator la ură",
+    "contentLabelMisleading": "Înșelător",
+    "contentLabelNudity": "Nuditate",
+    "contentLabelPornography": "Pornografie",
+    "contentLabelProfanity": "Limbaj vulgar",
+    "contentLabelScam": "Înșelăciune/Fraudă",
+    "contentLabelSelfHarm": "Automutilare/Suicid",
+    "contentLabelSensitiveContent": "Conținut sensibil",
+    "contentLabelSexualContent": "Conținut sexual",
+    "contentLabelSpam": "Spam",
+    "contentLabelSpoiler": "Spoiler",
+    "contentLabelTobacco": "Tutun/Fumat",
+    "contentLabelViolence": "Violență",
+    "contentWarningNone": "Niciunul",
+    "draftTimeJustNow": "Chiar acum",
+    "@draftTimeJustNow": {
+        "description": "Draft age label for less than one minute (capitalized)"
+    },
+    "draftUntitled": "Fără titlu",
+    "notificationCommentedOnYourVideo": "{actorName} a comentat la videoclipul tău",
+    "@notificationCommentedOnYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationLikedYourVideo": "{actorName} a apreciat videoclipul tău",
+    "@notificationLikedYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationMentionedYou": "{actorName} te-a menționat",
+    "@notificationMentionedYou": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationRepostedYourVideo": "{actorName} a redistribuit videoclipul tău",
+    "@notificationRepostedYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationStartedFollowing": "{actorName} a început să te urmărească",
+    "@notificationStartedFollowing": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "textAlignCenter": "Centru",
+    "textAlignLeft": "Stânga",
+    "textAlignRight": "Dreapta",
+    "textBackgroundHighlight": "Evidențiere",
+    "textBackgroundNone": "Niciunul",
+    "textBackgroundSolid": "Opac",
+    "textBackgroundTransparent": "Transparent",
+    "timeAgo": "acum {time}",
+    "@timeAgo": {
+        "description": "Verbose relative time with ago suffix, e.g. 3m ago",
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "timeDaysAgo": "acum {count}z",
+    "@timeDaysAgo": {
+        "description": "Relative time in days with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeHoursAgo": "acum {count}h",
+    "@timeHoursAgo": {
+        "description": "Relative time in hours with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeJustNow": "chiar acum",
+    "@timeJustNow": {
+        "description": "Verbose relative time for less than one minute (lowercase)"
+    },
+    "timeMinutesAgo": "acum {count}min",
+    "@timeMinutesAgo": {
+        "description": "Relative time in minutes with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeNow": "acum",
+    "@timeNow": {
+        "description": "Relative time label for less than one minute ago (short form)"
+    },
+    "timeShortDays": "{count}z",
+    "@timeShortDays": {
+        "description": "Short relative time in days, e.g. 3d",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortHours": "{count}h",
+    "@timeShortHours": {
+        "description": "Short relative time in hours, e.g. 2h",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortMinutes": "{count}min",
+    "@timeShortMinutes": {
+        "description": "Short relative time in minutes, e.g. 3m",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortMonths": "{count}lu",
+    "@timeShortMonths": {
+        "description": "Short relative time in months, e.g. 1mo",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortWeeks": "{count}săpt",
+    "@timeShortWeeks": {
+        "description": "Short relative time in weeks, e.g. 2w",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortYears": "{count}a",
+    "@timeShortYears": {
+        "description": "Short relative time in years, e.g. 1y",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeToday": "Astăzi",
+    "@timeToday": {
+        "description": "Date label for today"
+    },
+    "timeVerboseNow": "Acum",
+    "@timeVerboseNow": {
+        "description": "Verbose relative time label for less than one minute ago"
+    },
+    "timeYesterday": "Ieri",
+    "@timeYesterday": {
+        "description": "Date label for yesterday"
+    }
+}

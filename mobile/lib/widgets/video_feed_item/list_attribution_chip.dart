@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Callback type for list tap events.
 typedef ListTapCallback = void Function(String listId, String listName);
@@ -42,7 +43,7 @@ class ListAttributionChip extends StatelessWidget {
       spacing: 4,
       children: listIds.take(2).map((listId) {
         final list = listLookup(listId);
-        final listName = list?.name ?? 'List';
+        final listName = list?.name ?? context.l10n.listAttributionFallback;
 
         return GestureDetector(
           onTap: () {

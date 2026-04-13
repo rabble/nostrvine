@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 
 class _MockProfileEditorBloc
@@ -33,6 +34,8 @@ void main() {
       UsernameValidationError? error,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: Scaffold(
           body: UsernameStatusIndicator(status: status, error: error),
@@ -45,6 +48,8 @@ void main() {
       UsernameValidationError? error,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: BlocProvider<ProfileEditorBloc>.value(
           value: mockBloc,
@@ -191,6 +196,8 @@ void main() {
 
     Widget buildDialog(String username) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: BlocProvider<ProfileEditorBloc>.value(
           value: mockBloc,
@@ -252,6 +259,8 @@ void main() {
     testWidgets('Close button dismisses dialog', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
           home: BlocProvider<ProfileEditorBloc>.value(
             value: mockBloc,
@@ -288,6 +297,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
           home: BlocProvider<ProfileEditorBloc>.value(
             value: mockBloc,

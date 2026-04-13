@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
 
 void main() {
@@ -19,6 +20,8 @@ void main() {
       void Function(String)? onHashtagTap,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: TrendingHashtagsSection(
             hashtags: hashtags,

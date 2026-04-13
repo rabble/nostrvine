@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
 import 'package:time_formatter/time_formatter.dart';
 
@@ -438,7 +439,7 @@ class _FollowBackButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: const Text('Follow back'),
+        child: Text(context.l10n.notificationFollowBack),
       ),
     );
   }

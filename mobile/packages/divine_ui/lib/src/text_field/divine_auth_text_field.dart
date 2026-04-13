@@ -49,6 +49,8 @@ class DivineAuthTextField extends StatefulWidget {
     this.contentPadding,
     this.errorText,
     this.autofillHints,
+    this.showPasswordSemanticLabel = 'Show password',
+    this.hidePasswordSemanticLabel = 'Hide password',
   });
 
   /// Label text shown inside the field, floats above when focused/filled.
@@ -119,6 +121,16 @@ class DivineAuthTextField extends StatefulWidget {
   /// Common values include [AutofillHints.email], [AutofillHints.password],
   /// and [AutofillHints.newPassword].
   final Iterable<String>? autofillHints;
+
+  /// Semantic label for the visibility toggle when password is obscured.
+  ///
+  /// Defaults to `'Show password'`. Pass a localized string to override.
+  final String showPasswordSemanticLabel;
+
+  /// Semantic label for the visibility toggle when password is visible.
+  ///
+  /// Defaults to `'Hide password'`. Pass a localized string to override.
+  final String hidePasswordSemanticLabel;
 
   @override
   State<DivineAuthTextField> createState() => _DivineAuthTextFieldState();
@@ -284,6 +296,8 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
                       isObscured: _isObscured,
                       hasText: _hasText,
                       onToggle: _toggleObscured,
+                      showPasswordLabel: widget.showPasswordSemanticLabel,
+                      hidePasswordLabel: widget.hidePasswordSemanticLabel,
                     ),
                 ],
               ),
@@ -518,11 +532,15 @@ class _VisibilityToggle extends StatelessWidget {
     required this.isObscured,
     required this.hasText,
     required this.onToggle,
+    required this.showPasswordLabel,
+    required this.hidePasswordLabel,
   });
 
   final bool isObscured;
   final bool hasText;
   final VoidCallback onToggle;
+  final String showPasswordLabel;
+  final String hidePasswordLabel;
 
   /// Right padding for the visibility toggle icon.
   ///
@@ -537,7 +555,7 @@ class _VisibilityToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: isObscured ? 'Show password' : 'Hide password',
+      label: isObscured ? showPasswordLabel : hidePasswordLabel,
       button: true,
       child: GestureDetector(
         onTap: onToggle,

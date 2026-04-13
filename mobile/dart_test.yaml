@@ -5,6 +5,7 @@
 exclude:
   - test/old_files/**
   - test/**/old_files/**
+  - test/manual/**        # Manual/debug scripts that hit real endpoints
   - test/**/*.mocks.dart  # Mock files are generated, not run
   - test/**/*.g.dart      # Generated files
 

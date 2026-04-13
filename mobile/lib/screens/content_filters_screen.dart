@@ -5,6 +5,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -195,7 +197,7 @@ class _ContentFilterRow extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              label.displayName,
+              localizedContentLabelName(context.l10n, label),
               style: TextStyle(
                 color: locked
                     ? VineTheme.onSurfaceDisabled

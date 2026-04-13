@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
@@ -75,9 +76,9 @@ class _NotificationSettingsScreenState
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('All notifications marked as read'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(context.l10n.notificationSettingsAllMarkedAsRead),
+        duration: const Duration(seconds: 2),
         backgroundColor: VineTheme.vineGreen,
       ),
     );
@@ -85,9 +86,9 @@ class _NotificationSettingsScreenState
 
   void _showResetSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Settings reset to defaults'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(context.l10n.notificationSettingsResetToDefaults),
+        duration: const Duration(seconds: 2),
         backgroundColor: VineTheme.vineGreen,
       ),
     );
@@ -97,13 +98,13 @@ class _NotificationSettingsScreenState
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: VineTheme.backgroundColor,
     appBar: DiVineAppBar(
-      title: 'Notifications',
+      title: context.l10n.notificationSettingsTitle,
       showBackButton: true,
       onBackPressed: context.pop,
       actions: [
         DiVineAppBarAction(
           icon: const MaterialIconSource(Icons.refresh),
-          tooltip: 'Reset to defaults',
+          tooltip: context.l10n.notificationSettingsResetTooltip,
           onPressed: () async {
             await _resetToDefaults();
             if (!mounted) return;
@@ -125,13 +126,13 @@ class _NotificationSettingsScreenState
           ),
           children: [
             // Notification Types Section
-            _buildSectionHeader('Notification Types'),
+            _buildSectionHeader(context.l10n.notificationSettingsTypes),
             const SizedBox(height: 8),
             _buildNotificationCard(
               icon: Icons.favorite,
               iconColor: VineTheme.likeRed,
-              title: 'Likes',
-              subtitle: 'When someone likes your videos',
+              title: context.l10n.notificationSettingsLikes,
+              subtitle: context.l10n.notificationSettingsLikesSubtitle,
               value: _preferences.likesEnabled,
               onChanged: (value) => _applyPreferences(
                 _preferences.copyWith(likesEnabled: value),
@@ -140,8 +141,8 @@ class _NotificationSettingsScreenState
             _buildNotificationCard(
               icon: Icons.chat_bubble,
               iconColor: VineTheme.commentBlue,
-              title: 'Comments',
-              subtitle: 'When someone comments on your videos',
+              title: context.l10n.notificationSettingsComments,
+              subtitle: context.l10n.notificationSettingsCommentsSubtitle,
               value: _preferences.commentsEnabled,
               onChanged: (value) => _applyPreferences(
                 _preferences.copyWith(commentsEnabled: value),
@@ -150,8 +151,8 @@ class _NotificationSettingsScreenState
             _buildNotificationCard(
               icon: Icons.person_add,
               iconColor: VineTheme.vineGreen,
-              title: 'Follows',
-              subtitle: 'When someone follows you',
+              title: context.l10n.notificationSettingsFollows,
+              subtitle: context.l10n.notificationSettingsFollowsSubtitle,
               value: _preferences.followsEnabled,
               onChanged: (value) => _applyPreferences(
                 _preferences.copyWith(followsEnabled: value),
@@ -160,8 +161,8 @@ class _NotificationSettingsScreenState
             _buildNotificationCard(
               icon: Icons.alternate_email,
               iconColor: VineTheme.warning,
-              title: 'Mentions',
-              subtitle: 'When you are mentioned',
+              title: context.l10n.notificationSettingsMentions,
+              subtitle: context.l10n.notificationSettingsMentionsSubtitle,
               value: _preferences.mentionsEnabled,
               onChanged: (value) => _applyPreferences(
                 _preferences.copyWith(mentionsEnabled: value),
@@ -170,8 +171,8 @@ class _NotificationSettingsScreenState
             _buildNotificationCard(
               icon: Icons.repeat,
               iconColor: VineTheme.vineGreenLight,
-              title: 'Reposts',
-              subtitle: 'When someone reposts your videos',
+              title: context.l10n.notificationSettingsReposts,
+              subtitle: context.l10n.notificationSettingsRepostsSubtitle,
               value: _preferences.repostsEnabled,
               onChanged: (value) => _applyPreferences(
                 _preferences.copyWith(repostsEnabled: value),
@@ -180,8 +181,8 @@ class _NotificationSettingsScreenState
             _buildNotificationCard(
               icon: Icons.phone_android,
               iconColor: VineTheme.lightText,
-              title: 'System',
-              subtitle: 'App updates and system messages',
+              title: context.l10n.notificationSettingsSystem,
+              subtitle: context.l10n.notificationSettingsSystemSubtitle,
               value: _systemEnabled,
               onChanged: (value) => setState(() => _systemEnabled = value),
             ),
@@ -189,13 +190,16 @@ class _NotificationSettingsScreenState
             const SizedBox(height: 24),
 
             // Push Notification Settings
-            _buildSectionHeader('Push Notifications'),
+            _buildSectionHeader(
+              context.l10n.notificationSettingsPushNotificationsSection,
+            ),
             const SizedBox(height: 8),
             _buildNotificationCard(
               icon: Icons.notifications,
               iconColor: VineTheme.vineGreen,
-              title: 'Push Notifications',
-              subtitle: 'Receive notifications when app is closed',
+              title: context.l10n.notificationSettingsPushNotifications,
+              subtitle:
+                  context.l10n.notificationSettingsPushNotificationsSubtitle,
               value: _pushNotificationsEnabled,
               onChanged: (value) =>
                   setState(() => _pushNotificationsEnabled = value),
@@ -203,16 +207,16 @@ class _NotificationSettingsScreenState
             _buildNotificationCard(
               icon: Icons.volume_up,
               iconColor: VineTheme.commentBlue,
-              title: 'Sound',
-              subtitle: 'Play sound for notifications',
+              title: context.l10n.notificationSettingsSound,
+              subtitle: context.l10n.notificationSettingsSoundSubtitle,
               value: _soundEnabled,
               onChanged: (value) => setState(() => _soundEnabled = value),
             ),
             _buildNotificationCard(
               icon: Icons.vibration,
               iconColor: VineTheme.vineGreen,
-              title: 'Vibration',
-              subtitle: 'Vibrate for notifications',
+              title: context.l10n.notificationSettingsVibration,
+              subtitle: context.l10n.notificationSettingsVibrationSubtitle,
               value: _vibrationEnabled,
               onChanged: (value) => setState(() => _vibrationEnabled = value),
             ),
@@ -220,14 +224,14 @@ class _NotificationSettingsScreenState
             const SizedBox(height: 24),
 
             // Actions
-            _buildSectionHeader('Actions'),
+            _buildSectionHeader(context.l10n.notificationSettingsActions),
             const SizedBox(height: 8),
 
             _buildActionCard(
               icon: Icons.check_circle,
               iconColor: VineTheme.vineGreenLight,
-              title: 'Mark All as Read',
-              subtitle: 'Mark all notifications as read',
+              title: context.l10n.notificationSettingsMarkAllAsRead,
+              subtitle: context.l10n.notificationSettingsMarkAllAsReadSubtitle,
               onTap: _markAllAsRead,
             ),
 
@@ -326,20 +330,24 @@ class _NotificationSettingsScreenState
     ),
   );
 
-  Widget _buildInfoCard() => const Card(
+  Widget _buildInfoCard() => Card(
     color: VineTheme.cardBackground,
     child: Padding(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline, color: VineTheme.commentBlue, size: 20),
-              SizedBox(width: 8),
+              const Icon(
+                Icons.info_outline,
+                color: VineTheme.commentBlue,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Text(
-                'About Notifications',
-                style: TextStyle(
+                context.l10n.notificationSettingsAbout,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: VineTheme.primaryText,
@@ -347,10 +355,10 @@ class _NotificationSettingsScreenState
               ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Notifications are powered by the Nostr protocol. Real-time updates depend on your connection to Nostr relays. Some notifications may have delays.',
-            style: TextStyle(
+            context.l10n.notificationSettingsAboutDescription,
+            style: const TextStyle(
               fontSize: 13,
               color: VineTheme.secondaryText,
               height: 1.4,

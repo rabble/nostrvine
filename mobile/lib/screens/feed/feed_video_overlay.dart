@@ -227,9 +227,9 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
           child: Stack(
             children: [
               // ProofMode and Vine badges (top-right)
-              Positioned(
+              PositionedDirectional(
                 top: MediaQuery.viewPaddingOf(context).top + 64,
-                right: 16,
+                end: 16,
                 child: GestureDetector(
                   onTap: () => context.showVideoPausingDialog<void>(
                     builder: (context) => BadgeExplanationModal(video: video),
@@ -238,10 +238,10 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                 ),
               ),
               // Author info and description (bottom-left)
-              Positioned(
+              PositionedDirectional(
                 bottom: 14 + safeAreaBottom,
-                left: 16,
-                right: 80,
+                start: 16,
+                end: 80,
                 child: _AuthorInfoSection(
                   video: video,
                   hasTextContent: hasTextContent,
@@ -249,9 +249,9 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                 ),
               ),
               // Action buttons column (bottom-right)
-              Positioned(
+              PositionedDirectional(
                 bottom: 14 + safeAreaBottom,
-                right: 16,
+                end: 16,
                 child: _ActionButtons(video: video),
               ),
             ],
@@ -406,8 +406,8 @@ class _AuthorAvatar extends StatelessWidget {
               }
             },
           ),
-          Positioned(
-            left: 31,
+          PositionedDirectional(
+            start: 31,
             top: 31,
             child: VideoFollowButton(pubkey: pubkey, hideIfFollowing: true),
           ),

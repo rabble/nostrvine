@@ -13,13 +13,6 @@ const _canonicalPayloadAux =
     '00000000000000000000000000000000'
     '00000000000000000000000000000000';
 
-/// Optional capability for signers that can expose a local private key to an
-/// isolate-safe decrypt pipeline.
-abstract interface class IsolateDecryptSigner implements NostrSigner {
-  bool get canDecryptInIsolate;
-  T withPrivateKeyHex<T>(T Function(String hex) operation);
-}
-
 /// NostrSigner implementation backed by a local [SecureKeyContainer].
 ///
 /// Used internally by [LocalNostrIdentity] and [KeycastNostrIdentity]'s

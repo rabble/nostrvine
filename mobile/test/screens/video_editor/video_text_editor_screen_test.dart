@@ -14,6 +14,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_font_selector.dart';
@@ -108,6 +109,8 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: InheritedGoRouter(
             goRouter: mockGoRouter,
             child: BlocProvider<VideoEditorTextBloc>.value(
@@ -327,6 +330,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: BlocProvider<VideoEditorTextBloc>.value(
             value: mockBloc,
             child: const Scaffold(body: VideoTextEditorScreen()),
@@ -351,6 +356,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: BlocProvider<VideoEditorTextBloc>.value(
             value: mockBloc,
             child: const Scaffold(body: VideoTextEditorScreen()),
@@ -373,6 +380,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: BlocProvider<VideoEditorTextBloc>.value(
             value: mockBloc,
             child: const Scaffold(body: VideoTextEditorScreen()),
@@ -408,6 +417,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: BlocProvider<VideoEditorTextBloc>.value(
               value: mockBloc,
               child: const Scaffold(body: VideoTextEditorScreen()),
@@ -435,6 +446,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: BlocProvider<VideoEditorTextBloc>.value(
             value: mockBloc,
             child: const Scaffold(body: VideoTextEditorScreen()),
@@ -465,6 +478,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: BlocProvider<VideoEditorTextBloc>.value(
             value: mockBloc,
             child: const Scaffold(body: VideoTextEditorScreen()),
