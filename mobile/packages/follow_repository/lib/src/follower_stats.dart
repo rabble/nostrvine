@@ -20,6 +20,15 @@ typedef QueryContactListCallback =
       int fallbackTimeoutSeconds,
     });
 
+/// Callback to check if personal event cache is initialized.
+typedef IsCacheInitializedCallback = bool Function();
+
+/// Callback to get cached events by kind from personal event cache.
+typedef GetCachedEventsByKindCallback = List<Event> Function(int kind);
+
+/// Callback to cache a user-authored event in personal event cache.
+typedef CacheUserEventCallback = void Function(Event event);
+
 /// Factory for creating relay instances.
 ///
 /// Defaults to [RelayBase]. Override in tests to inject mock relays.

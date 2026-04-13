@@ -82,7 +82,6 @@ import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
-import 'package:openvine/services/personal_event_cache_adapter.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/push_notification_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
@@ -1400,7 +1399,9 @@ FollowRepository followRepository(Ref ref) {
 
   final repository = FollowRepository(
     nostrClient: nostrClient,
-    personalEventCache: PersonalEventCacheAdapter(personalEventCache),
+    isCacheInitialized: () => personalEventCache.isInitialized,
+    getCachedEventsByKind: personalEventCache.getEventsByKind,
+    cacheUserEvent: personalEventCache.cacheUserEvent,
     funnelcakeApiClient: funnelcakeApiClient,
     profileStatsDao: profileStatsDao,
     indexerRelayUrls: env.indexerRelays,

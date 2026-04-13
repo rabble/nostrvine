@@ -15,8 +15,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
-class _MockPersonalEventCache extends Mock implements PersonalEventCache {}
-
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 class _MockProfileStatsDao extends Mock implements ProfileStatsDao {}
@@ -83,7 +81,9 @@ void main() {
   group('FollowRepository', () {
     late FollowRepository repository;
     late _MockNostrClient mockNostrClient;
-    late _MockPersonalEventCache mockPersonalEventCache;
+    late bool cacheIsInitialized;
+    late List<Event> Function(int kind) getCachedEventsByKind;
+    late List<Event> cachedUserEvents;
 
     // Valid 64-character hex pubkeys for testing
     const testCurrentUserPubkey =
@@ -103,7 +103,9 @@ void main() {
       SharedPreferences.setMockInitialValues({});
 
       mockNostrClient = _MockNostrClient();
-      mockPersonalEventCache = _MockPersonalEventCache();
+      cacheIsInitialized = false;
+      getCachedEventsByKind = (_) => [];
+      cachedUserEvents = [];
 
       // Default nostr client setup
       when(() => mockNostrClient.hasKeys).thenReturn(true);
@@ -125,12 +127,11 @@ void main() {
       // Default nostr client unsubscribe - return completed future
       when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
 
-      // Default personal event cache setup
-      when(() => mockPersonalEventCache.isInitialized).thenReturn(false);
-
       repository = FollowRepository(
         nostrClient: mockNostrClient,
-        personalEventCache: mockPersonalEventCache,
+        isCacheInitialized: () => cacheIsInitialized,
+        getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+        cacheUserEvent: cachedUserEvents.add,
         // Prevent real WebSocket connections to indexer relays in tests
         indexerRelayUrls: const [],
       );
@@ -159,7 +160,9 @@ void main() {
         // Recreate repository to pick up the cached data
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -188,7 +191,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -215,7 +220,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -244,7 +251,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -346,10 +355,6 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
-
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isFalse);
         await repository.follow(testTargetPubkey);
@@ -427,10 +432,6 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
-
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isTrue);
         expect(repository.followingCount, 1);
@@ -492,10 +493,6 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
-
         await repository.initialize();
         expect(repository.isFollowing(testTargetPubkey), isFalse);
 
@@ -522,13 +519,11 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
-
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -580,7 +575,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -618,10 +615,6 @@ void main() {
           ),
         ).thenAnswer((_) async => mockEvent);
 
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
-
         await repository.initialize();
 
         final emittedValues = <List<String>>[];
@@ -655,10 +648,6 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((_) async => mockEvent);
-
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
 
         await repository.initialize();
 
@@ -1216,7 +1205,9 @@ void main() {
           // Need fresh repository to pick up cached data
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
           );
 
@@ -1276,7 +1267,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -1316,7 +1309,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
           );
 
@@ -1354,7 +1349,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -1384,9 +1381,9 @@ void main() {
       test(
         'skips merge protection when local list is below threshold',
         () async {
-          // Seed with 5 follows (below _mergeMinFollows of 10)
+          // Seed with 1 follow (below _mergeMinFollows of 2)
           final seededPubkeys = List.generate(
-            5,
+            1,
             (i) => i.toRadixString(16).padLeft(64, '0'),
           );
           SharedPreferences.setMockInitialValues({
@@ -1396,12 +1393,14 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
           );
 
           await repository.initialize();
-          expect(repository.followingCount, 5);
+          expect(repository.followingCount, 1);
 
           // Remote event with only 1 follow — drastic but below threshold
           final remoteEvent = Event(
@@ -1469,7 +1468,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -1503,7 +1504,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -1551,7 +1554,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -1576,7 +1581,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -1605,7 +1612,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -1647,7 +1656,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -1663,7 +1674,9 @@ void main() {
       test('returns null when client is null', () async {
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -1677,7 +1690,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -1700,7 +1715,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -1733,7 +1750,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -1752,7 +1771,9 @@ void main() {
       test('returns null when client is null', () async {
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -1768,7 +1789,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -1805,7 +1828,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -1844,7 +1869,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -1877,7 +1904,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -1896,7 +1925,9 @@ void main() {
       test('returns null when client is null', () async {
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -1912,7 +1943,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -1949,7 +1982,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -1988,7 +2023,9 @@ void main() {
 
         final repo = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -2013,12 +2050,8 @@ void main() {
 
     group('initialization - loads from PersonalEventCache', () {
       test('loads following from PersonalEventCache', () async {
-        when(
-          () => mockPersonalEventCache.isInitialized,
-        ).thenReturn(true);
-        when(
-          () => mockPersonalEventCache.getEventsByKind(EventKind.contactList),
-        ).thenReturn([
+        cacheIsInitialized = true;
+        getCachedEventsByKind = (_) => [
           Event(
             testCurrentUserPubkey,
             EventKind.contactList,
@@ -2029,7 +2062,7 @@ void main() {
             '',
             createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           ),
-        ]);
+        ];
 
         await repository.initialize();
 
@@ -2039,12 +2072,8 @@ void main() {
       });
 
       test('ignores empty p-tag values from PersonalEventCache', () async {
-        when(
-          () => mockPersonalEventCache.isInitialized,
-        ).thenReturn(true);
-        when(
-          () => mockPersonalEventCache.getEventsByKind(EventKind.contactList),
-        ).thenReturn([
+        cacheIsInitialized = true;
+        getCachedEventsByKind = (_) => [
           Event(
             testCurrentUserPubkey,
             EventKind.contactList,
@@ -2056,7 +2085,7 @@ void main() {
             '',
             createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           ),
-        ]);
+        ];
 
         await repository.initialize();
 
@@ -2067,12 +2096,8 @@ void main() {
       test(
         'handles PersonalEventCache error gracefully',
         () async {
-          when(
-            () => mockPersonalEventCache.isInitialized,
-          ).thenReturn(true);
-          when(
-            () => mockPersonalEventCache.getEventsByKind(EventKind.contactList),
-          ).thenThrow(Exception('Cache corrupted'));
+          cacheIsInitialized = true;
+          getCachedEventsByKind = (_) => throw Exception('Cache corrupted');
 
           await repository.initialize();
 
@@ -2082,29 +2107,117 @@ void main() {
       );
 
       test('skips PersonalEventCache when not initialized', () async {
-        when(
-          () => mockPersonalEventCache.isInitialized,
-        ).thenReturn(false);
+        cacheIsInitialized = false;
+        var getCachedEventsCalled = false;
+        getCachedEventsByKind = (_) {
+          getCachedEventsCalled = true;
+          return [];
+        };
 
         await repository.initialize();
 
-        verifyNever(
-          () => mockPersonalEventCache.getEventsByKind(EventKind.contactList),
-        );
+        expect(getCachedEventsCalled, isFalse);
       });
 
       test('ignores empty contact list from PersonalEventCache', () async {
-        when(
-          () => mockPersonalEventCache.isInitialized,
-        ).thenReturn(true);
-        when(
-          () => mockPersonalEventCache.getEventsByKind(EventKind.contactList),
-        ).thenReturn([]);
+        cacheIsInitialized = true;
+        getCachedEventsByKind = (_) => [];
 
         await repository.initialize();
 
         expect(repository.followingCount, 0);
       });
+
+      test(
+        'skips PersonalEventCache when it has fewer follows than '
+        'LocalStorage',
+        () async {
+          // Seed LocalStorage with 10 follows
+          final localPubkeys = List.generate(
+            10,
+            (i) => i.toRadixString(16).padLeft(64, '0'),
+          );
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey':
+                '[${localPubkeys.map((p) => '"$p"').join(',')}]',
+          });
+
+          // PersonalEventCache returns a stale event with only 3 pubkeys
+          final stalePubkeys = localPubkeys.take(3).toList();
+          final staleEvent = Event(
+            testCurrentUserPubkey,
+            EventKind.contactList,
+            stalePubkeys.map((p) => ['p', p]).toList(),
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 - 100,
+          );
+          cacheIsInitialized = true;
+          getCachedEventsByKind = (_) => [staleEvent];
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.initialize();
+
+          // Should keep the 10 from LocalStorage, not the 3 from cache
+          expect(repository.followingCount, 10);
+          for (final pk in localPubkeys) {
+            expect(repository.followingPubkeys, contains(pk));
+          }
+        },
+      );
+
+      test(
+        'accepts PersonalEventCache when it has more follows than '
+        'LocalStorage',
+        () async {
+          // Seed LocalStorage with 3 follows
+          final localPubkeys = List.generate(
+            3,
+            (i) => i.toRadixString(16).padLeft(64, '0'),
+          );
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey':
+                '[${localPubkeys.map((p) => '"$p"').join(',')}]',
+          });
+
+          // PersonalEventCache returns a newer event with 5 pubkeys
+          final cachePubkeys = List.generate(
+            5,
+            (i) => (i + 10).toRadixString(16).padLeft(64, '0'),
+          );
+          final cacheEvent = Event(
+            testCurrentUserPubkey,
+            EventKind.contactList,
+            cachePubkeys.map((p) => ['p', p]).toList(),
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000 + 100,
+          );
+          cacheIsInitialized = true;
+          getCachedEventsByKind = (_) => [cacheEvent];
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            indexerRelayUrls: const [],
+          );
+
+          await repository.initialize();
+
+          // Should use the 5 from PersonalEventCache
+          expect(repository.followingCount, 5);
+          for (final pk in cachePubkeys) {
+            expect(repository.followingPubkeys, contains(pk));
+          }
+        },
+      );
     });
 
     group('initialization - loads from relay', () {
@@ -2134,7 +2247,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
           queryContactList:
               ({
@@ -2213,7 +2328,9 @@ void main() {
           // Use queryContactList that returns the event from stream
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
             queryContactList:
                 ({
@@ -2259,7 +2376,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -2276,7 +2395,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -2300,7 +2421,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           funnelcakeApiClient: mockFunnelcakeClient,
           indexerRelayUrls: const [],
         );
@@ -2344,9 +2467,6 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((_) async => mockEvent);
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
 
         await repository.initialize();
 
@@ -2381,13 +2501,12 @@ void main() {
               targetRelays: any(named: 'targetRelays'),
             ),
           ).thenAnswer((_) async => mockEvent);
-          when(
-            () => mockPersonalEventCache.cacheUserEvent(any()),
-          ).thenReturn(null);
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
           );
 
@@ -2441,13 +2560,12 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((_) async => mockEvent);
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -2481,9 +2599,6 @@ void main() {
               targetRelays: any(named: 'targetRelays'),
             ),
           ).thenAnswer((_) async => mockEvent);
-          when(
-            () => mockPersonalEventCache.cacheUserEvent(any()),
-          ).thenReturn(null);
 
           await repository.initialize();
           expect(repository.isFollowing(testTargetPubkey), isFalse);
@@ -2514,7 +2629,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
           isOnline: () => false,
           queueOfflineAction:
@@ -2555,7 +2672,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
           isOnline: () => false,
           queueOfflineAction:
@@ -2605,7 +2724,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             indexerRelayUrls: const [],
           );
@@ -2634,7 +2755,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             indexerRelayUrls: const [],
           );
@@ -2680,7 +2803,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
             queryContactList:
                 ({
@@ -2716,7 +2841,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             indexerRelayUrls: const [],
           );
@@ -2739,7 +2866,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             indexerRelayUrls: const [],
           );
@@ -2788,7 +2917,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             profileStatsDao: mockStatsDao,
             indexerRelayUrls: const [],
@@ -2832,7 +2963,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             profileStatsDao: mockStatsDao,
             indexerRelayUrls: const [],
           );
@@ -2882,7 +3015,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             profileStatsDao: mockStatsDao,
             indexerRelayUrls: const [],
           );
@@ -2954,9 +3089,6 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((_) async => mockEvent);
-        when(
-          () => mockPersonalEventCache.cacheUserEvent(any()),
-        ).thenReturn(null);
 
         await repository.initialize();
 
@@ -2980,7 +3112,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -3063,7 +3197,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             indexerRelayUrls: const [],
             queryContactList:
@@ -3149,7 +3285,9 @@ void main() {
           // Skip this specific branch for now.
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
             queryContactList:
                 ({
@@ -3222,7 +3360,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -3248,7 +3388,9 @@ void main() {
 
         repository = FollowRepository(
           nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
           indexerRelayUrls: const [],
         );
 
@@ -3268,7 +3410,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             indexerRelayUrls: const [],
           );
@@ -3330,7 +3474,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             indexerRelayUrls: const [],
             queryContactList:
@@ -3398,7 +3544,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             profileStatsDao: mockStatsDao,
             indexerRelayUrls: const [],
@@ -3449,7 +3597,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             profileStatsDao: mockStatsDao,
             indexerRelayUrls: const [],
@@ -3507,7 +3657,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             indexerRelayUrls: const [],
           );
@@ -3541,13 +3693,12 @@ void main() {
               targetRelays: any(named: 'targetRelays'),
             ),
           ).thenAnswer((_) async => mockEvent);
-          when(
-            () => mockPersonalEventCache.cacheUserEvent(any()),
-          ).thenReturn(null);
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
           );
 
@@ -3601,7 +3752,9 @@ void main() {
           () async {
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: fakeRelayFactory(
                 responses: [
@@ -3632,7 +3785,9 @@ void main() {
           () async {
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: fakeRelayFactory(shouldConnect: false),
             );
@@ -3648,7 +3803,9 @@ void main() {
           () async {
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: (url, status) {
                 throw Exception('Relay creation failed');
@@ -3667,7 +3824,9 @@ void main() {
             var callCount = 0;
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [
                 'wss://indexer1.test',
                 'wss://indexer2.test',
@@ -3714,7 +3873,9 @@ void main() {
           () async {
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: fakeRelayFactory(
                 responses: [
@@ -3751,7 +3912,9 @@ void main() {
           () async {
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: fakeRelayFactory(shouldConnect: false),
             );
@@ -3803,7 +3966,9 @@ void main() {
 
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: fakeRelayFactory(
                 responses: [
@@ -3850,7 +4015,9 @@ void main() {
 
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: fakeRelayFactory(
                 responses: [
@@ -3888,7 +4055,9 @@ void main() {
 
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: fakeRelayFactory(
                 responses: [
@@ -3967,7 +4136,9 @@ void main() {
 
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: fakeRelayFactory(
                 responses: [
@@ -4013,7 +4184,9 @@ void main() {
           () async {
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: (url, status) {
                 final relay = _FakeRelay(url, status)
@@ -4053,7 +4226,9 @@ void main() {
 
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [indexerUrl],
               relayFactory: (url, status) {
                 final relay = _FakeRelay(url, status)
@@ -4095,7 +4270,9 @@ void main() {
 
             repository = FollowRepository(
               nostrClient: mockNostrClient,
-              personalEventCache: mockPersonalEventCache,
+              isCacheInitialized: () => cacheIsInitialized,
+              getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+              cacheUserEvent: cachedUserEvents.add,
               indexerRelayUrls: const [
                 'wss://idx1.test',
                 'wss://idx2.test',
@@ -4139,7 +4316,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             funnelcakeApiClient: mockFunnelcakeClient,
             indexerRelayUrls: const [indexerUrl],
             relayFactory: (url, status) {
@@ -4195,7 +4374,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
           );
 
@@ -4272,7 +4453,9 @@ void main() {
           // → catch calls _loadPersistedStats again → succeeds
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             profileStatsDao: mockStatsDao,
             indexerRelayUrls: const [],
           );
@@ -4297,7 +4480,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             profileStatsDao: mockStatsDao,
             indexerRelayUrls: const [],
           );
@@ -4315,7 +4500,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [indexerUrl],
             relayFactory: (url, status) {
               return _FakeRelay(url, status, throwOnSend: true)
@@ -4347,7 +4534,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [indexerUrl],
             relayFactory: (url, status) {
               return _FakeRelay(
@@ -4385,7 +4574,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
           );
 
@@ -4420,7 +4611,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [indexerUrl],
             relayFactory: (url, status) {
               return _FakeRelay(url, status, throwOnSend: true)
@@ -4482,7 +4675,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const [],
           );
 
@@ -4533,7 +4728,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const ['wss://idx.test'],
             relayFactory: (url, status) {
               throw Exception('Relay creation error');
@@ -4586,7 +4783,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const ['wss://idx.test'],
             relayFactory: (url, status) {
               // EVENT but no EOSE → timeout fires
@@ -4647,7 +4846,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const ['wss://idx.test'],
             relayFactory: (url, status) {
               return _FakeRelay(url, status, throwOnSend: true)
@@ -4679,7 +4880,9 @@ void main() {
           // will fail to connect to the fake URL.
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const ['wss://127.0.0.1:1'],
           );
 
@@ -4714,7 +4917,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const ['wss://idx.test'],
             relayFactory: (url, status) {
               throw Exception('Relay factory error');
@@ -4774,7 +4979,9 @@ void main() {
 
           repository = FollowRepository(
             nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
             indexerRelayUrls: const ['wss://idx.test'],
             relayFactory: (url, status) {
               // Two EVENTs (older then newer) + EOSE

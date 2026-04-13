@@ -6,4 +6,3 @@ library;
 
 export 'src/follow_repository.dart';
 export 'src/follower_stats.dart';
-export 'src/personal_event_cache.dart';
