@@ -286,7 +286,7 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_grouped(targetEventId: 'video1')],
+          notifications: [_grouped()],
           unreadCount: 1,
         ),
         act: (bloc) => bloc.add(
