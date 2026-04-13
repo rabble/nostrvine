@@ -341,4 +341,87 @@ void main() {
       },
     );
   });
+
+  group('BlossomAuthService - cache management', () {
+    test('clearCache removes all cached tokens', () async {
+      when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+
+      const signedEvent = BlossomSignedEvent(
+        json: {
+          'id': 'event123',
+          'kind': 24242,
+          'tags': [
+            ['t', 'get'],
+          ],
+        },
+      );
+
+      when(
+        () => mockAuthProvider.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+
+      // Create a cached token
+      await blossomAuthService.createGetAuthHeader(sha256Hash: 'abc123');
+
+      // Clear the cache
+      blossomAuthService.clearCache();
+
+      // Second call should create new token (not use cache)
+      await blossomAuthService.createGetAuthHeader(sha256Hash: 'abc123');
+
+      verify(
+        () => mockAuthProvider.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).called(2);
+    });
+
+    test('cacheStats returns correct statistics', () async {
+      when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+
+      const signedEvent = BlossomSignedEvent(
+        json: {
+          'id': 'event123',
+          'kind': 24242,
+          'tags': [
+            ['t', 'get'],
+          ],
+        },
+      );
+
+      when(
+        () => mockAuthProvider.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+
+      // Cache a token
+      await blossomAuthService.createGetAuthHeader(sha256Hash: 'abc123');
+
+      final stats = blossomAuthService.cacheStats;
+
+      expect(stats['total_cached'], equals(1));
+      expect(stats['valid_headers'], equals(1));
+      expect(stats['expired_headers'], equals(0));
+      expect(stats['is_authenticated'], isTrue);
+      expect(stats['cleanup_interval_minutes'], equals(15));
+      expect(stats['token_validity_hours'], equals(1));
+    });
+
+    test('canCreateHeaders returns authentication status', () {
+      when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+      expect(blossomAuthService.canCreateHeaders, isTrue);
+
+      when(() => mockAuthProvider.isAuthenticated).thenReturn(false);
+      expect(blossomAuthService.canCreateHeaders, isFalse);
+    });
+  });
 }
