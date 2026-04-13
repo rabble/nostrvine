@@ -49,6 +49,8 @@ class _TopActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scope = VideoEditorScope.of(context);
+    // Uses `read` because `draftId` is set once during `initialize()` and
+    // does not change during the editor session.
     final isAutosavedDraft = ref
         .read(videoEditorProvider.notifier)
         .isAutosavedDraft;
