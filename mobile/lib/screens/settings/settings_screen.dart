@@ -2,6 +2,7 @@
 // ABOUTME: Central entry point for all app settings, accessed via gear icon on profile
 
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -10,10 +11,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
@@ -28,6 +31,7 @@ import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
@@ -35,6 +39,7 @@ import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -94,19 +99,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (accountState.hasDrafts) {
       final draftCount = accountState.draftCount;
-      final draftWord = draftCount == 1 ? 'draft' : 'drafts';
       final proceedWithWarning = await VineBottomSheet.show<bool>(
         context: context,
         scrollable: false,
-        contentTitle: 'Unsaved Drafts',
+        contentTitle: context.l10n.settingsUnsavedDraftsTitle,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Text(
-              'You have $draftCount unsaved $draftWord. '
-              'Switching accounts will keep your $draftWord, but '
-              'you may want to publish or review '
-              '${draftCount == 1 ? 'it' : 'them'} first.',
+              context.l10n.settingsUnsavedDraftsMessage(draftCount),
               style: VineTheme.bodyMediumFont(
                 color: VineTheme.onSurfaceVariant,
               ),
@@ -119,7 +120,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 Expanded(
                   child: DivineButton(
-                    label: 'Cancel',
+                    label: context.l10n.settingsCancel,
                     type: DivineButtonType.secondary,
                     expanded: true,
                     onPressed: () => Navigator.of(context).pop(false),
@@ -127,7 +128,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 Expanded(
                   child: DivineButton(
-                    label: 'Switch Anyway',
+                    label: context.l10n.settingsSwitchAnyway,
                     type: DivineButtonType.error,
                     expanded: true,
                     onPressed: () => Navigator.of(context).pop(true),
@@ -179,7 +180,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       value: _accountCubit,
       child: Scaffold(
         appBar: DiVineAppBar(
-          title: 'Settings',
+          title: context.l10n.settingsTitle,
           showBackButton: true,
           onBackPressed: context.pop,
         ),
@@ -196,64 +197,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   if (authService.isAnonymous)
                     _SettingsTile(
                       icon: Icons.security,
-                      title: 'Secure Your Account',
+                      title: context.l10n.settingsSecureAccount,
                       onTap: () => context.push(SecureAccountScreen.path),
                     ),
                   if (!authService.isAnonymous &&
                       authService.hasExpiredOAuthSession)
                     _SettingsTile(
                       icon: Icons.refresh,
-                      title: 'Session Expired',
-                      subtitle: 'Sign in again to restore full access',
+                      title: context.l10n.settingsSessionExpired,
+                      subtitle: context.l10n.settingsSessionExpiredSubtitle,
                       onTap: _handleSessionExpired,
                       iconColor: VineTheme.accentOrange,
                     ),
                 ],
 
                 _SettingsTile(
-                  title: 'Creator Analytics',
+                  title: context.l10n.settingsCreatorAnalytics,
                   divineIcon: DivineIconName.trendUp,
                   onTap: () => context.push(CreatorAnalyticsScreen.path),
                 ),
                 _SettingsTile(
-                  title: 'Support Center',
+                  title: context.l10n.settingsSupportCenter,
                   icon: Icons.support_agent,
                   onTap: () => context.push(SupportCenterScreen.path),
                 ),
 
                 _SettingsTile(
-                  title: 'Notifications',
+                  title: context.l10n.settingsNotifications,
                   divineIcon: DivineIconName.bellSimple,
                   onTap: () => context.push(NotificationSettingsScreen.path),
                 ),
                 _SettingsTile(
-                  title: 'Content Preferences',
+                  title: context.l10n.settingsContentPreferences,
                   divineIcon: DivineIconName.globe,
                   onTap: () => context.push(ContentPreferencesScreen.path),
                 ),
+                const _AppLanguageTile(),
                 _SettingsTile(
-                  title: 'Moderation Controls',
+                  title: context.l10n.settingsModerationControls,
                   divineIcon: DivineIconName.faders,
                   onTap: () => context.push(SafetySettingsScreen.path),
                 ),
                 if (showBluesky)
                   _SettingsTile(
                     icon: Icons.cloud_upload,
-                    title: 'Bluesky Publishing',
-                    subtitle: 'Manage crossposting to Bluesky',
+                    title: context.l10n.settingsBlueskyPublishing,
+                    subtitle: context.l10n.settingsBlueskyPublishingSubtitle,
                     onTap: () => context.push(BlueskySettingsScreen.path),
                   ),
                 _SettingsTile(
-                  title: 'Nostr Settings',
+                  title: context.l10n.settingsNostrSettings,
                   divineIcon: DivineIconName.graph,
                   onTap: () => context.push(NostrSettingsScreen.path),
                 ),
                 if (nostrAppsSandboxSupported)
                   _SettingsTile(
                     icon: Icons.apps,
-                    title: 'Integrated Apps',
-                    subtitle:
-                        'Approved third-party apps that run inside Divine',
+                    title: context.l10n.settingsIntegratedApps,
+                    subtitle: context.l10n.settingsIntegratedAppsSubtitle,
                     onTap: () {
                       ref.read(forceExploreTabNameProvider.notifier).state =
                           'apps';
@@ -262,9 +263,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 _SettingsTile(
                   icon: Icons.science,
-                  title: 'Experimental Features',
-                  subtitle:
-                      'Tweaks that may hiccup—try them if you are curious.',
+                  title: context.l10n.settingsExperimentalFeatures,
+                  subtitle: context.l10n.settingsExperimentalFeaturesSubtitle,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -273,15 +273,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 _SettingsTile(
-                  title: 'Legal',
+                  title: context.l10n.settingsLegal,
                   icon: Icons.gavel,
                   onTap: () => context.push(LegalScreen.path),
                 ),
                 _SettingsTile(
                   icon: Icons.lock_open,
-                  title: 'Integration Permissions',
-                  subtitle:
-                      'Review and revoke remembered integration approvals',
+                  title: context.l10n.settingsIntegrationPermissions,
+                  subtitle: context.l10n.settingsIntegrationPermissionsSubtitle,
                   onTap: () => context.push(AppsPermissionsScreen.path),
                 ),
 
@@ -310,8 +309,8 @@ class _AccountHeader extends StatelessWidget {
 
         final hasMultipleAccounts = accountState.hasMultipleAccounts;
         final buttonLabel = hasMultipleAccounts
-            ? 'Switch account'
-            : 'Add another account';
+            ? context.l10n.settingsSwitchAccount
+            : context.l10n.settingsAddAnotherAccount;
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 32),
@@ -326,7 +325,7 @@ class _AccountHeader extends StatelessWidget {
                   }
                   return Semantics(
                     button: true,
-                    label: 'Invites',
+                    label: context.l10n.settingsInvites,
                     child: InkWell(
                       onTap: () => context.push(InvitesScreen.path),
                       borderRadius: BorderRadius.circular(16),
@@ -352,7 +351,7 @@ class _AccountHeader extends StatelessWidget {
                               color: VineTheme.vineGreen,
                             ),
                             Text(
-                              'Invites',
+                              context.l10n.settingsInvites,
                               style: VineTheme.titleMediumFont(
                                 color: VineTheme.vineGreen,
                               ),
@@ -504,13 +503,13 @@ class _VersionTile extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      label: 'App version',
+      label: context.l10n.settingsAppVersionLabel,
       child: InkWell(
         onTap: () async {
           if (isDeveloperMode) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Developer mode is already enabled'),
+              SnackBar(
+                content: Text(context.l10n.settingsDeveloperModeAlreadyEnabled),
                 backgroundColor: VineTheme.vineGreen,
               ),
             );
@@ -531,10 +530,10 @@ class _VersionTile extends ConsumerWidget {
 
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Developer mode enabled!'),
+                SnackBar(
+                  content: Text(context.l10n.settingsDeveloperModeEnabled),
                   backgroundColor: VineTheme.vineGreen,
-                  duration: Duration(seconds: 2),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             }
@@ -547,7 +546,7 @@ class _VersionTile extends ConsumerWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '$remaining more taps to enable developer mode',
+                    context.l10n.settingsDeveloperModeTapsRemaining(remaining),
                   ),
                   duration: const Duration(milliseconds: 500),
                 ),
@@ -561,15 +560,46 @@ class _VersionTile extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: Text(
-                _appVersion.isEmpty ? 'Version' : 'Version $_appVersion',
+                _appVersion.isEmpty
+                    ? context.l10n.settingsVersionEmpty
+                    : context.l10n.settingsVersion(_appVersion),
                 style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AppLanguageTile extends StatelessWidget {
+  const _AppLanguageTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<LocaleCubit, LocaleState>(
+      builder: (context, state) {
+        final locale = state.locale;
+        final subtitle = locale == null
+            ? context.l10n.settingsAppLanguageDeviceDefault(
+                LocalePreferenceService.nativeNameFor(
+                  PlatformDispatcher.instance.locale.languageCode,
+                ),
+              )
+            : LocalePreferenceService.nativeNameFor(
+                locale.languageCode,
+              );
+
+        return _SettingsTile(
+          title: context.l10n.settingsAppLanguage,
+          icon: Icons.language,
+          subtitle: subtitle,
+          onTap: () => context.push(AppLanguageScreen.path),
+        );
+      },
     );
   }
 }
@@ -714,7 +744,7 @@ class _AddAccountTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Add another account',
+      label: context.l10n.settingsAddAnotherAccount,
       child: InkWell(
         onTap: onTap,
         child: ConstrainedBox(
@@ -730,7 +760,7 @@ class _AddAccountTile extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'Add another account',
+                    context.l10n.settingsAddAnotherAccount,
                     style: VineTheme.titleMediumFont(
                       color: VineTheme.onSurface,
                     ),

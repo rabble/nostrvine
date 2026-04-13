@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/validators.dart';
 
 /// Shows a forgot password dialog that sends a reset email.
@@ -18,7 +19,7 @@ void showForgotPasswordDialog({
   VineBottomSheet.show<void>(
     context: context,
     scrollable: false,
-    title: const Text('Reset Password'),
+    title: Text(context.l10n.forgotPasswordTitle),
     body: _ForgotPasswordSheetContent(
       initialEmail: initialEmail,
       onSendResetEmail: onSendResetEmail,
@@ -68,10 +69,12 @@ class _ForgotPasswordSheetContentState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Enter your email address and we'll send you a link to "
-              'reset your password.',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+            Text(
+              context.l10n.forgotPasswordDescription,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 20),
             TextFormField(
@@ -80,7 +83,7 @@ class _ForgotPasswordSheetContentState
               autocorrect: false,
               style: const TextStyle(color: VineTheme.primaryText),
               decoration: InputDecoration(
-                labelText: 'Email Address',
+                labelText: context.l10n.forgotPasswordEmailLabel,
                 labelStyle: const TextStyle(color: VineTheme.lightText),
                 prefixIcon: const Icon(Icons.email_outlined),
                 enabledBorder: OutlineInputBorder(
@@ -105,9 +108,9 @@ class _ForgotPasswordSheetContentState
               children: [
                 TextButton(
                   onPressed: () => context.pop(),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: VineTheme.onSurfaceMuted),
+                  child: Text(
+                    context.l10n.forgotPasswordCancel,
+                    style: const TextStyle(color: VineTheme.onSurfaceMuted),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -123,7 +126,7 @@ class _ForgotPasswordSheetContentState
                       await widget.onSendResetEmail(email);
                     }
                   },
-                  child: const Text('Email Reset Link'),
+                  child: Text(context.l10n.forgotPasswordSendLink),
                 ),
               ],
             ),

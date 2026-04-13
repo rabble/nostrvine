@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -132,6 +133,8 @@ void main() {
     return UncontrolledProviderScope(
       container: ProviderContainer(overrides: providerOverrides),
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: MultiBlocProvider(
             providers: [
@@ -189,7 +192,7 @@ void main() {
         buildSubject(child: MetadataStatsRow(video: video)),
       );
 
-      expect(find.text('1.5k'), findsOneWidget); // originalLoops
+      expect(find.text('1.5K'), findsOneWidget); // originalLoops
       expect(find.text('250'), findsOneWidget); // likeCount
       expect(find.text('42'), findsOneWidget); // commentCount
       expect(find.text('15'), findsOneWidget); // repostCount

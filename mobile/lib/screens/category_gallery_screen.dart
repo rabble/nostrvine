@@ -12,6 +12,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_category_name.dart';
 import 'package:openvine/models/video_category.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -102,7 +104,10 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
                         const CategoryVideosLoadMore(),
                       );
                     },
-                    contextTitle: widget.category.displayName,
+                    contextTitle: localizedCategoryName(
+                      context.l10n,
+                      widget.category.name,
+                    ),
                   ),
                 );
               },
@@ -273,7 +278,7 @@ class _CategoryGalleryHeader extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.only(top: 18),
                     child: Text(
-                      category.displayName,
+                      localizedCategoryName(context.l10n, category.name),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: VineTheme.titleMediumFont().copyWith(

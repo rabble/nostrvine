@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/page_controller_sync_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
@@ -42,7 +43,7 @@ class _ExploreScreenRouterState extends ConsumerState<ExploreScreenRouter>
       onData: (ctx) {
         // Only handle explore routes
         if (ctx.type != RouteType.explore) {
-          return const Center(child: Text('Not an explore route'));
+          return Center(child: Text(context.l10n.exploreNotExploreRoute));
         }
 
         int urlIndex = 0;
@@ -54,7 +55,9 @@ class _ExploreScreenRouterState extends ConsumerState<ExploreScreenRouter>
           videosAsync,
           onData: (videos) {
             if (videos.isEmpty) {
-              return const Center(child: Text('No videos available'));
+              return Center(
+                child: Text(context.l10n.exploreNoVideosAvailable),
+              );
             }
 
             // Determine target index from route context (index-based routing)
@@ -105,12 +108,19 @@ class _ExploreScreenRouterState extends ConsumerState<ExploreScreenRouter>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Video ${index + 1}/${videos.length}',
+                        context.l10n.exploreVideoCounter(
+                          index + 1,
+                          videos.length,
+                        ),
                         style: const TextStyle(fontSize: 24),
                       ),
                       const SizedBox(height: 16),
-                      Text('ID: ${video.id}'),
-                      Text('Title: ${video.title ?? video.content}'),
+                      Text(context.l10n.exploreVideoId(video.id)),
+                      Text(
+                        context.l10n.exploreVideoTitle(
+                          video.title ?? video.content,
+                        ),
+                      ),
                     ],
                   ),
                 );

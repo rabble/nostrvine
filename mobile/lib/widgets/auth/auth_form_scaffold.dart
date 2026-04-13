@@ -153,7 +153,7 @@ class AuthFormScaffold extends StatelessWidget {
 
                     // Dog sticker
                     Align(
-                      alignment: Alignment.centerRight,
+                      alignment: AlignmentDirectional.centerEnd,
                       child: Transform.translate(
                         offset: const Offset(20, 0),
                         child: Transform.rotate(

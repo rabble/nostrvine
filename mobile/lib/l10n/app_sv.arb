@@ -1,0 +1,2434 @@
+{
+    "@@locale": "sv",
+    "appTitle": "Divine",
+    "@appTitle": {
+        "description": "App title shown in task switcher"
+    },
+    "settingsTitle": "Inställningar",
+    "@settingsTitle": {
+        "description": "Settings screen app bar title"
+    },
+    "settingsSecureAccount": "Säkra ditt konto",
+    "settingsSessionExpired": "Sessionen har löpt ut",
+    "settingsSessionExpiredSubtitle": "Logga in igen för att återfå full åtkomst",
+    "settingsCreatorAnalytics": "Kreatörsstatistik",
+    "settingsSupportCenter": "Supportcenter",
+    "settingsNotifications": "Aviseringar",
+    "settingsContentPreferences": "Innehållsinställningar",
+    "settingsModerationControls": "Modereringskontroller",
+    "settingsBlueskyPublishing": "Bluesky-publicering",
+    "settingsBlueskyPublishingSubtitle": "Hantera korspostning till Bluesky",
+    "settingsNostrSettings": "Nostr-inställningar",
+    "settingsIntegratedApps": "Integrerade appar",
+    "settingsIntegratedAppsSubtitle": "Godkända tredjepartsappar som körs inuti Divine",
+    "settingsExperimentalFeatures": "Experimentella funktioner",
+    "settingsExperimentalFeaturesSubtitle": "Finjusteringar som kan hicka—testa om du är nyfiken.",
+    "settingsLegal": "Juridik",
+    "settingsIntegrationPermissions": "Integrationsbehörigheter",
+    "settingsIntegrationPermissionsSubtitle": "Granska och återkalla sparade integrationsgodkännanden",
+    "settingsVersion": "Version {version}",
+    "@settingsVersion": {
+        "description": "App version label in settings footer",
+        "placeholders": {
+            "version": {
+                "type": "String"
+            }
+        }
+    },
+    "settingsVersionEmpty": "Version",
+    "@settingsVersionEmpty": {
+        "description": "Version label when version string is not yet loaded"
+    },
+    "settingsDeveloperModeAlreadyEnabled": "Utvecklarläge är redan aktiverat",
+    "settingsDeveloperModeEnabled": "Utvecklarläge aktiverat!",
+    "settingsDeveloperModeTapsRemaining": "{count} tryck till för att aktivera utvecklarläge",
+    "@settingsDeveloperModeTapsRemaining": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "settingsInvites": "Inbjudningar",
+    "settingsSwitchAccount": "Byt konto",
+    "settingsAddAnotherAccount": "Lägg till ett till konto",
+    "settingsUnsavedDraftsTitle": "Osparade utkast",
+    "settingsUnsavedDraftsMessage": "Du har {count} osparade {count, plural, one{utkast} other{utkast}}. Att byta konto behåller dina utkast, men du kanske vill publicera eller granska dem först.",
+    "@settingsUnsavedDraftsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "settingsCancel": "Avbryt",
+    "settingsSwitchAnyway": "Byt ändå",
+    "settingsAppVersionLabel": "Appversion",
+    "settingsAppLanguage": "Appspråk",
+    "settingsAppLanguageDeviceDefault": "{language} (enhetens standard)",
+    "@settingsAppLanguageDeviceDefault": {
+        "description": "Subtitle for app language tile when using device default",
+        "placeholders": {
+            "language": {
+                "type": "String"
+            }
+        }
+    },
+    "settingsAppLanguageTitle": "Appspråk",
+    "@settingsAppLanguageTitle": {
+        "description": "Title shown at top of locale picker bottom sheet"
+    },
+    "settingsAppLanguageDescription": "Välj språk för appens gränssnitt",
+    "settingsAppLanguageUseDeviceLanguage": "Använd enhetens språk",
+    "contentPreferencesTitle": "Innehållsinställningar",
+    "@contentPreferencesTitle": {
+        "description": "Content preferences screen app bar title"
+    },
+    "contentPreferencesContentFilters": "Innehållsfilter",
+    "contentPreferencesContentFiltersSubtitle": "Hantera filter för innehållsvarningar",
+    "contentPreferencesContentLanguage": "Innehållsspråk",
+    "contentPreferencesContentLanguageDeviceDefault": "{language} (enhetens standard)",
+    "@contentPreferencesContentLanguageDeviceDefault": {
+        "placeholders": {
+            "language": {
+                "type": "String"
+            }
+        }
+    },
+    "contentPreferencesTagYourVideos": "Tagga dina videor med ett språk så tittarna kan filtrera innehåll.",
+    "contentPreferencesUseDeviceLanguage": "Använd enhetens språk (standard)",
+    "contentPreferencesAudioSharing": "Gör mitt ljud tillgängligt för återanvändning",
+    "contentPreferencesAudioSharingSubtitle": "När aktiverat kan andra använda ljud från dina videor",
+    "contentPreferencesAccountLabels": "Kontoetiketter",
+    "contentPreferencesAccountLabelsEmpty": "Självmärk ditt innehåll",
+    "contentPreferencesAccountContentLabels": "Etiketter för kontoinnehåll",
+    "contentPreferencesClearAll": "Rensa alla",
+    "contentPreferencesSelectAllThatApply": "Välj allt som gäller för ditt konto",
+    "contentPreferencesDoneNoLabels": "Klar (Inga etiketter)",
+    "contentPreferencesDoneCount": "Klar ({count} valda)",
+    "@contentPreferencesDoneCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "contentPreferencesAudioInputDevice": "Ljudingångsenhet",
+    "contentPreferencesAutoRecommended": "Auto (rekommenderas)",
+    "contentPreferencesAutoSelectsBest": "Väljer automatiskt den bästa mikrofonen",
+    "contentPreferencesSelectAudioInput": "Välj ljudingång",
+    "contentPreferencesUnknownMicrophone": "Okänd mikrofon",
+    "profileBlockedAccountNotAvailable": "Det här kontot är inte tillgängligt",
+    "profileErrorPrefix": "Fel: {error}",
+    "@profileErrorPrefix": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileInvalidId": "Ogiltigt profil-ID",
+    "profileShareText": "Kolla in {displayName} på Divine!\n\nhttps://divine.video/profile/{npub}",
+    "@profileShareText": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            },
+            "npub": {
+                "type": "String"
+            }
+        }
+    },
+    "profileShareSubject": "{displayName} på Divine",
+    "@profileShareSubject": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileShareFailed": "Kunde inte dela profil: {error}",
+    "@profileShareFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileEditProfile": "Redigera profil",
+    "profileCreatorAnalytics": "Kreatörsstatistik",
+    "profileShareProfile": "Dela profil",
+    "profileCopyPublicKey": "Kopiera publik nyckel (npub)",
+    "profileGetEmbedCode": "Hämta inbäddningskod",
+    "profilePublicKeyCopied": "Publik nyckel kopierad till urklipp",
+    "profileEmbedCodeCopied": "Inbäddningskod kopierad till urklipp",
+    "profileRefreshTooltip": "Uppdatera",
+    "profileRefreshSemanticLabel": "Uppdatera profil",
+    "profileMoreTooltip": "Mer",
+    "profileMoreSemanticLabel": "Fler alternativ",
+    "profileFollowingLabel": "Följer",
+    "profileFollowLabel": "Följ",
+    "profileBlockedLabel": "Blockerad",
+    "profileFollowersLabel": "Följare",
+    "profileFollowingStatLabel": "Följer",
+    "profileVideosLabel": "Videor",
+    "profileFollowerCountUsers": "{count} användare",
+    "@profileFollowerCountUsers": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "profileBlockTitle": "Blockera {displayName}?",
+    "@profileBlockTitle": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileBlockExplanation": "När du blockerar en användare:",
+    "profileBlockBulletHidePosts": "Deras inlägg visas inte i dina flöden.",
+    "profileBlockBulletCantView": "De kommer inte kunna se din profil, följa dig eller se dina inlägg.",
+    "profileBlockBulletNoNotify": "De meddelas inte om denna ändring.",
+    "profileBlockBulletYouCanView": "Du kommer fortfarande kunna se deras profil.",
+    "profileBlockConfirmButton": "Blockera {displayName}",
+    "@profileBlockConfirmButton": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileCancelButton": "Avbryt",
+    "profileLearnMore": "Läs mer",
+    "profileUnblockTitle": "Avblockera {displayName}?",
+    "@profileUnblockTitle": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockExplanation": "När du avblockerar den här användaren:",
+    "profileUnblockBulletShowPosts": "Deras inlägg visas i dina flöden.",
+    "profileUnblockBulletCanView": "De kommer kunna se din profil, följa dig och se dina inlägg.",
+    "profileUnblockBulletNoNotify": "De meddelas inte om denna ändring.",
+    "profileLearnMoreAt": "Läs mer på ",
+    "profileUnblockButton": "Avblockera",
+    "profileUnfollowDisplayName": "Sluta följa {displayName}",
+    "@profileUnfollowDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileBlockDisplayName": "Blockera {displayName}",
+    "@profileBlockDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockDisplayName": "Avblockera {displayName}",
+    "@profileUnblockDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUserBlockedTitle": "Användare blockerad",
+    "profileUserBlockedContent": "Du kommer inte se innehåll från den här användaren i dina flöden.",
+    "profileUserBlockedUnblockHint": "Du kan avblockera när som helst från deras profil eller under Inställningar > Säkerhet.",
+    "profileCloseButton": "Stäng",
+    "profileNoCollabsTitle": "Inga samarbeten än",
+    "profileCollabsOwnEmpty": "Videor du samarbetar kring visas här",
+    "profileCollabsOtherEmpty": "Videor de samarbetar kring visas här",
+    "profileErrorLoadingCollabs": "Fel vid inläsning av samarbetsvideor",
+    "profileNoCommentsOwnTitle": "Inga kommentarer än",
+    "profileNoCommentsOtherTitle": "Inga kommentarer",
+    "profileCommentsOwnEmpty": "Dina kommentarer och svar visas här",
+    "profileCommentsOtherEmpty": "Deras kommentarer och svar visas här",
+    "profileErrorLoadingComments": "Fel vid inläsning av kommentarer",
+    "profileVideoRepliesSection": "Videosvar",
+    "profileCommentsSection": "Kommentarer",
+    "profileEditLabel": "Redigera",
+    "profileLibraryLabel": "Bibliotek",
+    "profileNoLikedVideosTitle": "Inga gillade videor än",
+    "profileLikedOwnEmpty": "Videor du gillar visas här",
+    "profileLikedOtherEmpty": "Videor de gillar visas här",
+    "profileErrorLoadingLiked": "Fel vid inläsning av gillade videor",
+    "profileNoRepostsTitle": "Inga återpubliceringar än",
+    "profileRepostsOwnEmpty": "Videor du återpublicerar visas här",
+    "profileRepostsOtherEmpty": "Videor de återpublicerar visas här",
+    "profileErrorLoadingReposts": "Fel vid inläsning av återpublicerade videor",
+    "profileLoadingTitle": "Läser in profil...",
+    "profileLoadingSubtitle": "Det här kan ta en liten stund",
+    "profileLoadingVideos": "Läser in videor...",
+    "profileNoVideosTitle": "Inga videor än",
+    "profileNoVideosOwnSubtitle": "Dela din första video för att se den här",
+    "profileNoVideosOtherSubtitle": "Den här användaren har inte delat några videor än",
+    "profileVideoThumbnailLabel": "Videominiatyr {number}",
+    "@profileVideoThumbnailLabel": {
+        "placeholders": {
+            "number": {
+                "type": "int"
+            }
+        }
+    },
+    "profileShowMore": "Visa mer",
+    "profileShowLess": "Visa mindre",
+    "profileCompleteYourProfile": "Komplettera din profil",
+    "profileCompleteSubtitle": "Lägg till namn, bio och bild för att komma igång",
+    "profileSetUpButton": "Sätt upp",
+    "profileVerifyingEmail": "Verifierar e-post...",
+    "profileCheckEmailVerification": "Kolla {email} efter verifieringslänk",
+    "@profileCheckEmailVerification": {
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "profileWaitingForVerification": "Väntar på e-postverifiering",
+    "profileVerificationFailed": "Verifiering misslyckades",
+    "profilePleaseTryAgain": "Försök igen",
+    "profileSecureYourAccount": "Säkra ditt konto",
+    "profileSecureSubtitle": "Lägg till e-post och lösenord för att återställa ditt konto på vilken enhet som helst",
+    "profileRetryButton": "Försök igen",
+    "profileRegisterButton": "Registrera",
+    "profileSessionExpired": "Sessionen har löpt ut",
+    "profileSignInToRestore": "Logga in igen för att återfå full åtkomst",
+    "profileSignInButton": "Logga in",
+    "profileDismissTooltip": "Avfärda",
+    "profileLinkCopied": "Profillänk kopierad",
+    "profileSetupEditProfileTitle": "Redigera profil",
+    "profileSetupBackLabel": "Tillbaka",
+    "profileSetupAboutNostr": "Om Nostr",
+    "profileSetupProfilePublished": "Profilen publicerades!",
+    "profileSetupCreateNewProfile": "Skapa ny profil?",
+    "profileSetupNoExistingProfile": "Vi hittade ingen befintlig profil på dina reler. Publicering skapar en ny profil. Fortsätta?",
+    "profileSetupPublishButton": "Publicera",
+    "profileSetupUsernameTaken": "Användarnamnet togs precis. Välj ett annat.",
+    "profileSetupClaimFailed": "Kunde inte claima användarnamnet. Försök igen.",
+    "profileSetupPublishFailed": "Kunde inte publicera profilen. Försök igen.",
+    "profileSetupDisplayNameLabel": "Visningsnamn",
+    "profileSetupDisplayNameHint": "Hur ska folk känna dig?",
+    "profileSetupDisplayNameHelper": "Vilket namn eller etikett du vill. Behöver inte vara unikt.",
+    "profileSetupDisplayNameRequired": "Ange ett visningsnamn",
+    "profileSetupBioLabel": "Bio (valfritt)",
+    "profileSetupBioHint": "Berätta om dig själv...",
+    "profileSetupPublicKeyLabel": "Publik nyckel (npub)",
+    "profileSetupUsernameLabel": "Användarnamn (valfritt)",
+    "profileSetupUsernameHint": "användarnamn",
+    "profileSetupUsernameHelper": "Din unika identitet på Divine",
+    "profileSetupProfileColorLabel": "Profilfärg (valfritt)",
+    "profileSetupSaveButton": "Spara",
+    "profileSetupSavingButton": "Sparar...",
+    "profileSetupImageUrlTitle": "Lägg till bild-URL",
+    "profileSetupPictureUploaded": "Profilbilden laddades upp!",
+    "profileSetupImageSelectionFailed": "Bildval misslyckades. Klistra in en bild-URL nedan istället.",
+    "profileSetupCameraAccessFailed": "Kameraåtkomst misslyckades: {error}",
+    "@profileSetupCameraAccessFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileSetupGotItButton": "Jag fattar",
+    "profileSetupUploadFailedGeneric": "Kunde inte ladda upp bilden: {error}",
+    "@profileSetupUploadFailedGeneric": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileSetupUploadNetworkError": "Nätverksfel: Kolla din internetanslutning och försök igen.",
+    "profileSetupUploadAuthError": "Autentiseringsfel: Logga ut och in igen.",
+    "profileSetupUploadFileTooLarge": "Filen är för stor: Välj en mindre bild (max 10 MB).",
+    "profileSetupUsernameChecking": "Kollar tillgänglighet...",
+    "profileSetupUsernameAvailable": "Användarnamnet är ledigt!",
+    "profileSetupUsernameTakenIndicator": "Användarnamnet är redan taget",
+    "profileSetupUsernameReserved": "Användarnamnet är reserverat",
+    "profileSetupContactSupport": "Kontakta support",
+    "profileSetupCheckAgain": "Kolla igen",
+    "profileSetupUsernameBurned": "Det här användarnamnet är inte längre tillgängligt",
+    "profileSetupUsernameInvalidFormat": "Endast bokstäver, siffror och bindestreck är tillåtna",
+    "profileSetupUsernameInvalidLength": "Användarnamnet måste vara 3–20 tecken",
+    "profileSetupUsernameNetworkError": "Kunde inte kolla tillgänglighet. Försök igen.",
+    "profileSetupUsernameInvalidFormatGeneric": "Ogiltigt format på användarnamn",
+    "profileSetupUsernameCheckFailed": "Kunde inte kolla tillgänglighet",
+    "profileSetupUsernameReservedTitle": "Användarnamnet är reserverat",
+    "profileSetupUsernameReservedBody": "Namnet {username} är reserverat. Berätta varför det borde vara ditt.",
+    "@profileSetupUsernameReservedBody": {
+        "placeholders": {
+            "username": {
+                "type": "String"
+            }
+        }
+    },
+    "profileSetupUsernameReservedHint": "t.ex. Det är mitt varumärkesnamn, artistnamn osv.",
+    "profileSetupUsernameReservedCheckHint": "Har du redan kontaktat supporten? Tryck på \"Kolla igen\" för att se om det har släppts till dig.",
+    "profileSetupSupportRequestSent": "Supportförfrågan skickad! Vi hör av oss snart.",
+    "profileSetupCouldntOpenEmail": "Kunde inte öppna e-post. Skicka till: names@divine.video",
+    "profileSetupSendRequest": "Skicka förfrågan",
+    "profileSetupPickColorTitle": "Välj en färg",
+    "profileSetupSelectButton": "Välj",
+    "profileSetupUseOwnNip05": "Använd din egen NIP-05-adress",
+    "profileSetupNip05AddressLabel": "NIP-05-adress",
+    "profileSetupProfilePicturePreview": "Förhandsvisning av profilbild",
+    "nostrInfoIntroBuiltOn": "DiVine är byggt på Nostr,",
+    "nostrInfoIntroDescription": " ett censurresistent öppet protokoll som låter folk kommunicera online utan att förlita sig på ett enda företag eller en enda plattform. ",
+    "nostrInfoIntroIdentity": "När du skapar ett Divine-konto får du en ny Nostr-identitet.",
+    "nostrInfoOwnership": "Nostr låter dig äga ditt innehåll, din identitet och ditt sociala nätverk, vilket du kan använda i många appar. Resultatet är fler valmöjligheter, mindre inlåsning och ett sundare, mer motståndskraftigt socialt internet.",
+    "nostrInfoLingo": "Nostr-jargong:",
+    "nostrInfoNpubLabel": "npub:",
+    "nostrInfoNpubDescription": " Din publika Nostr-adress. Den är säker att dela och låter andra hitta, följa eller meddela dig i Nostr-appar.",
+    "nostrInfoNsecLabel": "nsec:",
+    "nostrInfoNsecDescription": " Din privata nyckel och ditt ägandebevis. Den ger full kontroll över din Nostr-identitet, så ",
+    "nostrInfoNsecWarning": "håll den alltid hemlig!",
+    "nostrInfoUsernameLabel": "Nostr-användarnamn:",
+    "nostrInfoUsernameDescription": " Ett människoläsbart namn (som @namn.divine.video) som länkar till din npub. Det gör din Nostr-identitet lättare att känna igen och verifiera, ungefär som en e-postadress.",
+    "nostrInfoLearnMoreAt": "Läs mer på ",
+    "nostrInfoGotIt": "Uppfattat!",
+    "profileTabRefreshTooltip": "Uppdatera",
+    "videoGridRefreshLabel": "Söker efter fler videor",
+    "videoGridOptionsTitle": "Videoalternativ",
+    "videoGridEditVideo": "Redigera video",
+    "videoGridEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
+    "videoGridDeleteVideo": "Ta bort video",
+    "videoGridDeleteVideoSubtitle": "Ta bort det här innehållet permanent",
+    "videoGridDeleteConfirmTitle": "Ta bort video",
+    "videoGridDeleteConfirmMessage": "Är du säker på att du vill ta bort den här videon?",
+    "videoGridDeleteConfirmNote": "Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.",
+    "videoGridDeleteCancel": "Avbryt",
+    "videoGridDeleteConfirm": "Ta bort",
+    "videoGridDeletingContent": "Tar bort innehåll...",
+    "videoGridDeleteSuccess": "Borttagningsbegäran skickad",
+    "videoGridDeleteFailure": "Kunde inte ta bort innehåll: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreTabClassics": "Klassiker",
+    "exploreTabNew": "Nytt",
+    "exploreTabPopular": "Populärt",
+    "exploreTabCategories": "Kategorier",
+    "exploreTabForYou": "För dig",
+    "exploreTabLists": "Listor",
+    "exploreTabIntegratedApps": "Integrerade appar",
+    "exploreNoVideosAvailable": "Inga videor tillgängliga",
+    "exploreErrorPrefix": "Fel: {error}",
+    "@exploreErrorPrefix": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreDiscoverLists": "Upptäck listor",
+    "exploreAboutLists": "Om listor",
+    "exploreAboutListsDescription": "Listor hjälper dig organisera och kuratera Divine-innehåll på två sätt:",
+    "explorePeopleLists": "Personlistor",
+    "explorePeopleListsDescription": "Följ grupper av kreatörer och se deras senaste videor",
+    "exploreVideoLists": "Videolistor",
+    "exploreVideoListsDescription": "Skapa spellistor med dina favoritvideor för att titta på senare",
+    "exploreMyLists": "Mina listor",
+    "exploreSubscribedLists": "Prenumererade listor",
+    "exploreErrorLoadingLists": "Fel vid inläsning av listor: {error}",
+    "@exploreErrorLoadingLists": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreNewVideosCount": "{count, plural, one{1 ny video} other{{count} nya videor}}",
+    "@exploreNewVideosCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "exploreLoadNewVideosLabel": "Ladda {count} {count, plural, one{ny video} other{nya videor}}",
+    "@exploreLoadNewVideosLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "videoPlayerLoadingVideo": "Läser in video...",
+    "videoPlayerPlayVideo": "Spela upp video",
+    "videoPlayerEditVideo": "Redigera video",
+    "videoPlayerEditVideoTooltip": "Redigera video",
+    "contentWarningLabel": "Innehållsvarning",
+    "contentWarningNudity": "Nakenhet",
+    "contentWarningSexualContent": "Sexuellt innehåll",
+    "contentWarningPornography": "Pornografi",
+    "contentWarningGraphicMedia": "Grafiskt material",
+    "contentWarningViolence": "Våld",
+    "contentWarningSelfHarm": "Självskada",
+    "contentWarningDrugUse": "Drogbruk",
+    "contentWarningAlcohol": "Alkohol",
+    "contentWarningTobacco": "Tobak",
+    "contentWarningGambling": "Spel om pengar",
+    "contentWarningProfanity": "Grovt språk",
+    "contentWarningFlashingLights": "Blinkande ljus",
+    "contentWarningAiGenerated": "AI-genererat",
+    "contentWarningSpoiler": "Spoiler",
+    "contentWarningSensitiveContent": "Känsligt innehåll",
+    "contentWarningDescNudity": "Innehåller nakenhet eller delvis nakenhet",
+    "contentWarningDescSexual": "Innehåller sexuellt innehåll",
+    "contentWarningDescPorn": "Innehåller explicit pornografiskt innehåll",
+    "contentWarningDescGraphicMedia": "Innehåller grafiska eller störande bilder",
+    "contentWarningDescViolence": "Innehåller våldsamt innehåll",
+    "contentWarningDescSelfHarm": "Innehåller referenser till självskada",
+    "contentWarningDescDrugs": "Innehåller drogrelaterat innehåll",
+    "contentWarningDescAlcohol": "Innehåller alkoholrelaterat innehåll",
+    "contentWarningDescTobacco": "Innehåller tobaksrelaterat innehåll",
+    "contentWarningDescGambling": "Innehåller spelrelaterat innehåll",
+    "contentWarningDescProfanity": "Innehåller grovt språk",
+    "contentWarningDescFlashingLights": "Innehåller blinkande ljus (varning för ljuskänslighet)",
+    "contentWarningDescAiGenerated": "Det här innehållet genererades av AI",
+    "contentWarningDescSpoiler": "Innehåller spoilers",
+    "contentWarningDescContentWarning": "Kreatören markerade detta som känsligt",
+    "contentWarningDescDefault": "Kreatören flaggade det här innehållet",
+    "contentWarningDetailsTitle": "Innehållsvarningar",
+    "contentWarningDetailsSubtitle": "Kreatören applicerade dessa etiketter:",
+    "contentWarningManageFilters": "Hantera innehållsfilter",
+    "contentWarningViewAnyway": "Visa ändå",
+    "contentWarningHideAllLikeThis": "Dölj allt innehåll som det här",
+    "contentWarningNoFilterYet": "Inget sparat filter för den här varningen än.",
+    "contentWarningHiddenConfirmation": "Vi döljer inlägg som det här från och med nu.",
+    "videoErrorNotFound": "Videon hittades inte",
+    "videoErrorNetwork": "Nätverksfel",
+    "videoErrorTimeout": "Timeout vid inläsning",
+    "videoErrorFormat": "Fel i videoformat\n(Försök igen eller använd en annan webbläsare)",
+    "videoErrorUnsupportedFormat": "Videoformat stöds inte",
+    "videoErrorPlayback": "Fel vid videouppspelning",
+    "videoErrorAgeRestricted": "Åldersbegränsat innehåll",
+    "videoErrorVerifyAge": "Verifiera ålder",
+    "videoErrorRetry": "Försök igen",
+    "videoErrorContentRestricted": "Innehåll begränsat",
+    "videoErrorContentRestrictedBody": "Den här videon har begränsats av relen.",
+    "videoErrorVerifyAgeBody": "Verifiera din ålder för att se den här videon.",
+    "videoErrorSkip": "Hoppa över",
+    "videoErrorVerifyAgeButton": "Verifiera ålder",
+    "videoFollowButtonFollowing": "Följer",
+    "videoFollowButtonFollow": "Följ",
+    "audioAttributionOriginalSound": "Originalljud",
+    "videoInspiredByAttribution": "Inspirerad av @{creatorName}",
+    "@videoInspiredByAttribution": {
+        "placeholders": {
+            "creatorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoCollaboratorWithOne": "med @{name}",
+    "@videoCollaboratorWithOne": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoCollaboratorWithMore": "med @{name} +{count}",
+    "@videoCollaboratorWithMore": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "videoCollaboratorCountLabel": "{count, plural, one{1 samarbetspartner} other{{count} samarbetspartner}}. Tryck för att se profil.",
+    "@videoCollaboratorCountLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listAttributionFallback": "Lista",
+    "shareVideoLabel": "Dela video",
+    "sharePostSharedWith": "Inlägg delat med {recipientName}",
+    "@sharePostSharedWith": {
+        "placeholders": {
+            "recipientName": {
+                "type": "String"
+            }
+        }
+    },
+    "shareFailedToSend": "Kunde inte skicka video",
+    "shareAddedToBookmarks": "Tillagd i bokmärken",
+    "shareFailedToAddBookmark": "Kunde inte lägga till bokmärke",
+    "shareActionFailed": "Åtgärden misslyckades",
+    "shareWithTitle": "Dela med",
+    "shareFindPeople": "Hitta personer",
+    "shareFindPeopleMultiline": "Hitta\npersoner",
+    "shareSent": "Skickat",
+    "shareContactFallback": "Kontakt",
+    "shareUserFallback": "Användare",
+    "shareSendingTo": "Skickar till {name}",
+    "@shareSendingTo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMessageHint": "Lägg till valfritt meddelande...",
+    "videoActionUnlike": "Sluta gilla videon",
+    "videoActionLike": "Gilla videon",
+    "videoActionRemoveRepost": "Ta bort återpublicering",
+    "videoActionRepost": "Återpublicera video",
+    "videoActionViewComments": "Visa kommentarer",
+    "videoActionMoreOptions": "Fler alternativ",
+    "videoActionHideSubtitles": "Dölj undertexter",
+    "videoActionShowSubtitles": "Visa undertexter",
+    "videoDescriptionLoops": "{count} loopar",
+    "@videoDescriptionLoops": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "metadataBadgeNotDivine": "Inte Divine",
+    "metadataBadgeHumanMade": "Gjord av människa",
+    "metadataSoundsLabel": "Ljud",
+    "metadataOriginalSound": "Originalljud",
+    "metadataVerificationLabel": "Verifiering",
+    "metadataDeviceAttestation": "Enhetsattestering",
+    "metadataProofManifest": "Bevismanifest",
+    "metadataCreatorLabel": "Kreatör",
+    "metadataCollaboratorsLabel": "Samarbetspartner",
+    "metadataInspiredByLabel": "Inspirerad av",
+    "metadataRepostedByLabel": "Återpublicerad av",
+    "metadataLoopsLabel": "Loopar",
+    "metadataLikesLabel": "Gillamarkeringar",
+    "metadataCommentsLabel": "Kommentarer",
+    "metadataRepostsLabel": "Återpubliceringar",
+    "devOptionsTitle": "Utvecklaralternativ",
+    "@devOptionsTitle": {
+        "description": "Developer options screen app bar title"
+    },
+    "devOptionsPageLoadTimes": "Sidladdningstider",
+    "devOptionsNoPageLoads": "Inga sidladdningar registrerade än.\nNavigera i appen för att se tidsdata.",
+    "devOptionsPageLoadVisible": "Synlig: {visibleMs} ms  |  Data: {dataMs} ms",
+    "@devOptionsPageLoadVisible": {
+        "placeholders": {
+            "visibleMs": {
+                "type": "String"
+            },
+            "dataMs": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsSlowestScreens": "Långsammaste skärmarna",
+    "devOptionsVideoPlaybackFormat": "Videouppspelningsformat",
+    "devOptionsSwitchEnvironmentTitle": "Byta miljö?",
+    "devOptionsSwitchEnvironmentMessage": "Byta till {envName}?\n\nDetta rensar cachad videodata och åternsluter till den nya relen.",
+    "@devOptionsSwitchEnvironmentMessage": {
+        "placeholders": {
+            "envName": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsCancel": "Avbryt",
+    "devOptionsSwitch": "Byt",
+    "devOptionsSwitchedTo": "Bytte till {envName}",
+    "@devOptionsSwitchedTo": {
+        "placeholders": {
+            "envName": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsSwitchedFormat": "Bytte till {formatName} — cache rensad",
+    "@devOptionsSwitchedFormat": {
+        "placeholders": {
+            "formatName": {
+                "type": "String"
+            }
+        }
+    },
+    "featureFlagTitle": "Funktionsflaggor",
+    "@featureFlagTitle": {
+        "description": "Feature flags screen app bar title"
+    },
+    "featureFlagResetAllTooltip": "Återställ alla flaggor till standard",
+    "featureFlagResetToDefault": "Återställ till standard",
+    "featureFlagAppRecovery": "Appåterställning",
+    "featureFlagAppRecoveryDescription": "Om appen kraschar eller beter sig konstigt, testa att rensa cachen.",
+    "featureFlagClearAllCache": "Rensa all cache",
+    "featureFlagCacheInfo": "Cacheinfo",
+    "featureFlagClearCacheTitle": "Rensa all cache?",
+    "featureFlagClearCacheMessage": "Detta rensar all cachad data inklusive:\n• Aviseringar\n• Användarprofiler\n• Bokmärken\n• Temporära filer\n\nDu behöver logga in igen. Fortsätta?",
+    "featureFlagClearCache": "Rensa cache",
+    "featureFlagClearingCache": "Rensar cache...",
+    "featureFlagSuccess": "Klart",
+    "featureFlagError": "Fel",
+    "featureFlagClearCacheSuccess": "Cachen rensades. Starta om appen.",
+    "featureFlagClearCacheFailure": "Kunde inte rensa vissa cacheobjekt. Kolla loggarna för detaljer.",
+    "featureFlagOk": "OK",
+    "featureFlagCacheInformation": "Cacheinformation",
+    "featureFlagTotalCacheSize": "Total cachestorlek: {size}",
+    "@featureFlagTotalCacheSize": {
+        "placeholders": {
+            "size": {
+                "type": "String"
+            }
+        }
+    },
+    "featureFlagCacheIncludes": "Cachen innehåller:\n• Aviseringshistorik\n• Profildata\n• Videominiatyrer\n• Temporära filer\n• Databasindex",
+    "relaySettingsTitle": "Reler",
+    "@relaySettingsTitle": {
+        "description": "Relay settings screen app bar title"
+    },
+    "relaySettingsInfoTitle": "Divine är ett öppet system – du styr dina anslutningar",
+    "relaySettingsInfoDescription": "De här relerna distribuerar ditt innehåll över det decentraliserade Nostr-nätverket. Du kan lägga till eller ta bort reler som du vill.",
+    "relaySettingsLearnMoreNostr": "Läs mer om Nostr →",
+    "relaySettingsFindPublicRelays": "Hitta publika reler på nostr.co.uk →",
+    "relaySettingsAppNotFunctional": "Appen fungerar inte",
+    "relaySettingsRequiresRelay": "Divine kräver minst en rel för att ladda videor, publicera innehåll och synka data.",
+    "relaySettingsRestoreDefaultRelay": "Återställ standardrel",
+    "relaySettingsAddCustomRelay": "Lägg till egen rel",
+    "relaySettingsAddRelay": "Lägg till rel",
+    "relaySettingsRetry": "Försök igen",
+    "relaySettingsNoStats": "Ingen statistik tillgänglig än",
+    "relaySettingsConnection": "Anslutning",
+    "relaySettingsConnected": "Ansluten",
+    "relaySettingsDisconnected": "Frånkopplad",
+    "relaySettingsSessionDuration": "Sessionslängd",
+    "relaySettingsLastConnected": "Senast ansluten",
+    "relaySettingsDisconnectedLabel": "Frånkopplad",
+    "relaySettingsReason": "Anledning",
+    "relaySettingsActiveSubscriptions": "Aktiva prenumerationer",
+    "relaySettingsTotalSubscriptions": "Totala prenumerationer",
+    "relaySettingsEventsReceived": "Mottagna händelser",
+    "relaySettingsEventsSent": "Skickade händelser",
+    "relaySettingsRequestsThisSession": "Förfrågningar i den här sessionen",
+    "relaySettingsFailedRequests": "Misslyckade förfrågningar",
+    "relaySettingsLastError": "Senaste fel: {error}",
+    "@relaySettingsLastError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsLoadingRelayInfo": "Läser in relinfo...",
+    "relaySettingsAboutRelay": "Om relen",
+    "relaySettingsSupportedNips": "NIP:er som stöds",
+    "relaySettingsSoftware": "Mjukvara",
+    "relaySettingsViewWebsite": "Visa webbplats",
+    "relaySettingsRemoveRelayTitle": "Ta bort rel?",
+    "relaySettingsRemoveRelayMessage": "Är du säker på att du vill ta bort den här relen?\n\n{relayUrl}",
+    "@relaySettingsRemoveRelayMessage": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsCancel": "Avbryt",
+    "relaySettingsRemove": "Ta bort",
+    "relaySettingsRemovedRelay": "Rel borttagen: {relayUrl}",
+    "@relaySettingsRemovedRelay": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToRemoveRelay": "Kunde inte ta bort relen",
+    "relaySettingsForcingReconnection": "Tvingar återanslutning...",
+    "relaySettingsConnectedToRelays": "Ansluten till {count} rel(er)!",
+    "@relaySettingsConnectedToRelays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsFailedToConnectCheck": "Kunde inte ansluta till reler. Kolla din nätverksanslutning.",
+    "relaySettingsAddRelayTitle": "Lägg till rel",
+    "relaySettingsAddRelayPrompt": "Ange WebSocket-URL:en för relen du vill lägga till:",
+    "relaySettingsBrowsePublicRelays": "Bläddra bland publika reler på nostr.co.uk",
+    "relaySettingsAdd": "Lägg till",
+    "relaySettingsAddedRelay": "Rel tillagd: {relayUrl}",
+    "@relaySettingsAddedRelay": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToAddRelay": "Kunde inte lägga till relen. Kolla URL:en och försök igen.",
+    "relaySettingsInvalidUrl": "Rel-URL måste börja med wss:// eller ws://",
+    "relaySettingsRestoredDefault": "Återställde standardrel: {defaultRelay}",
+    "@relaySettingsRestoredDefault": {
+        "placeholders": {
+            "defaultRelay": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToRestoreDefault": "Kunde inte återställa standardrelen. Kolla din nätverksanslutning.",
+    "relaySettingsCouldNotOpenBrowser": "Kunde inte öppna webbläsaren",
+    "relaySettingsFailedToOpenLink": "Kunde inte öppna länken",
+    "relayDiagnosticTitle": "Reldiagnostik",
+    "@relayDiagnosticTitle": {
+        "description": "Relay diagnostics screen app bar title"
+    },
+    "relayDiagnosticRefreshTooltip": "Uppdatera diagnostik",
+    "relayDiagnosticLastRefresh": "Senaste uppdatering: {time}",
+    "@relayDiagnosticLastRefresh": {
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticRelayStatus": "Relstatus",
+    "relayDiagnosticInitialized": "Initierad",
+    "relayDiagnosticReady": "Redo",
+    "relayDiagnosticNotInitialized": "Inte initierad",
+    "relayDiagnosticDatabaseEvents": "Databashändelser",
+    "relayDiagnosticActiveSubscriptions": "Aktiva prenumerationer",
+    "relayDiagnosticExternalRelays": "Externa reler",
+    "relayDiagnosticConfigured": "Konfigurerad",
+    "relayDiagnosticRelayCount": "{count} rel(er)",
+    "@relayDiagnosticRelayCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticConnectedLabel": "Ansluten",
+    "relayDiagnosticConnectedRatio": "{connected}/{total}",
+    "@relayDiagnosticConnectedRatio": {
+        "placeholders": {
+            "connected": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticVideoEvents": "Videohändelser",
+    "relayDiagnosticHomeFeed": "Hemflöde",
+    "relayDiagnosticVideosCount": "{count} videor",
+    "@relayDiagnosticVideosCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticDiscovery": "Upptäck",
+    "relayDiagnosticLoading": "Laddar",
+    "relayDiagnosticYes": "Ja",
+    "relayDiagnosticNo": "Nej",
+    "relayDiagnosticTestDirectQuery": "Testa direktförfrågan",
+    "relayDiagnosticNetworkConnectivity": "Nätverksanslutning",
+    "relayDiagnosticRunNetworkTest": "Kör nätverkstest",
+    "relayDiagnosticBlossomServer": "Blossom-server",
+    "relayDiagnosticTestAllEndpoints": "Testa alla ändpunkter",
+    "relayDiagnosticStatus": "Status",
+    "relayDiagnosticUrl": "URL",
+    "relayDiagnosticError": "Fel",
+    "relayDiagnosticFunnelCakeApi": "FunnelCake-API",
+    "relayDiagnosticBaseUrl": "Bas-URL",
+    "relayDiagnosticSummary": "Sammanfattning",
+    "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} OK (snitt {avgMs} ms)",
+    "@relayDiagnosticEndpointSummary": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "totalCount": {
+                "type": "int"
+            },
+            "avgMs": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticRetestAll": "Testa allt igen",
+    "relayDiagnosticRetrying": "Försöker igen...",
+    "relayDiagnosticRetryConnection": "Försök ansluta igen",
+    "relayDiagnosticTroubleshooting": "Felsökning",
+    "relayDiagnosticTroubleshootingGuide": "• Grön status = Ansluten och fungerar\n• Röd status = Anslutningen misslyckades\n• Om nätverkstestet misslyckas, kolla internetanslutningen\n• Om reler är konfigurerade men inte anslutna, tryck på \"Försök ansluta igen\"\n• Ta en skärmdump av den här skärmen för felsökning",
+    "relayDiagnosticAllEndpointsHealthy": "Alla REST-ändpunkter är friska!",
+    "relayDiagnosticSomeEndpointsFailed": "Vissa REST-ändpunkter misslyckades – se detaljer ovan",
+    "relayDiagnosticFoundVideoEvents": "Hittade {count} videohändelser i databasen",
+    "@relayDiagnosticFoundVideoEvents": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticQueryFailed": "Förfrågan misslyckades: {error}",
+    "@relayDiagnosticQueryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticConnectedToRelays": "Ansluten till {count} rel(er)!",
+    "@relayDiagnosticConnectedToRelays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticFailedToConnect": "Kunde inte ansluta till några reler",
+    "relayDiagnosticConnectionRetryFailed": "Förnyat anslutningsförsök misslyckades: {error}",
+    "@relayDiagnosticConnectionRetryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticConnectedAuthenticated": "Ansluten och autentiserad",
+    "relayDiagnosticConnectedOnly": "Ansluten",
+    "relayDiagnosticNotConnected": "Inte ansluten",
+    "relayDiagnosticNoRelaysConfigured": "Inga reler konfigurerade",
+    "relayDiagnosticFailed": "Misslyckades",
+    "notificationSettingsTitle": "Aviseringar",
+    "@notificationSettingsTitle": {
+        "description": "Notification settings screen app bar title"
+    },
+    "notificationSettingsResetTooltip": "Återställ till standard",
+    "notificationSettingsTypes": "Aviseringstyper",
+    "notificationSettingsLikes": "Gillamarkeringar",
+    "notificationSettingsLikesSubtitle": "När någon gillar dina videor",
+    "notificationSettingsComments": "Kommentarer",
+    "notificationSettingsCommentsSubtitle": "När någon kommenterar dina videor",
+    "notificationSettingsFollows": "Följare",
+    "notificationSettingsFollowsSubtitle": "När någon följer dig",
+    "notificationSettingsMentions": "Omnämnanden",
+    "notificationSettingsMentionsSubtitle": "När du omnämns",
+    "notificationSettingsReposts": "Återpubliceringar",
+    "notificationSettingsRepostsSubtitle": "När någon återpublicerar dina videor",
+    "notificationSettingsSystem": "System",
+    "notificationSettingsSystemSubtitle": "Appuppdateringar och systemmeddelanden",
+    "notificationSettingsPushNotificationsSection": "Push-aviseringar",
+    "notificationSettingsPushNotifications": "Push-aviseringar",
+    "notificationSettingsPushNotificationsSubtitle": "Få aviseringar när appen är stängd",
+    "notificationSettingsSound": "Ljud",
+    "notificationSettingsSoundSubtitle": "Spela upp ljud för aviseringar",
+    "notificationSettingsVibration": "Vibration",
+    "notificationSettingsVibrationSubtitle": "Vibrera vid aviseringar",
+    "notificationSettingsActions": "Åtgärder",
+    "notificationSettingsMarkAllAsRead": "Markera alla som lästa",
+    "notificationSettingsMarkAllAsReadSubtitle": "Markera alla aviseringar som lästa",
+    "notificationSettingsAllMarkedAsRead": "Alla aviseringar markerade som lästa",
+    "notificationSettingsResetToDefaults": "Inställningar återställda till standard",
+    "notificationSettingsAbout": "Om aviseringar",
+    "notificationSettingsAboutDescription": "Aviseringar drivs av Nostr-protokollet. Realtidsuppdateringar beror på din anslutning till Nostr-reler. Vissa aviseringar kan vara fördröjda.",
+    "safetySettingsTitle": "Säkerhet och integritet",
+    "@safetySettingsTitle": {
+        "description": "Safety settings screen app bar title"
+    },
+    "safetySettingsLabel": "INSTÄLLNINGAR",
+    "safetySettingsShowDivineHostedOnly": "Visa endast Divine-hostade videor",
+    "safetySettingsShowDivineHostedOnlySubtitle": "Dölj videor som serveras från andra mediavärdar",
+    "safetySettingsModeration": "MODERERING",
+    "safetySettingsBlockedUsers": "BLOCKERADE ANVÄNDARE",
+    "safetySettingsAgeVerification": "ÅLDERSVERIFIERING",
+    "safetySettingsAgeConfirmation": "Jag bekräftar att jag är 18 år eller äldre",
+    "safetySettingsAgeRequired": "Krävs för att se vuxeninnehåll",
+    "safetySettingsDivine": "Divine",
+    "safetySettingsDivineSubtitle": "Officiell modereringstjänst (på som standard)",
+    "safetySettingsPeopleIFollow": "Personer jag följer",
+    "safetySettingsPeopleIFollowSubtitle": "Prenumerera på etiketter från personer du följer",
+    "safetySettingsAddCustomLabeler": "Lägg till egen etiketterare",
+    "safetySettingsAddCustomLabelerHint": "Ange npub...",
+    "safetySettingsAddCustomLabelerListTitle": "Lägg till egen etiketterare",
+    "safetySettingsAddCustomLabelerListSubtitle": "Ange npub-adress",
+    "safetySettingsNoBlockedUsers": "Inga blockerade användare",
+    "safetySettingsUnblock": "Avblockera",
+    "safetySettingsUserUnblocked": "Användare avblockerad",
+    "safetySettingsCancel": "Avbryt",
+    "safetySettingsAdd": "Lägg till",
+    "analyticsTitle": "Kreatörsstatistik",
+    "@analyticsTitle": {
+        "description": "Creator analytics screen app bar title"
+    },
+    "analyticsDiagnosticsTooltip": "Diagnostik",
+    "analyticsDiagnosticsSemanticLabel": "Växla diagnostik",
+    "analyticsRetry": "Försök igen",
+    "analyticsUnableToLoad": "Kunde inte läsa in statistik.",
+    "analyticsSignInRequired": "Logga in för att se kreatörsstatistik.",
+    "analyticsViewDataUnavailable": "Visningar är för tillfället inte tillgängliga från relen för de här inläggen. Gillamarkeringar/kommentarer/återpubliceringar är fortfarande exakta.",
+    "analyticsViewDataTitle": "Visningsdata",
+    "analyticsUpdatedTimestamp": "Uppdaterad {time} • Poäng använder gillamarkeringar, kommentarer, återpubliceringar och visningar/loopar från Funnelcake när tillgängliga.",
+    "@analyticsUpdatedTimestamp": {
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsVideos": "Videor",
+    "analyticsViews": "Visningar",
+    "analyticsInteractions": "Interaktioner",
+    "analyticsEngagement": "Engagemang",
+    "analyticsFollowers": "Följare",
+    "analyticsAvgPerPost": "Snitt/inlägg",
+    "analyticsInteractionMix": "Interaktionsmix",
+    "analyticsLikes": "Gillamarkeringar",
+    "analyticsComments": "Kommentarer",
+    "analyticsReposts": "Återpubliceringar",
+    "analyticsPerformanceHighlights": "Prestandahöjdpunkter",
+    "analyticsMostViewed": "Mest sedda",
+    "analyticsMostDiscussed": "Mest diskuterade",
+    "analyticsMostReposted": "Mest återpublicerade",
+    "analyticsNoVideosYet": "Inga videor än",
+    "analyticsViewDataUnavailableShort": "Visningsdata otillgänglig",
+    "analyticsViewsCount": "{count} visningar",
+    "@analyticsViewsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsCommentsCount": "{count} kommentarer",
+    "@analyticsCommentsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsRepostsCount": "{count} återpubliceringar",
+    "@analyticsRepostsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsTopContent": "Topp-innehåll",
+    "analyticsPublishPrompt": "Publicera några videor för att se rankningar.",
+    "analyticsEngagementRateExplainer": "Högersidig % = engagemangsgrad (interaktioner delat med visningar).",
+    "analyticsEngagementRateNoViews": "Engagemangsgrad kräver visningsdata; värden visas som N/A tills visningar finns tillgängliga.",
+    "analyticsEngagementLabel": "Engagemang",
+    "analyticsViewsUnavailable": "visningar otillgängliga",
+    "analyticsInteractionsCount": "{count} interaktioner",
+    "@analyticsInteractionsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsPostAnalytics": "Inläggsstatistik",
+    "analyticsOpenPost": "Öppna inlägg",
+    "analyticsRecentDailyInteractions": "Senaste dagliga interaktioner",
+    "analyticsNoActivityYet": "Ingen aktivitet i det här intervallet än.",
+    "analyticsDailyInteractionsExplainer": "Interaktioner = gillamarkeringar + kommentarer + återpubliceringar per publiceringsdatum.",
+    "analyticsDailyBarExplainer": "Stapellängden är relativ till din högsta dag i det här fönstret.",
+    "analyticsAudienceSnapshot": "Publikmomentbild",
+    "analyticsFollowersCount": "Följare: {count}",
+    "@analyticsFollowersCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsFollowingCount": "Följer: {count}",
+    "@analyticsFollowingCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsAudiencePlaceholder": "Publikkälla/geografi/tidsuppdelningar kommer att fyllas i när Funnelcake lägger till publikstatistikslutpunkter.",
+    "analyticsRetention": "Retention",
+    "analyticsRetentionWithViews": "Retentionskurva och visningstidsuppdelning visas när per-sekund/per-hink-retention kommer från Funnelcake.",
+    "analyticsRetentionWithoutViews": "Retentionsdata otillgänglig tills visnings- och tittartidsstatistik returneras av Funnelcake.",
+    "analyticsDiagnostics": "Diagnostik",
+    "analyticsDiagnosticsTotalVideos": "Totalt antal videor: {count}",
+    "@analyticsDiagnosticsTotalVideos": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsWithViews": "Med visningar: {count}",
+    "@analyticsDiagnosticsWithViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsMissingViews": "Saknar visningar: {count}",
+    "@analyticsDiagnosticsMissingViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsHydratedBulk": "Hydrerade (bulk): {count}",
+    "@analyticsDiagnosticsHydratedBulk": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsHydratedViews": "Hydrerade (/visningar): {count}",
+    "@analyticsDiagnosticsHydratedViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsSources": "Källor: {sources}",
+    "@analyticsDiagnosticsSources": {
+        "placeholders": {
+            "sources": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsDiagnosticsUseFixture": "Använd fixturedata",
+    "analyticsNa": "N/A",
+    "authCreateNewAccount": "Skapa ett nytt Divine-konto",
+    "authSignInDifferentAccount": "Logga in med ett annat konto",
+    "authSignBackIn": "Logga in igen",
+    "authTermsPrefix": "Genom att välja ett alternativ ovan bekräftar du att du är minst 16 år gammal och godkänner ",
+    "authTermsOfService": "Användarvillkor",
+    "authPrivacyPolicy": "Integritetspolicy",
+    "authTermsAnd": ", och ",
+    "authSafetyStandards": "Säkerhetsstandarder",
+    "authAmberNotInstalled": "Amber-appen är inte installerad",
+    "authAmberConnectionFailed": "Kunde inte ansluta med Amber",
+    "authPasswordResetSent": "Om ett konto finns med den e-postadressen har en länk för lösenordsåterställning skickats.",
+    "authSignInTitle": "Logga in",
+    "authEmailLabel": "E-post",
+    "authPasswordLabel": "Lösenord",
+    "authForgotPassword": "Glömt lösenord?",
+    "authImportNostrKey": "Importera Nostr-nyckel",
+    "authConnectSignerApp": "Anslut med en sign-app",
+    "authSignInWithAmber": "Logga in med Amber",
+    "authSignInOptionsTitle": "Inloggningsalternativ",
+    "authInfoEmailPasswordTitle": "E-post och lösenord",
+    "authInfoEmailPasswordDescription": "Logga in med ditt Divine-konto. Om du registrerade dig med e-post och lösenord, använd dem här.",
+    "authInfoImportNostrKeyDescription": "Har du redan en Nostr-identitet? Importera din nsec-privatnyckel från en annan klient.",
+    "authInfoSignerAppTitle": "Sign-app",
+    "authInfoSignerAppDescription": "Anslut med hjälp av en NIP-46-kompatibel fjärrsigner som nsecBunker för förbättrad nyckelsäkerhet.",
+    "authInfoAmberTitle": "Amber",
+    "authInfoAmberDescription": "Använd Amber-signappen på Android för att hantera dina Nostr-nycklar säkert.",
+    "authCreateAccountTitle": "Skapa konto",
+    "authBackToInviteCode": "Tillbaka till inbjudningskod",
+    "authUseDivineNoBackup": "Använd Divine utan backup",
+    "authSkipConfirmTitle": "En sista grej...",
+    "authSkipConfirmKeyCreated": "Du är inne! Vi skapar en säker nyckel som driver ditt Divine-konto.",
+    "authSkipConfirmKeyOnly": "Utan en e-post är din nyckel det enda sättet Divine vet att det här kontot är ditt.",
+    "authSkipConfirmRecommendEmail": "Du kan nå din nyckel i appen, men om du inte är särskilt teknisk rekommenderar vi att du lägger till en e-post och ett lösenord nu. Det gör det enklare att logga in och återställa ditt konto om du tappar eller återställer den här enheten.",
+    "authAddEmailPassword": "Lägg till e-post och lösenord",
+    "authUseThisDeviceOnly": "Använd bara den här enheten",
+    "authCompleteRegistration": "Slutför din registrering",
+    "authVerifying": "Verifierar...",
+    "authVerificationLinkSent": "Vi skickade en verifieringslänk till:",
+    "authClickVerificationLink": "Klicka på länken i din e-post för att\nslutföra din registrering.",
+    "authPleaseWaitVerifying": "Vänta medan vi verifierar din e-post...",
+    "authWaitingForVerification": "Väntar på verifiering",
+    "authOpenEmailApp": "Öppna e-postappen",
+    "authWelcomeToDivine": "Välkommen till Divine!",
+    "authEmailVerified": "Din e-post har verifierats.",
+    "authSigningYouIn": "Loggar in dig",
+    "authErrorTitle": "Oj då.",
+    "authVerificationFailed": "Vi misslyckades att verifiera din e-post.\nFörsök igen.",
+    "authStartOver": "Börja om",
+    "authEmailVerifiedLogin": "E-post verifierad! Logga in för att fortsätta.",
+    "authVerificationLinkExpired": "Den här verifieringslänken är inte längre giltig.",
+    "authVerificationConnectionError": "Kunde inte verifiera e-post. Kolla din anslutning och försök igen.",
+    "authWaitlistConfirmTitle": "Du är på listan!",
+    "authWaitlistUpdatesAt": "Vi delar uppdateringar på {email}.\nNär fler inbjudningskoder blir tillgängliga skickar vi dem till dig.",
+    "@authWaitlistUpdatesAt": {
+        "description": "Waitlist confirmation message with email",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authOk": "OK",
+    "authInviteUnavailable": "Inbjudningsåtkomst är tillfälligt otillgänglig.",
+    "authInviteUnavailableBody": "Försök igen om en stund eller kontakta supporten om du behöver hjälp att komma in.",
+    "authTryAgain": "Försök igen",
+    "authContactSupport": "Kontakta support",
+    "authCouldNotOpenEmail": "Kunde inte öppna {email}",
+    "@authCouldNotOpenEmail": {
+        "description": "Error when email client cannot be opened",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authAddInviteCode": "Lägg till din inbjudningskod",
+    "authInviteCodeLabel": "Inbjudningskod",
+    "authEnterYourCode": "Ange din kod",
+    "authNext": "Nästa",
+    "authJoinWaitlist": "Ansluta till väntelistan",
+    "authJoinWaitlistTitle": "Ansluta till väntelistan",
+    "authJoinWaitlistDescription": "Dela din e-post så skickar vi uppdateringar när åtkomst öppnas.",
+    "authInviteAccessHelp": "Hjälp med inbjudningsåtkomst",
+    "authGeneratingConnection": "Genererar anslutning...",
+    "authConnectedAuthenticating": "Ansluten! Autentiserar...",
+    "authConnectionTimedOut": "Anslutningen tog slut på tid",
+    "authApproveConnection": "Se till att du godkände anslutningen i din sign-app.",
+    "authConnectionCancelled": "Anslutning avbruten",
+    "authConnectionCancelledMessage": "Anslutningen avbröts.",
+    "authConnectionFailed": "Anslutning misslyckades",
+    "authUnknownError": "Ett okänt fel uppstod.",
+    "authUrlCopied": "URL kopierad till urklipp",
+    "authConnectToDivine": "Anslut till Divine",
+    "authPasteBunkerUrl": "Klistra in bunker://-URL",
+    "authBunkerUrlHint": "bunker://-URL",
+    "authInvalidBunkerUrl": "Ogiltig bunker-URL. Den ska börja med bunker://",
+    "authScanSignerApp": "Skanna med din\nsign-app för att ansluta.",
+    "authWaitingForConnection": "Väntar på anslutning... {seconds} s",
+    "@authWaitingForConnection": {
+        "description": "Waiting indicator with elapsed seconds",
+        "placeholders": {
+            "seconds": {
+                "type": "int"
+            }
+        }
+    },
+    "authCopyUrl": "Kopiera URL",
+    "authShare": "Dela",
+    "authAddBunker": "Lägg till bunker",
+    "authCompatibleSignerApps": "Kompatibla sign-appar",
+    "authFailedToConnect": "Kunde inte ansluta",
+    "authResetPasswordTitle": "Återställ lösenord",
+    "authResetPasswordSubtitle": "Ange ditt nya lösenord. Det måste vara minst 8 tecken långt.",
+    "authNewPasswordLabel": "Nytt lösenord",
+    "authPasswordTooShort": "Lösenordet måste vara minst 8 tecken",
+    "authPasswordResetSuccess": "Lösenordet återställdes. Logga in.",
+    "authPasswordResetFailed": "Lösenordsåterställning misslyckades",
+    "authUnexpectedError": "Ett oväntat fel uppstod. Försök igen.",
+    "authUpdatePassword": "Uppdatera lösenord",
+    "authSecureAccountTitle": "Säkra konto",
+    "authUnableToAccessKeys": "Kunde inte komma åt dina nycklar. Försök igen.",
+    "authRegistrationFailed": "Registrering misslyckades",
+    "authRegistrationComplete": "Registrering klar. Kolla din e-post.",
+    "authVerificationFailedTitle": "Verifiering misslyckades",
+    "authClose": "Stäng",
+    "authAccountSecured": "Konto säkrat!",
+    "authAccountLinkedToEmail": "Ditt konto är nu kopplat till din e-post.",
+    "authVerifyYourEmail": "Verifiera din e-post",
+    "authClickLinkContinue": "Klicka på länken i din e-post för att slutföra registreringen. Du kan fortsätta använda appen under tiden.",
+    "authWaitingForVerificationEllipsis": "Väntar på verifiering...",
+    "authContinueToApp": "Fortsätt till appen",
+    "authResetPassword": "Återställ lösenord",
+    "authResetPasswordDescription": "Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord.",
+    "authFailedToSendResetEmail": "Kunde inte skicka återställningsmejl.",
+    "authUnexpectedErrorShort": "Ett oväntat fel uppstod.",
+    "authSending": "Skickar...",
+    "authSendResetLink": "Skicka återställningslänk",
+    "authEmailSent": "E-post skickad!",
+    "authResetLinkSentTo": "Vi skickade en återställningslänk till {email}. Klicka på länken i din e-post för att uppdatera ditt lösenord.",
+    "@authResetLinkSentTo": {
+        "description": "Confirmation message after reset link sent",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authSignInButton": "Logga in",
+    "authVerificationErrorTimeout": "Verifieringen tog slut på tid. Försök registrera dig igen.",
+    "authVerificationErrorMissingCode": "Verifiering misslyckades – auktoriseringskod saknas.",
+    "authVerificationErrorPollFailed": "Verifiering misslyckades. Försök igen.",
+    "authVerificationErrorNetworkExchange": "Nätverksfel vid inloggning. Försök igen.",
+    "authVerificationErrorOAuthExchange": "Verifiering misslyckades. Försök registrera dig igen.",
+    "authVerificationErrorSignInFailed": "Inloggning misslyckades. Försök logga in manuellt.",
+    "authInviteErrorAlreadyUsed": "Den inbjudningskoden är inte längre tillgänglig. Gå tillbaka till din inbjudningskod, gå med i väntelistan eller kontakta supporten.",
+    "authInviteErrorInvalid": "Den inbjudningskoden kan inte användas just nu. Gå tillbaka till din inbjudningskod, gå med i väntelistan eller kontakta supporten.",
+    "authInviteErrorTemporary": "Vi kunde inte bekräfta din inbjudan just nu. Gå tillbaka till din inbjudningskod och försök igen, eller kontakta supporten.",
+    "authInviteErrorUnknown": "Vi kunde inte aktivera din inbjudan. Gå tillbaka till din inbjudningskod, gå med i väntelistan eller kontakta supporten.",
+    "shareSheetSave": "Spara",
+    "shareSheetSaveToGallery": "Spara i galleriet",
+    "shareSheetSaveWithWatermark": "Spara med vattenmärke",
+    "shareSheetSaveVideo": "Spara video",
+    "shareSheetAddToList": "Lägg till i lista",
+    "shareSheetCopy": "Kopiera",
+    "shareSheetShareVia": "Dela via",
+    "shareSheetReport": "Rapportera",
+    "shareSheetEventJson": "Händelse-JSON",
+    "shareSheetEventId": "Händelse-ID",
+    "shareSheetMoreActions": "Fler åtgärder",
+    "watermarkDownloadSavedToCameraRoll": "Sparad i kamerarullen",
+    "watermarkDownloadShare": "Dela",
+    "watermarkDownloadDone": "Klar",
+    "watermarkDownloadPhotosAccessNeeded": "Fotoåtkomst behövs",
+    "watermarkDownloadPhotosAccessDescription": "För att spara videor, tillåt fotoåtkomst i Inställningar.",
+    "watermarkDownloadOpenSettings": "Öppna inställningar",
+    "watermarkDownloadNotNow": "Inte nu",
+    "watermarkDownloadFailed": "Nedladdning misslyckades",
+    "watermarkDownloadDismiss": "Avfärda",
+    "watermarkDownloadStageDownloading": "Laddar ner video",
+    "watermarkDownloadStageWatermarking": "Lägger till vattenmärke",
+    "watermarkDownloadStageSaving": "Sparar i kamerarullen",
+    "watermarkDownloadStageDownloadingDesc": "Hämtar videon från nätverket...",
+    "watermarkDownloadStageWatermarkingDesc": "Lägger till Divine-vattenmärket...",
+    "watermarkDownloadStageSavingDesc": "Sparar den vattenmärkta videon i din kamerarulle...",
+    "uploadProgressVideoUpload": "Videouppladdning",
+    "uploadProgressPause": "Pausa",
+    "uploadProgressResume": "Återuppta",
+    "uploadProgressGoBack": "Gå tillbaka",
+    "uploadProgressRetryWithCount": "Försök igen ({count} kvar)",
+    "@uploadProgressRetryWithCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressDelete": "Ta bort",
+    "uploadProgressDaysAgo": "{count} d sedan",
+    "@uploadProgressDaysAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressHoursAgo": "{count} h sedan",
+    "@uploadProgressHoursAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressMinutesAgo": "{count} min sedan",
+    "@uploadProgressMinutesAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressJustNow": "Just nu",
+    "uploadProgressUploadingPercent": "Laddar upp {percent} %",
+    "@uploadProgressUploadingPercent": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressPausedPercent": "Pausad {percent} %",
+    "@uploadProgressPausedPercent": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationClose": "Stäng",
+    "badgeExplanationOriginalVineArchive": "Originalt Vine-arkiv",
+    "badgeExplanationCameraProof": "Kamerabevis",
+    "badgeExplanationAuthenticitySignals": "Äkthetssignaler",
+    "badgeExplanationVineArchiveIntro": "Den här videon är en originalvine som återhämtats från Internet Archive.",
+    "badgeExplanationVineArchiveHistory": "Innan Vine stängde 2017 arbetade ArchiveTeam och Internet Archive för att bevara miljontals vines för framtiden. Det här innehållet är en del av den historiska bevarandeinsatsen.",
+    "badgeExplanationOriginalStats": "Originalstatistik: {loops} loopar",
+    "@badgeExplanationOriginalStats": {
+        "placeholders": {
+            "loops": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationLearnVineArchive": "Läs mer om Vine-arkivets bevarande",
+    "badgeExplanationLearnProofmode": "Läs mer om Proofmode-verifiering",
+    "badgeExplanationLearnAuthenticity": "Läs mer om Divines äkthetssignaler",
+    "badgeExplanationInspectProofCheck": "Inspektera med ProofCheck-verktyget",
+    "badgeExplanationInspectMedia": "Inspektera mediadetaljer",
+    "badgeExplanationProofmodeVerified": "Den här videons äkthet är verifierad med Proofmode-teknik.",
+    "badgeExplanationDivineHostedHumanMade": "Den här videon hostas på Divine och AI-detektering indikerar att den troligen är mänskligt gjord, men den inkluderar inga kryptografiska kameraverifieringsdata.",
+    "badgeExplanationHumanMadeNoCrypto": "AI-detektering indikerar att den här videon troligen är mänskligt gjord, men den inkluderar inga kryptografiska kameraverifieringsdata.",
+    "badgeExplanationDivineHostedNoCrypto": "Den här videon hostas på Divine, men den inkluderar ännu inga kryptografiska kameraverifieringsdata.",
+    "badgeExplanationExternalNoCrypto": "Den här videon hostas utanför Divine och inkluderar inga kryptografiska kameraverifieringsdata.",
+    "badgeExplanationDeviceAttestation": "Enhetsattestering",
+    "badgeExplanationPgpSignature": "PGP-signatur",
+    "badgeExplanationC2paCredentials": "C2PA Content Credentials",
+    "badgeExplanationProofManifest": "Bevismanifest",
+    "badgeExplanationAiDetection": "AI-detektering",
+    "badgeExplanationAiNotScanned": "AI-skanning: Inte skannad än",
+    "badgeExplanationNoScanResults": "Inga skanningsresultat tillgängliga än.",
+    "badgeExplanationCheckAiGenerated": "Kontrollera om AI-genererad",
+    "badgeExplanationAiLikelihood": "{percentage} % sannolikhet att vara AI-genererad",
+    "@badgeExplanationAiLikelihood": {
+        "placeholders": {
+            "percentage": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationScannedBy": "Skannad av: {source}",
+    "@badgeExplanationScannedBy": {
+        "placeholders": {
+            "source": {
+                "type": "String"
+            }
+        }
+    },
+    "badgeExplanationVerifiedByModerator": "Verifierad av mänsklig moderator",
+    "badgeExplanationVerificationPlatinum": "Platina: Enhetens hårdvaruattestering, kryptografiska signaturer, Content Credentials (C2PA) och AI-skanning bekräftar mänskligt ursprung.",
+    "badgeExplanationVerificationGold": "Guld: Fotograferad på en riktig enhet med hårdvaruattestering, kryptografiska signaturer och Content Credentials (C2PA).",
+    "badgeExplanationVerificationSilver": "Silver: Kryptografiska signaturer bevisar att den här videon inte har ändrats sedan inspelningen.",
+    "badgeExplanationVerificationBronze": "Brons: Grundläggande metadatasignaturer finns.",
+    "badgeExplanationVerificationSilverAiScan": "Silver: AI-skanning bekräftar att den här videon troligen är människoskapad.",
+    "badgeExplanationNoVerification": "Ingen verifieringsdata tillgänglig för den här videon.",
+    "shareMenuTitle": "Dela video",
+    "shareMenuReportAiContent": "Rapportera AI-innehåll",
+    "shareMenuReportAiContentSubtitle": "Snabbrapportera misstänkt AI-genererat innehåll",
+    "shareMenuReportingAiContent": "Rapporterar AI-innehåll...",
+    "shareMenuFailedToReportContent": "Kunde inte rapportera innehåll: {error}",
+    "@shareMenuFailedToReportContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuFailedToReportAiContent": "Kunde inte rapportera AI-innehåll: {error}",
+    "@shareMenuFailedToReportAiContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuVideoStatus": "Videostatus",
+    "shareMenuViewAllLists": "Visa alla listor →",
+    "shareMenuShareWith": "Dela med",
+    "shareMenuShareViaOtherApps": "Dela via andra appar",
+    "shareMenuShareViaOtherAppsSubtitle": "Dela via andra appar eller kopiera länk",
+    "shareMenuSaveToGallery": "Spara i galleriet",
+    "shareMenuSaveOriginalSubtitle": "Spara originalvideon i kamerarullen",
+    "shareMenuSaveWithWatermark": "Spara med vattenmärke",
+    "shareMenuSaveVideo": "Spara video",
+    "shareMenuDownloadWithWatermark": "Ladda ner med Divine-vattenmärke",
+    "shareMenuSaveVideoSubtitle": "Spara videon i kamerarullen",
+    "shareMenuLists": "Listor",
+    "shareMenuAddToList": "Lägg till i lista",
+    "shareMenuAddToListSubtitle": "Lägg till i dina kuraterade listor",
+    "shareMenuCreateNewList": "Skapa ny lista",
+    "shareMenuCreateNewListSubtitle": "Starta en ny kuraterad samling",
+    "shareMenuRemovedFromList": "Borttagen från listan",
+    "shareMenuFailedToRemoveFromList": "Kunde inte ta bort från listan",
+    "shareMenuBookmarks": "Bokmärken",
+    "shareMenuAddToBookmarks": "Lägg till i bokmärken",
+    "shareMenuAddToBookmarksSubtitle": "Spara för senare visning",
+    "shareMenuAddToBookmarkSet": "Lägg till i bokmärkessamling",
+    "shareMenuAddToBookmarkSetSubtitle": "Organisera i samlingar",
+    "shareMenuFollowSets": "Följsamlingar",
+    "shareMenuCreateFollowSet": "Skapa följsamling",
+    "shareMenuCreateFollowSetSubtitle": "Starta en ny samling med den här kreatören",
+    "shareMenuAddToFollowSet": "Lägg till i följsamling",
+    "shareMenuFollowSetsAvailable": "{count} följsamlingar tillgängliga",
+    "@shareMenuFollowSetsAvailable": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuAddedToBookmarks": "Tillagd i bokmärken!",
+    "shareMenuFailedToAddBookmark": "Kunde inte lägga till bokmärke",
+    "shareMenuCreatedListAndAddedVideo": "Skapade listan \"{name}\" och la till videon",
+    "@shareMenuCreatedListAndAddedVideo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuManageContent": "Hantera innehåll",
+    "shareMenuEditVideo": "Redigera video",
+    "shareMenuEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
+    "shareMenuDeleteVideo": "Ta bort video",
+    "shareMenuDeleteVideoSubtitle": "Ta bort det här innehållet permanent",
+    "shareMenuVideoInTheseLists": "Videon finns i de här listorna:",
+    "shareMenuVideoCount": "{count} videor",
+    "@shareMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuClose": "Stäng",
+    "shareMenuDeleteConfirmation": "Är du säker på att du vill ta bort den här videon?",
+    "shareMenuDeleteWarning": "Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.",
+    "shareMenuCancel": "Avbryt",
+    "shareMenuDelete": "Ta bort",
+    "shareMenuDeletingContent": "Tar bort innehåll...",
+    "shareMenuDeleteRequestSent": "Borttagningsbegäran skickad",
+    "shareMenuFailedToDeleteContent": "Kunde inte ta bort innehåll: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuFollowSetName": "Namn på följsamling",
+    "shareMenuFollowSetNameHint": "t.ex. Kreatörer, Musiker osv.",
+    "shareMenuDescriptionOptional": "Beskrivning (valfritt)",
+    "shareMenuCreate": "Skapa",
+    "shareMenuCreatedFollowSetAndAddedCreator": "Skapade följsamlingen \"{name}\" och la till kreatören",
+    "@shareMenuCreatedFollowSetAndAddedCreator": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuDone": "Klar",
+    "shareMenuEditTitle": "Titel",
+    "shareMenuEditTitleHint": "Ange videotitel",
+    "shareMenuEditDescription": "Beskrivning",
+    "shareMenuEditDescriptionHint": "Ange videobeskrivning",
+    "shareMenuEditHashtags": "Hashtags",
+    "shareMenuEditHashtagsHint": "kommaseparerade, hashtags",
+    "shareMenuEditMetadataNote": "Obs: Endast metadata kan redigeras. Själva videoinnehållet kan inte ändras.",
+    "shareMenuDeleting": "Tar bort...",
+    "shareMenuUpdate": "Uppdatera",
+    "shareMenuVideoUpdated": "Videon uppdaterades",
+    "shareMenuFailedToUpdateVideo": "Kunde inte uppdatera videon: {error}",
+    "@shareMenuFailedToUpdateVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuDeleteVideoQuestion": "Ta bort video?",
+    "shareMenuDeleteRelayWarning": "Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.",
+    "shareMenuVideoDeletionRequested": "Videoborttagning begärd",
+    "shareMenuFailedToDeleteVideo": "Kunde inte ta bort videon: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuContentLabels": "Innehållsetiketter",
+    "shareMenuAddContentLabels": "Lägg till innehållsetiketter",
+    "shareMenuClearAll": "Rensa alla",
+    "shareMenuCollaborators": "Samarbetspartner",
+    "shareMenuAddCollaborator": "Lägg till samarbetspartner",
+    "shareMenuMutualFollowRequired": "Du och {name} måste följa varandra för att du ska kunna lägga till dem som samarbetspartner.",
+    "@shareMenuMutualFollowRequired": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuLoading": "Laddar...",
+    "shareMenuInspiredBy": "Inspirerad av",
+    "shareMenuAddInspirationCredit": "Lägg till inspirationskredit",
+    "shareMenuCreatorCannotBeReferenced": "Den här kreatören kan inte refereras.",
+    "shareMenuUnknown": "Okänd",
+    "shareMenuCreateBookmarkSet": "Skapa bokmärkessamling",
+    "shareMenuSetName": "Samlingsnamn",
+    "shareMenuSetNameHint": "t.ex. Favoriter, Titta senare osv.",
+    "shareMenuCreateNewSet": "Skapa ny samling",
+    "shareMenuStartNewBookmarkCollection": "Starta en ny bokmärkessamling",
+    "shareMenuNoBookmarkSets": "Inga bokmärkessamlingar än. Skapa din första!",
+    "shareMenuError": "Fel",
+    "shareMenuFailedToLoadBookmarkSets": "Kunde inte läsa in bokmärkessamlingar",
+    "shareMenuCreatedSetAndAddedVideo": "Skapade \"{name}\" och la till videon",
+    "@shareMenuCreatedSetAndAddedVideo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuUseThisSound": "Använd det här ljudet",
+    "shareMenuOriginalSound": "Originalljud",
+    "authSessionExpired": "Din session har löpt ut. Logga in igen.",
+    "authSignInFailed": "Kunde inte logga in. Försök igen.",
+    "localeAppLanguage": "Appspråk",
+    "localeDeviceDefault": "Enhetens standard",
+    "localeSelectLanguage": "Välj språk",
+    "webAuthNotSupportedSecureMode": "Webbautentisering stöds inte i säkert läge. Använd mobilappen för säker nyckelhantering.",
+    "webAuthIntegrationFailed": "Autentiseringsintegrering misslyckades: {error}",
+    "@webAuthIntegrationFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "webAuthUnexpectedError": "Oväntat fel: {error}",
+    "@webAuthUnexpectedError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "webAuthEnterBunkerUri": "Ange en bunker-URI",
+    "webAuthConnectTitle": "Anslut till Divine",
+    "webAuthChooseMethod": "Välj din föredragna Nostr-autentiseringsmetod",
+    "webAuthBrowserExtension": "Webbläsartillägg",
+    "webAuthRecommended": "REKOMMENDERAS",
+    "webAuthNsecBunker": "nsec bunker",
+    "webAuthConnectRemoteSigner": "Anslut till en fjärrsigner",
+    "webAuthBunkerHint": "bunker://pubkey?relay=wss://...",
+    "webAuthPasteFromClipboard": "Klistra in från urklipp",
+    "webAuthConnectToBunker": "Anslut till bunker",
+    "webAuthNewToNostr": "Ny på Nostr?",
+    "webAuthNostrHelp": "Installera ett webbläsartillägg som Alby eller nos2x för enklaste upplevelsen, eller använd nsec bunker för säker fjärrsignering.",
+    "soundsTitle": "Ljud",
+    "soundsSearchHint": "Sök ljud...",
+    "soundsPreviewUnavailable": "Kan inte förhandsvisa ljud – inget ljud tillgängligt",
+    "soundsPreviewFailed": "Kunde inte spela förhandsvisning: {error}",
+    "@soundsPreviewFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "soundsFeaturedSounds": "Utvalda ljud",
+    "soundsTrendingSounds": "Trendiga ljud",
+    "soundsAllSounds": "Alla ljud",
+    "soundsSearchResults": "Sökresultat",
+    "soundsNoSoundsAvailable": "Inga ljud tillgängliga",
+    "soundsNoSoundsDescription": "Ljud visas här när kreatörer delar ljud",
+    "soundsNoSoundsFound": "Inga ljud hittades",
+    "soundsNoSoundsFoundDescription": "Testa en annan sökterm",
+    "soundsFailedToLoad": "Kunde inte läsa in ljud",
+    "soundsRetry": "Försök igen",
+    "soundsScreenLabel": "Ljudskärm",
+    "profileTitle": "Profil",
+    "profileRefresh": "Uppdatera",
+    "profileRefreshLabel": "Uppdatera profil",
+    "profileMoreOptions": "Fler alternativ",
+    "profileBlockedUser": "Blockerade {name}",
+    "@profileBlockedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockedUser": "Avblockerade {name}",
+    "@profileUnblockedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnfollowedUser": "Slutade följa {name}",
+    "@profileUnfollowedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileError": "Fel: {error}",
+    "@profileError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsTabAll": "Alla",
+    "notificationsTabLikes": "Gillamarkeringar",
+    "notificationsTabComments": "Kommentarer",
+    "notificationsTabFollows": "Följare",
+    "notificationsTabReposts": "Återpubliceringar",
+    "notificationsFailedToLoad": "Kunde inte läsa in aviseringar",
+    "notificationsRetry": "Försök igen",
+    "notificationsCheckingNew": "kollar efter nya aviseringar",
+    "notificationsNoneYet": "Inga aviseringar än",
+    "notificationsNoneForType": "Inga {type}-aviseringar",
+    "@notificationsNoneForType": {
+        "placeholders": {
+            "type": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsEmptyDescription": "När folk interagerar med ditt innehåll ser du det här",
+    "notificationsLoadingType": "Läser in {type}-aviseringar...",
+    "@notificationsLoadingType": {
+        "placeholders": {
+            "type": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsInviteSingular": "Du har 1 inbjudan att dela med en vän!",
+    "notificationsInvitePlural": "Du har {count} inbjudningar att dela med vänner!",
+    "@notificationsInvitePlural": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "notificationsVideoNotFound": "Videon hittades inte",
+    "notificationsVideoUnavailable": "Videon är otillgänglig",
+    "notificationsFromNotification": "Från avisering",
+    "feedFailedToLoadVideos": "Kunde inte läsa in videor",
+    "feedRetry": "Försök igen",
+    "feedNoFollowedUsers": "Inga följda användare.\nFölj någon för att se deras videor här.",
+    "feedNoVideosForMode": "Inga videor hittades för flödet {mode}.",
+    "@feedNoVideosForMode": {
+        "placeholders": {
+            "mode": {
+                "type": "String"
+            }
+        }
+    },
+    "feedExploreVideos": "Upptäck videor",
+    "feedExternalVideoSlow": "Extern video laddar långsamt",
+    "feedSkip": "Hoppa över",
+    "uploadWaitingToUpload": "Väntar på att laddas upp",
+    "uploadUploadingVideo": "Laddar upp video",
+    "uploadProcessingVideo": "Bearbetar video",
+    "uploadProcessingComplete": "Bearbetning klar",
+    "uploadPublishedSuccessfully": "Publicerad",
+    "uploadFailed": "Uppladdning misslyckades",
+    "uploadRetrying": "Försöker ladda upp igen",
+    "uploadPaused": "Uppladdning pausad",
+    "uploadPercentComplete": "{percent} % klart",
+    "@uploadPercentComplete": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadQueuedMessage": "Din video är i kö för uppladdning",
+    "uploadUploadingMessage": "Laddar upp till servern...",
+    "uploadProcessingMessage": "Bearbetar video – det här kan ta några minuter",
+    "uploadReadyToPublishMessage": "Videon bearbetades och är redo att publiceras",
+    "uploadPublishedMessage": "Videon publicerad till din profil",
+    "uploadFailedMessage": "Uppladdning misslyckades – försök igen",
+    "uploadRetryingMessage": "Försöker ladda upp igen...",
+    "uploadPausedMessage": "Uppladdning pausad av användaren",
+    "uploadRetryButton": "FÖRSÖK IGEN",
+    "uploadRetryFailed": "Kunde inte försöka ladda upp igen: {error}",
+    "@uploadRetryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "userSearchPrompt": "Sök efter användare",
+    "userSearchNoResults": "Inga användare hittades",
+    "userSearchFailed": "Sökning misslyckades",
+    "forgotPasswordTitle": "Återställ lösenord",
+    "forgotPasswordDescription": "Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord.",
+    "forgotPasswordEmailLabel": "E-postadress",
+    "forgotPasswordCancel": "Avbryt",
+    "forgotPasswordSendLink": "E-posta återställningslänk",
+    "ageVerificationContentWarning": "Innehållsvarning",
+    "ageVerificationTitle": "Åldersverifiering",
+    "ageVerificationAdultDescription": "Det här innehållet har flaggats som potentiellt innehållande vuxenmaterial. Du måste vara 18 eller äldre för att se det.",
+    "ageVerificationCreationDescription": "För att använda kameran och skapa innehåll måste du vara minst 16 år gammal.",
+    "ageVerificationAdultQuestion": "Är du 18 år eller äldre?",
+    "ageVerificationCreationQuestion": "Är du 16 år eller äldre?",
+    "ageVerificationNo": "Nej",
+    "ageVerificationYes": "Ja",
+    "shareLinkCopied": "Länk kopierad till urklipp",
+    "shareFailedToCopy": "Kunde inte kopiera länken",
+    "shareVideoSubject": "Kolla in den här videon på Divine",
+    "shareFailedToShare": "Kunde inte dela",
+    "shareVideoTitle": "Dela video",
+    "shareToApps": "Dela till appar",
+    "shareToAppsSubtitle": "Dela via meddelanden, sociala appar",
+    "shareCopyWebLink": "Kopiera webblänk",
+    "shareCopyWebLinkSubtitle": "Kopiera delbar webblänk",
+    "shareCopyNostrLink": "Kopiera Nostr-länk",
+    "shareCopyNostrLinkSubtitle": "Kopiera nevent-länk för Nostr-klienter",
+    "navHome": "Hem",
+    "navExplore": "Upptäck",
+    "navInbox": "Inkorg",
+    "navProfile": "Profil",
+    "navMyProfile": "Min profil",
+    "navSearch": "Sök",
+    "navNotifications": "Aviseringar",
+    "navSearchTooltip": "Sök",
+    "navOpenCamera": "Öppna kamera",
+    "navUnknown": "Okänd",
+    "navExploreClassics": "Klassiker",
+    "navExploreNewVideos": "Nya videor",
+    "navExploreTrending": "Trendar",
+    "navExploreForYou": "För dig",
+    "navExploreLists": "Listor",
+    "routeErrorTitle": "Fel",
+    "routeInvalidHashtag": "Ogiltig hashtag",
+    "routeInvalidConversationId": "Ogiltigt konversations-ID",
+    "routeInvalidRequestId": "Ogiltigt förfrågans-ID",
+    "routeInvalidListId": "Ogiltigt list-ID",
+    "routeInvalidUserId": "Ogiltigt användar-ID",
+    "routeInvalidVideoId": "Ogiltigt video-ID",
+    "routeInvalidSoundId": "Ogiltigt ljud-ID",
+    "routeInvalidCategory": "Ogiltig kategori",
+    "routeNoVideosToDisplay": "Inga videor att visa",
+    "routeInvalidProfileId": "Ogiltigt profil-ID",
+    "routeDefaultListName": "Lista",
+    "supportTitle": "Supportcenter",
+    "supportContactSupport": "Kontakta support",
+    "supportContactSupportSubtitle": "Starta en konversation eller visa tidigare meddelanden",
+    "supportReportBug": "Rapportera en bugg",
+    "supportReportBugSubtitle": "Tekniska problem med appen",
+    "supportRequestFeature": "Begär en funktion",
+    "supportRequestFeatureSubtitle": "Föreslå en förbättring eller ny funktion",
+    "supportSaveLogs": "Spara loggar",
+    "supportSaveLogsSubtitle": "Exportera loggar till fil för manuell sändning",
+    "supportFaq": "FAQ",
+    "supportFaqSubtitle": "Vanliga frågor och svar",
+    "supportProofMode": "ProofMode",
+    "supportProofModeSubtitle": "Läs om verifiering och äkthet",
+    "supportLoginRequired": "Logga in för att kontakta supporten",
+    "supportExportingLogs": "Exporterar loggar...",
+    "supportExportLogsFailed": "Kunde inte exportera loggar",
+    "supportChatNotAvailable": "Supportchatten är inte tillgänglig",
+    "supportCouldNotOpenMessages": "Kunde inte öppna supportmeddelanden",
+    "supportCouldNotOpenPage": "Kunde inte öppna {pageName}",
+    "@supportCouldNotOpenPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            }
+        }
+    },
+    "supportErrorOpeningPage": "Fel vid öppning av {pageName}: {error}",
+    "@supportErrorOpeningPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            },
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "reportTitle": "Rapportera innehåll",
+    "reportWhyReporting": "Varför rapporterar du det här innehållet?",
+    "reportPolicyNotice": "Divine agerar på innehållsrapporter inom 24 timmar genom att ta bort innehållet och stänga av användaren som tillhandahöll det felaktiga innehållet.",
+    "reportAdditionalDetails": "Ytterligare detaljer (valfritt)",
+    "reportBlockUser": "Blockera den här användaren",
+    "reportCancel": "Avbryt",
+    "reportSubmit": "Rapportera",
+    "reportSelectReason": "Välj en anledning för att rapportera det här innehållet",
+    "reportReasonSpam": "Skräppost eller ovälkommet innehåll",
+    "reportReasonHarassment": "Trakasserier, mobbning eller hot",
+    "reportReasonViolence": "Våldsamt eller extremistiskt innehåll",
+    "reportReasonSexualContent": "Sexuellt eller vuxeninnehåll",
+    "reportReasonCopyright": "Upphovsrättsbrott",
+    "reportReasonFalseInfo": "Felaktig information",
+    "reportReasonCsam": "Brott mot barns säkerhet",
+    "reportReasonAiGenerated": "AI-genererat innehåll",
+    "reportReasonOther": "Annat policybrott",
+    "reportFailed": "Kunde inte rapportera innehåll: {error}",
+    "@reportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "reportReceivedTitle": "Rapport mottagen",
+    "reportReceivedThankYou": "Tack för att du hjälper till att hålla Divine säkert.",
+    "reportReceivedReviewNotice": "Vårt team granskar din rapport och vidtar lämpliga åtgärder. Du kan få uppdateringar via direktmeddelande.",
+    "reportLearnMore": "Läs mer",
+    "reportSafetyUrl": "divine.video/safety",
+    "reportClose": "Stäng",
+    "listAddToList": "Lägg till i lista",
+    "listVideoCount": "{count} videor",
+    "@listVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listNewList": "Ny lista",
+    "listDone": "Klar",
+    "listErrorLoading": "Fel vid inläsning av listor",
+    "listRemovedFrom": "Borttagen från {name}",
+    "@listRemovedFrom": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listAddedTo": "Tillagd i {name}",
+    "@listAddedTo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listCreateNewList": "Skapa ny lista",
+    "listNameLabel": "Listnamn",
+    "listDescriptionLabel": "Beskrivning (valfritt)",
+    "listPublicList": "Publik lista",
+    "listPublicListSubtitle": "Andra kan följa och se den här listan",
+    "listCancel": "Avbryt",
+    "listCreate": "Skapa",
+    "listCreateFailed": "Kunde inte skapa listan",
+    "keyManagementTitle": "Nostr-nycklar",
+    "keyManagementWhatAreKeys": "Vad är Nostr-nycklar?",
+    "keyManagementExplanation": "Din Nostr-identitet är ett kryptografiskt nyckelpar:\n\n• Din publika nyckel (npub) är som ditt användarnamn – dela den fritt\n• Din privata nyckel (nsec) är som ditt lösenord – håll den hemlig!\n\nDin nsec låter dig nå ditt konto i vilken Nostr-app som helst.",
+    "keyManagementImportTitle": "Importera befintlig nyckel",
+    "keyManagementImportSubtitle": "Har du redan ett Nostr-konto? Klistra in din privata nyckel (nsec) för att nå det här.",
+    "keyManagementImportButton": "Importera nyckel",
+    "keyManagementImportWarning": "Detta ersätter din nuvarande nyckel!",
+    "keyManagementBackupTitle": "Säkerhetskopiera din nyckel",
+    "keyManagementBackupSubtitle": "Spara din privata nyckel (nsec) för att använda ditt konto i andra Nostr-appar.",
+    "keyManagementCopyNsec": "Kopiera min privata nyckel (nsec)",
+    "keyManagementNeverShare": "Dela aldrig din nsec med någon!",
+    "keyManagementPasteKey": "Klistra in din privata nyckel",
+    "keyManagementInvalidFormat": "Ogiltigt nyckelformat. Måste börja med \"nsec1\"",
+    "keyManagementConfirmImportTitle": "Importera den här nyckeln?",
+    "keyManagementConfirmImportBody": "Detta ersätter din nuvarande identitet med den importerade.\n\nDin nuvarande nyckel går förlorad om du inte säkerhetskopierade den först.",
+    "keyManagementImportConfirm": "Importera",
+    "keyManagementImportSuccess": "Nyckeln importerades!",
+    "keyManagementImportFailed": "Kunde inte importera nyckeln: {error}",
+    "@keyManagementImportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "keyManagementExportSuccess": "Privat nyckel kopierad till urklipp!\n\nFörvara den på ett säkert ställe.",
+    "keyManagementExportFailed": "Kunde inte exportera nyckeln: {error}",
+    "@keyManagementExportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "saveOriginalSavedToCameraRoll": "Sparad i kamerarullen",
+    "saveOriginalShare": "Dela",
+    "saveOriginalDone": "Klar",
+    "saveOriginalPhotosAccessNeeded": "Fotoåtkomst behövs",
+    "saveOriginalPhotosAccessMessage": "För att spara videor, tillåt fotoåtkomst i Inställningar.",
+    "saveOriginalOpenSettings": "Öppna inställningar",
+    "saveOriginalNotNow": "Inte nu",
+    "saveOriginalDownloadFailed": "Nedladdning misslyckades",
+    "saveOriginalDismiss": "Avfärda",
+    "saveOriginalDownloadingVideo": "Laddar ner video",
+    "saveOriginalSavingToCameraRoll": "Sparar i kamerarullen",
+    "saveOriginalFetchingVideo": "Hämtar videon från nätverket...",
+    "saveOriginalSavingVideo": "Sparar originalvideon i din kamerarulle...",
+    "soundTitle": "Ljud",
+    "soundOriginalSound": "Originalljud",
+    "soundVideosUsingThisSound": "Videor som använder det här ljudet",
+    "soundSourceVideo": "Källvideo",
+    "soundNoVideosYet": "Inga videor än",
+    "soundBeFirstToUse": "Var först med att använda det här ljudet!",
+    "soundFailedToLoadVideos": "Kunde inte läsa in videor",
+    "soundRetry": "Försök igen",
+    "soundVideosUnavailable": "Videor otillgängliga",
+    "soundCouldNotLoadDetails": "Kunde inte läsa in videodetaljer",
+    "soundPreview": "Förhandsvisning",
+    "soundStop": "Stoppa",
+    "soundUseSound": "Använd ljud",
+    "soundNoVideoCount": "Inga videor än",
+    "soundOneVideo": "1 video",
+    "soundVideoCount": "{count} videor",
+    "@soundVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "soundUnableToPreview": "Kan inte förhandsvisa ljud – inget ljud tillgängligt",
+    "soundPreviewFailed": "Kunde inte spela förhandsvisning: {error}",
+    "@soundPreviewFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "soundViewSource": "Visa källa",
+    "soundCloseTooltip": "Stäng",
+    "exploreNotExploreRoute": "Inte en upptäcktsrutt",
+    "legalTitle": "Juridik",
+    "legalTermsOfService": "Användarvillkor",
+    "legalTermsOfServiceSubtitle": "Användningsvillkor",
+    "legalPrivacyPolicy": "Integritetspolicy",
+    "legalPrivacyPolicySubtitle": "Hur vi hanterar dina data",
+    "legalSafetyStandards": "Säkerhetsstandarder",
+    "legalSafetyStandardsSubtitle": "Communityriktlinjer och säkerhet",
+    "legalDmca": "DMCA",
+    "legalDmcaSubtitle": "Upphovsrätt och borttagningspolicy",
+    "legalOpenSourceLicenses": "Öppen källkod-licenser",
+    "legalOpenSourceLicensesSubtitle": "Tillskrivningar till tredjepartspaket",
+    "legalAppName": "Divine",
+    "legalCouldNotOpenPage": "Kunde inte öppna {pageName}",
+    "@legalCouldNotOpenPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            }
+        }
+    },
+    "legalErrorOpeningPage": "Fel vid öppning av {pageName}: {error}",
+    "@legalErrorOpeningPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            },
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "categoryAction": "Action",
+    "categoryAdventure": "Äventyr",
+    "categoryAnimals": "Djur",
+    "categoryAnimation": "Animation",
+    "categoryArchitecture": "Arkitektur",
+    "categoryArt": "Konst",
+    "categoryAutomotive": "Bilar",
+    "categoryAwardShow": "Prisutdelning",
+    "categoryAwards": "Priser",
+    "categoryBaseball": "Baseball",
+    "categoryBasketball": "Basket",
+    "categoryBeauty": "Skönhet",
+    "categoryBeverage": "Dryck",
+    "categoryCars": "Bilar",
+    "categoryCelebration": "Firande",
+    "categoryCelebrities": "Kändisar",
+    "categoryCelebrity": "Kändis",
+    "categoryCityscape": "Stadsbild",
+    "categoryComedy": "Komedi",
+    "categoryConcert": "Konsert",
+    "categoryCooking": "Matlagning",
+    "categoryCostume": "Kostym",
+    "categoryCrafts": "Hantverk",
+    "categoryCrime": "Brott",
+    "categoryCulture": "Kultur",
+    "categoryDance": "Dans",
+    "categoryDiy": "Gör det själv",
+    "categoryDrama": "Drama",
+    "categoryEducation": "Utbildning",
+    "categoryEmotional": "Känslosam",
+    "categoryEmotions": "Känslor",
+    "categoryEntertainment": "Underhållning",
+    "categoryEvent": "Event",
+    "categoryFamily": "Familj",
+    "categoryFans": "Fans",
+    "categoryFantasy": "Fantasy",
+    "categoryFashion": "Mode",
+    "categoryFestival": "Festival",
+    "categoryFilm": "Film",
+    "categoryFitness": "Träning",
+    "categoryFood": "Mat",
+    "categoryFootball": "Amerikansk fotboll",
+    "categoryFurniture": "Möbler",
+    "categoryGaming": "Gaming",
+    "categoryGolf": "Golf",
+    "categoryGrooming": "Skötsel",
+    "categoryGuitar": "Gitarr",
+    "categoryHalloween": "Halloween",
+    "categoryHealth": "Hälsa",
+    "categoryHockey": "Hockey",
+    "categoryHoliday": "Semester",
+    "categoryHome": "Hem",
+    "categoryHomeImprovement": "Renovering",
+    "categoryHorror": "Skräck",
+    "categoryHospital": "Sjukhus",
+    "categoryHumor": "Humor",
+    "categoryInteriorDesign": "Inredning",
+    "categoryInterview": "Intervju",
+    "categoryKids": "Barn",
+    "categoryLifestyle": "Livsstil",
+    "categoryMagic": "Magi",
+    "categoryMakeup": "Smink",
+    "categoryMedical": "Medicin",
+    "categoryMusic": "Musik",
+    "categoryMystery": "Mysterium",
+    "categoryNature": "Natur",
+    "categoryNews": "Nyheter",
+    "categoryOutdoor": "Utomhus",
+    "categoryParty": "Fest",
+    "categoryPeople": "Människor",
+    "categoryPerformance": "Uppträdande",
+    "categoryPets": "Husdjur",
+    "categoryPolitics": "Politik",
+    "categoryPrank": "Skämt",
+    "categoryPranks": "Skämt",
+    "categoryRealityShow": "Reality-show",
+    "categoryRelationship": "Relation",
+    "categoryRelationships": "Relationer",
+    "categoryRomance": "Romantik",
+    "categorySchool": "Skola",
+    "categoryScienceFiction": "Science fiction",
+    "categorySelfie": "Selfie",
+    "categoryShopping": "Shopping",
+    "categorySkateboarding": "Skateboard",
+    "categorySkincare": "Hudvård",
+    "categorySoccer": "Fotboll",
+    "categorySocialGathering": "Sammankomst",
+    "categorySocialMedia": "Sociala medier",
+    "categorySports": "Sport",
+    "categoryTalkShow": "Talkshow",
+    "categoryTech": "Tech",
+    "categoryTechnology": "Teknologi",
+    "categoryTelevision": "TV",
+    "categoryToys": "Leksaker",
+    "categoryTransportation": "Transport",
+    "categoryTravel": "Resor",
+    "categoryUrban": "Urbant",
+    "categoryViolence": "Våld",
+    "categoryVlog": "Vlogg",
+    "categoryVlogging": "Vloggning",
+    "categoryWrestling": "Brottning",
+    "blossomFailedToSaveSettings": "Kunde inte spara inställningarna: {error}",
+    "@blossomFailedToSaveSettings": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "blueskyFailedToUpdateCrosspost": "Kunde inte uppdatera crosspost-inställningen",
+    "cameraAgeRestriction": "Du måste vara 16 år eller äldre för att skapa innehåll",
+    "categoriesCouldNotLoadCategories": "Kunde inte ladda kategorier",
+    "categoryGalleryCouldNotLoadVideos": "Kunde inte ladda videor",
+    "classicVinersTitle": "OG Viners",
+    "commonCancel": "Avbryt",
+    "commonDelete": "Radera",
+    "commonRetry": "Försök igen",
+    "discoverListsFailedToUpdateSubscription": "Kunde inte uppdatera prenumerationen: {error}",
+    "@discoverListsFailedToUpdateSubscription": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreVideoCounter": "Video {current}/{total}",
+    "@exploreVideoCounter": {
+        "placeholders": {
+            "current": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "exploreVideoId": "ID: {id}",
+    "@exploreVideoId": {
+        "placeholders": {
+            "id": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreVideoTitle": "Titel: {title}",
+    "@exploreVideoTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestCancel": "Avbryt",
+    "followersFailedToLoadList": "Kunde inte ladda följarlistan",
+    "followingFailedToLoadList": "Kunde inte ladda följer-listan",
+    "inboxBlockedUser": "{displayName} blockerad",
+    "@inboxBlockedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemovedConversation": "Konversation borttagen",
+    "inboxReportedUser": "{displayName} rapporterad",
+    "@inboxReportedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxUnblockedUser": "{displayName} avblockerad",
+    "@inboxUnblockedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesTitle": "Bjud in vänner",
+    "keyImportError": "Fel: {error}",
+    "@keyImportError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteConfirm": "Radera",
+    "notificationFollowBack": "Följ tillbaka",
+    "profileSetupUploadSuccess": "Profilbilden laddades upp!",
+    "proofmodeCheckAiGenerated": "Kontrollera om AI-genererat",
+    "reportDialogCancel": "Avbryt",
+    "reportDialogReport": "Rapportera",
+    "routerInvalidCreator": "Ogiltig skapare",
+    "routerInvalidHashtagRoute": "Ogiltig hashtagrutt",
+    "searchFindCuratedVideoLists": "Hitta kurerade videolistor",
+    "searchForLists": "Sök efter listor",
+    "searchSomethingWentWrong": "Något gick fel",
+    "searchTryAgain": "Försök igen",
+    "trendingTitle": "Trendande",
+    "videoEditorLayers": "Lager",
+    "videoEditorStickers": "Klistermärken",
+    "videoMetadataContentWarnings": "Innehållsvarningar",
+    "videoMetadataExpiration": "Utgångsdatum",
+    "videoMetadataTags": "Taggar",
+    "contentLabelAiGenerated": "AI-genererat",
+    "contentLabelAlcohol": "Alkohol",
+    "contentLabelDeepfake": "Deepfake",
+    "contentLabelDrugUse": "Droganvändning",
+    "contentLabelFlashingLights": "Blinkande ljus",
+    "contentLabelGambling": "Spelande",
+    "contentLabelGraphicMedia": "Grafiskt innehåll",
+    "contentLabelHarassment": "Trakasserier",
+    "contentLabelHateSpeech": "Hatretorik",
+    "contentLabelMisleading": "Vilseledande",
+    "contentLabelNudity": "Nakenhet",
+    "contentLabelPornography": "Pornografi",
+    "contentLabelProfanity": "Svordomar",
+    "contentLabelScam": "Bedrägeri",
+    "contentLabelSelfHarm": "Självskada/Självmord",
+    "contentLabelSensitiveContent": "Känsligt innehåll",
+    "contentLabelSexualContent": "Sexuellt innehåll",
+    "contentLabelSpam": "Spam",
+    "contentLabelSpoiler": "Spoiler",
+    "contentLabelTobacco": "Tobak/Rökning",
+    "contentLabelViolence": "Våld",
+    "contentWarningNone": "Ingen",
+    "draftTimeJustNow": "Nyss",
+    "@draftTimeJustNow": {
+        "description": "Draft age label for less than one minute (capitalized)"
+    },
+    "draftUntitled": "Namnlös",
+    "notificationCommentedOnYourVideo": "{actorName} kommenterade din video",
+    "@notificationCommentedOnYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationLikedYourVideo": "{actorName} gillade din video",
+    "@notificationLikedYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationMentionedYou": "{actorName} nämnde dig",
+    "@notificationMentionedYou": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationRepostedYourVideo": "{actorName} delade din video",
+    "@notificationRepostedYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationStartedFollowing": "{actorName} började följa dig",
+    "@notificationStartedFollowing": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "textAlignCenter": "Centrera",
+    "textAlignLeft": "Vänster",
+    "textAlignRight": "Höger",
+    "textBackgroundHighlight": "Markering",
+    "textBackgroundNone": "Ingen",
+    "textBackgroundSolid": "Heltäckande",
+    "textBackgroundTransparent": "Transparent",
+    "timeAgo": "{time} sedan",
+    "@timeAgo": {
+        "description": "Verbose relative time with ago suffix, e.g. 3m ago",
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "timeDaysAgo": "{count}d sedan",
+    "@timeDaysAgo": {
+        "description": "Relative time in days with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeHoursAgo": "{count}t sedan",
+    "@timeHoursAgo": {
+        "description": "Relative time in hours with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeJustNow": "nyss",
+    "@timeJustNow": {
+        "description": "Verbose relative time for less than one minute (lowercase)"
+    },
+    "timeMinutesAgo": "{count}min sedan",
+    "@timeMinutesAgo": {
+        "description": "Relative time in minutes with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeNow": "nu",
+    "@timeNow": {
+        "description": "Relative time label for less than one minute ago (short form)"
+    },
+    "timeShortDays": "{count}d",
+    "@timeShortDays": {
+        "description": "Short relative time in days, e.g. 3d",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortHours": "{count}t",
+    "@timeShortHours": {
+        "description": "Short relative time in hours, e.g. 2h",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortMinutes": "{count}min",
+    "@timeShortMinutes": {
+        "description": "Short relative time in minutes, e.g. 3m",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortMonths": "{count}må",
+    "@timeShortMonths": {
+        "description": "Short relative time in months, e.g. 1mo",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortWeeks": "{count}v",
+    "@timeShortWeeks": {
+        "description": "Short relative time in weeks, e.g. 2w",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortYears": "{count}å",
+    "@timeShortYears": {
+        "description": "Short relative time in years, e.g. 1y",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeToday": "Idag",
+    "@timeToday": {
+        "description": "Date label for today"
+    },
+    "timeVerboseNow": "Nu",
+    "@timeVerboseNow": {
+        "description": "Verbose relative time label for less than one minute ago"
+    },
+    "timeYesterday": "Igår",
+    "@timeYesterday": {
+        "description": "Date label for yesterday"
+    }
+}

@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/pending_upload.dart';
 
 /// Widget that displays upload progress for a video
@@ -44,7 +45,7 @@ class UploadProgressIndicator extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        upload.title ?? 'Video Upload',
+                        upload.title ?? context.l10n.uploadProgressVideoUpload,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -67,7 +68,7 @@ class UploadProgressIndicator extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            _buildProgressBar(),
+            _buildProgressBar(context),
             if (showActions &&
                 (upload.canRetry ||
                     upload.status == UploadStatus.uploading ||
@@ -79,7 +80,7 @@ class UploadProgressIndicator extends StatelessWidget {
                     upload.status == UploadStatus.uploading ||
                     upload.status == UploadStatus.paused ||
                     upload.status == UploadStatus.failed))
-              _buildActionButtons(),
+              _buildActionButtons(context),
           ],
         ),
       ),
@@ -118,7 +119,7 @@ class UploadProgressIndicator extends StatelessWidget {
     }
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(BuildContext context) {
     final progress = upload.progressValue;
 
     return Column(
@@ -137,7 +138,7 @@ class UploadProgressIndicator extends StatelessWidget {
               style: const TextStyle(fontSize: 12, color: VineTheme.lightText),
             ),
             Text(
-              _getTimeInfo(),
+              _getTimeInfo(context),
               style: const TextStyle(fontSize: 12, color: VineTheme.lightText),
             ),
           ],
@@ -146,14 +147,14 @@ class UploadProgressIndicator extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons() => Row(
+  Widget _buildActionButtons(BuildContext context) => Row(
     mainAxisAlignment: MainAxisAlignment.end,
     children: [
       if (upload.status == UploadStatus.uploading && onPause != null)
         ElevatedButton.icon(
           onPressed: onPause,
           icon: const Icon(Icons.pause),
-          label: const Text('Pause'),
+          label: Text(context.l10n.uploadProgressPause),
           style: ElevatedButton.styleFrom(
             backgroundColor: VineTheme.info,
             foregroundColor: VineTheme.whiteText,
@@ -163,7 +164,7 @@ class UploadProgressIndicator extends StatelessWidget {
         ElevatedButton.icon(
           onPressed: onResume,
           icon: const Icon(Icons.play_arrow),
-          label: const Text('Resume'),
+          label: Text(context.l10n.uploadProgressResume),
           style: ElevatedButton.styleFrom(
             backgroundColor: VineTheme.warning,
             foregroundColor: VineTheme.whiteText,
@@ -178,7 +179,7 @@ class UploadProgressIndicator extends StatelessWidget {
               backgroundColor: VineTheme.cardBackground,
               foregroundColor: VineTheme.whiteText,
             ),
-            child: const Text('Go Back'),
+            child: Text(context.l10n.uploadProgressGoBack),
           ),
         ],
         if (onRetry != null && upload.canRetry) ...[
@@ -189,7 +190,11 @@ class UploadProgressIndicator extends StatelessWidget {
               backgroundColor: VineTheme.warning,
               foregroundColor: VineTheme.whiteText,
             ),
-            child: Text('Retry (${3 - (upload.retryCount ?? 0)} left)'),
+            child: Text(
+              context.l10n.uploadProgressRetryWithCount(
+                3 - (upload.retryCount ?? 0),
+              ),
+            ),
           ),
         ],
         if (onDelete != null) ...[
@@ -197,7 +202,7 @@ class UploadProgressIndicator extends StatelessWidget {
           TextButton(
             onPressed: onDelete,
             style: TextButton.styleFrom(foregroundColor: VineTheme.error),
-            child: const Text('Delete'),
+            child: Text(context.l10n.uploadProgressDelete),
           ),
         ],
       ] else if (upload.canRetry && onRetry != null) ...[
@@ -208,7 +213,11 @@ class UploadProgressIndicator extends StatelessWidget {
             backgroundColor: VineTheme.warning,
             foregroundColor: VineTheme.whiteText,
           ),
-          child: Text('Retry (${3 - (upload.retryCount ?? 0)} left)'),
+          child: Text(
+            context.l10n.uploadProgressRetryWithCount(
+              3 - (upload.retryCount ?? 0),
+            ),
+          ),
         ),
       ],
     ],
@@ -256,18 +265,18 @@ class UploadProgressIndicator extends StatelessWidget {
     }
   }
 
-  String _getTimeInfo() {
+  String _getTimeInfo(BuildContext context) {
     final now = DateTime.now();
     final diff = now.difference(upload.createdAt);
 
     if (diff.inDays > 0) {
-      return '${diff.inDays}d ago';
+      return context.l10n.uploadProgressDaysAgo(diff.inDays);
     } else if (diff.inHours > 0) {
-      return '${diff.inHours}h ago';
+      return context.l10n.uploadProgressHoursAgo(diff.inHours);
     } else if (diff.inMinutes > 0) {
-      return '${diff.inMinutes}m ago';
+      return context.l10n.uploadProgressMinutesAgo(diff.inMinutes);
     } else {
-      return 'Just now';
+      return context.l10n.uploadProgressJustNow;
     }
   }
 }
@@ -307,9 +316,13 @@ class CompactUploadProgress extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             upload.status == UploadStatus.uploading
-                ? 'Uploading ${(upload.progressValue * 100).toInt()}%'
+                ? context.l10n.uploadProgressUploadingPercent(
+                    (upload.progressValue * 100).toInt(),
+                  )
                 : upload.status == UploadStatus.paused
-                ? 'Paused ${(upload.progressValue * 100).toInt()}%'
+                ? context.l10n.uploadProgressPausedPercent(
+                    (upload.progressValue * 100).toInt(),
+                  )
                 : upload.statusText,
             style: const TextStyle(color: VineTheme.whiteText, fontSize: 12),
           ),

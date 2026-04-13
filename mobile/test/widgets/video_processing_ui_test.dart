@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -45,6 +46,8 @@ void main() {
               uploadManagerProvider.overrideWith((ref) => mockUploadManager),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: VideoProcessingStatusWidget(uploadId: 'test_upload_123'),
               ),
@@ -87,6 +90,8 @@ void main() {
               uploadManagerProvider.overrideWith((ref) => mockUploadManager),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: VideoProcessingStatusWidget(uploadId: 'test_upload_456'),
               ),
@@ -130,6 +135,8 @@ void main() {
             uploadManagerProvider.overrideWith((ref) => mockUploadManager),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: VideoProcessingStatusWidget(uploadId: 'test_upload_789'),
             ),
@@ -171,6 +178,8 @@ void main() {
             uploadManagerProvider.overrideWith((ref) => mockUploadManager),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: VideoProcessingStatusWidget(uploadId: 'test_upload_error'),
             ),
@@ -212,6 +221,8 @@ void main() {
             uploadManagerProvider.overrideWith((ref) => mockUploadManager),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: VideoProcessingStatusWidget(uploadId: 'dynamic_upload'),
             ),
@@ -247,6 +258,8 @@ void main() {
             uploadManagerProvider.overrideWith((ref) => mockUploadManager),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: VideoProcessingStatusWidget(uploadId: 'dynamic_upload'),
             ),

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_category.dart';
 import 'package:openvine/widgets/categories_tab.dart';
 
@@ -14,6 +15,8 @@ void main() {
     VoidCallback? onRetry,
   }) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: CategoriesDiscoveryView(
           state: state,
@@ -48,7 +51,6 @@ void main() {
         buildSubject(
           state: const CategoriesState(
             categoriesStatus: CategoriesStatus.error,
-            errorMessage: 'Network error',
           ),
           onRetry: () => retries += 1,
         ),

@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -210,7 +211,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     if (resolvedVideoEventId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Video not found')),
+        SnackBar(
+          content: Text(context.l10n.notificationsVideoNotFound),
+        ),
       );
       return;
     }
@@ -238,9 +241,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     if (video == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Video not found'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.notificationsVideoNotFound),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -248,9 +251,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     if (videoEventService.shouldHideVideo(video)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Video unavailable'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.notificationsVideoUnavailable),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -266,8 +269,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       extra: PooledFullscreenVideoFeedArgs(
         videosStream: Stream.value([videoForNav]),
         initialIndex: 0,
-        contextTitle: 'From Notification',
-
+        contextTitle: context.l10n.notificationsFromNotification,
         autoOpenComments: shouldAutoOpenComments,
       ),
     );
@@ -323,16 +325,19 @@ class _FailureBody extends StatelessWidget {
             color: VineTheme.lightText,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Failed to load notifications',
-            style: TextStyle(fontSize: 18, color: VineTheme.secondaryText),
+          Text(
+            context.l10n.notificationsFailedToLoad,
+            style: const TextStyle(
+              fontSize: 18,
+              color: VineTheme.secondaryText,
+            ),
           ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: onRetry,
-            child: const Text(
-              'Retry',
-              style: TextStyle(color: VineTheme.vineGreen),
+            child: Text(
+              context.l10n.notificationsRetry,
+              style: const TextStyle(color: VineTheme.vineGreen),
             ),
           ),
         ],

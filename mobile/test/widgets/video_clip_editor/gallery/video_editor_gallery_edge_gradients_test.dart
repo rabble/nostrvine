@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_edge_gradients.dart';
 
 void main() {
@@ -10,6 +11,8 @@ void main() {
     testWidgets('should render with gradient decoration', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SizedBox(
               width: 400,
@@ -31,6 +34,8 @@ void main() {
     testWidgets('should ignore pointer events', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClipGalleryEdgeGradients(opacity: 1, isReordering: false),
           ),
@@ -49,6 +54,8 @@ void main() {
     testWidgets('should apply scaled opacity', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClipGalleryEdgeGradients(opacity: 1, isReordering: false),
           ),
@@ -63,6 +70,8 @@ void main() {
     testWidgets('should be invisible when opacity is 0', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClipGalleryEdgeGradients(opacity: 0, isReordering: false),
           ),
@@ -78,6 +87,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClipGalleryEdgeGradients(opacity: 1, isReordering: false),
           ),
@@ -97,6 +108,8 @@ void main() {
     testWidgets('should have solid gradient when reordering', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClipGalleryEdgeGradients(opacity: 1, isReordering: true),
           ),

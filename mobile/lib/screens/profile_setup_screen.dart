@@ -17,6 +17,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -217,9 +218,9 @@ class _ProfileSetupScreenViewState
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
-                        'Profile published successfully!',
-                        style: TextStyle(color: VineTheme.vineGreen),
+                      Text(
+                        context.l10n.profileSetupProfilePublished,
+                        style: const TextStyle(color: VineTheme.vineGreen),
                       ),
                     ],
                   ),
@@ -242,22 +243,20 @@ class _ProfileSetupScreenViewState
                 context: context,
                 builder: (dialogContext) => AlertDialog(
                   backgroundColor: VineTheme.cardBackground,
-                  title: const Text(
-                    'Create new profile?',
-                    style: TextStyle(color: VineTheme.whiteText),
+                  title: Text(
+                    context.l10n.profileSetupCreateNewProfile,
+                    style: const TextStyle(color: VineTheme.whiteText),
                   ),
-                  content: const Text(
-                    "We didn't find an existing profile on your "
-                    'relays. Publishing will create a new profile. '
-                    'Continue?',
-                    style: TextStyle(color: VineTheme.secondaryText),
+                  content: Text(
+                    context.l10n.profileSetupNoExistingProfile,
+                    style: const TextStyle(color: VineTheme.secondaryText),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(color: VineTheme.lightText),
+                      child: Text(
+                        context.l10n.profileCancelButton,
+                        style: const TextStyle(color: VineTheme.lightText),
                       ),
                     ),
                     TextButton(
@@ -267,9 +266,9 @@ class _ProfileSetupScreenViewState
                           const ProfileSaveConfirmed(),
                         );
                       },
-                      child: const Text(
-                        'Publish',
-                        style: TextStyle(color: VineTheme.vineGreen),
+                      child: Text(
+                        context.l10n.profileSetupPublishButton,
+                        style: const TextStyle(color: VineTheme.vineGreen),
                       ),
                     ),
                   ],
@@ -287,13 +286,12 @@ class _ProfileSetupScreenViewState
               switch (state.error) {
                 case ProfileEditorError.usernameTaken:
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text(
-                        'Username was just taken. '
-                        'Please choose another.',
+                        context.l10n.profileSetupUsernameTaken,
                       ),
                       backgroundColor: VineTheme.error,
-                      duration: Duration(seconds: 3),
+                      duration: const Duration(seconds: 3),
                     ),
                   );
                 case ProfileEditorError.usernameReserved:
@@ -304,19 +302,15 @@ class _ProfileSetupScreenViewState
                   );
                 case ProfileEditorError.claimFailed:
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Failed to claim username. Please try again.',
-                      ),
+                    SnackBar(
+                      content: Text(context.l10n.profileSetupClaimFailed),
                       backgroundColor: VineTheme.error,
                     ),
                   );
                 case ProfileEditorError.publishFailed:
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Failed to publish profile. Please try again.',
-                      ),
+                    SnackBar(
+                      content: Text(context.l10n.profileSetupPublishFailed),
                       backgroundColor: VineTheme.error,
                     ),
                   );
@@ -332,10 +326,10 @@ class _ProfileSetupScreenViewState
           return Scaffold(
             backgroundColor: VineTheme.surfaceContainerHigh,
             appBar: DiVineAppBar(
-              title: 'Edit Profile',
+              title: context.l10n.profileSetupEditProfileTitle,
               backgroundMode: DiVineAppBarBackgroundMode.transparent,
               showBackButton: true,
-              backButtonSemanticLabel: 'Back',
+              backButtonSemanticLabel: context.l10n.profileSetupBackLabel,
               onBackPressed: () {
                 // Try to pop using context.pop() which GoRouter intercepts
                 // This should work even if canPop() returns false
@@ -360,8 +354,8 @@ class _ProfileSetupScreenViewState
                 DiVineAppBarAction(
                   icon: SvgIconSource(DivineIconName.info.assetPath),
                   onPressed: () => _showNostrInfoSheet(context),
-                  tooltip: 'About Nostr',
-                  semanticLabel: 'About Nostr',
+                  tooltip: context.l10n.profileSetupAboutNostr,
+                  semanticLabel: context.l10n.profileSetupAboutNostr,
                 ),
               ],
             ),
@@ -405,8 +399,9 @@ class _ProfileSetupScreenViewState
                                             _buildProfilePictureProvider(),
                                         name: _nameController.text.trim(),
                                         size: 144,
-                                        semanticLabel:
-                                            'Profile picture preview',
+                                        semanticLabel: context
+                                            .l10n
+                                            .profileSetupProfilePicturePreview,
                                       ),
                                       // Upload progress indicator
                                       if (_isUploadingImage)
@@ -563,9 +558,11 @@ class _ProfileSetupScreenViewState
 
                               // Display Name
                               Padding(
-                                padding: const EdgeInsets.only(left: 16),
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 16,
+                                ),
                                 child: Text(
-                                  'Display Name',
+                                  context.l10n.profileSetupDisplayNameLabel,
                                   style: VineTheme.labelMediumFont(
                                     color: _nameFocusNode.hasFocus
                                         ? VineTheme.primary
@@ -581,56 +578,61 @@ class _ProfileSetupScreenViewState
                                 style: VineTheme.bodyLargeFont(
                                   color: VineTheme.onSurface,
                                 ),
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   isCollapsed: true,
-                                  hintText: 'How should people know you?',
-                                  helperText:
-                                      "Any name or label you want. Doesn't have to be unique.",
-                                  helperStyle: TextStyle(
+                                  hintText:
+                                      context.l10n.profileSetupDisplayNameHint,
+                                  helperText: context
+                                      .l10n
+                                      .profileSetupDisplayNameHelper,
+                                  helperStyle: const TextStyle(
                                     color: VineTheme.onSurfaceMuted,
                                     fontSize: 12,
                                   ),
-                                  hintStyle: TextStyle(
+                                  hintStyle: const TextStyle(
                                     color: VineTheme.lightText,
                                   ),
-                                  border: UnderlineInputBorder(
+                                  border: const UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  enabledBorder: UnderlineInputBorder(
+                                  enabledBorder: const UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedBorder: UnderlineInputBorder(
+                                  focusedBorder: const UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  errorBorder: UnderlineInputBorder(
+                                  errorBorder: const UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedErrorBorder: UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  contentPadding: EdgeInsets.all(16),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
                                 ),
                                 textInputAction: TextInputAction.next,
                                 onFieldSubmitted: (_) =>
                                     FocusScope.of(context).nextFocus(),
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter a display name';
+                                    return context
+                                        .l10n
+                                        .profileSetupDisplayNameRequired;
                                   }
                                   return null;
                                 },
@@ -647,7 +649,7 @@ class _ProfileSetupScreenViewState
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'Bio (Optional)',
+                                      context.l10n.profileSetupBioLabel,
                                       style: VineTheme.labelMediumFont(
                                         color: _bioFocusNode.hasFocus
                                             ? VineTheme.primary
@@ -720,7 +722,9 @@ class _ProfileSetupScreenViewState
 
                               // Public key (npub) - read-only
                               Padding(
-                                padding: const EdgeInsets.only(left: 16),
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 16,
+                                ),
                                 child: Text(
                                   'Public key (npub)',
                                   style: VineTheme.labelMediumFont(
@@ -911,7 +915,9 @@ class _ProfileSetupScreenViewState
 
                               // Profile Color (optional)
                               Padding(
-                                padding: const EdgeInsets.only(left: 16),
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 16,
+                                ),
                                 child: Text(
                                   'Profile Color (Optional)',
                                   style: VineTheme.labelMediumFont(
@@ -1259,8 +1265,8 @@ class _ProfileSetupScreenViewState
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile picture uploaded successfully!'),
+            SnackBar(
+              content: Text(context.l10n.profileSetupUploadSuccess),
               backgroundColor: VineTheme.success,
             ),
           );
@@ -1815,7 +1821,7 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
                     color: VineTheme.whiteText,
                   ),
                 )
-              : const Text('Send request'),
+              : Text(context.l10n.profileSetupSendRequest),
         ),
       ],
     );
@@ -2070,7 +2076,7 @@ class _ExternalNip05Section extends StatelessWidget {
             if (isExternal) ...[
               const SizedBox(height: 4),
               Padding(
-                padding: const EdgeInsets.only(left: 16),
+                padding: const EdgeInsetsDirectional.only(start: 16),
                 child: Text(
                   'NIP-05 Address',
                   style: VineTheme.labelMediumFont(

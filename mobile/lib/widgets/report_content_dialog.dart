@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_moderation_service.dart';
@@ -35,98 +36,100 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   bool _isSubmitting = false;
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: VineTheme.cardBackground,
-    title: const Text(
-      'Report Content',
-      style: TextStyle(color: VineTheme.whiteText),
-    ),
-    content: SizedBox(
-      width: double.maxFinite,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Why are you reporting this content?',
-              style: TextStyle(color: VineTheme.whiteText),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Divine will act on content reports within 24 hours by '
-              'removing the content and ejecting the user who provided '
-              'the offending content.',
-              style: TextStyle(
-                color: VineTheme.secondaryText,
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AlertDialog(
+      backgroundColor: VineTheme.cardBackground,
+      title: Text(
+        l10n.reportTitle,
+        style: const TextStyle(color: VineTheme.whiteText),
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n.reportWhyReporting,
+                style: const TextStyle(color: VineTheme.whiteText),
               ),
-            ),
-            const SizedBox(height: 16),
-            RadioGroup<ContentFilterReason>(
-              groupValue: _selectedReason,
-              onChanged: (value) => setState(() => _selectedReason = value),
-              child: Column(
-                children: ContentFilterReason.values
-                    .map(
-                      (reason) => RadioListTile<ContentFilterReason>(
-                        title: Text(
-                          _getReasonDisplayName(reason),
-                          style: const TextStyle(color: VineTheme.whiteText),
+              const SizedBox(height: 8),
+              Text(
+                l10n.reportPolicyNotice,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(height: 16),
+              RadioGroup<ContentFilterReason>(
+                groupValue: _selectedReason,
+                onChanged: (value) => setState(() => _selectedReason = value),
+                child: Column(
+                  children: ContentFilterReason.values
+                      .map(
+                        (reason) => RadioListTile<ContentFilterReason>(
+                          title: Text(
+                            _getReasonDisplayName(reason),
+                            style: const TextStyle(color: VineTheme.whiteText),
+                          ),
+                          value: reason,
                         ),
-                        value: reason,
-                      ),
-                    )
-                    .toList(),
+                      )
+                      .toList(),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _detailsController,
-              enableInteractiveSelection: true,
-              style: const TextStyle(color: VineTheme.whiteText),
-              decoration: const InputDecoration(
-                labelText: 'Additional details (optional)',
-                labelStyle: TextStyle(color: VineTheme.secondaryText),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _detailsController,
+                enableInteractiveSelection: true,
+                style: const TextStyle(color: VineTheme.whiteText),
+                decoration: InputDecoration(
+                  labelText: l10n.reportAdditionalDetails,
+                  labelStyle: const TextStyle(color: VineTheme.secondaryText),
+                ),
+                maxLines: 3,
               ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 8),
-            CheckboxListTile(
-              title: const Text(
-                'Block this user',
-                style: TextStyle(color: VineTheme.whiteText),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                title: Text(
+                  l10n.reportBlockUser,
+                  style: const TextStyle(color: VineTheme.whiteText),
+                ),
+                value: _blockUser,
+                onChanged: (value) =>
+                    setState(() => _blockUser = value ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
               ),
-              value: _blockUser,
-              onChanged: (value) => setState(() => _blockUser = value ?? false),
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-    actions: [
-      TextButton(onPressed: context.pop, child: const Text('Cancel')),
-      TextButton(
-        onPressed: _isSubmitting ? null : _handleSubmitReport,
-        child: _isSubmitting
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Text('Report'),
-      ),
-    ],
-  );
+      actions: [
+        TextButton(onPressed: context.pop, child: Text(l10n.reportCancel)),
+        TextButton(
+          onPressed: _isSubmitting ? null : _handleSubmitReport,
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.reportSubmit),
+        ),
+      ],
+    );
+  }
 
   void _handleSubmitReport() {
     if (_isSubmitting) return;
     if (_selectedReason == null) {
       // Show error when no reason selected (Apple requires button to be visible)
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a reason for reporting this content'),
+        SnackBar(
+          content: Text(context.l10n.reportSelectReason),
           backgroundColor: VineTheme.error,
         ),
       );
@@ -136,25 +139,26 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   }
 
   String _getReasonDisplayName(ContentFilterReason reason) {
+    final l10n = context.l10n;
     switch (reason) {
       case ContentFilterReason.spam:
-        return 'Spam or Unwanted Content';
+        return l10n.reportReasonSpam;
       case ContentFilterReason.harassment:
-        return 'Harassment, Bullying, or Threats';
+        return l10n.reportReasonHarassment;
       case ContentFilterReason.violence:
-        return 'Violent or Extremist Content';
+        return l10n.reportReasonViolence;
       case ContentFilterReason.sexualContent:
-        return 'Sexual or Adult Content';
+        return l10n.reportReasonSexualContent;
       case ContentFilterReason.copyright:
-        return 'Copyright Violation';
+        return l10n.reportReasonCopyright;
       case ContentFilterReason.falseInformation:
-        return 'False Information';
+        return l10n.reportReasonFalseInfo;
       case ContentFilterReason.csam:
-        return 'Child Safety Violation';
+        return l10n.reportReasonCsam;
       case ContentFilterReason.aiGenerated:
-        return 'AI-Generated Content';
+        return l10n.reportReasonAiGenerated;
       case ContentFilterReason.other:
-        return 'Other Policy Violation';
+        return l10n.reportReasonOther;
     }
   }
 
@@ -243,7 +247,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // Show error snackbar
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to report content: ${result.error}'),
+              content: Text(
+                context.l10n.reportFailed(result.error ?? ''),
+              ),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -259,7 +265,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to report content: $e'),
+            content: Text(context.l10n.reportFailed(e)),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -298,85 +304,105 @@ class ReportConfirmationDialog extends StatelessWidget {
   const ReportConfirmationDialog({super.key});
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: VineTheme.cardBackground,
-    title: const Row(
-      spacing: 12,
-      children: [
-        Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
-        Text('Report Received', style: TextStyle(color: VineTheme.whiteText)),
-      ],
-    ),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Thank you for helping keep Divine safe.',
-          style: TextStyle(color: VineTheme.whiteText, fontSize: 16),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Our team will review your report and take appropriate action. '
-          'You may receive updates via direct message.',
-          style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
-        ),
-        const SizedBox(height: 20),
-        InkWell(
-          onTap: () async {
-            final uri = Uri.parse('https://divine.video/safety');
-            if (await canLaunchUrl(uri)) {
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: VineTheme.backgroundColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: VineTheme.vineGreen),
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AlertDialog(
+      backgroundColor: VineTheme.cardBackground,
+      title: Row(
+        spacing: 12,
+        children: [
+          const Icon(
+            Icons.check_circle,
+            color: VineTheme.vineGreen,
+            size: 28,
+          ),
+          Text(
+            l10n.reportReceivedTitle,
+            style: const TextStyle(color: VineTheme.whiteText),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.reportReceivedThankYou,
+            style: const TextStyle(color: VineTheme.whiteText, fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.reportReceivedReviewNotice,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 14,
             ),
-            child: const Row(
-              spacing: 8,
-              children: [
-                Icon(Icons.info_outline, color: VineTheme.vineGreen, size: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Learn More',
-                        style: TextStyle(
-                          color: VineTheme.whiteText,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        'divine.video/safety',
-                        style: TextStyle(
-                          color: VineTheme.vineGreen,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+          ),
+          const SizedBox(height: 20),
+          InkWell(
+            onTap: () async {
+              final uri = Uri.parse('https://divine.video/safety');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: VineTheme.backgroundColor,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: VineTheme.vineGreen),
+              ),
+              child: Row(
+                spacing: 8,
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    color: VineTheme.vineGreen,
+                    size: 20,
                   ),
-                ),
-                Icon(Icons.open_in_new, color: VineTheme.vineGreen, size: 18),
-              ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.reportLearnMore,
+                          style: const TextStyle(
+                            color: VineTheme.whiteText,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          l10n.reportSafetyUrl,
+                          style: const TextStyle(
+                            color: VineTheme.vineGreen,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.open_in_new,
+                    color: VineTheme.vineGreen,
+                    size: 18,
+                  ),
+                ],
+              ),
             ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: context.pop,
+          child: Text(
+            l10n.reportClose,
+            style: const TextStyle(color: VineTheme.vineGreen),
           ),
         ),
       ],
-    ),
-    actions: [
-      TextButton(
-        onPressed: context.pop,
-        child: const Text(
-          'Close',
-          style: TextStyle(color: VineTheme.vineGreen),
-        ),
-      ),
-    ],
-  );
+    );
+  }
 }

@@ -35,6 +35,14 @@ jobs:
             git diff --name-only
             exit 1
           fi
+      - name: 🌐 Verify l10n generated files
+        run: |
+          flutter gen-l10n
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "⚠️ L10n generated files are out of date. Please run 'flutter gen-l10n' and commit the changes."
+            git diff --name-only
+            exit 1
+          fi
   format:
     name: Format
     runs-on: ubuntu-latest

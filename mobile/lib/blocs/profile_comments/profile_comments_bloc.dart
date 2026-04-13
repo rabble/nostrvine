@@ -59,16 +59,11 @@ class ProfileCommentsBloc
           textComments: textComments,
           hasMoreContent: comments.length >= _pageSize,
           paginationCursor: cursor,
-          clearError: true,
         ),
       );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          status: ProfileCommentsStatus.failure,
-          error: 'Failed to load comments',
-        ),
-      );
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(status: ProfileCommentsStatus.failure));
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -153,8 +154,12 @@ class _VideoMetadataTagsInputState
               Row(
                 mainAxisAlignment: .spaceBetween,
                 children: [
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  Flexible(child: Text('Tags', style: labelStyle)),
+                  Flexible(
+                    child: Text(
+                      context.l10n.videoMetadataTags,
+                      style: labelStyle,
+                    ),
+                  ),
                   if (VideoEditorConstants.enableTagLimit)
                     Text(
                       '${tags.length}/${VideoEditorConstants.tagLimit}',

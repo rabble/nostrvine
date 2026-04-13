@@ -4,13 +4,18 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/audio_waveform.dart';
 
 void main() {
   group('AudioWaveform', () {
     testWidgets('renders with default parameters', (WidgetTester tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AudioWaveform())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: AudioWaveform()),
+        ),
       );
 
       expect(find.byType(AudioWaveform), findsOneWidget);
@@ -28,7 +33,11 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AudioWaveform())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: AudioWaveform()),
+        ),
       );
 
       expect(find.text('--:-- / --:--'), findsOneWidget);
@@ -39,6 +48,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration(seconds: 6),
@@ -56,6 +67,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration(minutes: 2, seconds: 30),
@@ -73,6 +86,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration(seconds: 10),
@@ -92,6 +107,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               height: customHeight,
@@ -132,6 +149,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               color: customColor,
@@ -150,6 +169,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               backgroundColor: bgColor,
@@ -172,6 +193,8 @@ void main() {
     testWidgets('handles isPlaying state change', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: AudioWaveform(duration: Duration(seconds: 6))),
         ),
       );
@@ -181,6 +204,8 @@ void main() {
       // Change to playing state
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration(seconds: 6),
@@ -200,6 +225,8 @@ void main() {
     testWidgets('handles position update', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration(seconds: 6),
@@ -214,6 +241,8 @@ void main() {
       // Update position
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration(seconds: 6),
@@ -231,6 +260,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration(seconds: 6),
@@ -250,6 +281,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration.zero,
@@ -268,6 +301,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration(seconds: 6),
@@ -291,7 +326,11 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AudioWaveform())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: AudioWaveform()),
+        ),
       );
 
       // Verify Semantics widget exists
@@ -307,6 +346,8 @@ void main() {
     testWidgets('respects custom bar count', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(duration: Duration(seconds: 6), barCount: 20),
           ),
@@ -322,12 +363,16 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: AudioWaveform(duration: Duration(seconds: 6))),
         ),
       );
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(duration: Duration(seconds: 6), barCount: 40),
           ),
@@ -341,6 +386,8 @@ void main() {
     testWidgets('animation stops when disposed', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration(seconds: 6),
@@ -354,7 +401,11 @@ void main() {
 
       // Dispose by removing from tree
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: SizedBox.shrink())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: SizedBox.shrink()),
+        ),
       );
 
       // No exceptions should occur
@@ -366,6 +417,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: AudioWaveform(duration: Duration(seconds: 6))),
         ),
       );
@@ -380,7 +433,11 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AudioWaveform())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: AudioWaveform()),
+        ),
       );
 
       final textWidget = tester.widget<Text>(find.text('--:-- / --:--'));

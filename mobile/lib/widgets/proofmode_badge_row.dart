@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
@@ -435,7 +436,7 @@ class _AICheckSectionState extends State<_AICheckSection> {
               child: OutlinedButton.icon(
                 onPressed: _checkForResults,
                 icon: const Icon(Icons.search, size: 16),
-                label: const Text('Check if AI-generated'),
+                label: Text(context.l10n.proofmodeCheckAiGenerated),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: VineTheme.onSurfaceVariant,
                   side: const BorderSide(color: VineTheme.onSurfaceMuted),

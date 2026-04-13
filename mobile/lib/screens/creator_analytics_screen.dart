@@ -7,8 +7,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_analytics_providers.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -49,7 +52,7 @@ class _CreatorAnalyticsScreenState
     final authService = ref.read(authServiceProvider);
     final pubkey = authService.currentPublicKeyHex;
     if (pubkey == null || pubkey.isEmpty) {
-      throw StateError('Sign in to view creator analytics.');
+      throw StateError(context.l10n.analyticsSignInRequired);
     }
 
     final repository = ref.read(creatorAnalyticsRepositoryProvider);
@@ -83,10 +86,9 @@ class _CreatorAnalyticsScreenState
       if (!summary.hasViewData) ...[
         const SizedBox(height: 12),
         _AnalyticsCard(
-          title: 'View Data',
+          title: context.l10n.analyticsViewDataTitle,
           child: Text(
-            'Views are currently unavailable from the relay for these posts. '
-            'Like/comment/repost metrics are still accurate.',
+            context.l10n.analyticsViewDataUnavailable,
             style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
           ),
         ),
@@ -111,22 +113,30 @@ class _CreatorAnalyticsScreenState
 
   Widget _buildAudienceSnapshotCard(_CreatorAnalyticsData data) {
     return _AnalyticsCard(
-      title: 'Audience Snapshot',
+      title: context.l10n.analyticsAudienceSnapshot,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Followers: ${StringUtils.formatCompactNumber(data.socialCounts?.followerCount ?? 0)}',
+            context.l10n.analyticsFollowersCount(
+              StringUtils.formatCompactNumber(
+                data.socialCounts?.followerCount ?? 0,
+              ),
+            ),
             style: VineTheme.bodyMediumFont(),
           ),
           const SizedBox(height: 6),
           Text(
-            'Following: ${StringUtils.formatCompactNumber(data.socialCounts?.followingCount ?? 0)}',
+            context.l10n.analyticsFollowingCount(
+              StringUtils.formatCompactNumber(
+                data.socialCounts?.followingCount ?? 0,
+              ),
+            ),
             style: VineTheme.bodyMediumFont(),
           ),
           const SizedBox(height: 8),
           Text(
-            'Audience source/geo/time breakdowns will populate as Funnelcake adds audience analytics endpoints.',
+            context.l10n.analyticsAudiencePlaceholder,
             style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
           ),
         ],
@@ -136,11 +146,11 @@ class _CreatorAnalyticsScreenState
 
   Widget _buildRetentionCard(_CreatorAnalyticsSummary summary) {
     return _AnalyticsCard(
-      title: 'Retention',
+      title: context.l10n.analyticsRetention,
       child: Text(
         summary.hasViewData
-            ? 'Retention curve and watch-time breakdown will appear once per-second/per-bucket retention arrives from Funnelcake.'
-            : 'Retention data unavailable until view+watch-time analytics are returned by Funnelcake.',
+            ? context.l10n.analyticsRetentionWithViews
+            : context.l10n.analyticsRetentionWithoutViews,
         style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
       ),
     );
@@ -151,7 +161,7 @@ class _CreatorAnalyticsScreenState
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Creator Analytics',
+        title: context.l10n.analyticsTitle,
         showBackButton: true,
         actions: [
           DiVineAppBarAction(
@@ -163,8 +173,8 @@ class _CreatorAnalyticsScreenState
                 _showDiagnostics = !_showDiagnostics;
               });
             },
-            tooltip: 'Diagnostics',
-            semanticLabel: 'Toggle diagnostics',
+            tooltip: context.l10n.analyticsDiagnosticsTooltip,
+            semanticLabel: context.l10n.analyticsDiagnosticsSemanticLabel,
           ),
         ],
       ),
@@ -182,7 +192,7 @@ class _CreatorAnalyticsScreenState
           final data = snapshot.data;
           if (data == null) {
             return _ErrorView(
-              error: 'Unable to load analytics.',
+              error: context.l10n.analyticsUnableToLoad,
               onRetry: _refresh,
             );
           }
@@ -234,8 +244,9 @@ class _CreatorAnalyticsScreenState
                 ..._buildOverviewSection(summary, data),
                 const SizedBox(height: 12),
                 Text(
-                  'Updated ${_formatLastUpdated(data.fetchedAt)} • '
-                  'Scores use likes, comments, reposts, and views/loops from Funnelcake when available.',
+                  context.l10n.analyticsUpdatedTimestamp(
+                    _formatLastUpdated(context.l10n, data.fetchedAt),
+                  ),
                   style: VineTheme.bodySmallFont(
                     color: VineTheme.onSurfaceMuted,
                   ),
@@ -281,7 +292,7 @@ class _ErrorView extends StatelessWidget {
                 backgroundColor: VineTheme.vineGreen,
                 foregroundColor: VineTheme.onPrimary,
               ),
-              child: const Text('Retry'),
+              child: Text(context.l10n.analyticsRetry),
             ),
           ],
         ),
@@ -346,37 +357,47 @@ class _DiagnosticsPanel extends StatelessWidget {
         : diagnostics.sourcesUsed.map(sourceLabel).join(', ');
 
     return _AnalyticsCard(
-      title: 'Diagnostics',
+      title: context.l10n.analyticsDiagnostics,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Total videos: ${diagnostics.totalVideos}',
+            context.l10n.analyticsDiagnosticsTotalVideos(
+              diagnostics.totalVideos,
+            ),
             style: VineTheme.bodySmallFont(),
           ),
           const SizedBox(height: 4),
           Text(
-            'With views: ${diagnostics.videosWithAnyViews}',
+            context.l10n.analyticsDiagnosticsWithViews(
+              diagnostics.videosWithAnyViews,
+            ),
             style: VineTheme.bodySmallFont(),
           ),
           const SizedBox(height: 4),
           Text(
-            'Missing views: ${diagnostics.videosMissingViews}',
+            context.l10n.analyticsDiagnosticsMissingViews(
+              diagnostics.videosMissingViews,
+            ),
             style: VineTheme.bodySmallFont(),
           ),
           const SizedBox(height: 4),
           Text(
-            'Hydrated (bulk): ${diagnostics.videosHydratedByBulkStats}',
+            context.l10n.analyticsDiagnosticsHydratedBulk(
+              diagnostics.videosHydratedByBulkStats,
+            ),
             style: VineTheme.bodySmallFont(),
           ),
           const SizedBox(height: 4),
           Text(
-            'Hydrated (/views): ${diagnostics.videosHydratedByViewsEndpoint}',
+            context.l10n.analyticsDiagnosticsHydratedViews(
+              diagnostics.videosHydratedByViewsEndpoint,
+            ),
             style: VineTheme.bodySmallFont(),
           ),
           const SizedBox(height: 6),
           Text(
-            'Sources: $sourceText',
+            context.l10n.analyticsDiagnosticsSources(sourceText),
             style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
           ),
           const SizedBox(height: 10),
@@ -384,7 +405,7 @@ class _DiagnosticsPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Use fixture data',
+                  context.l10n.analyticsDiagnosticsUseFixture,
                   style: VineTheme.bodySmallFont(),
                 ),
               ),
@@ -418,44 +439,46 @@ class _KpiGrid extends StatelessWidget {
       children: [
         _KpiCard(
           width: cardWidth,
-          label: 'Videos',
+          label: context.l10n.analyticsVideos,
           value: StringUtils.formatCompactNumber(summary.videoCount),
           icon: Icons.video_collection_outlined,
         ),
         _KpiCard(
           width: cardWidth,
-          label: 'Views',
+          label: context.l10n.analyticsViews,
           value: summary.hasViewData
               ? StringUtils.formatCompactNumber(summary.totalViews)
-              : 'N/A',
+              : context.l10n.analyticsNa,
           icon: Icons.visibility_outlined,
         ),
         _KpiCard(
           width: cardWidth,
-          label: 'Interactions',
+          label: context.l10n.analyticsInteractions,
           value: StringUtils.formatCompactNumber(summary.totalInteractions),
           icon: Icons.touch_app_outlined,
         ),
         _KpiCard(
           width: cardWidth,
-          label: 'Engagement',
+          label: context.l10n.analyticsEngagement,
           value: summary.engagementRate == null
-              ? 'N/A'
-              : '${(summary.engagementRate! * 100).toStringAsFixed(1)}%',
+              ? context.l10n.analyticsNa
+              : '${NumberFormat.decimalPattern().format(summary.engagementRate! * 100)}%',
           icon: Icons.trending_up,
         ),
         _KpiCard(
           width: cardWidth,
-          label: 'Followers',
+          label: context.l10n.analyticsFollowers,
           value: StringUtils.formatCompactNumber(followerCount),
           icon: Icons.group_outlined,
         ),
         _KpiCard(
           width: cardWidth,
-          label: 'Avg/Post',
+          label: context.l10n.analyticsAvgPerPost,
           value: summary.videoCount == 0
               ? '0'
-              : summary.averageInteractionsPerVideo.toStringAsFixed(1),
+              : NumberFormat.decimalPattern().format(
+                  summary.averageInteractionsPerVideo,
+                ),
           icon: Icons.stacked_bar_chart,
         ),
       ],
@@ -516,25 +539,25 @@ class _EngagementBreakdown extends StatelessWidget {
     final repostsShare = total == 0 ? 0.0 : summary.totalReposts / total;
 
     return _AnalyticsCard(
-      title: 'Interaction Mix',
+      title: context.l10n.analyticsInteractionMix,
       child: Column(
         children: [
           _BreakdownRow(
-            label: 'Likes',
+            label: context.l10n.analyticsLikes,
             value: summary.totalLikes,
             share: likesShare,
             color: const Color(0xFF79C97D),
           ),
           const SizedBox(height: 8),
           _BreakdownRow(
-            label: 'Comments',
+            label: context.l10n.analyticsComments,
             value: summary.totalComments,
             share: commentsShare,
             color: const Color(0xFF64B5F6),
           ),
           const SizedBox(height: 8),
           _BreakdownRow(
-            label: 'Reposts',
+            label: context.l10n.analyticsReposts,
             value: summary.totalReposts,
             share: repostsShare,
             color: const Color(0xFFFFB74D),
@@ -597,37 +620,52 @@ class _PerformanceHighlights extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _AnalyticsCard(
-      title: 'Performance Highlights',
+      title: context.l10n.analyticsPerformanceHighlights,
       child: Column(
         children: [
           _HighlightRow(
-            label: 'Most viewed',
+            label: context.l10n.analyticsMostViewed,
             title: summary.hasViewData
-                ? (summary.mostViewed?.displayTitle ?? 'No videos yet')
-                : 'View data unavailable',
+                ? (summary.mostViewed?.displayTitle ??
+                      context.l10n.analyticsNoVideosYet)
+                : context.l10n.analyticsViewDataUnavailableShort,
             metricText: summary.hasViewData && summary.mostViewed != null
-                ? '${StringUtils.formatCompactNumber(summary.mostViewed!.views ?? 0)} views'
-                : 'N/A',
+                ? context.l10n.analyticsViewsCount(
+                    StringUtils.formatCompactNumber(
+                      summary.mostViewed!.views ?? 0,
+                    ),
+                  )
+                : context.l10n.analyticsNa,
             onTap: summary.mostViewed == null
                 ? null
                 : () => onTapPerformance(summary.mostViewed!),
           ),
           const SizedBox(height: 10),
           _HighlightRow(
-            label: 'Most discussed',
-            metricText:
-                '${StringUtils.formatCompactNumber(summary.mostDiscussed?.comments ?? 0)} comments',
-            title: summary.mostDiscussed?.displayTitle ?? 'No videos yet',
+            label: context.l10n.analyticsMostDiscussed,
+            metricText: context.l10n.analyticsCommentsCount(
+              StringUtils.formatCompactNumber(
+                summary.mostDiscussed?.comments ?? 0,
+              ),
+            ),
+            title:
+                summary.mostDiscussed?.displayTitle ??
+                context.l10n.analyticsNoVideosYet,
             onTap: summary.mostDiscussed == null
                 ? null
                 : () => onTapPerformance(summary.mostDiscussed!),
           ),
           const SizedBox(height: 10),
           _HighlightRow(
-            label: 'Most reposted',
-            metricText:
-                '${StringUtils.formatCompactNumber(summary.mostReposted?.reposts ?? 0)} reposts',
-            title: summary.mostReposted?.displayTitle ?? 'No videos yet',
+            label: context.l10n.analyticsMostReposted,
+            metricText: context.l10n.analyticsRepostsCount(
+              StringUtils.formatCompactNumber(
+                summary.mostReposted?.reposts ?? 0,
+              ),
+            ),
+            title:
+                summary.mostReposted?.displayTitle ??
+                context.l10n.analyticsNoVideosYet,
             onTap: summary.mostReposted == null
                 ? null
                 : () => onTapPerformance(summary.mostReposted!),
@@ -700,10 +738,10 @@ class _TopVideosList extends StatelessWidget {
     final topVideos = summary.topVideos.take(5).toList();
 
     return _AnalyticsCard(
-      title: 'Top Content',
+      title: context.l10n.analyticsTopContent,
       child: topVideos.isEmpty
           ? Text(
-              'Publish a few videos to see rankings.',
+              context.l10n.analyticsPublishPrompt,
               style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
             )
           : Column(
@@ -711,8 +749,8 @@ class _TopVideosList extends StatelessWidget {
               children: [
                 Text(
                   summary.hasViewData
-                      ? 'Right-side % = Engagement Rate (interactions divided by views).'
-                      : 'Engagement Rate needs view data; values show as N/A until views are available.',
+                      ? context.l10n.analyticsEngagementRateExplainer
+                      : context.l10n.analyticsEngagementRateNoViews,
                   style: VineTheme.bodySmallFont(
                     color: VineTheme.onSurfaceMuted,
                   ),
@@ -724,7 +762,7 @@ class _TopVideosList extends StatelessWidget {
                     SizedBox(
                       width: 96,
                       child: Text(
-                        'Engagement',
+                        context.l10n.analyticsEngagementLabel,
                         textAlign: TextAlign.right,
                         style: VineTheme.bodySmallFont(
                           color: VineTheme.onSurfaceMuted,
@@ -791,8 +829,8 @@ class _TopVideoRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${performance.views != null ? '${StringUtils.formatCompactNumber(performance.views!)} views' : 'views unavailable'} • '
-                    '${StringUtils.formatCompactNumber(performance.interactions)} interactions',
+                    '${performance.views != null ? context.l10n.analyticsViewsCount(StringUtils.formatCompactNumber(performance.views!)) : context.l10n.analyticsViewsUnavailable} \u2022 '
+                    '${context.l10n.analyticsInteractionsCount(StringUtils.formatCompactNumber(performance.interactions))}',
                     style: VineTheme.bodySmallFont(
                       color: VineTheme.onSurfaceMuted,
                     ),
@@ -834,7 +872,7 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Post Analytics',
+        title: context.l10n.analyticsPostAnalytics,
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).pop(),
       ),
@@ -851,48 +889,48 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
                   runSpacing: 10,
                   children: [
                     _MetricPill(
-                      label: 'Views',
+                      label: context.l10n.analyticsViews,
                       value: performance.views == null
-                          ? 'N/A'
+                          ? context.l10n.analyticsNa
                           : StringUtils.formatCompactNumber(performance.views!),
                     ),
                     _MetricPill(
-                      label: 'Likes',
+                      label: context.l10n.analyticsLikes,
                       value: StringUtils.formatCompactNumber(likes),
                     ),
                     _MetricPill(
-                      label: 'Comments',
+                      label: context.l10n.analyticsComments,
                       value: StringUtils.formatCompactNumber(comments),
                     ),
                     _MetricPill(
-                      label: 'Reposts',
+                      label: context.l10n.analyticsReposts,
                       value: StringUtils.formatCompactNumber(reposts),
                     ),
                     _MetricPill(
-                      label: 'Engagement',
+                      label: context.l10n.analyticsEngagement,
                       value: performance.engagementRate == null
-                          ? 'N/A'
+                          ? context.l10n.analyticsNa
                           : '${(performance.engagementRate! * 100).toStringAsFixed(1)}%',
                     ),
                   ],
                 ),
                 const SizedBox(height: 14),
                 _BreakdownRow(
-                  label: 'Likes',
+                  label: context.l10n.analyticsLikes,
                   value: likes,
                   share: likesShare,
                   color: const Color(0xFF79C97D),
                 ),
                 const SizedBox(height: 8),
                 _BreakdownRow(
-                  label: 'Comments',
+                  label: context.l10n.analyticsComments,
                   value: comments,
                   share: commentsShare,
                   color: const Color(0xFF64B5F6),
                 ),
                 const SizedBox(height: 8),
                 _BreakdownRow(
-                  label: 'Reposts',
+                  label: context.l10n.analyticsReposts,
                   value: reposts,
                   share: repostShare,
                   color: const Color(0xFFFFB74D),
@@ -914,7 +952,7 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     icon: const Icon(Icons.play_circle_outline),
-                    label: const Text('Open Post'),
+                    label: Text(context.l10n.analyticsOpenPost),
                   ),
                 ),
               ],
@@ -971,24 +1009,24 @@ class _DailyTrendCard extends StatelessWidget {
     );
 
     return _AnalyticsCard(
-      title: 'Recent Daily Interactions',
+      title: context.l10n.analyticsRecentDailyInteractions,
       child: points.isEmpty
           ? Text(
-              'No activity in this range yet.',
+              context.l10n.analyticsNoActivityYet,
               style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Interactions = likes + comments + reposts by post date.',
+                  context.l10n.analyticsDailyInteractionsExplainer,
                   style: VineTheme.bodySmallFont(
                     color: VineTheme.onSurfaceMuted,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Bar length is relative to your highest day in this window.',
+                  context.l10n.analyticsDailyBarExplainer,
                   style: VineTheme.bodySmallFont(
                     color: VineTheme.onSurfaceMuted,
                   ),
@@ -1319,10 +1357,8 @@ class _DailyInteractionPoint {
   final DateTime day;
   final int interactions;
 
-  String get axisLabel {
-    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return '${dayLabels[day.weekday - 1]} ${day.month}/${day.day}';
-  }
+  String get axisLabel =>
+      '${DateFormat.E().format(day)} ${DateFormat.Md().format(day)}';
 }
 
 DateTime _videoTimestamp(VideoEvent video) {
@@ -1341,10 +1377,10 @@ String _dayKey(DateTime day) {
   return '${day.year}-$month-$date';
 }
 
-String _formatLastUpdated(DateTime updatedAt) {
+String _formatLastUpdated(
+  AppLocalizations l10n,
+  DateTime updatedAt,
+) {
   final diff = DateTime.now().difference(updatedAt);
-  if (diff.inMinutes < 1) return 'just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-  if (diff.inHours < 24) return '${diff.inHours}h ago';
-  return '${diff.inDays}d ago';
+  return LocalizedTimeFormatter.formatDurationAgo(l10n, diff);
 }

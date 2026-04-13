@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart';
 
 class _MockSearchResultsFilterCubit extends MockCubit<SearchResultsFilter>
@@ -24,6 +25,8 @@ void main() {
 
     Widget buildSubject() {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: BlocProvider<SearchResultsFilterCubit>.value(
             value: mockCubit,

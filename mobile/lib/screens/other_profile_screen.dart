@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
@@ -68,7 +69,7 @@ class OtherProfileScreen extends ConsumerWidget {
 
     if (pubkey == null) {
       return _ProfileErrorScreen(
-        message: 'Invalid profile ID',
+        message: context.l10n.profileInvalidId,
         onBack: context.pop,
       );
     }
@@ -234,7 +235,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Blocked $name')));
+          ).showSnackBar(
+            SnackBar(content: Text(context.l10n.profileBlockedUser(name))),
+          );
           context.pop();
         }
       case MoreSheetResult.unblockConfirmed:
@@ -250,7 +253,11 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Unblocked $name')));
+          ).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.profileUnblockedUser(name)),
+            ),
+          );
         }
     }
   }
@@ -266,7 +273,11 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Unfollowed $displayName')));
+      ).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.profileUnfollowedUser(displayName)),
+        ),
+      );
     }
   }
 
@@ -358,13 +369,13 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                         DivineIconName.arrowsCounterClockwise.assetPath,
                       ),
                 onPressed: _isRefreshing ? null : _refreshProfile,
-                tooltip: 'Refresh',
-                semanticLabel: 'Refresh profile',
+                tooltip: context.l10n.profileRefresh,
+                semanticLabel: context.l10n.profileRefreshLabel,
               ),
               DiVineAppBarAction(
                 icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
                 onPressed: _more,
-                semanticLabel: 'More options',
+                semanticLabel: context.l10n.profileMoreOptions,
               ),
             ],
           ),
@@ -372,7 +383,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             AsyncLoading() => const ProfileLoadingView(),
             AsyncError(:final error) => Center(
               child: Text(
-                'Error: $error',
+                context.l10n.profileError('$error'),
                 style: const TextStyle(color: VineTheme.whiteText),
               ),
             ),
@@ -407,7 +418,7 @@ class _ProfileErrorScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Profile',
+        title: context.l10n.profileTitle,
         showBackButton: true,
         onBackPressed: onBack,
       ),

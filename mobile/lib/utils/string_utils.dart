@@ -1,6 +1,8 @@
 // ABOUTME: String utility functions for safe operations and formatting
 // ABOUTME: Provides safe substring operations and string truncation for logging
 
+import 'package:count_formatter/count_formatter.dart';
+
 /// Utility functions for safe string operations
 class StringUtils {
   /// Safely truncate a string to a maximum length for logging purposes
@@ -33,30 +35,12 @@ class StringUtils {
   /// Commonly used pattern throughout the codebase for logging video/event IDs
   static String formatIdForLogging(String id) => safeTruncate(id, 8);
 
-  /// Format a number to a compact, human-readable string
-  /// Examples: 999 -> "999", 1203 -> "1.2k", 1500 -> "1.5k", 1000000 -> "1M"
-  /// Removes unnecessary decimal zeros (e.g., "1.0k" becomes "1k")
-  static String formatCompactNumber(int number) {
-    if (number < 1000) {
-      return number.toString();
-    } else if (number < 1000000) {
-      final result = (number / 1000).toStringAsFixed(1);
-      // Remove trailing .0
-      return result.endsWith('.0')
-          ? '${result.substring(0, result.length - 2)}k'
-          : '${result}k';
-    } else if (number < 1000000000) {
-      final result = (number / 1000000).toStringAsFixed(1);
-      // Remove trailing .0
-      return result.endsWith('.0')
-          ? '${result.substring(0, result.length - 2)}M'
-          : '${result}M';
-    } else {
-      final result = (number / 1000000000).toStringAsFixed(1);
-      // Remove trailing .0
-      return result.endsWith('.0')
-          ? '${result.substring(0, result.length - 2)}B'
-          : '${result}B';
-    }
-  }
+  /// Format a number to a compact, locale-aware string.
+  ///
+  /// Delegates to [CountFormatter.formatCompact] for consistent,
+  /// locale-aware number formatting across the app.
+  static String formatCompactNumber(
+    int number, {
+    String? locale,
+  }) => CountFormatter.formatCompact(number, locale: locale);
 }

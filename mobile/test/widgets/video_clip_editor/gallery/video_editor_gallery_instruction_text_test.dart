@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_instruction_text.dart';
 
 void main() {
@@ -22,6 +23,8 @@ void main() {
         BlocProvider<ClipEditorBloc>.value(
           value: bloc,
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),
@@ -42,6 +45,8 @@ void main() {
         BlocProvider<ClipEditorBloc>.value(
           value: bloc,
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),
@@ -63,6 +68,8 @@ void main() {
         BlocProvider<ClipEditorBloc>.value(
           value: bloc,
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),
@@ -84,6 +91,8 @@ void main() {
         BlocProvider<ClipEditorBloc>.value(
           value: bloc,
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),

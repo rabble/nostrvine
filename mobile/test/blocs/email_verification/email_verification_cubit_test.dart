@@ -63,7 +63,7 @@ void main() {
         expect(cubit.state.status, EmailVerificationStatus.initial);
         expect(cubit.state.isPolling, isFalse);
         expect(cubit.state.pendingEmail, isNull);
-        expect(cubit.state.error, isNull);
+        expect(cubit.state.errorCode, isNull);
 
         cubit.close();
       });
@@ -210,9 +210,8 @@ void main() {
 
           expect(cubit.state.status, EmailVerificationStatus.failure);
           expect(
-            cubit.state.error,
-            "We couldn't activate your invite. "
-            'Go back to your invite code, join the waitlist, or contact support.',
+            cubit.state.errorCode,
+            EmailVerificationError.inviteUnknown,
           );
           expect(cubit.state.showInviteGateRecovery, isTrue);
           expect(cubit.state.inviteRecoveryCode, 'AB12-EF34');
@@ -237,7 +236,7 @@ void main() {
         verify: (cubit) {
           expect(cubit.state.isPolling, isFalse);
           expect(cubit.state.pendingEmail, isNull);
-          expect(cubit.state.error, isNull);
+          expect(cubit.state.errorCode, isNull);
         },
       );
 
@@ -289,13 +288,13 @@ void main() {
         build: buildCubit,
         seed: () => const EmailVerificationState(
           status: EmailVerificationStatus.failure,
-          error: 'some error',
+          errorCode: EmailVerificationError.timeout,
         ),
         act: (cubit) => cubit.reset(),
         expect: () => [const EmailVerificationState()],
         verify: (cubit) {
           expect(cubit.state.status, EmailVerificationStatus.initial);
-          expect(cubit.state.error, isNull);
+          expect(cubit.state.errorCode, isNull);
         },
       );
     });
@@ -529,20 +528,20 @@ void main() {
       expect(state.status, EmailVerificationStatus.initial);
       expect(state.isPolling, isFalse);
       expect(state.pendingEmail, isNull);
-      expect(state.error, isNull);
+      expect(state.errorCode, isNull);
     });
 
     test('creates with custom values', () {
       const state = EmailVerificationState(
         status: EmailVerificationStatus.polling,
         pendingEmail: 'test@example.com',
-        error: 'Some error',
+        errorCode: EmailVerificationError.timeout,
       );
 
       expect(state.status, EmailVerificationStatus.polling);
       expect(state.isPolling, isTrue);
       expect(state.pendingEmail, 'test@example.com');
-      expect(state.error, 'Some error');
+      expect(state.errorCode, EmailVerificationError.timeout);
     });
 
     test('isPolling returns true only when status is polling', () {
@@ -579,13 +578,13 @@ void main() {
 
       expect(updated.status, EmailVerificationStatus.success);
       expect(updated.pendingEmail, 'original@example.com');
-      expect(updated.error, isNull);
+      expect(updated.errorCode, isNull);
     });
 
-    test('copyWith clears error when not provided', () {
+    test('copyWith clears errorCode when not provided', () {
       const original = EmailVerificationState(
         status: EmailVerificationStatus.failure,
-        error: 'Some error',
+        errorCode: EmailVerificationError.timeout,
       );
 
       final updated = original.copyWith(
@@ -593,7 +592,7 @@ void main() {
       );
 
       expect(updated.status, EmailVerificationStatus.polling);
-      expect(updated.error, isNull);
+      expect(updated.errorCode, isNull);
     });
 
     group('equality', () {

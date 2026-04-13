@@ -3426,7 +3426,7 @@ final class BlossomAuthServiceProvider
 }
 
 String _$blossomAuthServiceHash() =>
-    r'e64f2eebfd131f289245c69c1c7dd4f0575bf85d';
+    r'18b397ce487844dd002ada34930c6ce08f0566f8';
 
 /// Media authentication interceptor for handling 401 unauthorized responses
 
@@ -3532,7 +3532,7 @@ final class BlossomUploadServiceProvider
 }
 
 String _$blossomUploadServiceHash() =>
-    r'dd7f21326fc6c7cbc8ea291e9e9ca7c337da54f4';
+    r'8b83e68824cc146d304111a8d88e5ea8fadb2cc7';
 
 /// Upload manager uses only Blossom upload service
 

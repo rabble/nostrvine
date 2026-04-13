@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/profile/more_sheet/bullet_point.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -37,29 +38,25 @@ class BlockConfirmationView extends StatelessWidget {
           const SizedBox(height: 32),
           // Title
           Text(
-            'Block $displayName?',
+            context.l10n.profileBlockTitle(displayName),
             style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
           ),
           const SizedBox(height: 8),
           // Explanation content
           Text(
-            'When you block a user:',
+            context.l10n.profileBlockExplanation,
             style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: Column(
               spacing: 14,
               children: [
-                BulletPoint('Their posts will not appear in your feeds.'),
-                BulletPoint(
-                  'They will be unable to view your profile, follow you, or view your posts.',
-                ),
-                BulletPoint('They will not be notified of this change.'),
-                BulletPoint(
-                  'You will still be able to view their profile.',
-                ),
+                BulletPoint(context.l10n.profileBlockBulletHidePosts),
+                BulletPoint(context.l10n.profileBlockBulletCantView),
+                BulletPoint(context.l10n.profileBlockBulletNoNotify),
+                BulletPoint(context.l10n.profileBlockBulletYouCanView),
               ],
             ),
           ),
@@ -70,19 +67,19 @@ class BlockConfirmationView extends StatelessWidget {
             spacing: 16,
             children: [
               DivineButton(
-                label: 'Block $displayName',
+                label: context.l10n.profileBlockConfirmButton(displayName),
                 onPressed: onConfirm,
                 expanded: true,
                 type: DivineButtonType.error,
               ),
               DivineButton(
-                label: 'Cancel',
+                label: context.l10n.profileCancelButton,
                 type: DivineButtonType.secondary,
                 onPressed: onCancel,
                 expanded: true,
               ),
               DivineButton(
-                label: 'Learn More',
+                label: context.l10n.profileLearnMore,
                 type: DivineButtonType.link,
                 onPressed: () =>
                     launchUrl(Uri.parse('https://divine.video/safety')),

@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -24,9 +25,10 @@ class SupportCenterScreen extends ConsumerWidget {
     final userPubkey = authService.currentPublicKeyHex;
     final bugReportService = ref.read(bugReportServiceProvider);
 
+    final l10n = context.l10n;
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Support Center',
+        title: l10n.supportTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -39,14 +41,14 @@ class SupportCenterScreen extends ConsumerWidget {
             children: [
               _SupportTile(
                 icon: Icons.chat,
-                title: 'Contact Support',
-                subtitle: 'Start a conversation or view past messages',
+                title: l10n.supportContactSupport,
+                subtitle: l10n.supportContactSupportSubtitle,
                 onTap: () => _viewSupportMessages(context),
               ),
               _SupportTile(
                 icon: Icons.bug_report,
-                title: 'Report a Bug',
-                subtitle: 'Technical issues with the app',
+                title: l10n.supportReportBug,
+                subtitle: l10n.supportReportBugSubtitle,
                 onTap: () => _showBugReport(
                   context,
                   bugReportService,
@@ -55,14 +57,14 @@ class SupportCenterScreen extends ConsumerWidget {
               ),
               _SupportTile(
                 icon: Icons.lightbulb,
-                title: 'Request a Feature',
-                subtitle: 'Suggest an improvement or new feature',
+                title: l10n.supportRequestFeature,
+                subtitle: l10n.supportRequestFeatureSubtitle,
                 onTap: () => _showFeatureRequest(context, userPubkey),
               ),
               _SupportTile(
                 icon: Icons.save,
-                title: 'Save Logs',
-                subtitle: 'Export logs to file for manual sending',
+                title: l10n.supportSaveLogs,
+                subtitle: l10n.supportSaveLogsSubtitle,
                 onTap: () => _exportLogs(
                   context,
                   bugReportService,
@@ -71,22 +73,22 @@ class SupportCenterScreen extends ConsumerWidget {
               ),
               _SupportTile(
                 icon: Icons.help,
-                title: 'FAQ',
-                subtitle: 'Common questions & answers',
+                title: l10n.supportFaq,
+                subtitle: l10n.supportFaqSubtitle,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/faq',
-                  'FAQ',
+                  l10n.supportFaq,
                 ),
               ),
               _SupportTile(
                 icon: Icons.verified_user,
-                title: 'ProofMode',
-                subtitle: 'Learn about verification and authenticity',
+                title: l10n.supportProofMode,
+                subtitle: l10n.supportProofModeSubtitle,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/proofmode',
-                  'ProofMode',
+                  l10n.supportProofMode,
                 ),
               ),
             ],
@@ -103,8 +105,8 @@ class SupportCenterScreen extends ConsumerWidget {
   ) {
     if (userPubkey == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Log in to contact support'),
+        SnackBar(
+          content: Text(context.l10n.supportLoginRequired),
           backgroundColor: VineTheme.error,
         ),
       );
@@ -134,9 +136,9 @@ class SupportCenterScreen extends ConsumerWidget {
     String? userPubkey,
   ) async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Exporting logs...'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(context.l10n.supportExportingLogs),
+        duration: const Duration(seconds: 2),
       ),
     );
 
@@ -147,8 +149,8 @@ class SupportCenterScreen extends ConsumerWidget {
 
     if (!success && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to export logs'),
+        SnackBar(
+          content: Text(context.l10n.supportExportLogsFailed),
           backgroundColor: VineTheme.error,
         ),
       );
@@ -159,8 +161,8 @@ class SupportCenterScreen extends ConsumerWidget {
     if (!ZendeskSupportService.isAvailable) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Support chat not available'),
+          SnackBar(
+            content: Text(context.l10n.supportChatNotAvailable),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -172,8 +174,8 @@ class SupportCenterScreen extends ConsumerWidget {
     final shown = await ZendeskSupportService.showTicketListScreen();
     if (!shown && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open support messages'),
+        SnackBar(
+          content: Text(context.l10n.supportCouldNotOpenMessages),
           backgroundColor: VineTheme.error,
         ),
       );
@@ -193,7 +195,9 @@ class SupportCenterScreen extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Could not open $pageName'),
+              content: Text(
+                context.l10n.supportCouldNotOpenPage(pageName),
+              ),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -203,7 +207,9 @@ class SupportCenterScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error opening $pageName: $e'),
+            content: Text(
+              context.l10n.supportErrorOpeningPage(pageName, e),
+            ),
             backgroundColor: VineTheme.error,
           ),
         );

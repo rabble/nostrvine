@@ -1,5 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Shared error state for search result sections.
 ///
@@ -25,11 +26,14 @@ class SearchSectionErrorState extends StatelessWidget {
               color: VineTheme.secondaryText,
               size: 48,
             ),
-            Text('Something went wrong', style: VineTheme.titleSmallFont()),
+            Text(
+              context.l10n.searchSomethingWentWrong,
+              style: VineTheme.titleSmallFont(),
+            ),
             DivineButton(
               type: DivineButtonType.secondary,
               size: DivineButtonSize.small,
-              label: 'Try again',
+              label: context.l10n.searchTryAgain,
               onPressed: onRetry,
             ),
           ],

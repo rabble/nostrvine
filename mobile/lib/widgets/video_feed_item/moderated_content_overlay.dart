@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Displayed in place of the normal feed overlay when the active video's
 /// [PlaybackStatus] is [PlaybackStatus.forbidden] or
@@ -49,11 +50,11 @@ class ModeratedContentOverlay extends StatelessWidget {
         ? DivineIconName.lockSimple
         : DivineIconName.shieldCheck;
     final title = _isAgeRestricted
-        ? ModeratedContentOverlayStrings.ageRestrictedTitle
-        : ModeratedContentOverlayStrings.forbiddenTitle;
+        ? context.l10n.videoErrorAgeRestricted
+        : context.l10n.videoErrorContentRestricted;
     final body = _isAgeRestricted
-        ? ModeratedContentOverlayStrings.ageRestrictedBody
-        : ModeratedContentOverlayStrings.forbiddenBody;
+        ? context.l10n.videoErrorVerifyAgeBody
+        : context.l10n.videoErrorContentRestrictedBody;
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
@@ -83,11 +84,11 @@ class ModeratedContentOverlay extends StatelessWidget {
                 const SizedBox(height: 12),
                 if (_isAgeRestricted && onVerifyAge != null)
                   DivineButton(
-                    label: ModeratedContentOverlayStrings.verifyAgeLabel,
+                    label: context.l10n.videoErrorVerifyAgeButton,
                     onPressed: onVerifyAge,
                   ),
                 DivineButton(
-                  label: ModeratedContentOverlayStrings.skipLabel,
+                  label: context.l10n.videoErrorSkip,
                   type: DivineButtonType.tertiary,
                   onPressed: onSkip,
                 ),

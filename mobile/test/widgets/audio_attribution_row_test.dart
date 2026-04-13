@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 
 void main() {
@@ -76,6 +76,8 @@ void main() {
           ...additionalOverrides,
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
           home: Scaffold(
             backgroundColor: Colors.black,
@@ -86,38 +88,7 @@ void main() {
     }
 
     group('Original sound (no audio reference)', () {
-      testWidgets('shows Original sound with creator display name', (
-        tester,
-      ) async {
-        final video = createVideoWithoutAudio();
-        final profile = UserProfile(
-          pubkey: testPubkey,
-          rawData: const <String, dynamic>{},
-          createdAt: DateTime(2024),
-          eventId:
-              'event0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab',
-          displayName: 'TestCreator',
-        );
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            video: video,
-            additionalOverrides: [
-              userProfileReactiveProvider(testPubkey).overrideWith(
-                (ref) => Stream.value(profile),
-              ),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(
-          find.textContaining('Original sound - TestCreator'),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('shows music note icon with vineGreen color', (
+      testWidgets('renders nothing for videos without audio reference', (
         tester,
       ) async {
         final video = createVideoWithoutAudio();
@@ -125,87 +96,17 @@ void main() {
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        final divineIcons = tester.widgetList<DivineIcon>(
+        // Should render SizedBox.shrink - no visible content
+        expect(
           find.descendant(
             of: find.byType(AudioAttributionRow),
-            matching: find.byType(DivineIcon),
+            matching: find.byType(SizedBox),
           ),
-        );
-        final musicNoteIcon = divineIcons.firstWhere(
-          (icon) => icon.icon == DivineIconName.musicNote,
-        );
-        expect(musicNoteIcon.color, equals(VineTheme.vineGreen));
-      });
-
-      testWidgets('shows caret right icon', (tester) async {
-        final video = createVideoWithoutAudio();
-
-        await tester.pumpWidget(buildTestWidget(video: video));
-        await tester.pumpAndSettle();
-
-        final divineIcons = tester.widgetList<DivineIcon>(
-          find.descendant(
-            of: find.byType(AudioAttributionRow),
-            matching: find.byType(DivineIcon),
-          ),
-        );
-        expect(
-          divineIcons.any((icon) => icon.icon == DivineIconName.caretRight),
-          isTrue,
-        );
-      });
-
-      testWidgets('has correct semantics identifier', (tester) async {
-        final video = createVideoWithoutAudio();
-
-        await tester.pumpWidget(buildTestWidget(video: video));
-        await tester.pumpAndSettle();
-
-        final semantics = tester.widget<Semantics>(
-          find
-              .descendant(
-                of: find.byType(AudioAttributionRow),
-                matching: find.byType(Semantics),
-              )
-              .first,
-        );
-
-        expect(
-          semantics.properties.identifier,
-          equals('audio_attribution_row'),
-        );
-      });
-
-      testWidgets('has semantic label with Original sound', (tester) async {
-        final video = createVideoWithoutAudio();
-
-        await tester.pumpWidget(buildTestWidget(video: video));
-        await tester.pumpAndSettle();
-
-        final semantics = tester.widget<Semantics>(
-          find
-              .descendant(
-                of: find.byType(AudioAttributionRow),
-                matching: find.byType(Semantics),
-              )
-              .first,
-        );
-
-        expect(semantics.properties.label, contains('Original sound'));
-      });
-
-      testWidgets('falls back to generated name when no profile', (
-        tester,
-      ) async {
-        final video = createVideoWithoutAudio();
-        final generatedName = UserProfile.defaultDisplayNameFor(testPubkey);
-
-        await tester.pumpWidget(buildTestWidget(video: video));
-        await tester.pumpAndSettle();
-
-        expect(
-          find.textContaining('Original sound - $generatedName'),
           findsOneWidget,
+        );
+        expect(
+          find.textContaining('Original sound'),
+          findsNothing,
         );
       });
     });
@@ -292,7 +193,7 @@ void main() {
       });
 
       testWidgets(
-        'falls back to Original sound when audio event is null',
+        'renders nothing when audio event is null',
         (tester) async {
           final video = createVideoWithAudio();
 
@@ -315,8 +216,8 @@ void main() {
 
           await tester.pumpAndSettle();
 
-          // Should fall back to original sound, not hide
-          expect(find.textContaining('Original sound'), findsOneWidget);
+          // Should render nothing when audio can't be found
+          expect(find.textContaining('Original sound'), findsNothing);
         },
       );
     });
@@ -333,6 +234,8 @@ void main() {
               }),
             ],
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               theme: VineTheme.theme,
               home: Scaffold(
                 backgroundColor: Colors.black,

@@ -257,7 +257,8 @@ class NotificationRepository {
 
         items.add(
           GroupedNotification(
-            id: group.first.dedupeKey,
+            // Stable ID based on the video, not the newest liker.
+            id: 'group_like_${entry.key}',
             type: NotificationKind.like,
             actors: actors,
             totalCount: group.length,

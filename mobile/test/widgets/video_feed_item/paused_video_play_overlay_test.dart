@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 
 class _MockPlayer extends Mock implements Player {}
@@ -46,6 +47,8 @@ void main() {
 
     Widget buildSubject({Key? key}) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: PausedVideoPlayOverlay(
             key: key,
@@ -70,7 +73,13 @@ void main() {
 
         expect(find.bySemanticsLabel('Play video'), findsOneWidget);
 
-        await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SizedBox.shrink(),
+          ),
+        );
         await tester.pump();
 
         await tester.pumpWidget(buildSubject(key: const ValueKey('second')));

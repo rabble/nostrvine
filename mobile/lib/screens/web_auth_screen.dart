@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/web_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -77,11 +78,9 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
           final scaffoldMessenger = ScaffoldMessenger.of(context);
 
           scaffoldMessenger.showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
-                'Web authentication not supported in secure '
-                'mode. Please use mobile app for secure '
-                'key management.',
+                context.l10n.webAuthNotSupportedSecureMode,
               ),
               backgroundColor: VineTheme.error,
             ),
@@ -97,7 +96,9 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Authentication integration failed: $e'),
+              content: Text(
+                context.l10n.webAuthIntegrationFailed('$e'),
+              ),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -128,7 +129,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Unexpected error: $e';
+          _errorMessage = context.l10n.webAuthUnexpectedError('$e');
         });
       }
     } finally {
@@ -144,7 +145,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
     final bunkerUri = _bunkerUriController.text.trim();
     if (bunkerUri.isEmpty) {
       setState(() {
-        _errorMessage = 'Please enter a bunker URI';
+        _errorMessage = context.l10n.webAuthEnterBunkerUri;
       });
       return;
     }
@@ -170,7 +171,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Unexpected error: $e';
+          _errorMessage = context.l10n.webAuthUnexpectedError('$e');
         });
       }
     } finally {
@@ -226,14 +227,12 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
                                 ),
                                 const SizedBox(height: 24),
                                 Text(
-                                  'Connect to Divine',
+                                  context.l10n.webAuthConnectTitle,
                                   style: VineTheme.headlineLargeFont(),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Choose your preferred '
-                                  'Nostr authentication '
-                                  'method',
+                                  context.l10n.webAuthChooseMethod,
                                   style: VineTheme.bodyLargeFont(
                                     color: VineTheme.onSurfaceVariant,
                                   ),
@@ -332,7 +331,7 @@ class _Nip07AuthCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Browser Extension',
+                          context.l10n.webAuthBrowserExtension,
                           style: VineTheme.titleSmallFont(),
                         ),
                         const SizedBox(width: 8),
@@ -346,7 +345,7 @@ class _Nip07AuthCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'RECOMMENDED',
+                            context.l10n.webAuthRecommended,
                             style: VineTheme.labelSmallFont(
                               color: VineTheme.onPrimary,
                             ),
@@ -428,9 +427,12 @@ class _BunkerAuthCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('nsec bunker', style: VineTheme.titleSmallFont()),
                       Text(
-                        'Connect to a remote signer',
+                        context.l10n.webAuthNsecBunker,
+                        style: VineTheme.titleSmallFont(),
+                      ),
+                      Text(
+                        context.l10n.webAuthConnectRemoteSigner,
                         style: VineTheme.bodyMediumFont(
                           color: VineTheme.onSurfaceVariant,
                         ),
@@ -447,7 +449,7 @@ class _BunkerAuthCard extends StatelessWidget {
               enableInteractiveSelection: true,
               style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
               decoration: InputDecoration(
-                hintText: 'bunker://pubkey?relay=wss://...',
+                hintText: context.l10n.webAuthBunkerHint,
                 hintStyle: VineTheme.bodyMediumFont(
                   color: VineTheme.onSurfaceDisabled,
                 ),
@@ -466,7 +468,7 @@ class _BunkerAuthCard extends StatelessWidget {
                         icon: DivineIconName.clipboard,
                         color: VineTheme.onSurfaceMuted,
                       ),
-                      tooltip: 'Paste from clipboard',
+                      tooltip: context.l10n.webAuthPasteFromClipboard,
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -475,7 +477,7 @@ class _BunkerAuthCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             DivineButton(
-              label: 'Connect to Bunker',
+              label: context.l10n.webAuthConnectToBunker,
               expanded: true,
               isLoading: isAuthenticating,
               onPressed: isAuthenticating ? null : onConnect,
@@ -533,27 +535,32 @@ class _NostrHelpBox extends StatelessWidget {
         color: VineTheme.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.info,
-                color: VineTheme.primary,
-                size: 20,
+      child: Builder(
+        builder: (context) => Column(
+          children: [
+            Row(
+              children: [
+                const DivineIcon(
+                  icon: DivineIconName.info,
+                  color: VineTheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  context.l10n.webAuthNewToNostr,
+                  style: VineTheme.titleSmallFont(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              context.l10n.webAuthNostrHelp,
+              style: VineTheme.bodySmallFont(
+                color: VineTheme.onSurfaceVariant,
               ),
-              const SizedBox(width: 8),
-              Text('New to Nostr?', style: VineTheme.titleSmallFont()),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Install a browser extension like Alby or '
-            'nos2x for the easiest experience, or use '
-            'nsec bunker for secure remote signing.',
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
