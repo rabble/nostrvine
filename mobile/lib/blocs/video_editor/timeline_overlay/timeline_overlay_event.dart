@@ -19,7 +19,7 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
 
   final List<Layer> layers;
   final List<FilterState> filters;
-  final List<AudioTrack> audioTracks;
+  final List<AudioEvent> audioTracks;
 
   final Duration totalVideoDuration;
 

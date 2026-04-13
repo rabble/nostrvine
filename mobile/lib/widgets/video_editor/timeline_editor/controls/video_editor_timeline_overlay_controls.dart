@@ -1,8 +1,12 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 import 'package:pro_image_editor/core/models/layers/layer.dart';
@@ -25,17 +29,10 @@ class TimelineOverlayControls extends StatelessWidget {
     if (item == null) return const SizedBox.shrink();
 
     return switch (item.type) {
-      TimelineOverlayType.layer => _LayerOverlayControls(item: item),
-      TimelineOverlayType.filter => _FilterOverlayControls(item: item),
-      TimelineOverlayType.sound => VideoEditorTimelineControls(
-        onDelete: () => _removeOverlay(context, selectedId),
-        onDone: () => _deselect(context),
-      ),
+      .sound => _SoundOverlayControls(item: item),
+      .filter => _FilterOverlayControls(item: item),
+      .layer => _LayerOverlayControls(item: item),
     };
-  }
-
-  static void _removeOverlay(BuildContext context, String itemId) {
-    //FIXME:
   }
 
   static void _deselect(BuildContext context) {
@@ -116,13 +113,12 @@ class _FilterOverlayControls extends StatelessWidget {
   }) {
     final editor = VideoEditorScope.of(context).editor;
     if (editor == null) return;
-    final filterIdx = _filterIndexFromId(item.id);
-    if (filterIdx == null) return;
 
     final currentFilters = List<FilterState>.from(
       editor.stateManager.activeFilters,
     );
-    if (filterIdx < 0 || filterIdx >= currentFilters.length) return;
+    final filterIdx = currentFilters.indexWhere((f) => f.id == item.id);
+    if (filterIdx < 0) return;
     currentFilters.removeAt(filterIdx);
 
     // The editor history system uses lastWhere(filters.isNotEmpty) to derive
@@ -131,7 +127,7 @@ class _FilterOverlayControls extends StatelessWidget {
     // (empty matrices) is non-empty as a list, so it takes priority and
     // causes the rendered filter to be a no-op (no colour transformation).
     final newFilters = currentFilters.isEmpty
-        ? [const FilterState(name: 'none')]
+        ? [FilterState(name: 'none')]
         : currentFilters;
     editor.addHistory(filters: newFilters);
 
@@ -148,9 +144,78 @@ class _FilterOverlayControls extends StatelessWidget {
       const TimelineOverlayItemSelected(null),
     );
   }
+}
 
-  static int? _filterIndexFromId(String id) {
-    if (!id.startsWith('filter_')) return null;
-    return int.tryParse(id.substring('filter_'.length));
+/// Controls for sound overlays: Delete + Done.
+class _SoundOverlayControls extends StatelessWidget {
+  const _SoundOverlayControls({required this.item});
+
+  final TimelineOverlayItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return VideoEditorTimelineControls(
+      onDelete: () => _removeSound(context: context),
+      onEdit: () => _editSound(context: context),
+      onDone: () => TimelineOverlayControls._deselect(context),
+    );
+  }
+
+  Future<void> _editSound({required BuildContext context}) async {
+    final editor = VideoEditorScope.of(context).editor;
+    if (editor == null) return;
+
+    final tracks = editor.stateManager.audioTracks;
+    final sound = tracks.where((t) => t.id == item.id).firstOrNull;
+    if (sound == null) return;
+
+    final timingResult = await Navigator.of(context).push<AudioTimingResult>(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: VineTheme.transparent,
+        transitionsBuilder: (_, animation, _, child) =>
+            FadeTransition(opacity: animation, child: child),
+        pageBuilder: (_, _, _) => VideoAudioEditorTimingScreen(sound: sound),
+      ),
+    );
+    if (timingResult == null || !context.mounted) return;
+
+    switch (timingResult) {
+      case AudioTimingConfirmed(:final sound):
+        final updatedTracks = tracks
+            .map((t) => t.id == item.id ? sound : t)
+            .map((e) => e.toJson())
+            .toList();
+        editor.addHistory(
+          meta: {
+            ...editor.stateManager.activeMeta,
+            VideoEditorConstants.audioStateHistoryKey: updatedTracks,
+          },
+        );
+      case AudioTimingDeleted():
+        _removeSound(context: context);
+    }
+  }
+
+  void _removeSound({required BuildContext context}) {
+    final editor = VideoEditorScope.of(context).editor;
+    if (editor == null) return;
+
+    final tracks = editor.stateManager.audioTracks;
+    final updatedTracks = tracks
+        .where((t) => t.id != item.id)
+        .map((e) => e.toJson())
+        .toList();
+
+    editor.addHistory(
+      meta: {
+        ...editor.stateManager.activeMeta,
+        VideoEditorConstants.audioStateHistoryKey: updatedTracks,
+      },
+    );
+
+    context.read<TimelineOverlayBloc>().add(
+      const TimelineOverlayItemSelected(null),
+    );
   }
 }

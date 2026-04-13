@@ -7,6 +7,7 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -397,26 +398,37 @@ class _VideoEditorTimelineState
     );
     final duration = item.duration;
 
-    final filterIdx = _filterIndexFromId(itemId);
-    if (filterIdx != null) {
-      editor.setFilterTimeline(
-        index: filterIdx,
-        startTime: startTime,
-        endTime: startTime + duration,
-        skipUpdateHistory: true,
-      );
-    } else {
-      final layers = editor.activeLayers;
-      final layerIdx = layers.indexWhere((l) => l.id == itemId);
-      if (layerIdx != -1) {
-        final stackIndex = editor.getLayerStackIndex(layers[layerIdx]);
+    switch (item.type) {
+      case .layer:
+        final layers = editor.activeLayers;
+        final layerIdx = layers.indexWhere((l) => l.id == itemId);
+
         editor.setLayerTimeline(
-          index: stackIndex,
+          index: layerIdx,
           startTime: startTime,
           endTime: startTime + duration,
           skipUpdateHistory: true,
         );
-      }
+      case .filter:
+        final filters = editor.stateManager.activeFilters;
+        final filterIdx = filters.indexWhere((e) => e.id == itemId);
+
+        editor.setFilterTimeline(
+          index: filterIdx,
+          startTime: startTime,
+          endTime: startTime + duration,
+          skipUpdateHistory: true,
+        );
+      case .sound:
+        final audioTracks = editor.stateManager.audioTracks;
+        final audioIdx = audioTracks.indexWhere((e) => e.id == itemId);
+
+        editor.setSoundTimeline(
+          index: audioIdx,
+          startTime: startTime,
+          endTime: startTime + duration,
+          skipUpdateHistory: true,
+        );
     }
 
     context.read<TimelineOverlayBloc>().add(
@@ -436,26 +448,41 @@ class _VideoEditorTimelineState
     required bool isStart,
   }) {
     final editor = VideoEditorScope.of(context).editor!;
+    final item = context.read<TimelineOverlayBloc>().state.items.firstWhere(
+      (i) => i.id == itemId,
+    );
 
-    final filterIdx = _filterIndexFromId(itemId);
-    if (filterIdx != null) {
-      editor.setFilterTimeline(
-        index: filterIdx,
-        startTime: startTime,
-        endTime: endTime,
-        skipUpdateHistory: true,
-      );
-    } else {
-      final layer = editor.activeLayers.firstWhere(
-        (layer) => layer.id == itemId,
-      );
-      final index = editor.getLayerStackIndex(layer);
-      editor.setLayerTimeline(
-        index: index,
-        startTime: startTime,
-        endTime: endTime,
-        skipUpdateHistory: true,
-      );
+    switch (item.type) {
+      case .layer:
+        final layers = editor.activeLayers;
+        final layerIdx = layers.indexWhere((l) => l.id == itemId);
+
+        editor.setLayerTimeline(
+          index: layerIdx,
+          startTime: startTime,
+          endTime: endTime,
+          skipUpdateHistory: true,
+        );
+      case .filter:
+        final filters = editor.stateManager.activeFilters;
+        final filterIdx = filters.indexWhere((e) => e.id == itemId);
+
+        editor.setFilterTimeline(
+          index: filterIdx,
+          startTime: startTime,
+          endTime: endTime,
+          skipUpdateHistory: true,
+        );
+      case .sound:
+        final audioTracks = editor.stateManager.audioTracks;
+        final audioIdx = audioTracks.indexWhere((e) => e.id == itemId);
+
+        editor.setSoundTimeline(
+          index: audioIdx,
+          startTime: startTime,
+          endTime: endTime,
+          skipUpdateHistory: true,
+        );
     }
 
     context.read<TimelineOverlayBloc>().add(
@@ -514,33 +541,38 @@ class _VideoEditorTimelineState
       (i) => i.id == itemId,
     );
 
-    final filterIdx = _filterIndexFromId(itemId);
-    if (filterIdx != null) {
-      editor.setFilterTimeline(
-        index: filterIdx,
-        startTime: startTime,
-        endTime: startTime + item.duration,
-        skipUpdateHistory: true,
-      );
-    } else {
-      final layers = editor.activeLayers;
-      final layerIdx = layers.indexWhere((l) => l.id == itemId);
-      if (layerIdx == -1) return;
-      final stackIndex = editor.getLayerStackIndex(layers[layerIdx]);
-      editor.setLayerTimeline(
-        index: stackIndex,
-        startTime: startTime,
-        endTime: startTime + item.duration,
-        skipUpdateHistory: true,
-      );
-    }
-  }
+    switch (item.type) {
+      case .layer:
+        final layers = editor.activeLayers;
+        final layerIdx = layers.indexWhere((l) => l.id == itemId);
 
-  /// Returns the [FilterState] index encoded in the given overlay item [id],
-  /// or `null` if [id] does not belong to a filter item.
-  static int? _filterIndexFromId(String id) {
-    if (!id.startsWith('filter_')) return null;
-    return int.tryParse(id.substring('filter_'.length));
+        editor.setLayerTimeline(
+          index: layerIdx,
+          startTime: startTime,
+          endTime: startTime + item.duration,
+          skipUpdateHistory: true,
+        );
+      case .filter:
+        final layers = editor.stateManager.activeFilters;
+        final filterIdx = layers.indexWhere((e) => e.id == itemId);
+
+        editor.setFilterTimeline(
+          index: filterIdx,
+          startTime: startTime,
+          endTime: startTime + item.duration,
+          skipUpdateHistory: true,
+        );
+      case .sound:
+        final audioTracks = editor.stateManager.audioTracks;
+        final audioIdx = audioTracks.indexWhere((e) => e.id == itemId);
+
+        editor.setSoundTimeline(
+          index: audioIdx,
+          startTime: startTime,
+          endTime: startTime + item.duration,
+          skipUpdateHistory: true,
+        );
+    }
   }
 
   void _onOverlayDragEnded() {
@@ -665,28 +697,13 @@ class _VideoEditorTimelineState
       final editorFilters = editor.stateManager.activeFilters;
 
       if (appliedFilters.length > _committedFilterStates.length) {
-        // A new filter was confirmed. The library already wrote its FilterState
-        // into the editor history (replacing the previous entry). Accumulate
-        // the new state on top of the existing ones so all applied filters
-        // continue to render composited together.
-        final newStates = editorFilters.where((f) => f.isNotEmpty).toList();
-        // Persist the filter name in meta so it survives a history
-        // export/import (appliedFilters is in-memory only).
-        final nameOffset = _committedFilterStates.length;
-        final namedStates = [
-          for (var i = 0; i < newStates.length; i++)
-            newStates[i].copyWith(
-              meta: {
-                ...newStates[i].meta,
-                'name': (nameOffset + i) < appliedFilters.length
-                    ? appliedFilters[nameOffset + i].name
-                    : 'Filter',
-              },
-            ),
-        ];
-        _committedFilterStates = [..._committedFilterStates, ...namedStates];
-        // Write the full accumulated list back so pro_image_editor composites
-        // every filter together during render and export.
+        // A new filter was applied. The editor's activeFilters contains only
+        // the latest; append it to our accumulated list so all filters are
+        // composited together.
+        final newFilter = editorFilters.lastOrNull;
+        if (newFilter != null && newFilter.isNotEmpty) {
+          _committedFilterStates = [..._committedFilterStates, newFilter];
+        }
         editor.addHistory(filters: _committedFilterStates);
       } else {
         // A filter was removed (one or all). _removeFilter already called

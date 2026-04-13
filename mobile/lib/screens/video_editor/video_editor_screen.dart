@@ -333,7 +333,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   Future<void> _openMusicLibrary() async {
     // If no sound selected, show selection sheet first
 
-    final result = await VineBottomSheet.show<AudioEvent>(
+    var result = await VineBottomSheet.show<AudioEvent>(
       context: context,
       maxChildSize: 1,
       initialChildSize: 1,
@@ -346,11 +346,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
     if (!mounted || editor == null || result == null) return;
 
+    result = result.copyWith(id: '${result.id}-${DateTime.now()}');
     editor.addHistory(
       meta: {
+        ...editor.stateManager.activeMeta,
         VideoEditorConstants.audioStateHistoryKey: [
-          // Preserve existing audio tracks from the current history entry.
-          ...editor.stateManager.audioTracks,
+          ...editor.stateManager.audioTracks.map((e) => e.toJson()),
           result.toJson(),
         ],
       },

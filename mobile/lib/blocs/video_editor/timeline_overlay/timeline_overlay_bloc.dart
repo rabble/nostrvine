@@ -5,6 +5,7 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -47,9 +48,13 @@ class TimelineOverlayBloc
             TimelineOverlayItem(
               id: track.id,
               type: .sound,
-              startTime: track.startTime ?? .zero,
-              endTime: (track.startTime ?? .zero) + track.duration,
-              label: track.title,
+              startTime: track.startOffset,
+              endTime:
+                  track.startOffset +
+                  Duration(
+                    milliseconds: ((track.duration ?? 0) * 1000).toInt(),
+                  ),
+              label: track.title ?? track.pubkey,
               row: soundRow++,
             ),
           for (var i = 0; i < event.filters.length; i++)
@@ -57,7 +62,7 @@ class TimelineOverlayBloc
             // _removeFilter to "clear" the filter in the editor history.
             if (event.filters[i].isNotEmpty)
               TimelineOverlayItem(
-                id: 'filter_${event.filters[i].name}_$i',
+                id: event.filters[i].id,
                 type: TimelineOverlayType.filter,
                 startTime: event.filters[i].startTime ?? Duration.zero,
                 endTime: event.filters[i].endTime ?? event.totalVideoDuration,

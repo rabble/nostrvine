@@ -247,8 +247,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
   }
 
-  /// Called when clip paths change. Reinitializes the player with the new
-  /// paths or pauses when no clips are available.
+  /// Called when clip paths change. Updates the player with the new clips
+  /// or pauses when no clips are available.
   void _onClipPathsChanged(List<String> clipPaths) {
     if (clipPaths.isEmpty) {
       _videoPlayer?.pause();
@@ -259,11 +259,23 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       return;
     }
 
+    final clips = ref.read(clipManagerProvider).clips;
     final currentPosition = context
         .read<VideoEditorMainBloc>()
         .state
         .currentPosition;
-    _initializePlayer(clipPaths, startPosition: currentPosition);
+    _videoPlayer?.setClips(
+      [
+        for (final clip in clips)
+          if (clip.video.file?.path case final path?)
+            VideoClip(
+              uri: path,
+              start: clip.trimStart,
+              end: clip.duration - clip.trimEnd,
+            ),
+      ],
+      startPosition: currentPosition,
+    );
   }
 
   /// Creates the [ProVideoController] (only once, not tied to a file).
@@ -697,6 +709,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 : const StateHistoryConfigs(),
             imageGeneration: ImageGenerationConfigs(
               captureImageByteFormat: .rawStraightRgba,
+              enableBackgroundGeneration: false,
+              enableUseOriginalBytes: false,
               customPixelRatio: max(
                 1,
                 max(
