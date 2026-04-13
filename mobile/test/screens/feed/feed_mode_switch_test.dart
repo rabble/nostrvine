@@ -9,8 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 
@@ -33,13 +31,8 @@ void main() {
       mockBloc.close();
     });
 
-    Widget createTestWidget({bool newSearchEnabled = false}) {
+    Widget createTestWidget() {
       return ProviderScope(
-        overrides: [
-          isFeatureEnabledProvider(
-            FeatureFlag.newSearch,
-          ).overrideWith((ref) => newSearchEnabled),
-        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -177,26 +170,6 @@ void main() {
       await tester.pump();
 
       expect(find.text('For You'), findsOneWidget);
-    });
-
-    group('newSearch feature flag', () {
-      testWidgets('hides search button when flag is enabled', (tester) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoFeedState(status: VideoFeedStatus.success));
-        await tester.pumpWidget(createTestWidget(newSearchEnabled: true));
-
-        expect(find.byType(DiVineAppBarIconButton), findsNothing);
-      });
-
-      testWidgets('shows search button when flag is disabled', (tester) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoFeedState(status: VideoFeedStatus.success));
-        await tester.pumpWidget(createTestWidget());
-
-        expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
-      });
     });
   });
 }

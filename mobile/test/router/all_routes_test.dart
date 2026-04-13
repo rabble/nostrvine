@@ -1,5 +1,5 @@
 // ABOUTME: Comprehensive test verifying all app routes are properly configured
-// ABOUTME: Tests both grid and feed modes for explore, search, hashtag, and profile routes
+// ABOUTME: Tests both grid and feed modes for explore, hashtag, and profile routes
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +13,6 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
@@ -176,92 +175,6 @@ void main() {
         ProfileScreenRouter.pathForIndex('npub1abc', 5),
       );
     });
-
-    testWidgets('${SearchScreenPure.path} route works (empty search)', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-      router.go(SearchScreenPure.path);
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.path,
-      );
-    });
-
-    testWidgets('${SearchScreenPure.pathWithTerm} route works (grid mode)', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.pathForTerm(term: 'bitcoin'),
-      );
-    });
-
-    testWidgets(
-      '${SearchScreenPure.pathWithTermAndIndex} route works (feed mode)',
-      (tester) async {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp.router(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              routerConfig: container.read(goRouterProvider),
-            ),
-          ),
-        );
-
-        final router = container.read(goRouterProvider);
-        router.go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 0));
-        await tester.pumpAndSettle();
-        expect(
-          router.routeInformationProvider.value.uri.toString(),
-          SearchScreenPure.pathForTerm(term: 'bitcoin', index: 0),
-        );
-
-        router.go(SearchScreenPure.pathForTerm(term: 'nostr', index: 3));
-        await tester.pumpAndSettle();
-        expect(
-          router.routeInformationProvider.value.uri.toString(),
-          SearchScreenPure.pathForTerm(term: 'nostr', index: 3),
-        );
-      },
-    );
 
     testWidgets('${HashtagScreenRouter.path} route works (grid mode)', (
       tester,

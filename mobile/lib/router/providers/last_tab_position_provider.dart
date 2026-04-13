@@ -42,9 +42,7 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
   /// For routes that always have an index (home, notifications, profile): defaults to 0
   int? getPosition(RouteType type) {
     // For routes that have grid/feed modes, return null for grid mode by default
-    if (type == RouteType.explore ||
-        type == RouteType.search ||
-        type == RouteType.hashtag) {
+    if (type == RouteType.explore || type == RouteType.hashtag) {
       return state[type]; // Returns null if not set, indicating grid mode
     }
     // For routes that always have an index (home, notifications, profile), default to 0

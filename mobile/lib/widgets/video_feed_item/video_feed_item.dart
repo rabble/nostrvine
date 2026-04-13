@@ -31,7 +31,6 @@ import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/visibility_tracker.dart';
@@ -944,10 +943,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                   ),
                   RouteType.likedVideos => LikedVideosScreenRouter.pathForIndex(
                     widget.index,
-                  ),
-                  RouteType.search => SearchScreenPure.pathForTerm(
-                    term: ctx.searchTerm,
-                    index: widget.index,
                   ),
                   _ => ExploreScreen.pathForIndex(widget.index),
                 };
@@ -2195,10 +2190,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _ContentWarningBadge._humanize(
-                              context,
-                              label,
-                            ),
+                            _ContentWarningBadge._humanize(context, label),
                             style: const TextStyle(
                               color: VineTheme.whiteText,
                               fontSize: 15,
@@ -2207,10 +2199,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _ContentWarningBadge._describe(
-                              context,
-                              label,
-                            ),
+                            _ContentWarningBadge._describe(context, label),
                             style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 13,

@@ -79,8 +79,6 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       return null;
     case RouteType.explore:
       videosAsync = ref.watch(videosForExploreRouteProvider);
-    case RouteType.search:
-      videosAsync = ref.watch(videosForSearchRouteProvider);
     case RouteType.likedVideos:
       // Liked videos feed mode uses PooledFullscreenVideoFeedScreen inline,
       // which self-manages playback. Return null.
