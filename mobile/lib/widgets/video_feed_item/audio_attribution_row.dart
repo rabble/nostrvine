@@ -29,9 +29,10 @@ class AudioAttributionRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Videos without a shared audio event show "Original sound - @creator"
+    // Only show for videos with shared/bundled audio, not original sounds.
+    // Original sound info is available in the metadata "more info" sheet.
     if (!video.hasAudioReference || video.audioEventId == null) {
-      return _OriginalSoundContent(video: video);
+      return const SizedBox.shrink();
     }
 
     // Watch the shared audio event asynchronously
@@ -46,8 +47,7 @@ class AudioAttributionRow extends ConsumerWidget {
             name: 'AudioAttributionRow',
             category: LogCategory.ui,
           );
-          // Fall back to original sound when the referenced audio is missing
-          return _OriginalSoundContent(video: video);
+          return const SizedBox.shrink();
         }
 
         return _AudioAttributionContent(audio: audio);
@@ -59,8 +59,7 @@ class AudioAttributionRow extends ConsumerWidget {
           name: 'AudioAttributionRow',
           category: LogCategory.ui,
         );
-        // Fall back to original sound on error
-        return _OriginalSoundContent(video: video);
+        return const SizedBox.shrink();
       },
     );
   }
@@ -143,80 +142,6 @@ class _AudioAttributionContent extends ConsumerWidget {
     context.pushWithVideoPause(
       SoundDetailScreen.pathForId(audio.id),
       extra: audio,
-    );
-  }
-}
-
-/// Original sound attribution for videos without a shared audio event.
-///
-/// Shows `♪ Original sound - @creator_display_name` and navigates to
-/// [OriginalSoundDetailScreen] on tap.
-class _OriginalSoundContent extends ConsumerWidget {
-  const _OriginalSoundContent({required this.video});
-
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final creatorProfile = ref
-        .watch(userProfileReactiveProvider(video.pubkey))
-        .value;
-    final creatorName =
-        creatorProfile?.bestDisplayName ??
-        UserProfile.defaultDisplayNameFor(video.pubkey);
-
-    final label = 'Original sound - $creatorName';
-
-    return Semantics(
-      identifier: 'audio_attribution_row',
-      button: true,
-      label: 'Sound: $label. Tap to view sound details.',
-      child: GestureDetector(
-        onTap: () {
-          Log.info(
-            'Navigating to original sound detail: pubkey=${video.pubkey}',
-            name: 'AudioAttributionRow',
-            category: LogCategory.ui,
-          );
-          context.pushWithVideoPause(
-            OriginalSoundDetailScreen.pathForPubkey(video.pubkey),
-            extra: video,
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: VineTheme.backgroundColor.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 4,
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.musicNote,
-                size: 14,
-                color: VineTheme.vineGreen,
-              ),
-              Flexible(
-                child: Text(
-                  label,
-                  style: VineTheme.labelMediumFont().copyWith(
-                    shadows: [const Shadow(blurRadius: 4)],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const DivineIcon(
-                icon: DivineIconName.caretRight,
-                size: 14,
-                color: VineTheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
