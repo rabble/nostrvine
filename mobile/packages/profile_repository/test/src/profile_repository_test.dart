@@ -101,18 +101,18 @@ void main() {
           profileContent: any(named: 'profileContent'),
         ),
       ).thenAnswer((_) async => mockProfileEvent);
-      when(
-        () => mockUserProfilesDao.getProfile(any()),
-      ).thenAnswer((invocation) async {
+      when(() => mockUserProfilesDao.getProfile(any())).thenAnswer((
+        invocation,
+      ) async {
         final pubkey = invocation.positionalArguments.first as String;
         if (storedProfile?.pubkey == pubkey) {
           return storedProfile;
         }
         return null;
       });
-      when(
-        () => mockUserProfilesDao.upsertProfile(any()),
-      ).thenAnswer((invocation) async {
+      when(() => mockUserProfilesDao.upsertProfile(any())).thenAnswer((
+        invocation,
+      ) async {
         storedProfile = invocation.positionalArguments.first as UserProfile;
       });
     });
@@ -915,50 +915,50 @@ void main() {
         test(
           'keeps cached relay profile when slower indexer is older',
           () async {
-          final indexerCompleter = Completer<List<Event>>();
-          when(
-            () => mockNostrClient.fetchProfile(testPubkey),
-          ).thenAnswer((_) async => mockProfileEvent);
-          final indexerEvent = MockEvent();
-          when(() => indexerEvent.kind).thenReturn(0);
-          when(() => indexerEvent.pubkey).thenReturn(testPubkey);
-          when(() => indexerEvent.createdAt).thenReturn(1703977200);
-          when(() => indexerEvent.id).thenReturn('idx_old_$testEventId');
-          when(
-            () => indexerEvent.content,
-          ).thenReturn(jsonEncode({'display_name': 'Old Indexer'}));
-          when(
-            () => mockNostrClient.queryEvents(
-              any(),
-              tempRelays: any(named: 'tempRelays'),
-              useCache: any(named: 'useCache'),
-            ),
-          ).thenAnswer((_) => indexerCompleter.future);
+            final indexerCompleter = Completer<List<Event>>();
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey),
+            ).thenAnswer((_) async => mockProfileEvent);
+            final indexerEvent = MockEvent();
+            when(() => indexerEvent.kind).thenReturn(0);
+            when(() => indexerEvent.pubkey).thenReturn(testPubkey);
+            when(() => indexerEvent.createdAt).thenReturn(1703977200);
+            when(() => indexerEvent.id).thenReturn('idx_old_$testEventId');
+            when(
+              () => indexerEvent.content,
+            ).thenReturn(jsonEncode({'display_name': 'Old Indexer'}));
+            when(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+                useCache: any(named: 'useCache'),
+              ),
+            ).thenAnswer((_) => indexerCompleter.future);
 
-          final fetchFuture = profileRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-          );
-          final firstResult = await fetchFuture.timeout(
-            const Duration(milliseconds: 50),
-          );
+            final fetchFuture = profileRepository.fetchFreshProfile(
+              pubkey: testPubkey,
+            );
+            final firstResult = await fetchFuture.timeout(
+              const Duration(milliseconds: 50),
+            );
 
-          expect(firstResult, isNotNull);
-          expect(firstResult!.displayName, equals('Test User'));
+            expect(firstResult, isNotNull);
+            expect(firstResult!.displayName, equals('Test User'));
 
-          indexerCompleter.complete([indexerEvent]);
-          await Future<void>.delayed(Duration.zero);
+            indexerCompleter.complete([indexerEvent]);
+            await Future<void>.delayed(Duration.zero);
 
-          verifyNever(
-            () => mockUserProfilesDao.upsertProfile(
-              any(
-                that: isA<UserProfile>().having(
-                  (profile) => profile.displayName,
-                  'displayName',
-                  equals('Old Indexer'),
+            verifyNever(
+              () => mockUserProfilesDao.upsertProfile(
+                any(
+                  that: isA<UserProfile>().having(
+                    (profile) => profile.displayName,
+                    'displayName',
+                    equals('Old Indexer'),
+                  ),
                 ),
               ),
-            ),
-          );
+            );
           },
         );
 
