@@ -1,10 +1,37 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/image_cache_manager.dart';
+import 'package:media_cache/media_cache.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 void main() {
+  group('openVineImageCache', () {
+    test('is a $MediaCacheManager', () {
+      expect(openVineImageCache, isA<MediaCacheManager>());
+    });
+
+    test('uses image config with correct cache key', () {
+      expect(
+        openVineImageCache.mediaConfig.cacheKey,
+        equals('openvine_image_cache'),
+      );
+    });
+
+    test('uses 7-day stale period from image preset', () {
+      expect(
+        openVineImageCache.mediaConfig.stalePeriod,
+        equals(const Duration(days: 7)),
+      );
+    });
+
+    test('limits to 200 cache objects', () {
+      expect(
+        openVineImageCache.mediaConfig.maxNrOfCacheObjects,
+        equals(200),
+      );
+    });
+  });
+
   group(VineCachedImage, () {
     const testUrl = 'https://example.com/image.jpg';
 
@@ -72,11 +99,7 @@ void main() {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
-          child: VineCachedImage(
-            imageUrl: testUrl,
-            width: 100,
-            height: 200,
-          ),
+          child: VineCachedImage(imageUrl: testUrl, width: 100, height: 200),
         ),
       );
 
@@ -138,10 +161,7 @@ void main() {
       final cached = tester.widget<CachedNetworkImage>(
         find.byType(CachedNetworkImage),
       );
-      expect(
-        cached.fadeInDuration,
-        equals(const Duration(milliseconds: 500)),
-      );
+      expect(cached.fadeInDuration, equals(const Duration(milliseconds: 500)));
     });
 
     testWidgets('defaults fadeOutDuration to 1000ms', (tester) async {
@@ -179,10 +199,7 @@ void main() {
         find.byType(CachedNetworkImage),
       );
       expect(cached.fadeInDuration, equals(Duration.zero));
-      expect(
-        cached.fadeOutDuration,
-        equals(const Duration(milliseconds: 200)),
-      );
+      expect(cached.fadeOutDuration, equals(const Duration(milliseconds: 200)));
     });
   });
 }

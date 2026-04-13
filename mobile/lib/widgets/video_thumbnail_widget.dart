@@ -352,23 +352,14 @@ class _SafeNetworkImage extends StatelessWidget {
       placeholder: (context, url) =>
           Container(width: width, height: height, color: VineTheme.transparent),
       errorWidget: (context, url, error) {
-        // 404s are expected - thumbnail may not exist yet. Handle silently.
-        final errorStr = error.toString();
-        final is404 =
-            errorStr.contains('404') ||
-            (errorStr.contains('statusCode') && errorStr.contains('Invalid'));
-
-        if (!is404) {
-          // Log full error details for debugging
-          Log.warning(
-            '🖼️ Thumbnail load failed for video $videoId:\n'
-            '  URL: $url\n'
-            '  Error type: ${error.runtimeType}\n'
-            '  Error: $errorStr',
-            name: 'VideoThumbnailWidget',
-            category: LogCategory.video,
-          );
-        }
+        Log.warning(
+          '🖼️ Thumbnail load failed for video $videoId:\n'
+          '  URL: $url\n'
+          '  Error type: ${error.runtimeType}\n'
+          '  Error: $error',
+          name: 'VideoThumbnailWidget',
+          category: LogCategory.video,
+        );
 
         // Show transparent so background surfaceContainer color shows through
         return Container(
