@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/web_video_player.dart';
 import 'package:video_player/video_player.dart';
 
@@ -21,6 +22,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: WebVideoPlayer(
           url: 'https://example.com/video.mp4',
           initializeTimeout: const Duration(milliseconds: 50),

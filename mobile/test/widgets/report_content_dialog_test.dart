@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart' as nostr;
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
@@ -96,6 +97,8 @@ void main() {
         ),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: ReportContentDialog(video: testVideo)),
       ),
     );
@@ -195,6 +198,8 @@ void main() {
             muteServiceProvider.overrideWith((ref) async => mockMuteService),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ReportContentDialog(video: testVideo)),
           ),
         ),
@@ -300,7 +305,11 @@ void main() {
           ),
           muteServiceProvider.overrideWith((ref) async => mockMuteService),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
       );
     }
 
@@ -533,6 +542,8 @@ void main() {
     testWidgets('renders success content with DM mention', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -567,6 +578,8 @@ void main() {
     testWidgets('renders Close button', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -650,7 +663,11 @@ void main() {
           muteServiceProvider.overrideWith((ref) async => mockMuteService),
           dmRepositoryProvider.overrideWithValue(mockDmRepository),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
       );
     }
 
@@ -781,7 +798,11 @@ void main() {
               ),
               dmRepositoryProvider.overrideWithValue(noKeysDmRepo),
             ],
-            child: MaterialApp.router(routerConfig: router),
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
           ),
         );
         await tester.pumpAndSettle();

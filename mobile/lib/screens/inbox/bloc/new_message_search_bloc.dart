@@ -5,9 +5,9 @@ import 'dart:developer' as developer;
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 part 'new_message_search_event.dart';

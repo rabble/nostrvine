@@ -177,7 +177,7 @@ class _GrantCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Align(
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerEnd,
             child: DivineButton(
               label: 'Revoke',
               onPressed: onRevoke,

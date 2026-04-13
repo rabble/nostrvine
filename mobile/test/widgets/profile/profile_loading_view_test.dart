@@ -3,13 +3,18 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 
 void main() {
   group('ProfileLoadingView', () {
     testWidgets('displays loading indicator and text', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: ProfileLoadingView())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: ProfileLoadingView()),
+        ),
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);

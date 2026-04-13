@@ -23,6 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/broken_video_tracker.dart' as broken_tracker;
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -88,6 +89,8 @@ void main() {
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ComposableVideoGrid(
                 videos: testVideos.take(2).toList(), // Only non-broken videos
@@ -118,6 +121,8 @@ void main() {
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ComposableVideoGrid(
                 videos: testVideos, // All 3 videos including broken one
@@ -144,6 +149,8 @@ void main() {
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ComposableVideoGrid(
                 videos: const [],
@@ -172,6 +179,8 @@ void main() {
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ComposableVideoGrid(
                 videos: testVideos.take(2).toList(),
@@ -204,6 +213,8 @@ void main() {
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ComposableVideoGrid(
                 videos: testVideos.take(2).toList(),
@@ -234,6 +245,8 @@ void main() {
             brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: ComposableVideoGrid(
                 videos: [testVideos.first],

@@ -5,10 +5,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/screens/followers/others_followers_screen.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';

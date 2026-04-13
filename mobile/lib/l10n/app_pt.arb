@@ -1,0 +1,2434 @@
+{
+    "@@locale": "pt",
+    "appTitle": "Divine",
+    "@appTitle": {
+        "description": "App title shown in task switcher"
+    },
+    "settingsTitle": "Configurações",
+    "@settingsTitle": {
+        "description": "Settings screen app bar title"
+    },
+    "settingsSecureAccount": "Proteja sua conta",
+    "settingsSessionExpired": "Sessão expirada",
+    "settingsSessionExpiredSubtitle": "Entre novamente para recuperar o acesso completo",
+    "settingsCreatorAnalytics": "Estatísticas de criador",
+    "settingsSupportCenter": "Central de suporte",
+    "settingsNotifications": "Notificações",
+    "settingsContentPreferences": "Preferências de conteúdo",
+    "settingsModerationControls": "Controles de moderação",
+    "settingsBlueskyPublishing": "Publicação no Bluesky",
+    "settingsBlueskyPublishingSubtitle": "Gerencie o crosspost para o Bluesky",
+    "settingsNostrSettings": "Configurações do Nostr",
+    "settingsIntegratedApps": "Apps integrados",
+    "settingsIntegratedAppsSubtitle": "Apps de terceiros aprovados que rodam dentro do Divine",
+    "settingsExperimentalFeatures": "Recursos experimentais",
+    "settingsExperimentalFeaturesSubtitle": "Ajustes que podem dar chilique—experimente se estiver curioso.",
+    "settingsLegal": "Legal",
+    "settingsIntegrationPermissions": "Permissões de integração",
+    "settingsIntegrationPermissionsSubtitle": "Revise e revogue as aprovações de integração lembradas",
+    "settingsVersion": "Versão {version}",
+    "@settingsVersion": {
+        "description": "App version label in settings footer",
+        "placeholders": {
+            "version": {
+                "type": "String"
+            }
+        }
+    },
+    "settingsVersionEmpty": "Versão",
+    "@settingsVersionEmpty": {
+        "description": "Version label when version string is not yet loaded"
+    },
+    "settingsDeveloperModeAlreadyEnabled": "O modo desenvolvedor já está ativado",
+    "settingsDeveloperModeEnabled": "Modo desenvolvedor ativado!",
+    "settingsDeveloperModeTapsRemaining": "Mais {count} toques para ativar o modo desenvolvedor",
+    "@settingsDeveloperModeTapsRemaining": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "settingsInvites": "Convites",
+    "settingsSwitchAccount": "Trocar de conta",
+    "settingsAddAnotherAccount": "Adicionar outra conta",
+    "settingsUnsavedDraftsTitle": "Rascunhos não salvos",
+    "settingsUnsavedDraftsMessage": "Você tem {count} {count, plural, =1{rascunho não salvo} other{rascunhos não salvos}}. Trocar de conta vai manter {count, plural, =1{seu rascunho} other{seus rascunhos}}, mas talvez você queira publicar ou revisar {count, plural, =1{ele} other{eles}} antes.",
+    "@settingsUnsavedDraftsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "settingsCancel": "Cancelar",
+    "settingsSwitchAnyway": "Trocar mesmo assim",
+    "settingsAppVersionLabel": "Versão do app",
+    "settingsAppLanguage": "Idioma do app",
+    "settingsAppLanguageDeviceDefault": "{language} (padrão do dispositivo)",
+    "@settingsAppLanguageDeviceDefault": {
+        "description": "Subtitle for app language tile when using device default",
+        "placeholders": {
+            "language": {
+                "type": "String"
+            }
+        }
+    },
+    "settingsAppLanguageTitle": "Idioma do app",
+    "@settingsAppLanguageTitle": {
+        "description": "Title shown at top of locale picker bottom sheet"
+    },
+    "settingsAppLanguageDescription": "Escolha o idioma da interface do app",
+    "settingsAppLanguageUseDeviceLanguage": "Usar idioma do dispositivo",
+    "contentPreferencesTitle": "Preferências de conteúdo",
+    "@contentPreferencesTitle": {
+        "description": "Content preferences screen app bar title"
+    },
+    "contentPreferencesContentFilters": "Filtros de conteúdo",
+    "contentPreferencesContentFiltersSubtitle": "Gerencie os filtros de aviso de conteúdo",
+    "contentPreferencesContentLanguage": "Idioma do conteúdo",
+    "contentPreferencesContentLanguageDeviceDefault": "{language} (padrão do dispositivo)",
+    "@contentPreferencesContentLanguageDeviceDefault": {
+        "placeholders": {
+            "language": {
+                "type": "String"
+            }
+        }
+    },
+    "contentPreferencesTagYourVideos": "Marque seus vídeos com um idioma para que os espectadores possam filtrar o conteúdo.",
+    "contentPreferencesUseDeviceLanguage": "Usar idioma do dispositivo (padrão)",
+    "contentPreferencesAudioSharing": "Liberar meu áudio para reutilização",
+    "contentPreferencesAudioSharingSubtitle": "Quando ativado, outras pessoas podem usar o áudio dos seus vídeos",
+    "contentPreferencesAccountLabels": "Rótulos da conta",
+    "contentPreferencesAccountLabelsEmpty": "Rótulos próprios para seu conteúdo",
+    "contentPreferencesAccountContentLabels": "Rótulos de conteúdo da conta",
+    "contentPreferencesClearAll": "Limpar tudo",
+    "contentPreferencesSelectAllThatApply": "Selecione tudo que se aplica à sua conta",
+    "contentPreferencesDoneNoLabels": "Concluído (sem rótulos)",
+    "contentPreferencesDoneCount": "Concluído ({count} selecionados)",
+    "@contentPreferencesDoneCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "contentPreferencesAudioInputDevice": "Dispositivo de entrada de áudio",
+    "contentPreferencesAutoRecommended": "Automático (recomendado)",
+    "contentPreferencesAutoSelectsBest": "Seleciona automaticamente o melhor microfone",
+    "contentPreferencesSelectAudioInput": "Selecionar entrada de áudio",
+    "contentPreferencesUnknownMicrophone": "Microfone desconhecido",
+    "profileBlockedAccountNotAvailable": "Esta conta não está disponível",
+    "profileErrorPrefix": "Erro: {error}",
+    "@profileErrorPrefix": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileInvalidId": "ID de perfil inválido",
+    "profileShareText": "Confira {displayName} no Divine!\n\nhttps://divine.video/profile/{npub}",
+    "@profileShareText": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            },
+            "npub": {
+                "type": "String"
+            }
+        }
+    },
+    "profileShareSubject": "{displayName} no Divine",
+    "@profileShareSubject": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileShareFailed": "Falha ao compartilhar perfil: {error}",
+    "@profileShareFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileEditProfile": "Editar perfil",
+    "profileCreatorAnalytics": "Estatísticas de criador",
+    "profileShareProfile": "Compartilhar perfil",
+    "profileCopyPublicKey": "Copiar chave pública (npub)",
+    "profileGetEmbedCode": "Obter código de incorporação",
+    "profilePublicKeyCopied": "Chave pública copiada para a área de transferência",
+    "profileEmbedCodeCopied": "Código de incorporação copiado para a área de transferência",
+    "profileRefreshTooltip": "Atualizar",
+    "profileRefreshSemanticLabel": "Atualizar perfil",
+    "profileMoreTooltip": "Mais",
+    "profileMoreSemanticLabel": "Mais opções",
+    "profileFollowingLabel": "Seguindo",
+    "profileFollowLabel": "Seguir",
+    "profileBlockedLabel": "Bloqueado",
+    "profileFollowersLabel": "Seguidores",
+    "profileFollowingStatLabel": "Seguindo",
+    "profileVideosLabel": "Vídeos",
+    "profileFollowerCountUsers": "{count} usuários",
+    "@profileFollowerCountUsers": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "profileBlockTitle": "Bloquear {displayName}?",
+    "@profileBlockTitle": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileBlockExplanation": "Quando você bloqueia alguém:",
+    "profileBlockBulletHidePosts": "Os posts dessa pessoa não vão aparecer no seu feed.",
+    "profileBlockBulletCantView": "Ela não poderá ver seu perfil, te seguir ou ver seus posts.",
+    "profileBlockBulletNoNotify": "Ela não será notificada sobre essa mudança.",
+    "profileBlockBulletYouCanView": "Você ainda poderá ver o perfil dela.",
+    "profileBlockConfirmButton": "Bloquear {displayName}",
+    "@profileBlockConfirmButton": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileCancelButton": "Cancelar",
+    "profileLearnMore": "Saiba mais",
+    "profileUnblockTitle": "Desbloquear {displayName}?",
+    "@profileUnblockTitle": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockExplanation": "Quando você desbloqueia essa pessoa:",
+    "profileUnblockBulletShowPosts": "Os posts dela vão voltar a aparecer no seu feed.",
+    "profileUnblockBulletCanView": "Ela poderá ver seu perfil, te seguir e ver seus posts.",
+    "profileUnblockBulletNoNotify": "Ela não será notificada sobre essa mudança.",
+    "profileLearnMoreAt": "Saiba mais em ",
+    "profileUnblockButton": "Desbloquear",
+    "profileUnfollowDisplayName": "Deixar de seguir {displayName}",
+    "@profileUnfollowDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileBlockDisplayName": "Bloquear {displayName}",
+    "@profileBlockDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockDisplayName": "Desbloquear {displayName}",
+    "@profileUnblockDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUserBlockedTitle": "Usuário bloqueado",
+    "profileUserBlockedContent": "Você não vai mais ver conteúdo desse usuário no seu feed.",
+    "profileUserBlockedUnblockHint": "Você pode desbloqueá-lo a qualquer momento no perfil dele ou em Configurações > Segurança.",
+    "profileCloseButton": "Fechar",
+    "profileNoCollabsTitle": "Sem colabs ainda",
+    "profileCollabsOwnEmpty": "Vídeos em que você colabora vão aparecer aqui",
+    "profileCollabsOtherEmpty": "Vídeos em que essa pessoa colabora vão aparecer aqui",
+    "profileErrorLoadingCollabs": "Erro ao carregar vídeos de colab",
+    "profileNoCommentsOwnTitle": "Nenhum comentário ainda",
+    "profileNoCommentsOtherTitle": "Sem comentários",
+    "profileCommentsOwnEmpty": "Seus comentários e respostas vão aparecer aqui",
+    "profileCommentsOtherEmpty": "Os comentários e respostas dessa pessoa vão aparecer aqui",
+    "profileErrorLoadingComments": "Erro ao carregar comentários",
+    "profileVideoRepliesSection": "Respostas em vídeo",
+    "profileCommentsSection": "Comentários",
+    "profileEditLabel": "Editar",
+    "profileLibraryLabel": "Biblioteca",
+    "profileNoLikedVideosTitle": "Sem vídeos curtidos ainda",
+    "profileLikedOwnEmpty": "Vídeos que você curtir vão aparecer aqui",
+    "profileLikedOtherEmpty": "Vídeos que essa pessoa curtir vão aparecer aqui",
+    "profileErrorLoadingLiked": "Erro ao carregar vídeos curtidos",
+    "profileNoRepostsTitle": "Sem reposts ainda",
+    "profileRepostsOwnEmpty": "Vídeos que você repostar vão aparecer aqui",
+    "profileRepostsOtherEmpty": "Vídeos que essa pessoa repostar vão aparecer aqui",
+    "profileErrorLoadingReposts": "Erro ao carregar vídeos repostados",
+    "profileLoadingTitle": "Carregando perfil...",
+    "profileLoadingSubtitle": "Isso pode levar alguns instantes",
+    "profileLoadingVideos": "Carregando vídeos...",
+    "profileNoVideosTitle": "Sem vídeos ainda",
+    "profileNoVideosOwnSubtitle": "Compartilhe seu primeiro vídeo para vê-lo aqui",
+    "profileNoVideosOtherSubtitle": "Este usuário ainda não compartilhou nenhum vídeo",
+    "profileVideoThumbnailLabel": "Miniatura do vídeo {number}",
+    "@profileVideoThumbnailLabel": {
+        "placeholders": {
+            "number": {
+                "type": "int"
+            }
+        }
+    },
+    "profileShowMore": "Mostrar mais",
+    "profileShowLess": "Mostrar menos",
+    "profileCompleteYourProfile": "Complete seu perfil",
+    "profileCompleteSubtitle": "Adicione seu nome, bio e foto para começar",
+    "profileSetUpButton": "Configurar",
+    "profileVerifyingEmail": "Verificando e-mail...",
+    "profileCheckEmailVerification": "Confira {email} para o link de verificação",
+    "@profileCheckEmailVerification": {
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "profileWaitingForVerification": "Aguardando verificação de e-mail",
+    "profileVerificationFailed": "Verificação falhou",
+    "profilePleaseTryAgain": "Por favor, tente novamente",
+    "profileSecureYourAccount": "Proteja sua conta",
+    "profileSecureSubtitle": "Adicione e-mail e senha para recuperar sua conta em qualquer dispositivo",
+    "profileRetryButton": "Tentar novamente",
+    "profileRegisterButton": "Registrar",
+    "profileSessionExpired": "Sessão expirada",
+    "profileSignInToRestore": "Entre novamente para recuperar o acesso completo",
+    "profileSignInButton": "Entrar",
+    "profileDismissTooltip": "Dispensar",
+    "profileLinkCopied": "Link do perfil copiado",
+    "profileSetupEditProfileTitle": "Editar perfil",
+    "profileSetupBackLabel": "Voltar",
+    "profileSetupAboutNostr": "Sobre o Nostr",
+    "profileSetupProfilePublished": "Perfil publicado com sucesso!",
+    "profileSetupCreateNewProfile": "Criar novo perfil?",
+    "profileSetupNoExistingProfile": "Não encontramos um perfil existente nos seus relays. Publicar vai criar um novo perfil. Continuar?",
+    "profileSetupPublishButton": "Publicar",
+    "profileSetupUsernameTaken": "Esse nome de usuário acabou de ser pego. Escolha outro.",
+    "profileSetupClaimFailed": "Falha ao reivindicar o nome de usuário. Tente novamente.",
+    "profileSetupPublishFailed": "Falha ao publicar perfil. Tente novamente.",
+    "profileSetupDisplayNameLabel": "Nome de exibição",
+    "profileSetupDisplayNameHint": "Como as pessoas devem te conhecer?",
+    "profileSetupDisplayNameHelper": "Qualquer nome ou rótulo que você queira. Não precisa ser único.",
+    "profileSetupDisplayNameRequired": "Por favor, insira um nome de exibição",
+    "profileSetupBioLabel": "Bio (opcional)",
+    "profileSetupBioHint": "Fale um pouco sobre você...",
+    "profileSetupPublicKeyLabel": "Chave pública (npub)",
+    "profileSetupUsernameLabel": "Nome de usuário (opcional)",
+    "profileSetupUsernameHint": "usuario",
+    "profileSetupUsernameHelper": "Sua identidade única no Divine",
+    "profileSetupProfileColorLabel": "Cor do perfil (opcional)",
+    "profileSetupSaveButton": "Salvar",
+    "profileSetupSavingButton": "Salvando...",
+    "profileSetupImageUrlTitle": "Adicionar URL da imagem",
+    "profileSetupPictureUploaded": "Foto de perfil enviada com sucesso!",
+    "profileSetupImageSelectionFailed": "Falha ao selecionar a imagem. Cole uma URL de imagem abaixo.",
+    "profileSetupCameraAccessFailed": "Falha no acesso à câmera: {error}",
+    "@profileSetupCameraAccessFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileSetupGotItButton": "Entendi",
+    "profileSetupUploadFailedGeneric": "Falha ao enviar imagem: {error}",
+    "@profileSetupUploadFailedGeneric": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "profileSetupUploadNetworkError": "Erro de rede: verifique sua conexão com a internet e tente novamente.",
+    "profileSetupUploadAuthError": "Erro de autenticação: tente sair e entrar novamente.",
+    "profileSetupUploadFileTooLarge": "Arquivo muito grande: escolha uma imagem menor (máx. 10 MB).",
+    "profileSetupUsernameChecking": "Verificando disponibilidade...",
+    "profileSetupUsernameAvailable": "Nome de usuário disponível!",
+    "profileSetupUsernameTakenIndicator": "Nome de usuário já em uso",
+    "profileSetupUsernameReserved": "Nome de usuário reservado",
+    "profileSetupContactSupport": "Contatar suporte",
+    "profileSetupCheckAgain": "Verificar novamente",
+    "profileSetupUsernameBurned": "Este nome de usuário não está mais disponível",
+    "profileSetupUsernameInvalidFormat": "São permitidos apenas letras, números e hífens",
+    "profileSetupUsernameInvalidLength": "O nome de usuário deve ter de 3 a 20 caracteres",
+    "profileSetupUsernameNetworkError": "Não foi possível verificar a disponibilidade. Tente novamente.",
+    "profileSetupUsernameInvalidFormatGeneric": "Formato de nome de usuário inválido",
+    "profileSetupUsernameCheckFailed": "Falha ao verificar a disponibilidade",
+    "profileSetupUsernameReservedTitle": "Nome de usuário reservado",
+    "profileSetupUsernameReservedBody": "O nome {username} está reservado. Diga por que ele deveria ser seu.",
+    "@profileSetupUsernameReservedBody": {
+        "placeholders": {
+            "username": {
+                "type": "String"
+            }
+        }
+    },
+    "profileSetupUsernameReservedHint": "Ex.: é minha marca, nome artístico, etc.",
+    "profileSetupUsernameReservedCheckHint": "Já entrou em contato com o suporte? Toque em \"Verificar novamente\" para ver se foi liberado pra você.",
+    "profileSetupSupportRequestSent": "Solicitação de suporte enviada! Retornaremos em breve.",
+    "profileSetupCouldntOpenEmail": "Não foi possível abrir o e-mail. Envie para: names@divine.video",
+    "profileSetupSendRequest": "Enviar solicitação",
+    "profileSetupPickColorTitle": "Escolha uma cor",
+    "profileSetupSelectButton": "Selecionar",
+    "profileSetupUseOwnNip05": "Usar seu próprio endereço NIP-05",
+    "profileSetupNip05AddressLabel": "Endereço NIP-05",
+    "profileSetupProfilePicturePreview": "Pré-visualização da foto de perfil",
+    "nostrInfoIntroBuiltOn": "O DiVine é construído sobre o Nostr,",
+    "nostrInfoIntroDescription": " um protocolo aberto e resistente à censura que permite que as pessoas se comuniquem online sem depender de uma única empresa ou plataforma. ",
+    "nostrInfoIntroIdentity": "Quando você se cadastra no Divine, ganha uma nova identidade Nostr.",
+    "nostrInfoOwnership": "O Nostr permite que você seja dono do seu conteúdo, identidade e grafo social, que podem ser usados em vários apps. O resultado é mais escolha, menos aprisionamento e uma internet social mais saudável e resiliente.",
+    "nostrInfoLingo": "Termos do Nostr:",
+    "nostrInfoNpubLabel": "npub:",
+    "nostrInfoNpubDescription": " Seu endereço público no Nostr. É seguro compartilhar e permite que outras pessoas te encontrem, sigam ou te enviem mensagens pelos apps Nostr.",
+    "nostrInfoNsecLabel": "nsec:",
+    "nostrInfoNsecDescription": " Sua chave privada e prova de propriedade. Ela dá controle total da sua identidade Nostr, então ",
+    "nostrInfoNsecWarning": "mantenha sempre em segredo!",
+    "nostrInfoUsernameLabel": "Nome de usuário Nostr:",
+    "nostrInfoUsernameDescription": " Um nome legível (como @nome.divine.video) que aponta para sua npub. Ele torna sua identidade Nostr mais fácil de reconhecer e verificar, parecido com um endereço de e-mail.",
+    "nostrInfoLearnMoreAt": "Saiba mais em ",
+    "nostrInfoGotIt": "Entendi!",
+    "profileTabRefreshTooltip": "Atualizar",
+    "videoGridRefreshLabel": "Procurando mais vídeos",
+    "videoGridOptionsTitle": "Opções do vídeo",
+    "videoGridEditVideo": "Editar vídeo",
+    "videoGridEditVideoSubtitle": "Atualize título, descrição e hashtags",
+    "videoGridDeleteVideo": "Excluir vídeo",
+    "videoGridDeleteVideoSubtitle": "Remover este conteúdo permanentemente",
+    "videoGridDeleteConfirmTitle": "Excluir vídeo",
+    "videoGridDeleteConfirmMessage": "Tem certeza que quer excluir este vídeo?",
+    "videoGridDeleteConfirmNote": "Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.",
+    "videoGridDeleteCancel": "Cancelar",
+    "videoGridDeleteConfirm": "Excluir",
+    "videoGridDeletingContent": "Excluindo conteúdo...",
+    "videoGridDeleteSuccess": "Solicitação de exclusão enviada com sucesso",
+    "videoGridDeleteFailure": "Falha ao excluir conteúdo: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreTabClassics": "Clássicos",
+    "exploreTabNew": "Novos",
+    "exploreTabPopular": "Populares",
+    "exploreTabCategories": "Categorias",
+    "exploreTabForYou": "Para você",
+    "exploreTabLists": "Listas",
+    "exploreTabIntegratedApps": "Apps integrados",
+    "exploreNoVideosAvailable": "Nenhum vídeo disponível",
+    "exploreErrorPrefix": "Erro: {error}",
+    "@exploreErrorPrefix": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreDiscoverLists": "Descobrir listas",
+    "exploreAboutLists": "Sobre listas",
+    "exploreAboutListsDescription": "Listas te ajudam a organizar e curar conteúdo do Divine de duas formas:",
+    "explorePeopleLists": "Listas de pessoas",
+    "explorePeopleListsDescription": "Siga grupos de criadores e veja os últimos vídeos deles",
+    "exploreVideoLists": "Listas de vídeos",
+    "exploreVideoListsDescription": "Crie playlists dos seus vídeos favoritos para assistir depois",
+    "exploreMyLists": "Minhas listas",
+    "exploreSubscribedLists": "Listas inscritas",
+    "exploreErrorLoadingLists": "Erro ao carregar listas: {error}",
+    "@exploreErrorLoadingLists": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "exploreNewVideosCount": "{count, plural, one{1 vídeo novo} other{{count} vídeos novos}}",
+    "@exploreNewVideosCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "exploreLoadNewVideosLabel": "Carregar {count} {count, plural, one{vídeo novo} other{vídeos novos}}",
+    "@exploreLoadNewVideosLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "videoPlayerLoadingVideo": "Carregando vídeo...",
+    "videoPlayerPlayVideo": "Reproduzir vídeo",
+    "videoPlayerEditVideo": "Editar vídeo",
+    "videoPlayerEditVideoTooltip": "Editar vídeo",
+    "contentWarningLabel": "Aviso de conteúdo",
+    "contentWarningNudity": "Nudez",
+    "contentWarningSexualContent": "Conteúdo sexual",
+    "contentWarningPornography": "Pornografia",
+    "contentWarningGraphicMedia": "Mídia gráfica",
+    "contentWarningViolence": "Violência",
+    "contentWarningSelfHarm": "Automutilação",
+    "contentWarningDrugUse": "Uso de drogas",
+    "contentWarningAlcohol": "Álcool",
+    "contentWarningTobacco": "Tabaco",
+    "contentWarningGambling": "Jogos de azar",
+    "contentWarningProfanity": "Palavrões",
+    "contentWarningFlashingLights": "Luzes piscantes",
+    "contentWarningAiGenerated": "Gerado por IA",
+    "contentWarningSpoiler": "Spoiler",
+    "contentWarningSensitiveContent": "Conteúdo sensível",
+    "contentWarningDescNudity": "Contém nudez ou nudez parcial",
+    "contentWarningDescSexual": "Contém conteúdo sexual",
+    "contentWarningDescPorn": "Contém conteúdo pornográfico explícito",
+    "contentWarningDescGraphicMedia": "Contém imagens gráficas ou perturbadoras",
+    "contentWarningDescViolence": "Contém conteúdo violento",
+    "contentWarningDescSelfHarm": "Contém referências à automutilação",
+    "contentWarningDescDrugs": "Contém conteúdo relacionado a drogas",
+    "contentWarningDescAlcohol": "Contém conteúdo relacionado a álcool",
+    "contentWarningDescTobacco": "Contém conteúdo relacionado a tabaco",
+    "contentWarningDescGambling": "Contém conteúdo relacionado a jogos de azar",
+    "contentWarningDescProfanity": "Contém linguagem forte",
+    "contentWarningDescFlashingLights": "Contém luzes piscantes (aviso de fotossensibilidade)",
+    "contentWarningDescAiGenerated": "Este conteúdo foi gerado por IA",
+    "contentWarningDescSpoiler": "Contém spoilers",
+    "contentWarningDescContentWarning": "O criador marcou isso como sensível",
+    "contentWarningDescDefault": "O criador sinalizou este conteúdo",
+    "contentWarningDetailsTitle": "Avisos de conteúdo",
+    "contentWarningDetailsSubtitle": "O criador aplicou os seguintes rótulos:",
+    "contentWarningManageFilters": "Gerenciar filtros de conteúdo",
+    "contentWarningViewAnyway": "Ver mesmo assim",
+    "contentWarningHideAllLikeThis": "Ocultar todo conteúdo parecido",
+    "contentWarningNoFilterYet": "Ainda não há filtro salvo para este aviso.",
+    "contentWarningHiddenConfirmation": "Vamos ocultar posts assim a partir de agora.",
+    "videoErrorNotFound": "Vídeo não encontrado",
+    "videoErrorNetwork": "Erro de rede",
+    "videoErrorTimeout": "Tempo de carregamento esgotado",
+    "videoErrorFormat": "Erro no formato do vídeo\n(Tente novamente ou use outro navegador)",
+    "videoErrorUnsupportedFormat": "Formato de vídeo não suportado",
+    "videoErrorPlayback": "Erro na reprodução do vídeo",
+    "videoErrorAgeRestricted": "Conteúdo com restrição de idade",
+    "videoErrorVerifyAge": "Verificar idade",
+    "videoErrorRetry": "Tentar novamente",
+    "videoErrorContentRestricted": "Conteúdo restrito",
+    "videoErrorContentRestrictedBody": "Este vídeo foi restringido pelo relay.",
+    "videoErrorVerifyAgeBody": "Verifique sua idade para ver este vídeo.",
+    "videoErrorSkip": "Pular",
+    "videoErrorVerifyAgeButton": "Verificar idade",
+    "videoFollowButtonFollowing": "Seguindo",
+    "videoFollowButtonFollow": "Seguir",
+    "audioAttributionOriginalSound": "Som original",
+    "videoInspiredByAttribution": "Inspirado em @{creatorName}",
+    "@videoInspiredByAttribution": {
+        "placeholders": {
+            "creatorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoCollaboratorWithOne": "com @{name}",
+    "@videoCollaboratorWithOne": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoCollaboratorWithMore": "com @{name} +{count}",
+    "@videoCollaboratorWithMore": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "videoCollaboratorCountLabel": "{count, plural, one{1 colaborador} other{{count} colaboradores}}. Toque para ver o perfil.",
+    "@videoCollaboratorCountLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listAttributionFallback": "Lista",
+    "shareVideoLabel": "Compartilhar vídeo",
+    "sharePostSharedWith": "Post compartilhado com {recipientName}",
+    "@sharePostSharedWith": {
+        "placeholders": {
+            "recipientName": {
+                "type": "String"
+            }
+        }
+    },
+    "shareFailedToSend": "Falha ao enviar vídeo",
+    "shareAddedToBookmarks": "Adicionado aos favoritos",
+    "shareFailedToAddBookmark": "Falha ao adicionar aos favoritos",
+    "shareActionFailed": "A ação falhou",
+    "shareWithTitle": "Compartilhar com",
+    "shareFindPeople": "Encontrar pessoas",
+    "shareFindPeopleMultiline": "Encontrar\npessoas",
+    "shareSent": "Enviado",
+    "shareContactFallback": "Contato",
+    "shareUserFallback": "Usuário",
+    "shareSendingTo": "Enviando para {name}",
+    "@shareSendingTo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMessageHint": "Adicione uma mensagem opcional...",
+    "videoActionUnlike": "Descurtir vídeo",
+    "videoActionLike": "Curtir vídeo",
+    "videoActionRemoveRepost": "Remover repost",
+    "videoActionRepost": "Repostar vídeo",
+    "videoActionViewComments": "Ver comentários",
+    "videoActionMoreOptions": "Mais opções",
+    "videoActionHideSubtitles": "Ocultar legendas",
+    "videoActionShowSubtitles": "Mostrar legendas",
+    "videoDescriptionLoops": "{count} loops",
+    "@videoDescriptionLoops": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "metadataBadgeNotDivine": "Não-Divine",
+    "metadataBadgeHumanMade": "Feito por humano",
+    "metadataSoundsLabel": "Sons",
+    "metadataOriginalSound": "Som original",
+    "metadataVerificationLabel": "Verificação",
+    "metadataDeviceAttestation": "Atestação do dispositivo",
+    "metadataProofManifest": "Manifesto de prova",
+    "metadataCreatorLabel": "Criador",
+    "metadataCollaboratorsLabel": "Colaboradores",
+    "metadataInspiredByLabel": "Inspirado em",
+    "metadataRepostedByLabel": "Repostado por",
+    "metadataLoopsLabel": "Loops",
+    "metadataLikesLabel": "Curtidas",
+    "metadataCommentsLabel": "Comentários",
+    "metadataRepostsLabel": "Reposts",
+    "devOptionsTitle": "Opções do desenvolvedor",
+    "@devOptionsTitle": {
+        "description": "Developer options screen app bar title"
+    },
+    "devOptionsPageLoadTimes": "Tempos de carregamento de página",
+    "devOptionsNoPageLoads": "Nenhum carregamento de página registrado ainda.\nNavegue pelo app para ver os dados de tempo.",
+    "devOptionsPageLoadVisible": "Visível: {visibleMs}ms  |  Dados: {dataMs}ms",
+    "@devOptionsPageLoadVisible": {
+        "placeholders": {
+            "visibleMs": {
+                "type": "String"
+            },
+            "dataMs": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsSlowestScreens": "Telas mais lentas",
+    "devOptionsVideoPlaybackFormat": "Formato de reprodução de vídeo",
+    "devOptionsSwitchEnvironmentTitle": "Trocar ambiente?",
+    "devOptionsSwitchEnvironmentMessage": "Trocar para {envName}?\n\nIsso vai limpar o cache de vídeos e reconectar ao novo relay.",
+    "@devOptionsSwitchEnvironmentMessage": {
+        "placeholders": {
+            "envName": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsCancel": "Cancelar",
+    "devOptionsSwitch": "Trocar",
+    "devOptionsSwitchedTo": "Trocado para {envName}",
+    "@devOptionsSwitchedTo": {
+        "placeholders": {
+            "envName": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsSwitchedFormat": "Trocado para {formatName} — cache limpo",
+    "@devOptionsSwitchedFormat": {
+        "placeholders": {
+            "formatName": {
+                "type": "String"
+            }
+        }
+    },
+    "featureFlagTitle": "Feature flags",
+    "@featureFlagTitle": {
+        "description": "Feature flags screen app bar title"
+    },
+    "featureFlagResetAllTooltip": "Redefinir todas as flags para o padrão",
+    "featureFlagResetToDefault": "Redefinir para o padrão",
+    "featureFlagAppRecovery": "Recuperação do app",
+    "featureFlagAppRecoveryDescription": "Se o app estiver travando ou se comportando de forma estranha, tente limpar o cache.",
+    "featureFlagClearAllCache": "Limpar todo o cache",
+    "featureFlagCacheInfo": "Informações do cache",
+    "featureFlagClearCacheTitle": "Limpar todo o cache?",
+    "featureFlagClearCacheMessage": "Isso vai limpar todos os dados em cache, incluindo:\n• Notificações\n• Perfis de usuários\n• Favoritos\n• Arquivos temporários\n\nVocê vai precisar entrar de novo. Continuar?",
+    "featureFlagClearCache": "Limpar cache",
+    "featureFlagClearingCache": "Limpando cache...",
+    "featureFlagSuccess": "Sucesso",
+    "featureFlagError": "Erro",
+    "featureFlagClearCacheSuccess": "Cache limpo com sucesso. Reinicie o app.",
+    "featureFlagClearCacheFailure": "Falha ao limpar alguns itens do cache. Verifique os logs para mais detalhes.",
+    "featureFlagOk": "OK",
+    "featureFlagCacheInformation": "Informações do cache",
+    "featureFlagTotalCacheSize": "Tamanho total do cache: {size}",
+    "@featureFlagTotalCacheSize": {
+        "placeholders": {
+            "size": {
+                "type": "String"
+            }
+        }
+    },
+    "featureFlagCacheIncludes": "O cache inclui:\n• Histórico de notificações\n• Dados de perfil de usuários\n• Miniaturas de vídeo\n• Arquivos temporários\n• Índices do banco de dados",
+    "relaySettingsTitle": "Relays",
+    "@relaySettingsTitle": {
+        "description": "Relay settings screen app bar title"
+    },
+    "relaySettingsInfoTitle": "O Divine é um sistema aberto - você controla suas conexões",
+    "relaySettingsInfoDescription": "Estes relays distribuem seu conteúdo pela rede descentralizada Nostr. Você pode adicionar ou remover relays como quiser.",
+    "relaySettingsLearnMoreNostr": "Saiba mais sobre o Nostr →",
+    "relaySettingsFindPublicRelays": "Encontre relays públicos em nostr.co.uk →",
+    "relaySettingsAppNotFunctional": "App não funcional",
+    "relaySettingsRequiresRelay": "O Divine precisa de pelo menos um relay para carregar vídeos, publicar conteúdo e sincronizar dados.",
+    "relaySettingsRestoreDefaultRelay": "Restaurar relay padrão",
+    "relaySettingsAddCustomRelay": "Adicionar relay personalizado",
+    "relaySettingsAddRelay": "Adicionar relay",
+    "relaySettingsRetry": "Tentar novamente",
+    "relaySettingsNoStats": "Ainda não há estatísticas disponíveis",
+    "relaySettingsConnection": "Conexão",
+    "relaySettingsConnected": "Conectado",
+    "relaySettingsDisconnected": "Desconectado",
+    "relaySettingsSessionDuration": "Duração da sessão",
+    "relaySettingsLastConnected": "Última conexão",
+    "relaySettingsDisconnectedLabel": "Desconectado",
+    "relaySettingsReason": "Motivo",
+    "relaySettingsActiveSubscriptions": "Assinaturas ativas",
+    "relaySettingsTotalSubscriptions": "Total de assinaturas",
+    "relaySettingsEventsReceived": "Eventos recebidos",
+    "relaySettingsEventsSent": "Eventos enviados",
+    "relaySettingsRequestsThisSession": "Solicitações nesta sessão",
+    "relaySettingsFailedRequests": "Solicitações falhas",
+    "relaySettingsLastError": "Último erro: {error}",
+    "@relaySettingsLastError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsLoadingRelayInfo": "Carregando informações do relay...",
+    "relaySettingsAboutRelay": "Sobre o relay",
+    "relaySettingsSupportedNips": "NIPs suportados",
+    "relaySettingsSoftware": "Software",
+    "relaySettingsViewWebsite": "Ver site",
+    "relaySettingsRemoveRelayTitle": "Remover relay?",
+    "relaySettingsRemoveRelayMessage": "Tem certeza que quer remover este relay?\n\n{relayUrl}",
+    "@relaySettingsRemoveRelayMessage": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsCancel": "Cancelar",
+    "relaySettingsRemove": "Remover",
+    "relaySettingsRemovedRelay": "Relay removido: {relayUrl}",
+    "@relaySettingsRemovedRelay": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToRemoveRelay": "Falha ao remover o relay",
+    "relaySettingsForcingReconnection": "Forçando reconexão do relay...",
+    "relaySettingsConnectedToRelays": "Conectado a {count} relay(s)!",
+    "@relaySettingsConnectedToRelays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsFailedToConnectCheck": "Falha ao conectar aos relays. Verifique sua conexão de rede.",
+    "relaySettingsAddRelayTitle": "Adicionar relay",
+    "relaySettingsAddRelayPrompt": "Digite a URL WebSocket do relay que você quer adicionar:",
+    "relaySettingsBrowsePublicRelays": "Navegue por relays públicos em nostr.co.uk",
+    "relaySettingsAdd": "Adicionar",
+    "relaySettingsAddedRelay": "Relay adicionado: {relayUrl}",
+    "@relaySettingsAddedRelay": {
+        "placeholders": {
+            "relayUrl": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToAddRelay": "Falha ao adicionar o relay. Verifique a URL e tente novamente.",
+    "relaySettingsInvalidUrl": "A URL do relay deve começar com wss:// ou ws://",
+    "relaySettingsRestoredDefault": "Relay padrão restaurado: {defaultRelay}",
+    "@relaySettingsRestoredDefault": {
+        "placeholders": {
+            "defaultRelay": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsFailedToRestoreDefault": "Falha ao restaurar o relay padrão. Verifique sua conexão de rede.",
+    "relaySettingsCouldNotOpenBrowser": "Não foi possível abrir o navegador",
+    "relaySettingsFailedToOpenLink": "Falha ao abrir o link",
+    "relayDiagnosticTitle": "Diagnósticos de relay",
+    "@relayDiagnosticTitle": {
+        "description": "Relay diagnostics screen app bar title"
+    },
+    "relayDiagnosticRefreshTooltip": "Atualizar diagnósticos",
+    "relayDiagnosticLastRefresh": "Última atualização: {time}",
+    "@relayDiagnosticLastRefresh": {
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticRelayStatus": "Status do relay",
+    "relayDiagnosticInitialized": "Inicializado",
+    "relayDiagnosticReady": "Pronto",
+    "relayDiagnosticNotInitialized": "Não inicializado",
+    "relayDiagnosticDatabaseEvents": "Eventos do banco de dados",
+    "relayDiagnosticActiveSubscriptions": "Assinaturas ativas",
+    "relayDiagnosticExternalRelays": "Relays externos",
+    "relayDiagnosticConfigured": "Configurado",
+    "relayDiagnosticRelayCount": "{count} relay(s)",
+    "@relayDiagnosticRelayCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticConnectedLabel": "Conectado",
+    "relayDiagnosticConnectedRatio": "{connected}/{total}",
+    "@relayDiagnosticConnectedRatio": {
+        "placeholders": {
+            "connected": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticVideoEvents": "Eventos de vídeo",
+    "relayDiagnosticHomeFeed": "Feed principal",
+    "relayDiagnosticVideosCount": "{count} vídeos",
+    "@relayDiagnosticVideosCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticDiscovery": "Descoberta",
+    "relayDiagnosticLoading": "Carregando",
+    "relayDiagnosticYes": "Sim",
+    "relayDiagnosticNo": "Não",
+    "relayDiagnosticTestDirectQuery": "Testar consulta direta",
+    "relayDiagnosticNetworkConnectivity": "Conectividade de rede",
+    "relayDiagnosticRunNetworkTest": "Executar teste de rede",
+    "relayDiagnosticBlossomServer": "Servidor Blossom",
+    "relayDiagnosticTestAllEndpoints": "Testar todos os endpoints",
+    "relayDiagnosticStatus": "Status",
+    "relayDiagnosticUrl": "URL",
+    "relayDiagnosticError": "Erro",
+    "relayDiagnosticFunnelCakeApi": "API FunnelCake",
+    "relayDiagnosticBaseUrl": "URL base",
+    "relayDiagnosticSummary": "Resumo",
+    "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} OK (média {avgMs}ms)",
+    "@relayDiagnosticEndpointSummary": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "totalCount": {
+                "type": "int"
+            },
+            "avgMs": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticRetestAll": "Retestar tudo",
+    "relayDiagnosticRetrying": "Tentando novamente...",
+    "relayDiagnosticRetryConnection": "Tentar reconectar",
+    "relayDiagnosticTroubleshooting": "Solução de problemas",
+    "relayDiagnosticTroubleshootingGuide": "• Status verde = Conectado e funcionando\n• Status vermelho = Falha na conexão\n• Se o teste de rede falhar, verifique a conexão com a internet\n• Se os relays estiverem configurados mas não conectados, toque em \"Tentar reconectar\"\n• Tire uma captura desta tela para debug",
+    "relayDiagnosticAllEndpointsHealthy": "Todos os endpoints REST estão saudáveis!",
+    "relayDiagnosticSomeEndpointsFailed": "Alguns endpoints REST falharam - veja os detalhes acima",
+    "relayDiagnosticFoundVideoEvents": "Encontrados {count} eventos de vídeo no banco de dados",
+    "@relayDiagnosticFoundVideoEvents": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticQueryFailed": "Consulta falhou: {error}",
+    "@relayDiagnosticQueryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticConnectedToRelays": "Conectado a {count} relay(s)!",
+    "@relayDiagnosticConnectedToRelays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relayDiagnosticFailedToConnect": "Falha ao conectar a qualquer relay",
+    "relayDiagnosticConnectionRetryFailed": "Tentativa de reconexão falhou: {error}",
+    "@relayDiagnosticConnectionRetryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "relayDiagnosticConnectedAuthenticated": "Conectado e autenticado",
+    "relayDiagnosticConnectedOnly": "Conectado",
+    "relayDiagnosticNotConnected": "Não conectado",
+    "relayDiagnosticNoRelaysConfigured": "Nenhum relay configurado",
+    "relayDiagnosticFailed": "Falhou",
+    "notificationSettingsTitle": "Notificações",
+    "@notificationSettingsTitle": {
+        "description": "Notification settings screen app bar title"
+    },
+    "notificationSettingsResetTooltip": "Redefinir para o padrão",
+    "notificationSettingsTypes": "Tipos de notificação",
+    "notificationSettingsLikes": "Curtidas",
+    "notificationSettingsLikesSubtitle": "Quando alguém curte seus vídeos",
+    "notificationSettingsComments": "Comentários",
+    "notificationSettingsCommentsSubtitle": "Quando alguém comenta nos seus vídeos",
+    "notificationSettingsFollows": "Seguidores",
+    "notificationSettingsFollowsSubtitle": "Quando alguém começa a te seguir",
+    "notificationSettingsMentions": "Menções",
+    "notificationSettingsMentionsSubtitle": "Quando você é mencionado",
+    "notificationSettingsReposts": "Reposts",
+    "notificationSettingsRepostsSubtitle": "Quando alguém reposta seus vídeos",
+    "notificationSettingsSystem": "Sistema",
+    "notificationSettingsSystemSubtitle": "Atualizações do app e mensagens do sistema",
+    "notificationSettingsPushNotificationsSection": "Notificações push",
+    "notificationSettingsPushNotifications": "Notificações push",
+    "notificationSettingsPushNotificationsSubtitle": "Receber notificações quando o app estiver fechado",
+    "notificationSettingsSound": "Som",
+    "notificationSettingsSoundSubtitle": "Tocar som nas notificações",
+    "notificationSettingsVibration": "Vibração",
+    "notificationSettingsVibrationSubtitle": "Vibrar nas notificações",
+    "notificationSettingsActions": "Ações",
+    "notificationSettingsMarkAllAsRead": "Marcar tudo como lido",
+    "notificationSettingsMarkAllAsReadSubtitle": "Marcar todas as notificações como lidas",
+    "notificationSettingsAllMarkedAsRead": "Todas as notificações marcadas como lidas",
+    "notificationSettingsResetToDefaults": "Configurações redefinidas para o padrão",
+    "notificationSettingsAbout": "Sobre as notificações",
+    "notificationSettingsAboutDescription": "As notificações são alimentadas pelo protocolo Nostr. Atualizações em tempo real dependem da sua conexão com os relays Nostr. Algumas notificações podem ter atrasos.",
+    "safetySettingsTitle": "Segurança e privacidade",
+    "@safetySettingsTitle": {
+        "description": "Safety settings screen app bar title"
+    },
+    "safetySettingsLabel": "CONFIGURAÇÕES",
+    "safetySettingsShowDivineHostedOnly": "Mostrar apenas vídeos hospedados pelo Divine",
+    "safetySettingsShowDivineHostedOnlySubtitle": "Ocultar vídeos servidos de outros hosts de mídia",
+    "safetySettingsModeration": "MODERAÇÃO",
+    "safetySettingsBlockedUsers": "USUÁRIOS BLOQUEADOS",
+    "safetySettingsAgeVerification": "VERIFICAÇÃO DE IDADE",
+    "safetySettingsAgeConfirmation": "Confirmo que tenho 18 anos ou mais",
+    "safetySettingsAgeRequired": "Necessário para ver conteúdo adulto",
+    "safetySettingsDivine": "Divine",
+    "safetySettingsDivineSubtitle": "Serviço oficial de moderação (ativado por padrão)",
+    "safetySettingsPeopleIFollow": "Pessoas que eu sigo",
+    "safetySettingsPeopleIFollowSubtitle": "Assinar rótulos de pessoas que você segue",
+    "safetySettingsAddCustomLabeler": "Adicionar rótulo personalizado",
+    "safetySettingsAddCustomLabelerHint": "Digite a npub...",
+    "safetySettingsAddCustomLabelerListTitle": "Adicionar rótulo personalizado",
+    "safetySettingsAddCustomLabelerListSubtitle": "Digite o endereço npub",
+    "safetySettingsNoBlockedUsers": "Nenhum usuário bloqueado",
+    "safetySettingsUnblock": "Desbloquear",
+    "safetySettingsUserUnblocked": "Usuário desbloqueado",
+    "safetySettingsCancel": "Cancelar",
+    "safetySettingsAdd": "Adicionar",
+    "analyticsTitle": "Estatísticas de criador",
+    "@analyticsTitle": {
+        "description": "Creator analytics screen app bar title"
+    },
+    "analyticsDiagnosticsTooltip": "Diagnósticos",
+    "analyticsDiagnosticsSemanticLabel": "Alternar diagnósticos",
+    "analyticsRetry": "Tentar novamente",
+    "analyticsUnableToLoad": "Não foi possível carregar as estatísticas.",
+    "analyticsSignInRequired": "Entre para ver as estatísticas de criador.",
+    "analyticsViewDataUnavailable": "As visualizações estão indisponíveis no relay para esses posts. As métricas de curtidas/comentários/reposts continuam precisas.",
+    "analyticsViewDataTitle": "Dados de visualização",
+    "analyticsUpdatedTimestamp": "Atualizado {time} • Os scores usam curtidas, comentários, reposts e views/loops do Funnelcake quando disponíveis.",
+    "@analyticsUpdatedTimestamp": {
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsVideos": "Vídeos",
+    "analyticsViews": "Visualizações",
+    "analyticsInteractions": "Interações",
+    "analyticsEngagement": "Engajamento",
+    "analyticsFollowers": "Seguidores",
+    "analyticsAvgPerPost": "Média/Post",
+    "analyticsInteractionMix": "Mix de interações",
+    "analyticsLikes": "Curtidas",
+    "analyticsComments": "Comentários",
+    "analyticsReposts": "Reposts",
+    "analyticsPerformanceHighlights": "Destaques de desempenho",
+    "analyticsMostViewed": "Mais visto",
+    "analyticsMostDiscussed": "Mais comentado",
+    "analyticsMostReposted": "Mais repostado",
+    "analyticsNoVideosYet": "Sem vídeos ainda",
+    "analyticsViewDataUnavailableShort": "Dados de visualização indisponíveis",
+    "analyticsViewsCount": "{count} visualizações",
+    "@analyticsViewsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsCommentsCount": "{count} comentários",
+    "@analyticsCommentsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsRepostsCount": "{count} reposts",
+    "@analyticsRepostsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsTopContent": "Conteúdo em destaque",
+    "analyticsPublishPrompt": "Publique alguns vídeos para ver o ranking.",
+    "analyticsEngagementRateExplainer": "% à direita = taxa de engajamento (interações divididas por visualizações).",
+    "analyticsEngagementRateNoViews": "A taxa de engajamento precisa de dados de visualização; os valores aparecem como N/A até as visualizações estarem disponíveis.",
+    "analyticsEngagementLabel": "Engajamento",
+    "analyticsViewsUnavailable": "visualizações indisponíveis",
+    "analyticsInteractionsCount": "{count} interações",
+    "@analyticsInteractionsCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsPostAnalytics": "Estatísticas do post",
+    "analyticsOpenPost": "Abrir post",
+    "analyticsRecentDailyInteractions": "Interações diárias recentes",
+    "analyticsNoActivityYet": "Ainda sem atividade neste período.",
+    "analyticsDailyInteractionsExplainer": "Interações = curtidas + comentários + reposts por data do post.",
+    "analyticsDailyBarExplainer": "O tamanho da barra é relativo ao seu dia de maior engajamento nesta janela.",
+    "analyticsAudienceSnapshot": "Resumo do público",
+    "analyticsFollowersCount": "Seguidores: {count}",
+    "@analyticsFollowersCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsFollowingCount": "Seguindo: {count}",
+    "@analyticsFollowingCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsAudiencePlaceholder": "Detalhes do público por fonte/geografia/hora vão aparecer conforme o Funnelcake adicionar endpoints de estatísticas de público.",
+    "analyticsRetention": "Retenção",
+    "analyticsRetentionWithViews": "A curva de retenção e o detalhamento de tempo de visualização vão aparecer assim que os dados de retenção por segundo/faixa chegarem do Funnelcake.",
+    "analyticsRetentionWithoutViews": "Dados de retenção indisponíveis até que as estatísticas de visualização + tempo de reprodução sejam retornadas pelo Funnelcake.",
+    "analyticsDiagnostics": "Diagnósticos",
+    "analyticsDiagnosticsTotalVideos": "Total de vídeos: {count}",
+    "@analyticsDiagnosticsTotalVideos": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsWithViews": "Com visualizações: {count}",
+    "@analyticsDiagnosticsWithViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsMissingViews": "Sem visualizações: {count}",
+    "@analyticsDiagnosticsMissingViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsHydratedBulk": "Hidratado (bulk): {count}",
+    "@analyticsDiagnosticsHydratedBulk": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsHydratedViews": "Hidratado (/views): {count}",
+    "@analyticsDiagnosticsHydratedViews": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsDiagnosticsSources": "Fontes: {sources}",
+    "@analyticsDiagnosticsSources": {
+        "placeholders": {
+            "sources": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsDiagnosticsUseFixture": "Usar dados de fixture",
+    "analyticsNa": "N/A",
+    "authCreateNewAccount": "Criar uma nova conta Divine",
+    "authSignInDifferentAccount": "Entrar com outra conta",
+    "authSignBackIn": "Entrar de novo",
+    "authTermsPrefix": "Ao selecionar uma opção acima, você confirma que tem pelo menos 16 anos e concorda com os ",
+    "authTermsOfService": "Termos de Serviço",
+    "authPrivacyPolicy": "Política de Privacidade",
+    "authTermsAnd": ", e ",
+    "authSafetyStandards": "Padrões de Segurança",
+    "authAmberNotInstalled": "O app Amber não está instalado",
+    "authAmberConnectionFailed": "Falha ao conectar com o Amber",
+    "authPasswordResetSent": "Se existir uma conta com esse e-mail, um link de redefinição de senha foi enviado.",
+    "authSignInTitle": "Entrar",
+    "authEmailLabel": "E-mail",
+    "authPasswordLabel": "Senha",
+    "authForgotPassword": "Esqueceu a senha?",
+    "authImportNostrKey": "Importar chave Nostr",
+    "authConnectSignerApp": "Conectar com um app signer",
+    "authSignInWithAmber": "Entrar com Amber",
+    "authSignInOptionsTitle": "Opções de login",
+    "authInfoEmailPasswordTitle": "E-mail e senha",
+    "authInfoEmailPasswordDescription": "Entre com sua conta Divine. Se você se registrou com e-mail e senha, use-os aqui.",
+    "authInfoImportNostrKeyDescription": "Já tem uma identidade Nostr? Importe sua chave privada nsec de outro cliente.",
+    "authInfoSignerAppTitle": "App Signer",
+    "authInfoSignerAppDescription": "Conecte-se usando um signer remoto compatível com NIP-46, como o nsecBunker, para maior segurança da chave.",
+    "authInfoAmberTitle": "Amber",
+    "authInfoAmberDescription": "Use o app signer Amber no Android para gerenciar suas chaves Nostr com segurança.",
+    "authCreateAccountTitle": "Criar conta",
+    "authBackToInviteCode": "Voltar para o código de convite",
+    "authUseDivineNoBackup": "Usar o Divine sem backup",
+    "authSkipConfirmTitle": "Só mais uma coisa...",
+    "authSkipConfirmKeyCreated": "Você entrou! Vamos criar uma chave segura que alimenta sua conta Divine.",
+    "authSkipConfirmKeyOnly": "Sem um e-mail, sua chave é a única forma do Divine saber que esta conta é sua.",
+    "authSkipConfirmRecommendEmail": "Você pode acessar sua chave no app, mas, se você não for técnico, recomendamos adicionar um e-mail e senha agora. Isso facilita entrar e recuperar sua conta se você perder ou resetar este dispositivo.",
+    "authAddEmailPassword": "Adicionar e-mail e senha",
+    "authUseThisDeviceOnly": "Usar apenas este dispositivo",
+    "authCompleteRegistration": "Complete seu registro",
+    "authVerifying": "Verificando...",
+    "authVerificationLinkSent": "Enviamos um link de verificação para:",
+    "authClickVerificationLink": "Clique no link no seu e-mail para\ncompletar o registro.",
+    "authPleaseWaitVerifying": "Aguarde enquanto verificamos seu e-mail...",
+    "authWaitingForVerification": "Aguardando verificação",
+    "authOpenEmailApp": "Abrir app de e-mail",
+    "authWelcomeToDivine": "Bem-vindo ao Divine!",
+    "authEmailVerified": "Seu e-mail foi verificado.",
+    "authSigningYouIn": "Entrando",
+    "authErrorTitle": "Opa.",
+    "authVerificationFailed": "Falhamos ao verificar seu e-mail.\nTente novamente.",
+    "authStartOver": "Começar de novo",
+    "authEmailVerifiedLogin": "E-mail verificado! Faça login para continuar.",
+    "authVerificationLinkExpired": "Este link de verificação não é mais válido.",
+    "authVerificationConnectionError": "Não foi possível verificar o e-mail. Verifique sua conexão e tente novamente.",
+    "authWaitlistConfirmTitle": "Você entrou!",
+    "authWaitlistUpdatesAt": "Vamos mandar novidades para {email}.\nQuando houver mais códigos de convite, enviaremos pra você.",
+    "@authWaitlistUpdatesAt": {
+        "description": "Waitlist confirmation message with email",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authOk": "OK",
+    "authInviteUnavailable": "O acesso por convite está temporariamente indisponível.",
+    "authInviteUnavailableBody": "Tente novamente em instantes ou entre em contato com o suporte se precisar de ajuda.",
+    "authTryAgain": "Tentar novamente",
+    "authContactSupport": "Contatar suporte",
+    "authCouldNotOpenEmail": "Não foi possível abrir {email}",
+    "@authCouldNotOpenEmail": {
+        "description": "Error when email client cannot be opened",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authAddInviteCode": "Adicione seu código de convite",
+    "authInviteCodeLabel": "Código de convite",
+    "authEnterYourCode": "Digite seu código",
+    "authNext": "Próximo",
+    "authJoinWaitlist": "Entrar na lista de espera",
+    "authJoinWaitlistTitle": "Entre na lista de espera",
+    "authJoinWaitlistDescription": "Compartilhe seu e-mail e enviaremos novidades conforme o acesso for liberado.",
+    "authInviteAccessHelp": "Ajuda com acesso por convite",
+    "authGeneratingConnection": "Gerando conexão...",
+    "authConnectedAuthenticating": "Conectado! Autenticando...",
+    "authConnectionTimedOut": "Conexão expirou",
+    "authApproveConnection": "Certifique-se de ter aprovado a conexão no seu app signer.",
+    "authConnectionCancelled": "Conexão cancelada",
+    "authConnectionCancelledMessage": "A conexão foi cancelada.",
+    "authConnectionFailed": "Falha na conexão",
+    "authUnknownError": "Ocorreu um erro desconhecido.",
+    "authUrlCopied": "URL copiada para a área de transferência",
+    "authConnectToDivine": "Conectar ao Divine",
+    "authPasteBunkerUrl": "Colar URL bunker://",
+    "authBunkerUrlHint": "URL bunker://",
+    "authInvalidBunkerUrl": "URL bunker inválida. Ela deve começar com bunker://",
+    "authScanSignerApp": "Escaneie com seu\napp signer para conectar.",
+    "authWaitingForConnection": "Aguardando conexão... {seconds}s",
+    "@authWaitingForConnection": {
+        "description": "Waiting indicator with elapsed seconds",
+        "placeholders": {
+            "seconds": {
+                "type": "int"
+            }
+        }
+    },
+    "authCopyUrl": "Copiar URL",
+    "authShare": "Compartilhar",
+    "authAddBunker": "Adicionar bunker",
+    "authCompatibleSignerApps": "Apps signer compatíveis",
+    "authFailedToConnect": "Falha ao conectar",
+    "authResetPasswordTitle": "Redefinir senha",
+    "authResetPasswordSubtitle": "Digite sua nova senha. Ela deve ter pelo menos 8 caracteres.",
+    "authNewPasswordLabel": "Nova senha",
+    "authPasswordTooShort": "A senha deve ter pelo menos 8 caracteres",
+    "authPasswordResetSuccess": "Senha redefinida com sucesso. Faça login.",
+    "authPasswordResetFailed": "Falha ao redefinir a senha",
+    "authUnexpectedError": "Ocorreu um erro inesperado. Tente novamente.",
+    "authUpdatePassword": "Atualizar senha",
+    "authSecureAccountTitle": "Proteger conta",
+    "authUnableToAccessKeys": "Não foi possível acessar suas chaves. Tente novamente.",
+    "authRegistrationFailed": "Falha no registro",
+    "authRegistrationComplete": "Registro completo. Verifique seu e-mail.",
+    "authVerificationFailedTitle": "Verificação falhou",
+    "authClose": "Fechar",
+    "authAccountSecured": "Conta protegida!",
+    "authAccountLinkedToEmail": "Sua conta agora está vinculada ao seu e-mail.",
+    "authVerifyYourEmail": "Verifique seu e-mail",
+    "authClickLinkContinue": "Clique no link no seu e-mail para completar o registro. Você pode continuar usando o app enquanto isso.",
+    "authWaitingForVerificationEllipsis": "Aguardando verificação...",
+    "authContinueToApp": "Ir para o app",
+    "authResetPassword": "Redefinir senha",
+    "authResetPasswordDescription": "Digite seu endereço de e-mail e enviaremos um link para redefinir sua senha.",
+    "authFailedToSendResetEmail": "Falha ao enviar o e-mail de redefinição.",
+    "authUnexpectedErrorShort": "Ocorreu um erro inesperado.",
+    "authSending": "Enviando...",
+    "authSendResetLink": "Enviar link de redefinição",
+    "authEmailSent": "E-mail enviado!",
+    "authResetLinkSentTo": "Enviamos um link de redefinição de senha para {email}. Clique no link do e-mail para atualizar sua senha.",
+    "@authResetLinkSentTo": {
+        "description": "Confirmation message after reset link sent",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authSignInButton": "Entrar",
+    "authVerificationErrorTimeout": "A verificação expirou. Tente se registrar novamente.",
+    "authVerificationErrorMissingCode": "Verificação falhou — código de autorização ausente.",
+    "authVerificationErrorPollFailed": "Verificação falhou. Tente novamente.",
+    "authVerificationErrorNetworkExchange": "Erro de rede durante o login. Tente novamente.",
+    "authVerificationErrorOAuthExchange": "Verificação falhou. Tente se registrar novamente.",
+    "authVerificationErrorSignInFailed": "Falha no login. Tente entrar manualmente.",
+    "authInviteErrorAlreadyUsed": "Esse código de convite não está mais disponível. Volte para o seu código de convite, entre na lista de espera ou contate o suporte.",
+    "authInviteErrorInvalid": "Esse código de convite não pode ser usado agora. Volte para o seu código de convite, entre na lista de espera ou contate o suporte.",
+    "authInviteErrorTemporary": "Não conseguimos confirmar seu convite agora. Volte para o seu código de convite e tente novamente ou contate o suporte.",
+    "authInviteErrorUnknown": "Não conseguimos ativar seu convite. Volte para o seu código de convite, entre na lista de espera ou contate o suporte.",
+    "shareSheetSave": "Salvar",
+    "shareSheetSaveToGallery": "Salvar na galeria",
+    "shareSheetSaveWithWatermark": "Salvar com marca d'água",
+    "shareSheetSaveVideo": "Salvar vídeo",
+    "shareSheetAddToList": "Adicionar à lista",
+    "shareSheetCopy": "Copiar",
+    "shareSheetShareVia": "Compartilhar via",
+    "shareSheetReport": "Denunciar",
+    "shareSheetEventJson": "JSON do evento",
+    "shareSheetEventId": "ID do evento",
+    "shareSheetMoreActions": "Mais ações",
+    "watermarkDownloadSavedToCameraRoll": "Salvo no rolo da câmera",
+    "watermarkDownloadShare": "Compartilhar",
+    "watermarkDownloadDone": "Concluído",
+    "watermarkDownloadPhotosAccessNeeded": "Acesso a fotos necessário",
+    "watermarkDownloadPhotosAccessDescription": "Para salvar vídeos, permita o acesso a Fotos nas Configurações.",
+    "watermarkDownloadOpenSettings": "Abrir Configurações",
+    "watermarkDownloadNotNow": "Agora não",
+    "watermarkDownloadFailed": "Download falhou",
+    "watermarkDownloadDismiss": "Dispensar",
+    "watermarkDownloadStageDownloading": "Baixando vídeo",
+    "watermarkDownloadStageWatermarking": "Adicionando marca d'água",
+    "watermarkDownloadStageSaving": "Salvando no rolo da câmera",
+    "watermarkDownloadStageDownloadingDesc": "Buscando o vídeo na rede...",
+    "watermarkDownloadStageWatermarkingDesc": "Aplicando a marca d'água do Divine...",
+    "watermarkDownloadStageSavingDesc": "Salvando o vídeo com marca d'água no seu rolo da câmera...",
+    "uploadProgressVideoUpload": "Upload de vídeo",
+    "uploadProgressPause": "Pausar",
+    "uploadProgressResume": "Retomar",
+    "uploadProgressGoBack": "Voltar",
+    "uploadProgressRetryWithCount": "Tentar novamente ({count} restantes)",
+    "@uploadProgressRetryWithCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressDelete": "Excluir",
+    "uploadProgressDaysAgo": "há {count}d",
+    "@uploadProgressDaysAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressHoursAgo": "há {count}h",
+    "@uploadProgressHoursAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressMinutesAgo": "há {count}min",
+    "@uploadProgressMinutesAgo": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressJustNow": "Agora mesmo",
+    "uploadProgressUploadingPercent": "Enviando {percent}%",
+    "@uploadProgressUploadingPercent": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadProgressPausedPercent": "Pausado {percent}%",
+    "@uploadProgressPausedPercent": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationClose": "Fechar",
+    "badgeExplanationOriginalVineArchive": "Arquivo original do Vine",
+    "badgeExplanationCameraProof": "Prova de câmera",
+    "badgeExplanationAuthenticitySignals": "Sinais de autenticidade",
+    "badgeExplanationVineArchiveIntro": "Este vídeo é um Vine original recuperado do Internet Archive.",
+    "badgeExplanationVineArchiveHistory": "Antes do Vine encerrar em 2017, o ArchiveTeam e o Internet Archive trabalharam para preservar milhões de Vines para a posteridade. Este conteúdo faz parte desse esforço histórico de preservação.",
+    "badgeExplanationOriginalStats": "Estatísticas originais: {loops} loops",
+    "@badgeExplanationOriginalStats": {
+        "placeholders": {
+            "loops": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationLearnVineArchive": "Saiba mais sobre a preservação do arquivo do Vine",
+    "badgeExplanationLearnProofmode": "Saiba mais sobre a verificação Proofmode",
+    "badgeExplanationLearnAuthenticity": "Saiba mais sobre os sinais de autenticidade do Divine",
+    "badgeExplanationInspectProofCheck": "Inspecionar com a ferramenta ProofCheck",
+    "badgeExplanationInspectMedia": "Inspecionar detalhes da mídia",
+    "badgeExplanationProofmodeVerified": "A autenticidade deste vídeo é verificada usando a tecnologia Proofmode.",
+    "badgeExplanationDivineHostedHumanMade": "Este vídeo está hospedado no Divine e a detecção de IA indica que provavelmente foi feito por humano, mas não inclui dados criptográficos de verificação de câmera.",
+    "badgeExplanationHumanMadeNoCrypto": "A detecção de IA indica que este vídeo provavelmente foi feito por humano, embora não inclua dados criptográficos de verificação de câmera.",
+    "badgeExplanationDivineHostedNoCrypto": "Este vídeo está hospedado no Divine, mas ainda não inclui dados criptográficos de verificação de câmera.",
+    "badgeExplanationExternalNoCrypto": "Este vídeo está hospedado fora do Divine e não inclui dados criptográficos de verificação de câmera.",
+    "badgeExplanationDeviceAttestation": "Atestação do dispositivo",
+    "badgeExplanationPgpSignature": "Assinatura PGP",
+    "badgeExplanationC2paCredentials": "Credenciais de conteúdo C2PA",
+    "badgeExplanationProofManifest": "Manifesto de prova",
+    "badgeExplanationAiDetection": "Detecção de IA",
+    "badgeExplanationAiNotScanned": "Scan de IA: ainda não escaneado",
+    "badgeExplanationNoScanResults": "Nenhum resultado de scan disponível ainda.",
+    "badgeExplanationCheckAiGenerated": "Verificar se é gerado por IA",
+    "badgeExplanationAiLikelihood": "{percentage}% de probabilidade de ser gerado por IA",
+    "@badgeExplanationAiLikelihood": {
+        "placeholders": {
+            "percentage": {
+                "type": "int"
+            }
+        }
+    },
+    "badgeExplanationScannedBy": "Escaneado por: {source}",
+    "@badgeExplanationScannedBy": {
+        "placeholders": {
+            "source": {
+                "type": "String"
+            }
+        }
+    },
+    "badgeExplanationVerifiedByModerator": "Verificado por moderador humano",
+    "badgeExplanationVerificationPlatinum": "Platina: atestação de hardware do dispositivo, assinaturas criptográficas, Content Credentials (C2PA) e scan de IA confirma origem humana.",
+    "badgeExplanationVerificationGold": "Ouro: capturado em um dispositivo real com atestação de hardware, assinaturas criptográficas e Content Credentials (C2PA).",
+    "badgeExplanationVerificationSilver": "Prata: assinaturas criptográficas provam que este vídeo não foi alterado desde a gravação.",
+    "badgeExplanationVerificationBronze": "Bronze: assinaturas básicas de metadados presentes.",
+    "badgeExplanationVerificationSilverAiScan": "Prata: scan de IA confirma que este vídeo provavelmente foi criado por humano.",
+    "badgeExplanationNoVerification": "Nenhum dado de verificação disponível para este vídeo.",
+    "shareMenuTitle": "Compartilhar vídeo",
+    "shareMenuReportAiContent": "Denunciar conteúdo de IA",
+    "shareMenuReportAiContentSubtitle": "Denuncie rapidamente suspeita de conteúdo gerado por IA",
+    "shareMenuReportingAiContent": "Denunciando conteúdo de IA...",
+    "shareMenuFailedToReportContent": "Falha ao denunciar conteúdo: {error}",
+    "@shareMenuFailedToReportContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuFailedToReportAiContent": "Falha ao denunciar conteúdo de IA: {error}",
+    "@shareMenuFailedToReportAiContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuVideoStatus": "Status do vídeo",
+    "shareMenuViewAllLists": "Ver todas as listas →",
+    "shareMenuShareWith": "Compartilhar com",
+    "shareMenuShareViaOtherApps": "Compartilhar via outros apps",
+    "shareMenuShareViaOtherAppsSubtitle": "Compartilhar via outros apps ou copiar o link",
+    "shareMenuSaveToGallery": "Salvar na galeria",
+    "shareMenuSaveOriginalSubtitle": "Salvar vídeo original no rolo da câmera",
+    "shareMenuSaveWithWatermark": "Salvar com marca d'água",
+    "shareMenuSaveVideo": "Salvar vídeo",
+    "shareMenuDownloadWithWatermark": "Baixar com marca d'água do Divine",
+    "shareMenuSaveVideoSubtitle": "Salvar vídeo no rolo da câmera",
+    "shareMenuLists": "Listas",
+    "shareMenuAddToList": "Adicionar à lista",
+    "shareMenuAddToListSubtitle": "Adicionar às suas listas curadas",
+    "shareMenuCreateNewList": "Criar nova lista",
+    "shareMenuCreateNewListSubtitle": "Comece uma nova coleção curada",
+    "shareMenuRemovedFromList": "Removido da lista",
+    "shareMenuFailedToRemoveFromList": "Falha ao remover da lista",
+    "shareMenuBookmarks": "Favoritos",
+    "shareMenuAddToBookmarks": "Adicionar aos favoritos",
+    "shareMenuAddToBookmarksSubtitle": "Salvar para ver depois",
+    "shareMenuAddToBookmarkSet": "Adicionar a coleção de favoritos",
+    "shareMenuAddToBookmarkSetSubtitle": "Organize em coleções",
+    "shareMenuFollowSets": "Coleções de seguidos",
+    "shareMenuCreateFollowSet": "Criar coleção de seguidos",
+    "shareMenuCreateFollowSetSubtitle": "Comece uma nova coleção com este criador",
+    "shareMenuAddToFollowSet": "Adicionar à coleção de seguidos",
+    "shareMenuFollowSetsAvailable": "{count} coleções de seguidos disponíveis",
+    "@shareMenuFollowSetsAvailable": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuAddedToBookmarks": "Adicionado aos favoritos!",
+    "shareMenuFailedToAddBookmark": "Falha ao adicionar aos favoritos",
+    "shareMenuCreatedListAndAddedVideo": "Lista \"{name}\" criada e vídeo adicionado",
+    "@shareMenuCreatedListAndAddedVideo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuManageContent": "Gerenciar conteúdo",
+    "shareMenuEditVideo": "Editar vídeo",
+    "shareMenuEditVideoSubtitle": "Atualize título, descrição e hashtags",
+    "shareMenuDeleteVideo": "Excluir vídeo",
+    "shareMenuDeleteVideoSubtitle": "Remover este conteúdo permanentemente",
+    "shareMenuVideoInTheseLists": "O vídeo está nestas listas:",
+    "shareMenuVideoCount": "{count} vídeos",
+    "@shareMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuClose": "Fechar",
+    "shareMenuDeleteConfirmation": "Tem certeza que quer excluir este vídeo?",
+    "shareMenuDeleteWarning": "Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.",
+    "shareMenuCancel": "Cancelar",
+    "shareMenuDelete": "Excluir",
+    "shareMenuDeletingContent": "Excluindo conteúdo...",
+    "shareMenuDeleteRequestSent": "Solicitação de exclusão enviada com sucesso",
+    "shareMenuFailedToDeleteContent": "Falha ao excluir conteúdo: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuFollowSetName": "Nome da coleção de seguidos",
+    "shareMenuFollowSetNameHint": "ex.: Criadores de conteúdo, Músicos, etc.",
+    "shareMenuDescriptionOptional": "Descrição (opcional)",
+    "shareMenuCreate": "Criar",
+    "shareMenuCreatedFollowSetAndAddedCreator": "Coleção de seguidos \"{name}\" criada e criador adicionado",
+    "@shareMenuCreatedFollowSetAndAddedCreator": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuDone": "Concluído",
+    "shareMenuEditTitle": "Título",
+    "shareMenuEditTitleHint": "Digite o título do vídeo",
+    "shareMenuEditDescription": "Descrição",
+    "shareMenuEditDescriptionHint": "Digite a descrição do vídeo",
+    "shareMenuEditHashtags": "Hashtags",
+    "shareMenuEditHashtagsHint": "hashtags, separadas, por, vírgula",
+    "shareMenuEditMetadataNote": "Nota: apenas os metadados podem ser editados. O conteúdo do vídeo não pode ser alterado.",
+    "shareMenuDeleting": "Excluindo...",
+    "shareMenuUpdate": "Atualizar",
+    "shareMenuVideoUpdated": "Vídeo atualizado com sucesso",
+    "shareMenuFailedToUpdateVideo": "Falha ao atualizar vídeo: {error}",
+    "@shareMenuFailedToUpdateVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuDeleteVideoQuestion": "Excluir vídeo?",
+    "shareMenuDeleteRelayWarning": "Isso vai enviar uma solicitação de exclusão para os relays. Nota: alguns relays ainda podem ter cópias em cache.",
+    "shareMenuVideoDeletionRequested": "Exclusão de vídeo solicitada",
+    "shareMenuFailedToDeleteVideo": "Falha ao excluir vídeo: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuContentLabels": "Rótulos de conteúdo",
+    "shareMenuAddContentLabels": "Adicionar rótulos de conteúdo",
+    "shareMenuClearAll": "Limpar tudo",
+    "shareMenuCollaborators": "Colaboradores",
+    "shareMenuAddCollaborator": "Adicionar colaborador",
+    "shareMenuMutualFollowRequired": "Você precisa seguir e ser seguido por {name} para adicioná-lo como colaborador.",
+    "@shareMenuMutualFollowRequired": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuLoading": "Carregando...",
+    "shareMenuInspiredBy": "Inspirado em",
+    "shareMenuAddInspirationCredit": "Adicionar crédito de inspiração",
+    "shareMenuCreatorCannotBeReferenced": "Este criador não pode ser referenciado.",
+    "shareMenuUnknown": "Desconhecido",
+    "shareMenuCreateBookmarkSet": "Criar coleção de favoritos",
+    "shareMenuSetName": "Nome da coleção",
+    "shareMenuSetNameHint": "ex.: Favoritos, Ver depois, etc.",
+    "shareMenuCreateNewSet": "Criar nova coleção",
+    "shareMenuStartNewBookmarkCollection": "Comece uma nova coleção de favoritos",
+    "shareMenuNoBookmarkSets": "Ainda sem coleções de favoritos. Crie a primeira!",
+    "shareMenuError": "Erro",
+    "shareMenuFailedToLoadBookmarkSets": "Falha ao carregar coleções de favoritos",
+    "shareMenuCreatedSetAndAddedVideo": "\"{name}\" criada e vídeo adicionado",
+    "@shareMenuCreatedSetAndAddedVideo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "shareMenuUseThisSound": "Usar este som",
+    "shareMenuOriginalSound": "Som original",
+    "authSessionExpired": "Sua sessão expirou. Entre novamente.",
+    "authSignInFailed": "Falha ao entrar. Tente novamente.",
+    "localeAppLanguage": "Idioma do app",
+    "localeDeviceDefault": "Padrão do dispositivo",
+    "localeSelectLanguage": "Selecionar idioma",
+    "webAuthNotSupportedSecureMode": "Autenticação web não suportada no modo seguro. Use o app para celular para gerenciamento seguro de chaves.",
+    "webAuthIntegrationFailed": "Falha na integração de autenticação: {error}",
+    "@webAuthIntegrationFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "webAuthUnexpectedError": "Erro inesperado: {error}",
+    "@webAuthUnexpectedError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "webAuthEnterBunkerUri": "Digite uma URI bunker",
+    "webAuthConnectTitle": "Conectar ao Divine",
+    "webAuthChooseMethod": "Escolha seu método preferido de autenticação Nostr",
+    "webAuthBrowserExtension": "Extensão do navegador",
+    "webAuthRecommended": "RECOMENDADO",
+    "webAuthNsecBunker": "nsec bunker",
+    "webAuthConnectRemoteSigner": "Conectar a um signer remoto",
+    "webAuthBunkerHint": "bunker://pubkey?relay=wss://...",
+    "webAuthPasteFromClipboard": "Colar da área de transferência",
+    "webAuthConnectToBunker": "Conectar ao bunker",
+    "webAuthNewToNostr": "Novo no Nostr?",
+    "webAuthNostrHelp": "Instale uma extensão de navegador como Alby ou nos2x para a experiência mais fácil, ou use nsec bunker para assinatura remota segura.",
+    "soundsTitle": "Sons",
+    "soundsSearchHint": "Buscar sons...",
+    "soundsPreviewUnavailable": "Não é possível pré-visualizar o som - sem áudio disponível",
+    "soundsPreviewFailed": "Falha ao reproduzir pré-visualização: {error}",
+    "@soundsPreviewFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "soundsFeaturedSounds": "Sons em destaque",
+    "soundsTrendingSounds": "Sons em alta",
+    "soundsAllSounds": "Todos os sons",
+    "soundsSearchResults": "Resultados da busca",
+    "soundsNoSoundsAvailable": "Nenhum som disponível",
+    "soundsNoSoundsDescription": "Os sons vão aparecer aqui quando os criadores compartilharem áudio",
+    "soundsNoSoundsFound": "Nenhum som encontrado",
+    "soundsNoSoundsFoundDescription": "Tente outro termo de busca",
+    "soundsFailedToLoad": "Falha ao carregar sons",
+    "soundsRetry": "Tentar novamente",
+    "soundsScreenLabel": "Tela de sons",
+    "profileTitle": "Perfil",
+    "profileRefresh": "Atualizar",
+    "profileRefreshLabel": "Atualizar perfil",
+    "profileMoreOptions": "Mais opções",
+    "profileBlockedUser": "{name} bloqueado",
+    "@profileBlockedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnblockedUser": "{name} desbloqueado",
+    "@profileUnblockedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileUnfollowedUser": "Deixou de seguir {name}",
+    "@profileUnfollowedUser": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "profileError": "Erro: {error}",
+    "@profileError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsTabAll": "Todas",
+    "notificationsTabLikes": "Curtidas",
+    "notificationsTabComments": "Comentários",
+    "notificationsTabFollows": "Seguidores",
+    "notificationsTabReposts": "Reposts",
+    "notificationsFailedToLoad": "Falha ao carregar notificações",
+    "notificationsRetry": "Tentar novamente",
+    "notificationsCheckingNew": "verificando novas notificações",
+    "notificationsNoneYet": "Sem notificações ainda",
+    "notificationsNoneForType": "Sem notificações de {type}",
+    "@notificationsNoneForType": {
+        "placeholders": {
+            "type": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsEmptyDescription": "Quando as pessoas interagirem com seu conteúdo, você vai ver aqui",
+    "notificationsLoadingType": "Carregando notificações de {type}...",
+    "@notificationsLoadingType": {
+        "placeholders": {
+            "type": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsInviteSingular": "Você tem 1 convite para compartilhar com um amigo!",
+    "notificationsInvitePlural": "Você tem {count} convites para compartilhar com amigos!",
+    "@notificationsInvitePlural": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "notificationsVideoNotFound": "Vídeo não encontrado",
+    "notificationsVideoUnavailable": "Vídeo indisponível",
+    "notificationsFromNotification": "Da notificação",
+    "feedFailedToLoadVideos": "Falha ao carregar vídeos",
+    "feedRetry": "Tentar novamente",
+    "feedNoFollowedUsers": "Nenhum usuário seguido.\nSiga alguém para ver os vídeos dessa pessoa aqui.",
+    "feedNoVideosForMode": "Nenhum vídeo encontrado para o feed {mode}.",
+    "@feedNoVideosForMode": {
+        "placeholders": {
+            "mode": {
+                "type": "String"
+            }
+        }
+    },
+    "feedExploreVideos": "Explorar vídeos",
+    "feedExternalVideoSlow": "Vídeo externo carregando devagar",
+    "feedSkip": "Pular",
+    "uploadWaitingToUpload": "Aguardando envio",
+    "uploadUploadingVideo": "Enviando vídeo",
+    "uploadProcessingVideo": "Processando vídeo",
+    "uploadProcessingComplete": "Processamento concluído",
+    "uploadPublishedSuccessfully": "Publicado com sucesso",
+    "uploadFailed": "Falha no envio",
+    "uploadRetrying": "Tentando enviar novamente",
+    "uploadPaused": "Envio pausado",
+    "uploadPercentComplete": "{percent}% concluído",
+    "@uploadPercentComplete": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "uploadQueuedMessage": "Seu vídeo está na fila de envio",
+    "uploadUploadingMessage": "Enviando para o servidor...",
+    "uploadProcessingMessage": "Processando vídeo - isso pode levar alguns minutos",
+    "uploadReadyToPublishMessage": "Vídeo processado com sucesso e pronto para publicar",
+    "uploadPublishedMessage": "Vídeo publicado no seu perfil",
+    "uploadFailedMessage": "Falha no envio - tente novamente",
+    "uploadRetryingMessage": "Tentando enviar novamente...",
+    "uploadPausedMessage": "Envio pausado pelo usuário",
+    "uploadRetryButton": "TENTAR DE NOVO",
+    "uploadRetryFailed": "Falha ao tentar o envio novamente: {error}",
+    "@uploadRetryFailed": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "userSearchPrompt": "Buscar usuários",
+    "userSearchNoResults": "Nenhum usuário encontrado",
+    "userSearchFailed": "A busca falhou",
+    "forgotPasswordTitle": "Redefinir senha",
+    "forgotPasswordDescription": "Digite seu endereço de e-mail e enviaremos um link para redefinir sua senha.",
+    "forgotPasswordEmailLabel": "Endereço de e-mail",
+    "forgotPasswordCancel": "Cancelar",
+    "forgotPasswordSendLink": "Enviar link por e-mail",
+    "ageVerificationContentWarning": "Aviso de conteúdo",
+    "ageVerificationTitle": "Verificação de idade",
+    "ageVerificationAdultDescription": "Este conteúdo foi sinalizado como podendo conter material adulto. Você precisa ter 18 anos ou mais para vê-lo.",
+    "ageVerificationCreationDescription": "Para usar a câmera e criar conteúdo, você precisa ter pelo menos 16 anos.",
+    "ageVerificationAdultQuestion": "Você tem 18 anos ou mais?",
+    "ageVerificationCreationQuestion": "Você tem 16 anos ou mais?",
+    "ageVerificationNo": "Não",
+    "ageVerificationYes": "Sim",
+    "shareLinkCopied": "Link copiado para a área de transferência",
+    "shareFailedToCopy": "Falha ao copiar o link",
+    "shareVideoSubject": "Confira este vídeo no Divine",
+    "shareFailedToShare": "Falha ao compartilhar",
+    "shareVideoTitle": "Compartilhar vídeo",
+    "shareToApps": "Compartilhar para apps",
+    "shareToAppsSubtitle": "Compartilhe via mensagens, apps sociais",
+    "shareCopyWebLink": "Copiar link da web",
+    "shareCopyWebLinkSubtitle": "Copiar link compartilhável da web",
+    "shareCopyNostrLink": "Copiar link Nostr",
+    "shareCopyNostrLinkSubtitle": "Copiar link nevent para clientes Nostr",
+    "navHome": "Início",
+    "navExplore": "Explorar",
+    "navInbox": "Caixa de entrada",
+    "navProfile": "Perfil",
+    "navMyProfile": "Meu perfil",
+    "navSearch": "Buscar",
+    "navNotifications": "Notificações",
+    "navSearchTooltip": "Buscar",
+    "navOpenCamera": "Abrir câmera",
+    "navUnknown": "Desconhecido",
+    "navExploreClassics": "Clássicos",
+    "navExploreNewVideos": "Novos vídeos",
+    "navExploreTrending": "Em alta",
+    "navExploreForYou": "Para você",
+    "navExploreLists": "Listas",
+    "routeErrorTitle": "Erro",
+    "routeInvalidHashtag": "Hashtag inválida",
+    "routeInvalidConversationId": "ID de conversa inválido",
+    "routeInvalidRequestId": "ID de solicitação inválido",
+    "routeInvalidListId": "ID de lista inválido",
+    "routeInvalidUserId": "ID de usuário inválido",
+    "routeInvalidVideoId": "ID de vídeo inválido",
+    "routeInvalidSoundId": "ID de som inválido",
+    "routeInvalidCategory": "Categoria inválida",
+    "routeNoVideosToDisplay": "Nenhum vídeo para exibir",
+    "routeInvalidProfileId": "ID de perfil inválido",
+    "routeDefaultListName": "Lista",
+    "supportTitle": "Central de suporte",
+    "supportContactSupport": "Contatar o suporte",
+    "supportContactSupportSubtitle": "Inicie uma conversa ou veja mensagens anteriores",
+    "supportReportBug": "Reportar um bug",
+    "supportReportBugSubtitle": "Problemas técnicos com o app",
+    "supportRequestFeature": "Pedir uma funcionalidade",
+    "supportRequestFeatureSubtitle": "Sugira uma melhoria ou nova funcionalidade",
+    "supportSaveLogs": "Salvar logs",
+    "supportSaveLogsSubtitle": "Exportar logs para um arquivo para envio manual",
+    "supportFaq": "FAQ",
+    "supportFaqSubtitle": "Perguntas e respostas comuns",
+    "supportProofMode": "ProofMode",
+    "supportProofModeSubtitle": "Saiba mais sobre verificação e autenticidade",
+    "supportLoginRequired": "Entre para contatar o suporte",
+    "supportExportingLogs": "Exportando logs...",
+    "supportExportLogsFailed": "Falha ao exportar logs",
+    "supportChatNotAvailable": "Chat de suporte indisponível",
+    "supportCouldNotOpenMessages": "Não foi possível abrir as mensagens de suporte",
+    "supportCouldNotOpenPage": "Não foi possível abrir {pageName}",
+    "@supportCouldNotOpenPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            }
+        }
+    },
+    "supportErrorOpeningPage": "Erro ao abrir {pageName}: {error}",
+    "@supportErrorOpeningPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            },
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "reportTitle": "Denunciar conteúdo",
+    "reportWhyReporting": "Por que você está denunciando este conteúdo?",
+    "reportPolicyNotice": "O Divine vai agir sobre denúncias de conteúdo em até 24 horas, removendo o conteúdo e expulsando o usuário que o publicou.",
+    "reportAdditionalDetails": "Detalhes adicionais (opcional)",
+    "reportBlockUser": "Bloquear este usuário",
+    "reportCancel": "Cancelar",
+    "reportSubmit": "Denunciar",
+    "reportSelectReason": "Selecione um motivo para denunciar este conteúdo",
+    "reportReasonSpam": "Spam ou conteúdo indesejado",
+    "reportReasonHarassment": "Assédio, bullying ou ameaças",
+    "reportReasonViolence": "Conteúdo violento ou extremista",
+    "reportReasonSexualContent": "Conteúdo sexual ou adulto",
+    "reportReasonCopyright": "Violação de direitos autorais",
+    "reportReasonFalseInfo": "Informações falsas",
+    "reportReasonCsam": "Violação de segurança infantil",
+    "reportReasonAiGenerated": "Conteúdo gerado por IA",
+    "reportReasonOther": "Outra violação de política",
+    "reportFailed": "Falha ao denunciar conteúdo: {error}",
+    "@reportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "reportReceivedTitle": "Denúncia recebida",
+    "reportReceivedThankYou": "Obrigado por ajudar a manter o Divine seguro.",
+    "reportReceivedReviewNotice": "Nossa equipe vai revisar sua denúncia e tomar as medidas adequadas. Você pode receber atualizações por mensagem direta.",
+    "reportLearnMore": "Saiba mais",
+    "reportSafetyUrl": "divine.video/safety",
+    "reportClose": "Fechar",
+    "listAddToList": "Adicionar à lista",
+    "listVideoCount": "{count} vídeos",
+    "@listVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listNewList": "Nova lista",
+    "listDone": "Concluído",
+    "listErrorLoading": "Erro ao carregar listas",
+    "listRemovedFrom": "Removido de {name}",
+    "@listRemovedFrom": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listAddedTo": "Adicionado a {name}",
+    "@listAddedTo": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "listCreateNewList": "Criar nova lista",
+    "listNameLabel": "Nome da lista",
+    "listDescriptionLabel": "Descrição (opcional)",
+    "listPublicList": "Lista pública",
+    "listPublicListSubtitle": "Outras pessoas podem seguir e ver esta lista",
+    "listCancel": "Cancelar",
+    "listCreate": "Criar",
+    "listCreateFailed": "Falha ao criar a lista",
+    "keyManagementTitle": "Chaves Nostr",
+    "keyManagementWhatAreKeys": "O que são chaves Nostr?",
+    "keyManagementExplanation": "Sua identidade Nostr é um par de chaves criptográficas:\n\n• Sua chave pública (npub) é como seu nome de usuário - compartilhe à vontade\n• Sua chave privada (nsec) é como sua senha - mantenha em segredo!\n\nSua nsec permite acessar sua conta em qualquer app Nostr.",
+    "keyManagementImportTitle": "Importar chave existente",
+    "keyManagementImportSubtitle": "Já tem uma conta Nostr? Cole sua chave privada (nsec) para acessá-la aqui.",
+    "keyManagementImportButton": "Importar chave",
+    "keyManagementImportWarning": "Isso vai substituir sua chave atual!",
+    "keyManagementBackupTitle": "Faça backup da sua chave",
+    "keyManagementBackupSubtitle": "Salve sua chave privada (nsec) para usar sua conta em outros apps Nostr.",
+    "keyManagementCopyNsec": "Copiar minha chave privada (nsec)",
+    "keyManagementNeverShare": "Nunca compartilhe sua nsec com ninguém!",
+    "keyManagementPasteKey": "Por favor, cole sua chave privada",
+    "keyManagementInvalidFormat": "Formato de chave inválido. Deve começar com \"nsec1\"",
+    "keyManagementConfirmImportTitle": "Importar esta chave?",
+    "keyManagementConfirmImportBody": "Isso vai substituir sua identidade atual pela importada.\n\nSua chave atual será perdida a menos que você tenha feito backup antes.",
+    "keyManagementImportConfirm": "Importar",
+    "keyManagementImportSuccess": "Chave importada com sucesso!",
+    "keyManagementImportFailed": "Falha ao importar chave: {error}",
+    "@keyManagementImportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "keyManagementExportSuccess": "Chave privada copiada para a área de transferência!\n\nGuarde em um lugar seguro.",
+    "keyManagementExportFailed": "Falha ao exportar chave: {error}",
+    "@keyManagementExportFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "saveOriginalSavedToCameraRoll": "Salvo no rolo da câmera",
+    "saveOriginalShare": "Compartilhar",
+    "saveOriginalDone": "Concluído",
+    "saveOriginalPhotosAccessNeeded": "Acesso a fotos necessário",
+    "saveOriginalPhotosAccessMessage": "Para salvar vídeos, permita o acesso a Fotos nas Configurações.",
+    "saveOriginalOpenSettings": "Abrir Configurações",
+    "saveOriginalNotNow": "Agora não",
+    "saveOriginalDownloadFailed": "Download falhou",
+    "saveOriginalDismiss": "Dispensar",
+    "saveOriginalDownloadingVideo": "Baixando vídeo",
+    "saveOriginalSavingToCameraRoll": "Salvando no rolo da câmera",
+    "saveOriginalFetchingVideo": "Buscando o vídeo na rede...",
+    "saveOriginalSavingVideo": "Salvando o vídeo original no seu rolo da câmera...",
+    "soundTitle": "Som",
+    "soundOriginalSound": "Som original",
+    "soundVideosUsingThisSound": "Vídeos que usam este som",
+    "soundSourceVideo": "Vídeo de origem",
+    "soundNoVideosYet": "Sem vídeos ainda",
+    "soundBeFirstToUse": "Seja o primeiro a usar este som!",
+    "soundFailedToLoadVideos": "Falha ao carregar vídeos",
+    "soundRetry": "Tentar novamente",
+    "soundVideosUnavailable": "Vídeos indisponíveis",
+    "soundCouldNotLoadDetails": "Não foi possível carregar os detalhes do vídeo",
+    "soundPreview": "Pré-visualizar",
+    "soundStop": "Parar",
+    "soundUseSound": "Usar som",
+    "soundNoVideoCount": "Sem vídeos ainda",
+    "soundOneVideo": "1 vídeo",
+    "soundVideoCount": "{count} vídeos",
+    "@soundVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "soundUnableToPreview": "Não é possível pré-visualizar o som - sem áudio disponível",
+    "soundPreviewFailed": "Falha ao reproduzir pré-visualização: {error}",
+    "@soundPreviewFailed": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "soundViewSource": "Ver origem",
+    "soundCloseTooltip": "Fechar",
+    "exploreNotExploreRoute": "Não é uma rota de explorar",
+    "legalTitle": "Legal",
+    "legalTermsOfService": "Termos de Serviço",
+    "legalTermsOfServiceSubtitle": "Termos e condições de uso",
+    "legalPrivacyPolicy": "Política de Privacidade",
+    "legalPrivacyPolicySubtitle": "Como lidamos com seus dados",
+    "legalSafetyStandards": "Padrões de Segurança",
+    "legalSafetyStandardsSubtitle": "Diretrizes da comunidade e segurança",
+    "legalDmca": "DMCA",
+    "legalDmcaSubtitle": "Política de direitos autorais e remoção",
+    "legalOpenSourceLicenses": "Licenças de código aberto",
+    "legalOpenSourceLicensesSubtitle": "Atribuições de pacotes de terceiros",
+    "legalAppName": "Divine",
+    "legalCouldNotOpenPage": "Não foi possível abrir {pageName}",
+    "@legalCouldNotOpenPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            }
+        }
+    },
+    "legalErrorOpeningPage": "Erro ao abrir {pageName}: {error}",
+    "@legalErrorOpeningPage": {
+        "placeholders": {
+            "pageName": {
+                "type": "String"
+            },
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "categoryAction": "Ação",
+    "categoryAdventure": "Aventura",
+    "categoryAnimals": "Animais",
+    "categoryAnimation": "Animação",
+    "categoryArchitecture": "Arquitetura",
+    "categoryArt": "Arte",
+    "categoryAutomotive": "Carros",
+    "categoryAwardShow": "Premiação",
+    "categoryAwards": "Prêmios",
+    "categoryBaseball": "Beisebol",
+    "categoryBasketball": "Basquete",
+    "categoryBeauty": "Beleza",
+    "categoryBeverage": "Bebidas",
+    "categoryCars": "Carros",
+    "categoryCelebration": "Comemoração",
+    "categoryCelebrities": "Celebridades",
+    "categoryCelebrity": "Celebridade",
+    "categoryCityscape": "Paisagem urbana",
+    "categoryComedy": "Comédia",
+    "categoryConcert": "Show",
+    "categoryCooking": "Culinária",
+    "categoryCostume": "Fantasia",
+    "categoryCrafts": "Artesanato",
+    "categoryCrime": "Crime",
+    "categoryCulture": "Cultura",
+    "categoryDance": "Dança",
+    "categoryDiy": "Faça você mesmo",
+    "categoryDrama": "Drama",
+    "categoryEducation": "Educação",
+    "categoryEmotional": "Emocionante",
+    "categoryEmotions": "Emoções",
+    "categoryEntertainment": "Entretenimento",
+    "categoryEvent": "Evento",
+    "categoryFamily": "Família",
+    "categoryFans": "Fãs",
+    "categoryFantasy": "Fantasia",
+    "categoryFashion": "Moda",
+    "categoryFestival": "Festival",
+    "categoryFilm": "Cinema",
+    "categoryFitness": "Fitness",
+    "categoryFood": "Comida",
+    "categoryFootball": "Futebol americano",
+    "categoryFurniture": "Móveis",
+    "categoryGaming": "Games",
+    "categoryGolf": "Golfe",
+    "categoryGrooming": "Cuidados pessoais",
+    "categoryGuitar": "Guitarra",
+    "categoryHalloween": "Halloween",
+    "categoryHealth": "Saúde",
+    "categoryHockey": "Hóquei",
+    "categoryHoliday": "Feriado",
+    "categoryHome": "Casa",
+    "categoryHomeImprovement": "Reforma",
+    "categoryHorror": "Terror",
+    "categoryHospital": "Hospital",
+    "categoryHumor": "Humor",
+    "categoryInteriorDesign": "Design de interiores",
+    "categoryInterview": "Entrevista",
+    "categoryKids": "Crianças",
+    "categoryLifestyle": "Estilo de vida",
+    "categoryMagic": "Mágica",
+    "categoryMakeup": "Maquiagem",
+    "categoryMedical": "Medicina",
+    "categoryMusic": "Música",
+    "categoryMystery": "Mistério",
+    "categoryNature": "Natureza",
+    "categoryNews": "Notícias",
+    "categoryOutdoor": "Ar livre",
+    "categoryParty": "Festa",
+    "categoryPeople": "Pessoas",
+    "categoryPerformance": "Performance",
+    "categoryPets": "Pets",
+    "categoryPolitics": "Política",
+    "categoryPrank": "Pegadinha",
+    "categoryPranks": "Pegadinhas",
+    "categoryRealityShow": "Reality show",
+    "categoryRelationship": "Relacionamento",
+    "categoryRelationships": "Relacionamentos",
+    "categoryRomance": "Romance",
+    "categorySchool": "Escola",
+    "categoryScienceFiction": "Ficção científica",
+    "categorySelfie": "Selfie",
+    "categoryShopping": "Compras",
+    "categorySkateboarding": "Skate",
+    "categorySkincare": "Cuidados com a pele",
+    "categorySoccer": "Futebol",
+    "categorySocialGathering": "Encontro",
+    "categorySocialMedia": "Redes sociais",
+    "categorySports": "Esportes",
+    "categoryTalkShow": "Talk show",
+    "categoryTech": "Tech",
+    "categoryTechnology": "Tecnologia",
+    "categoryTelevision": "Televisão",
+    "categoryToys": "Brinquedos",
+    "categoryTransportation": "Transporte",
+    "categoryTravel": "Viagem",
+    "categoryUrban": "Urbano",
+    "categoryViolence": "Violência",
+    "categoryVlog": "Vlog",
+    "categoryVlogging": "Vlogging",
+    "categoryWrestling": "Luta livre",
+    "blossomFailedToSaveSettings": "Falha ao salvar configurações: {error}",
+    "@blossomFailedToSaveSettings": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "blueskyFailedToUpdateCrosspost": "Falha ao atualizar configuração de crosspost",
+    "cameraAgeRestriction": "Você precisa ter 16 anos ou mais para criar conteúdo",
+    "categoriesCouldNotLoadCategories": "Não foi possível carregar as categorias",
+    "categoryGalleryCouldNotLoadVideos": "Não foi possível carregar os vídeos",
+    "classicVinersTitle": "OG Viners",
+    "commonCancel": "Cancelar",
+    "commonDelete": "Excluir",
+    "commonRetry": "Tentar novamente",
+    "discoverListsFailedToUpdateSubscription": "Falha ao atualizar assinatura: {error}",
+    "@discoverListsFailedToUpdateSubscription": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreVideoCounter": "Vídeo {current}/{total}",
+    "@exploreVideoCounter": {
+        "placeholders": {
+            "current": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "exploreVideoId": "ID: {id}",
+    "@exploreVideoId": {
+        "placeholders": {
+            "id": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreVideoTitle": "Título: {title}",
+    "@exploreVideoTitle": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestCancel": "Cancelar",
+    "followersFailedToLoadList": "Falha ao carregar lista de seguidores",
+    "followingFailedToLoadList": "Falha ao carregar lista de seguindo",
+    "inboxBlockedUser": "{displayName} bloqueado(a)",
+    "@inboxBlockedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemovedConversation": "Conversa removida",
+    "inboxReportedUser": "{displayName} denunciado(a)",
+    "@inboxReportedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxUnblockedUser": "{displayName} desbloqueado(a)",
+    "@inboxUnblockedUser": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesTitle": "Convidar amigos",
+    "keyImportError": "Erro: {error}",
+    "@keyImportError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteConfirm": "Excluir",
+    "notificationFollowBack": "Seguir de volta",
+    "profileSetupUploadSuccess": "Foto de perfil enviada com sucesso!",
+    "proofmodeCheckAiGenerated": "Verificar se gerado por IA",
+    "reportDialogCancel": "Cancelar",
+    "reportDialogReport": "Denunciar",
+    "routerInvalidCreator": "Criador inválido",
+    "routerInvalidHashtagRoute": "Rota de hashtag inválida",
+    "searchFindCuratedVideoLists": "Encontre listas de vídeos selecionados",
+    "searchForLists": "Buscar listas",
+    "searchSomethingWentWrong": "Algo deu errado",
+    "searchTryAgain": "Tentar novamente",
+    "trendingTitle": "Em alta",
+    "videoEditorLayers": "Camadas",
+    "videoEditorStickers": "Stickers",
+    "videoMetadataContentWarnings": "Avisos de conteúdo",
+    "videoMetadataExpiration": "Validade",
+    "videoMetadataTags": "Tags",
+    "contentLabelAiGenerated": "Gerado por IA",
+    "contentLabelAlcohol": "Álcool",
+    "contentLabelDeepfake": "Deepfake",
+    "contentLabelDrugUse": "Uso de drogas",
+    "contentLabelFlashingLights": "Luzes piscantes",
+    "contentLabelGambling": "Jogos de azar",
+    "contentLabelGraphicMedia": "Conteúdo gráfico",
+    "contentLabelHarassment": "Assédio",
+    "contentLabelHateSpeech": "Discurso de ódio",
+    "contentLabelMisleading": "Enganoso",
+    "contentLabelNudity": "Nudez",
+    "contentLabelPornography": "Pornografia",
+    "contentLabelProfanity": "Linguagem obscena",
+    "contentLabelScam": "Golpe/Fraude",
+    "contentLabelSelfHarm": "Automutilação/Suicídio",
+    "contentLabelSensitiveContent": "Conteúdo sensível",
+    "contentLabelSexualContent": "Conteúdo sexual",
+    "contentLabelSpam": "Spam",
+    "contentLabelSpoiler": "Spoiler",
+    "contentLabelTobacco": "Tabaco/Tabagismo",
+    "contentLabelViolence": "Violência",
+    "contentWarningNone": "Nenhum",
+    "draftTimeJustNow": "Agora mesmo",
+    "@draftTimeJustNow": {
+        "description": "Draft age label for less than one minute (capitalized)"
+    },
+    "draftUntitled": "Sem título",
+    "notificationCommentedOnYourVideo": "{actorName} comentou no seu vídeo",
+    "@notificationCommentedOnYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationLikedYourVideo": "{actorName} curtiu seu vídeo",
+    "@notificationLikedYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationMentionedYou": "{actorName} mencionou você",
+    "@notificationMentionedYou": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationRepostedYourVideo": "{actorName} repostou seu vídeo",
+    "@notificationRepostedYourVideo": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationStartedFollowing": "{actorName} começou a seguir você",
+    "@notificationStartedFollowing": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
+    "textAlignCenter": "Centro",
+    "textAlignLeft": "Esquerda",
+    "textAlignRight": "Direita",
+    "textBackgroundHighlight": "Destaque",
+    "textBackgroundNone": "Nenhum",
+    "textBackgroundSolid": "Sólido",
+    "textBackgroundTransparent": "Transparente",
+    "timeAgo": "{time} atrás",
+    "@timeAgo": {
+        "description": "Verbose relative time with ago suffix, e.g. 3m ago",
+        "placeholders": {
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "timeDaysAgo": "{count}d atrás",
+    "@timeDaysAgo": {
+        "description": "Relative time in days with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeHoursAgo": "{count}h atrás",
+    "@timeHoursAgo": {
+        "description": "Relative time in hours with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeJustNow": "agora mesmo",
+    "@timeJustNow": {
+        "description": "Verbose relative time for less than one minute (lowercase)"
+    },
+    "timeMinutesAgo": "{count}min atrás",
+    "@timeMinutesAgo": {
+        "description": "Relative time in minutes with ago suffix",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeNow": "agora",
+    "@timeNow": {
+        "description": "Relative time label for less than one minute ago (short form)"
+    },
+    "timeShortDays": "{count}d",
+    "@timeShortDays": {
+        "description": "Short relative time in days, e.g. 3d",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortHours": "{count}h",
+    "@timeShortHours": {
+        "description": "Short relative time in hours, e.g. 2h",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortMinutes": "{count}min",
+    "@timeShortMinutes": {
+        "description": "Short relative time in minutes, e.g. 3m",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortMonths": "{count}me",
+    "@timeShortMonths": {
+        "description": "Short relative time in months, e.g. 1mo",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortWeeks": "{count}sem",
+    "@timeShortWeeks": {
+        "description": "Short relative time in weeks, e.g. 2w",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeShortYears": "{count}a",
+    "@timeShortYears": {
+        "description": "Short relative time in years, e.g. 1y",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "timeToday": "Hoje",
+    "@timeToday": {
+        "description": "Date label for today"
+    },
+    "timeVerboseNow": "Agora",
+    "@timeVerboseNow": {
+        "description": "Verbose relative time label for less than one minute ago"
+    },
+    "timeYesterday": "Ontem",
+    "@timeYesterday": {
+        "description": "Date label for yesterday"
+    }
+}

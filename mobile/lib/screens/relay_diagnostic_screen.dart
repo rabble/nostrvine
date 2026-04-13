@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:models/models.dart' show NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart' show RelayState;
 import 'package:nostr_sdk/filter.dart' as nostr;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -263,8 +264,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         SnackBar(
           content: Text(
             blossomOk && funnelCakeOk
-                ? 'All REST endpoints healthy!'
-                : 'Some REST endpoints failed - see details above',
+                ? context.l10n.relayDiagnosticAllEndpointsHealthy
+                : context.l10n.relayDiagnosticSomeEndpointsFailed,
           ),
           backgroundColor: blossomOk && funnelCakeOk
               ? VineTheme.success
@@ -463,7 +464,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Found ${videoEvents.length} video events in database',
+              context.l10n.relayDiagnosticFoundVideoEvents(
+                videoEvents.length,
+              ),
             ),
             backgroundColor: videoEvents.isNotEmpty
                 ? VineTheme.success
@@ -476,7 +479,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Query failed: $e'),
+            content: Text(context.l10n.relayDiagnosticQueryFailed('$e')),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -510,8 +513,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
           SnackBar(
             content: Text(
               connectedCount > 0
-                  ? 'Connected to $connectedCount relay(s)!'
-                  : 'Failed to connect to any relays',
+                  ? context.l10n.relayDiagnosticConnectedToRelays(
+                      connectedCount,
+                    )
+                  : context.l10n.relayDiagnosticFailedToConnect,
             ),
             backgroundColor: connectedCount > 0
                 ? VineTheme.success
@@ -532,7 +537,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Connection retry failed: $e'),
+            content: Text(
+              context.l10n.relayDiagnosticConnectionRetryFailed('$e'),
+            ),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -562,14 +569,14 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Relay Diagnostics',
+        title: context.l10n.relayDiagnosticTitle,
         showBackButton: true,
         onBackPressed: context.pop,
         actions: [
           DiVineAppBarAction(
             icon: SvgIconSource(DivineIconName.arrowClockwise.assetPath),
             onPressed: _refreshDiagnostics,
-            tooltip: 'Refresh diagnostics',
+            tooltip: context.l10n.relayDiagnosticRefreshTooltip,
           ),
         ],
       ),
@@ -590,7 +597,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
-                    'Last refresh: ${_formatTime(_lastRefresh!)}',
+                    context.l10n.relayDiagnosticLastRefresh(
+                      _formatTime(_lastRefresh!),
+                    ),
                     style: const TextStyle(
                       color: VineTheme.lightText,
                       fontSize: 12,
@@ -601,22 +610,24 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
               // Relay status
               _buildSection(
-                title: 'Relay Status',
+                title: context.l10n.relayDiagnosticRelayStatus,
                 icon: Icons.storage,
                 children: [
                   _buildStatusRow(
-                    'Initialized',
+                    context.l10n.relayDiagnosticInitialized,
                     nostrService.isInitialized,
-                    nostrService.isInitialized ? 'Ready' : 'Not initialized',
+                    nostrService.isInitialized
+                        ? context.l10n.relayDiagnosticReady
+                        : context.l10n.relayDiagnosticNotInitialized,
                   ),
                   if (_relayStats != null) ...[
                     _buildInfoRow(
-                      'Database Events',
+                      context.l10n.relayDiagnosticDatabaseEvents,
                       _relayStats!['database']?['total_events']?.toString() ??
                           'N/A',
                     ),
                     _buildInfoRow(
-                      'Active Subscriptions',
+                      context.l10n.relayDiagnosticActiveSubscriptions,
                       _relayStats!['subscriptions']?['active_count']
                               ?.toString() ??
                           'N/A',
@@ -629,16 +640,21 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
               // External relays status
               _buildSection(
-                title: 'External Relays',
+                title: context.l10n.relayDiagnosticExternalRelays,
                 icon: Icons.cloud,
                 children: [
                   _buildInfoRow(
-                    'Configured',
-                    '${configuredRelays.length} relay(s)',
+                    context.l10n.relayDiagnosticConfigured,
+                    context.l10n.relayDiagnosticRelayCount(
+                      configuredRelays.length,
+                    ),
                   ),
                   _buildInfoRow(
-                    'Connected',
-                    '${connectedRelays.length}/${configuredRelays.length}',
+                    context.l10n.relayDiagnosticConnectedLabel,
+                    context.l10n.relayDiagnosticConnectedRatio(
+                      connectedRelays.length,
+                      configuredRelays.length,
+                    ),
                   ),
                   const Divider(color: VineTheme.lightText),
                   ...configuredRelays.map((relayUrl) {
@@ -659,14 +675,22 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
               // Video events status
               _buildSection(
-                title: 'Video Events',
+                title: context.l10n.relayDiagnosticVideoEvents,
                 icon: Icons.video_library,
                 children: [
-                  _buildInfoRow('Home Feed', '$homeFeedCount videos'),
-                  _buildInfoRow('Discovery', '$discoveryCount videos'),
                   _buildInfoRow(
-                    'Loading',
-                    videoService.isLoading ? 'Yes' : 'No',
+                    context.l10n.relayDiagnosticHomeFeed,
+                    context.l10n.relayDiagnosticVideosCount(homeFeedCount),
+                  ),
+                  _buildInfoRow(
+                    context.l10n.relayDiagnosticDiscovery,
+                    context.l10n.relayDiagnosticVideosCount(discoveryCount),
+                  ),
+                  _buildInfoRow(
+                    context.l10n.relayDiagnosticLoading,
+                    videoService.isLoading
+                        ? context.l10n.relayDiagnosticYes
+                        : context.l10n.relayDiagnosticNo,
                   ),
                   if (videoService.error != null)
                     _buildErrorRow('Error', videoService.error!),
@@ -678,9 +702,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                         Icons.search,
                         color: VineTheme.whiteText,
                       ),
-                      label: const Text(
-                        'Test Direct Query',
-                        style: TextStyle(color: VineTheme.whiteText),
+                      label: Text(
+                        context.l10n.relayDiagnosticTestDirectQuery,
+                        style: const TextStyle(color: VineTheme.whiteText),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: VineTheme.vineGreen,
@@ -694,7 +718,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
               // Network connectivity test
               _buildSection(
-                title: 'Network Connectivity',
+                title: context.l10n.relayDiagnosticNetworkConnectivity,
                 icon: Icons.network_check,
                 children: [
                   if (_networkTests.isEmpty && !_isTestingNetwork)
@@ -705,9 +729,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                           Icons.play_arrow,
                           color: VineTheme.whiteText,
                         ),
-                        label: const Text(
-                          'Run Network Test',
-                          style: TextStyle(color: VineTheme.whiteText),
+                        label: Text(
+                          context.l10n.relayDiagnosticRunNetworkTest,
+                          style: const TextStyle(color: VineTheme.whiteText),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: VineTheme.vineGreen,
@@ -741,7 +765,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
               // Blossom Server status
               _buildSection(
-                title: 'Blossom Server',
+                title: context.l10n.relayDiagnosticBlossomServer,
                 icon: Icons.cloud_upload,
                 children: [
                   if (_blossomResult == null && !_isTestingRestEndpoints)
@@ -752,9 +776,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                           Icons.play_arrow,
                           color: VineTheme.whiteText,
                         ),
-                        label: const Text(
-                          'Test All Endpoints',
-                          style: TextStyle(color: VineTheme.whiteText),
+                        label: Text(
+                          context.l10n.relayDiagnosticTestAllEndpoints,
+                          style: const TextStyle(color: VineTheme.whiteText),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: VineTheme.vineGreen,
@@ -774,7 +798,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     ),
                   if (_blossomResult != null) ...[
                     _buildInfoRow(
-                      'Status',
+                      context.l10n.relayDiagnosticStatus,
                       _blossomResult!.isReachable
                           ? 'OK (${_blossomResult!.latencyMs}ms)'
                           : 'FAILED',
@@ -783,9 +807,15 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                           : VineTheme.error,
                     ),
                     if (_blossomResult!.serverUrl != null)
-                      _buildInfoRow('URL', _blossomResult!.serverUrl!),
+                      _buildInfoRow(
+                        context.l10n.relayDiagnosticUrl,
+                        _blossomResult!.serverUrl!,
+                      ),
                     if (_blossomResult!.errorMessage != null)
-                      _buildErrorRow('Error', _blossomResult!.errorMessage!),
+                      _buildErrorRow(
+                        context.l10n.relayDiagnosticError,
+                        _blossomResult!.errorMessage!,
+                      ),
                   ],
                 ],
               ),
@@ -794,7 +824,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
               // FunnelCake API status - comprehensive endpoint testing
               _buildSection(
-                title: 'FunnelCake API',
+                title: context.l10n.relayDiagnosticFunnelCakeApi,
                 icon: Icons.api,
                 children: [
                   if (_funnelCakeResults == null && !_isTestingRestEndpoints)
@@ -805,9 +835,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                           Icons.play_arrow,
                           color: VineTheme.whiteText,
                         ),
-                        label: const Text(
-                          'Test All Endpoints',
-                          style: TextStyle(color: VineTheme.whiteText),
+                        label: Text(
+                          context.l10n.relayDiagnosticTestAllEndpoints,
+                          style: const TextStyle(color: VineTheme.whiteText),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: VineTheme.vineGreen,
@@ -827,11 +857,17 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     ),
                   if (_funnelCakeResults != null) ...[
                     // Summary row
-                    _buildInfoRow('Base URL', _funnelCakeResults!.apiBaseUrl),
                     _buildInfoRow(
-                      'Summary',
-                      '${_funnelCakeResults!.successCount}/${_funnelCakeResults!.endpoints.length} OK '
-                          '(avg ${_funnelCakeResults!.avgLatencyMs}ms)',
+                      context.l10n.relayDiagnosticBaseUrl,
+                      _funnelCakeResults!.apiBaseUrl,
+                    ),
+                    _buildInfoRow(
+                      context.l10n.relayDiagnosticSummary,
+                      context.l10n.relayDiagnosticEndpointSummary(
+                        _funnelCakeResults!.successCount,
+                        _funnelCakeResults!.endpoints.length,
+                        _funnelCakeResults!.avgLatencyMs,
+                      ),
                       textColor: _funnelCakeResults!.allSuccess
                           ? VineTheme.success
                           : VineTheme.warning,
@@ -845,9 +881,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     Center(
                       child: TextButton(
                         onPressed: _testRestEndpoints,
-                        child: const Text(
-                          'Retest All',
-                          style: TextStyle(color: VineTheme.vineGreen),
+                        child: Text(
+                          context.l10n.relayDiagnosticRetestAll,
+                          style: const TextStyle(color: VineTheme.vineGreen),
                         ),
                       ),
                     ),
@@ -873,7 +909,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                       )
                     : const Icon(Icons.refresh, color: VineTheme.whiteText),
                 label: Text(
-                  _isRetrying ? 'Retrying...' : 'Retry Connection',
+                  _isRetrying
+                      ? context.l10n.relayDiagnosticRetrying
+                      : context.l10n.relayDiagnosticRetryConnection,
                   style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 16,
@@ -898,20 +936,20 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   color: VineTheme.cardBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.info_outline,
                           color: VineTheme.secondaryText,
                           size: 20,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          'Troubleshooting',
-                          style: TextStyle(
+                          context.l10n.relayDiagnosticTroubleshooting,
+                          style: const TextStyle(
                             color: VineTheme.secondaryText,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -919,14 +957,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
-                      '• Green status = Connected and working\n'
-                      '• Red status = Connection failed\n'
-                      '• If network test fails, check internet connection\n'
-                      '• If relays are configured but not connected, tap "Retry Connection"\n'
-                      '• Screenshot this screen for debugging',
-                      style: TextStyle(
+                      context.l10n.relayDiagnosticTroubleshootingGuide,
+                      style: const TextStyle(
                         color: VineTheme.lightText,
                         fontSize: 12,
                       ),
@@ -1160,13 +1194,13 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
           ),
           const SizedBox(height: 4),
           Padding(
-            padding: const EdgeInsets.only(left: 28),
+            padding: const EdgeInsetsDirectional.only(start: 28),
             child: Text(
               isConnected
                   ? (isAuthenticated
-                        ? 'Connected & Authenticated'
-                        : 'Connected')
-                  : 'Not connected',
+                        ? context.l10n.relayDiagnosticConnectedAuthenticated
+                        : context.l10n.relayDiagnosticConnectedOnly)
+                  : context.l10n.relayDiagnosticNotConnected,
               style: TextStyle(
                 color: isConnected ? VineTheme.success : VineTheme.error,
                 fontSize: 12,

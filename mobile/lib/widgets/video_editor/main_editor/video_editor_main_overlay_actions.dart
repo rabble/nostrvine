@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -120,8 +121,7 @@ class _BottomActions extends StatelessWidget {
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      title: const Text('Layers'),
+      title: Text(context.l10n.videoEditorLayers),
       body: VideoEditorLayerReorderSheet(
         layers: layers,
         onReorder: (oldIndex, newIndex) {

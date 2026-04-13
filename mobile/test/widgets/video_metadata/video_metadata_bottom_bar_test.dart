@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as models;
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -39,7 +40,11 @@ Widget _createTestApp(Widget child) {
       ),
     ],
   );
-  return MaterialApp.router(routerConfig: router);
+  return MaterialApp.router(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    routerConfig: router,
+  );
 }
 
 void main() {
@@ -72,7 +77,11 @@ void main() {
     testWidgets('renders both Save draft and Post buttons', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
-          child: MaterialApp(home: Scaffold(body: VideoMetadataBottomBar())),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoMetadataBottomBar()),
+          ),
         ),
       );
       expect(find.text('Save for Later'), findsOneWidget);
@@ -84,7 +93,11 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const ProviderScope(
-          child: MaterialApp(home: Scaffold(body: VideoMetadataBottomBar())),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoMetadataBottomBar()),
+          ),
         ),
       );
 
@@ -131,6 +144,8 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataBottomBar()),
           ),
         ),

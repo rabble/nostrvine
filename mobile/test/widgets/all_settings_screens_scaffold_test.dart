@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 
@@ -12,7 +13,13 @@ void main() {
   group('All Settings Screens Scaffold Consistency', () {
     testWidgets('RelaySettingsScreen has nav green AppBar', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(child: MaterialApp(home: RelaySettingsScreen())),
+        const ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: RelaySettingsScreen(),
+          ),
+        ),
       );
 
       final appBarFinder = find.byType(AppBar);
@@ -29,7 +36,13 @@ void main() {
 
     testWidgets('BlossomSettingsScreen has nav green AppBar', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(child: MaterialApp(home: BlossomSettingsScreen())),
+        const ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BlossomSettingsScreen(),
+          ),
+        ),
       );
 
       final appBarFinder = find.byType(AppBar);
@@ -51,7 +64,13 @@ void main() {
 
       for (final screen in screensToTest) {
         await tester.pumpWidget(
-          ProviderScope(child: MaterialApp(home: screen)),
+          ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: screen,
+            ),
+          ),
         );
 
         final scaffoldFinder = find.byType(Scaffold);

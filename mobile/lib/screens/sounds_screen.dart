@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
@@ -132,9 +133,9 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to preview sound - no audio available'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.soundsPreviewUnavailable),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -173,7 +174,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to play preview: $e'),
+            content: Text(context.l10n.soundsPreviewFailed('$e')),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -222,12 +223,12 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Sounds screen',
+      label: context.l10n.soundsScreenLabel,
       container: true,
       child: Scaffold(
         backgroundColor: VineTheme.backgroundColor,
         appBar: DiVineAppBar(
-          title: 'Sounds',
+          title: context.l10n.soundsTitle,
           showBackButton: true,
           onBackPressed: context.pop,
           backgroundColor: VineTheme.cardBackground,
@@ -254,7 +255,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
         onChanged: _onSearchChanged,
         style: const TextStyle(color: VineTheme.whiteText),
         decoration: InputDecoration(
-          hintText: 'Search sounds...',
+          hintText: context.l10n.soundsSearchHint,
           hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
           prefixIcon: const Icon(Icons.search, color: VineTheme.onSurfaceMuted),
           filled: true,
@@ -366,15 +367,15 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
+              const SizedBox(width: 8),
               Text(
-                'Featured Sounds',
-                style: TextStyle(
+                context.l10n.soundsFeaturedSounds,
+                style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -422,19 +423,19 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.local_fire_department,
                 color: VineTheme.vineGreen,
                 size: 20,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'Trending Sounds',
-                style: TextStyle(
+                context.l10n.soundsTrendingSounds,
+                style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -487,7 +488,9 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                _searchQuery.isEmpty ? 'All Sounds' : 'Search Results',
+                _searchQuery.isEmpty
+                    ? context.l10n.soundsAllSounds
+                    : context.l10n.soundsSearchResults,
                 style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 16,
@@ -529,24 +532,24 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.music_off, size: 64, color: VineTheme.lightText),
-          SizedBox(height: 16),
+          const Icon(Icons.music_off, size: 64, color: VineTheme.lightText),
+          const SizedBox(height: 16),
           Text(
-            'No sounds available',
-            style: TextStyle(
+            context.l10n.soundsNoSoundsAvailable,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Sounds will appear here when creators share audio',
-            style: TextStyle(
+            context.l10n.soundsNoSoundsDescription,
+            style: const TextStyle(
               color: VineTheme.onSurfaceMuted,
               fontSize: 14,
             ),
@@ -558,24 +561,28 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
   }
 
   Widget _buildNoResultsState() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 64, color: VineTheme.lightText),
-          SizedBox(height: 16),
+          const Icon(
+            Icons.search_off,
+            size: 64,
+            color: VineTheme.lightText,
+          ),
+          const SizedBox(height: 16),
           Text(
-            'No sounds found',
-            style: TextStyle(
+            context.l10n.soundsNoSoundsFound,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Try a different search term',
-            style: TextStyle(
+            context.l10n.soundsNoSoundsFoundDescription,
+            style: const TextStyle(
               color: VineTheme.onSurfaceMuted,
               fontSize: 14,
             ),
@@ -594,9 +601,9 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
           children: [
             const Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
             const SizedBox(height: 16),
-            const Text(
-              'Failed to load sounds',
-              style: TextStyle(
+            Text(
+              context.l10n.soundsFailedToLoad,
+              style: const TextStyle(
                 color: VineTheme.whiteText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
@@ -619,7 +626,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
                 ref.invalidate(trendingSoundsProvider);
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(context.l10n.soundsRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
                 foregroundColor: VineTheme.backgroundColor,

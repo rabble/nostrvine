@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_extensions.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -90,7 +91,9 @@ class VideoEditorTextStyleBar extends StatelessWidget {
                     DivineIconButton(
                       // TODO(l10n): Replace with context.l10n when localization is added.
                       semanticLabel: 'Text alignment',
-                      semanticValue: state.alignment.accessibilityName,
+                      semanticValue: state.alignment.localizedAccessibilityName(
+                        context.l10n,
+                      ),
                       size: .small,
                       type: .secondary,
                       icon: state.alignment.icon,
@@ -99,7 +102,8 @@ class VideoEditorTextStyleBar extends StatelessWidget {
                     DivineIconButton(
                       // TODO(l10n): Replace with context.l10n when localization is added.
                       semanticLabel: 'Text background',
-                      semanticValue: state.backgroundStyle.accessibilityName,
+                      semanticValue: state.backgroundStyle
+                          .localizedAccessibilityName(context.l10n),
                       size: .small,
                       type: .secondary,
                       icon: state.backgroundStyle.icon,

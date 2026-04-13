@@ -21,7 +21,7 @@ class EnvironmentBadge extends ConsumerWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(left: 8),
+      margin: const EdgeInsetsDirectional.only(start: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: Color(environment.indicatorColorValue),

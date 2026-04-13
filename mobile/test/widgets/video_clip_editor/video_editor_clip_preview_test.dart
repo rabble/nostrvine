@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_clip_preview.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -65,6 +66,8 @@ void main() {
         child: BlocProvider<ClipEditorBloc>.value(
           value: bloc,
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: SizedBox(
                 width: 200,
@@ -184,6 +187,8 @@ void main() {
           child: BlocProvider<ClipEditorBloc>.value(
             value: bloc,
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SizedBox(
                   width: 200,

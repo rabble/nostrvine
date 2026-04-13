@@ -43,51 +43,53 @@ class _MoreActionsSection extends ConsumerWidget {
     final actions = <_ActionData>[
       _ActionData(
         icon: DivineIconName.bookmarkSimple,
-        label: 'Save',
+        label: context.l10n.shareSheetSave,
         onTap: onSave,
       ),
       if (onSaveOriginal != null)
         _ActionData(
           icon: DivineIconName.downloadSimple,
-          label: 'Save to Gallery',
+          label: context.l10n.shareSheetSaveToGallery,
           onTap: () => onSaveOriginal!.call(),
         ),
       _ActionData(
         icon: DivineIconName.downloadSimple,
-        label: isOwnContent ? 'Save with Watermark' : 'Save Video',
+        label: isOwnContent
+            ? context.l10n.shareSheetSaveWithWatermark
+            : context.l10n.shareSheetSaveVideo,
         onTap: onSaveWithWatermark,
       ),
       if (showCuratedLists)
         _ActionData(
           icon: DivineIconName.listPlus,
-          label: 'Add to List',
+          label: context.l10n.shareSheetAddToList,
           onTap: onAddToList,
         ),
       _ActionData(
         icon: DivineIconName.linkSimple,
-        label: 'Copy',
+        label: context.l10n.shareSheetCopy,
         onTap: onCopyLink,
       ),
       _ActionData(
         icon: DivineIconName.shareFat,
-        label: 'Share via',
+        label: context.l10n.shareSheetShareVia,
         onTap: onShareVia,
       ),
       _ActionData(
         icon: DivineIconName.flag,
-        label: 'Report',
+        label: context.l10n.shareSheetReport,
         onTap: onReport,
         isDestructive: true,
       ),
       if (showDebugTools) ...[
         _ActionData(
           icon: DivineIconName.bracketsAngle,
-          label: 'Event JSON',
+          label: context.l10n.shareSheetEventJson,
           onTap: onCopyEventJson,
         ),
         _ActionData(
           icon: DivineIconName.copySimple,
-          label: 'Event ID',
+          label: context.l10n.shareSheetEventId,
           onTap: onCopyEventId,
         ),
       ],
@@ -100,11 +102,11 @@ class _MoreActionsSection extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 12,
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'More actions',
-              style: TextStyle(
+              context.l10n.shareSheetMoreActions,
+              style: const TextStyle(
                 color: VineTheme.whiteText,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

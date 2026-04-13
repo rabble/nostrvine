@@ -2,7 +2,9 @@
 // ABOUTME: Verifies shouldShowContentWarningOverlay, contentWarningOverlayLabels,
 // ABOUTME: and humanizeContentLabel behavior.
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 
 void main() {
@@ -17,7 +19,8 @@ void main() {
     });
 
     test(
-      'returns false when contentWarningLabels is non-empty but warnLabels is empty',
+      'returns false when contentWarningLabels is non-empty '
+      'but warnLabels is empty',
       () {
         final result = shouldShowContentWarningOverlay(
           contentWarningLabels: ['violence'],
@@ -77,19 +80,59 @@ void main() {
   });
 
   group('humanizeContentLabel', () {
-    test('maps known labels to human-readable strings', () {
-      expect(humanizeContentLabel('nudity'), equals('Nudity'));
-      expect(humanizeContentLabel('violence'), equals('Violence'));
-      expect(humanizeContentLabel('drugs'), equals('Drug Use'));
-      expect(humanizeContentLabel('ai-generated'), equals('AI-Generated'));
+    late BuildContext capturedContext;
+
+    Future<void> pumpWithContext(WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+    }
+
+    testWidgets('maps known labels to human-readable strings', (
+      tester,
+    ) async {
+      await pumpWithContext(tester);
+
       expect(
-        humanizeContentLabel('flashing-lights'),
+        humanizeContentLabel(capturedContext, 'nudity'),
+        equals('Nudity'),
+      );
+      expect(
+        humanizeContentLabel(capturedContext, 'violence'),
+        equals('Violence'),
+      );
+      expect(
+        humanizeContentLabel(capturedContext, 'drugs'),
+        equals('Drug Use'),
+      );
+      expect(
+        humanizeContentLabel(capturedContext, 'ai-generated'),
+        equals('AI-Generated'),
+      );
+      expect(
+        humanizeContentLabel(capturedContext, 'flashing-lights'),
         equals('Flashing Lights'),
       );
     });
 
-    test('returns generic fallback for unknown labels', () {
-      expect(humanizeContentLabel('unknown-label'), equals('Content Warning'));
+    testWidgets('returns generic fallback for unknown labels', (
+      tester,
+    ) async {
+      await pumpWithContext(tester);
+
+      expect(
+        humanizeContentLabel(capturedContext, 'unknown-label'),
+        equals('Content Warning'),
+      );
     });
   });
 }

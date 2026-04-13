@@ -12,6 +12,7 @@ import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -170,7 +171,7 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
     final isDisabled = isSubmitting || isSkipping;
 
     return AuthFormScaffold(
-      title: 'Create account',
+      title: context.l10n.authCreateAccountTitle,
       onBack: isDisabled ? null : () => context.pop(),
       emailController: _emailController,
       passwordController: _passwordController,
@@ -190,10 +191,10 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
                     widget.state.inviteRecoveryCode != null) ...[
                   const SizedBox(height: 12),
                   Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     child: TextButton(
                       onPressed: isDisabled ? null : _returnToInviteGate,
-                      child: const Text('Back to invite code'),
+                      child: Text(context.l10n.authBackToInviteCode),
                     ),
                   ),
                 ],
@@ -202,7 +203,7 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
           : null,
       primaryButton: DivineButton(
         expanded: true,
-        label: 'Create account',
+        label: context.l10n.authCreateAccountTitle,
         isLoading: isSubmitting,
         onPressed: isDisabled ? null : _submit,
       ),
@@ -249,9 +250,12 @@ class _SkipButton extends StatelessWidget {
                   strokeWidth: 2,
                 ),
               )
-            : const Text(
-                'Use Divine with no backup',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            : Text(
+                context.l10n.authUseDivineNoBackup,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
       ),
     );
@@ -294,9 +298,9 @@ class _SkipConfirmationSheet extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Title
-          const Text(
-            'One last thing...',
-            style: TextStyle(
+          Text(
+            context.l10n.authSkipConfirmTitle,
+            style: const TextStyle(
               fontFamily: VineTheme.fontFamilyBricolage,
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -306,36 +310,30 @@ class _SkipConfirmationSheet extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Description
-          const Text(
-            "You're in! We'll create a secure key that powers "
-            'your Divine account.',
+          Text(
+            context.l10n.authSkipConfirmKeyCreated,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               color: VineTheme.secondaryText,
               height: 1.4,
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Without an email, your key is the only way '
-            'Divine knows this account is yours.',
+          Text(
+            context.l10n.authSkipConfirmKeyOnly,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               color: VineTheme.secondaryText,
               height: 1.4,
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'You can access your key in the app, but, if '
-            "you're not technical we recommend adding an "
-            'email and password now. It makes it easier to '
-            'sign in and restore your account if you lose or '
-            'reset this device.',
+          Text(
+            context.l10n.authSkipConfirmRecommendEmail,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               color: VineTheme.secondaryText,
               height: 1.4,
@@ -346,7 +344,7 @@ class _SkipConfirmationSheet extends StatelessWidget {
           // Add email & password button
           DivineButton(
             expanded: true,
-            label: 'Add email & password',
+            label: context.l10n.authAddEmailPassword,
             onPressed: () => Navigator.pop(context, false),
           ),
           const SizedBox(height: 12),
@@ -363,9 +361,12 @@ class _SkipConfirmationSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: const Text(
-                'Use this device only',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              child: Text(
+                context.l10n.authUseThisDeviceOnly,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),

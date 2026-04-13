@@ -18,7 +18,7 @@ void main() {}
 //
 //  Widget shell(ProviderContainer c) => UncontrolledProviderScope(
 //    container: c,
-//    child: MaterialApp.router(routerConfig: c.read(goRouterProvider)),
+//    child: MaterialApp.router(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, routerConfig: c.read(goRouterProvider)),
 //  );
 //
 //  String currentLocation(ProviderContainer c) {

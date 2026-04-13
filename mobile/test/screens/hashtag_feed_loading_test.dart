@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
@@ -42,7 +43,11 @@ void main() {
           ),
           hashtagServiceProvider.overrideWith((ref) => mockHashtagService),
         ],
-        child: MaterialApp(home: HashtagFeedScreen(hashtag: hashtag)),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HashtagFeedScreen(hashtag: hashtag),
+        ),
       );
     }
 

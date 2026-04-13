@@ -14,7 +14,10 @@ enum WelcomeStatus {
   /// An auth action (log back in / create account) is in progress.
   accepting,
 
-  /// An auth action failed.
+  /// An auth action failed due to expired session.
+  sessionExpired,
+
+  /// An auth action failed for a generic reason.
   error,
 
   /// Transient: navigate to login options, then auto-resets to [loaded].
@@ -52,7 +55,6 @@ final class WelcomeState extends Equatable {
     this.previousAccounts = const [],
     this.selectedPubkeyHex,
     this.signingInPubkeyHex,
-    this.error,
   });
 
   /// Current status of welcome operations.
@@ -67,9 +69,6 @@ final class WelcomeState extends Equatable {
 
   /// The pubkey of the account currently being signed into (for loading state).
   final String? signingInPubkeyHex;
-
-  /// Error message from the last failed operation.
-  final String? error;
 
   /// Whether any returning users were detected.
   bool get hasReturningUsers => previousAccounts.isNotEmpty;
@@ -93,9 +92,7 @@ final class WelcomeState extends Equatable {
     List<PreviousAccount>? previousAccounts,
     String? selectedPubkeyHex,
     String? signingInPubkeyHex,
-    String? error,
     bool clearAccounts = false,
-    bool clearError = false,
     bool clearSigningIn = false,
     bool clearSelectedPubkey = false,
   }) {
@@ -110,7 +107,6 @@ final class WelcomeState extends Equatable {
       signingInPubkeyHex: clearSigningIn
           ? null
           : (signingInPubkeyHex ?? this.signingInPubkeyHex),
-      error: clearError ? null : (error ?? this.error),
     );
   }
 
@@ -120,6 +116,5 @@ final class WelcomeState extends Equatable {
     previousAccounts,
     selectedPubkeyHex,
     signingInPubkeyHex,
-    error,
   ];
 }

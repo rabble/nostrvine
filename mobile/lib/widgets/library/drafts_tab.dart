@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
@@ -203,7 +204,7 @@ class DraftsTab extends ConsumerWidget {
               backgroundColor: VineTheme.error,
               foregroundColor: VineTheme.whiteText,
             ),
-            child: const Text('Delete'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),
@@ -261,7 +262,12 @@ class DraftListTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       minTileHeight: enableShrink ? null : 72,
-      contentPadding: EdgeInsets.fromLTRB(enableShrink ? 0 : 16, 0, 10, 0),
+      contentPadding: EdgeInsetsDirectional.fromSTEB(
+        enableShrink ? 0 : 16,
+        0,
+        10,
+        0,
+      ),
       leading: Container(
         width: 40,
         height: 40,
@@ -287,13 +293,13 @@ class DraftListTile extends StatelessWidget {
               ),
       ),
       title: Text(
-        draft.title.isEmpty ? 'Untitled' : draft.title,
+        draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
         style: VineTheme.titleSmallFont(),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        DateFormat('EEEE, MMM d yyyy h:mm a').format(draft.lastModified),
+        DateFormat.yMMMEd().add_jm().format(draft.lastModified),
         style: VineTheme.bodySmallFont(),
       ),
       trailing: onOpenMore == null

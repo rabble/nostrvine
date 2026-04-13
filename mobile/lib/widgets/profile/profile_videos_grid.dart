@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -258,14 +259,16 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
     if (allVideos.isEmpty) {
       if (widget.isLoading) {
-        return const ProfileTabLoadingState(message: 'Loading videos...');
+        return ProfileTabLoadingState(
+          message: context.l10n.profileLoadingVideos,
+        );
       }
       return ProfileTabEmptyState(
         icon: DivineIconName.videoCamera,
-        title: 'No Videos Yet',
+        title: context.l10n.profileNoVideosTitle,
         subtitle: isOwnProfile
-            ? 'Share your first video to see it here'
-            : "This user hasn't shared any videos yet",
+            ? context.l10n.profileNoVideosOwnSubtitle
+            : context.l10n.profileNoVideosOtherSubtitle,
         onRefresh: loadMoreProfileVideos,
       );
     }
@@ -383,7 +386,7 @@ class _VideoGridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     identifier: 'video_thumbnail_$index',
-    label: 'Video thumbnail ${index + 1}',
+    label: context.l10n.profileVideoThumbnailLabel(index + 1),
     button: true,
     child: GestureDetector(
       onTap: onTap,

@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -52,7 +53,11 @@ Widget buildTestWidget({List<Override> overrides = const []}) {
     ],
     child: BlocProvider<CameraPermissionBloc>(
       create: (_) => MockCameraPermissionBloc(),
-      child: const MaterialApp(home: VideoRecorderScreen()),
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: VideoRecorderScreen(),
+      ),
     ),
   );
 }
@@ -70,7 +75,11 @@ Widget buildTestWidgetWithOverrides(List<Override> overrides) {
     ],
     child: BlocProvider<CameraPermissionBloc>(
       create: (_) => MockCameraPermissionBloc(),
-      child: const MaterialApp(home: VideoRecorderScreen()),
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: VideoRecorderScreen(),
+      ),
     ),
   );
 }
@@ -212,7 +221,11 @@ void main() {
 
         // Remove the widget
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: Text('Other screen'))),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: Text('Other screen')),
+          ),
         );
 
         await tester.pump();
@@ -229,7 +242,11 @@ void main() {
 
         // Navigate away
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: Text('Other screen'))),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: Text('Other screen')),
+          ),
         );
 
         await tester.pumpAndSettle();
@@ -349,6 +366,8 @@ void main() {
             child: BlocProvider<CameraPermissionBloc>(
               create: (_) => MockCameraPermissionBloc(),
               child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: Scaffold(
                   body: Builder(
                     builder: (context) => ElevatedButton(
@@ -385,7 +404,11 @@ void main() {
 
         // Simulate back navigation
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: Text('Home'))),
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: Text('Home')),
+          ),
         );
 
         await tester.pumpAndSettle();

@@ -13,6 +13,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:http/http.dart';
@@ -34,7 +35,6 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/categories_repository.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -67,6 +67,7 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/moderation_label_service.dart';
@@ -172,9 +173,7 @@ final notificationPreferencesServiceProvider =
         publishPreferences: (prefs) {
           return ref
               .read(pushNotificationServiceProvider)
-              .updatePreferences(
-                prefs,
-              );
+              .updatePreferences(prefs);
         },
       );
     });
@@ -195,20 +194,14 @@ final nostrAppAuditServiceProvider = Provider<NostrAppAuditService>((ref) {
   return NostrAppAuditService(
     workerBaseUri: Uri.parse(AppConfig.appsDirectoryBaseUrl),
     authTokenProvider:
-        ({
-          required url,
-          required method,
-          required payload,
-        }) async {
+        ({required url, required method, required payload}) async {
           final token = await nip98AuthService.createAuthToken(
             url: url,
             method: HttpMethod.post,
             payload: payload,
           );
           if (token == null) return null;
-          return AuditAuthToken(
-            authorizationHeader: token.authorizationHeader,
-          );
+          return AuditAuthToken(authorizationHeader: token.authorizationHeader);
         },
     httpClient: client,
   );
@@ -848,10 +841,7 @@ void blocklistSyncBridge(Ref ref) {
 
     try {
       await Future.wait([
-        blocklistService.syncMuteListsInBackground(
-          nostrService,
-          pubkey,
-        ),
+        blocklistService.syncMuteListsInBackground(nostrService, pubkey),
         blocklistService.syncBlockListsInBackground(
           nostrService,
           authService,
@@ -1409,10 +1399,13 @@ FollowRepository followRepository(Ref ref) {
 
   final repository = FollowRepository(
     nostrClient: nostrClient,
-    personalEventCache: personalEventCache,
+    isCacheInitialized: () => personalEventCache.isInitialized,
+    getCachedEventsByKind: personalEventCache.getEventsByKind,
+    cacheUserEvent: personalEventCache.cacheUserEvent,
     funnelcakeApiClient: funnelcakeApiClient,
     profileStatsDao: profileStatsDao,
     indexerRelayUrls: env.indexerRelays,
+    queryContactList: ContactListCompletionHelper.queryContactList,
     isOnline: () =>
         connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
@@ -2400,9 +2393,7 @@ class _AuthServiceBridgeAdapter implements BridgeAuthProvider {
 
   @override
   List<BridgeRelay> get userRelays => _authService.userRelays
-      .map(
-        (r) => BridgeRelay(url: r.url, read: r.read, write: r.write),
-      )
+      .map((r) => BridgeRelay(url: r.url, read: r.read, write: r.write))
       .toList();
 
   @override

@@ -4,6 +4,17 @@ Goal: 100% test coverage on all projects. Tests reduce bugs, encourage clean cod
 
 ---
 
+## New and Extracted Packages Must Ship with Tests
+
+When extracting code into a new package (client, repository, utility), include test coverage in the same PR. Do not defer tests to a follow-up — the extraction PR is incomplete without them.
+
+At minimum, cover:
+- All public methods on the main class
+- Error/edge cases for network or I/O operations
+- Model serialization if the package defines models
+
+---
+
 ## Test Organization
 
 ### File Structure

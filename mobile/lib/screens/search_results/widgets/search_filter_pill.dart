@@ -21,7 +21,7 @@ class SearchFilterPill extends StatelessWidget {
       label: 'Filter: ${filter.label}',
       button: true,
       child: Padding(
-        padding: const EdgeInsets.only(right: 6),
+        padding: const EdgeInsetsDirectional.only(end: 6),
         child: GestureDetector(
           onTap: () => SearchFilterSheet.show(context),
           child: Container(

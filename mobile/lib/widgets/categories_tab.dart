@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_category_name.dart';
 import 'package:openvine/models/video_category.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
@@ -118,9 +120,10 @@ class _CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localizedName = localizedCategoryName(context.l10n, category.name);
     return Semantics(
       button: true,
-      label: category.displayName,
+      label: localizedName,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -145,7 +148,7 @@ class _CategoryTile extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        category.displayName,
+                        localizedName,
                         style: TextStyle(
                           color: visuals.foregroundColor,
                           fontSize: 24,
@@ -168,8 +171,8 @@ class _CategoryTile extends StatelessWidget {
                   ),
                 ),
                 if (visuals.assetPath != null)
-                  Positioned(
-                    right: 18,
+                  PositionedDirectional(
+                    end: 18,
                     top: 0,
                     bottom: 0,
                     child: IgnorePointer(

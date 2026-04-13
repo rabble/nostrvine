@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 
 /// A section displaying trending hashtags in a horizontal scrollable list.
@@ -84,9 +85,12 @@ class _HashtagChipList extends StatelessWidget {
         itemBuilder: (context, index) {
           if (index == 0) {
             return Padding(
-              padding: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsetsDirectional.only(end: 10),
               child: Center(
-                child: Text('Trending', style: VineTheme.titleSmallFont()),
+                child: Text(
+                  context.l10n.trendingTitle,
+                  style: VineTheme.titleSmallFont(),
+                ),
               ),
             );
           }
@@ -136,7 +140,7 @@ class _HashtagChip extends StatelessWidget {
     final color = _accentColors[colorIndex % _accentColors.length];
 
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsetsDirectional.only(end: 8),
       child: Semantics(
         label: 'View videos tagged $hashtag',
         button: true,

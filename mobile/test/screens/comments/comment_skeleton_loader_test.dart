@@ -3,13 +3,18 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/comments/widgets/comment_skeleton_loader.dart';
 
 void main() {
   group('CommentsSkeletonLoader', () {
     testWidgets('renders without error', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: CommentsSkeletonLoader())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: CommentsSkeletonLoader()),
+        ),
       );
 
       expect(find.byType(CommentsSkeletonLoader), findsOneWidget);
@@ -17,7 +22,11 @@ void main() {
 
     testWidgets('has semantic identifier for accessibility', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: CommentsSkeletonLoader())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: CommentsSkeletonLoader()),
+        ),
       );
 
       final semanticsFinder = find.bySemanticsLabel('Loading comments');
@@ -26,7 +35,11 @@ void main() {
 
     testWidgets('renders ListView with 6 skeleton items', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: CommentsSkeletonLoader())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: CommentsSkeletonLoader()),
+        ),
       );
 
       // Verify ListView is present

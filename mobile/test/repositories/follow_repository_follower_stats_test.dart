@@ -3,12 +3,12 @@
 
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

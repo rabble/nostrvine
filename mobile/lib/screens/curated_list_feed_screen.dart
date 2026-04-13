@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -173,7 +174,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                   ref.invalidate(curatedListVideoEventsProvider(widget.listId));
                 },
                 icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                label: Text(context.l10n.commonRetry),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: VineTheme.vineGreen,
                   foregroundColor: VineTheme.backgroundColor,
@@ -232,9 +233,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           trafficSource: ViewTrafficSource.search,
         ),
         // Back button overlay to exit video mode
-        Positioned(
+        PositionedDirectional(
           top: 50,
-          left: 16,
+          start: 16,
           child: SafeArea(
             child: IconButton(
               icon: Container(
@@ -383,7 +384,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update subscription: $e'),
+            content: Text(
+              context.l10n.discoverListsFailedToUpdateSubscription('$e'),
+            ),
             backgroundColor: VineTheme.likeRed,
           ),
         );

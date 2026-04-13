@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
 import 'package:openvine/notifications/widgets/notification_empty_state.dart';
@@ -27,6 +28,8 @@ Future<void> _pumpView(
   await tester.pumpWidget(
     ProviderScope(
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData.dark(),
         home: BlocProvider<NotificationFeedBloc>.value(
           value: bloc,

@@ -31,7 +31,6 @@ final class ProfileCollabVideosState extends Equatable {
   const ProfileCollabVideosState({
     this.status = ProfileCollabVideosStatus.initial,
     this.videos = const [],
-    this.error,
     this.isLoadingMore = false,
     this.hasMoreContent = true,
     this.paginationCursor,
@@ -42,9 +41,6 @@ final class ProfileCollabVideosState extends Equatable {
 
   /// The list of collab videos.
   final List<VideoEvent> videos;
-
-  /// Error message if loading failed, if any.
-  final String? error;
 
   /// Whether more videos are being loaded (pagination).
   final bool isLoadingMore;
@@ -65,8 +61,6 @@ final class ProfileCollabVideosState extends Equatable {
   ProfileCollabVideosState copyWith({
     ProfileCollabVideosStatus? status,
     List<VideoEvent>? videos,
-    String? error,
-    bool clearError = false,
     bool? isLoadingMore,
     bool? hasMoreContent,
     int? paginationCursor,
@@ -74,7 +68,6 @@ final class ProfileCollabVideosState extends Equatable {
     return ProfileCollabVideosState(
       status: status ?? this.status,
       videos: videos ?? this.videos,
-      error: clearError ? null : (error ?? this.error),
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
       paginationCursor: paginationCursor ?? this.paginationCursor,
@@ -85,7 +78,6 @@ final class ProfileCollabVideosState extends Equatable {
   List<Object?> get props => [
     status,
     videos,
-    error,
     isLoadingMore,
     hasMoreContent,
     paginationCursor,

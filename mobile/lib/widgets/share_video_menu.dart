@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -134,9 +136,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Share Video',
-                style: TextStyle(
+              Text(
+                context.l10n.shareMenuTitle,
+                style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -184,16 +186,16 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           size: 20,
         ),
       ),
-      title: const Text(
-        'Report AI Content',
-        style: TextStyle(
+      title: Text(
+        context.l10n.shareMenuReportAiContent,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontWeight: FontWeight.w600,
         ),
       ),
-      subtitle: const Text(
-        'Quick report suspected AI-generated content',
-        style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+      subtitle: Text(
+        context.l10n.shareMenuReportAiContentSubtitle,
+        style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
       ),
       trailing: const Icon(
         Icons.arrow_forward_ios,
@@ -210,10 +212,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       // Show loading snackbar
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -221,12 +223,12 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                     color: VineTheme.whiteText,
                   ),
                 ),
-                SizedBox(width: 12),
-                Text('Reporting AI content...'),
+                const SizedBox(width: 12),
+                Text(context.l10n.shareMenuReportingAiContent),
               ],
             ),
             backgroundColor: VineTheme.warning,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -259,7 +261,11 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   const Icon(Icons.error, color: VineTheme.whiteText),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text('Failed to report content: ${result.error}'),
+                    child: Text(
+                      context.l10n.shareMenuFailedToReportContent(
+                        result.error ?? '',
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -278,7 +284,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to report AI content: $e'),
+            content: Text(
+              context.l10n.shareMenuFailedToReportAiContent('$e'),
+            ),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -344,17 +352,17 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.info_outline,
                           color: VineTheme.vineGreen,
                           size: 18,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          'Video Status',
-                          style: TextStyle(
+                          context.l10n.shareMenuVideoStatus,
+                          style: const TextStyle(
                             color: VineTheme.whiteText,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -386,11 +394,11 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                       const SizedBox(height: 8),
                       InkWell(
                         onTap: () => _showAllListsDialog(listsContaining),
-                        child: const Padding(
-                          padding: EdgeInsets.only(left: 26),
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.only(start: 26),
                           child: Text(
-                            'View all lists →',
-                            style: TextStyle(
+                            context.l10n.shareMenuViewAllLists,
+                            style: const TextStyle(
                               color: VineTheme.vineGreen,
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -416,9 +424,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   Widget _buildShareSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
-        'Share With',
-        style: TextStyle(
+      Text(
+        context.l10n.shareMenuShareWith,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -429,8 +437,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       // External share (native share sheet includes copy option)
       _buildActionTile(
         icon: Icons.share,
-        title: 'Share via other apps',
-        subtitle: 'Share via other apps or copy link',
+        title: context.l10n.shareMenuShareViaOtherApps,
+        subtitle: context.l10n.shareMenuShareViaOtherAppsSubtitle,
         onTap: _shareExternally,
       ),
 
@@ -440,8 +448,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       if (_isUserOwnContent()) ...[
         _buildActionTile(
           icon: Icons.save_alt,
-          title: 'Save to Gallery',
-          subtitle: 'Save original video to camera roll',
+          title: context.l10n.shareMenuSaveToGallery,
+          subtitle: context.l10n.shareMenuSaveOriginalSubtitle,
           onTap: () => _saveOriginal(context),
         ),
         const SizedBox(height: 8),
@@ -450,10 +458,12 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       // Save video with watermark
       _buildActionTile(
         icon: Icons.download,
-        title: _isUserOwnContent() ? 'Save with Watermark' : 'Save Video',
+        title: _isUserOwnContent()
+            ? context.l10n.shareMenuSaveWithWatermark
+            : context.l10n.shareMenuSaveVideo,
         subtitle: _isUserOwnContent()
-            ? 'Download with Divine watermark'
-            : 'Save video to camera roll',
+            ? context.l10n.shareMenuDownloadWithWatermark
+            : context.l10n.shareMenuSaveVideoSubtitle,
         onTap: () => _saveWithWatermark(context),
       ),
 
@@ -471,9 +481,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   Widget _buildListSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
-        'Lists',
-        style: TextStyle(
+      Text(
+        context.l10n.shareMenuLists,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -584,8 +594,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       // Static buttons - always visible immediately
       _buildActionTile(
         icon: Icons.playlist_add,
-        title: 'Add to List',
-        subtitle: 'Add to your curated lists',
+        title: context.l10n.shareMenuAddToList,
+        subtitle: context.l10n.shareMenuAddToListSubtitle,
         onTap: _showSelectListDialog,
       ),
 
@@ -593,8 +603,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
       _buildActionTile(
         icon: Icons.create_new_folder,
-        title: 'Create New List',
-        subtitle: 'Start a new curated collection',
+        title: context.l10n.shareMenuCreateNewList,
+        subtitle: context.l10n.shareMenuCreateNewListSubtitle,
         onTap: _showCreateListDialog,
       ),
     ],
@@ -608,9 +618,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Removed from list'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.shareMenuRemovedFromList),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -623,9 +633,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to remove from list'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.shareMenuFailedToRemoveFromList),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -638,9 +648,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Bookmarks',
-            style: TextStyle(
+          Text(
+            context.l10n.shareMenuBookmarks,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -651,8 +661,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           // Add to global bookmarks
           _buildActionTile(
             icon: Icons.bookmark_outline,
-            title: 'Add to Bookmarks',
-            subtitle: 'Save for later viewing',
+            title: context.l10n.shareMenuAddToBookmarks,
+            subtitle: context.l10n.shareMenuAddToBookmarksSubtitle,
             onTap: _addToGlobalBookmarks,
           ),
 
@@ -661,8 +671,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           // Add to bookmark set
           _buildActionTile(
             icon: Icons.bookmark_add,
-            title: 'Add to Bookmark Set',
-            subtitle: 'Organize in collections',
+            title: context.l10n.shareMenuAddToBookmarkSet,
+            subtitle: context.l10n.shareMenuAddToBookmarkSetSubtitle,
             onTap: _showBookmarkSetsDialog,
           ),
         ],
@@ -679,9 +689,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Follow Sets',
-            style: TextStyle(
+          Text(
+            context.l10n.shareMenuFollowSets,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -692,8 +702,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           // Create new follow set with this author
           _buildActionTile(
             icon: Icons.group_add,
-            title: 'Create Follow Set',
-            subtitle: 'Start new collection with this creator',
+            title: context.l10n.shareMenuCreateFollowSet,
+            subtitle: context.l10n.shareMenuCreateFollowSetSubtitle,
             onTap: _showCreateFollowSetDialog,
           ),
 
@@ -702,8 +712,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             const SizedBox(height: 8),
             _buildActionTile(
               icon: Icons.people,
-              title: 'Add to Follow Set',
-              subtitle: '${followSets.length} follow sets available',
+              title: context.l10n.shareMenuAddToFollowSet,
+              subtitle: context.l10n.shareMenuFollowSetsAvailable(
+                followSets.length,
+              ),
               onTap: _showSelectFollowSetDialog,
             ),
           ],
@@ -757,7 +769,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              success ? 'Added to bookmarks!' : 'Failed to add bookmark',
+              success
+                  ? context.l10n.shareMenuAddedToBookmarks
+                  : context.l10n.shareMenuFailedToAddBookmark,
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -773,9 +787,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to add bookmark'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.shareMenuFailedToAddBookmark),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -866,7 +880,11 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       _safePop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Created list "$result" and added video')),
+        SnackBar(
+          content: Text(
+            context.l10n.shareMenuCreatedListAndAddedVideo(result),
+          ),
+        ),
       );
     }
   }
@@ -902,9 +920,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   Widget _buildDeleteSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
-        'Manage Content',
-        style: TextStyle(
+      Text(
+        context.l10n.shareMenuManageContent,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -916,8 +934,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       _buildActionTile(
         icon: Icons.edit,
         iconColor: VineTheme.vineGreen,
-        title: 'Edit Video',
-        subtitle: 'Update title, description, and hashtags',
+        title: context.l10n.shareMenuEditVideo,
+        subtitle: context.l10n.shareMenuEditVideoSubtitle,
         onTap: _showEditDialog,
       ),
 
@@ -927,8 +945,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       _buildActionTile(
         icon: Icons.delete_outline,
         iconColor: VineTheme.error,
-        title: 'Delete Video',
-        subtitle: 'Permanently remove this content',
+        title: context.l10n.shareMenuDeleteVideo,
+        subtitle: context.l10n.shareMenuDeleteVideoSubtitle,
         onTap: _showDeleteDialog,
       ),
     ],
@@ -952,9 +970,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.backgroundColor,
-        title: const Text(
-          'Video is in these lists:',
-          style: TextStyle(color: VineTheme.whiteText),
+        title: Text(
+          context.l10n.shareMenuVideoInTheseLists,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
         content: SizedBox(
           width: double.maxFinite,
@@ -982,7 +1000,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                       )
                     : null,
                 trailing: Text(
-                  '${list.videoEventIds.length} videos',
+                  context.l10n.shareMenuVideoCount(
+                    list.videoEventIds.length,
+                  ),
                   style: const TextStyle(
                     color: VineTheme.lightText,
                     fontSize: 12,
@@ -995,9 +1015,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         actions: [
           TextButton(
             onPressed: context.pop,
-            child: const Text(
-              'Close',
-              style: TextStyle(color: VineTheme.vineGreen),
+            child: Text(
+              context.l10n.shareMenuClose,
+              style: const TextStyle(color: VineTheme.vineGreen),
             ),
           ),
         ],
@@ -1008,29 +1028,32 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   /// Build delete confirmation dialog
   Widget _buildDeleteDialog(BuildContext dialogContext) => AlertDialog(
     backgroundColor: VineTheme.cardBackground,
-    title: const Text(
-      'Delete Video',
-      style: TextStyle(color: VineTheme.whiteText),
+    title: Text(
+      dialogContext.l10n.shareMenuDeleteVideo,
+      style: const TextStyle(color: VineTheme.whiteText),
     ),
-    content: const Column(
+    content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Are you sure you want to delete this video?',
-          style: TextStyle(color: VineTheme.whiteText),
+          dialogContext.l10n.shareMenuDeleteConfirmation,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         Text(
-          'This will send a delete request (NIP-09) to all relays. Some relays may still retain the content.',
-          style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+          dialogContext.l10n.shareMenuDeleteWarning,
+          style: const TextStyle(
+            color: VineTheme.secondaryText,
+            fontSize: 12,
+          ),
         ),
       ],
     ),
     actions: [
       TextButton(
         onPressed: () => dialogContext.pop(),
-        child: const Text('Cancel'),
+        child: Text(dialogContext.l10n.shareMenuCancel),
       ),
       TextButton(
         onPressed: () {
@@ -1038,7 +1061,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           _deleteContent();
         },
         style: TextButton.styleFrom(foregroundColor: VineTheme.error),
-        child: const Text('Delete'),
+        child: Text(dialogContext.l10n.shareMenuDelete),
       ),
     ],
   );
@@ -1057,10 +1080,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       // Show loading snackbar
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -1068,12 +1091,12 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                     color: VineTheme.whiteText,
                   ),
                 ),
-                SizedBox(width: 12),
-                Text('Deleting content...'),
+                const SizedBox(width: 12),
+                Text(context.l10n.shareMenuDeletingContent),
               ],
             ),
             backgroundColor: VineTheme.warning,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -1096,8 +1119,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                 Expanded(
                   child: Text(
                     result.success
-                        ? 'Delete request sent successfully'
-                        : 'Failed to delete content: ${result.error}',
+                        ? context.l10n.shareMenuDeleteRequestSent
+                        : context.l10n.shareMenuFailedToDeleteContent(
+                            result.error ?? '',
+                          ),
                   ),
                 ),
               ],
@@ -1142,7 +1167,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete content: $e'),
+            content: Text(
+              context.l10n.shareMenuFailedToDeleteContent('$e'),
+            ),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -1169,9 +1196,9 @@ class _CreateFollowSetDialogState
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: VineTheme.cardBackground,
-    title: const Text(
-      'Create Follow Set',
-      style: TextStyle(color: VineTheme.whiteText),
+    title: Text(
+      context.l10n.shareMenuCreateFollowSet,
+      style: const TextStyle(color: VineTheme.whiteText),
     ),
     content: Column(
       mainAxisSize: MainAxisSize.min,
@@ -1180,11 +1207,11 @@ class _CreateFollowSetDialogState
           controller: _nameController,
           enableInteractiveSelection: true,
           style: const TextStyle(color: VineTheme.whiteText),
-          decoration: const InputDecoration(
-            labelText: 'Follow Set Name',
-            labelStyle: TextStyle(color: VineTheme.secondaryText),
-            hintText: 'e.g., Content Creators, Musicians, etc.',
-            hintStyle: TextStyle(color: VineTheme.secondaryText),
+          decoration: InputDecoration(
+            labelText: context.l10n.shareMenuFollowSetName,
+            labelStyle: const TextStyle(color: VineTheme.secondaryText),
+            hintText: context.l10n.shareMenuFollowSetNameHint,
+            hintStyle: const TextStyle(color: VineTheme.secondaryText),
           ),
         ),
         const SizedBox(height: 16),
@@ -1192,17 +1219,23 @@ class _CreateFollowSetDialogState
           controller: _descriptionController,
           enableInteractiveSelection: true,
           style: const TextStyle(color: VineTheme.whiteText),
-          decoration: const InputDecoration(
-            labelText: 'Description (optional)',
-            labelStyle: TextStyle(color: VineTheme.secondaryText),
+          decoration: InputDecoration(
+            labelText: context.l10n.shareMenuDescriptionOptional,
+            labelStyle: const TextStyle(color: VineTheme.secondaryText),
           ),
           maxLines: 2,
         ),
       ],
     ),
     actions: [
-      TextButton(onPressed: context.pop, child: const Text('Cancel')),
-      TextButton(onPressed: _createFollowSet, child: const Text('Create')),
+      TextButton(
+        onPressed: context.pop,
+        child: Text(context.l10n.shareMenuCancel),
+      ),
+      TextButton(
+        onPressed: _createFollowSet,
+        child: Text(context.l10n.shareMenuCreate),
+      ),
     ],
   );
 
@@ -1225,7 +1258,9 @@ class _CreateFollowSetDialogState
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Created follow set "$name" and added creator'),
+            content: Text(
+              context.l10n.shareMenuCreatedFollowSetAndAddedCreator(name),
+            ),
           ),
         );
       }
@@ -1259,9 +1294,9 @@ class _SelectFollowSetDialog extends StatelessWidget {
 
       return AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: const Text(
-          'Add to Follow Set',
-          style: TextStyle(color: VineTheme.whiteText),
+        title: Text(
+          context.l10n.shareMenuAddToFollowSet,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
         content: SizedBox(
           width: double.maxFinite,
@@ -1298,7 +1333,10 @@ class _SelectFollowSetDialog extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: context.pop, child: const Text('Done')),
+          TextButton(
+            onPressed: context.pop,
+            child: Text(context.l10n.shareMenuDone),
+          ),
         ],
       );
     },
@@ -1389,9 +1427,9 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: VineTheme.cardBackground,
-    title: const Text(
-      'Edit Video',
-      style: TextStyle(color: VineTheme.whiteText),
+    title: Text(
+      context.l10n.shareMenuEditVideo,
+      style: const TextStyle(color: VineTheme.whiteText),
     ),
     content: SingleChildScrollView(
       child: Column(
@@ -1402,11 +1440,11 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
             enabled: !_isUpdating,
             enableInteractiveSelection: true,
             style: const TextStyle(color: VineTheme.whiteText),
-            decoration: const InputDecoration(
-              labelText: 'Title',
-              labelStyle: TextStyle(color: VineTheme.secondaryText),
-              hintText: 'Enter video title',
-              hintStyle: TextStyle(color: VineTheme.secondaryText),
+            decoration: InputDecoration(
+              labelText: context.l10n.shareMenuEditTitle,
+              labelStyle: const TextStyle(color: VineTheme.secondaryText),
+              hintText: context.l10n.shareMenuEditTitleHint,
+              hintStyle: const TextStyle(color: VineTheme.secondaryText),
             ),
           ),
           const SizedBox(height: 16),
@@ -1415,11 +1453,11 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
             enabled: !_isUpdating,
             enableInteractiveSelection: true,
             style: const TextStyle(color: VineTheme.whiteText),
-            decoration: const InputDecoration(
-              labelText: 'Description',
-              labelStyle: TextStyle(color: VineTheme.secondaryText),
-              hintText: 'Enter video description',
-              hintStyle: TextStyle(color: VineTheme.secondaryText),
+            decoration: InputDecoration(
+              labelText: context.l10n.shareMenuEditDescription,
+              labelStyle: const TextStyle(color: VineTheme.secondaryText),
+              hintText: context.l10n.shareMenuEditDescriptionHint,
+              hintStyle: const TextStyle(color: VineTheme.secondaryText),
             ),
             maxLines: 3,
           ),
@@ -1429,11 +1467,11 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
             enabled: !_isUpdating,
             enableInteractiveSelection: true,
             style: const TextStyle(color: VineTheme.whiteText),
-            decoration: const InputDecoration(
-              labelText: 'Hashtags',
-              labelStyle: TextStyle(color: VineTheme.secondaryText),
-              hintText: 'comma, separated, hashtags',
-              hintStyle: TextStyle(color: VineTheme.secondaryText),
+            decoration: InputDecoration(
+              labelText: context.l10n.shareMenuEditHashtags,
+              labelStyle: const TextStyle(color: VineTheme.secondaryText),
+              hintText: context.l10n.shareMenuEditHashtagsHint,
+              hintStyle: const TextStyle(color: VineTheme.secondaryText),
             ),
           ),
           const SizedBox(height: 16),
@@ -1473,10 +1511,12 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
           ),
 
           const SizedBox(height: 8),
-          const Text(
-            'Note: Only metadata can be edited. '
-            'Video content cannot be changed.',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+          Text(
+            context.l10n.shareMenuEditMetadataNote,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 16),
           // Delete button
@@ -1493,7 +1533,9 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
                   )
                 : const Icon(Icons.delete_outline, color: VineTheme.error),
             label: Text(
-              _isDeleting ? 'Deleting...' : 'Delete Video',
+              _isDeleting
+                  ? context.l10n.shareMenuDeleting
+                  : context.l10n.shareMenuDeleteVideo,
               style: const TextStyle(color: VineTheme.error),
             ),
           ),
@@ -1503,7 +1545,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
     actions: [
       TextButton(
         onPressed: (_isUpdating || _isDeleting) ? null : context.pop,
-        child: const Text('Cancel'),
+        child: Text(context.l10n.shareMenuCancel),
       ),
       TextButton(
         onPressed: (_isUpdating || _isDeleting) ? null : _updateVideo,
@@ -1516,7 +1558,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
                   color: VineTheme.vineGreen,
                 ),
               )
-            : const Text('Update'),
+            : Text(context.l10n.shareMenuUpdate),
       ),
     ],
   );
@@ -1725,8 +1767,8 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         context.pop(); // Close edit dialog
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Video updated successfully'),
+          SnackBar(
+            content: Text(context.l10n.shareMenuVideoUpdated),
             backgroundColor: VineTheme.vineGreen,
           ),
         );
@@ -1743,7 +1785,9 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update video: $e'),
+            content: Text(
+              context.l10n.shareMenuFailedToUpdateVideo('$e'),
+            ),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -1756,25 +1800,24 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: const Text(
-          'Delete Video?',
-          style: TextStyle(color: VineTheme.whiteText),
+        title: Text(
+          context.l10n.shareMenuDeleteVideoQuestion,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
-        content: const Text(
-          'This will send a deletion request to relays. '
-          'Note: Some relays may still have cached copies.',
-          style: TextStyle(color: VineTheme.secondaryText),
+        content: Text(
+          context.l10n.shareMenuDeleteRelayWarning,
+          style: const TextStyle(color: VineTheme.secondaryText),
         ),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.shareMenuCancel),
           ),
           TextButton(
             onPressed: () => context.pop(true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: VineTheme.error),
+            child: Text(
+              context.l10n.shareMenuDelete,
+              style: const TextStyle(color: VineTheme.error),
             ),
           ),
         ],
@@ -1813,8 +1856,10 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
           context.pop(); // Close edit dialog
 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Video deletion requested'),
+            SnackBar(
+              content: Text(
+                context.l10n.shareMenuVideoDeletionRequested,
+              ),
               backgroundColor: VineTheme.vineGreen,
             ),
           );
@@ -1834,7 +1879,9 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete video: $e'),
+            content: Text(
+              context.l10n.shareMenuFailedToDeleteVideo('$e'),
+            ),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -1871,14 +1918,18 @@ class _EditContentLabelsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayText = selectedLabels.isEmpty
-        ? 'Add content labels'
-        : selectedLabels.map((label) => label.displayName).join(', ');
+        ? context.l10n.shareMenuAddContentLabels
+        : selectedLabels
+              .map(
+                (label) => localizedContentLabelName(context.l10n, label),
+              )
+              .join(', ');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Content labels',
+          context.l10n.shareMenuContentLabels,
           style: VineTheme.labelSmallFont(
             color: VineTheme.onSurfaceVariant,
           ),
@@ -1972,13 +2023,16 @@ class _EditContentLabelsPickerState extends State<_EditContentLabelsPicker> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Content labels', style: VineTheme.titleMediumFont()),
+              Text(
+                context.l10n.shareMenuContentLabels,
+                style: VineTheme.titleMediumFont(),
+              ),
               if (_selected.isNotEmpty)
                 TextButton(
                   onPressed: () => setState(_selected.clear),
-                  child: const Text(
-                    'Clear all',
-                    style: TextStyle(color: VineTheme.vineGreen),
+                  child: Text(
+                    context.l10n.shareMenuClearAll,
+                    style: const TextStyle(color: VineTheme.vineGreen),
                   ),
                 ),
             ],
@@ -1993,7 +2047,10 @@ class _EditContentLabelsPickerState extends State<_EditContentLabelsPicker> {
                       value: _selected.contains(label),
                       onChanged: (_) => _toggle(label),
                       title: Text(
-                        label.displayName,
+                        localizedContentLabelName(
+                          context.l10n,
+                          label,
+                        ),
                         style: const TextStyle(color: VineTheme.whiteText),
                       ),
                       activeColor: VineTheme.vineGreen,
@@ -2009,7 +2066,7 @@ class _EditContentLabelsPickerState extends State<_EditContentLabelsPicker> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () => Navigator.of(context).pop(_selected),
-              child: const Text('Done'),
+              child: Text(context.l10n.shareMenuDone),
             ),
           ),
         ],
@@ -2039,7 +2096,7 @@ class _EditCollaboratorsSection extends ConsumerWidget {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
-        'Collaborators',
+        context.l10n.shareMenuCollaborators,
         style: VineTheme.labelSmallFont(
           color: VineTheme.onSurfaceVariant,
         ),
@@ -2082,7 +2139,7 @@ class _EditCollaboratorsSection extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'Add collaborator',
+                context.l10n.shareMenuAddCollaborator,
                 style: VineTheme.bodyMediumFont(
                   color: VineTheme.onSurfaceMuted,
                 ),
@@ -2097,7 +2154,7 @@ class _EditCollaboratorsSection extends ConsumerWidget {
     final profile = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.mutualFollowsOnly,
-      title: 'Add collaborator',
+      title: context.l10n.shareMenuAddCollaborator,
     );
 
     if (profile == null || !context.mounted) return;
@@ -2111,9 +2168,9 @@ class _EditCollaboratorsSection extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'You need to mutually follow '
-            '${profile.bestDisplayName} to add '
-            'them as a collaborator.',
+            context.l10n.shareMenuMutualFollowRequired(
+              profile.bestDisplayName,
+            ),
           ),
           backgroundColor: VineTheme.cardBackground,
         ),
@@ -2161,7 +2218,8 @@ class _EditCollaboratorChip extends ConsumerWidget {
           const SizedBox(width: 4),
           Flexible(
             child: Text(
-              profileAsync.value?.bestDisplayName ?? 'Loading...',
+              profileAsync.value?.bestDisplayName ??
+                  context.l10n.shareMenuLoading,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: VineTheme.labelMediumFont(),
@@ -2207,7 +2265,7 @@ class _EditInspiredBySection extends ConsumerWidget {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
-        'Inspired by',
+        context.l10n.shareMenuInspiredBy,
         style: VineTheme.labelSmallFont(
           color: VineTheme.onSurfaceVariant,
         ),
@@ -2241,7 +2299,7 @@ class _EditInspiredBySection extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'Add inspiration credit',
+                context.l10n.shareMenuAddInspirationCredit,
                 style: VineTheme.bodyMediumFont(
                   color: VineTheme.onSurfaceMuted,
                 ),
@@ -2256,7 +2314,7 @@ class _EditInspiredBySection extends ConsumerWidget {
     final profile = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.allUsers,
-      title: 'Inspired by',
+      title: context.l10n.shareMenuInspiredBy,
     );
 
     if (profile == null || !context.mounted) return;
@@ -2266,8 +2324,10 @@ class _EditInspiredBySection extends ConsumerWidget {
     if (blocklistService.hasMutedUs(profile.pubkey)) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This creator cannot be referenced.'),
+        SnackBar(
+          content: Text(
+            context.l10n.shareMenuCreatorCannotBeReferenced,
+          ),
           backgroundColor: VineTheme.cardBackground,
         ),
       );
@@ -2322,7 +2382,7 @@ class _EditInspiredByDisplay extends ConsumerWidget {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              displayName ?? inspiredByNpub ?? 'Unknown',
+              displayName ?? inspiredByNpub ?? context.l10n.shareMenuUnknown,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: VineTheme.labelMediumFont(),
@@ -2359,9 +2419,9 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
 
           return AlertDialog(
             backgroundColor: VineTheme.cardBackground,
-            title: const Text(
-              'Add to Bookmark Set',
-              style: TextStyle(color: VineTheme.whiteText),
+            title: Text(
+              context.l10n.shareMenuAddToBookmarkSet,
+              style: const TextStyle(color: VineTheme.whiteText),
             ),
             content: SizedBox(
               width: double.maxFinite,
@@ -2379,16 +2439,18 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
                       ),
                       child: const Icon(Icons.add, color: VineTheme.vineGreen),
                     ),
-                    title: const Text(
-                      'Create New Set',
-                      style: TextStyle(
+                    title: Text(
+                      context.l10n.shareMenuCreateNewSet,
+                      style: const TextStyle(
                         color: VineTheme.whiteText,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    subtitle: const Text(
-                      'Start a new bookmark collection',
-                      style: TextStyle(color: VineTheme.secondaryText),
+                    subtitle: Text(
+                      context.l10n.shareMenuStartNewBookmarkCollection,
+                      style: const TextStyle(
+                        color: VineTheme.secondaryText,
+                      ),
                     ),
                     onTap: () {
                       context.pop();
@@ -2405,11 +2467,13 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
 
                   // List of existing bookmark sets
                   if (bookmarkSets.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
                       child: Text(
-                        'No bookmark sets yet. Create your first one!',
-                        style: TextStyle(color: VineTheme.secondaryText),
+                        context.l10n.shareMenuNoBookmarkSets,
+                        style: const TextStyle(
+                          color: VineTheme.secondaryText,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     )
@@ -2466,7 +2530,10 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
               ),
             ),
             actions: [
-              TextButton(onPressed: context.pop, child: const Text('Done')),
+              TextButton(
+                onPressed: context.pop,
+                child: Text(context.l10n.shareMenuDone),
+              ),
             ],
           );
         },
@@ -2476,12 +2543,15 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
           ),
         ),
-        error: (_, _) => const AlertDialog(
+        error: (_, _) => AlertDialog(
           backgroundColor: VineTheme.cardBackground,
-          title: Text('Error', style: TextStyle(color: VineTheme.whiteText)),
+          title: Text(
+            context.l10n.shareMenuError,
+            style: const TextStyle(color: VineTheme.whiteText),
+          ),
           content: Text(
-            'Failed to load bookmark sets',
-            style: TextStyle(color: VineTheme.whiteText),
+            context.l10n.shareMenuFailedToLoadBookmarkSets,
+            style: const TextStyle(color: VineTheme.whiteText),
           ),
         ),
       );
@@ -2563,9 +2633,9 @@ class _CreateBookmarkSetDialogState
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: VineTheme.cardBackground,
-    title: const Text(
-      'Create Bookmark Set',
-      style: TextStyle(color: VineTheme.whiteText),
+    title: Text(
+      context.l10n.shareMenuCreateBookmarkSet,
+      style: const TextStyle(color: VineTheme.whiteText),
     ),
     content: Column(
       mainAxisSize: MainAxisSize.min,
@@ -2575,11 +2645,11 @@ class _CreateBookmarkSetDialogState
           enableInteractiveSelection: true,
           autofocus: true,
           style: const TextStyle(color: VineTheme.whiteText),
-          decoration: const InputDecoration(
-            labelText: 'Set Name',
-            labelStyle: TextStyle(color: VineTheme.secondaryText),
-            hintText: 'e.g., Favorites, Watch Later, etc.',
-            hintStyle: TextStyle(color: VineTheme.secondaryText),
+          decoration: InputDecoration(
+            labelText: context.l10n.shareMenuSetName,
+            labelStyle: const TextStyle(color: VineTheme.secondaryText),
+            hintText: context.l10n.shareMenuSetNameHint,
+            hintStyle: const TextStyle(color: VineTheme.secondaryText),
           ),
         ),
         const SizedBox(height: 16),
@@ -2587,17 +2657,23 @@ class _CreateBookmarkSetDialogState
           controller: _descriptionController,
           enableInteractiveSelection: true,
           style: const TextStyle(color: VineTheme.whiteText),
-          decoration: const InputDecoration(
-            labelText: 'Description (optional)',
-            labelStyle: TextStyle(color: VineTheme.secondaryText),
+          decoration: InputDecoration(
+            labelText: context.l10n.shareMenuDescriptionOptional,
+            labelStyle: const TextStyle(color: VineTheme.secondaryText),
           ),
           maxLines: 2,
         ),
       ],
     ),
     actions: [
-      TextButton(onPressed: context.pop, child: const Text('Cancel')),
-      TextButton(onPressed: _createBookmarkSet, child: const Text('Create')),
+      TextButton(
+        onPressed: context.pop,
+        child: Text(context.l10n.shareMenuCancel),
+      ),
+      TextButton(
+        onPressed: _createBookmarkSet,
+        child: Text(context.l10n.shareMenuCreate),
+      ),
     ],
   );
 
@@ -2627,7 +2703,9 @@ class _CreateBookmarkSetDialogState
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Created "$name" and added video'),
+              content: Text(
+                context.l10n.shareMenuCreatedSetAndAddedVideo(name),
+              ),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -2703,15 +2781,15 @@ class _UseThisSoundTile extends ConsumerWidget {
               size: 20,
             ),
           ),
-          title: const Text(
-            'Use this sound',
-            style: TextStyle(
+          title: Text(
+            context.l10n.shareMenuUseThisSound,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontWeight: FontWeight.w500,
             ),
           ),
           subtitle: Text(
-            audio.title ?? 'Original sound',
+            audio.title ?? context.l10n.shareMenuOriginalSound,
             style: const TextStyle(
               color: VineTheme.secondaryText,
               fontSize: 12,
@@ -2757,16 +2835,19 @@ class _UseThisSoundTile extends ConsumerWidget {
             ),
           ),
         ),
-        title: const Text(
-          'Use this sound',
-          style: TextStyle(
+        title: Text(
+          context.l10n.shareMenuUseThisSound,
+          style: const TextStyle(
             color: VineTheme.secondaryText,
             fontWeight: FontWeight.w500,
           ),
         ),
-        subtitle: const Text(
-          'Loading...',
-          style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+        subtitle: Text(
+          context.l10n.shareMenuLoading,
+          style: const TextStyle(
+            color: VineTheme.secondaryText,
+            fontSize: 12,
+          ),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),

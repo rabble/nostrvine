@@ -245,7 +245,7 @@ class _CommentTextField extends StatelessWidget {
     final isMultiline = isReplying || isEditing;
 
     return Padding(
-      padding: const EdgeInsets.only(left: 16, bottom: 14, top: 14),
+      padding: const EdgeInsetsDirectional.only(start: 16, bottom: 14, top: 14),
       child: Semantics(
         identifier: 'comment_text_field',
         textField: true,
@@ -296,7 +296,7 @@ class _SendButton extends StatelessWidget {
       child: Container(
         width: 40,
         height: 40,
-        margin: const EdgeInsets.only(right: 4, bottom: 4),
+        margin: const EdgeInsetsDirectional.only(end: 4, bottom: 4),
         decoration: BoxDecoration(
           color: VineTheme.tabIndicatorGreen,
           borderRadius: BorderRadius.circular(17),
@@ -342,7 +342,11 @@ class _EditIndicator extends StatelessWidget {
     return GestureDetector(
       onTap: onCancel,
       child: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+        padding: const EdgeInsetsDirectional.only(
+          start: 16,
+          end: 16,
+          bottom: 8,
+        ),
         child: Row(
           children: [
             Flexible(
@@ -385,7 +389,11 @@ class _ReplyIndicator extends StatelessWidget {
     return GestureDetector(
       onTap: onCancel,
       child: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+        padding: const EdgeInsetsDirectional.only(
+          start: 16,
+          end: 16,
+          bottom: 8,
+        ),
         child: Row(
           children: [
             Flexible(
