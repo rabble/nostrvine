@@ -15,6 +15,7 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
@@ -95,6 +96,8 @@ void main() {
         child: BlocProvider(
           create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             theme: VineTheme.theme,
             routerConfig: GoRouter(
               initialLocation: '/verify-email',
@@ -276,7 +279,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Verification timed out',
+              errorCode: EmailVerificationError.timeout,
             ),
           ),
         );
@@ -292,7 +295,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Error',
+              errorCode: EmailVerificationError.pollFailed,
             ),
           ),
         );
@@ -311,7 +314,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Error',
+              errorCode: EmailVerificationError.pollFailed,
             ),
           ),
         );
@@ -327,13 +330,19 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Verification failed',
+              errorCode: EmailVerificationError.pollFailed,
             ),
           ),
         );
         await tester.pump();
 
-        expect(find.text('Verification failed'), findsOneWidget);
+        // The screen should render the localized message for pollFailed.
+        // Source of truth is app_en.arb — this assertion protects the wiring
+        // between state codes and the l10n mapping.
+        expect(
+          find.text('Verification failed. Please try again.'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('renders invite recovery button when available', (
@@ -345,7 +354,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Invite problem',
+              errorCode: EmailVerificationError.inviteUnknown,
               showInviteGateRecovery: true,
               inviteRecoveryCode: 'AB12-EF34',
             ),
@@ -415,6 +424,8 @@ void main() {
                 forceExploreTabNameProvider.overrideWith((ref) => null),
               ],
               child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 theme: VineTheme.theme,
                 home: BlocProvider<EmailVerificationCubit>.value(
                   value: mockCubit,

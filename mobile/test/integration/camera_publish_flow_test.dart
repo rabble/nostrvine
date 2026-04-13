@@ -68,7 +68,7 @@ void main() {}
 //
 //        await tester.pumpWidget(
 //          const ProviderScope(
-//            child: MaterialApp(home: UniversalCameraScreenPure()),
+//            child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: UniversalCameraScreenPure()),
 //          ),
 //        );
 //
@@ -150,7 +150,7 @@ void main() {}
 //
 //        await tester.pumpWidget(
 //          ProviderScope(
-//            child: MaterialApp(
+//            child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales,
 //              navigatorKey: testNavigationKey,
 //              home: const UniversalCameraScreenPure(),
 //            ),
@@ -240,7 +240,7 @@ void main() {}
 //
 //        await tester.pumpWidget(
 //          const ProviderScope(
-//            child: MaterialApp(home: UniversalCameraScreenPure()),
+//            child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: UniversalCameraScreenPure()),
 //          ),
 //        );
 //

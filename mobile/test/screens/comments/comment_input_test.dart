@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/comments/comments.dart';
 
 void main() {
@@ -22,6 +23,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: CommentInput(
               controller: controller,
@@ -39,6 +42,8 @@ void main() {
     testWidgets('shows send button when text is entered', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: CommentInput(
               controller: controller,
@@ -60,6 +65,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: CommentInput(
               controller: controller,
@@ -79,6 +86,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: CommentInput(
               controller: controller,
@@ -104,6 +113,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: CommentInput(
               controller: controller,
@@ -123,6 +134,8 @@ void main() {
     testWidgets('allows text input', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: CommentInput(
               controller: controller,

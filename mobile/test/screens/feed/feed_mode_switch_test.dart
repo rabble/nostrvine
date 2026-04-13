@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
@@ -40,6 +41,8 @@ void main() {
           ).overrideWith((ref) => newSearchEnabled),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Stack(
               children: [

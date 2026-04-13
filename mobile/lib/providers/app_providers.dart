@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
@@ -47,8 +48,6 @@ import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
-import 'package:openvine/services/blossom_auth_service.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/bug_report_service.dart';
@@ -82,6 +81,7 @@ import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/push_notification_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
@@ -1685,7 +1685,9 @@ Nip98AuthService nip98AuthService(Ref ref) {
 @riverpod
 BlossomAuthService blossomAuthService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  return BlossomAuthService(authService: authService);
+  return BlossomAuthService(
+    authProvider: _BlossomAuthAdapter(authService),
+  );
 }
 
 /// Media authentication interceptor for handling 401 unauthorized responses
@@ -1705,7 +1707,8 @@ BlossomUploadService blossomUploadService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   final env = ref.read(currentEnvironmentProvider);
   return BlossomUploadService(
-    authService: authService,
+    authProvider: _BlossomAuthAdapter(authService),
+    performanceMonitor: _FirebasePerformanceAdapter(),
     defaultServerUrl: env.blossomUrl,
   );
 }
@@ -2421,4 +2424,50 @@ class _AuthServiceBridgeAdapter implements BridgeAuthProvider {
     if (event == null) return null;
     return BridgeSignedEvent(json: event.toJson());
   }
+}
+
+/// Adapts the app-level [AuthService] to the package-level
+/// [BlossomAuthProvider] interface.
+class _BlossomAuthAdapter implements BlossomAuthProvider {
+  const _BlossomAuthAdapter(this._authService);
+
+  final AuthService _authService;
+
+  @override
+  bool get isAuthenticated => _authService.isAuthenticated;
+
+  @override
+  Future<BlossomSignedEvent?> createAndSignEvent({
+    required int kind,
+    required String content,
+    required List<List<String>> tags,
+  }) async {
+    final event = await _authService.createAndSignEvent(
+      kind: kind,
+      content: content,
+      tags: tags,
+    );
+    if (event == null) return null;
+    return BlossomSignedEvent(json: event.toJson());
+  }
+}
+
+/// Adapts [PerformanceMonitoringService] to the package-level
+/// [BlossomPerformanceMonitor] interface.
+class _FirebasePerformanceAdapter implements BlossomPerformanceMonitor {
+  @override
+  Future<void> startTrace(String traceName) =>
+      PerformanceMonitoringService.instance.startTrace(traceName);
+
+  @override
+  Future<void> stopTrace(String traceName) =>
+      PerformanceMonitoringService.instance.stopTrace(traceName);
+
+  @override
+  void setMetric(String traceName, String metricName, int value) =>
+      PerformanceMonitoringService.instance.setMetric(
+        traceName,
+        metricName,
+        value,
+      );
 }

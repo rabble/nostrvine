@@ -4,9 +4,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/utils/hash_util.dart';
 
 void main() {
   group('New Blossom Server Streaming Upload', () {

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -61,6 +62,8 @@ Widget _buildSubject({
         relayNotificationUnreadCountProvider.overrideWithValue(unreadCount),
       ],
       child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: AppShell(currentIndex: 0, child: SizedBox.shrink()),
       ),
     ),

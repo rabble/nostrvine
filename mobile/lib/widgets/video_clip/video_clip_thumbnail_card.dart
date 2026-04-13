@@ -170,8 +170,8 @@ class _DurationBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: 12,
+    return PositionedDirectional(
+      start: 12,
       bottom: 12,
       child: Container(
         padding: const .symmetric(horizontal: 8, vertical: 4),
@@ -217,8 +217,8 @@ class _SelectionOverlay extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(
-          right: 14,
+        PositionedDirectional(
+          end: 14,
           top: 14,
           child: Container(
             width: 32,

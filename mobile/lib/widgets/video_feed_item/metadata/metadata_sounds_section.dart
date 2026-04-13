@@ -57,10 +57,8 @@ class _SharedAudioSection extends ConsumerWidget {
           child: _SoundListItem(audio: audio),
         );
       },
-      loading: () => const MetadataSection(
-        label: 'Sounds',
-        child: _SoundSkeleton(),
-      ),
+      loading: () =>
+          const MetadataSection(label: 'Sounds', child: _SoundSkeleton()),
       error: (error, stack) {
         Log.error(
           'Failed to load audio for metadata sheet: $error',
@@ -73,11 +71,9 @@ class _SharedAudioSection extends ConsumerWidget {
   }
 }
 
-/// Section showing "Original sound - @creator" for videos without shared audio.
-///
-/// Tapping creates a synthetic [AudioEvent] from the video's audio track
-/// and navigates to [SoundDetailScreen] where the user can preview and
-/// select the sound for recording.
+/// Section showing "Original sound - @creator" for videos without shared
+/// audio. Tapping navigates to [SoundDetailScreen] where the user can
+/// preview and select the sound for recording.
 class _OriginalSoundSection extends ConsumerWidget {
   const _OriginalSoundSection({required this.video});
 
@@ -152,7 +148,8 @@ class _OriginalSoundSection extends ConsumerWidget {
       creatorName: creatorName,
     );
 
-    // Dismiss the sheet first, then navigate from the root navigator context.
+    // Dismiss the sheet first, then navigate from the root navigator
+    // context.
     final hostContext = Navigator.of(context, rootNavigator: true).context;
     Navigator.of(context).pop();
     Future<void>.delayed(Duration.zero).then((_) {

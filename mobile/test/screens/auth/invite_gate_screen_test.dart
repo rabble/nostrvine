@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 
@@ -38,6 +39,8 @@ void main() {
       child: BlocProvider(
         create: (_) => InviteGateBloc(inviteApiClient: client),
         child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
           routerConfig: GoRouter(
             initialLocation: WelcomeScreen.inviteGatePath,
@@ -171,6 +174,8 @@ void main() {
           child: BlocProvider(
             create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
             child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               theme: VineTheme.theme,
               routerConfig: GoRouter(
                 initialLocation:

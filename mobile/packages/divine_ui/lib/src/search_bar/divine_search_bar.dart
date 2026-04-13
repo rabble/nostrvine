@@ -88,7 +88,7 @@ class _PrefixIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 8),
+      padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
       child: isLoading
           ? const SizedBox(
               width: 24,

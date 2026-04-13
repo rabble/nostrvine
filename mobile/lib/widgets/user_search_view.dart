@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
@@ -52,15 +53,19 @@ class _UserSearchEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.person_search, size: 64, color: VineTheme.secondaryText),
-          SizedBox(height: 16),
+          const Icon(
+            Icons.person_search,
+            size: 64,
+            color: VineTheme.secondaryText,
+          ),
+          const SizedBox(height: 16),
           Text(
-            'Search for users',
-            style: TextStyle(color: VineTheme.lightText),
+            context.l10n.userSearchPrompt,
+            style: const TextStyle(color: VineTheme.lightText),
           ),
         ],
       ),
@@ -162,13 +167,20 @@ class _UserSearchNoResultsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.person_off, size: 64, color: VineTheme.secondaryText),
-          SizedBox(height: 16),
-          Text('No users found', style: TextStyle(color: VineTheme.lightText)),
+          const Icon(
+            Icons.person_off,
+            size: 64,
+            color: VineTheme.secondaryText,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            context.l10n.userSearchNoResults,
+            style: const TextStyle(color: VineTheme.lightText),
+          ),
         ],
       ),
     );
@@ -180,13 +192,20 @@ class _UserSearchErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: VineTheme.error),
-          SizedBox(height: 16),
-          Text('Search failed', style: TextStyle(color: VineTheme.lightText)),
+          const Icon(
+            Icons.error_outline,
+            size: 64,
+            color: VineTheme.error,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            context.l10n.userSearchFailed,
+            style: const TextStyle(color: VineTheme.lightText),
+          ),
         ],
       ),
     );

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -14,7 +15,11 @@ void main() {
 
   Widget shell(ProviderContainer c) => UncontrolledProviderScope(
     container: c,
-    child: MaterialApp.router(routerConfig: c.read(goRouterProvider)),
+    child: MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: c.read(goRouterProvider),
+    ),
   );
 
   group('Profile Screen Share and Edit Buttons', () {

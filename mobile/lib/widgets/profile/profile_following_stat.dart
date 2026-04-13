@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_following/others_following_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -79,7 +80,7 @@ class _MyFollowingStatView extends ConsumerWidget {
 
         return ProfileStatColumn(
           count: isLoading ? null : state.followingPubkeys.length,
-          label: 'Following',
+          label: context.l10n.profileFollowingStatLabel,
           isLoading: isLoading,
           onTap: () => context.push(
             FollowingScreenRouter.pathForPubkey(pubkey),
@@ -117,7 +118,7 @@ class _OthersFollowingStatView extends ConsumerWidget {
 
         return ProfileStatColumn(
           count: isLoading ? null : state.followingPubkeys.length,
-          label: 'Following',
+          label: context.l10n.profileFollowingStatLabel,
           isLoading: isLoading,
           onTap: () => context.push(
             FollowingScreenRouter.pathForPubkey(pubkey),

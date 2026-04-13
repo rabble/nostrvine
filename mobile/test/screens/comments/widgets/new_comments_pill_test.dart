@@ -4,12 +4,15 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/comments/widgets/new_comments_pill.dart';
 
 void main() {
   group(NewCommentsPill, () {
     Widget buildSubject({required int count, VoidCallback? onTap}) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: NewCommentsPill(count: count, onTap: onTap ?? () {}),
         ),

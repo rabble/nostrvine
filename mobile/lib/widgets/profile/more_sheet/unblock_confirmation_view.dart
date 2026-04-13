@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/profile/more_sheet/bullet_point.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -36,25 +37,23 @@ class UnblockConfirmationView extends StatelessWidget {
         children: [
           // Title
           Text(
-            'Unblock $displayName?',
+            context.l10n.profileUnblockTitle(displayName),
             style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
           ),
           const SizedBox(height: 16),
           // Explanation content
           Text(
-            'When you unblock this user:',
+            context.l10n.profileUnblockExplanation,
             style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
-          const Column(
+          Column(
             spacing: 14,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              BulletPoint('Their posts will appear in your feeds.'),
-              BulletPoint(
-                'They will be able to view your profile, follow you, and view your posts.',
-              ),
-              BulletPoint('They will not be notified of this change.'),
+              BulletPoint(context.l10n.profileUnblockBulletShowPosts),
+              BulletPoint(context.l10n.profileUnblockBulletCanView),
+              BulletPoint(context.l10n.profileUnblockBulletNoNotify),
             ],
           ),
           const SizedBox(height: 16),
@@ -62,7 +61,7 @@ class UnblockConfirmationView extends StatelessWidget {
             onTap: () => launchUrl(Uri.parse('https://divine.video/safety')),
             child: Text.rich(
               TextSpan(
-                text: 'Learn more at ',
+                text: context.l10n.profileLearnMoreAt,
                 style: VineTheme.bodyLargeFont(
                   color: VineTheme.onSurfaceVariant,
                 ),
@@ -89,14 +88,14 @@ class UnblockConfirmationView extends StatelessWidget {
               children: [
                 Expanded(
                   child: DivineButton(
-                    label: 'Cancel',
+                    label: context.l10n.profileCancelButton,
                     onPressed: onCancel,
                     type: DivineButtonType.secondary,
                   ),
                 ),
                 Expanded(
                   child: DivineButton(
-                    label: 'Unblock',
+                    label: context.l10n.profileUnblockButton,
                     onPressed: onConfirm,
                   ),
                 ),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/smooth_time_display.dart';
 
 void main() {
@@ -26,6 +27,8 @@ void main() {
       return BlocProvider<ClipEditorBloc>.value(
         value: bloc,
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SmoothTimeDisplay(
               isPlayingSelector: (s) => s.isPlaying,
@@ -79,6 +82,8 @@ void main() {
         BlocProvider<ClipEditorBloc>.value(
           value: bloc,
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: SmoothTimeDisplay(
                 isPlayingSelector: (s) => s.isPlaying,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -395,8 +396,7 @@ class _ErrorState extends ConsumerWidget {
                 ref.invalidate(trendingSoundsProvider);
               },
               icon: const Icon(Icons.refresh),
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
                 foregroundColor: VineTheme.backgroundColor,

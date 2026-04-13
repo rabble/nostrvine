@@ -188,7 +188,6 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       state.copyWith(
         status: WelcomeStatus.accepting,
         signingInPubkeyHex: account.pubkeyHex,
-        clearError: true,
       ),
     );
 
@@ -202,34 +201,34 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
-    } on SessionExpiredException {
+    } on SessionExpiredException catch (e, stackTrace) {
       Log.warning(
         'WelcomeBloc: session expired for ${account.pubkeyHex} '
         '— redirecting to login options',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
+      addError(e, stackTrace);
       emit(
         state.copyWith(
-          status: WelcomeStatus.error,
-          error: 'Your session has expired. Please sign in again.',
+          status: WelcomeStatus.sessionExpired,
           clearSigningIn: true,
         ),
       );
       // Session cannot be restored silently — redirect to full login flow.
       await _authService.acceptTerms();
       emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
-      emit(state.copyWith(status: WelcomeStatus.loaded, clearError: true));
-    } catch (e) {
+      emit(state.copyWith(status: WelcomeStatus.loaded));
+    } catch (e, stackTrace) {
       Log.error(
         'WelcomeBloc: failed to log back in as ${account.pubkeyHex}: $e',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
+      addError(e, stackTrace);
       emit(
         state.copyWith(
           status: WelcomeStatus.error,
-          error: 'Failed to continue: $e',
           clearSigningIn: true,
         ),
       );
@@ -257,7 +256,6 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       state.copyWith(
         status: WelcomeStatus.accepting,
         signingInPubkeyHex: previous.pubkeyHex,
-        clearError: true,
       ),
     );
 
@@ -266,15 +264,16 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         previous.pubkeyHex,
         previous.authSource,
       );
-    } on SessionExpiredException {
+    } on SessionExpiredException catch (e, stackTrace) {
+      addError(e, stackTrace);
       await _authService.acceptTerms();
       emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
-      emit(state.copyWith(status: WelcomeStatus.loaded, clearError: true));
-    } catch (e) {
+      emit(state.copyWith(status: WelcomeStatus.loaded));
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
       emit(
         state.copyWith(
           status: WelcomeStatus.error,
-          error: 'Failed to restore previous account: $e',
           clearSigningIn: true,
         ),
       );

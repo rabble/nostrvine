@@ -85,7 +85,11 @@ void main() {
                 'categoriesStatus',
                 CategoriesStatus.error,
               )
-              .having((s) => s.errorMessage, 'errorMessage', isNotNull),
+              .having(
+                (s) => s.categoriesStatus,
+                'failure status',
+                CategoriesStatus.error,
+              ),
         ],
       );
 

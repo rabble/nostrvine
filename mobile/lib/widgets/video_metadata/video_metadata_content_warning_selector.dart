@@ -4,6 +4,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 
@@ -28,7 +30,7 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
 
     final result = await VineBottomSheet.show<Set<ContentLabel>>(
       context: context,
-      title: const Text('Content Warnings'),
+      title: Text(context.l10n.videoMetadataContentWarnings),
       maxChildSize: 1,
       initialChildSize: 0.7,
       minChildSize: 0.4,
@@ -51,8 +53,12 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
 
     final isSet = warnings.isNotEmpty;
     final displayText = isSet
-        ? warnings.map((label) => label.displayName).join(', ')
-        : 'None';
+        ? warnings
+              .map(
+                (label) => localizedContentLabelName(context.l10n, label),
+              )
+              .join(', ')
+        : context.l10n.contentWarningNone;
 
     return Semantics(
       button: true,
@@ -162,7 +168,10 @@ class _ContentWarningMultiSelectState
                   value: isChecked,
                   onChanged: (_) => _toggle(label),
                   title: Text(
-                    label.displayName,
+                    localizedContentLabelName(
+                      context.l10n,
+                      label,
+                    ),
                     style: const TextStyle(
                       color: VineTheme.whiteText,
                       fontSize: 15,

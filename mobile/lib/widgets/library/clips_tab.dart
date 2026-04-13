@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
@@ -125,8 +126,7 @@ class ClipsTab extends StatelessWidget {
               backgroundColor: VineTheme.error,
               foregroundColor: VineTheme.whiteText,
             ),
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            child: const Text('Delete'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),
@@ -193,7 +193,7 @@ class ClipSelectionHeader extends StatelessWidget {
                   ),
                   Expanded(
                     child: Align(
-                      alignment: Alignment.centerRight,
+                      alignment: AlignmentDirectional.centerEnd,
                       child: _AddClipButton(
                         onTap: selectedClipIds.isNotEmpty
                             ? onCreate
@@ -280,7 +280,7 @@ class _AddClipButton extends StatelessWidget {
         child: Opacity(
           opacity: enable ? 1 : 0.32,
           child: Container(
-            margin: const EdgeInsets.only(right: 16),
+            margin: const EdgeInsetsDirectional.only(end: 16),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: ShapeDecoration(
               color: VineTheme.tabIndicatorGreen,

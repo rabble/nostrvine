@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/actions/cc_action_button.dart';
 
 void main() {
@@ -37,6 +38,8 @@ void main() {
   Widget buildSubject({required VideoEvent video}) {
     return ProviderScope(
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: CcActionButton(video: video)),
       ),
     );

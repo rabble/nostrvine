@@ -4,11 +4,11 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/utils/hash_util.dart';
 
 void main() {
   group('Blossom Real Upload Test', () {

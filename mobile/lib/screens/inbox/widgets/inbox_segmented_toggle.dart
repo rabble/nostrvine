@@ -122,9 +122,9 @@ class _ToggleButton extends StatelessWidget {
                       ),
                 ),
                 if (badgeCount > 0)
-                  Positioned(
+                  PositionedDirectional(
                     top: -4,
-                    right: -24,
+                    end: -24,
                     child: _NotificationBadge(count: badgeCount),
                   ),
               ],

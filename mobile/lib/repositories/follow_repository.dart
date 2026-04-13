@@ -1363,6 +1363,22 @@ class FollowRepository {
             .toList();
 
         if (pubkeys.isNotEmpty) {
+          // Guard: only accept the cached event when it is at least as large
+          // as the list already loaded from LocalStorage. A stale
+          // PersonalEventCache entry with fewer pubkeys should not overwrite
+          // a fresher LocalStorage value — the network steps will fetch the
+          // authoritative event later.
+          if (pubkeys.length < _followingPubkeys.length) {
+            Log.debug(
+              'PersonalEventCache has fewer follows '
+              '(${pubkeys.length}) than LocalStorage '
+              '(${_followingPubkeys.length}), skipping',
+              name: 'FollowRepository',
+              category: LogCategory.system,
+            );
+            return;
+          }
+
           _followingPubkeys = pubkeys;
           _currentUserContactListEvent = latestContactList;
           _emitFollowingList();
@@ -1724,15 +1740,47 @@ class FollowRepository {
     );
   }
 
-  /// Minimum number of follows the local list must have before the
-  /// catastrophic-reduction heuristic kicks in. Below this threshold every
-  /// remote event is accepted as-is, because small lists change drastically
-  /// during normal use.
-  static const _mergeMinFollows = 10;
+  // ── Catastrophic-reduction merge guard ──────────────────────────────
+  //
+  // Protects against buggy external Nostr clients that publish a Kind 3
+  // event without first fetching the existing contact list, effectively
+  // overwriting hundreds of follows with a single entry.
+  //
+  // The guard uses a two-condition AND gate:
+  //   1. Drastic reduction — the remote list lost more than
+  //      [_mergeMaxLossFraction] (50 %) of the local list.
+  //   2. New-pubkey fingerprint — the remote list contains at least one
+  //      pubkey absent from the local list (the hallmark of a "follow one
+  //      user, replace the whole list" bug).
+  //
+  // When BOTH conditions are true the lists are union-merged and the
+  // corrected list is re-broadcast so relays converge on the right state.
+  //
+  // A legitimate mass-unfollow produces a strict *subset* of the local
+  // list, so condition 2 filters it out and the replacement is accepted.
+  //
+  // The guard is only active when the local list has at least
+  // [_mergeMinFollows] entries. With only 1 follow the list can only
+  // drop to zero, which is either a legitimate unfollow or a fresh
+  // account state — no merge is needed.
+  //
+  // Edge cases:
+  //   • Exactly 50 % loss (equals the ceil threshold) → accepted, not
+  //     merged, because the loss is within tolerance.
+  //   • Remote list is entirely new pubkeys but same size → accepted,
+  //     because condition 1 fails (no size reduction).
+  //   • Re-broadcast failure after merge → local list is already
+  //     correct; relays will converge on the next publish.
+  // ───────────────────────────────────────────────────────────────────
 
-  /// Maximum fraction of the local list that a remote event may remove
-  /// before we treat the reduction as suspicious and merge instead of replace.
-  /// 0.5 means "if more than half the list would be lost, merge."
+  /// Minimum local-list size for the merge guard to activate. A user with
+  /// only 1 follow cannot trigger a "catastrophic reduction" — the list
+  /// can only go to zero.
+  static const _mergeMinFollows = 2;
+
+  /// Maximum fraction of the local list that may be removed before the
+  /// reduction is treated as suspicious. 0.5 → more than half lost
+  /// triggers a merge instead of a replace.
   static const _mergeMaxLossFraction = 0.5;
 
   /// Process a NIP-02 contact list event (Kind 3)

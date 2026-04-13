@@ -25,6 +25,7 @@ environment:
 workspace:
   - packages/app_update_repository
   - packages/app_version_client
+  - packages/blossom_upload_service
   - packages/blurhash_service
   - packages/categories_repository
   - packages/comments_repository
@@ -74,6 +75,8 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
+  blossom_upload_service:
 
   # State management
   flutter_riverpod: ^3.0.0
@@ -190,12 +193,16 @@ dependencies:
   # Divine UI - Shared UI components
   divine_ui:
 
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+
   # Logging
   logging: ^1.2.0
   unified_logger:
 
   # Date formatting
-  intl: ^0.19.0
+  intl: ">=0.19.0 <1.0.0"
 
   # Missing dependencies required by nostr_sdk
   equatable: ^2.0.5
@@ -299,6 +306,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

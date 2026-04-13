@@ -53,7 +53,7 @@ void main() {}
 //                (ref) => Future.value(draftStorage),
 //              ),
 //            ],
-//            child: MaterialApp(home: UniversalCameraScreenPure()),
+//            child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: UniversalCameraScreenPure()),
 //          ),
 //        );
 //
@@ -150,7 +150,7 @@ void main() {}
 //              (ref) => Future.value(draftStorage),
 //            ),
 //          ],
-//          child: MaterialApp(home: UniversalCameraScreenPure()),
+//          child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: UniversalCameraScreenPure()),
 //        ),
 //      );
 //
@@ -191,7 +191,7 @@ void main() {}
 //              (ref) => Future.value(draftStorage),
 //            ),
 //          ],
-//          child: MaterialApp(home: UniversalCameraScreenPure()),
+//          child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: UniversalCameraScreenPure()),
 //        ),
 //      );
 //

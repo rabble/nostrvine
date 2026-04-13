@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -558,9 +559,12 @@ class _FeedErrorWidget extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, color: VineTheme.error, size: 64),
           const SizedBox(height: 16),
-          const Text(
-            'Failed to load videos',
-            style: TextStyle(color: VineTheme.whiteText, fontSize: 18),
+          Text(
+            context.l10n.feedFailedToLoadVideos,
+            style: const TextStyle(
+              color: VineTheme.whiteText,
+              fontSize: 18,
+            ),
           ),
           if (error != null) ...[
             const SizedBox(height: 8),
@@ -574,7 +578,7 @@ class _FeedErrorWidget extends StatelessWidget {
             onPressed: () => context.read<VideoFeedBloc>().add(
               const VideoFeedRefreshRequested(),
             ),
-            child: const Text('Retry'),
+            child: Text(context.l10n.feedRetry),
           ),
         ],
       ),
@@ -604,7 +608,7 @@ class FeedEmptyWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            _getEmptyMessage(state),
+            _getEmptyMessage(context, state),
             style: const TextStyle(color: VineTheme.whiteText, fontSize: 18),
             textAlign: TextAlign.center,
           ),
@@ -613,7 +617,7 @@ class FeedEmptyWidget extends StatelessWidget {
             FilledButton.icon(
               onPressed: () => context.go(ExploreScreen.path),
               icon: const Icon(Icons.explore),
-              label: const Text('Explore Videos'),
+              label: Text(context.l10n.feedExploreVideos),
               style: FilledButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
                 foregroundColor: VineTheme.backgroundColor,
@@ -625,12 +629,12 @@ class FeedEmptyWidget extends StatelessWidget {
     );
   }
 
-  String _getEmptyMessage(VideoFeedState state) {
+  String _getEmptyMessage(BuildContext context, VideoFeedState state) {
     if (state.mode == FeedMode.following &&
         state.error == VideoFeedError.noFollowedUsers) {
-      return 'No followed users.\nFollow someone to see their videos here.';
+      return context.l10n.feedNoFollowedUsers;
     }
-    return 'No videos found for ${state.mode.name} feed.';
+    return context.l10n.feedNoVideosForMode(state.mode.name);
   }
 }
 
@@ -879,7 +883,7 @@ class _SlowExternalVideoOverlay extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'External video loading slowly',
+                    context.l10n.feedExternalVideoSlow,
                     style: VineTheme.bodyMediumFont(),
                   ),
                 ),
@@ -895,7 +899,7 @@ class _SlowExternalVideoOverlay extends StatelessWidget {
                       foregroundColor: VineTheme.vineGreen,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
-                    child: const Text('Skip'),
+                    child: Text(context.l10n.feedSkip),
                   ),
               ],
             ),

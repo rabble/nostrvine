@@ -72,7 +72,6 @@ final class ClipsLibraryState extends Equatable {
     this.clips = const [],
     this.selectedClipIds = const {},
     this.selectedDuration = Duration.zero,
-    this.errorMessage,
     this.lastGallerySaveResult,
     this.lastDeletedCount,
   });
@@ -88,9 +87,6 @@ final class ClipsLibraryState extends Equatable {
 
   /// Total duration of selected clips.
   final Duration selectedDuration;
-
-  /// Error message if status is error.
-  final String? errorMessage;
 
   /// Result of the last gallery save operation (for UI feedback).
   final GallerySaveResult? lastGallerySaveResult;
@@ -117,19 +113,16 @@ final class ClipsLibraryState extends Equatable {
     List<DivineVideoClip>? clips,
     Set<String>? selectedClipIds,
     Duration? selectedDuration,
-    String? errorMessage,
     GallerySaveResult? lastGallerySaveResult,
     int? lastDeletedCount,
     bool clearGallerySaveResult = false,
     bool clearDeletedCount = false,
-    bool clearError = false,
   }) {
     return ClipsLibraryState(
       status: status ?? this.status,
       clips: clips ?? this.clips,
       selectedClipIds: selectedClipIds ?? this.selectedClipIds,
       selectedDuration: selectedDuration ?? this.selectedDuration,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       lastGallerySaveResult: clearGallerySaveResult
           ? null
           : (lastGallerySaveResult ?? this.lastGallerySaveResult),
@@ -145,7 +138,6 @@ final class ClipsLibraryState extends Equatable {
     clips,
     selectedClipIds,
     selectedDuration,
-    errorMessage,
     lastGallerySaveResult,
     lastDeletedCount,
   ];

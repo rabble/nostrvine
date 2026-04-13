@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 
 void main() {
   group('Profile Screen Empty Container TDD - Loading/Error State Tests', () {
@@ -41,6 +42,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -134,6 +137,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -227,6 +232,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               backgroundColor: Colors.black, // VineTheme.backgroundColor
               body: GridView(

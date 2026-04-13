@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LegalScreen extends StatelessWidget {
@@ -13,9 +14,10 @@ class LegalScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Legal',
+        title: l10n.legalTitle,
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).pop(),
       ),
@@ -28,55 +30,55 @@ class LegalScreen extends StatelessWidget {
             children: [
               _LegalTile(
                 icon: Icons.description,
-                title: 'Terms of Service',
-                subtitle: 'Usage terms and conditions',
+                title: l10n.legalTermsOfService,
+                subtitle: l10n.legalTermsOfServiceSubtitle,
                 isExternal: true,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/terms',
-                  'Terms of Service',
+                  l10n.legalTermsOfService,
                 ),
               ),
               _LegalTile(
                 icon: Icons.privacy_tip,
-                title: 'Privacy Policy',
-                subtitle: 'How we handle your data',
+                title: l10n.legalPrivacyPolicy,
+                subtitle: l10n.legalPrivacyPolicySubtitle,
                 isExternal: true,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/privacy',
-                  'Privacy Policy',
+                  l10n.legalPrivacyPolicy,
                 ),
               ),
               _LegalTile(
                 icon: Icons.shield,
-                title: 'Safety Standards',
-                subtitle: 'Community guidelines and safety',
+                title: l10n.legalSafetyStandards,
+                subtitle: l10n.legalSafetyStandardsSubtitle,
                 isExternal: true,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/safety',
-                  'Safety Standards',
+                  l10n.legalSafetyStandards,
                 ),
               ),
               _LegalTile(
                 icon: Icons.copyright,
-                title: 'DMCA',
-                subtitle: 'Copyright and takedown policy',
+                title: l10n.legalDmca,
+                subtitle: l10n.legalDmcaSubtitle,
                 isExternal: true,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/dmca',
-                  'DMCA',
+                  l10n.legalDmca,
                 ),
               ),
               _LegalTile(
                 icon: Icons.source,
-                title: 'Open Source Licenses',
-                subtitle: 'Third-party package attributions',
+                title: l10n.legalOpenSourceLicenses,
+                subtitle: l10n.legalOpenSourceLicensesSubtitle,
                 onTap: () => showLicensePage(
                   context: context,
-                  applicationName: 'Divine',
+                  applicationName: l10n.legalAppName,
                 ),
               ),
             ],
@@ -99,7 +101,9 @@ class LegalScreen extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Could not open $pageName'),
+              content: Text(
+                context.l10n.legalCouldNotOpenPage(pageName),
+              ),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -109,7 +113,9 @@ class LegalScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error opening $pageName: $e'),
+            content: Text(
+              context.l10n.legalErrorOpeningPage(pageName, e),
+            ),
             backgroundColor: VineTheme.error,
           ),
         );

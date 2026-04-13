@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -45,11 +46,12 @@ class SelectListDialog extends StatelessWidget {
         data: (lists) {
           final availableLists = lists.toList();
 
+          final l10n = context.l10n;
           return AlertDialog(
             backgroundColor: VineTheme.cardBackground,
-            title: const Text(
-              'Add to List',
-              style: TextStyle(color: VineTheme.whiteText),
+            title: Text(
+              l10n.listAddToList,
+              style: const TextStyle(color: VineTheme.whiteText),
             ),
             content: SizedBox(
               width: double.maxFinite,
@@ -72,7 +74,7 @@ class SelectListDialog extends StatelessWidget {
                       style: const TextStyle(color: VineTheme.whiteText),
                     ),
                     subtitle: Text(
-                      '${list.videoEventIds.length} videos',
+                      l10n.listVideoCount(list.videoEventIds.length),
                       style: const TextStyle(color: VineTheme.secondaryText),
                     ),
                     onTap: () => _toggleVideoInList(
@@ -93,14 +95,17 @@ class SelectListDialog extends StatelessWidget {
                     builder: (_) => CreateListDialog(video: video),
                   );
                 },
-                child: const Text('New List'),
+                child: Text(l10n.listNewList),
               ),
-              TextButton(onPressed: context.pop, child: const Text('Done')),
+              TextButton(
+                onPressed: context.pop,
+                child: Text(l10n.listDone),
+              ),
             ],
           );
         },
         loading: () => const _LoadingIndicator(),
-        error: (_, _) => const Center(child: Text('Error loading lists')),
+        error: (_, _) => Center(child: Text(context.l10n.listErrorLoading)),
       );
     },
   );
@@ -121,8 +126,8 @@ class SelectListDialog extends StatelessWidget {
 
       if (success && context.mounted) {
         final message = isCurrentlyInList
-            ? 'Removed from ${list.name}'
-            : 'Added to ${list.name}';
+            ? context.l10n.listRemovedFrom(list.name)
+            : context.l10n.listAddedTo(list.name);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
@@ -155,55 +160,58 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
   bool _isPublic = true;
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: VineTheme.cardBackground,
-    title: const Text(
-      'Create New List',
-      style: TextStyle(color: VineTheme.whiteText),
-    ),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          controller: _nameController,
-          enableInteractiveSelection: true,
-          style: const TextStyle(color: VineTheme.whiteText),
-          decoration: const InputDecoration(
-            labelText: 'List Name',
-            labelStyle: TextStyle(color: VineTheme.secondaryText),
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return AlertDialog(
+      backgroundColor: VineTheme.cardBackground,
+      title: Text(
+        l10n.listCreateNewList,
+        style: const TextStyle(color: VineTheme.whiteText),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            enableInteractiveSelection: true,
+            style: const TextStyle(color: VineTheme.whiteText),
+            decoration: InputDecoration(
+              labelText: l10n.listNameLabel,
+              labelStyle: const TextStyle(color: VineTheme.secondaryText),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _descriptionController,
-          enableInteractiveSelection: true,
-          style: const TextStyle(color: VineTheme.whiteText),
-          decoration: const InputDecoration(
-            labelText: 'Description (optional)',
-            labelStyle: TextStyle(color: VineTheme.secondaryText),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _descriptionController,
+            enableInteractiveSelection: true,
+            style: const TextStyle(color: VineTheme.whiteText),
+            decoration: InputDecoration(
+              labelText: l10n.listDescriptionLabel,
+              labelStyle: const TextStyle(color: VineTheme.secondaryText),
+            ),
+            maxLines: 2,
           ),
-          maxLines: 2,
-        ),
-        const SizedBox(height: 16),
-        SwitchListTile(
-          title: const Text(
-            'Public List',
-            style: TextStyle(color: VineTheme.whiteText),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            title: Text(
+              l10n.listPublicList,
+              style: const TextStyle(color: VineTheme.whiteText),
+            ),
+            subtitle: Text(
+              l10n.listPublicListSubtitle,
+              style: const TextStyle(color: VineTheme.secondaryText),
+            ),
+            value: _isPublic,
+            onChanged: (value) => setState(() => _isPublic = value),
           ),
-          subtitle: const Text(
-            'Others can follow and see this list',
-            style: TextStyle(color: VineTheme.secondaryText),
-          ),
-          value: _isPublic,
-          onChanged: (value) => setState(() => _isPublic = value),
-        ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: context.pop, child: Text(l10n.listCancel)),
+        TextButton(onPressed: _createList, child: Text(l10n.listCreate)),
       ],
-    ),
-    actions: [
-      TextButton(onPressed: context.pop, child: const Text('Cancel')),
-      TextButton(onPressed: _createList, child: const Text('Create')),
-    ],
-  );
+    );
+  }
 
   Future<void> _createList() async {
     final name = _nameController.text.trim();
@@ -237,9 +245,9 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to create list'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.listCreateFailed),
+            duration: const Duration(seconds: 2),
           ),
         );
         // Return null to indicate failure

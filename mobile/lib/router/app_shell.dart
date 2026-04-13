@@ -13,6 +13,7 @@ import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -50,11 +51,12 @@ class _AppShellState extends ConsumerState<AppShell> {
   int get currentIndex => widget.currentIndex;
   Widget get child => widget.child;
 
-  String _titleFor(WidgetRef ref) {
+  String _titleFor(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final ctx = ref.watch(pageContextProvider).asData?.value;
     switch (ctx?.type) {
       case RouteType.home:
-        return 'Home';
+        return l10n.navHome;
       case RouteType.explore:
         // When in feed mode (watching a video), show the tab name
         if (ctx?.videoIndex != null) {
@@ -65,26 +67,26 @@ class _AppShellState extends ConsumerState<AppShell> {
           final classicsAvailable =
               ref.watch(classicVinesAvailableProvider).asData?.value ?? false;
           final tabNames = <String>[];
-          if (classicsAvailable) tabNames.add('Classics');
-          tabNames.addAll(['New Videos', 'Trending']);
-          if (forYouAvailable) tabNames.add('For You');
-          tabNames.add('Lists');
+          if (classicsAvailable) tabNames.add(l10n.navExploreClassics);
+          tabNames.addAll([l10n.navExploreNewVideos, l10n.navExploreTrending]);
+          if (forYouAvailable) tabNames.add(l10n.navExploreForYou);
+          tabNames.add(l10n.navExploreLists);
           if (tabIndex >= 0 && tabIndex < tabNames.length) {
             return tabNames[tabIndex];
           }
-          return 'Explore';
+          return l10n.navExplore;
         }
-        return 'Explore';
+        return l10n.navExplore;
       case RouteType.categoryGallery:
-        return 'Explore';
+        return l10n.navExplore;
       case RouteType.notifications:
-        return 'Notifications';
+        return l10n.navNotifications;
       case RouteType.inbox:
-        return 'Inbox';
+        return l10n.navInbox;
       case RouteType.profile:
         final npub = ctx?.npub ?? '';
         if (npub == 'me') {
-          return 'My Profile';
+          return l10n.navMyProfile;
         }
         // Get user profile to show their display name
         final userIdHex = npubToHexOrNull(npub);
@@ -95,9 +97,9 @@ class _AppShellState extends ConsumerState<AppShell> {
             return displayName;
           }
         }
-        return 'Profile';
+        return l10n.navProfile;
       case RouteType.search:
-        return 'Search';
+        return l10n.navSearch;
       default:
         return '';
     }
@@ -164,7 +166,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     // Log user interaction
     Log.info(
-      '👆 User tapped bottom nav: tab=$tabIndex (${_tabName(tabIndex)})',
+      '👆 User tapped bottom nav: tab=$tabIndex (${_tabName(context, tabIndex)})',
       name: 'Navigation',
       category: LogCategory.ui,
     );
@@ -201,13 +203,14 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
   }
 
-  String _tabName(int index) {
+  String _tabName(BuildContext context, int index) {
+    final l10n = context.l10n;
     return switch (index) {
-      0 => 'Home',
-      1 => 'Explore',
-      2 => 'Inbox',
-      3 => 'Profile',
-      _ => 'Unknown',
+      0 => l10n.navHome,
+      1 => l10n.navExplore,
+      2 => l10n.navInbox,
+      3 => l10n.navProfile,
+      _ => l10n.navUnknown,
     };
   }
 
@@ -289,7 +292,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _titleFor(ref);
+    final title = _titleFor(context, ref);
 
     // Initialize auto-cleanup provider to ensure only one video plays at a time
     ref.watch(videoControllerAutoCleanupProvider);
@@ -499,7 +502,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                   : [
                       DiVineAppBarAction(
                         icon: SvgIconSource(DivineIconName.search.assetPath),
-                        tooltip: 'Search',
+                        tooltip: context.l10n.navSearchTooltip,
                         onPressed: () {
                           Log.info(
                             '👆 User tapped search button',
@@ -554,7 +557,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                   Semantics(
                     identifier: 'camera_button',
                     button: true,
-                    label: 'Open camera',
+                    label: context.l10n.navOpenCamera,
                     child: GestureDetector(
                       onTap: () {
                         Log.info(

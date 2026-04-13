@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/cache_recovery_service.dart';
 
 class FeatureFlagScreen extends ConsumerWidget {
@@ -19,7 +20,7 @@ class FeatureFlagScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Feature Flags',
+        title: context.l10n.featureFlagTitle,
         showBackButton: true,
         onBackPressed: context.pop,
         actions: [
@@ -28,8 +29,8 @@ class FeatureFlagScreen extends ConsumerWidget {
             onPressed: () async {
               await service.resetAllFlags();
             },
-            tooltip: 'Reset all flags to defaults',
-            semanticLabel: 'Reset all flags to defaults',
+            tooltip: context.l10n.featureFlagResetAllTooltip,
+            semanticLabel: context.l10n.featureFlagResetAllTooltip,
           ),
         ],
       ),
@@ -71,7 +72,7 @@ class FeatureFlagScreen extends ConsumerWidget {
                       children: [
                         if (hasUserOverride)
                           Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
+                            padding: const EdgeInsetsDirectional.only(end: 8),
                             child: Icon(
                               Icons.edit,
                               size: 16,
@@ -90,7 +91,7 @@ class FeatureFlagScreen extends ConsumerWidget {
                         if (hasUserOverride)
                           IconButton(
                             icon: const Icon(Icons.undo, size: 20),
-                            tooltip: 'Reset to default',
+                            tooltip: context.l10n.featureFlagResetToDefault,
                             onPressed: () async {
                               await service.resetFlag(flag);
                             },
@@ -113,14 +114,14 @@ class FeatureFlagScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'App Recovery',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            context.l10n.featureFlagAppRecovery,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'If the app is crashing or behaving strangely, try clearing the cache.',
-            style: TextStyle(color: VineTheme.lightText),
+          Text(
+            context.l10n.featureFlagAppRecoveryDescription,
+            style: const TextStyle(color: VineTheme.lightText),
           ),
           const SizedBox(height: 12),
           Row(
@@ -128,7 +129,7 @@ class FeatureFlagScreen extends ConsumerWidget {
               ElevatedButton.icon(
                 onPressed: () => _clearCache(context),
                 icon: const Icon(Icons.cleaning_services),
-                label: const Text('Clear All Cache'),
+                label: Text(context.l10n.featureFlagClearAllCache),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: VineTheme.accentOrange,
                   foregroundColor: VineTheme.whiteText,
@@ -138,7 +139,7 @@ class FeatureFlagScreen extends ConsumerWidget {
               TextButton.icon(
                 onPressed: () => _showCacheInfo(context),
                 icon: const Icon(Icons.info_outline),
-                label: const Text('Cache Info'),
+                label: Text(context.l10n.featureFlagCacheInfo),
               ),
             ],
           ),
@@ -153,26 +154,19 @@ class FeatureFlagScreen extends ConsumerWidget {
         await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Clear All Cache?'),
-            content: const Text(
-              'This will clear all cached data including:\n'
-              '• Notifications\n'
-              '• User profiles\n'
-              '• Bookmarks\n'
-              '• Temporary files\n\n'
-              'You will need to log in again. Continue?',
-            ),
+            title: Text(context.l10n.featureFlagClearCacheTitle),
+            content: Text(context.l10n.featureFlagClearCacheMessage),
             actions: [
               TextButton(
                 onPressed: () => context.pop(false),
-                child: const Text('Cancel'),
+                child: Text(context.l10n.devOptionsCancel),
               ),
               ElevatedButton(
                 onPressed: () => context.pop(true),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: VineTheme.accentOrange,
                 ),
-                child: const Text('Clear Cache'),
+                child: Text(context.l10n.featureFlagClearCache),
               ),
             ],
           ),
@@ -186,12 +180,12 @@ class FeatureFlagScreen extends ConsumerWidget {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const AlertDialog(
+      builder: (context) => AlertDialog(
         content: Row(
           children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Clearing cache...'),
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            Text(context.l10n.featureFlagClearingCache),
           ],
         ),
       ),
@@ -209,13 +203,22 @@ class FeatureFlagScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(success ? 'Success' : 'Error'),
+        title: Text(
+          success
+              ? context.l10n.featureFlagSuccess
+              : context.l10n.featureFlagError,
+        ),
         content: Text(
           success
-              ? 'Cache cleared successfully. Please restart the app.'
-              : 'Failed to clear some cache items. Check logs for details.',
+              ? context.l10n.featureFlagClearCacheSuccess
+              : context.l10n.featureFlagClearCacheFailure,
         ),
-        actions: [TextButton(onPressed: context.pop, child: const Text('OK'))],
+        actions: [
+          TextButton(
+            onPressed: context.pop,
+            child: Text(context.l10n.featureFlagOk),
+          ),
+        ],
       ),
     );
   }
@@ -227,25 +230,25 @@ class FeatureFlagScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cache Information'),
+        title: Text(context.l10n.featureFlagCacheInformation),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Total cache size: $cacheSize'),
+            Text(context.l10n.featureFlagTotalCacheSize(cacheSize)),
             const SizedBox(height: 12),
-            const Text(
-              'Cache includes:\n'
-              '• Notification history\n'
-              '• User profile data\n'
-              '• Video thumbnails\n'
-              '• Temporary files\n'
-              '• Database indexes',
-              style: TextStyle(fontSize: 14),
+            Text(
+              context.l10n.featureFlagCacheIncludes,
+              style: const TextStyle(fontSize: 14),
             ),
           ],
         ),
-        actions: [TextButton(onPressed: context.pop, child: const Text('OK'))],
+        actions: [
+          TextButton(
+            onPressed: context.pop,
+            child: Text(context.l10n.featureFlagOk),
+          ),
+        ],
       ),
     );
   }

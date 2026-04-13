@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
@@ -40,6 +41,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoFeedItem(video: portraitVideo, index: 0)),
           ),
         ),
@@ -83,6 +86,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: VideoFeedItem(video: landscapeVideo, index: 0),
             ),

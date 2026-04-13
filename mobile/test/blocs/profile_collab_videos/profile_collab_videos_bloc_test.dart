@@ -55,7 +55,7 @@ void main() {
       final bloc = createBloc();
       expect(bloc.state.status, ProfileCollabVideosStatus.initial);
       expect(bloc.state.videos, isEmpty);
-      expect(bloc.state.error, isNull);
+      expect(bloc.state.status, isNot(ProfileCollabVideosStatus.failure));
       expect(bloc.state.isLoadingMore, isFalse);
       expect(bloc.state.hasMoreContent, isTrue);
       expect(bloc.state.paginationCursor, isNull);
@@ -104,11 +104,15 @@ void main() {
         expect(updated.paginationCursor, equals(1700000000));
       });
 
-      test('copyWith clearError sets error to null', () {
-        const state = ProfileCollabVideosState(error: 'Some error');
-        final updated = state.copyWith(clearError: true);
+      test('copyWith status resets from failure', () {
+        const state = ProfileCollabVideosState(
+          status: ProfileCollabVideosStatus.failure,
+        );
+        final updated = state.copyWith(
+          status: ProfileCollabVideosStatus.initial,
+        );
 
-        expect(updated.error, isNull);
+        expect(updated.status, ProfileCollabVideosStatus.initial);
       });
 
       test('props are correct for Equatable', () {
@@ -153,7 +157,11 @@ void main() {
                 ProfileCollabVideosStatus.success,
               )
               .having((s) => s.videos, 'videos', hasLength(1))
-              .having((s) => s.error, 'error', isNull),
+              .having(
+                (s) => s.status,
+                'status',
+                isNot(ProfileCollabVideosStatus.failure),
+              ),
         ],
       );
 
@@ -293,7 +301,11 @@ void main() {
                 'status',
                 ProfileCollabVideosStatus.failure,
               )
-              .having((s) => s.error, 'error', isNotNull),
+              .having(
+                (s) => s.status,
+                'failure status',
+                ProfileCollabVideosStatus.failure,
+              ),
         ],
       );
 

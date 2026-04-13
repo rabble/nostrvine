@@ -43,7 +43,8 @@ void main() {
       final limit = invocation.namedArguments[#limit] as int? ?? 50;
       final cursor = invocation.namedArguments[#cursor] as String?;
       final effectiveBefore =
-          cursor ?? DateTime.now().millisecondsSinceEpoch.toString();
+          cursor ??
+              (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
       return Uri.parse(
         'https://api.example.com/api/users/$pubkey/notifications',
       ).replace(
@@ -404,6 +405,7 @@ void main() {
           expect(item.actors, hasLength(3));
           expect(item.actors.first.displayName, equals('Alice'));
           expect(item.targetEventId, equals('video_x'));
+          expect(item.id, equals('group_like_video_x'));
         },
       );
 

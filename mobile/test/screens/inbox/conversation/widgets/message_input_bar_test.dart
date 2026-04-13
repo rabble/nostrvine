@@ -5,6 +5,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_input_bar.dart';
 
 void main() {
@@ -13,6 +14,8 @@ void main() {
       testWidgets('renders $TextField with hint text', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageInputBar(onSend: (_) {}),
             ),
@@ -28,6 +31,8 @@ void main() {
         (tester) async {
           await tester.pumpWidget(
             MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: MessageInputBar(onSend: (_) {}),
               ),
@@ -43,6 +48,8 @@ void main() {
         (tester) async {
           await tester.pumpWidget(
             MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: MessageInputBar(onSend: (_) {}),
               ),
@@ -65,6 +72,8 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: MessageInputBar(
                   onSend: (text) => sentText = text,
@@ -86,6 +95,8 @@ void main() {
       testWidgets('clears text field after sending', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: MessageInputBar(onSend: (_) {}),
             ),
@@ -110,6 +121,8 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: MessageInputBar(
                   onSend: (_) => sendCalled = true,

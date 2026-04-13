@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/crosspost_settings/crosspost_settings_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 
 class BlueskySettingsScreen extends ConsumerWidget {
@@ -69,8 +70,10 @@ class _BlueskySettingsView extends StatelessWidget {
             listener: (context, state) {
               if (state.status == CrosspostSettingsStatus.failure) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Failed to update crosspost setting'),
+                  SnackBar(
+                    content: Text(
+                      context.l10n.blueskyFailedToUpdateCrosspost,
+                    ),
                     backgroundColor: VineTheme.error,
                   ),
                 );

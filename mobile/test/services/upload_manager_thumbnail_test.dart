@@ -2,9 +2,9 @@
 // ABOUTME: Verifies thumbnails are extracted from videos and uploaded to Blossom
 
 import 'dart:io';
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}

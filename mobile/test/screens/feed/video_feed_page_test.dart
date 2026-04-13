@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -329,6 +330,8 @@ void main() {
           UncontrolledProviderScope(
             container: container,
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: MultiBlocProvider(
                 providers: [
                   BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),

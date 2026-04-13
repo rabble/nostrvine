@@ -287,9 +287,9 @@ class QuickContentWarning extends StatelessWidget {
   Widget build(BuildContext context) => Stack(
     children: [
       child,
-      Positioned(
+      PositionedDirectional(
         top: 8,
-        right: 8,
+        end: 8,
         child: GestureDetector(
           onTap: onTap,
           child: Container(
