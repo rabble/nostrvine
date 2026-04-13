@@ -95,6 +95,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   void initState() {
     super.initState();
     final profileRepo = ref.read(profileRepositoryProvider);
+    assert(profileRepo != null, 'UserPickerSheet requires authentication');
     _searchBloc = UserSearchBloc(profileRepository: profileRepo!);
 
     if (_useLocalSearch) {
