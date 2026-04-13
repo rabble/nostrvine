@@ -32,6 +32,12 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// Path for clips route.
   static const clipsPath = '/clips';
 
+  /// Route name for clips-only path (no Sounds tab).
+  static const clipsOnlyRouteName = 'clipsOnly';
+
+  /// Path for clips-only route (no Sounds tab).
+  static const clipsOnlyPath = '/clips-only';
+
   /// Route name for sounds path.
   static const soundsRouteName = 'sounds';
 
@@ -42,6 +48,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
     super.key,
     this.initialTabIndex = 0,
     this.selectionMode = false,
+    this.enableSoundTab = true,
     this.editorClips = const [],
     this.scrollController,
   });
@@ -59,6 +66,9 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// - A header shows remaining duration and "Add" button
   /// - Selected clips are added to the video editor on confirmation
   final bool selectionMode;
+
+  /// Whether the Sounds tab is visible.
+  final bool enableSoundTab;
 
   /// Current editor clips, used to calculate remaining duration and
   /// target aspect ratio in selection mode.
@@ -79,7 +89,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: widget.enableSoundTab ? 3 : 2,
       initialIndex: widget.initialTabIndex,
       vsync: this,
     );
@@ -275,6 +285,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                           ? null
                           : _LibraryAppBar(
                               tabController: _tabController,
+                              enableSoundTab: widget.enableSoundTab,
                               onNext: () => _createVideoFromSelected(
                                 context,
                                 selectedClips: clipsState.selectedClips,
@@ -293,6 +304,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                             )
                           : _TabBody(
                               tabController: _tabController,
+                              enableSoundTab: widget.enableSoundTab,
                               targetAspectRatio: targetAspectRatio,
                             ),
                     ),
@@ -333,10 +345,12 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
   const _LibraryAppBar({
     required this.tabController,
     required this.onNext,
+    this.enableSoundTab = true,
   });
 
   final TabController tabController;
   final VoidCallback onNext;
+  final bool enableSoundTab;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 48);
@@ -389,10 +403,10 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
             labelPadding: const .symmetric(horizontal: 16),
             isScrollable: true,
             tabAlignment: .start,
-            tabs: const [
-              Tab(text: 'Drafts'),
-              Tab(text: 'Clips'),
-              Tab(text: 'Sounds'),
+            tabs: [
+              const Tab(text: 'Drafts'),
+              const Tab(text: 'Clips'),
+              if (enableSoundTab) const Tab(text: 'Sounds'),
             ],
           ),
         );
@@ -432,10 +446,12 @@ class _SelectionBody extends StatelessWidget {
 class _TabBody extends StatelessWidget {
   const _TabBody({
     required this.tabController,
+    this.enableSoundTab = true,
     this.targetAspectRatio,
   });
 
   final TabController tabController;
+  final bool enableSoundTab;
   final double? targetAspectRatio;
 
   @override
@@ -451,7 +467,7 @@ class _TabBody extends StatelessWidget {
           targetAspectRatio: targetAspectRatio,
           showRecordButton: false,
         ),
-        const SoundsTab(),
+        if (enableSoundTab) const SoundsTab(),
       ],
     );
   }
