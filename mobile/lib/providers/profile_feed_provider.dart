@@ -220,6 +220,7 @@ class ProfileFeed extends _$ProfileFeed {
   }) async {
     try {
       final client = clientOverride ?? ref.read(funnelcakeApiClientProvider);
+      if (client == null) return;
       final result = await client
           .getVideosByAuthor(pubkey: userId)
           .timeout(_restApiTimeout);
