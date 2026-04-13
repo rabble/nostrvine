@@ -4,10 +4,13 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Top action bar for the video editor.
 ///
@@ -40,28 +43,93 @@ class VideoEditorMainOverlayActions extends StatelessWidget {
 }
 
 /// Top row actions: close, audio chip, and done buttons.
-class _TopActions extends StatelessWidget {
+class _TopActions extends ConsumerWidget {
   const _TopActions();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scope = VideoEditorScope.of(context);
 
     return VideoEditorToolbar(
       closeIcon: .caretLeft,
       doneIcon: .caretRight,
-      onClose: () {
-        final bloc = context.read<VideoEditorMainBloc>();
-        if (bloc.state.isSubEditorOpen) {
-          scope.editor?.closeSubEditor();
-        } else {
-          // If came from library, go to recorder (not in stack)
-          // Otherwise pop back to recorder
-          context.pop();
-        }
-      },
+      onClose: () => _onClosePressed(
+        context: context,
+        ref: ref,
+        closeSubEditor: scope.editor?.closeSubEditor,
+      ),
       onDone: () => scope.editor?.doneEditing(),
     );
+  }
+
+  void _onClosePressed({
+    required BuildContext context,
+    required WidgetRef ref,
+    required VoidCallback? closeSubEditor,
+  }) {
+    final bloc = context.read<VideoEditorMainBloc>();
+    if (bloc.state.isSubEditorOpen) {
+      closeSubEditor?.call();
+      return;
+    }
+
+    VineBottomSheetPrompt.show(
+      context: context,
+      sticker: .videoClapBoard,
+      title: 'Save your draft?',
+      subtitle:
+          'Keep your edits for later, or discard them and leave the editor.',
+      primaryButtonText: 'Save draft',
+      secondaryButtonText: 'Discard changes',
+      tertiaryButtonText: 'Keep editing',
+      onPrimaryPressed: () => _onSaveDraftPressed(context: context, ref: ref),
+      onSecondaryPressed: () => _onDiscardPressed(context: context, ref: ref),
+      onTertiaryPressed: context.pop,
+    );
+  }
+
+  Future<void> _onSaveDraftPressed({
+    required BuildContext context,
+    required WidgetRef ref,
+  }) async {
+    var draftSaved = true;
+    try {
+      // Save the draft to the library.
+      final draftSuccess = await ref
+          .read(videoEditorProvider.notifier)
+          .saveAsDraft(enforceCreateNewDraft: true);
+      if (!draftSuccess) {
+        throw StateError('Failed to save draft');
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to save: $e',
+        name: 'VideoMetadataCaptureBottomBar',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      draftSaved = false;
+    }
+    if (!context.mounted) return;
+    context.pop();
+    context.pop();
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    scaffoldMessenger.showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        draftSaved ? 'Saved to library' : 'Failed to save',
+      ),
+    );
+  }
+
+  void _onDiscardPressed({
+    required BuildContext context,
+    required WidgetRef ref,
+  }) {
+    ref.read(videoEditorProvider.notifier).removeAutosavedDraft();
+    context.pop();
+    context.pop();
   }
 }
 
