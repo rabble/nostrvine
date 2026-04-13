@@ -620,6 +620,7 @@ class _NonTrimmingClipPositions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Stack(
+      clipBehavior: .none,
       children: [
         for (int i = 0; i < orderedClips.length; i++)
           if (i != dragIndex && orderedClips[i].id != trimmingClipId)
