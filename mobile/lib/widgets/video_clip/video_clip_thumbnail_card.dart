@@ -210,14 +210,6 @@ class _SelectionOverlay extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: .circular(4),
-              border: .all(color: VineTheme.tabIndicatorGreen, width: 4),
-            ),
-          ),
-        ),
         PositionedDirectional(
           end: 8,
           top: 6,
