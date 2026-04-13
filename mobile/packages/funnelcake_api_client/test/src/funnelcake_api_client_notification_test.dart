@@ -410,5 +410,25 @@ void main() {
         expect(response.markedCount, equals(10));
       });
     });
+
+    group('notificationsUri', () {
+      test('default cursor uses Unix seconds not milliseconds', () {
+        final uri = client.notificationsUri(pubkey: testPubkey);
+        final before = int.parse(uri.queryParameters['before']!);
+
+        // Unix seconds should be ~10 digits (1.7 billion in 2026).
+        // Milliseconds would be ~13 digits (1.7 trillion).
+        expect(before, lessThan(10000000000));
+      });
+
+      test('passes cursor through unchanged', () {
+        final uri = client.notificationsUri(
+          pubkey: testPubkey,
+          cursor: '1700000000',
+        );
+
+        expect(uri.queryParameters['before'], equals('1700000000'));
+      });
+    });
   });
 }

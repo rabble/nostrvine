@@ -166,8 +166,15 @@ class NotificationFeedBloc
   ) {
     final incoming = event.notification;
 
-    // Deduplicate — skip if we already have this notification.
-    final exists = state.notifications.any((n) => n.id == incoming.id);
+    // Deduplicate — skip if we already have this notification by ID,
+    // or if a grouped notification already covers this target event.
+    final exists = state.notifications.any(
+      (n) =>
+          n.id == incoming.id ||
+          (incoming.targetEventId != null &&
+              n is GroupedNotification &&
+              n.targetEventId == incoming.targetEventId),
+    );
     if (exists) return;
 
     emit(
