@@ -72,55 +72,67 @@ class _TimelineSection extends StatefulWidget {
 }
 
 class _TimelineSectionState extends State<_TimelineSection> {
-  bool _hasTransitioned = false;
-  bool? _lastHideTimeline;
+  /// What is currently rendered — only updated via postFrameCallback so
+  /// the content change never coincides with AnimatedSize's first layout.
+  bool _hideTimeline = false;
+
+  /// False until the initial layout has fully settled. Prevents AnimatedSize
+  /// from animating the initial appearance (0 → full height).
+  bool _initialLayoutDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Wait two frames for the timeline's initial layout (including
+    // thumbnails) to fully settle before enabling animated transitions.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _initialLayoutDone = true);
+      });
+    });
+  }
+
+  static bool _shouldHide(SubEditorType? type) =>
+      type == .draw || type == .filter;
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<
-      VideoEditorMainBloc,
-      VideoEditorMainState,
-      ({SubEditorType? openSubEditor, bool isTimelineHiddenByUser})
-    >(
-      selector: (state) => (
-        openSubEditor: state.openSubEditor,
-        isTimelineHiddenByUser: state.isTimelineHiddenByUser,
-      ),
-      builder: (context, selection) {
-        final isSubEditorTimelineHidden =
-            selection.openSubEditor == .draw ||
-            selection.openSubEditor == .filter;
-        final hideTimeline =
-            isSubEditorTimelineHidden || selection.isTimelineHiddenByUser;
-
-        // Enable animation only after the first actual transition.
-        if (_lastHideTimeline != null && _lastHideTimeline != hideTimeline) {
-          _hasTransitioned = true;
-        }
-        _lastHideTimeline = hideTimeline;
-
-        return AnimatedSize(
-          duration: _hasTransitioned ? _switchDuration : .zero,
-          curve: Curves.easeInOut,
-          alignment: .bottomCenter,
-          child: Column(
-            mainAxisSize: .min,
-            crossAxisAlignment: .stretch,
-            children: [
-              // Keep timeline always in tree to preserve thumbnail cache.
-              // Offstage hides without unmounting.
-              Offstage(
-                offstage: hideTimeline,
-                child: const Padding(
-                  padding: .only(top: 12),
-                  child: VideoEditorTimelineScaffold(),
-                ),
-              ),
-              if (isSubEditorTimelineHidden) const _BottomActions(),
-            ],
-          ),
-        );
+    return BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+      listenWhen: (prev, curr) =>
+          _shouldHide(prev.openSubEditor) != _shouldHide(curr.openSubEditor),
+      listener: (context, state) {
+        final target = _shouldHide(state.openSubEditor);
+        // Defer content swap by one frame so AnimatedSize has finished
+        // its current performLayout before children change size. This
+        // avoids "RenderAnimatedSize was mutated in its own
+        // performLayout".
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _hideTimeline != target) {
+            setState(() => _hideTimeline = target);
+          }
+        });
       },
+      child: AnimatedSize(
+        duration: _initialLayoutDone ? _switchDuration : Duration.zero,
+        curve: Curves.easeInOut,
+        alignment: .bottomCenter,
+        child: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .stretch,
+          children: [
+            // Keep timeline always in tree to preserve thumbnail cache.
+            // Offstage hides without unmounting.
+            Offstage(
+              offstage: _hideTimeline,
+              child: const Padding(
+                padding: .only(top: 12),
+                child: VideoEditorTimelineScaffold(),
+              ),
+            ),
+            if (_hideTimeline) const _BottomActions(),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -219,16 +231,13 @@ class _AddElementFab extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Semantics(
-      label: 'Add element',
-      button: true,
-      child: FloatingActionButton(
-        backgroundColor: VineTheme.primary,
-        onPressed: () => VideoEditorMainActionsSheet.show(context),
-        child: const DivineIcon(
-          icon: .plus,
-          color: VineTheme.onPrimary,
-        ),
+    return FloatingActionButton(
+      tooltip: 'Add element',
+      backgroundColor: VineTheme.primary,
+      onPressed: () => VideoEditorMainActionsSheet.show(context),
+      child: const DivineIcon(
+        icon: .plus,
+        color: VineTheme.onPrimary,
       ),
     );
   }

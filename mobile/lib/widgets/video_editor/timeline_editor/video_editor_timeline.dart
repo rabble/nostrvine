@@ -33,6 +33,9 @@ class VideoEditorTimelineScaffold extends ConsumerStatefulWidget {
 
 class _VideoEditorTimelineState
     extends ConsumerState<VideoEditorTimelineScaffold> {
+  /// Duration for the user-triggered timeline hide/show animation.
+  static const _timelineToggleDuration = Duration(milliseconds: 220);
+
   late final ScrollController _scrollController;
   bool _isUserScrolling = false;
 
@@ -105,199 +108,159 @@ class _VideoEditorTimelineState
 
   @override
   Widget build(BuildContext context) {
-    final clips = context.select(
-      (ClipEditorBloc b) => b.state.clips,
-    );
-    if (clips.isEmpty) return const SizedBox.shrink();
-
-    return BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
-      selector: (state) => state.isReordering,
-      builder: (context, isReordering) {
-        final totalDuration = context.select(
-          (ClipEditorBloc b) => b.state.totalDuration,
-        );
-        final isEditing = context.select(
-          (ClipEditorBloc b) => b.state.isEditing,
-        );
-        final currentClipIndex = context.select(
-          (ClipEditorBloc b) => b.state.currentClipIndex,
-        );
-        final trimmingClipId =
-            isEditing &&
-                currentClipIndex >= 0 &&
-                currentClipIndex < clips.length
-            ? clips[currentClipIndex].id
-            : null;
-
-        _totalDuration = totalDuration;
-        final screenWidth = MediaQuery.sizeOf(context).width;
-        final halfScreen = screenWidth / 2;
-        final totalWidth = _contentWidth(totalDuration);
-
-        final hasSelectedOverlay = context.select(
-          (TimelineOverlayBloc b) => b.state.selectedItemId != null,
-        );
-
-        // Sync layers from main editor to timeline overlay bloc, and
-        // sync scroll to playback position while not user-scrolling.
-        return MultiBlocListener(
-          listeners: [
-            BlocListener<ClipEditorBloc, ClipEditorState>(
-              listenWhen: (prev, curr) =>
-                  prev.totalDuration != curr.totalDuration,
-              listener: (context, state) {
-                _totalDuration = state.totalDuration;
-                context.read<TimelineOverlayBloc>().add(
-                  TimelineOverlayTotalDurationChanged(state.totalDuration),
-                );
-              },
-            ),
-            BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
-              listenWhen: (prev, curr) =>
-                  !_isUserScrolling &&
-                  prev.currentPosition != curr.currentPosition,
-              listener: (context, state) => _syncScrollToPosition(
-                state.currentPosition,
-                totalDuration,
-                totalWidth,
-              ),
-            ),
-            BlocListener<VideoEditorFilterBloc, VideoEditorFilterState>(
-              listenWhen: (prev, curr) =>
-                  prev.appliedFilters != curr.appliedFilters,
-              listener: (context, state) {
-                _syncFilterToOverlay(
-                  context,
-                  state.appliedFilters,
-                  totalDuration,
-                );
-              },
-            ),
-          ],
-          child: GestureDetector(
-            onTap: isEditing || hasSelectedOverlay ? _onBackgroundTapped : null,
-            behavior: HitTestBehavior.translucent,
-            child: Container(
-              color: VineTheme.backgroundCamera,
-              height: TimelineConstants.height,
-              child: Column(
-                crossAxisAlignment: .stretch,
-                children: [
-                  VideoEditorTimelineHeader(
-                    playheadPosition: _playheadPosition,
-                  ),
-                  const Padding(
-                    padding: .only(top: 12),
-                    child: Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: VineTheme.outlinedDisabled,
-                    ),
-                  ),
-
-                  /// Interactive body and playhead
-                  Expanded(
-                    child: Stack(
-                      fit: .expand,
-                      children: [
-                        ValueListenableBuilder<Duration>(
-                          valueListenable: _playheadPosition,
-                          builder: (context, position, child) {
-                            final increased = Duration(
-                              milliseconds:
-                                  (position + const Duration(seconds: 1))
-                                      .inMilliseconds
-                                      .clamp(0, totalDuration.inMilliseconds),
-                            );
-                            final decreased = Duration(
-                              milliseconds:
-                                  (position - const Duration(seconds: 1))
-                                      .inMilliseconds
-                                      .clamp(0, totalDuration.inMilliseconds),
-                            );
-                            return Semantics(
-                              label: 'Video timeline',
-                              slider: true,
-                              value: _formatPosition(position),
-                              increasedValue: _formatPosition(increased),
-                              decreasedValue: _formatPosition(decreased),
-                              onIncrease: () => _stepPosition(
-                                position,
-                                totalDuration,
-                                const Duration(seconds: 1),
-                              ),
-                              onDecrease: () => _stepPosition(
-                                position,
-                                totalDuration,
-                                const Duration(seconds: -1),
-                              ),
-                              child: child ?? const SizedBox.shrink(),
-                            );
-                          },
-                          // Pinch-to-zoom gesture tracking.
-                          child: Listener(
-                            onPointerDown: _onPointerDown,
-                            onPointerMove: _onPointerMove,
-                            onPointerUp: _onPointerUp,
-                            onPointerCancel: _onPointerCancel,
-                            child: NotificationListener<ScrollNotification>(
-                              onNotification: _handleScrollNotification,
-                              child: SingleChildScrollView(
-                                controller: _scrollController,
-                                scrollDirection: Axis.horizontal,
-                                physics: _isPinching || _isTrimming
-                                    ? const NeverScrollableScrollPhysics()
-                                    : const ClampingScrollPhysics(),
-                                clipBehavior: .none,
-                                padding: .symmetric(horizontal: halfScreen),
-                                child: VideoEditorTimelineBody(
-                                  isReordering: isReordering,
-                                  totalDuration: totalDuration,
-                                  pixelsPerSecond: _pixelsPerSecond,
-                                  scrollController: _scrollController,
-                                  scrollPadding: halfScreen,
-                                  clips: clips,
-                                  totalWidth: totalWidth,
-                                  isInteracting:
-                                      _isUserScrolling || _isPinching,
-                                  onReorder: _onClipsReordered,
-                                  onReorderChanged: _onReorderChanged,
-                                  trimmingClipId: trimmingClipId,
-                                  onTrimChanged: _onTrimChanged,
-                                  onTrimDragChanged: _onTrimDragChanged,
-                                  onClipTapped: _onClipTapped,
-                                  onOverlayItemMoved: _onOverlayItemMoved,
-                                  onOverlayItemMoving: _onOverlayItemMoving,
-                                  onOverlayItemTrimmed: _onOverlayItemTrimmed,
-                                  onOverlayTrimDragChanged:
-                                      _onOverlayTrimDragChanged,
-                                  onOverlayItemTapped: _onOverlayItemTapped,
-                                  onOverlayDragStarted: _onOverlayDragStarted,
-                                  onOverlayDragEnded: _onOverlayDragEnded,
-                                  playheadPosition: _playheadPosition,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Playhead
-                        VideoEditorTimelinePlayhead(isVisible: !isReordering),
-                      ],
-                    ),
-                  ),
-
-                  /// Bottom controls like edit and delete
-                  TimelineControlsBar(
-                    isEditing: isEditing,
-                    playheadPosition: _playheadPosition,
-                  ),
-                ],
-              ),
-            ),
+    final (:clips, :totalDuration, :isEditing, :currentClipIndex) = context
+        .select(
+          (ClipEditorBloc b) => (
+            clips: b.state.clips,
+            totalDuration: b.state.totalDuration,
+            isEditing: b.state.isEditing,
+            currentClipIndex: b.state.currentClipIndex,
           ),
         );
-      },
+    if (clips.isEmpty) return const SizedBox.shrink();
+
+    final trimmingClipId =
+        isEditing && currentClipIndex >= 0 && currentClipIndex < clips.length
+        ? clips[currentClipIndex].id
+        : null;
+
+    _totalDuration = totalDuration;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final halfScreen = screenWidth / 2;
+    final totalWidth = _contentWidth(totalDuration);
+
+    final hasSelectedOverlay = context.select(
+      (TimelineOverlayBloc b) => b.state.selectedItemId != null,
+    );
+
+    final isTimelineHiddenByUser = context.select(
+      (VideoEditorMainBloc b) => b.state.isTimelineHiddenByUser,
+    );
+
+    // Sync layers from main editor to timeline overlay bloc, and
+    // sync scroll to playback position while not user-scrolling.
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<ClipEditorBloc, ClipEditorState>(
+          listenWhen: (prev, curr) => prev.totalDuration != curr.totalDuration,
+          listener: (context, state) {
+            _totalDuration = state.totalDuration;
+            context.read<TimelineOverlayBloc>().add(
+              TimelineOverlayTotalDurationChanged(state.totalDuration),
+            );
+          },
+        ),
+        BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+          listenWhen: (prev, curr) =>
+              !_isUserScrolling && prev.currentPosition != curr.currentPosition,
+          listener: (context, state) => _syncScrollToPosition(
+            state.currentPosition,
+            totalDuration,
+            totalWidth,
+          ),
+        ),
+        BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+          listenWhen: (prev, curr) =>
+              prev.isTimelineHiddenByUser != curr.isTimelineHiddenByUser,
+          listener: (context, state) {
+            final clipBloc = context.read<ClipEditorBloc>();
+            if (clipBloc.state.isEditing) {
+              clipBloc.add(const ClipEditorEditingToggled());
+            }
+
+            final bloc = context.read<TimelineOverlayBloc>();
+            bloc.add(const TimelineOverlayItemSelected(null));
+          },
+        ),
+        BlocListener<VideoEditorFilterBloc, VideoEditorFilterState>(
+          listenWhen: (prev, curr) =>
+              prev.appliedFilters != curr.appliedFilters,
+          listener: (context, state) {
+            _syncFilterToOverlay(
+              context,
+              state.appliedFilters,
+              totalDuration,
+            );
+          },
+        ),
+      ],
+      child: GestureDetector(
+        onTap: isEditing || hasSelectedOverlay ? _onBackgroundTapped : null,
+        behavior: HitTestBehavior.translucent,
+        child: Column(
+          crossAxisAlignment: .stretch,
+          children: [
+            VideoEditorTimelineHeader(
+              playheadPosition: _playheadPosition,
+            ),
+            const Padding(
+              padding: .only(top: 12),
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: VineTheme.outlinedDisabled,
+              ),
+            ),
+
+            AnimatedContainer(
+              duration: _timelineToggleDuration,
+              height: isTimelineHiddenByUser
+                  ? MediaQuery.viewPaddingOf(context).bottom
+                  : TimelineConstants.height,
+              child: OverflowBox(
+                alignment: .topCenter,
+                minHeight: TimelineConstants.height,
+                maxHeight: TimelineConstants.height,
+                child: Column(
+                  children: [
+                    /// Interactive body and playhead
+                    Expanded(
+                      child: _TimelineInteractiveBody(
+                        playheadPosition: _playheadPosition,
+                        totalDuration: totalDuration,
+                        formatPosition: _formatPosition,
+                        onStepPosition: _stepPosition,
+                        onPointerDown: _onPointerDown,
+                        onPointerMove: _onPointerMove,
+                        onPointerUp: _onPointerUp,
+                        onPointerCancel: _onPointerCancel,
+                        onScrollNotification: _handleScrollNotification,
+                        scrollController: _scrollController,
+                        isPinching: _isPinching,
+                        isTrimming: _isTrimming,
+                        halfScreen: halfScreen,
+                        pixelsPerSecond: _pixelsPerSecond,
+                        clips: clips,
+                        totalWidth: totalWidth,
+                        isInteracting: _isUserScrolling || _isPinching,
+                        onReorder: _onClipsReordered,
+                        onReorderChanged: _onReorderChanged,
+                        trimmingClipId: trimmingClipId,
+                        onTrimChanged: _onTrimChanged,
+                        onTrimDragChanged: _onTrimDragChanged,
+                        onClipTapped: _onClipTapped,
+                        onOverlayItemMoved: _onOverlayItemMoved,
+                        onOverlayItemMoving: _onOverlayItemMoving,
+                        onOverlayItemTrimmed: _onOverlayItemTrimmed,
+                        onOverlayTrimDragChanged: _onOverlayTrimDragChanged,
+                        onOverlayItemTapped: _onOverlayItemTapped,
+                        onOverlayDragStarted: _onOverlayDragStarted,
+                        onOverlayDragEnded: _onOverlayDragEnded,
+                      ),
+                    ),
+
+                    /// Bottom controls like edit and delete
+                    TimelineControlsBar(
+                      isEditing: isEditing,
+                      playheadPosition: _playheadPosition,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -779,6 +742,178 @@ class _VideoEditorTimelineState
     final position = Duration(milliseconds: ms);
     context.read<VideoEditorMainBloc>().add(
       VideoEditorSeekRequested(position),
+    );
+  }
+}
+
+class _TimelineInteractiveBody extends StatelessWidget {
+  const _TimelineInteractiveBody({
+    required this.playheadPosition,
+    required this.totalDuration,
+    required this.formatPosition,
+    required this.onStepPosition,
+    required this.onPointerDown,
+    required this.onPointerMove,
+    required this.onPointerUp,
+    required this.onPointerCancel,
+    required this.onScrollNotification,
+    required this.scrollController,
+    required this.isPinching,
+    required this.isTrimming,
+    required this.halfScreen,
+    required this.pixelsPerSecond,
+    required this.clips,
+    required this.totalWidth,
+    required this.isInteracting,
+    required this.onReorder,
+    required this.onReorderChanged,
+    required this.trimmingClipId,
+    required this.onTrimChanged,
+    required this.onTrimDragChanged,
+    required this.onClipTapped,
+    required this.onOverlayItemMoved,
+    required this.onOverlayItemMoving,
+    required this.onOverlayItemTrimmed,
+    required this.onOverlayTrimDragChanged,
+    required this.onOverlayItemTapped,
+    required this.onOverlayDragStarted,
+    required this.onOverlayDragEnded,
+  });
+
+  final ValueNotifier<Duration> playheadPosition;
+  final Duration totalDuration;
+  final String Function(Duration) formatPosition;
+  final void Function(Duration, Duration, Duration) onStepPosition;
+  final PointerDownEventListener onPointerDown;
+  final PointerMoveEventListener onPointerMove;
+  final PointerUpEventListener onPointerUp;
+  final PointerCancelEventListener onPointerCancel;
+  final bool Function(ScrollNotification) onScrollNotification;
+  final ScrollController scrollController;
+  final bool isPinching;
+  final bool isTrimming;
+  final double halfScreen;
+  final double pixelsPerSecond;
+  final List<DivineVideoClip> clips;
+  final double totalWidth;
+  final bool isInteracting;
+  final void Function(List<DivineVideoClip>) onReorder;
+  final ValueChanged<bool> onReorderChanged;
+  final String? trimmingClipId;
+  final void Function({
+    required String clipId,
+    required Duration trimStart,
+    required Duration trimEnd,
+    required bool isStart,
+  })
+  onTrimChanged;
+  final ValueChanged<bool> onTrimDragChanged;
+  final ValueChanged<int> onClipTapped;
+  final void Function({
+    required String itemId,
+    required Duration startTime,
+    required int row,
+    required bool insertAbove,
+  })
+  onOverlayItemMoved;
+  final void Function({
+    required String itemId,
+    required Duration startTime,
+  })
+  onOverlayItemMoving;
+  final void Function({
+    required String itemId,
+    required Duration startTime,
+    required Duration endTime,
+    required bool isStart,
+  })
+  onOverlayItemTrimmed;
+  final ValueChanged<bool> onOverlayTrimDragChanged;
+  final ValueChanged<String> onOverlayItemTapped;
+  final ValueChanged<String> onOverlayDragStarted;
+  final VoidCallback onOverlayDragEnded;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: .expand,
+      children: [
+        ValueListenableBuilder<Duration>(
+          valueListenable: playheadPosition,
+          builder: (context, position, child) {
+            final increased = Duration(
+              milliseconds: (position + const Duration(seconds: 1))
+                  .inMilliseconds
+                  .clamp(0, totalDuration.inMilliseconds),
+            );
+            final decreased = Duration(
+              milliseconds: (position - const Duration(seconds: 1))
+                  .inMilliseconds
+                  .clamp(0, totalDuration.inMilliseconds),
+            );
+            return Semantics(
+              label: 'Video timeline',
+              slider: true,
+              value: formatPosition(position),
+              increasedValue: formatPosition(increased),
+              decreasedValue: formatPosition(decreased),
+              onIncrease: () => onStepPosition(
+                position,
+                totalDuration,
+                const Duration(seconds: 1),
+              ),
+              onDecrease: () => onStepPosition(
+                position,
+                totalDuration,
+                const Duration(seconds: -1),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+          child: Listener(
+            onPointerDown: onPointerDown,
+            onPointerMove: onPointerMove,
+            onPointerUp: onPointerUp,
+            onPointerCancel: onPointerCancel,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: onScrollNotification,
+              child: SingleChildScrollView(
+                controller: scrollController,
+                scrollDirection: Axis.horizontal,
+                physics: isPinching || isTrimming
+                    ? const NeverScrollableScrollPhysics()
+                    : const ClampingScrollPhysics(),
+                clipBehavior: .none,
+                padding: .symmetric(horizontal: halfScreen),
+                child: VideoEditorTimelineBody(
+                  totalDuration: totalDuration,
+                  pixelsPerSecond: pixelsPerSecond,
+                  scrollController: scrollController,
+                  scrollPadding: halfScreen,
+                  clips: clips,
+                  totalWidth: totalWidth,
+                  isInteracting: isInteracting,
+                  onReorder: onReorder,
+                  onReorderChanged: onReorderChanged,
+                  trimmingClipId: trimmingClipId,
+                  onTrimChanged: onTrimChanged,
+                  onTrimDragChanged: onTrimDragChanged,
+                  onClipTapped: onClipTapped,
+                  onOverlayItemMoved: onOverlayItemMoved,
+                  onOverlayItemMoving: onOverlayItemMoving,
+                  onOverlayItemTrimmed: onOverlayItemTrimmed,
+                  onOverlayTrimDragChanged: onOverlayTrimDragChanged,
+                  onOverlayItemTapped: onOverlayItemTapped,
+                  onOverlayDragStarted: onOverlayDragStarted,
+                  onOverlayDragEnded: onOverlayDragEnded,
+                  playheadPosition: playheadPosition,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const VideoEditorTimelinePlayhead(),
+      ],
     );
   }
 }

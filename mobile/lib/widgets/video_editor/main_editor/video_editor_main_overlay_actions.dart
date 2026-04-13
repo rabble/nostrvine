@@ -49,26 +49,37 @@ class _TopActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scope = VideoEditorScope.of(context);
+    final isAutosavedDraft = ref
+        .read(videoEditorProvider.notifier)
+        .isAutosavedDraft;
 
-    return VideoEditorToolbar(
-      closeIcon: .caretLeft,
-      doneIcon: .caretRight,
-      onClose: () {
-        final isAutosavedDraft = ref
-            .read(videoEditorProvider.notifier)
-            .isAutosavedDraft;
-
-        if (isAutosavedDraft) {
+    return PopScope(
+      canPop: !isAutosavedDraft,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && isAutosavedDraft) {
           _onClosePressed(
             context: context,
             ref: ref,
             closeSubEditor: scope.editor?.closeSubEditor,
           );
-        } else {
-          context.pop();
         }
       },
-      onDone: () => scope.editor?.doneEditing(),
+      child: VideoEditorToolbar(
+        closeIcon: .caretLeft,
+        doneIcon: .caretRight,
+        onClose: () {
+          if (isAutosavedDraft) {
+            _onClosePressed(
+              context: context,
+              ref: ref,
+              closeSubEditor: scope.editor?.closeSubEditor,
+            );
+          } else {
+            context.pop();
+          }
+        },
+        onDone: () => scope.editor?.doneEditing(),
+      ),
     );
   }
 
@@ -155,13 +166,8 @@ class _BottomActions extends StatelessWidget {
     return Semantics(
       label: isTimelineHiddenByUser ? 'Show timeline' : 'Hide timeline',
       button: true,
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 240),
-        padding: .only(
-          bottom: isTimelineHiddenByUser
-              ? MediaQuery.viewPaddingOf(context).bottom + 12
-              : 8,
-        ),
+      child: Padding(
+        padding: const .only(bottom: 8),
         child: DivineIconButton(
           icon: isTimelineHiddenByUser ? .caretUp : .caretDown,
           onPressed: () => context.read<VideoEditorMainBloc>().add(

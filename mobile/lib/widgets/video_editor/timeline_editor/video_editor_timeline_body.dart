@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
@@ -14,7 +15,6 @@ import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timel
 
 class VideoEditorTimelineBody extends StatelessWidget {
   const VideoEditorTimelineBody({
-    required this.isReordering,
     required this.totalDuration,
     required this.pixelsPerSecond,
     required this.scrollController,
@@ -39,7 +39,6 @@ class VideoEditorTimelineBody extends StatelessWidget {
     this.onOverlayDragEnded,
   });
 
-  final bool isReordering;
   final Duration totalDuration;
   final double pixelsPerSecond;
   final ScrollController scrollController;
@@ -78,6 +77,10 @@ class VideoEditorTimelineBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final (isReordering) = context.select(
+      (VideoEditorMainBloc b) => b.state.isReordering,
+    );
+
     final clipTrimExpand = trimmingClipId != null
         ? TimelineConstants.trimHandleWidth + TimelineConstants.trimHitAreaExtra
         : 0.0;
