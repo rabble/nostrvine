@@ -538,7 +538,18 @@ class _ProfileBanner extends StatelessWidget {
               ),
             )
           else
-            const ColoredBox(color: VineTheme.surfaceBackground),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    VineTheme.containerLow,
+                    VineTheme.surfaceBackground,
+                  ],
+                ),
+              ),
+            ),
 
           // Layer 2: gradient scrim fading to bg/surface at the bottom
           DecoratedBox(
