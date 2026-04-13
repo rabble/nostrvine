@@ -40,10 +40,6 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
   }
 
   void _onDragStart() {
-    developer.log(
-      'ClipTile._onDragStart clip=${widget.clip.id}',
-      name: 'clip_trim',
-    );
     _isDragStarted = false;
     widget.onTrimDragChanged?.call(true);
   }
@@ -54,10 +50,6 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
   }
 
   void _onLeftDragUpdate(double dx) {
-    developer.log(
-      'ClipTile._onLeftDragUpdate dx=$dx clip=${widget.clip.id}',
-      name: 'clip_trim',
-    );
     final clip = widget.clip;
     final delta = _dxToDuration(dx);
     var newTrimStart = clip.trimStart + delta;
@@ -67,10 +59,10 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
 
     var atLimit = false;
 
-    if (newTrimStart < Duration.zero) {
+    if (newTrimStart <= Duration.zero) {
       newTrimStart = Duration.zero;
       atLimit = true;
-    } else if (newTrimStart > maxTrimStart) {
+    } else if (newTrimStart >= maxTrimStart) {
       newTrimStart = maxTrimStart;
       atLimit = true;
     }
@@ -90,10 +82,6 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
   }
 
   void _onRightDragUpdate(double dx) {
-    developer.log(
-      'ClipTile._onRightDragUpdate dx=$dx clip=${widget.clip.id}',
-      name: 'clip_trim',
-    );
     final clip = widget.clip;
     // Dragging right handle left (negative dx) increases trimEnd.
     final delta = _dxToDuration(-dx);
@@ -104,10 +92,10 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
 
     var atLimit = false;
 
-    if (newTrimEnd < Duration.zero) {
+    if (newTrimEnd <= Duration.zero) {
       newTrimEnd = Duration.zero;
       atLimit = true;
-    } else if (newTrimEnd > maxTrimEnd) {
+    } else if (newTrimEnd >= maxTrimEnd) {
       newTrimEnd = maxTrimEnd;
       atLimit = true;
     }

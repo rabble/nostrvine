@@ -334,23 +334,17 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
             )
             as int;
 
-    if (clampedMs != posMs) {
-      if (!_hitBoundary) {
-        HapticFeedback.heavyImpact();
-        _hitBoundary = true;
-      }
-    } else {
-      _hitBoundary = false;
-    }
+    final atMinTrim =
+        (_rightSnap.originMs - clampedMs) <
+        TimelineConstants.minTrimDuration.inMilliseconds;
+    final atBoundary = clampedMs != posMs || atMinTrim;
 
-    if ((_rightSnap.originMs - clampedMs) <
-        TimelineConstants.minTrimDuration.inMilliseconds) {
-      if (!_hitBoundary) {
-        HapticFeedback.heavyImpact();
-        _hitBoundary = true;
-      }
-      return;
+    if (atBoundary && !_hitBoundary) {
+      HapticFeedback.heavyImpact();
     }
+    _hitBoundary = atBoundary;
+
+    if (atMinTrim) return;
 
     widget.onTrimChanged?.call(
       itemId: widget.item.id,
@@ -378,23 +372,17 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
       widget.totalDuration.inMilliseconds,
     );
 
-    if (clampedMs != posMs) {
-      if (!_hitBoundary) {
-        HapticFeedback.heavyImpact();
-        _hitBoundary = true;
-      }
-    } else {
-      _hitBoundary = false;
-    }
+    final atMinTrim =
+        (clampedMs - _leftSnap.originMs) <
+        TimelineConstants.minTrimDuration.inMilliseconds;
+    final atBoundary = clampedMs != posMs || atMinTrim;
 
-    if ((clampedMs - _leftSnap.originMs) <
-        TimelineConstants.minTrimDuration.inMilliseconds) {
-      if (!_hitBoundary) {
-        HapticFeedback.heavyImpact();
-        _hitBoundary = true;
-      }
-      return;
+    if (atBoundary && !_hitBoundary) {
+      HapticFeedback.heavyImpact();
     }
+    _hitBoundary = atBoundary;
+
+    if (atMinTrim) return;
 
     widget.onTrimChanged?.call(
       itemId: widget.item.id,
