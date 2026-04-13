@@ -1,7 +1,6 @@
 name: sounds_repository
 description: >
-  Repository for fetching and caching Kind 1063 audio events
-  from Nostr relays.
+  Repository for fetching and caching audio events.
 version: 0.0.1
 publish_to: none
 resolution: workspace
@@ -23,4 +22,4 @@ dependencies:
 dev_dependencies:
   mocktail: ^1.0.4
   test: ^1.26.3
-  very_good_analysis: ^10.0.0
+  very_good_analysis: ^10.2.0
