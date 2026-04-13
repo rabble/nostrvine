@@ -3,9 +3,9 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/screens/inbox/bloc/new_message_search_bloc.dart';
 import 'package:profile_repository/profile_repository.dart';
 

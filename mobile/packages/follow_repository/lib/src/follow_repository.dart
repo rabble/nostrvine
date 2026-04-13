@@ -1,62 +1,16 @@
-// ABOUTME: Repository for managing follow relationships (follow/unfollow)
-// ABOUTME: Single source of truth for follow data with in-memory cache, local storage, and API sync
-// ABOUTME: Uses FunnelcakeApiClient directly for REST API calls (follower/following bootstrap)
-
-// TODO(refactor): Extract this to packages/follow_repository once dependencies are resolved.
-// Currently blocked by app-level dependencies:
-// - PersonalEventCacheService (needs interface extraction)
-// - unified_logger (needs logging abstraction)
-// See packages/nostr_client for the pattern to follow.
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
 import 'package:db_client/db_client.dart' hide Filter;
+import 'package:follow_repository/src/follower_stats.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
-import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/constants/nostr_event_kinds.dart';
-import 'package:openvine/services/immediate_completion_helper.dart';
-import 'package:openvine/services/personal_event_cache_service.dart';
-import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
-
-/// Callback to check if the device is currently online
-typedef IsOnlineCallback = bool Function();
-
-/// Callback to queue an action for offline sync
-typedef QueueOfflineFollowCallback =
-    Future<void> Function({required bool isFollow, required String pubkey});
-
-/// Immutable follower/following counts for a pubkey.
-@immutable
-class FollowerStats {
-  const FollowerStats({required this.followers, required this.following});
-
-  final int followers;
-  final int following;
-
-  static const zero = FollowerStats(followers: 0, following: 0);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is FollowerStats &&
-          followers == other.followers &&
-          following == other.following;
-
-  @override
-  int get hashCode => Object.hash(followers, following);
-
-  @override
-  String toString() =>
-      'FollowerStats(followers: $followers, following: $following)';
-}
 
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
@@ -70,23 +24,32 @@ class FollowerStats {
 class FollowRepository {
   FollowRepository({
     required NostrClient nostrClient,
-    PersonalEventCacheService? personalEventCache,
+    required List<String> indexerRelayUrls,
+    IsCacheInitializedCallback? isCacheInitialized,
+    GetCachedEventsByKindCallback? getCachedEventsByKind,
+    CacheUserEventCallback? cacheUserEvent,
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileStatsDao? profileStatsDao,
     IsOnlineCallback? isOnline,
     QueueOfflineFollowCallback? queueOfflineAction,
-    List<String>? indexerRelayUrls,
+    QueryContactListCallback? queryContactList,
+    RelayFactory? relayFactory,
   }) : _nostrClient = nostrClient,
-       _personalEventCache = personalEventCache,
+       _isCacheInitialized = isCacheInitialized,
+       _getCachedEventsByKind = getCachedEventsByKind,
+       _cacheUserEvent = cacheUserEvent,
        _funnelcakeApiClient = funnelcakeApiClient,
        _profileStatsDao = profileStatsDao,
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
-       _indexerRelayUrls =
-           indexerRelayUrls ?? IndexerRelayConfig.defaultIndexers;
+       _indexerRelayUrls = indexerRelayUrls,
+       _queryContactList = queryContactList ?? _defaultQueryContactList,
+       _relayFactory = relayFactory ?? _defaultRelayFactory;
 
   final NostrClient _nostrClient;
-  final PersonalEventCacheService? _personalEventCache;
+  final IsCacheInitializedCallback? _isCacheInitialized;
+  final GetCachedEventsByKindCallback? _getCachedEventsByKind;
+  final CacheUserEventCallback? _cacheUserEvent;
   final FunnelcakeApiClient? _funnelcakeApiClient;
 
   /// Callback to check if the device is online
@@ -102,7 +65,36 @@ class FollowRepository {
   /// Pass empty list in tests to prevent real network connections.
   final List<String> _indexerRelayUrls;
 
-  // Default indexer relays come from IndexerRelayConfig.defaultIndexers.
+  /// Callback to query a contact list from a relay event stream.
+  final QueryContactListCallback _queryContactList;
+
+  /// Factory for creating relay instances (injectable for testing).
+  final RelayFactory _relayFactory;
+
+  /// Default relay factory — creates a real [RelayBase].
+  static RelayBase _defaultRelayFactory(String url, RelayStatus status) =>
+      RelayBase(url, status);
+
+  /// Default implementation: listen for the first matching contact list
+  /// event, with a timeout fallback.
+  static Future<Event?> _defaultQueryContactList({
+    required Stream<Event> eventStream,
+    required String pubkey,
+    int fallbackTimeoutSeconds = 10,
+  }) async {
+    try {
+      return await eventStream
+          .where((e) => e.kind == EventKind.contactList && e.pubkey == pubkey)
+          .first
+          .timeout(Duration(seconds: fallbackTimeoutSeconds));
+    } on TimeoutException {
+      return null;
+      // ignore: avoid_catching_errors
+    } on StateError {
+      // Stream closed without matching event.
+      return null;
+    }
+  }
 
   // BehaviorSubject replays last value to late subscribers, fixing race condition
   // where BLoC subscribes AFTER initial emission.
@@ -217,10 +209,7 @@ class FollowRepository {
     }
 
     // Phase 2: Fetch fresh data from all sources in parallel
-    final results = await Future.wait([
-      getMyFollowers(),
-      getMyFollowerCount(),
-    ]);
+    final results = await Future.wait([getMyFollowers(), getMyFollowerCount()]);
     final pubkeys = results[0] as List<String>;
     final countFromService = results[1] as int;
     final count = max(pubkeys.length, countFromService);
@@ -337,10 +326,7 @@ class FollowRepository {
   }
 
   /// Persist follower stats to the Drift database.
-  Future<void> _persistFollowerStats(
-    String pubkey,
-    FollowerStats stats,
-  ) async {
+  Future<void> _persistFollowerStats(String pubkey, FollowerStats stats) async {
     await _profileStatsDao?.upsertStats(
       pubkey: pubkey,
       followerCount: stats.followers,
@@ -403,7 +389,8 @@ class FollowRepository {
         'Hysteresis stabilized stats for $pubkey: '
         'fresh=${freshStats.followers}/${freshStats.following} '
         '-> stable=$stableFollowers/$stableFollowing '
-        '(persisted=${persisted.followers}/${persisted.following})',
+        '(persisted=${persisted.followers}/'
+        '${persisted.following})',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -461,11 +448,7 @@ class FollowRepository {
       // Apply hysteresis against the persistent cache so counts don't
       // visibly fluctuate across app restarts due to relay variance.
       final persisted = await _loadPersistedStats(pubkey);
-      final stats = _stabilizeStats(
-        pubkey,
-        freshStats,
-        persisted: persisted,
-      );
+      final stats = _stabilizeStats(pubkey, freshStats, persisted: persisted);
 
       // Cache in memory.
       _followerStatsCache[pubkey] = stats;
@@ -561,8 +544,10 @@ class FollowRepository {
       final counts = await client.getSocialCounts(pubkey);
       if (counts != null) {
         Log.debug(
-          'REST API follower stats: ${counts.followerCount} followers, '
-          '${counts.followingCount} following for $pubkey',
+          'REST API follower stats: '
+          '${counts.followerCount} followers, '
+          '${counts.followingCount} following '
+          'for $pubkey',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
@@ -573,7 +558,8 @@ class FollowRepository {
       }
     } catch (e) {
       Log.warning(
-        'REST API follower stats failed, falling back to WebSocket: $e',
+        'REST API follower stats failed, '
+        'falling back to WebSocket: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -582,9 +568,7 @@ class FollowRepository {
   }
 
   /// Fetch follower stats via WebSocket queries (parallel).
-  Future<FollowerStats> _fetchFollowerStatsViaWebSocket(
-    String pubkey,
-  ) async {
+  Future<FollowerStats> _fetchFollowerStatsViaWebSocket(String pubkey) async {
     try {
       final results = await Future.wait([
         _fetchFollowingCountViaWebSocket(pubkey),
@@ -605,14 +589,10 @@ class FollowRepository {
   /// Get following count via WebSocket (Kind 3 contact list).
   Future<int> _fetchFollowingCountViaWebSocket(String pubkey) async {
     final eventStream = _nostrClient.subscribe([
-      Filter(
-        authors: [pubkey],
-        kinds: [NostrEventKinds.contactList],
-        limit: 1,
-      ),
+      Filter(authors: [pubkey], kinds: [EventKind.contactList], limit: 1),
     ]);
 
-    final event = await ContactListCompletionHelper.queryContactList(
+    final event = await _queryContactList(
       eventStream: eventStream,
       pubkey: pubkey,
       fallbackTimeoutSeconds: 3,
@@ -639,7 +619,8 @@ class FollowRepository {
         (url) =>
             _queryIndexerForFollowerCount(url, pubkey).catchError((Object e) {
               Log.warning(
-                'Indexer $url follower count query failed: $e',
+                'Indexer $url follower count query '
+                'failed: $e',
                 name: 'FollowRepository',
                 category: LogCategory.system,
               );
@@ -655,7 +636,8 @@ class FollowRepository {
     }
 
     Log.info(
-      'Indexer followers counts: $results, using $best for $pubkey',
+      'Indexer followers counts: $results, '
+      'using $best for $pubkey',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -669,7 +651,7 @@ class FollowRepository {
     String pubkey,
   ) async {
     final relayStatus = RelayStatus(indexerUrl);
-    final relay = RelayBase(indexerUrl, relayStatus);
+    final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<int>();
     final followerPubkeys = <String>{};
     final subscriptionId = 'fc_${DateTime.now().millisecondsSinceEpoch}';
@@ -694,7 +676,7 @@ class FollowRepository {
 
     try {
       final filter = <String, dynamic>{
-        'kinds': <int>[NostrEventKinds.contactList],
+        'kinds': <int>[EventKind.contactList],
         '#p': <String>[pubkey],
       };
       relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
@@ -711,7 +693,8 @@ class FollowRepository {
 
       await relay.send(<dynamic>['CLOSE', subscriptionId]);
       Log.debug(
-        'Indexer $indexerUrl returned $result followers for $pubkey',
+        'Indexer $indexerUrl returned $result '
+        'followers for $pubkey',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -784,9 +767,11 @@ class FollowRepository {
     };
 
     Log.info(
-      'Followers for $pubkey: API=${apiFollowers.length}, '
+      'Followers for $pubkey: '
+      'API=${apiFollowers.length}, '
       'relays=${relayFollowers.length}, '
-      'indexers=${indexerFollowers.length}, merged=${merged.length}',
+      'indexers=${indexerFollowers.length}, '
+      'merged=${merged.length}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -799,13 +784,14 @@ class FollowRepository {
     try {
       final events = await _nostrClient
           .queryEvents([
-            Filter(kinds: const [NostrEventKinds.contactList], p: [pubkey]),
+            Filter(kinds: const [EventKind.contactList], p: [pubkey]),
           ])
           .timeout(
             _fetchFollowersTimeout,
             onTimeout: () {
               Log.warning(
-                'Followers relay query timed out for $pubkey',
+                'Followers relay query timed out '
+                'for $pubkey',
                 name: 'FollowRepository',
                 category: LogCategory.system,
               );
@@ -851,7 +837,8 @@ class FollowRepository {
     }
 
     Log.debug(
-      'Indexer follower pubkeys: ${allFollowers.length} for $pubkey',
+      'Indexer follower pubkeys: '
+      '${allFollowers.length} for $pubkey',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -866,7 +853,7 @@ class FollowRepository {
     String pubkey,
   ) async {
     final relayStatus = RelayStatus(indexerUrl);
-    final relay = RelayBase(indexerUrl, relayStatus);
+    final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<List<String>>();
     final followerPubkeys = <String>{};
     final subscriptionId = 'fr_${DateTime.now().millisecondsSinceEpoch}';
@@ -891,7 +878,7 @@ class FollowRepository {
 
     try {
       final filter = <String, dynamic>{
-        'kinds': <int>[NostrEventKinds.contactList],
+        'kinds': <int>[EventKind.contactList],
         '#p': <String>[pubkey],
       };
       relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
@@ -953,14 +940,16 @@ class FollowRepository {
 
   /// Check if [pubkey] follows the current user by querying their Kind 3 event.
   Future<bool> _checkIfTheyFollowUs(String pubkey) async {
-    if (pubkey.isEmpty || _nostrClient.publicKey.isEmpty) return false;
+    if (pubkey.isEmpty || _nostrClient.publicKey.isEmpty) {
+      return false;
+    }
 
     try {
       final events = await _nostrClient
           .queryEvents([
             Filter(
               authors: [pubkey],
-              kinds: const [NostrEventKinds.contactList],
+              kinds: const [EventKind.contactList],
               limit: 1,
             ),
           ])
@@ -1006,7 +995,8 @@ class FollowRepository {
     // Don't set _isInitialized = true so we can retry when keys are available.
     if (!_nostrClient.hasKeys) {
       Log.debug(
-        'FollowRepository.initialize() skipped - no keys yet',
+        'FollowRepository.initialize() skipped '
+        '- no keys yet',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1108,7 +1098,8 @@ class FollowRepository {
       await _saveToLocalStorage();
 
       Log.info(
-        'Queued follow action for offline sync: $pubkey',
+        'Queued follow action for offline sync: '
+        '$pubkey',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1220,7 +1211,8 @@ class FollowRepository {
       await _saveToLocalStorage();
 
       Log.info(
-        'Queued unfollow action for offline sync: $pubkey',
+        'Queued unfollow action for offline sync: '
+        '$pubkey',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1301,7 +1293,8 @@ class FollowRepository {
       await _saveToLocalStorage();
 
       Log.info(
-        'Merged contact lists: now following ${_followingPubkeys.length} users',
+        'Merged contact lists: now following '
+        '${_followingPubkeys.length} users',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1324,7 +1317,8 @@ class FollowRepository {
           _emitFollowingList();
 
           Log.info(
-            'Loaded cached following list: ${_followingPubkeys.length} users',
+            'Loaded cached following list: '
+            '${_followingPubkeys.length} users',
             name: 'FollowRepository',
             category: LogCategory.system,
           );
@@ -1341,11 +1335,13 @@ class FollowRepository {
 
   /// Load from PersonalEventCache (Kind 3 events)
   Future<void> _loadFromPersonalEventCache() async {
-    if (_personalEventCache?.isInitialized != true) return;
+    if (_isCacheInitialized?.call() != true) {
+      return;
+    }
 
     try {
-      final cachedContactLists = _personalEventCache!.getEventsByKind(
-        NostrEventKinds.contactList,
+      final cachedContactLists = _getCachedEventsByKind!(
+        EventKind.contactList,
       );
 
       if (cachedContactLists.isNotEmpty) {
@@ -1363,11 +1359,11 @@ class FollowRepository {
             .toList();
 
         if (pubkeys.isNotEmpty) {
-          // Guard: only accept the cached event when it is at least as large
-          // as the list already loaded from LocalStorage. A stale
-          // PersonalEventCache entry with fewer pubkeys should not overwrite
-          // a fresher LocalStorage value — the network steps will fetch the
-          // authoritative event later.
+          // Guard: only accept the cached event when it is at least as
+          // large as the list already loaded from LocalStorage. A stale
+          // PersonalEventCache entry with fewer pubkeys should not
+          // overwrite a fresher LocalStorage value — the network steps
+          // will fetch the authoritative event later.
           if (pubkeys.length < _followingPubkeys.length) {
             Log.debug(
               'PersonalEventCache has fewer follows '
@@ -1384,7 +1380,9 @@ class FollowRepository {
           _emitFollowingList();
 
           Log.debug(
-            'Loaded following from PersonalEventCache: ${pubkeys.length} users',
+            'Loaded following from '
+            'PersonalEventCache: '
+            '${pubkeys.length} users',
             name: 'FollowRepository',
             category: LogCategory.system,
           );
@@ -1413,7 +1411,8 @@ class FollowRepository {
       }
 
       Log.info(
-        'Loading following list from REST API (cache was empty)',
+        'Loading following list from REST API '
+        '(cache was empty)',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1432,7 +1431,8 @@ class FollowRepository {
         await _saveToLocalStorage();
 
         Log.info(
-          'Loaded following from REST API: ${pubkeys.length} users',
+          'Loaded following from REST API: '
+          '${pubkeys.length} users',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
@@ -1445,7 +1445,8 @@ class FollowRepository {
       }
     } catch (e) {
       Log.warning(
-        'Failed to load following from REST API (will rely on relay): $e',
+        'Failed to load following from REST API '
+        '(will rely on relay): $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1463,11 +1464,13 @@ class FollowRepository {
         await prefs.setString(key, jsonEncode(_followingPubkeys));
 
         Log.debug(
-          'Saved following list to cache: ${_followingPubkeys.length} users',
+          'Saved following list to cache: '
+          '${_followingPubkeys.length} users',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
       }
+      // coverage:ignore-start
     } catch (e) {
       Log.error(
         'Failed to save following list to cache: $e',
@@ -1475,11 +1478,12 @@ class FollowRepository {
         category: LogCategory.system,
       );
     }
+    // coverage:ignore-end
   }
 
   /// Query relays for the user's kind 3 contact list.
   ///
-  /// Uses [ContactListCompletionHelper] (same proven approach as
+  /// Uses [_queryContactList] callback (same proven approach as
   /// SocialService) to do a one-shot query with proper EOSE handling.
   /// Called when local cache and REST API are both empty.
   Future<void> _loadFromRelay() async {
@@ -1526,6 +1530,7 @@ class FollowRepository {
           category: LogCategory.system,
         );
       }
+      // coverage:ignore-start
     } catch (e) {
       Log.warning(
         'Failed to load following from relay: $e',
@@ -1533,6 +1538,7 @@ class FollowRepository {
         category: LogCategory.system,
       );
     }
+    // coverage:ignore-end
   }
 
   /// Query connected relays for kind 3 contact list.
@@ -1541,19 +1547,21 @@ class FollowRepository {
       final eventStream = _nostrClient.subscribe([
         Filter(
           authors: [pubkey],
-          kinds: const [NostrEventKinds.contactList],
+          kinds: const [EventKind.contactList],
           limit: 1,
         ),
       ]);
 
-      return await ContactListCompletionHelper.queryContactList(
+      final event = await _queryContactList(
         eventStream: eventStream,
         pubkey: pubkey,
         fallbackTimeoutSeconds: 5,
       );
+      return event;
     } catch (e) {
       Log.warning(
-        'Connected relay contact list query failed: $e',
+        'Connected relay contact list query '
+        'failed: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1571,7 +1579,8 @@ class FollowRepository {
         final event = await _queryIndexerForContactList(indexerUrl, pubkey);
         if (event != null) {
           Log.info(
-            'Got contact list from indexer $indexerUrl',
+            'Got contact list from indexer '
+            '$indexerUrl',
             name: 'FollowRepository',
             category: LogCategory.system,
           );
@@ -1579,7 +1588,8 @@ class FollowRepository {
         }
       } catch (e) {
         Log.warning(
-          'Indexer $indexerUrl contact list query failed: $e',
+          'Indexer $indexerUrl contact list query '
+          'failed: $e',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
@@ -1594,7 +1604,7 @@ class FollowRepository {
     String pubkey,
   ) async {
     final relayStatus = RelayStatus(indexerUrl);
-    final relay = RelayBase(indexerUrl, relayStatus);
+    final relay = _relayFactory(indexerUrl, relayStatus);
     final completer = Completer<Event?>();
     final subscriptionId = 'cl_${DateTime.now().millisecondsSinceEpoch}';
     Event? bestEvent;
@@ -1613,7 +1623,8 @@ class FollowRepository {
           }
         } catch (e) {
           Log.warning(
-            'Failed to parse kind 3 event from $indexerUrl: $e',
+            'Failed to parse kind 3 event from '
+            '$indexerUrl: $e',
             name: 'FollowRepository',
             category: LogCategory.system,
           );
@@ -1627,7 +1638,7 @@ class FollowRepository {
 
     try {
       final filter = <String, dynamic>{
-        'kinds': <int>[NostrEventKinds.contactList],
+        'kinds': <int>[EventKind.contactList],
         'authors': <String>[pubkey],
         'limit': 1,
       };
@@ -1645,7 +1656,8 @@ class FollowRepository {
       return result;
     } catch (e) {
       Log.warning(
-        'Error querying $indexerUrl for contact list: $e',
+        'Error querying $indexerUrl for '
+        'contact list: $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -1676,7 +1688,8 @@ class FollowRepository {
     if (currentUserPubkey.isEmpty) return;
 
     Log.debug(
-      'Subscribing to contact list for: $currentUserPubkey',
+      'Subscribing to contact list for: '
+      '$currentUserPubkey',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -1687,7 +1700,7 @@ class FollowRepository {
     final eventStream = _nostrClient.subscribe([
       Filter(
         authors: [currentUserPubkey],
-        kinds: const [NostrEventKinds.contactList],
+        kinds: const [EventKind.contactList],
         limit: 1,
       ),
     ], subscriptionId: _contactListSubscriptionId);
@@ -1695,14 +1708,15 @@ class FollowRepository {
     _contactListSubscription = eventStream.listen(
       (event) {
         // Only process Kind 3 events from the current user
-        if (event.kind == NostrEventKinds.contactList &&
+        if (event.kind == EventKind.contactList &&
             event.pubkey == currentUserPubkey) {
           _processContactListEvent(event);
         }
       },
       onError: (error) {
         Log.error(
-          'Real-time contact list subscription error: $error',
+          'Real-time contact list subscription '
+          'error: $error',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
@@ -1729,7 +1743,7 @@ class FollowRepository {
     }
 
     // Cache the contact list event
-    _personalEventCache?.cacheUserEvent(event);
+    _cacheUserEvent?.call(event);
 
     _currentUserContactListEvent = event;
 
@@ -1819,9 +1833,12 @@ class FollowRepository {
         final merged = <String>{..._followingPubkeys, ...followedPubkeys};
 
         Log.warning(
-          'Catastrophic contact list reduction detected '
-          '(${_followingPubkeys.length} → ${followedPubkeys.length}). '
-          'Merging to ${merged.length} follows instead of replacing.',
+          'Catastrophic contact list reduction '
+          'detected '
+          '(${_followingPubkeys.length} → '
+          '${followedPubkeys.length}). '
+          'Merging to ${merged.length} follows '
+          'instead of replacing.',
           name: 'FollowRepository',
           category: LogCategory.system,
         );
@@ -1833,7 +1850,8 @@ class FollowRepository {
         // Re-broadcast the merged list so relays have the correct state.
         _broadcastContactList().catchError((e) {
           Log.error(
-            'Failed to broadcast merged contact list: $e',
+            'Failed to broadcast merged '
+            'contact list: $e',
             name: 'FollowRepository',
             category: LogCategory.system,
           );
@@ -1845,7 +1863,8 @@ class FollowRepository {
       _emitFollowingList();
 
       Log.info(
-        'Updated follow list from network: ${_followingPubkeys.length} following',
+        'Updated follow list from network: '
+        '${_followingPubkeys.length} following',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
