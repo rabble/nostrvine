@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Falha ao carregar vídeos",
     "feedRetry": "Tentar novamente",
     "feedNoFollowedUsers": "Nenhum usuário seguido.\nSiga alguém para ver os vídeos dessa pessoa aqui.",
-    "feedNoVideosForMode": "Nenhum vídeo encontrado para o feed {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Explorar vídeos",
     "feedExternalVideoSlow": "Vídeo externo carregando devagar",
     "feedSkip": "Pular",

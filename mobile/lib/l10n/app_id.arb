@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Gagal memuat video",
     "feedRetry": "Coba Lagi",
     "feedNoFollowedUsers": "Tidak ada pengguna yang diikuti.\nIkuti seseorang untuk melihat video mereka di sini.",
-    "feedNoVideosForMode": "Tidak ada video ditemukan untuk feed {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Jelajahi Video",
     "feedExternalVideoSlow": "Video eksternal memuat lambat",
     "feedSkip": "Lewati",

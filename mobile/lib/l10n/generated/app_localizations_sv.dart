@@ -3331,9 +3331,15 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga följda användare.\nFölj någon för att se deras videor här.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return 'Inga videor hittades för flödet $mode.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Upptäck videor';

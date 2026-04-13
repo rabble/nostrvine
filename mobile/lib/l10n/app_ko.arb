@@ -1014,14 +1014,6 @@
     "feedFailedToLoadVideos": "영상을 불러오지 못했어요",
     "feedRetry": "다시 시도",
     "feedNoFollowedUsers": "팔로우한 사용자가 없어요.\n누군가를 팔로우하면 여기에 영상이 표시돼요.",
-    "feedNoVideosForMode": "{mode} 피드에 영상이 없어요.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "영상 둘러보기",
     "feedExternalVideoSlow": "외부 영상 로딩이 느려요",
     "feedSkip": "건너뛰기",

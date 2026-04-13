@@ -3183,9 +3183,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get feedNoFollowedUsers => '팔로우한 사용자가 없어요.\n누군가를 팔로우하면 여기에 영상이 표시돼요.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return '$mode 피드에 영상이 없어요.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => '영상 둘러보기';

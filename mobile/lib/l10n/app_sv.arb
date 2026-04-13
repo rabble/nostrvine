@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Kunde inte läsa in videor",
     "feedRetry": "Försök igen",
     "feedNoFollowedUsers": "Inga följda användare.\nFölj någon för att se deras videor här.",
-    "feedNoVideosForMode": "Inga videor hittades för flödet {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Upptäck videor",
     "feedExternalVideoSlow": "Extern video laddar långsamt",
     "feedSkip": "Hoppa över",

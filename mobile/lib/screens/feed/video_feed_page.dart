@@ -561,10 +561,7 @@ class _FeedErrorWidget extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.feedFailedToLoadVideos,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
-              fontSize: 18,
-            ),
+            style: const TextStyle(color: VineTheme.whiteText, fontSize: 18),
           ),
           if (error != null) ...[
             const SizedBox(height: 8),
@@ -594,7 +591,7 @@ class FeedEmptyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNoFollowedUsers =
-        state.mode == FeedMode.following &&
+        (state.mode == FeedMode.following || state.mode == FeedMode.forYou) &&
         state.error == VideoFeedError.noFollowedUsers;
 
     return Center(
@@ -630,11 +627,16 @@ class FeedEmptyWidget extends StatelessWidget {
   }
 
   String _getEmptyMessage(BuildContext context, VideoFeedState state) {
-    if (state.mode == FeedMode.following &&
+    if ((state.mode == FeedMode.following || state.mode == FeedMode.forYou) &&
         state.error == VideoFeedError.noFollowedUsers) {
       return context.l10n.feedNoFollowedUsers;
     }
-    return context.l10n.feedNoVideosForMode(state.mode.name);
+
+    return switch (state.mode) {
+      FeedMode.forYou => context.l10n.feedForYouEmpty,
+      FeedMode.following => context.l10n.feedFollowingEmpty,
+      FeedMode.latest => context.l10n.feedLatestEmpty,
+    };
   }
 }
 
@@ -831,11 +833,7 @@ class _FittedVideoPlayer extends StatelessWidget {
     // Do not set filterQuality to high — on Android the bicubic
     // interpolation causes visible blur on the Texture widget when
     // the video resolution doesn't match the display size exactly.
-    return Video(
-      controller: videoController,
-      fit: boxFit,
-      controls: null,
-    );
+    return Video(controller: videoController, fit: boxFit, controls: null);
   }
 }
 

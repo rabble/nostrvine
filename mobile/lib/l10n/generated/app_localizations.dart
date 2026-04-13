@@ -5876,11 +5876,23 @@ abstract class AppLocalizations {
   /// **'No followed users.\nFollow someone to see their videos here.'**
   String get feedNoFollowedUsers;
 
-  /// No description provided for @feedNoVideosForMode.
+  /// No description provided for @feedForYouEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No videos found for {mode} feed.'**
-  String feedNoVideosForMode(String mode);
+  /// **'Your For You feed is empty.\nExplore videos and follow creators to shape it.'**
+  String get feedForYouEmpty;
+
+  /// No description provided for @feedFollowingEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos from people you follow yet.\nFind creators you like and follow them.'**
+  String get feedFollowingEmpty;
+
+  /// No description provided for @feedLatestEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No new videos yet.\nCheck back soon.'**
+  String get feedLatestEmpty;
 
   /// No description provided for @feedExploreVideos.
   ///

@@ -3300,9 +3300,15 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يوجد مستخدمون متابَعون.\nتابِع شخصًا ما لترى مقاطع الفيديو هنا.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return 'لم يُعثر على مقاطع فيديو لتغذية $mode.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'استكشاف مقاطع الفيديو';

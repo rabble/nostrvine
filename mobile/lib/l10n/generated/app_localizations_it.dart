@@ -3375,9 +3375,15 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessun utente seguito.\nSegui qualcuno per vedere i suoi video qui.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return 'Nessun video trovato per il feed $mode.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Esplora video';

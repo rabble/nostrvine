@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "N-am putut încărca videoclipurile",
     "feedRetry": "Reîncearcă",
     "feedNoFollowedUsers": "Niciun utilizator urmărit.\nUrmărește pe cineva ca să-i vezi videoclipurile aici.",
-    "feedNoVideosForMode": "Niciun videoclip găsit pentru feedul {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Explorează videoclipuri",
     "feedExternalVideoSlow": "Videoclipul extern se încarcă încet",
     "feedSkip": "Sari peste",
