@@ -260,7 +260,6 @@ class _DivineButtonContent extends StatelessWidget {
         ] else if (leadingIcon != null) ...[
           DivineIcon(
             icon: leadingIcon!,
-            size: _iconSize,
             color: _foregroundColor,
           ),
           const SizedBox(width: 8),
@@ -278,7 +277,6 @@ class _DivineButtonContent extends StatelessWidget {
           const SizedBox(width: 8),
           DivineIcon(
             icon: trailingIcon!,
-            size: _iconSize,
             color: _foregroundColor,
           ),
         ],

@@ -143,7 +143,6 @@ class _DivineIconButtonContent extends StatelessWidget {
   };
 
   /// Icon size is 24px for both variants.
-  static const double _iconSize = 24;
 
   double get _disabledOpacity => switch (type) {
     DivineIconButtonType.error => 0.5,
@@ -199,7 +198,6 @@ class _DivineIconButtonContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconWidget = DivineIcon(
       icon: icon,
-      size: _iconSize,
       color: _iconColor,
     );
 

@@ -140,7 +140,6 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(
             icon: const MaterialIconSource(Icons.arrow_back),
-            borderRadius: 16,
           ),
         );
 
@@ -297,7 +296,6 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(
             icon: const SvgIconSource('assets/icon/CaretLeft.svg'),
-            iconSize: 24,
           ),
         );
 
