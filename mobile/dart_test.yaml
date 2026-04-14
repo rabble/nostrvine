@@ -6,7 +6,6 @@ exclude:
   - test/old_files/**
   - test/**/old_files/**
   - test/manual/**        # Manual/debug scripts that hit real endpoints
-  - test/integration/**   # Live-endpoint tests excluded from CI (#2527)
   - test/**/*.mocks.dart  # Mock files are generated, not run
   - test/**/*.g.dart      # Generated files
 
