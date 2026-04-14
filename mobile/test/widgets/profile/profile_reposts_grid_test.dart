@@ -131,7 +131,9 @@ void main() {
 
         expect(find.text('No reposts yet'), findsOneWidget);
         expect(
-          find.text('See something worth sharing? Repost it and it'll appear here.'),
+          find.text(
+            "See something worth sharing? Repost it and it'll appear here.",
+          ),
           findsOneWidget,
         );
       });
@@ -149,7 +151,9 @@ void main() {
 
         expect(find.text('No reposts yet'), findsOneWidget);
         expect(
-          find.text('They haven't passed anything on yet. When they do, it'll show up here.'),
+          find.text(
+            "They haven't passed anything on yet. When they do, it'll show up here.",
+          ),
           findsOneWidget,
         );
       });
