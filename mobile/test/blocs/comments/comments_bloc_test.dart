@@ -110,6 +110,9 @@ void main() {
       when(
         () => mockContentBlocklistService.isBlocked(any()),
       ).thenReturn(false);
+      when(
+        () => mockContentBlocklistService.shouldFilterFromFeeds(any()),
+      ).thenReturn(false);
     });
 
     // Video kind 34236 for NIP-71 addressable short videos
@@ -353,6 +356,136 @@ void main() {
           await streamController.close();
           await bloc.close();
         },
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'filters out comments from blocked users on initial load',
+        setUp: () {
+          when(
+            () => mockContentBlocklistService.shouldFilterFromFeeds(
+              validId('blocked'),
+            ),
+          ).thenReturn(true);
+
+          final allowed = Comment(
+            id: validId('allowed'),
+            content: 'Allowed comment',
+            authorPubkey: validId('gooduser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final blocked = Comment(
+            id: validId('blockedcomment'),
+            content: 'Blocked comment',
+            authorPubkey: validId('blocked'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final thread = CommentThread(
+            rootEventId: validId('root'),
+            comments: [allowed, blocked],
+            totalCount: 2,
+            commentCache: {allowed.id: allowed, blocked.id: blocked},
+          );
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => thread);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentsLoadRequested()),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.status,
+            'status',
+            CommentsStatus.loading,
+          ),
+          isA<CommentsState>()
+              .having((s) => s.status, 'status', CommentsStatus.success)
+              .having((s) => s.commentsById.length, 'comments count', 1)
+              .having(
+                (s) => s.commentsById.containsKey(validId('allowed')),
+                'has allowed comment',
+                true,
+              )
+              .having(
+                (s) => s.commentsById.containsKey(validId('blockedcomment')),
+                'has blocked comment',
+                false,
+              ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'keeps replies to blocked comments as orphans',
+        setUp: () {
+          when(
+            () => mockContentBlocklistService.shouldFilterFromFeeds(
+              validId('blocked'),
+            ),
+          ).thenReturn(true);
+
+          final blockedParent = Comment(
+            id: validId('parent'),
+            content: 'Blocked parent',
+            authorPubkey: validId('blocked'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final reply = Comment(
+            id: validId('reply'),
+            content: 'Reply to blocked',
+            authorPubkey: validId('gooduser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+            replyToEventId: validId('parent'),
+          );
+          final thread = CommentThread(
+            rootEventId: validId('root'),
+            comments: [blockedParent, reply],
+            totalCount: 2,
+            commentCache: {
+              blockedParent.id: blockedParent,
+              reply.id: reply,
+            },
+          );
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => thread);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentsLoadRequested()),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.status,
+            'status',
+            CommentsStatus.loading,
+          ),
+          isA<CommentsState>()
+              .having((s) => s.status, 'status', CommentsStatus.success)
+              .having((s) => s.commentsById.length, 'comments count', 1)
+              .having(
+                (s) => s.commentsById.containsKey(validId('reply')),
+                'has reply',
+                true,
+              )
+              .having(
+                (s) => s.commentsById.containsKey(validId('parent')),
+                'has blocked parent',
+                false,
+              ),
+        ],
       );
     });
 
@@ -656,6 +789,80 @@ void main() {
           isA<CommentsState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.comments.length, 'comments count', 2),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'filters out comments from blocked users on load more',
+        setUp: () {
+          when(
+            () => mockContentBlocklistService.shouldFilterFromFeeds(
+              validId('blocked'),
+            ),
+          ).thenReturn(true);
+
+          final allowed = Comment(
+            id: validId('newallowed'),
+            content: 'New allowed',
+            authorPubkey: validId('gooduser'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(500000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final blocked = Comment(
+            id: validId('newblocked'),
+            content: 'New blocked',
+            authorPubkey: validId('blocked'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(400000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final thread = CommentThread(
+            rootEventId: validId('root'),
+            comments: [allowed, blocked],
+            totalCount: 2,
+            commentCache: {allowed.id: allowed, blocked.id: blocked},
+          );
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => thread);
+        },
+        build: createBloc,
+        seed: () {
+          final existing = Comment(
+            id: validId('existing'),
+            content: 'Existing',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(2000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {existing.id: existing},
+          );
+        },
+        act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          // 1 existing + 1 allowed = 2 (blocked comment filtered out)
+          isA<CommentsState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.comments.length, 'comments count', 2)
+              .having(
+                (s) => s.commentsById.containsKey(validId('newblocked')),
+                'has blocked comment',
+                false,
+              ),
         ],
       );
     });
@@ -2456,6 +2663,149 @@ void main() {
               .having((s) => s.mentionSuggestions, 'suggestions', isEmpty),
         ],
       );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'excludes blocked users from local mention suggestions',
+        setUp: () {
+          when(
+            () => mockContentBlocklistService.shouldFilterFromFeeds(
+              validId('blocked'),
+            ),
+          ).thenReturn(true);
+
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: validId('blocked'),
+            ),
+          ).thenAnswer(
+            (_) async => UserProfile(
+              pubkey: validId('blocked'),
+              displayName: 'Blocked Alice',
+              createdAt: DateTime.now(),
+              eventId: 'e1',
+              rawData: const {},
+            ),
+          );
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: validId('allowed'),
+            ),
+          ).thenAnswer(
+            (_) async => UserProfile(
+              pubkey: validId('allowed'),
+              displayName: 'Allowed Bob',
+              createdAt: DateTime.now(),
+              eventId: 'e2',
+              rawData: const {},
+            ),
+          );
+        },
+        build: () => createBloc(
+          profileRepository: mockProfileRepository,
+          followRepository: mockFollowRepository,
+        ),
+        seed: () {
+          final blockedComment = Comment(
+            id: validId('c1'),
+            content: 'Comment',
+            authorPubkey: validId('blocked'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final allowedComment = Comment(
+            id: validId('c2'),
+            content: 'Comment',
+            authorPubkey: validId('allowed'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            rootAuthorPubkey: validId('author'),
+            commentsById: {
+              blockedComment.id: blockedComment,
+              allowedComment.id: allowedComment,
+            },
+          );
+        },
+        act: (bloc) => bloc.add(const MentionSearchRequested('lo')),
+        expect: () => [
+          isA<CommentsState>()
+              .having(
+                (s) => s.mentionSuggestions.length,
+                'suggestion count',
+                1,
+              )
+              .having(
+                (s) => s.mentionSuggestions.first.pubkey,
+                'suggestion pubkey',
+                validId('allowed'),
+              ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'excludes blocked users from remote mention suggestions',
+        setUp: () {
+          when(
+            () => mockContentBlocklistService.shouldFilterFromFeeds(
+              validId('remoteblocked'),
+            ),
+          ).thenReturn(true);
+
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              UserProfile(
+                pubkey: validId('remoteblocked'),
+                displayName: 'Remote Blocked',
+                createdAt: DateTime.now(),
+                eventId: 'e3',
+                rawData: const {},
+              ),
+              UserProfile(
+                pubkey: validId('remoteallowed'),
+                displayName: 'Remote Allowed',
+                createdAt: DateTime.now(),
+                eventId: 'e4',
+                rawData: const {},
+              ),
+            ],
+          );
+        },
+        build: () => createBloc(
+          profileRepository: mockProfileRepository,
+          followRepository: mockFollowRepository,
+        ),
+        seed: () => const CommentsState(
+          status: CommentsStatus.success,
+        ),
+        act: (bloc) => bloc.add(const MentionSearchRequested('remote')),
+        expect: () => [
+          // First emit: empty local results
+          isA<CommentsState>()
+              .having((s) => s.mentionQuery, 'mentionQuery', 'remote')
+              .having((s) => s.mentionSuggestions, 'suggestions', isEmpty),
+          // Second emit: remote results with blocked user excluded
+          isA<CommentsState>()
+              .having(
+                (s) => s.mentionSuggestions.length,
+                'suggestion count',
+                1,
+              )
+              .having(
+                (s) => s.mentionSuggestions.first.pubkey,
+                'suggestion pubkey',
+                validId('remoteallowed'),
+              ),
+        ],
+      );
     });
 
     group('MentionSuggestionsCleared', () {
@@ -2750,7 +3100,9 @@ void main() {
         'skips comment from blocked user',
         setUp: () {
           when(
-            () => mockContentBlocklistService.isBlocked(validId('blocked')),
+            () => mockContentBlocklistService.shouldFilterFromFeeds(
+              validId('blocked'),
+            ),
           ).thenReturn(true);
         },
         seed: () => CommentsState(

@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -15,6 +16,9 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockFeedPerformanceTracker extends Mock
     implements FeedPerformanceTracker {}
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
 
 void main() {
   group('UserSearchBloc', () {
@@ -30,8 +34,10 @@ void main() {
 
     UserSearchBloc createBloc({
       Duration? searchTimeout = const Duration(seconds: 20),
+      ContentBlocklistService? contentBlocklistService,
     }) => UserSearchBloc(
       profileRepository: mockProfileRepository,
+      contentBlocklistService: contentBlocklistService,
       searchTimeout: searchTimeout,
     );
 
@@ -951,6 +957,148 @@ void main() {
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.results.length, 'results.length', 1),
+          isA<UserSearchState>().having(
+            (s) => s.status,
+            'status',
+            UserSearchStatus.success,
+          ),
+        ],
+      );
+    });
+
+    group('blocklist filtering', () {
+      const debounceDuration = Duration(milliseconds: 400);
+      late _MockContentBlocklistService mockBlocklistService;
+
+      setUp(() {
+        mockBlocklistService = _MockContentBlocklistService();
+        when(
+          () => mockBlocklistService.shouldFilterFromFeeds(any()),
+        ).thenReturn(false);
+      });
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'filters blocked users from search results',
+        setUp: () {
+          final profiles = [
+            createTestProfile('a' * 64, 'Alice'),
+            createTestProfile('b' * 64, 'Blocked Bob'),
+            createTestProfile('c' * 64, 'Charlie'),
+          ];
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'test',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) => Stream.value(profiles));
+          when(
+            () => mockBlocklistService.shouldFilterFromFeeds('b' * 64),
+          ).thenReturn(true);
+        },
+        build: () => createBloc(
+          contentBlocklistService: mockBlocklistService,
+        ),
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'test',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.results.length, 'results.length', 2)
+              .having(
+                (s) => s.results.map((u) => u.displayName).toList(),
+                'result names',
+                ['Alice', 'Charlie'],
+              ),
+          isA<UserSearchState>().having(
+            (s) => s.status,
+            'status',
+            UserSearchStatus.success,
+          ),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'filters blocked users from load-more results',
+        setUp: () {
+          final moreResults = [
+            createTestProfile('d' * 64, 'Diana'),
+            createTestProfile('e' * 64, 'Blocked Eve'),
+            createTestProfile('f' * 64, 'Frank'),
+          ];
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'test',
+              limit: 50,
+              offset: 50,
+              sortBy: 'followers',
+            ),
+          ).thenAnswer((_) => Stream.value(moreResults));
+          when(
+            () => mockBlocklistService.shouldFilterFromFeeds('e' * 64),
+          ).thenReturn(true);
+        },
+        build: () => createBloc(
+          contentBlocklistService: mockBlocklistService,
+        ),
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'test',
+          results: createTestProfiles(50),
+          offset: 50,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const UserSearchLoadMore()),
+        expect: () => [
+          isA<UserSearchState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.results.length, 'results.length', 52)
+              .having(
+                (s) => s.results.any((u) => u.displayName == 'Blocked Eve'),
+                'blocked user excluded',
+                false,
+              ),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'works without contentBlocklistService (null)',
+        setUp: () {
+          final profiles = [
+            createTestProfile('a' * 64, 'Alice'),
+            createTestProfile('b' * 64, 'Bob'),
+            createTestProfile('c' * 64, 'Charlie'),
+          ];
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'test',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) => Stream.value(profiles));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'test',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.results.length, 'results.length', 3),
           isA<UserSearchState>().having(
             (s) => s.status,
             'status',

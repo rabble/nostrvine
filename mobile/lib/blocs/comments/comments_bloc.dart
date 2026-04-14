@@ -112,6 +112,22 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   final FollowRepository? _followRepository;
   bool _isInitialBackfillComplete = true;
 
+  /// Removes comments authored by blocked/muted users from a comments map.
+  ///
+  /// Replies to filtered comments are kept — the [threadedComments] getter
+  /// already treats orphaned replies (missing parent) as root-level items.
+  Map<String, Comment> _filterBlockedComments(
+    Map<String, Comment> commentsById,
+  ) {
+    return Map.fromEntries(
+      commentsById.entries.where(
+        (e) => !_contentBlocklistService.shouldFilterFromFeeds(
+          e.value.authorPubkey,
+        ),
+      ),
+    );
+  }
+
   Future<void> _onLoadRequested(
     CommentsLoadRequested event,
     Emitter<CommentsState> emit,
@@ -135,10 +151,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         limit: _pageSize,
       );
 
-      final commentsById = {
+      final commentsById = _filterBlockedComments({
         ...state.commentsById,
         for (final comment in thread.comments) comment.id: comment,
-      };
+      });
       final hasMore = _hasMoreContent(
         loadedCount: commentsById.length,
         lastBatchCount: thread.comments.length,
@@ -215,10 +231,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
       // Merge new comments into the Map - duplicates are automatically replaced
       // This handles the edge case where multiple comments have the same timestamp
-      final allCommentsById = {
+      final allCommentsById = _filterBlockedComments({
         ...state.commentsById,
         for (final c in thread.comments) c.id: c,
-      };
+      });
 
       // Determine if there are more comments to load:
       // 1. If we have a known total count, compare loaded count to it
@@ -764,6 +780,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     for (final pubkey in candidatePubkeys) {
       if (seen.contains(pubkey)) continue;
       seen.add(pubkey);
+      if (_contentBlocklistService.shouldFilterFromFeeds(pubkey)) continue;
 
       final profile = await _profileRepository?.getCachedProfile(
         pubkey: pubkey,
@@ -804,6 +821,11 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         for (final profile in remoteResults) {
           if (seen.contains(profile.pubkey)) continue;
           seen.add(profile.pubkey);
+          if (_contentBlocklistService.shouldFilterFromFeeds(
+            profile.pubkey,
+          )) {
+            continue;
+          }
 
           final name = profile.displayName ?? profile.name;
           if (name == null) continue;
@@ -861,8 +883,12 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     // Skip if already in the map (dedup with optimistic posts)
     if (state.commentsById.containsKey(comment.id)) return;
 
-    // Skip if author is blocked
-    if (_contentBlocklistService.isBlocked(comment.authorPubkey)) return;
+    // Skip if author is blocked or muted
+    if (_contentBlocklistService.shouldFilterFromFeeds(
+      comment.authorPubkey,
+    )) {
+      return;
+    }
 
     final updatedCommentsById = {...state.commentsById, comment.id: comment};
 

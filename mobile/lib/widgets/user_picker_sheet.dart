@@ -102,7 +102,10 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
       _profileRepoMissing = true;
       return;
     }
-    _searchBloc = UserSearchBloc(profileRepository: profileRepo);
+    _searchBloc = UserSearchBloc(
+      profileRepository: profileRepo,
+      contentBlocklistService: ref.read(contentBlocklistServiceProvider),
+    );
 
     if (_useLocalSearch) {
       _loadFollowProfiles();

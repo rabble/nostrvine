@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 
 part 'notification_feed_event.dart';
 part 'notification_feed_state.dart';
@@ -26,8 +27,10 @@ class NotificationFeedBloc
   NotificationFeedBloc({
     required NotificationRepository notificationRepository,
     required FollowRepository followRepository,
+    ContentBlocklistService? contentBlocklistService,
   }) : _notificationRepository = notificationRepository,
        _followRepository = followRepository,
+       _contentBlocklistService = contentBlocklistService,
        super(const NotificationFeedState()) {
     on<NotificationFeedStarted>(
       _onStarted,
@@ -56,6 +59,45 @@ class NotificationFeedBloc
 
   final NotificationRepository _notificationRepository;
   final FollowRepository _followRepository;
+  final ContentBlocklistService? _contentBlocklistService;
+
+  /// Filters notifications from blocked/muted users.
+  ///
+  /// - [SingleNotification]: removed if actor is blocked.
+  /// - [GroupedNotification]: blocked actors removed; entire notification
+  ///   removed if no actors remain.
+  List<NotificationItem> _filterBlockedNotifications(
+    List<NotificationItem> items,
+  ) {
+    final service = _contentBlocklistService;
+    if (service == null) return items;
+    return items
+        .map(
+          (n) => switch (n) {
+            SingleNotification() =>
+              service.shouldFilterFromFeeds(n.actor.pubkey) ? null : n,
+            GroupedNotification() => () {
+              final filtered = n.actors
+                  .where((a) => !service.shouldFilterFromFeeds(a.pubkey))
+                  .toList();
+              if (filtered.isEmpty) return null;
+              if (filtered.length == n.actors.length) return n;
+              return GroupedNotification(
+                id: n.id,
+                type: n.type,
+                actors: filtered,
+                totalCount: filtered.length,
+                timestamp: n.timestamp,
+                isRead: n.isRead,
+                targetEventId: n.targetEventId,
+                videoTitle: n.videoTitle,
+              );
+            }(),
+          },
+        )
+        .whereType<NotificationItem>()
+        .toList();
+  }
 
   /// Handle initial load.
   Future<void> _onStarted(
@@ -66,11 +108,12 @@ class NotificationFeedBloc
 
     try {
       final page = await _notificationRepository.refresh();
+      final filtered = _filterBlockedNotifications(page.items);
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: filtered,
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -95,9 +138,9 @@ class NotificationFeedBloc
 
       // Deduplicate by ID — keep existing items, append only new ones.
       final existingIds = state.notifications.map((n) => n.id).toSet();
-      final newItems = page.items
-          .where((n) => !existingIds.contains(n.id))
-          .toList();
+      final newItems = _filterBlockedNotifications(
+        page.items.where((n) => !existingIds.contains(n.id)).toList(),
+      );
 
       emit(
         state.copyWith(
@@ -119,11 +162,12 @@ class NotificationFeedBloc
   ) async {
     try {
       final page = await _notificationRepository.refresh();
+      final filtered = _filterBlockedNotifications(page.items);
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: filtered,
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -141,11 +185,12 @@ class NotificationFeedBloc
   ) async {
     try {
       final page = await _notificationRepository.refresh();
+      final filtered = _filterBlockedNotifications(page.items);
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: filtered,
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -165,6 +210,20 @@ class NotificationFeedBloc
     Emitter<NotificationFeedState> emit,
   ) {
     final incoming = event.notification;
+
+    // Filter notifications from blocked/muted users.
+    final service = _contentBlocklistService;
+    if (service != null) {
+      final blocked = switch (incoming) {
+        SingleNotification() => service.shouldFilterFromFeeds(
+          incoming.actor.pubkey,
+        ),
+        GroupedNotification() => incoming.actors.every(
+          (a) => service.shouldFilterFromFeeds(a.pubkey),
+        ),
+      };
+      if (blocked) return;
+    }
 
     // Deduplicate — skip if we already have this notification by ID,
     // or if a grouped notification already covers this target event.
