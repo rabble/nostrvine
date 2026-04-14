@@ -111,7 +111,7 @@ void main() {
 
         expect(find.text('No videos yet'), findsOneWidget);
         expect(
-          find.text("This user hasn't shared any videos yet."),
+          find.text("The world is waiting. Follow them so you don't miss it."),
           findsOneWidget,
         );
       });

@@ -328,7 +328,8 @@ class _ProfileVideosEmptyState extends StatelessWidget {
                 isOwnProfile
                     ? 'Your stage is set. Start posting and your '
                           'videos will live here.'
-                    : "This user hasn't shared any videos yet.",
+                    : 'The world is waiting. Follow them so you '
+                          "don't miss it.",
                 textAlign: TextAlign.center,
                 style: VineTheme.bodyMediumFont(
                   color: VineTheme.onSurfaceMuted,

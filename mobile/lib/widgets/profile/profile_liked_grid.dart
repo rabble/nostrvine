@@ -173,7 +173,7 @@ class _LikedEmptyState extends StatelessWidget {
                 isOwnProfile
                     ? 'When something catches your eye, tap the '
                           'heart. Your likes will show up here.'
-                    : 'Videos they like will appear here.',
+                    : 'Nothing caught their eye yet. Give it time.',
                 textAlign: TextAlign.center,
                 style: VineTheme.bodyMediumFont(
                   color: VineTheme.onSurfaceMuted,

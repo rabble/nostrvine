@@ -173,7 +173,8 @@ class _RepostsEmptyState extends StatelessWidget {
                 isOwnProfile
                     ? 'See something worth sharing? Repost it '
                           "and it'll appear here."
-                    : 'Videos they repost will appear here.',
+                    : "They haven't passed anything on yet. "
+                          "When they do, it'll show up here.",
                 textAlign: TextAlign.center,
                 style: VineTheme.bodyMediumFont(
                   color: VineTheme.onSurfaceMuted,
