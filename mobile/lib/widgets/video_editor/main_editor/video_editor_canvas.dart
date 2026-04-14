@@ -24,6 +24,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_feed_preview_overlay.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
@@ -615,6 +616,18 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     return _OverlayCutArea(
       child: MultiBlocListener(
         listeners: [
+          // Re-export state history when an overlay item drag or trim
+          // ends so the updated positions are persisted for ProofMode.
+          BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+            listenWhen: (previous, current) =>
+                (previous.draggingItemId != null &&
+                    current.draggingItemId == null) ||
+                (previous.trimmingItemId != null &&
+                    current.trimmingItemId == null),
+            listener: (context, state) {
+              _onStateHistoryChange(scope, bloc);
+            },
+          ),
           // Update native player clip boundaries when trim handle is
           // released or for non-trim clip changes (reorder, add, remove).
           BlocListener<ClipEditorBloc, ClipEditorState>(
@@ -700,11 +713,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           /// TODO(@hm21): Once all subeditors have been implemented,
           /// separate the configs/callbacks for better readability.
           configs: ProImageEditorConfigs(
-            stateHistory: !_hasImportedHistory && editorStateHistory.isNotEmpty
+            stateHistory:
+                !_hasImportedHistory &&
+                    !_isImportingHistory &&
+                    editorStateHistory.isNotEmpty
                 ? StateHistoryConfigs(
-                    initStateHistory: ImportStateHistory.fromMap(
-                      editorStateHistory,
-                    ),
+                    initStateHistory: .fromMap(editorStateHistory),
                   )
                 : const StateHistoryConfigs(),
             imageGeneration: ImageGenerationConfigs(
@@ -770,6 +784,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                               );
                             },
                           ),
+                      stream: rebuildStream,
+                    ),
+                    ReactiveWidget(
+                      builder: (context) => VideoEditorFeedPreviewOverlay(
+                        renderSize: widget.renderSize,
+                        targetAspectRatio: targetAspectRatio.value,
+                        isFeedPreviewVisible: editor.isLayerBeingTransformed,
+                      ),
                       stream: rebuildStream,
                     ),
                   ];

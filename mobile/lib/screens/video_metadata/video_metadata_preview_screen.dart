@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
