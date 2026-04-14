@@ -88,41 +88,7 @@ void main() {
     }
 
     group('Original sound (no audio reference)', () {
-      testWidgets(
-        'renders original sound text for videos without audio reference',
-        (tester) async {
-          final video = createVideoWithoutAudio();
-
-          await tester.pumpWidget(buildTestWidget(video: video));
-          await tester.pumpAndSettle();
-
-          expect(find.textContaining('Original sound'), findsOneWidget);
-        },
-      );
-
-      testWidgets('displays creator name from authorName', (tester) async {
-        final now = DateTime.now();
-        final video = VideoEvent(
-          id: testVideoId,
-          pubkey: testPubkey,
-          content: 'Test video',
-          videoUrl: 'https://example.com/video.mp4',
-          createdAt: now.millisecondsSinceEpoch ~/ 1000,
-          timestamp: now,
-          title: 'Test Video',
-          authorName: 'Jake Lara',
-        );
-
-        await tester.pumpWidget(buildTestWidget(video: video));
-        await tester.pumpAndSettle();
-
-        expect(
-          find.textContaining('Original sound - Jake Lara'),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('displays music note icon with vineGreen color', (
+      testWidgets('renders nothing for videos without audio reference', (
         tester,
       ) async {
         final video = createVideoWithoutAudio();
@@ -130,59 +96,17 @@ void main() {
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        final divineIcons = tester.widgetList<DivineIcon>(
+        // Should render SizedBox.shrink - no visible content
+        expect(
           find.descendant(
             of: find.byType(AudioAttributionRow),
-            matching: find.byType(DivineIcon),
+            matching: find.byType(SizedBox),
           ),
-        );
-        final musicNoteIcon = divineIcons.firstWhere(
-          (icon) => icon.icon == DivineIconName.musicNote,
-        );
-        expect(musicNoteIcon.color, equals(VineTheme.vineGreen));
-      });
-
-      testWidgets('has correct semantics', (tester) async {
-        final video = createVideoWithoutAudio();
-
-        await tester.pumpWidget(buildTestWidget(video: video));
-        await tester.pumpAndSettle();
-
-        final semantics = tester.widget<Semantics>(
-          find
-              .descendant(
-                of: find.byType(AudioAttributionRow),
-                matching: find.byType(Semantics),
-              )
-              .first,
-        );
-
-        expect(
-          semantics.properties.identifier,
-          equals('audio_attribution_row'),
-        );
-        expect(semantics.properties.button, isTrue);
-        expect(
-          semantics.properties.label,
-          contains('Original sound'),
-        );
-      });
-
-      testWidgets('displays caret right icon', (tester) async {
-        final video = createVideoWithoutAudio();
-
-        await tester.pumpWidget(buildTestWidget(video: video));
-        await tester.pumpAndSettle();
-
-        final divineIcons = tester.widgetList<DivineIcon>(
-          find.descendant(
-            of: find.byType(AudioAttributionRow),
-            matching: find.byType(DivineIcon),
-          ),
+          findsOneWidget,
         );
         expect(
-          divineIcons.any((icon) => icon.icon == DivineIconName.caretRight),
-          isTrue,
+          find.textContaining('Original sound'),
+          findsNothing,
         );
       });
     });
@@ -269,7 +193,7 @@ void main() {
       });
 
       testWidgets(
-        'falls back to original sound when audio event is null',
+        'renders nothing when audio event is null',
         (tester) async {
           final video = createVideoWithAudio();
 
@@ -281,8 +205,6 @@ void main() {
                 }),
               ],
               child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
                 theme: VineTheme.theme,
                 home: Scaffold(
                   backgroundColor: Colors.black,
@@ -294,8 +216,8 @@ void main() {
 
           await tester.pumpAndSettle();
 
-          // Should fall back to original sound display
-          expect(find.textContaining('Original sound'), findsOneWidget);
+          // Should render nothing when audio can't be found
+          expect(find.textContaining('Original sound'), findsNothing);
         },
       );
     });
