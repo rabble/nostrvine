@@ -1463,7 +1463,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     Widget buildApp(Locale? locale) {
       if (!kIsWeb && io.Platform.isAndroid) {
         return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.light,
+          value: VineTheme.statusBarStyle,
           child: MaterialApp.router(
             title: 'Divine',
             debugShowCheckedModeBanner: false,
@@ -1482,7 +1482,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           await handleBackNavigation(router, ref);
         },
         child: AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.light,
+          value: VineTheme.statusBarStyle,
           child: MaterialApp.router(
             title: 'Divine',
             debugShowCheckedModeBanner: false,
