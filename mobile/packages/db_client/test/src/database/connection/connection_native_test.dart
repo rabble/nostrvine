@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:db_client/src/database/connection/connection_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:sqlite3/sqlite3.dart' as raw_sqlite;
 
 void main() {
   group('prepareDatabaseFile', () {
@@ -44,6 +43,110 @@ void main() {
         path,
         equals('/tmp/app-support/openvine/database/divine_db.db'),
       );
+    });
+  });
+
+  group('applyDbCacheVersionReset', () {
+    late Directory tempRoot;
+    late String dbPath;
+    late String dbDir;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_cache_version_test_',
+      );
+      dbDir = p.join(tempRoot.path, 'openvine', 'database');
+      dbPath = p.join(dbDir, 'divine_db.db');
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) {
+        tempRoot.deleteSync(recursive: true);
+      }
+    });
+
+    test('writes current version on first run without deleting DB', () {
+      Directory(dbDir).createSync(recursive: true);
+      File(dbPath).writeAsBytesSync(const [1, 2, 3]);
+
+      applyDbCacheVersionReset(dbPath);
+
+      expect(File(dbPath).existsSync(), isTrue);
+      expect(
+        File(dbPath).readAsBytesSync(),
+        equals(const [1, 2, 3]),
+      );
+      expect(readDbCacheVersion(dbDir), equals(dbCacheVersion));
+    });
+
+    test('deletes DB and sidecars when stored version is stale', () {
+      Directory(dbDir).createSync(recursive: true);
+      File(dbPath).writeAsBytesSync(const [1]);
+      File('$dbPath-wal').writeAsBytesSync(const [2]);
+      File('$dbPath-shm').writeAsBytesSync(const [3]);
+      writeDbCacheVersion(dbDir, 1);
+
+      applyDbCacheVersionReset(dbPath);
+
+      expect(File(dbPath).existsSync(), isFalse);
+      expect(File('$dbPath-wal').existsSync(), isFalse);
+      expect(File('$dbPath-shm').existsSync(), isFalse);
+      expect(readDbCacheVersion(dbDir), equals(dbCacheVersion));
+    });
+
+    test('no-op when stored version matches current', () {
+      Directory(dbDir).createSync(recursive: true);
+      File(dbPath).writeAsBytesSync(const [9, 9]);
+      writeDbCacheVersion(dbDir, dbCacheVersion);
+
+      applyDbCacheVersionReset(dbPath);
+
+      expect(File(dbPath).existsSync(), isTrue);
+      expect(
+        File(dbPath).readAsBytesSync(),
+        equals(const [9, 9]),
+      );
+    });
+
+    test('no-op when DB does not exist and no version file', () {
+      applyDbCacheVersionReset(dbPath);
+
+      expect(readDbCacheVersion(dbDir), equals(dbCacheVersion));
+    });
+  });
+
+  group('readDbCacheVersion / writeDbCacheVersion', () {
+    late Directory tempRoot;
+    late String dbDir;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_version_rw_test_',
+      );
+      dbDir = p.join(tempRoot.path, 'openvine', 'database');
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) {
+        tempRoot.deleteSync(recursive: true);
+      }
+    });
+
+    test('returns null when version file does not exist', () {
+      expect(readDbCacheVersion(dbDir), isNull);
+    });
+
+    test('round-trips a version number', () {
+      writeDbCacheVersion(dbDir, 42);
+
+      expect(readDbCacheVersion(dbDir), equals(42));
+    });
+
+    test('returns null for corrupt version file content', () {
+      Directory(dbDir).createSync(recursive: true);
+      File(p.join(dbDir, dbVersionFileName)).writeAsStringSync('not-a-number');
+
+      expect(readDbCacheVersion(dbDir), isNull);
     });
   });
 
@@ -104,106 +207,39 @@ void main() {
     });
 
     test(
-      'replaces near-empty new DB with legacy when both exist',
+      'replaces new DB with legacy when both exist',
       () async {
-        // Legacy DB with conversations (the user's real data).
-        _createDatabaseWithConversations(legacyPath, 20).dispose();
+        final legacyFile = File(legacyPath);
+        legacyFile.parent.createSync(recursive: true);
+        legacyFile.writeAsBytesSync(const [1, 2, 3]);
 
-        // New DB with 0 conversations (artifact of relay re-fetch).
-        _createDatabaseWithConversations(newPath, 0).dispose();
-
-        await migrateLegacyDatabase(
-          legacyPath: legacyPath,
-          newPath: newPath,
-        );
-
-        // Legacy replaced the new DB.
-        expect(File(legacyPath).existsSync(), isFalse);
-        final resultDb = raw_sqlite.sqlite3.open(newPath);
-        final count =
-            resultDb
-                    .select(
-                      'SELECT COUNT(*) AS cnt FROM conversations',
-                    )
-                    .first['cnt']
-                as int;
-        resultDb.dispose();
-        expect(count, equals(20));
-      },
-    );
-
-    test(
-      'keeps new DB and deletes legacy when new has data above threshold',
-      () async {
-        _createDatabaseWithConversations(legacyPath, 50).dispose();
-
-        // New DB with conversations above threshold — real user data.
-        _createDatabaseWithConversations(
-          newPath,
-          maxConversationsForReplacement + 1,
-        ).dispose();
-
-        await migrateLegacyDatabase(
-          legacyPath: legacyPath,
-          newPath: newPath,
-        );
-
-        // New DB kept, legacy cleaned up.
-        expect(File(newPath).existsSync(), isTrue);
-        expect(File(legacyPath).existsSync(), isFalse);
-        final resultDb = raw_sqlite.sqlite3.open(newPath);
-        final count =
-            resultDb
-                    .select(
-                      'SELECT COUNT(*) AS cnt FROM conversations',
-                    )
-                    .first['cnt']
-                as int;
-        resultDb.dispose();
-        expect(count, equals(maxConversationsForReplacement + 1));
-      },
-    );
-
-    test(
-      'treats new DB without conversations table as empty and replaces it',
-      () async {
-        _createDatabaseWithConversations(legacyPath, 10).dispose();
-
-        // New DB exists but has no conversations table (incomplete init).
         final newFile = File(newPath);
         newFile.parent.createSync(recursive: true);
-        raw_sqlite.sqlite3.open(newPath)
-          ..execute('CREATE TABLE other_table (id TEXT PRIMARY KEY)')
-          ..dispose();
+        newFile.writeAsBytesSync(const [9, 9, 9]);
 
         await migrateLegacyDatabase(
           legacyPath: legacyPath,
           newPath: newPath,
         );
 
+        // Legacy always wins — it predates the path change.
         expect(File(legacyPath).existsSync(), isFalse);
-        final resultDb = raw_sqlite.sqlite3.open(newPath);
-        final count =
-            resultDb
-                    .select(
-                      'SELECT COUNT(*) AS cnt FROM conversations',
-                    )
-                    .first['cnt']
-                as int;
-        resultDb.dispose();
-        expect(count, equals(10));
+        expect(File(newPath).readAsBytesSync(), equals(const [1, 2, 3]));
       },
     );
 
     test(
-      'cleans up sidecars of the replaced new DB before renaming legacy',
+      'cleans up new DB sidecars before replacing with legacy',
       () async {
-        _createDatabaseWithConversations(legacyPath, 15).dispose();
+        final legacyFile = File(legacyPath);
+        legacyFile.parent.createSync(recursive: true);
+        legacyFile.writeAsBytesSync(const [1]);
 
-        _createDatabaseWithConversations(newPath, 0).dispose();
-        // Simulate stale sidecars on the new DB.
-        File('$newPath-wal').writeAsBytesSync(const [1]);
-        File('$newPath-shm').writeAsBytesSync(const [2]);
+        final newFile = File(newPath);
+        newFile.parent.createSync(recursive: true);
+        newFile.writeAsBytesSync(const [9]);
+        File('$newPath-wal').writeAsBytesSync(const [2]);
+        File('$newPath-shm').writeAsBytesSync(const [3]);
 
         await migrateLegacyDatabase(
           legacyPath: legacyPath,
@@ -211,9 +247,9 @@ void main() {
         );
 
         expect(File(newPath).existsSync(), isTrue);
-        // Stale sidecars from the replaced new DB should be gone.
-        // (Legacy sidecars are migrated by the existing logic if present.)
-        expect(File(legacyPath).existsSync(), isFalse);
+        expect(File(newPath).readAsBytesSync(), equals(const [1]));
+        expect(File('$newPath-wal').existsSync(), isFalse);
+        expect(File('$newPath-shm').existsSync(), isFalse);
       },
     );
 
@@ -255,34 +291,4 @@ void main() {
       expect(File('$newPath-shm').existsSync(), isFalse);
     });
   });
-}
-
-/// Creates a real SQLite database at [path] with a conversations table
-/// containing [count] rows. Returns the open database handle so the
-/// caller can dispose it after setup.
-raw_sqlite.Database _createDatabaseWithConversations(String path, int count) {
-  File(path).parent.createSync(recursive: true);
-  final db = raw_sqlite.sqlite3.open(path)
-    ..execute('''
-    CREATE TABLE conversations (
-      id TEXT PRIMARY KEY,
-      participant_pubkeys TEXT NOT NULL DEFAULT '[]',
-      is_group INTEGER NOT NULL DEFAULT 0,
-      created_at INTEGER NOT NULL DEFAULT 0,
-      last_message_content TEXT,
-      last_message_timestamp INTEGER,
-      last_message_sender_pubkey TEXT,
-      subject TEXT,
-      is_read INTEGER NOT NULL DEFAULT 1,
-      current_user_has_sent INTEGER NOT NULL DEFAULT 0,
-      owner_pubkey TEXT,
-      dm_protocol TEXT
-    )
-  ''');
-  for (var i = 0; i < count; i++) {
-    db.execute(
-      "INSERT INTO conversations (id, created_at) VALUES ('conv_$i', $i)",
-    );
-  }
-  return db;
 }
