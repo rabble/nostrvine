@@ -471,19 +471,18 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     BuildContext context,
     double shrinkOffset,
     bool overlapsContent,
-  ) =>
-      DecoratedBox(
-        decoration: const BoxDecoration(
-          color: VineTheme.surfaceBackground,
-          border: Border(
-            bottom: BorderSide(
-              color: VineTheme.outlineMuted,
-              width: 2,
-            ),
-          ),
+  ) => DecoratedBox(
+    decoration: const BoxDecoration(
+      color: VineTheme.surfaceBackground,
+      border: Border(
+        bottom: BorderSide(
+          color: VineTheme.outlineMuted,
+          width: 2,
         ),
-        child: _tabBar,
-      );
+      ),
+    ),
+    child: _tabBar,
+  );
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;

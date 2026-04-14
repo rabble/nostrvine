@@ -516,8 +516,8 @@ class _ProfileDataView extends ConsumerWidget {
       child: switch (videosAsync) {
         AsyncLoading() => const ProfileLoadingView(),
         AsyncError(:final error) => Center(
-        child: Text(context.l10n.profileErrorPrefix(error)),
-      ),
+          child: Text(context.l10n.profileErrorPrefix(error)),
+        ),
         AsyncData(:final value) => ProfileViewSwitcher(
           npub: npub,
           userIdHex: userIdHex,
