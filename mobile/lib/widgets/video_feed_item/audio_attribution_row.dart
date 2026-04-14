@@ -29,39 +29,38 @@ class AudioAttributionRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Only show for videos with shared/bundled audio, not original sounds.
-    // Original sound info is available in the metadata "more info" sheet.
-    if (!video.hasAudioReference || video.audioEventId == null) {
-      return const SizedBox.shrink();
-    }
+    // Videos with shared/bundled audio show the fetched sound name.
+    if (video.hasAudioReference && video.audioEventId != null) {
+      final audioAsync = ref.watch(soundByIdProvider(video.audioEventId!));
 
-    // Watch the shared audio event asynchronously
-    final audioAsync = ref.watch(soundByIdProvider(video.audioEventId!));
+      return audioAsync.when(
+        data: (audio) {
+          if (audio == null) {
+            Log.warning(
+              'Audio event not found for video ${video.id} '
+              '(audioEventId: ${video.audioEventId})',
+              name: 'AudioAttributionRow',
+              category: LogCategory.ui,
+            );
+            return _OriginalSoundContent(video: video);
+          }
 
-    return audioAsync.when(
-      data: (audio) {
-        if (audio == null) {
-          Log.warning(
-            'Audio event not found for video ${video.id} '
-            '(audioEventId: ${video.audioEventId})',
+          return _AudioAttributionContent(audio: audio);
+        },
+        loading: () => const _AudioAttributionSkeleton(),
+        error: (error, stack) {
+          Log.error(
+            'Failed to load audio for video ${video.id}: $error',
             name: 'AudioAttributionRow',
             category: LogCategory.ui,
           );
-          return const SizedBox.shrink();
-        }
+          return _OriginalSoundContent(video: video);
+        },
+      );
+    }
 
-        return _AudioAttributionContent(audio: audio);
-      },
-      loading: () => const _AudioAttributionSkeleton(),
-      error: (error, stack) {
-        Log.error(
-          'Failed to load audio for video ${video.id}: $error',
-          name: 'AudioAttributionRow',
-          category: LogCategory.ui,
-        );
-        return const SizedBox.shrink();
-      },
-    );
+    // Videos without shared audio show "Original sound - @creator".
+    return _OriginalSoundContent(video: video);
   }
 }
 
@@ -142,6 +141,90 @@ class _AudioAttributionContent extends ConsumerWidget {
     context.pushWithVideoPause(
       SoundDetailScreen.pathForId(audio.id),
       extra: audio,
+    );
+  }
+}
+
+/// Displays "Original sound - @creator" for videos without shared audio.
+class _OriginalSoundContent extends ConsumerWidget {
+  const _OriginalSoundContent({required this.video});
+
+  final VideoEvent video;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final creatorProfile = ref
+        .watch(userProfileReactiveProvider(video.pubkey))
+        .value;
+    final creatorName =
+        creatorProfile?.bestDisplayName ??
+        video.authorName ??
+        UserProfile.generatedNameFor(video.pubkey);
+    final soundName = context.l10n.audioAttributionOriginalSound;
+
+    return Semantics(
+      identifier: 'audio_attribution_row',
+      button: true,
+      label:
+          'Sound: $soundName by $creatorName. '
+          'Tap to view sound details.',
+      child: GestureDetector(
+        onTap: () => _navigateToOriginalSound(context, creatorName),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: VineTheme.backgroundColor.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 4,
+            children: [
+              const DivineIcon(
+                icon: DivineIconName.musicNote,
+                size: 14,
+                color: VineTheme.vineGreen,
+              ),
+              Flexible(
+                child: Text(
+                  '$soundName - $creatorName',
+                  style: VineTheme.labelMediumFont().copyWith(
+                    shadows: [const Shadow(blurRadius: 4)],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const DivineIcon(
+                icon: DivineIconName.caretRight,
+                size: 14,
+                color: VineTheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToOriginalSound(BuildContext context, String creatorName) {
+    Log.info(
+      'Navigating to original sound detail for video: ${video.id}',
+      name: 'AudioAttributionRow',
+      category: LogCategory.ui,
+    );
+
+    final syntheticAudio = AudioEvent.fromVideoOriginalSound(
+      video,
+      creatorName: creatorName,
+    );
+
+    context.pushWithVideoPause(
+      SoundDetailScreen.pathForId(syntheticAudio.id),
+      extra: <String, dynamic>{
+        'sound': syntheticAudio,
+        'sourceVideo': video,
+      },
     );
   }
 }
