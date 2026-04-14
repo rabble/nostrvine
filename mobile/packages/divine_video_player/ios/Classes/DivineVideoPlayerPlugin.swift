@@ -80,6 +80,10 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
                 )
                 return
             }
+            // Dispose any existing player with the same ID before
+            // creating the new one to avoid leaking zombie players.
+            PlayerRegistry.shared.remove(id)?.dispose()
+
             let instance = DivineVideoPlayerInstance(
                 messenger: registrar.messenger(),
                 playerId: id

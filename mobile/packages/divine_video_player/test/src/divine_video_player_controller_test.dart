@@ -670,6 +670,22 @@ void main() {
             (globalCalls.first.arguments as Map)['clips'] as List<dynamic>;
         expect(clips, hasLength(1));
       });
+
+      test('disposeAll invokes global channel', () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              (call) async {
+                globalCalls.add(call);
+                return null;
+              },
+            );
+
+        await DivineVideoPlayerController.disposeAll();
+
+        expect(globalCalls, hasLength(1));
+        expect(globalCalls.first.method, equals('disposeAll'));
+      });
     });
   });
 }
