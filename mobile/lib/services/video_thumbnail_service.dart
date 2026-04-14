@@ -2,6 +2,7 @@
 // ABOUTME: Generates preview frames for video posts to include in NIP-71 events
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:ui';
 
@@ -19,9 +20,12 @@ class VideoThumbnailService {
 
   static final ProVideoEditor _proVideoEditor = ProVideoEditor.instance;
 
-  /// Completer-based lock so only one strip extraction runs at a time,
-  /// preventing multiple clips from hammering the native decoder in parallel.
-  static Completer<void>? _stripLock;
+  /// Serial queue for strip thumbnail extraction batches.
+  ///
+  /// This keeps only one native decode call active at a time, but allows
+  /// multiple clip streams to interleave batch-by-batch for faster
+  /// perceived timeline fill across clips.
+  static Future<void> _stripBatchQueue = Future<void>.value();
 
   /// Extract a thumbnail from a video file at a specific timestamp
   ///
@@ -512,26 +516,29 @@ class VideoThumbnailService {
   }) async* {
     if (duration <= Duration.zero) return;
 
-    // Wait for any other strip extraction to finish first.
-    while (_stripLock != null) {
-      await _stripLock!.future;
-    }
-    _stripLock = Completer<void>();
+    yield* _generateStripThumbnailsBatched(
+      videoPath: videoPath,
+      clipId: clipId,
+      duration: duration,
+      outputSize: outputSize,
+      thumbsPerSecond: thumbsPerSecond,
+      quality: quality,
+      batchSize: batchSize,
+    );
+  }
 
+  static Future<T> _runStripBatchExclusive<T>(
+    Future<T> Function() action,
+  ) async {
+    final previous = _stripBatchQueue;
+    final release = Completer<void>();
+    _stripBatchQueue = release.future;
+
+    await previous;
     try {
-      yield* _generateStripThumbnailsBatched(
-        videoPath: videoPath,
-        clipId: clipId,
-        duration: duration,
-        outputSize: outputSize,
-        thumbsPerSecond: thumbsPerSecond,
-        quality: quality,
-        batchSize: batchSize,
-      );
+      return await action();
     } finally {
-      final lock = _stripLock;
-      _stripLock = null;
-      lock?.complete();
+      release.complete();
     }
   }
 
@@ -548,12 +555,11 @@ class VideoThumbnailService {
     // Enough frames to cover every visual slot at the requested density.
     final count = ((durationMs / 1000) * thumbsPerSecond).ceil().clamp(1, 500);
 
-    final allTimestamps = List.generate(count, (i) {
-      final fraction = (i + 0.5) / count;
-      return Duration(
-        milliseconds: (durationMs * fraction).round(),
-      );
-    });
+    // Extract center-first so the strip gets useful visual coverage quickly.
+    final allTimestamps = _buildProgressiveStripTimestamps(
+      durationMs: durationMs,
+      count: count,
+    );
 
     final cacheDir = await getTemporaryDirectory();
     final batchId = '${clipId}_${DateTime.now().millisecondsSinceEpoch}';
@@ -568,14 +574,16 @@ class VideoThumbnailService {
       final batchEnd = (batchStart + batchSize).clamp(0, allTimestamps.length);
       final batchTimestamps = allTimestamps.sublist(batchStart, batchEnd);
 
-      final bytes = await _proVideoEditor.getThumbnails(
-        ThumbnailConfigs(
-          video: EditorVideo.file(videoPath),
-          outputSize: outputSize,
-          timestamps: batchTimestamps,
-          jpegQuality: quality,
+      final bytes = await _runStripBatchExclusive(
+        () => _proVideoEditor.getThumbnails(
+          ThumbnailConfigs(
+            video: EditorVideo.file(videoPath),
+            outputSize: outputSize,
+            timestamps: batchTimestamps,
+            jpegQuality: quality,
+          ),
+          nativeLogLevel: .warning,
         ),
-        nativeLogLevel: .warning,
       );
 
       for (var i = 0; i < bytes.length && i < batchTimestamps.length; i++) {
@@ -591,8 +599,58 @@ class VideoThumbnailService {
         );
       }
 
-      yield List.unmodifiable(accumulated);
+      final sorted = [...accumulated]
+        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      yield List.unmodifiable(sorted);
     }
+  }
+
+  /// Builds a center-first timestamp sequence (midpoint refinement).
+  ///
+  /// Example progression for ~10s: 5.0s, 2.5s, 7.5s, 1.25s, 3.75s...
+  /// This improves perceived loading because early batches cover the full
+  /// timeline instead of only the beginning.
+  static List<Duration> _buildProgressiveStripTimestamps({
+    required int durationMs,
+    required int count,
+  }) {
+    final timestamps = <Duration>[];
+    final seenMs = <int>{};
+    final segments = Queue<(double, double)>()..add((0, durationMs.toDouble()));
+
+    final minMs = durationMs > 1 ? 1 : 0;
+    final maxMs = durationMs > 1 ? durationMs - 1 : durationMs;
+
+    while (segments.isNotEmpty && timestamps.length < count) {
+      final (start, end) = segments.removeFirst();
+      final width = end - start;
+      if (width <= 0) {
+        continue;
+      }
+
+      final midMs = ((start + end) / 2).round().clamp(minMs, maxMs);
+
+      if (seenMs.add(midMs)) {
+        timestamps.add(Duration(milliseconds: midMs));
+      }
+
+      if (width > 1) {
+        final mid = midMs.toDouble();
+        segments
+          ..add((start, mid))
+          ..add((mid, end));
+      }
+    }
+
+    if (timestamps.length < count) {
+      for (var i = 0; i < count && timestamps.length < count; i++) {
+        final fraction = (i + 0.5) / count;
+        final ms = (durationMs * fraction).round().clamp(minMs, maxMs);
+        timestamps.add(Duration(milliseconds: ms));
+      }
+    }
+
+    return timestamps.take(count).toList(growable: false);
   }
 
   /// Get optimal thumbnail timestamp based on video duration
