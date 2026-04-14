@@ -1,6 +1,7 @@
 // ABOUTME: Tracks per-relay statistics like subscriptions, events, and connection health
 // ABOUTME: Provides data for enhanced relay status display in settings
 
+import 'package:count_formatter/count_formatter.dart';
 import 'package:flutter/foundation.dart';
 
 /// Statistics for a single relay
@@ -76,14 +77,7 @@ class RelayStatistics {
   }
 
   /// Format a count for compact display
-  String _formatCount(int count) {
-    if (count >= 1000000) {
-      return '${(count / 1000000).toStringAsFixed(1)}M';
-    } else if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(1)}K';
-    }
-    return count.toString();
-  }
+  String _formatCount(int count) => CountFormatter.formatCompact(count);
 
   /// Format a duration for display
   String _formatDuration(Duration duration) {

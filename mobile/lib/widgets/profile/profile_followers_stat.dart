@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
@@ -17,6 +18,7 @@ class ProfileFollowersStat extends ConsumerWidget {
     required this.pubkey,
     required this.displayName,
     required this.isOwnProfile,
+    this.initialCount,
     super.key,
   });
 
@@ -29,6 +31,9 @@ class ProfileFollowersStat extends ConsumerWidget {
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
 
+  /// Initial count from profile data, shown while the BLoC loads.
+  final int? initialCount;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
@@ -40,22 +45,36 @@ class ProfileFollowersStat extends ConsumerWidget {
           followRepository: followRepository,
           contentBlocklistService: blocklistService,
         )..add(const MyFollowersListLoadRequested()),
-        child: _MyFollowersStatView(pubkey: pubkey, displayName: displayName),
+        child: _MyFollowersStatView(
+          pubkey: pubkey,
+          displayName: displayName,
+          initialCount: initialCount,
+        ),
       );
     } else {
-      // Use the OthersFollowersBloc from parent context (provided by ProfileGridView)
-      // This allows the follow button to update the count optimistically
-      return _OthersFollowersStatView(pubkey: pubkey, displayName: displayName);
+      // Use the OthersFollowersBloc from parent context (provided by
+      // ProfileGridView). This allows the follow button to update the
+      // count optimistically.
+      return _OthersFollowersStatView(
+        pubkey: pubkey,
+        displayName: displayName,
+        initialCount: initialCount,
+      );
     }
   }
 }
 
 /// View widget for current user's followers stat.
 class _MyFollowersStatView extends ConsumerWidget {
-  const _MyFollowersStatView({required this.pubkey, required this.displayName});
+  const _MyFollowersStatView({
+    required this.pubkey,
+    required this.displayName,
+    this.initialCount,
+  });
 
   final String pubkey;
   final String? displayName;
+  final int? initialCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,9 +89,9 @@ class _MyFollowersStatView extends ConsumerWidget {
             state.status == MyFollowersStatus.loading;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followerCount,
-          label: 'Followers',
-          isLoading: isLoading,
+          count: isLoading ? initialCount : state.followerCount,
+          label: context.l10n.profileFollowersLabel,
+          isLoading: isLoading && initialCount == null,
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(pubkey),
             extra: displayName,
@@ -88,10 +107,12 @@ class _OthersFollowersStatView extends ConsumerWidget {
   const _OthersFollowersStatView({
     required this.pubkey,
     required this.displayName,
+    this.initialCount,
   });
 
   final String pubkey;
   final String? displayName;
+  final int? initialCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -108,9 +129,9 @@ class _OthersFollowersStatView extends ConsumerWidget {
             state.status == OthersFollowersStatus.loading;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followerCount,
-          label: 'Followers',
-          isLoading: isLoading,
+          count: isLoading ? initialCount : state.followerCount,
+          label: context.l10n.profileFollowersLabel,
+          isLoading: isLoading && initialCount == null,
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(pubkey),
             extra: displayName,

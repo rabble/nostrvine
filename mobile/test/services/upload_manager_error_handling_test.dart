@@ -3,13 +3,13 @@
 
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/pending_upload.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
@@ -57,9 +57,15 @@ void main() {
 
   tearDown(() async {
     uploadManager.dispose();
-    await Hive.close();
-    if (testDir.existsSync()) {
+    try {
+      await Hive.close();
+    } on PathNotFoundException catch (_) {
+      // Hive may already have removed the lock file during async shutdown.
+    }
+    try {
       await testDir.delete(recursive: true);
+    } on PathNotFoundException catch (_) {
+      // Lock file may already be deleted by Hive.close().
     }
   });
 

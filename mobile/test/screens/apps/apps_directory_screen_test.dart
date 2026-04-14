@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
@@ -22,7 +23,11 @@ void main() {
     });
 
     Widget buildSubject({MockGoRouter? goRouter}) {
-      const app = MaterialApp(home: AppsDirectoryScreen());
+      const app = MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AppsDirectoryScreen(),
+      );
       return ProviderScope(
         overrides: [
           nostrAppDirectoryServiceProvider.overrideWithValue(
@@ -36,7 +41,11 @@ void main() {
     }
 
     Widget buildEmbeddedSubject() {
-      const app = MaterialApp(home: AppsDirectoryScreen(embedded: true));
+      const app = MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AppsDirectoryScreen(embedded: true),
+      );
       return ProviderScope(
         overrides: [
           nostrAppDirectoryServiceProvider.overrideWithValue(

@@ -1,0 +1,31 @@
+name: blossom_upload_service
+description: Blossom BUD-01 media upload service with resumable upload support.
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  convert: ^3.1.1
+  crypto: ^3.0.6
+  dio: ^5.7.0
+  # Required transitively by flutter_test (dev) and image_metadata_stripper.
+  # The lib/ sources do NOT import dart:ui or any flutter/* package — this
+  # package is a pure Dart data layer. Do not remove without first confirming
+  # both transitive deps are gone.
+  flutter:
+    sdk: flutter
+  hive_ce: ^2.6.0
+  image_metadata_stripper:
+    path: ../image_metadata_stripper
+  shared_preferences: ^2.5.0
+  unified_logger:
+    path: ../unified_logger
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.2.0

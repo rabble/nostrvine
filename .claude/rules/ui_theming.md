@@ -201,6 +201,25 @@ Icon(Icons.search, color: VineTheme.lightText)
 
 ---
 
+## Typography
+
+### Use VineTheme Font Methods
+Use `VineTheme` font methods (e.g. `titleMediumFont()`, `bodyMediumFont()`) instead of raw `TextStyle` constructors. VineTheme methods apply the correct font family, weight, line height, and letter spacing from the design system.
+
+**Good:**
+```dart
+Text('Display name', style: VineTheme.titleMediumFont())
+Text('Secondary info', style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText))
+```
+
+**Bad:**
+```dart
+Text('Display name', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))
+Text('Secondary info', style: const TextStyle(color: VineTheme.secondaryText, fontSize: 14))
+```
+
+---
+
 ## Widget Structure
 
 ### Page/View Pattern
@@ -363,49 +382,4 @@ SingleChildScrollView(
 
 ## Accessibility
 
-### Color Contrast
-- **Normal text:** Minimum 4.5:1 contrast ratio
-- **Large text (18pt+):** Minimum 3:1 contrast ratio
-
-### Dynamic Font Sizes
-Test with system font size increased to ensure UI remains usable.
-
-### Use minHeight, Not Fixed Height, for Text Containers
-Never use `SizedBox(height: ...)` to wrap widgets that contain text. A fixed height clips content when users increase their device font size. Use `ConstrainedBox` with `minHeight` instead — this preserves the touch-target size while letting the container grow.
-
-**Bad:**
-```dart
-SizedBox(
-  height: 48,
-  child: TextField(...),  // Clips at large font sizes
-)
-```
-
-**Good:**
-```dart
-ConstrainedBox(
-  constraints: const BoxConstraints(minHeight: 48),
-  child: TextField(...),  // Grows with text, keeps 48px minimum
-)
-```
-
-This applies to any wrapper around text-bearing widgets: `TextField`, `Text`, buttons with labels, etc.
-
-### Testing Accessibility
-- Test with screen readers (TalkBack on Android, VoiceOver on iOS)
-- Use Flutter's accessibility inspector
-- Verify touch targets are at least 48x48 dp
-
-### Semantic Labels
-Use `Semantics` widget for screen readers:
-
-```dart
-Semantics(
-  label: 'Play video',
-  button: true,
-  child: IconButton(
-    icon: const Icon(Icons.play_arrow),
-    onPressed: () {},
-  ),
-);
-```
+See `accessibility.md` for the full accessibility guide (semantic labels, announcements, traversal order, contrast, font responsiveness, motion, and testing).

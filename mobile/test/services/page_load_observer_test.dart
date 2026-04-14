@@ -1,6 +1,7 @@
 import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/page_load_observer.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
@@ -57,6 +58,8 @@ void main() {
     testWidgets('tracks didPush for regular routes', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           navigatorObservers: [observer],
           home: const Scaffold(body: Text('Home')),
           routes: {'/test': (_) => const Scaffold(body: Text('Test'))},
@@ -73,6 +76,8 @@ void main() {
     testWidgets('skips popup routes without crashing', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           navigatorObservers: [observer],
           home: Scaffold(
             body: Builder(
@@ -99,6 +104,8 @@ void main() {
     testWidgets('tracks didPop for regular routes', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           navigatorObservers: [observer],
           home: const Scaffold(body: Text('Home')),
           routes: {

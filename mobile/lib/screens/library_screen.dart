@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -17,8 +18,8 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/library/library.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   /// Route name for drafts path.
@@ -33,6 +34,12 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// Path for clips route.
   static const clipsPath = '/clips';
 
+  /// Route name for sounds path.
+  static const soundsRouteName = 'sounds';
+
+  /// Path for sounds route.
+  static const soundsPath = '/sounds';
+
   const LibraryScreen({
     super.key,
     this.initialTabIndex = 0,
@@ -42,7 +49,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
   /// Index of the tab to show when the screen opens.
   ///
-  /// `0` = Drafts, `1` = Clips.
+  /// `0` = Drafts, `1` = Clips, `2` = Sounds.
   final int initialTabIndex;
 
   /// When true, enables multi-select mode for adding clips to the editor.
@@ -70,7 +77,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 2,
+      length: 3,
       initialIndex: widget.initialTabIndex,
       vsync: this,
     );
@@ -162,7 +169,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               backgroundColor: VineTheme.error,
               foregroundColor: VineTheme.whiteText,
             ),
-            child: const Text('Delete'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),
@@ -455,6 +462,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
             tabs: const [
               Tab(text: 'Drafts'),
               Tab(text: 'Clips'),
+              Tab(text: 'Sounds'),
             ],
           ),
         );
@@ -516,6 +524,7 @@ class _TabBody extends StatelessWidget {
           targetAspectRatio: targetAspectRatio,
           isSelectionMode: false,
         ),
+        const SoundsTab(),
       ],
     );
   }

@@ -1,7 +1,7 @@
 // ABOUTME: Bridges pooled_video_player debug logs into the app's unified logger
 // ABOUTME: Enables production log exports to include video player diagnostics
 
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Creates a logging callback for [VideoFeedController.onLog] that forwards
 /// messages into the app's structured logging system.

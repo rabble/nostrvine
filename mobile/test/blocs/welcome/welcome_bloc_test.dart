@@ -106,7 +106,7 @@ void main() {
       );
 
       blocTest<WelcomeBloc, WelcomeState>(
-        'emits loaded with single returning user and profile',
+        'emits accounts immediately, then hydrates profiles later',
         setUp: () {
           when(
             () => mockAuthService.getKnownAccounts(),
@@ -118,6 +118,12 @@ void main() {
         build: buildBloc,
         act: (bloc) => bloc.add(const WelcomeStarted()),
         expect: () => [
+          // First: accounts without profiles
+          const WelcomeState(
+            status: WelcomeStatus.loaded,
+            previousAccounts: [_testPreviousAccount],
+          ),
+          // Second: accounts with hydrated profiles
           WelcomeState(
             status: WelcomeStatus.loaded,
             previousAccounts: [
@@ -172,7 +178,7 @@ void main() {
       );
 
       blocTest<WelcomeBloc, WelcomeState>(
-        'emits loaded with multiple accounts in order',
+        'emits loaded with multiple accounts then hydrates profiles',
         setUp: () {
           when(
             () => mockAuthService.getKnownAccounts(),
@@ -187,6 +193,15 @@ void main() {
         build: buildBloc,
         act: (bloc) => bloc.add(const WelcomeStarted()),
         expect: () => [
+          // First: accounts without profiles
+          const WelcomeState(
+            status: WelcomeStatus.loaded,
+            previousAccounts: [
+              _testPreviousAccount,
+              _testPreviousAccount2,
+            ],
+          ),
+          // Second: accounts with hydrated profiles
           WelcomeState(
             status: WelcomeStatus.loaded,
             previousAccounts: [
@@ -305,7 +320,6 @@ void main() {
           const WelcomeState(
             status: WelcomeStatus.error,
             previousAccounts: [_testPreviousAccount],
-            error: 'Failed to continue: Exception: Network error',
           ),
         ],
       );
@@ -331,14 +345,12 @@ void main() {
             signingInPubkeyHex: _testPubkeyHex,
           ),
           const WelcomeState(
-            status: WelcomeStatus.error,
+            status: WelcomeStatus.sessionExpired,
             previousAccounts: [_testPreviousAccount],
-            error: 'Your session has expired. Please sign in again.',
           ),
           const WelcomeState(
             status: WelcomeStatus.navigatingToLoginOptions,
             previousAccounts: [_testPreviousAccount],
-            error: 'Your session has expired. Please sign in again.',
           ),
           const WelcomeState(
             status: WelcomeStatus.loaded,
@@ -470,13 +482,12 @@ void main() {
       expect(cleared.signingInPubkeyHex, isNull);
     });
 
-    test('copyWith clearError removes error', () {
+    test('copyWith status resets from error', () {
       const state = WelcomeState(
         status: WelcomeStatus.error,
-        error: 'some error',
       );
-      final cleared = state.copyWith(clearError: true);
-      expect(cleared.error, isNull);
+      final cleared = state.copyWith(status: WelcomeStatus.loaded);
+      expect(cleared.status, equals(WelcomeStatus.loaded));
     });
   });
 }

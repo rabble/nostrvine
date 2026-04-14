@@ -114,7 +114,9 @@ class MessageBubble extends StatelessWidget {
         bottom: isLastInGroup ? 8 : 2,
       ),
       child: Align(
-        alignment: isSent ? Alignment.centerRight : Alignment.centerLeft,
+        alignment: isSent
+            ? AlignmentDirectional.centerEnd
+            : AlignmentDirectional.centerStart,
         child: Semantics(
           hint: isSent ? 'Sent message' : 'Received message',
           onLongPressHint: onLongPress != null ? 'Message actions' : null,

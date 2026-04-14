@@ -5,12 +5,15 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
 
 void main() {
   group(AuthHeroSection, () {
     Widget createTestWidget() {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: const Scaffold(
           body: SingleChildScrollView(child: AuthHeroSection()),
@@ -49,17 +52,11 @@ void main() {
         expect(text.style?.color, equals(VineTheme.whiteText));
       });
 
-      testWidgets('displays $SvgPicture logo', (tester) async {
+      testWidgets('displays logo and sticker SVGs', (tester) async {
         await tester.pumpWidget(createTestWidget());
 
-        expect(find.byType(SvgPicture), findsOneWidget);
-      });
-
-      testWidgets('displays sticker images', (tester) async {
-        await tester.pumpWidget(createTestWidget());
-
-        // 4 sticker images in the Stack
-        expect(find.byType(Image), findsNWidgets(4));
+        // 4 sticker SVGs + 1 logo SVG = 5 total
+        expect(find.byType(SvgPicture), findsNWidgets(5));
       });
     });
   });

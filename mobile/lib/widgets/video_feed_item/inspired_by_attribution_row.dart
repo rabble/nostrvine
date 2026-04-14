@@ -7,11 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A tappable row showing inspired-by attribution on a video feed item.
 ///
@@ -118,7 +119,7 @@ class _InspiredByContent extends ConsumerWidget {
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  'Inspired by @$creatorName',
+                  context.l10n.videoInspiredByAttribution(creatorName),
                   style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 12,

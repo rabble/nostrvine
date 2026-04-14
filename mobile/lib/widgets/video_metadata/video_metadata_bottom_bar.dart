@@ -10,8 +10,8 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/gallery_permission_sheet.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
 ///

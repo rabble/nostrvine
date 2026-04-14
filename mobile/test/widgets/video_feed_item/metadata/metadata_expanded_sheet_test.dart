@@ -11,9 +11,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
@@ -132,6 +134,8 @@ void main() {
     return UncontrolledProviderScope(
       container: ProviderContainer(overrides: providerOverrides),
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: MultiBlocProvider(
             providers: [
@@ -164,6 +168,22 @@ void main() {
       expect(find.text('A description'), findsOneWidget);
     });
 
+    testWidgets('renders description with clickable rich text', (
+      tester,
+    ) async {
+      final video = _makeVideo(
+        title: 'Who knew?',
+        content: 'Read more at https://example.com/docs #proof',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+
+      expect(find.text('Who knew?'), findsOneWidget);
+      expect(find.byType(ClickableHashtagText), findsOneWidget);
+    });
+
     testWidgets('hides title section when both are empty', (tester) async {
       final video = _makeVideo();
 
@@ -189,7 +209,7 @@ void main() {
         buildSubject(child: MetadataStatsRow(video: video)),
       );
 
-      expect(find.text('1.5k'), findsOneWidget); // originalLoops
+      expect(find.text('1.5K'), findsOneWidget); // originalLoops
       expect(find.text('250'), findsOneWidget); // likeCount
       expect(find.text('42'), findsOneWidget); // commentCount
       expect(find.text('15'), findsOneWidget); // repostCount
@@ -363,7 +383,7 @@ void main() {
       expect(find.text('Animals'), findsOneWidget);
       expect(find.text('Music'), findsOneWidget);
       expect(find.text('🐾'), findsOneWidget);
-      expect(find.text('🎵'), findsOneWidget);
+      expect(find.text('🎸'), findsOneWidget);
       // Hashtag chip still present
       expect(find.text('cool'), findsOneWidget);
       expect(find.text('#'), findsOneWidget);
@@ -590,14 +610,16 @@ void main() {
       expect(find.text('Test Sound'), findsOneWidget);
     });
 
-    testWidgets('hides when no audio reference', (tester) async {
+    testWidgets('shows original sound when no audio reference', (tester) async {
       final video = _makeVideo();
 
       await tester.pumpWidget(
         buildSubject(child: MetadataSoundsSection(video: video)),
       );
+      await tester.pumpAndSettle();
 
-      expect(find.text('Sounds'), findsNothing);
+      expect(find.text('Sounds'), findsOneWidget);
+      expect(find.text('Original sound'), findsOneWidget);
     });
   });
 
@@ -731,7 +753,14 @@ void main() {
       expect(find.text('Collaborators'), findsNothing);
       expect(find.text('Inspired by'), findsNothing);
       expect(find.text('Reposted by'), findsNothing);
-      expect(find.text('Sounds'), findsNothing);
+
+      // Sounds section is always present (shows "Original sound")
+      // Scroll down to find it
+      final listFinder = find.byType(ListView);
+      await tester.drag(listFinder, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(find.text('Sounds'), findsOneWidget);
+      expect(find.text('Original sound'), findsOneWidget);
     });
   });
 }

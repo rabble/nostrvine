@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:test/test.dart';
+import 'package:unique_names_generator/unique_names_generator.dart';
 
 void main() {
   group('UserProfile', () {
@@ -10,7 +11,7 @@ void main() {
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
     const testEventId =
         'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2';
-    final testCreatedAt = DateTime(2024);
+    final testCreatedAt = DateTime.utc(2024);
 
     group('constructor', () {
       test('creates profile with required fields', () {
@@ -53,6 +54,7 @@ void main() {
         expect(profile.nip05, equals('test@example.com'));
         expect(profile.lud16, equals('test@wallet.com'));
         expect(profile.lud06, equals('lnurl1234'));
+        expect(profile.createdAt.isUtc, isTrue);
       });
     });
 
@@ -152,6 +154,7 @@ void main() {
         expect(profile.rawData, isEmpty);
         expect(profile.name, isNull);
         expect(profile.displayName, isNull);
+        expect(profile.createdAt.isUtc, isTrue);
       });
 
       test('preserves rawData', () {
@@ -439,6 +442,70 @@ void main() {
         );
 
         expect(profile1.bestDisplayName, equals(profile2.bestDisplayName));
+      });
+    });
+
+    group('generatedNameFor', () {
+      test('returns pinned output for testPubkey', () {
+        expect(
+          UserProfile.generatedNameFor(testPubkey),
+          equals('Integral Cicada 66'),
+        );
+      });
+
+      test('returns pinned output for issue #2979 example pubkey', () {
+        // Hex pubkey from the issue report (npub1488afm…).
+        // Full npub: npub1488afme74urmveua85xkkyxc83c
+        // 608qtgg2ncmth4f2npvjgw8lqehxguh
+        const issuePubkey =
+            '89ef92b9ebe6dc1e4ea398f6477f227e95429627b0a33dc89b640e137b256be5';
+        expect(
+          UserProfile.generatedNameFor(issuePubkey),
+          equals('Possible Mandrill 76'),
+        );
+      });
+
+      test('output matches expected format', () {
+        final name = UserProfile.generatedNameFor(testPubkey);
+        // Format: "Adjective Animal N" where N is 1–99.
+        expect(name, matches(RegExp(r'^[A-Z][a-z]+ [A-Z][a-z]+ \d{1,2}$')));
+      });
+
+      test('is deterministic across calls', () {
+        const pubkey =
+            'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
+        final first = UserProfile.generatedNameFor(pubkey);
+        final second = UserProfile.generatedNameFor(pubkey);
+        expect(first, equals(second));
+      });
+
+      test('different pubkeys produce different names', () {
+        const pubkeyA =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        const pubkeyB =
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+        expect(
+          UserProfile.generatedNameFor(pubkeyA),
+          isNot(equals(UserProfile.generatedNameFor(pubkeyB))),
+        );
+      });
+
+      test('word list sizes are stable', () {
+        // Guard against silent changes from unique_names_generator updates.
+        // If these fail, the package changed its dictionaries and every
+        // anonymous user's generated name may have shifted.
+        expect(adjectives.length, equals(1202));
+        expect(animals.length, equals(354));
+      });
+
+      test('handles single-character pubkey', () {
+        final name = UserProfile.generatedNameFor('a');
+        expect(name, matches(RegExp(r'^[A-Z][a-z]+ [A-Z][a-z]+ \d{1,2}$')));
+      });
+
+      test('handles numeric-only pubkey', () {
+        final name = UserProfile.generatedNameFor('1234567890');
+        expect(name, matches(RegExp(r'^[A-Z][a-z]+ [A-Z][a-z]+ \d{1,2}$')));
       });
     });
 

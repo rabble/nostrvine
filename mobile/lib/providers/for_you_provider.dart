@@ -7,8 +7,8 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'for_you_provider.g.dart';
 

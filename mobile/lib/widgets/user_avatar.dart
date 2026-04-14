@@ -5,8 +5,8 @@ import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 enum UserAvatarPlaceholderTone {
   auto,

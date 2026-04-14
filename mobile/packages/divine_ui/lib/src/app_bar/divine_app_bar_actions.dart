@@ -57,7 +57,7 @@ class DiVineAppBarActions extends StatelessWidget {
     }
 
     return Padding(
-      padding: EdgeInsets.only(right: style.horizontalPadding),
+      padding: EdgeInsetsDirectional.only(end: style.horizontalPadding),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

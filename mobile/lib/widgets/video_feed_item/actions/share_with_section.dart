@@ -35,11 +35,11 @@ class _ShareWithSection extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 12,
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'Share with',
-              style: TextStyle(
+              context.l10n.shareWithTitle,
+              style: const TextStyle(
                 color: VineTheme.whiteText,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -92,7 +92,7 @@ class _FindPeopleItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Find people',
+      label: context.l10n.shareFindPeople,
       child: GestureDetector(
         onTap: onTap,
         child: SizedBox(
@@ -117,9 +117,9 @@ class _FindPeopleItem extends StatelessWidget {
                   ),
                 ),
               ),
-              const Text(
-                'Find\npeople',
-                style: TextStyle(
+              Text(
+                context.l10n.shareFindPeopleMultiline,
+                style: const TextStyle(
                   color: VineTheme.secondaryText,
                   fontSize: 11,
                 ),
@@ -174,7 +174,7 @@ class _ContactItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: user.displayName ?? 'Contact',
+      label: user.displayName ?? context.l10n.shareContactFallback,
       child: GestureDetector(
         onTap: isSent ? null : onTap,
         child: SizedBox(
@@ -214,7 +214,9 @@ class _ContactItem extends StatelessWidget {
                 ],
               ),
               Text(
-                isSent ? 'Sent' : (user.displayName ?? 'User'),
+                isSent
+                    ? context.l10n.shareSent
+                    : (user.displayName ?? context.l10n.shareUserFallback),
                 style: TextStyle(
                   color: (isSelected || isSent)
                       ? VineTheme.vineGreen

@@ -15,7 +15,7 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/repositories/follow_repository.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';

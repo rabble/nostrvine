@@ -1,5 +1,7 @@
 // ABOUTME: Video feed item using individual controller architecture
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
+// ABOUTME: SCOPE: Non-feed detail use cases only (e.g. debug screens).
+// ABOUTME: Feed surfaces must use PooledFullscreenVideoFeedScreen / PooledVideoFeed instead.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +14,8 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
@@ -25,7 +29,6 @@ import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
-import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
@@ -36,7 +39,6 @@ import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
@@ -52,11 +54,13 @@ import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -929,7 +933,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                 final routePath = switch (ctx.type) {
                   RouteType.home => VideoFeedPage.pathForIndex(widget.index),
                   RouteType.explore => ExploreScreen.pathForIndex(widget.index),
-                  RouteType.notifications => NotificationsScreen.pathForIndex(
+                  RouteType.notifications => NotificationsPage.pathForIndex(
                     widget.index,
                   ),
                   RouteType.profile => ProfileScreenRouter.pathForIndex(
@@ -996,17 +1000,17 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         fit: StackFit.expand,
                         children: [
                           VideoThumbnailWidget(video: video),
-                          const ColoredBox(
+                          ColoredBox(
                             color: VineTheme.scrim50,
                             child: Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  BrandedLoadingIndicator(size: 60),
-                                  SizedBox(height: 16),
+                                  const BrandedLoadingIndicator(size: 60),
+                                  const SizedBox(height: 16),
                                   Text(
-                                    'Loading video...',
-                                    style: TextStyle(
+                                    context.l10n.videoPlayerLoadingVideo,
+                                    style: const TextStyle(
                                       color: VineTheme.whiteText,
                                       fontSize: 14,
                                     ),
@@ -1142,9 +1146,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             if (isActive &&
                                 value.isInitialized &&
                                 !value.isPlaying)
-                              const CenterPlaybackControl(
+                              CenterPlaybackControl(
                                 state: CenterPlaybackControlState.play,
-                                semanticsLabel: 'Play video',
+                                semanticsLabel:
+                                    context.l10n.videoPlayerPlayVideo,
                               ),
                             // Fading pause button when resuming playback
                             if (_showFadingPauseButton &&
@@ -1428,9 +1433,9 @@ class VideoOverlayActions extends ConsumerWidget {
                   contentWarningLabels: video.contentWarningLabels,
                   warnLabels: video.warnLabels,
                 ))
-              Positioned(
+              PositionedDirectional(
                 top: safeAreaTop + topOffset + 56,
-                left: 16,
+                start: 16,
                 child: GestureDetector(
                   onTap: () => _showContentWarningDetails(
                     context,
@@ -1445,9 +1450,9 @@ class VideoOverlayActions extends ConsumerWidget {
               ),
             // ProofMode and Vine badges in upper right corner (tappable)
             if (!isPreviewMode)
-              Positioned(
+              PositionedDirectional(
                 top: safeAreaTop + topOffset,
-                right: 16,
+                end: 16,
                 child: GestureDetector(
                   onTap: () {
                     _showBadgeExplanationModal(context, ref, video, isActive);
@@ -1529,8 +1534,8 @@ class VideoOverlayActions extends ConsumerWidget {
                                     onTap: navigateToProfile,
                                   ),
                                   // Follow button positioned at bottom-right of avatar
-                                  Positioned(
-                                    left: 31,
+                                  PositionedDirectional(
+                                    start: 31,
                                     top: 31,
                                     child: VideoFollowButton(
                                       pubkey: video.pubkey,
@@ -1637,34 +1642,38 @@ class VideoOverlayActions extends ConsumerWidget {
                       const SizedBox(
                         height: 2,
                       ), // 2px + 10px from avatar container = 12px total
-                      Semantics(
-                        identifier: 'video_description',
-                        container: true,
-                        explicitChildNodes: true,
-                        label:
-                            'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-                        child: ClickableHashtagText(
-                          text:
-                              (video.content.isNotEmpty
-                                      ? video.content
-                                      : video.title ?? '')
-                                  .trim(),
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            color: VineTheme.whiteText,
-                            fontSize: 14,
-                            height: 20 / 14,
-                            letterSpacing: 0.25,
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => MetadataExpandedSheet.show(context, video),
+                        child: Semantics(
+                          identifier: 'video_description',
+                          container: true,
+                          explicitChildNodes: true,
+                          label:
+                              'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
+                          child: ClickableHashtagText(
+                            text:
+                                (video.content.isNotEmpty
+                                        ? video.content
+                                        : video.title ?? '')
+                                    .trim(),
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              color: VineTheme.whiteText,
+                              fontSize: 14,
+                              height: 20 / 14,
+                              letterSpacing: 0.25,
+                            ),
+                            hashtagStyle: const TextStyle(
+                              fontFamily: 'Inter',
+                              color: VineTheme.vineGreen,
+                              fontSize: 14,
+                              height: 20 / 14,
+                              letterSpacing: 0.25,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          hashtagStyle: const TextStyle(
-                            fontFamily: 'Inter',
-                            color: VineTheme.vineGreen,
-                            fontSize: 14,
-                            height: 20 / 14,
-                            letterSpacing: 0.25,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       // Collaborator avatar row (if video has collaborators)
@@ -1680,23 +1689,19 @@ class VideoOverlayActions extends ConsumerWidget {
                           isActive: isActive,
                         ),
                       ],
-                      // Audio attribution row (if video uses external audio)
-                      if (video.hasAudioReference) ...[
-                        const SizedBox(height: 4),
-                        AudioAttributionRow(video: video),
-                      ],
-                      const SizedBox(
-                        height: 8,
-                      ), // Bottom spacing only when description exists
                     ],
+                    // Audio attribution row (all videos)
+                    const SizedBox(height: 4),
+                    AudioAttributionRow(video: video),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
             ),
             // Action buttons at bottom right
-            Positioned(
+            PositionedDirectional(
               bottom: bottomOffset - 6,
-              right: 16,
+              end: 16,
               child: AnimatedOpacity(
                 opacity: isActive ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 200),
@@ -1851,7 +1856,7 @@ class _VideoEditButton extends ConsumerWidget {
           container: true,
           explicitChildNodes: true,
           button: true,
-          label: 'Edit video',
+          label: context.l10n.videoPlayerEditVideo,
           child: IconButton(
             padding: const EdgeInsets.all(8),
             constraints: const BoxConstraints.tightFor(width: 48, height: 48),
@@ -1869,7 +1874,7 @@ class _VideoEditButton extends ConsumerWidget {
               // Show edit dialog directly (works on all platforms)
               showEditDialogForVideo(context, video);
             },
-            tooltip: 'Edit video',
+            tooltip: context.l10n.videoPlayerEditVideoTooltip,
             icon: DecoratedBox(
               decoration: BoxDecoration(
                 boxShadow: [
@@ -2035,7 +2040,7 @@ class _Nip05Badge extends ConsumerWidget {
     if (!isVerified) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsetsDirectional.only(start: 4),
       child: Container(
         padding: const EdgeInsets.all(2),
         decoration: const BoxDecoration(
@@ -2075,7 +2080,9 @@ class _ContentWarningBadge extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            labels.length == 1 ? _humanize(labels.first) : 'Content Warning',
+            labels.length == 1
+                ? _humanize(context, labels.first)
+                : context.l10n.contentWarningLabel,
             style: const TextStyle(
               color: VineTheme.contentWarningAmber,
               fontSize: 11,
@@ -2087,79 +2094,46 @@ class _ContentWarningBadge extends StatelessWidget {
     );
   }
 
-  /// Convert a NIP-32 label value to a human-readable string.
-  static String _humanize(String label) {
-    switch (label) {
-      case 'nudity':
-        return 'Nudity';
-      case 'sexual':
-        return 'Sexual Content';
-      case 'porn':
-        return 'Pornography';
-      case 'graphic-media':
-        return 'Graphic Media';
-      case 'violence':
-        return 'Violence';
-      case 'self-harm':
-        return 'Self-Harm';
-      case 'drugs':
-        return 'Drug Use';
-      case 'alcohol':
-        return 'Alcohol';
-      case 'tobacco':
-        return 'Tobacco';
-      case 'gambling':
-        return 'Gambling';
-      case 'profanity':
-        return 'Profanity';
-      case 'flashing-lights':
-        return 'Flashing Lights';
-      case 'ai-generated':
-        return 'AI-Generated';
-      case 'spoiler':
-        return 'Spoiler';
-      case 'content-warning':
-        return 'Sensitive Content';
-      default:
-        return 'Content Warning';
-    }
-  }
+  /// Convert a NIP-32 label value to a localized human-readable string.
+  static String _humanize(BuildContext context, String label) =>
+      humanizeContentLabel(context, label);
 
-  /// Return a description for a NIP-32 content-warning label.
-  static String _describe(String label) {
+  /// Return a localized description for a NIP-32 content-warning label.
+  static String _describe(BuildContext context, String label) {
+    final l10n = context.l10n;
     switch (label) {
       case 'nudity':
-        return 'Contains nudity or partial nudity';
+        return l10n.contentWarningDescNudity;
       case 'sexual':
-        return 'Contains sexual content';
+        return l10n.contentWarningDescSexual;
       case 'porn':
-        return 'Contains explicit pornographic content';
+        return l10n.contentWarningDescPorn;
       case 'graphic-media':
-        return 'Contains graphic or disturbing imagery';
+        return l10n.contentWarningDescGraphicMedia;
       case 'violence':
-        return 'Contains violent content';
+        return l10n.contentWarningDescViolence;
       case 'self-harm':
-        return 'Contains references to self-harm';
+        return l10n.contentWarningDescSelfHarm;
       case 'drugs':
-        return 'Contains drug-related content';
+        return l10n.contentWarningDescDrugs;
       case 'alcohol':
-        return 'Contains alcohol-related content';
+        return l10n.contentWarningDescAlcohol;
       case 'tobacco':
-        return 'Contains tobacco-related content';
+        return l10n.contentWarningDescTobacco;
       case 'gambling':
-        return 'Contains gambling-related content';
+        return l10n.contentWarningDescGambling;
       case 'profanity':
-        return 'Contains strong language';
+        return l10n.contentWarningDescProfanity;
       case 'flashing-lights':
-        return 'Contains flashing lights (photosensitivity warning)';
+        return l10n.contentWarningDescFlashingLights;
       case 'ai-generated':
-        return 'This content was generated by AI';
+        return l10n.contentWarningDescAiGenerated;
       case 'spoiler':
-        return 'Contains spoilers';
+        return l10n.contentWarningDescSpoiler;
       case 'content-warning':
-        return 'Creator marked this as sensitive';
+        return l10n.contentWarningDescContentWarning;
       default:
-        return 'Creator flagged this content';
+        return l10n.contentWarningDescDefault;
     }
   }
 }
@@ -2191,15 +2165,18 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Content Warnings',
+                  context.l10n.contentWarningDetailsTitle,
                   style: VineTheme.titleMediumFont(),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            const Text(
-              'The creator applied these labels:',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+            Text(
+              context.l10n.contentWarningDetailsSubtitle,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 16),
             // Label list
@@ -2223,7 +2200,10 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _ContentWarningBadge._humanize(label),
+                            _ContentWarningBadge._humanize(
+                              context,
+                              label,
+                            ),
                             style: const TextStyle(
                               color: VineTheme.whiteText,
                               fontSize: 15,
@@ -2232,7 +2212,10 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _ContentWarningBadge._describe(label),
+                            _ContentWarningBadge._describe(
+                              context,
+                              label,
+                            ),
                             style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 13,
@@ -2261,9 +2244,9 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                   size: 18,
                   color: VineTheme.vineGreen,
                 ),
-                label: const Text(
-                  'Manage content filters',
-                  style: TextStyle(
+                label: Text(
+                  context.l10n.contentWarningManageFilters,
+                  style: const TextStyle(
                     color: VineTheme.vineGreen,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

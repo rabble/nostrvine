@@ -9,25 +9,36 @@ import 'package:audio_session/audio_session.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
     show DivineVideoPlayerController;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/blocs/locale/locale_cubit.dart';
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
+import 'package:openvine/l10n/email_verification_error_l10n.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
+import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
@@ -40,7 +51,6 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -49,8 +59,9 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
+import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
+import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
@@ -60,7 +71,6 @@ import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
@@ -68,7 +78,50 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:window_manager/window_manager.dart';
+
+/// Top-level background message handler required by Firebase.
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+
+  final data = message.data;
+  final title = data['title'] as String? ?? 'diVine';
+  final body = data['body'] as String? ?? '';
+
+  if (body.isEmpty) return;
+
+  final plugin = FlutterLocalNotificationsPlugin();
+  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const darwinInit = DarwinInitializationSettings();
+  const initSettings = InitializationSettings(
+    android: androidInit,
+    iOS: darwinInit,
+    macOS: darwinInit,
+  );
+  await plugin.initialize(initSettings);
+
+  const androidDetails = AndroidNotificationDetails(
+    'openvine_push',
+    'Push Notifications',
+    channelDescription: 'Notifications from diVine',
+    importance: Importance.high,
+    priority: Priority.high,
+  );
+  const details = NotificationDetails(
+    android: androidDetails,
+    iOS: DarwinNotificationDetails(),
+  );
+
+  await plugin.show(
+    DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    title,
+    body,
+    details,
+    payload: data['referencedEventId'] as String?,
+  );
+}
 
 @visibleForTesting
 bool handleKnownFrameworkError(
@@ -281,6 +334,45 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
     optional: true,
   );
 
+  coordinator.registerService(
+    name: 'PushNotifications',
+    phase: StartupPhase.deferred,
+    initialize: () async {
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
+
+      // Check if app was launched from a push notification tap (cold start)
+      final initialMessage = await FirebaseMessaging.instance
+          .getInitialMessage();
+      if (initialMessage != null) {
+        final referencedEventId =
+            initialMessage.data['referencedEventId'] as String?;
+        if (referencedEventId != null) {
+          Log.info(
+            'App launched from push notification, target: $referencedEventId',
+            name: 'main',
+            category: LogCategory.system,
+          );
+        }
+      }
+
+      // Handle taps on notifications while app is in background
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        final referencedEventId = message.data['referencedEventId'] as String?;
+        if (referencedEventId != null) {
+          Log.info(
+            'Push notification tapped (background), '
+            'target: $referencedEventId',
+            name: 'main',
+            category: LogCategory.system,
+          );
+        }
+      });
+    },
+    optional: true,
+  );
+
   return coordinator;
 }
 
@@ -289,7 +381,15 @@ Future<void> _startOpenVineApp() async {
   final startTime = DateTime.now();
 
   // Ensure bindings are initialized first (required for everything)
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Keep the native splash visible until auth resolves. AuthService calls
+  // FlutterNativeSplash.remove() in its initialize() finally block once a
+  // terminal auth state is reached. The Future.delayed is a safety net for
+  // catastrophic hangs — 5s is chosen to cover slow bunker/relay reconnects.
+  // See #2749 and #2953 for the investigation.
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  Future.delayed(const Duration(seconds: 5), FlutterNativeSplash.remove);
 
   // Lock app to portrait mode only (portrait up and portrait down)
   // Skip on desktop platforms where orientation lock doesn't apply
@@ -324,6 +424,13 @@ Future<void> _startOpenVineApp() async {
     isWeb: kIsWeb,
     configureCache: DivineVideoPlayerController.configureCache,
   );
+
+  // Dispose any zombie native players from a previous Dart VM
+  // (e.g. hot restart). Must happen after configureCache so the
+  // global method channel is already registered.
+  if (!kIsWeb) {
+    await DivineVideoPlayerController.disposeAll();
+  }
 
   StartupPerformanceService.instance.completePhase('bindings');
 
@@ -1285,7 +1392,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       if (ctx.videoIndex != null && ctx.videoIndex != 0) {
         final newRoute = switch (ctx.type) {
           // Notifications always has an index, go to index 0
-          RouteType.notifications => NotificationsScreen.pathForIndex(0),
+          RouteType.notifications => NotificationsPage.pathForIndex(0),
           RouteType.explore => ExploreScreen.path,
           RouteType.profile => ProfileScreenRouter.pathForNpub(
             ctx.npub ?? 'me',
@@ -1330,7 +1437,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               router.go(ExploreScreen.path);
             }
           case 2:
-            router.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
+            router.go(NotificationsPage.pathForIndex(lastIndex ?? 0));
           case 3:
             // Get current user's npub for profile
             final authService = ref.read(authServiceProvider);
@@ -1357,27 +1464,44 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       return false; // Not handled - let PopScope handle it (may exit app)
     }
 
-    // On iOS/macOS/Windows, use PopScope. On Android, platform channel handles it
-    final app = (!kIsWeb && io.Platform.isAndroid)
-        ? MaterialApp.router(
+    // Build MaterialApp with locale from LocaleCubit.
+    // The BlocBuilder is used because the cubit is provided further down
+    // in the widget tree by MultiBlocProvider.
+    Widget buildApp(Locale? locale) {
+      if (!kIsWeb && io.Platform.isAndroid) {
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: VineTheme.statusBarStyle,
+          child: MaterialApp.router(
             title: 'Divine',
             debugShowCheckedModeBanner: false,
             theme: VineTheme.theme,
             routerConfig: router,
-          )
-        : PopScope(
-            canPop: false,
-            onPopInvokedWithResult: (didPop, result) async {
-              if (didPop) return;
-              await handleBackNavigation(router, ref);
-            },
-            child: MaterialApp.router(
-              title: 'Divine',
-              debugShowCheckedModeBanner: false,
-              theme: VineTheme.theme,
-              routerConfig: router,
-            ),
-          );
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        );
+      }
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          await handleBackNavigation(router, ref);
+        },
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: VineTheme.statusBarStyle,
+          child: MaterialApp.router(
+            title: 'Divine',
+            debugShowCheckedModeBanner: false,
+            theme: VineTheme.theme,
+            routerConfig: router,
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+    }
 
     /// Creates the publish service with callbacks wired to this notifier.
     Future<VideoPublishService> createPublishService({
@@ -1396,13 +1520,45 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       );
     }
 
+    const forceOpenOnboarding = AppConfig.isGhActionsPrPreviewBuild;
+
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(
       providers: [
         RepositoryProvider(
-          create: (_) =>
-              InviteApiService(authService: ref.read(nip98AuthServiceProvider)),
-          dispose: (service) => service.dispose(),
+          create: (_) => InviteApiClient(
+            baseUrl: AppConfig.inviteServerBaseUrl,
+            // ignore: avoid_redundant_argument_values
+            forceOpenOnboarding: forceOpenOnboarding,
+            authHeaderProvider:
+                ({
+                  required String url,
+                  required InviteRequestMethod method,
+                  String? payload,
+                }) async {
+                  final authService = ref.read(nip98AuthServiceProvider);
+                  if (!authService.canCreateTokens) return null;
+                  final token = await authService.createAuthToken(
+                    url: url,
+                    method: switch (method) {
+                      InviteRequestMethod.get => HttpMethod.get,
+                      InviteRequestMethod.post => HttpMethod.post,
+                      InviteRequestMethod.put => HttpMethod.put,
+                      InviteRequestMethod.patch => HttpMethod.patch,
+                    },
+                    payload: payload,
+                  );
+                  return token?.authorizationHeader;
+                },
+            warningLogger: (message) {
+              Log.warning(
+                message,
+                name: 'InviteApiClient',
+                category: LogCategory.api,
+              );
+            },
+          ),
+          dispose: (client) => client.dispose(),
         ),
         BlocProvider(
           create: (_) =>
@@ -1411,6 +1567,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       ],
       child: MultiBlocProvider(
         providers: [
+          BlocProvider(
+            create: (_) => LocaleCubit(
+              localePreferenceService: LocalePreferenceService(
+                sharedPreferences: ref.read(sharedPreferencesProvider),
+              ),
+            ),
+          ),
           BlocProvider(
             create: (_) => BackgroundPublishBloc(
               videoPublishServiceFactory: createPublishService,
@@ -1424,14 +1587,19 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           ),
           BlocProvider(
             create: (context) => InviteGateBloc(
-              inviteApiService: context.read<InviteApiService>(),
+              inviteApiClient: context.read<InviteApiClient>(),
             ),
           ),
           BlocProvider(
             create: (context) => EmailVerificationCubit(
               oauthClient: ref.read(oauthClientProvider),
               authService: ref.read(authServiceProvider),
-              inviteApiService: context.read<InviteApiService>(),
+              inviteApiClient: context.read<InviteApiClient>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => InviteStatusCubit(
+              inviteApiClient: context.read<InviteApiClient>(),
             ),
           ),
           BlocProvider(
@@ -1453,10 +1621,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               previous.status != EmailVerificationStatus.failure,
           listener: (context, state) {
             final messenger = ScaffoldMessenger.maybeOf(context);
-            if (messenger != null && state.error != null) {
+            final errorCode = state.errorCode;
+            if (messenger != null && errorCode != null) {
               messenger.showSnackBar(
                 SnackBar(
-                  content: Text(state.error!),
+                  content: Text(
+                    context.l10n.emailVerificationErrorMessage(errorCode),
+                  ),
                   backgroundColor: VineTheme.error,
                   behavior: SnackBarBehavior.floating,
                   duration: const Duration(seconds: 5),
@@ -1466,7 +1637,14 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           },
           child: UpdateDialogListener(
             child: _UploadFailureListener(
-              child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+              child: GeoBlockingGate(
+                child: AppLifecycleHandler(
+                  child: BlocBuilder<LocaleCubit, LocaleState>(
+                    builder: (context, localeState) =>
+                        buildApp(localeState.locale),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

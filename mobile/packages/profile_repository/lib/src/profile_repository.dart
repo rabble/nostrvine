@@ -250,8 +250,8 @@ class ProfileRepository {
   /// Strategy:
   /// 1. Funnelcake REST API (fast, broad coverage)
   /// 2. Connected relays and indexer relays —
-  ///    both fired **in parallel**, first result wins
-  ///    to minimise latency
+  ///    both fired **in parallel**, first valid result returns immediately
+  ///    and slower sources may upgrade the cache if they are newer
   ///
   /// Skips all fetches if the pubkey is confirmed missing.
   /// Deduplicates concurrent calls for the same pubkey —
@@ -305,11 +305,11 @@ class ProfileRepository {
     }
 
     // Step 2: Fire connected relays and indexer relays concurrently.
-    // The first source to return a profile wins.
+    // Return the first valid profile immediately, then let slower
+    // sources upgrade the cache if they have a newer kind 0 event.
     final profile = await _fetchFromRelaysParallel(pubkey);
     if (profile != null) {
-      _knownCached.add(pubkey);
-      await _userProfilesDao.upsertProfile(profile);
+      await _cacheProfileIfNewer(profile);
       return profile;
     }
 
@@ -322,42 +322,55 @@ class ProfileRepository {
     return null;
   }
 
+  Future<void> _cacheProfileIfNewer(UserProfile profile) async {
+    final cachedProfile = await _userProfilesDao.getProfile(profile.pubkey);
+    if (cachedProfile != null &&
+        !profile.createdAt.isAfter(cachedProfile.createdAt)) {
+      return;
+    }
+
+    _confirmedMissing.remove(profile.pubkey);
+    _knownCached.add(profile.pubkey);
+    await _userProfilesDao.upsertProfile(profile);
+  }
+
   /// Queries connected relays and indexer relays in parallel for a
-  /// kind 0 profile event. Returns as soon as the first source
-  /// finds a profile (first-result-wins) to minimise latency.
-  /// Falls back to null only when every source completes without
-  /// a result.
+  /// kind 0 profile event. Returns the first valid profile immediately,
+  /// then upgrades the cache if a slower source yields a newer event.
+  /// Falls back to null only when every source completes without a result.
   Future<UserProfile?> _fetchFromRelaysParallel(String pubkey) async {
     final completer = Completer<UserProfile?>();
-    final futures = <Future<UserProfile?>>[
-      _fetchFromConnectedRelays(pubkey),
-      _fetchFromIndexerRelays(pubkey),
-    ];
+    UserProfile? newestProfile;
+    var remaining = 2;
 
-    var remaining = futures.length;
-
-    void onDone() {
-      remaining--;
-      if (remaining == 0 && !completer.isCompleted) {
-        completer.complete(null);
+    Future<void> handleSource(Future<UserProfile?> source) async {
+      try {
+        final profile = await source;
+        if (profile != null) {
+          final isNewer =
+              newestProfile == null ||
+              profile.createdAt.isAfter(newestProfile!.createdAt);
+          if (isNewer) {
+            newestProfile = profile;
+            if (!completer.isCompleted) {
+              completer.complete(profile);
+            } else {
+              await _cacheProfileIfNewer(profile);
+            }
+          }
+        }
+      } on Object {
+        // Individual source failures should not abort the overall fetch.
+      } finally {
+        remaining--;
+        if (remaining == 0 && !completer.isCompleted) {
+          completer.complete(newestProfile);
+        }
       }
     }
 
-    for (final future in futures) {
-      unawaited(
-        future
-            .then((result) {
-              if (result != null && !completer.isCompleted) {
-                completer.complete(result);
-              } else {
-                onDone();
-              }
-            })
-            .catchError((_) {
-              onDone();
-            }),
-      );
-    }
+    unawaited(handleSource(_fetchFromConnectedRelays(pubkey)));
+    unawaited(handleSource(_fetchFromIndexerRelays(pubkey)));
 
     return completer.future;
   }

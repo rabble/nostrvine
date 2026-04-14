@@ -117,6 +117,63 @@ void main() {
     );
 
     test(
+      'uses a deterministic generated name for follow notifications without actorName',
+      () {
+        final relay = makeRelayNotification(
+          notificationType: 'follow',
+          sourceKind: 3,
+          referencedEventId: null,
+        );
+
+        final model = notificationModelFromRelayApi(relay);
+
+        expect(model.type, NotificationType.follow);
+        expect(model.message, isNot('Someone started following you'));
+        expect(model.message, endsWith(' started following you'));
+      },
+    );
+
+    test('uses sourceCreatedAt when present instead of createdAt', () {
+      final sourceTime = DateTime.utc(2026, 3, 8, 10);
+      final createdTime = DateTime.utc(2026, 3, 9, 10);
+      final relay = RelayNotification(
+        id: 'notif-1',
+        sourcePubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        sourceEventId:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        sourceKind: 7,
+        notificationType: 'reaction',
+        createdAt: createdTime,
+        read: false,
+        sourceCreatedAt: sourceTime,
+      );
+
+      final model = notificationModelFromRelayApi(relay);
+
+      expect(model.timestamp, equals(sourceTime));
+    });
+
+    test('falls back to createdAt when sourceCreatedAt is null', () {
+      final createdTime = DateTime.utc(2026, 3, 9, 10);
+      final relay = RelayNotification(
+        id: 'notif-1',
+        sourcePubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        sourceEventId:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        sourceKind: 7,
+        notificationType: 'reaction',
+        createdAt: createdTime,
+        read: false,
+      );
+
+      final model = notificationModelFromRelayApi(relay);
+
+      expect(model.timestamp, equals(createdTime));
+    });
+
+    test(
       'preserves original relay.id for API calls, not uniqueId fallback',
       () {
         // When API returns a notification without an id field, the model

@@ -6,7 +6,7 @@ import 'dart:async';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Manages Nostr subscriptions for video events and other content
 /// Smart subscription manager that checks event cache before requesting from relay

@@ -1,11 +1,15 @@
 // ABOUTME: Widget test verifying settings screens use proper Vine scaffold structure
 // ABOUTME: Tests that settings screens have green AppBar and black background
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/locale/locale_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
@@ -15,15 +19,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
+class _MockLocaleCubit extends MockCubit<LocaleState> implements LocaleCubit {}
+
 void main() {
   group('Settings Screen Scaffold Structure', () {
     late _MockAuthService mockAuthService;
+    late _MockLocaleCubit mockLocaleCubit;
     late SharedPreferences sharedPreferences;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
       mockAuthService = _MockAuthService();
+      mockLocaleCubit = _MockLocaleCubit();
+      when(() => mockLocaleCubit.state).thenReturn(const LocaleState());
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.isAnonymous).thenReturn(false);
       when(
@@ -39,7 +48,14 @@ void main() {
             authServiceProvider.overrideWithValue(mockAuthService),
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
-          child: const MaterialApp(home: SettingsScreen()),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BlocProvider<LocaleCubit>.value(
+              value: mockLocaleCubit,
+              child: const SettingsScreen(),
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -65,7 +81,14 @@ void main() {
             authServiceProvider.overrideWithValue(mockAuthService),
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
-          child: const MaterialApp(home: SettingsScreen()),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BlocProvider<LocaleCubit>.value(
+              value: mockLocaleCubit,
+              child: const SettingsScreen(),
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -91,13 +114,18 @@ void main() {
             currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const SettingsScreen(),
+                      builder: (context) => BlocProvider<LocaleCubit>.value(
+                        value: mockLocaleCubit,
+                        child: const SettingsScreen(),
+                      ),
                     ),
                   ),
                   child: const Text('Open Settings'),
@@ -123,7 +151,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
-          child: const MaterialApp(home: NotificationSettingsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NotificationSettingsScreen(),
+          ),
         ),
       );
 
@@ -142,7 +174,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
-          child: const MaterialApp(home: NotificationSettingsScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NotificationSettingsScreen(),
+          ),
         ),
       );
 

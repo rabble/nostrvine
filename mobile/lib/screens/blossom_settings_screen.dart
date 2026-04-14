@@ -5,8 +5,9 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class BlossomSettingsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -123,7 +124,9 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save settings: $e'),
+            content: Text(
+              context.l10n.blossomFailedToSaveSettings('$e'),
+            ),
             backgroundColor: VineTheme.error,
           ),
         );

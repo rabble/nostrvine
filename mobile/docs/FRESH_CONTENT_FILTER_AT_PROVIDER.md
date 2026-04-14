@@ -152,7 +152,7 @@ Create lib/providers/unseen_video_events_provider.dart:
 import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unseen_video_events_provider.g.dart';

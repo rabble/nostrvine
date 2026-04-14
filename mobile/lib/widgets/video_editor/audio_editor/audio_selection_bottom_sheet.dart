@@ -2,14 +2,15 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_sort_dropdown.dart';
 import 'package:sound_service/sound_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
   const AudioSelectionBottomSheet({required this.scrollController, super.key});
@@ -395,8 +396,7 @@ class _ErrorState extends ConsumerWidget {
                 ref.invalidate(trendingSoundsProvider);
               },
               icon: const Icon(Icons.refresh),
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              label: const Text('Retry'),
+              label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
                 foregroundColor: VineTheme.backgroundColor,

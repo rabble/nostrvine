@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -51,6 +52,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: container.read(goRouterProvider),
           ),
         ),
@@ -126,6 +129,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: container.read(goRouterProvider),
           ),
         ),
@@ -168,6 +173,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: container.read(goRouterProvider),
           ),
         ),
@@ -201,6 +208,8 @@ void main() {
           UncontrolledProviderScope(
             container: container,
             child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               routerConfig: container.read(goRouterProvider),
             ),
           ),
@@ -243,6 +252,8 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: container.read(goRouterProvider),
           ),
         ),

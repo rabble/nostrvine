@@ -5,6 +5,7 @@
 import 'dart:math';
 
 import 'package:comments_repository/comments_repository.dart';
+import 'package:count_formatter/count_formatter.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -608,16 +609,13 @@ class _CommentVoteButtons extends StatelessWidget {
   }
 }
 
-/// Formats an [int] score with k/M suffix for large numbers.
+/// Formats an [int] score with locale-aware compact suffixes.
 extension _ScoreFormatting on int {
   String get formatScore {
     final abs = this.abs();
     final prefix = this < 0 ? '-' : '';
-    if (abs >= 1000000) {
-      return '$prefix${(abs / 1000000).toStringAsFixed(1)}M';
-    }
     if (abs >= 1000) {
-      return '$prefix${(abs / 1000).toStringAsFixed(1)}k';
+      return '$prefix${CountFormatter.formatCompact(abs)}';
     }
     return '$this';
   }

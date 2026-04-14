@@ -1,0 +1,248 @@
+// ABOUTME: Blossom BUD-01 authentication service for
+// ABOUTME: age-restricted content. Creates kind 24242 signed
+// ABOUTME: events for authenticating GET requests to Blossom
+// ABOUTME: servers.
+
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:blossom_upload_service/src/blossom_auth_provider.dart';
+import 'package:crypto/crypto.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+/// Exception thrown by Blossom authentication operations
+class BlossomAuthException implements Exception {
+  /// Creates a [BlossomAuthException].
+  const BlossomAuthException(this.message, {this.code});
+
+  /// The error message.
+  final String message;
+
+  /// An optional error code.
+  final String? code;
+
+  @override
+  String toString() => 'BlossomAuthException: $message';
+}
+
+/// Service for creating Blossom BUD-01 authentication headers
+/// Uses kind 24242 events with `t: get` and `x: sha256hash` tags
+class BlossomAuthService {
+  /// Creates a [BlossomAuthService] with the given [authProvider].
+  BlossomAuthService({required BlossomAuthProvider authProvider})
+    : _authProvider = authProvider {
+    // Start periodic cache cleanup — timer callback unreachable in tests
+    _cleanupTimer = Timer.periodic(
+      _cacheCleanupInterval,
+      (_) => _cleanupExpiredCache(), // coverage:ignore-line
+    );
+  }
+
+  final BlossomAuthProvider _authProvider;
+
+  // Token cache to avoid repeated signing for identical blob requests
+  final Map<String, _CachedAuthHeader> _cache = {};
+  static const Duration _tokenValidityDuration = Duration(hours: 1);
+  static const Duration _cacheCleanupInterval = Duration(minutes: 15);
+
+  Timer? _cleanupTimer;
+
+  /// Create a Blossom BUD-01 authentication header for GET
+  /// requests.
+  ///
+  /// Returns `Nostr {base64-encoded-event}` header value.
+  Future<String?> createGetAuthHeader({
+    required String sha256Hash,
+    String? serverUrl,
+  }) async {
+    if (!_authProvider.isAuthenticated) {
+      Log.error(
+        'Cannot create Blossom auth header - user not authenticated',
+        name: 'BlossomAuthService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+
+    try {
+      // Create preview of hash for logging (handle short test hashes)
+      final hashPreview = sha256Hash.length > 8
+          ? '${sha256Hash.substring(0, 8)}...'
+          : sha256Hash;
+
+      // Create cache key
+      final cacheKey = _createCacheKey(sha256Hash, serverUrl);
+
+      // Check cache first
+      final cached = _cache[cacheKey];
+      if (cached != null && !cached.isExpired) {
+        Log.debug(
+          'Using cached Blossom auth header for hash: $hashPreview',
+          name: 'BlossomAuthService',
+          category: LogCategory.system,
+        );
+        return cached.header;
+      }
+
+      Log.debug(
+        'Creating Blossom auth header for blob: $hashPreview',
+        name: 'BlossomAuthService',
+        category: LogCategory.system,
+      );
+
+      // Calculate expiration (1 hour from now)
+      final now = DateTime.now();
+      final expirationTimestamp =
+          (now.millisecondsSinceEpoch / 1000).round() + 3600;
+
+      // Create tags for Blossom BUD-01
+      final tags = <List<String>>[
+        ['t', 'get'], // Action type
+        ['x', sha256Hash], // Blob hash
+        ['expiration', expirationTimestamp.toString()], // Token expiration
+      ];
+
+      // Add server tag if provided (optional per BUD-01 spec)
+      if (serverUrl != null && serverUrl.isNotEmpty) {
+        tags.add(['server', serverUrl]);
+      }
+
+      // Create and sign the event
+      final authEvent = await _authProvider.createAndSignEvent(
+        kind: 24242, // Blossom BUD-01 auth event kind
+        content: 'Get blob from Blossom server',
+        tags: tags,
+      );
+
+      if (authEvent == null) {
+        throw const BlossomAuthException(
+          'Failed to create authentication event',
+        );
+      }
+
+      // Encode the event as base64 for the header
+      final eventJson = jsonEncode(authEvent.json);
+      final token = base64Encode(utf8.encode(eventJson));
+      final header = 'Nostr $token';
+
+      // Cache the header
+      _cache[cacheKey] = _CachedAuthHeader(
+        header: header,
+        createdAt: now,
+        expiresAt: DateTime.fromMillisecondsSinceEpoch(
+          expirationTimestamp * 1000,
+        ),
+      );
+
+      final expiresAt = _cache[cacheKey]!.expiresAt;
+      Log.info(
+        'Created Blossom auth header for '
+        '$hashPreview (expires: $expiresAt)',
+        name: 'BlossomAuthService',
+        category: LogCategory.system,
+      );
+      Log.debug(
+        'Event ID: ${authEvent.json['id']}',
+        name: 'BlossomAuthService',
+        category: LogCategory.system,
+      );
+
+      return header;
+    } on Object catch (e) {
+      Log.error(
+        'Failed to create Blossom auth header: $e',
+        name: 'BlossomAuthService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
+  /// Create a cache key for blob authentication
+  String _createCacheKey(String sha256Hash, String? serverUrl) {
+    final components = [sha256Hash, serverUrl ?? ''];
+    final combined = components.join('|');
+    final hash = sha256.convert(utf8.encode(combined));
+    return hash.toString();
+  }
+
+  // coverage:ignore-start
+  /// Clean up expired cache entries
+  void _cleanupExpiredCache() {
+    final expiredKeys =
+        _cache.entries
+            .where((entry) => entry.value.isExpired)
+            .map((entry) => entry.key)
+            .toList()
+          ..forEach(_cache.remove);
+
+    if (expiredKeys.isNotEmpty) {
+      Log.debug(
+        'Cleaned up ${expiredKeys.length} expired Blossom auth headers',
+        name: 'BlossomAuthService',
+        category: LogCategory.system,
+      );
+    }
+  }
+  // coverage:ignore-end
+
+  /// Clear all cached auth headers
+  void clearCache() {
+    _cache.clear();
+    Log.debug(
+      'Cleared all Blossom auth cache',
+      name: 'BlossomAuthService',
+      category: LogCategory.system,
+    );
+  }
+
+  /// Get cache statistics
+  Map<String, dynamic> get cacheStats {
+    final validHeaders = _cache.values
+        .where((entry) => !entry.isExpired)
+        .length;
+    final expiredHeaders = _cache.values
+        .where((entry) => entry.isExpired)
+        .length;
+
+    return {
+      'total_cached': _cache.length,
+      'valid_headers': validHeaders,
+      'expired_headers': expiredHeaders,
+      'is_authenticated': _authProvider.isAuthenticated,
+      'cleanup_interval_minutes': _cacheCleanupInterval.inMinutes,
+      'token_validity_hours': _tokenValidityDuration.inHours,
+    };
+  }
+
+  /// Check if we can create auth headers (user is authenticated)
+  bool get canCreateHeaders => _authProvider.isAuthenticated;
+
+  /// Dispose the service and clean up resources.
+  void dispose() {
+    Log.debug(
+      'Disposing BlossomAuthService',
+      name: 'BlossomAuthService',
+      category: LogCategory.system,
+    );
+
+    _cleanupTimer?.cancel();
+    _cache.clear();
+  }
+}
+
+/// Cached authentication header with expiration
+class _CachedAuthHeader {
+  const _CachedAuthHeader({
+    required this.header,
+    required this.createdAt,
+    required this.expiresAt,
+  });
+
+  final String header;
+  final DateTime createdAt;
+  final DateTime expiresAt;
+
+  /// Check if the cached header is expired
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
+}

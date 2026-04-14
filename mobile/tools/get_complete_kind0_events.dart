@@ -10,7 +10,7 @@ import 'package:nostr_sdk/relay/event_filter.dart';
 import 'package:nostr_sdk/relay/relay_base.dart';
 import 'package:nostr_sdk/relay/relay_status.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() async {
   Log.info(

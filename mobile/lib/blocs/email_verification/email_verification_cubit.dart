@@ -6,12 +6,11 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
-import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/utils/invite_error_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'email_verification_state.dart';
 
@@ -29,15 +28,15 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   EmailVerificationCubit({
     required KeycastOAuth oauthClient,
     required AuthService authService,
-    InviteApiService? inviteApiService,
+    InviteApiClient? inviteApiClient,
   }) : _oauthClient = oauthClient,
        _authService = authService,
-       _inviteApiService = inviteApiService,
+       _inviteApiClient = inviteApiClient,
        super(const EmailVerificationState());
 
   final KeycastOAuth _oauthClient;
   final AuthService _authService;
-  final InviteApiService? _inviteApiService;
+  final InviteApiClient? _inviteApiClient;
 
   /// Tracks the device code that was already successfully exchanged.
   ///
@@ -84,7 +83,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     _pendingVerifier = verifier;
     _pendingInviteCode = inviteCode == null
         ? null
-        : InviteApiService.normalizeCode(inviteCode);
+        : InviteApiClient.normalizeCode(inviteCode);
 
     emit(
       EmailVerificationState(
@@ -105,12 +104,15 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   }
 
   /// Emit a failure state from outside the cubit (e.g., token verification).
-  void emitFailure(String error) {
+  ///
+  /// Callers must pass a reason code — state never carries English strings;
+  /// the UI layer is responsible for mapping the code to localized copy.
+  void emitFailure(EmailVerificationError errorCode) {
     _cleanup();
     emit(
       EmailVerificationState(
         status: EmailVerificationStatus.failure,
-        error: error,
+        errorCode: errorCode,
       ),
     );
   }
@@ -153,7 +155,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     emit(
       const EmailVerificationState(
         status: EmailVerificationStatus.failure,
-        error: 'Verification timed out. Please try registering again.',
+        errorCode: EmailVerificationError.timeout,
       ),
     );
   }
@@ -252,7 +254,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
             emit(
               const EmailVerificationState(
                 status: EmailVerificationStatus.failure,
-                error: 'Verification failed - missing authorization code',
+                errorCode: EmailVerificationError.missingAuthCode,
               ),
             );
           }
@@ -291,9 +293,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
             );
             _cleanup();
             emit(
-              EmailVerificationState(
+              const EmailVerificationState(
                 status: EmailVerificationStatus.failure,
-                error: errorMsg,
+                errorCode: EmailVerificationError.pollFailed,
               ),
             );
           }
@@ -367,13 +369,13 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
           emit(
             const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Sign-in failed. Please try logging in manually.',
+              errorCode: EmailVerificationError.signInFailed,
             ),
           );
         }
 
         return; // Success - exit the retry loop
-      } on ApiException catch (e) {
+      } on InviteApiException catch (e) {
         Log.error(
           'Invite activation failed: ${e.message}',
           name: 'EmailVerificationCubit',
@@ -384,7 +386,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         emit(
           EmailVerificationState(
             status: EmailVerificationStatus.failure,
-            error: InviteErrorUtils.activationFailureMessage(e),
+            errorCode: InviteErrorUtils.toEmailVerificationError(e),
             showInviteGateRecovery: inviteCode != null,
             inviteRecoveryCode: inviteCode,
           ),
@@ -399,9 +401,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         );
         _cleanup();
         emit(
-          EmailVerificationState(
+          const EmailVerificationState(
             status: EmailVerificationStatus.failure,
-            error: e.message,
+            errorCode: EmailVerificationError.oauthExchange,
           ),
         );
         return; // Don't retry OAuth errors
@@ -424,7 +426,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
           emit(
             const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Network error during sign-in. Please try again.',
+              errorCode: EmailVerificationError.networkExchange,
             ),
           );
           return;
@@ -454,12 +456,12 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
 
   Future<void> _consumeInviteWithSessionIfNeeded(KeycastSession session) async {
     final inviteCode = _pendingInviteCode;
-    final inviteApiService = _inviteApiService;
-    if (inviteCode == null || inviteApiService == null) {
+    final inviteApiClient = _inviteApiClient;
+    if (inviteCode == null || inviteApiClient == null) {
       return;
     }
 
-    await inviteApiService.consumeInviteWithSession(
+    await inviteApiClient.consumeInviteWithSession(
       code: inviteCode,
       oauthConfig: _oauthClient.config,
       session: session,

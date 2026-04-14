@@ -4,11 +4,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart';
 import 'package:openvine/screens/search_results/widgets/search_results_app_bar.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
+
+class _MockSearchResultsFilterCubit extends MockCubit<SearchResultsFilter>
+    implements SearchResultsFilterCubit {}
 
 class _MockUserSearchBloc extends MockBloc<UserSearchEvent, UserSearchState>
     implements UserSearchBloc {}
@@ -22,15 +27,18 @@ class _MockHashtagSearchBloc
 
 void main() {
   group(SearchResultsAppBar, () {
+    late _MockSearchResultsFilterCubit mockFilterCubit;
     late _MockUserSearchBloc mockUserSearchBloc;
     late _MockVideoSearchBloc mockVideoSearchBloc;
     late _MockHashtagSearchBloc mockHashtagSearchBloc;
 
     setUp(() {
+      mockFilterCubit = _MockSearchResultsFilterCubit();
       mockUserSearchBloc = _MockUserSearchBloc();
       mockVideoSearchBloc = _MockVideoSearchBloc();
       mockHashtagSearchBloc = _MockHashtagSearchBloc();
 
+      when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
       when(() => mockUserSearchBloc.state).thenReturn(const UserSearchState());
       when(
         () => mockVideoSearchBloc.state,
@@ -40,65 +48,37 @@ void main() {
       ).thenReturn(const HashtagSearchState());
     });
 
-    Widget createTestWidget({
-      String? filterLabel,
-      VoidCallback? onFilterTap,
-    }) {
+    Widget createTestWidget() {
       return testMaterialApp(
         home: MultiBlocProvider(
           providers: [
+            BlocProvider<SearchResultsFilterCubit>.value(
+              value: mockFilterCubit,
+            ),
             BlocProvider<UserSearchBloc>.value(value: mockUserSearchBloc),
             BlocProvider<VideoSearchBloc>.value(value: mockVideoSearchBloc),
-            BlocProvider<HashtagSearchBloc>.value(
-              value: mockHashtagSearchBloc,
-            ),
+            BlocProvider<HashtagSearchBloc>.value(value: mockHashtagSearchBloc),
           ],
-          child: Scaffold(
-            body: SearchResultsAppBar(
-              initialQuery: 'test',
-              filterLabel: filterLabel,
-              onFilterTap: onFilterTap,
-            ),
+          child: const Scaffold(
+            body: SearchResultsAppBar(initialQuery: 'test'),
           ),
         ),
         mockAuthService: createMockAuthService(),
       );
     }
 
-    group('filter chip', () {
-      testWidgets('renders filter label when provided', (tester) async {
-        await tester.pumpWidget(createTestWidget(filterLabel: 'People'));
-        await tester.pump();
+    testWidgets('renders $SearchFilterPill', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pump();
 
-        expect(find.text('People'), findsOneWidget);
-      });
+      expect(find.byType(SearchFilterPill), findsOneWidget);
+    });
 
-      testWidgets('does not render filter chip when label is null', (
-        tester,
-      ) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pump();
+    testWidgets('renders search bar with initial query', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pump();
 
-        expect(find.text('All'), findsNothing);
-        expect(find.text('People'), findsNothing);
-      });
-
-      testWidgets('calls onFilterTap when chip is tapped', (tester) async {
-        var tapped = false;
-
-        await tester.pumpWidget(
-          createTestWidget(
-            filterLabel: 'People',
-            onFilterTap: () => tapped = true,
-          ),
-        );
-        await tester.pump();
-
-        await tester.tap(find.text('People'));
-        await tester.pump();
-
-        expect(tapped, isTrue);
-      });
+      expect(find.text('test'), findsOneWidget);
     });
   });
 }

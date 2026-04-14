@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,11 +14,11 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
 import 'package:openvine/screens/inbox/message_requests/widgets/message_requests_banner.dart';
@@ -29,7 +30,7 @@ import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/notifications_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
 /// and the corresponding content for each tab.
@@ -45,6 +46,10 @@ class _InboxViewState extends ConsumerState<InboxView> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild the inbox surfaces when auth identity changes so per-screen UI
+    // state does not linger across account switches.
+    ref.watch(currentAuthStateProvider);
+
     // Re-filter conversation list when blocklist changes.
     ref.listen(blocklistVersionProvider, (previous, current) {
       if (previous != null && current > previous) {
@@ -56,6 +61,7 @@ class _InboxViewState extends ConsumerState<InboxView> {
 
     // Watch notification unread count for the badge.
     final notificationCount = ref.watch(relayNotificationUnreadCountProvider);
+    final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
 
     return ColoredBox(
       color: VineTheme.surfaceBackground,
@@ -76,8 +82,16 @@ class _InboxViewState extends ConsumerState<InboxView> {
                 child: ColoredBox(
                   color: VineTheme.surfaceContainerHigh,
                   child: _selectedTab == InboxTab.messages
-                      ? const _MessagesContent()
-                      : const NotificationsScreen(),
+                      ? KeyedSubtree(
+                          key: ValueKey('messages-$currentPubkey'),
+                          child: const _MessagesContent(),
+                        )
+                      // Keep Inbox on the proven relay-provider notifications
+                      // path until the BLoC migration matches production.
+                      : KeyedSubtree(
+                          key: ValueKey('notifications-$currentPubkey'),
+                          child: const NotificationsScreen(),
+                        ),
                 ),
               ),
             ),
@@ -167,8 +181,8 @@ class _MessagesContent extends ConsumerWidget {
             ],
           ),
           // FAB positioned bottom-right
-          Positioned(
-            right: 16,
+          PositionedDirectional(
+            end: 16,
             bottom: 16,
             child: InboxFab(
               onPressed: () => _onNewConversation(context, ref),
@@ -426,7 +440,9 @@ class _ConversationListState extends ConsumerState<_ConversationList>
         final reported = await actionsCubit.reportUser(otherPubkey);
         if (context.mounted && reported) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Reported $displayName')),
+            SnackBar(
+              content: Text(context.l10n.inboxReportedUser(displayName)),
+            ),
           );
         }
 
@@ -440,7 +456,9 @@ class _ConversationListState extends ConsumerState<_ConversationList>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                isBlocked ? 'Unblocked $displayName' : 'Blocked $displayName',
+                isBlocked
+                    ? context.l10n.inboxUnblockedUser(displayName)
+                    : context.l10n.inboxBlockedUser(displayName),
               ),
             ),
           );
@@ -455,7 +473,9 @@ class _ConversationListState extends ConsumerState<_ConversationList>
           );
           if (context.mounted && removed) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Removed conversation')),
+              SnackBar(
+                content: Text(context.l10n.inboxRemovedConversation),
+              ),
             );
           }
         }

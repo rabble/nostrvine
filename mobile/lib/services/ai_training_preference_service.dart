@@ -1,8 +1,8 @@
 // ABOUTME: Service for managing the AI training opt-out preference
 // ABOUTME: Controls whether CAWG training-mining assertion is embedded in C2PA manifests
 
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for managing the user's preference for opting out of AI training
 /// and data mining. When enabled, a `cawg.training-mining` assertion is

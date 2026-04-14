@@ -6,15 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +42,9 @@ void main() {
 
       // Generate a test key container
       keyContainer = await SecureKeyContainer.generate();
-      nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
+      nostrService = NostrServiceFactory.create(
+        signer: LocalNostrIdentity(keyContainer: keyContainer),
+      );
       await nostrService.initialize();
 
       subscriptionManager = SubscriptionManager(nostrService);
@@ -116,7 +120,11 @@ void main() {
                 () => TabVisibility()..setActiveTab(2),
               ), // Explore tab active
             ],
-            child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: ExploreScreen()),
+            ),
           ),
         );
 
@@ -209,7 +217,11 @@ void main() {
                 () => TabVisibility()..setActiveTab(0),
               ), // Feed tab active
             ],
-            child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: ExploreScreen()),
+            ),
           ),
         );
 
@@ -227,7 +239,11 @@ void main() {
                 () => TabVisibility()..setActiveTab(2),
               ), // Explore tab now active
             ],
-            child: const MaterialApp(home: Scaffold(body: ExploreScreen())),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: ExploreScreen()),
+            ),
           ),
         );
 

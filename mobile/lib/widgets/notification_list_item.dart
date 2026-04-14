@@ -4,9 +4,10 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/theme/app_theme.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class NotificationListItem extends StatelessWidget {
   const NotificationListItem({
@@ -138,8 +139,8 @@ class NotificationListItem extends StatelessWidget {
             ),
 
             // Type icon overlay
-            Positioned(
-              right: 0,
+            PositionedDirectional(
+              end: 0,
               bottom: 0,
               child: Container(
                 width: 20,
@@ -179,9 +180,10 @@ class NotificationListItem extends StatelessWidget {
 
   Widget _buildMessage(BuildContext context) {
     final textStyle = VineTheme.bodyMediumFont();
+    final message = _displayMessage(context);
 
     final actorName = notification.actorName;
-    if (_messageStartsWithActorName(actorName)) {
+    if (_messageStartsWithActorName(actorName, message)) {
       // Build rich text with bold actor name
       return RichText(
         textScaler: MediaQuery.textScalerOf(context),
@@ -193,20 +195,45 @@ class NotificationListItem extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             TextSpan(
-              text: notification.message.substring(actorName!.length),
+              text: message.substring(actorName!.length),
             ),
           ],
         ),
       );
     }
 
-    return Text(notification.message, style: textStyle);
+    return Text(message, style: textStyle);
   }
 
-  bool _messageStartsWithActorName(String? actorName) {
+  String _displayMessage(BuildContext context) {
+    final actorName = notification.actorName;
+    final displayName = actorName?.isNotEmpty == true
+        ? actorName!
+        : UserProfile.defaultDisplayNameFor(notification.actorPubkey);
+
+    return switch (notification.type) {
+      NotificationType.like => context.l10n.notificationLikedYourVideo(
+        displayName,
+      ),
+      NotificationType.comment => context.l10n.notificationCommentedOnYourVideo(
+        displayName,
+      ),
+      NotificationType.follow => context.l10n.notificationStartedFollowing(
+        displayName,
+      ),
+      NotificationType.mention => context.l10n.notificationMentionedYou(
+        displayName,
+      ),
+      NotificationType.repost => context.l10n.notificationRepostedYourVideo(
+        displayName,
+      ),
+      NotificationType.system => notification.message,
+    };
+  }
+
+  bool _messageStartsWithActorName(String? actorName, String message) {
     if (actorName == null) return false;
-    return notification.message == actorName ||
-        notification.message.startsWith('$actorName ');
+    return message == actorName || message.startsWith('$actorName ');
   }
 
   bool _hasAdditionalContent() {
@@ -248,7 +275,7 @@ class NotificationListItem extends StatelessWidget {
   }
 
   Widget _buildVideoThumbnail() => Padding(
-    padding: const EdgeInsets.only(left: 8),
+    padding: const EdgeInsetsDirectional.only(start: 8),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: VineCachedImage(

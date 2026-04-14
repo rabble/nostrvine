@@ -7,7 +7,10 @@ const localHost = '10.0.2.2';
 /// Local Docker stack port mappings.
 const localKeycastPort = 43000;
 const localRelayPort = 47777;
-const localApiPort = 43001;
+
+/// REST API port — shares the funnelcake-proxy with the relay (nginx routes
+/// `/api/*` to funnelcake-api, everything else to the relay WebSocket).
+const int localApiPort = localRelayPort;
 const localBlossomPort = 43003;
 const localInvitePort = 43004;
 const productionApiBaseUrl = 'https://api.divine.video';
@@ -140,6 +143,24 @@ class EnvironmentConfig {
         return 'Local';
       case AppEnvironment.production:
         return 'Production';
+    }
+  }
+
+  /// Public key of the divine-push-service for this environment.
+  /// Used for NIP-44 encryption of FCM token registration events.
+  /// Obtain from GET /health on the push service.
+  String get pushServicePubkey {
+    switch (environment) {
+      case AppEnvironment.poc:
+        return '2fc7d43fc02ae951a226108d3a31330bd26f37c1ef88eaa91948251de98b049d';
+      case AppEnvironment.staging:
+        return '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809';
+      case AppEnvironment.test:
+        return '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809';
+      case AppEnvironment.local:
+        return '5414dcebf15d0d8b36fb80c6295ae4222113b61807e777870cbd1fd422a35809';
+      case AppEnvironment.production:
+        return '2f871aaa4a519da94aeb5ebffe7587549158855c4460e7a5a1b91d36d2fb5b04';
     }
   }
 

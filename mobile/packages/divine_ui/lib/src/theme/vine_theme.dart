@@ -2,6 +2,7 @@
 // ABOUTME: Matches the classic Vine app aesthetic with proper styling
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Vine-inspired theme with characteristic green colors and clean design.
@@ -206,6 +207,17 @@ class VineTheme {
         color: color,
       );
 
+  /// Status bar style for dark backgrounds: light icons on both platforms.
+  ///
+  /// [SystemUiOverlayStyle.light] uses `statusBarBrightness: Brightness.light`
+  /// which causes **dark** icons on iOS. This constant sets the correct
+  /// brightness per platform so icons are always visible on dark backgrounds.
+  static const SystemUiOverlayStyle statusBarStyle = SystemUiOverlayStyle(
+    statusBarColor: transparent,
+    statusBarIconBrightness: Brightness.light, // Android
+    statusBarBrightness: Brightness.dark, // iOS
+  );
+
   // Classic Vine green color palette
 
   /// Primary brand green color.
@@ -263,6 +275,9 @@ class VineTheme {
   /// Muted content color on surfaces (50% white).
   static const Color onSurfaceMuted = Color(0x80FFFFFF);
 
+  /// Muted content color on surfaces (55% white).
+  static const Color onSurfaceMuted55 = Color(0x8CFFFFFF);
+
   /// Variant content color on surfaces (75% white).
   static const Color onSurfaceVariant = Color(0xBFFFFFFF);
 
@@ -316,6 +331,21 @@ class VineTheme {
 
   /// Neutral 10 color for subtle borders.
   static const Color neutral10 = Color(0xFF1B1C1C);
+
+  // Skeleton / shimmer loading
+  // TODO(design): Confirm skeleton colors and duration with design team.
+
+  /// Base color for skeleton shimmer effects.
+  static const Color skeletonBase = iconButtonBackground;
+
+  /// Highlight color for skeleton shimmer sweep (60% alpha of base).
+  static const Color skeletonHighlight = Color(0x99032017);
+
+  /// Surface color for skeleton placeholder shapes.
+  static const Color skeletonSurface = outlinedDisabled;
+
+  /// Duration of a single skeleton shimmer sweep.
+  static const Duration skeletonDuration = Duration(milliseconds: 1500);
 
   /// Tab text style using Bricolage Grotesque bold.
   static TextStyle tabTextStyle({Color color = whiteText}) =>
@@ -469,6 +499,7 @@ class VineTheme {
       foregroundColor: whiteText,
       elevation: 1,
       centerTitle: true,
+      systemOverlayStyle: statusBarStyle,
       titleTextStyle: TextStyle(
         color: whiteText,
         fontSize: 20,

@@ -61,7 +61,7 @@ class AuthHeroSection extends StatelessWidget {
                 top: -30,
                 left: 10,
                 child: _StickerImage(
-                  path: 'assets/stickers/video_camera.png',
+                  path: 'assets/stickers/video_camera.svg',
                   size: 60,
                 ),
               ),
@@ -71,7 +71,7 @@ class AuthHeroSection extends StatelessWidget {
                 top: -5,
                 right: -20,
                 child: _StickerImage(
-                  path: 'assets/stickers/teeth.png',
+                  path: 'assets/stickers/teeth.svg',
                   size: 70,
                 ),
               ),
@@ -81,7 +81,7 @@ class AuthHeroSection extends StatelessWidget {
                 bottom: -34,
                 left: 15,
                 child: _StickerImage(
-                  path: 'assets/stickers/balloon_dog.png',
+                  path: 'assets/stickers/balloon_dog.svg',
                   size: 80,
                 ),
               ),
@@ -91,7 +91,7 @@ class AuthHeroSection extends StatelessWidget {
                 bottom: -10,
                 right: -10,
                 child: _StickerImage(
-                  path: 'assets/stickers/disco_ball.png',
+                  path: 'assets/stickers/disco_ball.svg',
                   size: 65,
                 ),
               ),
@@ -117,6 +117,6 @@ class _StickerImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(path, width: size, height: size, fit: BoxFit.contain);
+    return SvgPicture.asset(path, width: size, height: size);
   }
 }

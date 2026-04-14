@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -88,7 +89,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Safety & Privacy',
+        title: context.l10n.safetySettingsTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -101,7 +102,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
               children: [
                 _buildAgeVerificationSection(),
                 const SizedBox(height: 8),
-                _buildSectionHeader('SETTINGS'),
+                _buildSectionHeader(context.l10n.safetySettingsLabel),
                 SwitchListTile(
                   value: _showDivineHostedOnly,
                   onChanged: _setShowDivineHostedOnly,
@@ -109,19 +110,19 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                     Icons.verified,
                     color: VineTheme.vineGreen,
                   ),
-                  title: const Text(
-                    'Only show Divine-hosted videos',
-                    style: TextStyle(color: VineTheme.whiteText),
+                  title: Text(
+                    context.l10n.safetySettingsShowDivineHostedOnly,
+                    style: const TextStyle(color: VineTheme.whiteText),
                   ),
-                  subtitle: const Text(
-                    'Hide videos served from other media hosts',
-                    style: TextStyle(color: VineTheme.secondaryText),
+                  subtitle: Text(
+                    context.l10n.safetySettingsShowDivineHostedOnlySubtitle,
+                    style: const TextStyle(color: VineTheme.secondaryText),
                   ),
                   activeThumbColor: VineTheme.vineGreen,
                 ),
-                _buildSectionHeader('MODERATION'),
+                _buildSectionHeader(context.l10n.safetySettingsModeration),
                 _buildModerationProvidersSection(),
-                _buildSectionHeader('BLOCKED USERS'),
+                _buildSectionHeader(context.l10n.safetySettingsBlockedUsers),
                 _buildBlockedUsersSection(),
               ],
             ),
@@ -145,7 +146,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('AGE VERIFICATION'),
+        _buildSectionHeader(context.l10n.safetySettingsAgeVerification),
         CheckboxListTile(
           value: _isAgeVerified,
           onChanged: (value) {
@@ -153,13 +154,13 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
               _setAgeVerified(value);
             }
           },
-          title: const Text(
-            'I confirm I am 18 years or older',
-            style: TextStyle(color: VineTheme.whiteText),
+          title: Text(
+            context.l10n.safetySettingsAgeConfirmation,
+            style: const TextStyle(color: VineTheme.whiteText),
           ),
-          subtitle: const Text(
-            'Required to view adult content',
-            style: TextStyle(color: VineTheme.secondaryText),
+          subtitle: Text(
+            context.l10n.safetySettingsAgeRequired,
+            style: const TextStyle(color: VineTheme.secondaryText),
           ),
           activeColor: VineTheme.vineGreen,
           checkColor: VineTheme.backgroundColor,
@@ -194,10 +195,13 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         });
       },
       secondary: const Icon(Icons.verified_user, color: VineTheme.vineGreen),
-      title: const Text('Divine', style: TextStyle(color: VineTheme.whiteText)),
-      subtitle: const Text(
-        'Official moderation service (on by default)',
-        style: TextStyle(color: VineTheme.secondaryText),
+      title: Text(
+        context.l10n.safetySettingsDivine,
+        style: const TextStyle(color: VineTheme.whiteText),
+      ),
+      subtitle: Text(
+        context.l10n.safetySettingsDivineSubtitle,
+        style: const TextStyle(color: VineTheme.secondaryText),
       ),
       activeThumbColor: VineTheme.vineGreen,
     );
@@ -218,13 +222,13 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
           _isPeopleIFollowEnabled = value;
         });
       },
-      title: const Text(
-        'People I follow',
-        style: TextStyle(color: VineTheme.whiteText),
+      title: Text(
+        context.l10n.safetySettingsPeopleIFollow,
+        style: const TextStyle(color: VineTheme.whiteText),
       ),
-      subtitle: const Text(
-        'Subscribe to labels from people you follow',
-        style: TextStyle(color: VineTheme.secondaryText),
+      subtitle: Text(
+        context.l10n.safetySettingsPeopleIFollowSubtitle,
+        style: const TextStyle(color: VineTheme.secondaryText),
       ),
       activeThumbColor: VineTheme.vineGreen,
       secondary: Icon(
@@ -242,20 +246,20 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: const Text(
-          'Add Custom Labeler',
-          style: TextStyle(color: VineTheme.whiteText),
+        title: Text(
+          context.l10n.safetySettingsAddCustomLabeler,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
         content: TextField(
           controller: controller,
           style: const TextStyle(color: VineTheme.whiteText),
-          decoration: const InputDecoration(
-            hintText: 'Enter npub...',
-            hintStyle: TextStyle(color: VineTheme.secondaryText),
-            enabledBorder: UnderlineInputBorder(
+          decoration: InputDecoration(
+            hintText: context.l10n.safetySettingsAddCustomLabelerHint,
+            hintStyle: const TextStyle(color: VineTheme.secondaryText),
+            enabledBorder: const UnderlineInputBorder(
               borderSide: BorderSide(color: VineTheme.secondaryText),
             ),
-            focusedBorder: UnderlineInputBorder(
+            focusedBorder: const UnderlineInputBorder(
               borderSide: BorderSide(color: VineTheme.vineGreen),
             ),
           ),
@@ -263,16 +267,16 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: VineTheme.secondaryText),
+            child: Text(
+              context.l10n.safetySettingsCancel,
+              style: const TextStyle(color: VineTheme.secondaryText),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text(
-              'Add',
-              style: TextStyle(color: VineTheme.vineGreen),
+            child: Text(
+              context.l10n.safetySettingsAdd,
+              style: const TextStyle(color: VineTheme.vineGreen),
             ),
           ),
         ],
@@ -323,13 +327,13 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
             Icons.add_circle_outline,
             color: VineTheme.onSurfaceDisabled,
           ),
-          title: const Text(
-            'Add custom labeler',
-            style: TextStyle(color: VineTheme.whiteText),
+          title: Text(
+            context.l10n.safetySettingsAddCustomLabelerListTitle,
+            style: const TextStyle(color: VineTheme.whiteText),
           ),
-          subtitle: const Text(
-            'Enter npub address',
-            style: TextStyle(color: VineTheme.secondaryText),
+          subtitle: Text(
+            context.l10n.safetySettingsAddCustomLabelerListSubtitle,
+            style: const TextStyle(color: VineTheme.secondaryText),
           ),
           onTap: _showAddLabelerDialog,
         ),
@@ -344,11 +348,11 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     final blockedUsers = blocklistService.runtimeBlockedUsers.toList();
 
     if (blockedUsers.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Text(
-          'No blocked users',
-          style: TextStyle(
+          context.l10n.safetySettingsNoBlockedUsers,
+          style: const TextStyle(
             color: VineTheme.secondaryText,
             fontStyle: FontStyle.italic,
           ),
@@ -374,9 +378,9 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('User unblocked'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.safetySettingsUserUnblocked),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -447,9 +451,9 @@ class _BlockedUserTile extends ConsumerWidget {
       ),
       trailing: TextButton(
         onPressed: onUnblock,
-        child: const Text(
-          'Unblock',
-          style: TextStyle(color: VineTheme.vineGreen),
+        child: Text(
+          context.l10n.safetySettingsUnblock,
+          style: const TextStyle(color: VineTheme.vineGreen),
         ),
       ),
     );

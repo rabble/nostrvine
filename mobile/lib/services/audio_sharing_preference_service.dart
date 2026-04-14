@@ -1,8 +1,8 @@
 // ABOUTME: Service for managing the global audio sharing preference
 // ABOUTME: Controls whether user's audio is available for reuse by default
 
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for managing the user's preference for making audio available
 /// for reuse by other users. This is a global setting that can be overridden

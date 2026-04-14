@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
@@ -17,7 +18,7 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
@@ -68,7 +69,7 @@ class OtherProfileScreen extends ConsumerWidget {
 
     if (pubkey == null) {
       return _ProfileErrorScreen(
-        message: 'Invalid profile ID',
+        message: context.l10n.profileInvalidId,
         onBack: context.pop,
       );
     }
@@ -147,9 +148,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   }
 
   void _messageUser() {
-    final bloc = context.read<OtherProfileBloc>();
     context.push(
-      ConversationPage.pathForId(bloc.conversationId),
+      ConversationPage.pathForId(widget.pubkey),
       extra: [widget.pubkey],
     );
   }
@@ -201,7 +201,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Blocked $name')));
+          ).showSnackBar(
+            SnackBar(content: Text(context.l10n.profileBlockedUser(name))),
+          );
           context.pop();
         }
       case MoreSheetResult.unblockConfirmed:
@@ -217,7 +219,11 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Unblocked $name')));
+          ).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.profileUnblockedUser(name)),
+            ),
+          );
         }
     }
   }
@@ -233,7 +239,11 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Unfollowed $displayName')));
+      ).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.profileUnfollowedUser(displayName)),
+        ),
+      );
     }
   }
 
@@ -311,7 +321,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
         final displayName =
             headerProfile?.bestDisplayName ??
             widget.displayNameHint ??
-            'Profile';
+            context.l10n.profileTitle;
 
         return Scaffold(
           backgroundColor: VineTheme.surfaceBackground,
@@ -319,7 +329,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             AsyncLoading() => const ProfileLoadingView(),
             AsyncError(:final error) => Center(
               child: Text(
-                'Error: $error',
+                context.l10n.profileError('$error'),
                 style: const TextStyle(color: VineTheme.whiteText),
               ),
             ),
@@ -358,7 +368,7 @@ class _ProfileErrorScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Profile',
+        title: context.l10n.profileTitle,
         showBackButton: true,
         onBackPressed: onBack,
       ),

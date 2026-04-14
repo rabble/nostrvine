@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -36,7 +37,11 @@ void main() {
           ),
           isDeveloperModeEnabledProvider.overrideWithValue(false),
         ],
-        child: const MaterialApp(home: NostrSettingsScreen()),
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NostrSettingsScreen(),
+        ),
       );
     }
 

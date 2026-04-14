@@ -1,6 +1,7 @@
 // ABOUTME: Tests for VideoEventPublisher retry logic with exponential backoff
 // ABOUTME: Verifies 3 retry attempts with 2s, 4s delays match implementation
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Extracted retry logic from VideoEventPublisher for testability
@@ -40,149 +41,205 @@ void main() {
     group('RetryExecutor.executeWithRetry', () {
       test(
         'returns true immediately when operation succeeds on first try',
-        () async {
-          var callCount = 0;
+        () {
+          fakeAsync((async) {
+            var callCount = 0;
+            bool? result;
 
-          final result = await RetryExecutor.executeWithRetry(
+            RetryExecutor.executeWithRetry(
+              operation: () async {
+                callCount++;
+                return true; // Succeeds immediately
+              },
+            ).then((r) => result = r);
+
+            async.flushMicrotasks();
+
+            expect(result, isTrue);
+            expect(
+              callCount,
+              equals(1),
+              reason: 'Should only call once on success',
+            );
+          });
+        },
+      );
+
+      test('retries up to 3 times when operation fails', () {
+        fakeAsync((async) {
+          var callCount = 0;
+          bool? result;
+
+          RetryExecutor.executeWithRetry(
             operation: () async {
               callCount++;
-              return true; // Succeeds immediately
+              return false; // Always fails
             },
+          ).then((r) => result = r);
+
+          // Elapse past all retry delays: 2s + 4s = 6s
+          async.elapse(const Duration(seconds: 7));
+
+          expect(result, isFalse);
+          expect(
+            callCount,
+            equals(3),
+            reason: 'Should try 3 times (maxRetries)',
           );
+        });
+      });
+
+      test('returns true on second attempt when first fails', () {
+        fakeAsync((async) {
+          var callCount = 0;
+          bool? result;
+
+          RetryExecutor.executeWithRetry(
+            operation: () async {
+              callCount++;
+              return callCount >= 2; // Fails first, succeeds second
+            },
+          ).then((r) => result = r);
+
+          // Elapse past first retry delay: 2s
+          async.elapse(const Duration(seconds: 3));
 
           expect(result, isTrue);
           expect(
             callCount,
-            equals(1),
-            reason: 'Should only call once on success',
+            equals(2),
+            reason: 'Should succeed on second try',
           );
-        },
-      );
-
-      test('retries up to 3 times when operation fails', () async {
-        var callCount = 0;
-
-        final result = await RetryExecutor.executeWithRetry(
-          operation: () async {
-            callCount++;
-            return false; // Always fails
-          },
-        );
-
-        expect(result, isFalse);
-        expect(callCount, equals(3), reason: 'Should try 3 times (maxRetries)');
+        });
       });
 
-      test('returns true on second attempt when first fails', () async {
-        var callCount = 0;
-
-        final result = await RetryExecutor.executeWithRetry(
-          operation: () async {
-            callCount++;
-            return callCount >= 2; // Fails first, succeeds second
-          },
-        );
-
-        expect(result, isTrue);
-        expect(callCount, equals(2), reason: 'Should succeed on second try');
-      });
-
-      test('returns true on third attempt when first two fail', () async {
-        var callCount = 0;
-
-        final result = await RetryExecutor.executeWithRetry(
-          operation: () async {
-            callCount++;
-            return callCount >= 3; // Fails first two, succeeds third
-          },
-        );
-
-        expect(result, isTrue);
-        expect(callCount, equals(3), reason: 'Should succeed on third try');
-      });
-
-      test('calls onRetry callback with correct attempt and delay', () async {
-        final retryAttempts = <int>[];
-        final retryDelays = <int>[];
-
-        await RetryExecutor.executeWithRetry(
-          operation: () async => false,
-          onRetry: (attempt, delaySeconds) {
-            retryAttempts.add(attempt);
-            retryDelays.add(delaySeconds);
-          },
-        );
-
-        // Should have 2 retries (attempt 1 and 2, not 3 since that's the last)
-        expect(retryAttempts, equals([1, 2]));
-        expect(
-          retryDelays,
-          equals([2, 4]),
-          reason: 'Delays should be 2s, 4s (exponential backoff)',
-        );
-      });
-
-      test('calls onAllFailed callback when all attempts exhausted', () async {
-        var allFailedCalled = false;
-
-        await RetryExecutor.executeWithRetry(
-          operation: () async => false,
-          onAllFailed: () {
-            allFailedCalled = true;
-          },
-        );
-
-        expect(allFailedCalled, isTrue);
-      });
-
-      test(
-        'does not call onAllFailed when operation eventually succeeds',
-        () async {
-          var allFailedCalled = false;
+      test('returns true on third attempt when first two fail', () {
+        fakeAsync((async) {
           var callCount = 0;
+          bool? result;
 
-          await RetryExecutor.executeWithRetry(
+          RetryExecutor.executeWithRetry(
             operation: () async {
               callCount++;
-              return callCount >= 2; // Succeeds on second try
+              return callCount >= 3; // Fails first two, succeeds third
             },
+          ).then((r) => result = r);
+
+          // Elapse past all retry delays: 2s + 4s = 6s
+          async.elapse(const Duration(seconds: 7));
+
+          expect(result, isTrue);
+          expect(
+            callCount,
+            equals(3),
+            reason: 'Should succeed on third try',
+          );
+        });
+      });
+
+      test('calls onRetry callback with correct attempt and delay', () {
+        fakeAsync((async) {
+          final retryAttempts = <int>[];
+          final retryDelays = <int>[];
+
+          RetryExecutor.executeWithRetry(
+            operation: () async => false,
+            onRetry: (attempt, delaySeconds) {
+              retryAttempts.add(attempt);
+              retryDelays.add(delaySeconds);
+            },
+          );
+
+          async.elapse(const Duration(seconds: 7));
+
+          // Should have 2 retries (attempt 1 and 2, not 3 since that's last)
+          expect(retryAttempts, equals([1, 2]));
+          expect(
+            retryDelays,
+            equals([2, 4]),
+            reason: 'Delays should be 2s, 4s (exponential backoff)',
+          );
+        });
+      });
+
+      test('calls onAllFailed callback when all attempts exhausted', () {
+        fakeAsync((async) {
+          var allFailedCalled = false;
+
+          RetryExecutor.executeWithRetry(
+            operation: () async => false,
             onAllFailed: () {
               allFailedCalled = true;
             },
           );
 
-          expect(allFailedCalled, isFalse);
+          async.elapse(const Duration(seconds: 7));
+
+          expect(allFailedCalled, isTrue);
+        });
+      });
+
+      test(
+        'does not call onAllFailed when operation eventually succeeds',
+        () {
+          fakeAsync((async) {
+            var allFailedCalled = false;
+            var callCount = 0;
+
+            RetryExecutor.executeWithRetry(
+              operation: () async {
+                callCount++;
+                return callCount >= 2; // Succeeds on second try
+              },
+              onAllFailed: () {
+                allFailedCalled = true;
+              },
+            );
+
+            async.elapse(const Duration(seconds: 3));
+
+            expect(allFailedCalled, isFalse);
+          });
         },
       );
 
       test(
         'does not call onRetry when operation succeeds on first try',
-        () async {
-          var retryCalled = false;
+        () {
+          fakeAsync((async) {
+            var retryCalled = false;
 
-          await RetryExecutor.executeWithRetry(
-            operation: () async => true,
-            onRetry: (_, _) {
-              retryCalled = true;
-            },
-          );
+            RetryExecutor.executeWithRetry(
+              operation: () async => true,
+              onRetry: (_, _) {
+                retryCalled = true;
+              },
+            );
 
-          expect(retryCalled, isFalse);
+            async.flushMicrotasks();
+
+            expect(retryCalled, isFalse);
+          });
         },
       );
 
-      test('respects custom maxRetries parameter', () async {
-        var callCount = 0;
+      test('respects custom maxRetries parameter', () {
+        fakeAsync((async) {
+          var callCount = 0;
 
-        await RetryExecutor.executeWithRetry(
-          operation: () async {
-            callCount++;
-            return false;
-          },
-          maxRetries: 5,
-        );
+          RetryExecutor.executeWithRetry(
+            operation: () async {
+              callCount++;
+              return false;
+            },
+            maxRetries: 5,
+          );
 
-        expect(callCount, equals(5));
+          // 2+4+6+8 = 20s of delays for 5 attempts
+          async.elapse(const Duration(seconds: 21));
+
+          expect(callCount, equals(5));
+        });
       });
     });
 
@@ -203,7 +260,8 @@ void main() {
         const attempt = 3;
         const delaySeconds = attempt * 2;
         expect(delaySeconds, equals(6));
-        // Note: In actual implementation, delay is not applied after last attempt
+        // Note: In actual implementation, delay is not applied after last
+        // attempt
       });
 
       test('total wait time for 3 attempts is 6 seconds (2s + 4s)', () {

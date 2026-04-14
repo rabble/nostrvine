@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
@@ -39,7 +40,11 @@ void main() {
             mockFunnelcakeApiClient,
           ),
         ],
-        child: MaterialApp(home: HashtagFeedScreen(hashtag: hashtag)),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HashtagFeedScreen(hashtag: hashtag),
+        ),
       );
     }
 

@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Loading view displayed while profile data is being fetched.
 class ProfileLoadingView extends StatelessWidget {
@@ -10,26 +11,29 @@ class ProfileLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Material(
-      type: .transparency,
+    return Material(
+      type: MaterialType.transparency,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: VineTheme.vineGreen),
-            SizedBox(height: 24),
+            const CircularProgressIndicator(color: VineTheme.vineGreen),
+            const SizedBox(height: 24),
             Text(
-              'Loading profile...',
-              style: TextStyle(
+              context.l10n.profileLoadingTitle,
+              style: const TextStyle(
                 color: VineTheme.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'This may take a few moments',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+              context.l10n.profileLoadingSubtitle,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
             ),
           ],
         ),

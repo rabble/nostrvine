@@ -19,13 +19,13 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
 import 'package:openvine/widgets/video_editor/video_editor_scaffold.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// The main video editor screen for adding layers (text, stickers, effects).
 ///
@@ -144,15 +144,16 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     final estimatedSize = MediaQuery.sizeOf(context) / 3;
 
     for (final sticker in stickers) {
-      final ImageProvider? provider = sticker.networkUrl != null
-          ? NetworkImage(sticker.networkUrl!)
-          : sticker.assetPath != null
-          ? AssetImage(sticker.assetPath!)
-          : null;
+      // SVG assets are vector and don't need raster precaching.
+      if (sticker.networkUrl == null) continue;
 
-      if (provider == null) continue;
-
-      unawaited(precacheImage(provider, context, size: estimatedSize));
+      unawaited(
+        precacheImage(
+          NetworkImage(sticker.networkUrl!),
+          context,
+          size: estimatedSize,
+        ),
+      );
     }
   }
 

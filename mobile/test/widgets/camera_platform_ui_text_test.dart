@@ -4,6 +4,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 
 void main() {
   group('Camera Platform UI Text Tests', () {
@@ -13,6 +14,8 @@ void main() {
       // Build a simple widget that shows the platform-specific text
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Center(
               child: Text(kIsWeb ? 'Tap to record' : 'Hold to record'),
@@ -34,14 +37,22 @@ void main() {
     testWidgets('segment counter text should format correctly', (tester) async {
       // Test single segment
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: Text('1 segment'))),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: Text('1 segment')),
+        ),
       );
 
       expect(find.text('1 segment'), findsOneWidget);
 
       // Test multiple segments
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: Text('3 segments'))),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: Text('3 segments')),
+        ),
       );
 
       expect(find.text('3 segments'), findsOneWidget);
@@ -55,6 +66,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Column(
               children: [
@@ -102,21 +115,33 @@ void main() {
     ) async {
       // Test idle state
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: Text('Ready'))),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: Text('Ready')),
+        ),
       );
 
       expect(find.text('Ready'), findsOneWidget);
 
       // Test recording state
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: Text('00:03'))),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: Text('00:03')),
+        ),
       );
 
       expect(find.text('00:03'), findsOneWidget);
 
       // Test completed state
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: Text('Processing video...'))),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: Text('Processing video...')),
+        ),
       );
 
       expect(find.text('Processing video...'), findsOneWidget);

@@ -12,13 +12,12 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/find_people_sheet.dart';
@@ -28,14 +27,16 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'share_sheet_header.dart';
-part 'share_with_section.dart';
 part 'share_sheet_message_input.dart';
 part 'share_sheet_more_actions.dart';
+part 'share_with_section.dart';
 
 /// Share action button for video overlay.
 ///
@@ -74,7 +75,7 @@ class ShareActionButton extends StatelessWidget {
     return VideoActionButton(
       icon: .shareFatDuo,
       semanticIdentifier: 'share_button',
-      semanticLabel: 'Share video',
+      semanticLabel: context.l10n.shareVideoLabel,
       onPressed: () {
         Log.info(
           'Share button tapped for ${video.id}',
@@ -177,17 +178,24 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       case ShareSheetSendSuccess(:final recipientName, :final shouldDismiss):
         if (shouldDismiss) _safePop(context);
         messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar('Post shared with $recipientName'),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.sharePostSharedWith(recipientName),
+          ),
         );
       case ShareSheetSendFailure():
         messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar('Failed to send video', error: true),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.shareFailedToSend,
+            error: true,
+          ),
         );
       case ShareSheetSaveResult(:final succeeded):
         _safePop(context);
         messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(
-            succeeded ? 'Added to bookmarks' : 'Failed to add bookmark',
+            succeeded
+                ? context.l10n.shareAddedToBookmarks
+                : context.l10n.shareFailedToAddBookmark,
             error: !succeeded,
           ),
         );
@@ -212,7 +220,10 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         );
       case ShareSheetActionFailure():
         messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar('Action failed', error: true),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.shareActionFailed,
+            error: true,
+          ),
         );
     }
   }
@@ -332,9 +343,9 @@ class _UnifiedShareSheetView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.5,
-    );
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.5);
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: Material(

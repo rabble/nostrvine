@@ -1,3 +1,4 @@
+// TODO(notifications-refactor): Remove after migration is verified
 // ABOUTME: Riverpod provider for Divine Relay notifications API with pagination
 // ABOUTME: Combines REST API for initial load/pagination with profile enrichment
 
@@ -12,9 +13,9 @@ import 'package:openvine/services/notification_model_converter.dart';
 import 'package:openvine/services/relay_notification_api_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'relay_notifications_provider.g.dart';
 
@@ -132,6 +133,10 @@ class RelayNotifications extends _$RelayNotifications {
 
   @override
   Future<NotificationFeedState> build() async {
+    // Rebuild on login/logout/account-switch so stale in-memory notifications
+    // do not survive across identities.
+    ref.watch(currentAuthStateProvider);
+
     // Reset pagination state at start of build
     _nextCursor = null;
     _hasMoreFromApi = true;

@@ -39,18 +39,13 @@ void main() {
       expect(FeatureFlag.values, contains(FeatureFlag.livestreamingBeta));
       expect(FeatureFlag.values, contains(FeatureFlag.debugTools));
       expect(FeatureFlag.values, contains(FeatureFlag.integratedApps));
+      expect(FeatureFlag.values, contains(FeatureFlag.newSearch));
     });
 
     test('integratedApps flag should have correct metadata', () {
-      expect(
-        FeatureFlag.integratedApps.displayName,
-        equals('Integrated Apps'),
-      );
+      expect(FeatureFlag.integratedApps.displayName, equals('Integrated Apps'));
       expect(FeatureFlag.integratedApps.description, isNotEmpty);
-      expect(
-        FeatureFlag.integratedApps.description.length,
-        greaterThan(10),
-      );
+      expect(FeatureFlag.integratedApps.description.length, greaterThan(10));
     });
 
     test('should provide meaningful descriptions', () {

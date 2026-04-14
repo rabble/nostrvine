@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
@@ -12,39 +13,28 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/config/bug_report_config.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Mock services for integration test
-class MockAuthService implements AuthService {
+/// Mock auth provider for integration test
+class MockAuthProvider implements BlossomAuthProvider {
   final Keychain _keychain;
 
-  MockAuthService(this._keychain);
+  MockAuthProvider(this._keychain);
 
   @override
   bool get isAuthenticated => true;
 
   @override
-  String get currentPublicKeyHex => _keychain.public;
-
-  @override
-  Future<Event?> createAndSignEvent({
+  Future<BlossomSignedEvent?> createAndSignEvent({
     required int kind,
     required String content,
-    List<List<String>>? tags,
-    String? biometricPrompt,
-    int? createdAt,
+    required List<List<String>> tags,
   }) async {
-    final event = Event(_keychain.public, kind, tags ?? [], content);
+    final event = Event(_keychain.public, kind, tags, content);
     event.sign(_keychain.private);
-    return event;
+    return BlossomSignedEvent(json: event.toJson());
   }
-
-  // Stub methods not used in this test
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 class MockNostrService implements NostrClient {
@@ -129,9 +119,9 @@ void main() {
       );
 
       // Create services
-      final mockAuthService = MockAuthService(testKeychain);
+      final mockAuthProvider = MockAuthProvider(testKeychain);
 
-      blossomService = BlossomUploadService(authService: mockAuthService);
+      blossomService = BlossomUploadService(authProvider: mockAuthProvider);
 
       // Configure Blossom server
       await blossomService.setBlossomServer(blossomServer);

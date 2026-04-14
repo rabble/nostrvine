@@ -85,11 +85,15 @@ class VideoStats {
     DateTime createdAt;
     final rawCreatedAt = eventData['created_at'];
     if (rawCreatedAt is int) {
-      createdAt = DateTime.fromMillisecondsSinceEpoch(rawCreatedAt * 1000);
+      createdAt = DateTime.fromMillisecondsSinceEpoch(
+        rawCreatedAt * 1000,
+        isUtc: true,
+      );
     } else if (rawCreatedAt is String) {
-      createdAt = DateTime.tryParse(rawCreatedAt) ?? DateTime.now();
+      createdAt =
+          DateTime.tryParse(rawCreatedAt)?.toUtc() ?? DateTime.now().toUtc();
     } else {
-      createdAt = DateTime.now();
+      createdAt = DateTime.now().toUtc();
     }
 
     // Parse loops from multiple possible sources
@@ -448,7 +452,10 @@ class VideoStats {
       pubkey: pubkey,
       createdAt: effectiveTimestamp,
       content: description ?? '',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(effectiveTimestamp * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(
+        effectiveTimestamp * 1000,
+        isUtc: true,
+      ),
       title: title.isNotEmpty ? title : null,
       videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
       thumbnailUrl: thumbnail.isNotEmpty ? thumbnail : null,

@@ -23,7 +23,6 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -33,12 +32,14 @@ import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Video overlay for the home feed matching the new design.
 ///
@@ -221,18 +222,15 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
             final opacity = scrollDrivenOpacity(distance);
             return Opacity(
               opacity: opacity,
-              child: IgnorePointer(
-                ignoring: opacity < 0.01,
-                child: child,
-              ),
+              child: IgnorePointer(ignoring: opacity < 0.01, child: child),
             );
           },
           child: Stack(
             children: [
               // ProofMode and Vine badges (top-right)
-              Positioned(
+              PositionedDirectional(
                 top: MediaQuery.viewPaddingOf(context).top + 64,
-                right: 16,
+                end: 16,
                 child: GestureDetector(
                   onTap: () => context.showVideoPausingDialog<void>(
                     builder: (context) => BadgeExplanationModal(video: video),
@@ -241,10 +239,10 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                 ),
               ),
               // Author info and description (bottom-left)
-              Positioned(
+              PositionedDirectional(
                 bottom: 14 + safeAreaBottom,
-                left: 16,
-                right: 80,
+                start: 16,
+                end: 80,
                 child: _AuthorInfoSection(
                   video: video,
                   hasTextContent: hasTextContent,
@@ -252,9 +250,9 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                 ),
               ),
               // Action buttons column (bottom-right)
-              Positioned(
+              PositionedDirectional(
                 bottom: 14 + safeAreaBottom,
-                right: 16,
+                end: 16,
                 child: _ActionButtons(video: video),
               ),
             ],
@@ -342,20 +340,26 @@ class _AuthorInfoSection extends ConsumerWidget {
         // Video description
         if (hasTextContent) ...[
           const SizedBox(height: 2),
-          Semantics(
-            identifier: 'video_description',
-            container: true,
-            explicitChildNodes: true,
-            label:
-                'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-            child: ClickableHashtagText(
-              text:
-                  (video.content.isNotEmpty ? video.content : video.title ?? '')
-                      .trim(),
-              style: VineTheme.bodyMediumFont(),
-              hashtagStyle: VineTheme.bodySmallFont(),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => MetadataExpandedSheet.show(context, video),
+            child: Semantics(
+              identifier: 'video_description',
+              container: true,
+              explicitChildNodes: true,
+              label:
+                  'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
+              child: ClickableHashtagText(
+                text:
+                    (video.content.isNotEmpty
+                            ? video.content
+                            : video.title ?? '')
+                        .trim(),
+                style: VineTheme.bodyMediumFont(),
+                hashtagStyle: VineTheme.bodySmallFont(),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
           // Collaborator avatars
@@ -368,18 +372,16 @@ class _AuthorInfoSection extends ConsumerWidget {
             const SizedBox(height: 4),
             InspiredByAttributionRow(video: video, isActive: true),
           ],
-          // Audio attribution
-          if (video.hasAudioReference) ...[
-            const SizedBox(height: 4),
-            AudioAttributionRow(video: video),
-          ],
-          // List attribution (curated lists)
-          if (listSources != null && listSources!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            _ListAttribution(listSources: listSources!),
-          ],
-          const SizedBox(height: 8),
         ],
+        // Audio attribution (all videos)
+        const SizedBox(height: 4),
+        AudioAttributionRow(video: video),
+        // List attribution (curated lists)
+        if (listSources != null && listSources!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          _ListAttribution(listSources: listSources!),
+        ],
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -411,8 +413,8 @@ class _AuthorAvatar extends StatelessWidget {
               }
             },
           ),
-          Positioned(
-            left: 31,
+          PositionedDirectional(
+            start: 31,
             top: 31,
             child: VideoFollowButton(pubkey: pubkey, hideIfFollowing: true),
           ),

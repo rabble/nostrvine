@@ -9,9 +9,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' show VideoEvent;
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/video_category.dart';
+import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
@@ -37,7 +40,6 @@ import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -49,7 +51,7 @@ import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
-import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
@@ -58,8 +60,10 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
+import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
@@ -72,8 +76,8 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/page_load_observer.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Global route observer for [RouteAware] subscribers (e.g. pausing video
 /// when a new route is pushed on top of the feed).
@@ -241,16 +245,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
           // NOTIFICATIONS tab subtree
           GoRoute(
-            path: NotificationsScreen.pathWithIndex,
-            name: NotificationsScreen.routeName,
+            path: NotificationsPage.pathWithIndex,
+            name: NotificationsPage.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
                 key: NavigatorKeys.notifications,
                 onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const NotificationsScreen(),
+                  builder: (_) => const NotificationsPage(),
                   settings: const RouteSettings(
-                    name: NotificationsScreen.routeName,
+                    name: NotificationsPage.routeName,
                   ),
                 ),
               ),
@@ -421,9 +425,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final tag = st.pathParameters['tag'];
           if (tag == null || tag.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid hashtag')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeInvalidHashtag)),
             );
           }
           final decoded = Uri.decodeComponent(tag);
@@ -448,9 +452,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final id = st.pathParameters['id'];
           if (id == null || id.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid conversation ID')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeInvalidConversationId)),
             );
           }
           final participantPubkeys = st.extra as List<String>? ?? [];
@@ -477,9 +481,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final id = st.pathParameters['id'];
           if (id == null || id.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid request ID')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeInvalidRequestId)),
             );
           }
           // Pubkeys are optional — the page loads them from the DB
@@ -508,16 +512,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final listId = st.pathParameters['listId'];
           if (listId == null || listId.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid list ID')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeInvalidListId)),
             );
           }
           // Extra data contains listName, videoIds, authorPubkey
           final extra = st.extra as CuratedListRouteExtra?;
           return CuratedListFeedScreen(
             listId: listId,
-            listName: extra?.listName ?? 'List',
+            listName: extra?.listName ?? ctx.l10n.routeDefaultListName,
             videoIds: extra?.videoIds,
             authorPubkey: extra?.authorPubkey,
           );
@@ -615,6 +619,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const SettingsScreen(),
       ),
       GoRoute(
+        path: InvitesScreen.path,
+        name: InvitesScreen.routeName,
+        builder: (_, _) => const InvitesScreen(),
+      ),
+      GoRoute(
         path: AppsDirectoryScreen.path,
         name: AppsDirectoryScreen.routeName,
         builder: (_, _) => const AppsDirectoryScreen(),
@@ -639,10 +648,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ? state.extra! as NostrAppDirectoryEntry
               : null;
           final appId = state.pathParameters['appId'] ?? '';
-          return ResolvedSandboxRouteScreen(
-            appId: appId,
-            initialApp: app,
-          );
+          return ResolvedSandboxRouteScreen(appId: appId, initialApp: app);
         },
       ),
       GoRoute(
@@ -653,10 +659,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final initialEntry = state.extra is NostrAppDirectoryEntry
               ? state.extra! as NostrAppDirectoryEntry
               : null;
-          return AppDetailScreen(
-            slug: slug,
-            initialEntry: initialEntry,
-          );
+          return AppDetailScreen(slug: slug, initialEntry: initialEntry);
         },
       ),
       GoRoute(
@@ -673,6 +676,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: ContentPreferencesScreen.path,
         name: ContentPreferencesScreen.routeName,
         builder: (_, _) => const ContentPreferencesScreen(),
+      ),
+      GoRoute(
+        path: AppLanguageScreen.path,
+        name: AppLanguageScreen.routeName,
+        builder: (_, _) => const AppLanguageScreen(),
       ),
       GoRoute(
         path: BlueskySettingsScreen.path,
@@ -800,6 +808,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: LibraryScreen.clipsRouteName,
         builder: (_, _) => const LibraryScreen(initialTabIndex: 1),
       ),
+      GoRoute(
+        path: LibraryScreen.soundsPath,
+        name: LibraryScreen.soundsRouteName,
+        builder: (_, _) => const LibraryScreen(initialTabIndex: 2),
+      ),
       // Followers screen - routes to My or Others based on pubkey
       GoRoute(
         path: FollowersScreenRouter.path,
@@ -808,9 +821,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
           if (pubkey == null || pubkey.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid user ID')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeInvalidUserId)),
             );
           }
           return FollowersScreenRouter(
@@ -827,9 +840,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
           if (pubkey == null || pubkey.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid user ID')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeInvalidUserId)),
             );
           }
           return FollowingScreenRouter(
@@ -845,9 +858,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final videoId = st.pathParameters['id'];
           if (videoId == null || videoId.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid video ID')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeInvalidVideoId)),
             );
           }
           return VideoDetailScreen(videoId: videoId);
@@ -859,20 +872,50 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: SoundDetailScreen.routeName,
         builder: (ctx, st) {
           final soundId = st.pathParameters['id'];
-          final sound = st.extra as AudioEvent?;
           if (soundId == null || soundId.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid sound ID')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeInvalidSoundId)),
             );
           }
-          // If sound was passed via extra, use it directly
-          // Otherwise, SoundDetailScreen will need to fetch it
+          // Extra can be an AudioEvent directly or a Map with both
+          // sound and sourceVideo (for original sounds).
+          final extra = st.extra;
+          AudioEvent? sound;
+          VideoEvent? sourceVideo;
+          if (extra is AudioEvent) {
+            sound = extra;
+          } else if (extra is Map<String, dynamic>) {
+            sound = extra['sound'] as AudioEvent?;
+            sourceVideo = extra['sourceVideo'] as VideoEvent?;
+          }
           if (sound != null) {
-            return SoundDetailScreen(sound: sound);
+            return SoundDetailScreen(
+              sound: sound,
+              sourceVideo: sourceVideo,
+            );
           }
           // Wrap in a loader that fetches the sound by ID
           return SoundDetailLoader(soundId: soundId);
+        },
+      ),
+      // Original sound detail route (for videos without shared audio)
+      GoRoute(
+        path: OriginalSoundDetailScreen.path,
+        name: OriginalSoundDetailScreen.routeName,
+        builder: (ctx, st) {
+          final pubkey = st.pathParameters['pubkey'];
+          final video = st.extra as VideoEvent?;
+          if (pubkey == null || pubkey.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid creator')),
+            );
+          }
+          return OriginalSoundDetailScreen(
+            creatorPubkey: pubkey,
+            sourceVideo: video,
+          );
         },
       ),
       // Video editor route (requires video passed via extra)
@@ -917,43 +960,20 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: CategoryGalleryScreen.path,
         name: CategoryGalleryScreen.routeName,
-        builder: (_, st) {
+        builder: (ctx, st) {
           final categoryName = st.pathParameters['categoryName'];
           final category =
               st.extra as VideoCategory? ??
-              VideoCategory(
-                name: categoryName ?? '',
-                videoCount: 0,
-              );
+              VideoCategory(name: categoryName ?? '', videoCount: 0);
 
           if (category.name.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid category')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeInvalidCategory)),
             );
           }
 
           return CategoryGalleryScreen(category: category);
-        },
-      ),
-      // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
-      GoRoute(
-        path: FullscreenVideoFeedScreen.path,
-        name: FullscreenVideoFeedScreen.routeName,
-        builder: (ctx, st) {
-          final args = st.extra as FullscreenVideoFeedArgs?;
-          if (args == null) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('No videos to display')),
-            );
-          }
-          return FullscreenVideoFeedScreen(
-            source: args.source,
-            initialIndex: args.initialIndex,
-            contextTitle: args.contextTitle,
-            trafficSource: args.trafficSource,
-          );
         },
       ),
       // Pooled fullscreen video feed (uses pooled_video_player package)
@@ -963,9 +983,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final args = st.extra as PooledFullscreenVideoFeedArgs?;
           if (args == null) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('No videos to display')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeNoVideosToDisplay)),
             );
           }
           return PooledFullscreenVideoFeedScreen(
@@ -975,6 +995,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             contextTitle: args.contextTitle,
             trafficSource: args.trafficSource,
             sourceDetail: args.sourceDetail,
+            autoOpenComments: args.autoOpenComments,
+            onPageChanged: args.onPageChanged,
           );
         },
       ),
@@ -986,9 +1008,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final npub = st.pathParameters['npub'];
           if (npub == null || npub.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid profile ID')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routeInvalidProfileId)),
             );
           }
           // Extract profile hints from extra (for users without Kind 0 profiles)
@@ -1048,6 +1070,7 @@ int tabIndexFromLocation(String loc) {
     case 'safety-settings':
     case 'content-filters':
     case 'content-preferences':
+    case 'app-language':
     case 'support-center':
     case 'legal':
     case 'nostr-settings':

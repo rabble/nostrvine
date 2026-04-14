@@ -18,6 +18,9 @@ Prefer immutable data structures. Widgets (especially `StatelessWidget`) should 
 ### Simplicity
 Write straightforward code. Clever or obscure code is difficult to maintain.
 
+### Reuse Before Writing
+Before writing a new helper, utility, or formatter, search `mobile/packages/` for an existing package that already provides the functionality. The monorepo contains shared packages (e.g., `count_formatter`, `divine_ui`) specifically to avoid duplication across features.
+
 ---
 
 ## Naming Conventions
@@ -101,6 +104,47 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
 ```
 
 Group related constants together so they are easy to find and update in one place.
+
+---
+
+## Latest Dependency Versions
+
+When adding a new dependency to `pubspec.yaml`, always use the latest stable version. Don't copy version constraints from older packages without checking for updates.
+
+```yaml
+# Good — checked pub.dev for latest
+very_good_analysis: ^10.2.0
+
+# Bad — copied from another package without checking
+very_good_analysis: ^6.0.0
+```
+
+---
+
+## PR Scope
+
+Pull requests should only include changes directly related to the task. Remove unrelated file modifications (stale lock files, unrelated docs, formatting changes in untouched files) before requesting review.
+
+If you discover something unrelated that needs fixing, create a separate PR or issue for it.
+
+---
+
+## Temporary Code
+
+Transitional or temporary code (feature flags, compatibility shims, workarounds for in-progress migrations) must include a `// TODO(#issue):` comment referencing a tracking issue for its removal. Code without a removal plan tends to become permanent.
+
+```dart
+// Good — linked to a tracking issue
+// TODO(#2854): Remove this fallback after unified search ships
+if (useOldSearch) {
+  return _legacySearch(query);
+}
+
+// Bad — no indication this is temporary or when to remove it
+if (useOldSearch) {
+  return _legacySearch(query);
+}
+```
 
 ---
 

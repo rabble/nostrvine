@@ -13,6 +13,7 @@
 
 # Git worktrees
 .worktrees/
+worktrees/
 
 # Flutter repo-specific
 /bin/cache/

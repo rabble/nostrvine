@@ -59,9 +59,12 @@ void main() {
 
       expect(manager.isAppInBackground, isTrue);
 
-      // Wait for async service notifications to complete
-      // The implementation uses Future.microtask() which needs event loop processing
-      await Future.delayed(const Duration(milliseconds: 10));
+      // _performImmediateBackgroundActions wraps each service notification in
+      // Future.microtask(() async { await Future.any([Future(fn), ...]); }),
+      // so the notification chain is microtask → Timer(0) → completion. Drain
+      // the event queue deterministically instead of relying on a fixed
+      // wall-clock delay, which is flaky under CI load.
+      await pumpEventQueue();
 
       expect(testService.backgroundCalled, isTrue);
     });
@@ -72,8 +75,8 @@ void main() {
       // Go to background then resume
       manager.onAppLifecycleStateChanged(AppLifecycleState.paused);
 
-      // Wait for background notification
-      await Future.delayed(const Duration(milliseconds: 10));
+      // Drain the background notification chain before transitioning back.
+      await pumpEventQueue();
 
       manager.onAppLifecycleStateChanged(AppLifecycleState.resumed);
 

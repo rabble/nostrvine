@@ -8,9 +8,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_category_name.dart';
 import 'package:openvine/models/video_category.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -101,7 +104,10 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
                         const CategoryVideosLoadMore(),
                       );
                     },
-                    contextTitle: widget.category.displayName,
+                    contextTitle: localizedCategoryName(
+                      context.l10n,
+                      widget.category.name,
+                    ),
                   ),
                 );
               },
@@ -272,7 +278,7 @@ class _CategoryGalleryHeader extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.only(top: 18),
                     child: Text(
-                      category.displayName,
+                      localizedCategoryName(context.l10n, category.name),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: VineTheme.titleMediumFont().copyWith(
@@ -287,9 +293,7 @@ class _CategoryGalleryHeader extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: _CategoryHeaderActionButton(
-                    decorationKey: const Key(
-                      'category-header-filter-button',
-                    ),
+                    decorationKey: const Key('category-header-filter-button'),
                     icon: DivineIconName.funnelSimple,
                     semanticLabel: 'Category sort options',
                     onPressed: () async {
@@ -328,11 +332,7 @@ const _categoryActionShadows = <BoxShadow>[
     offset: Offset(0.4, 0.4),
     blurRadius: 0.6,
   ),
-  BoxShadow(
-    color: Color(0x1A000000),
-    offset: Offset(1, 1),
-    blurRadius: 1,
-  ),
+  BoxShadow(color: Color(0x1A000000), offset: Offset(1, 1), blurRadius: 1),
 ];
 
 Future<String?> _showCategorySortSheet({
@@ -383,10 +383,7 @@ class _CategoryHeaderActionButton extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: DivineIcon(
-                icon: icon,
-                color: VineTheme.onSurface,
-              ),
+              child: DivineIcon(icon: icon, color: VineTheme.onSurface),
             ),
           ),
         ),
@@ -416,13 +413,10 @@ class _CategoryHeaderMascotSlot extends StatelessWidget {
                 offset: const Offset(0, -12),
                 child: Transform.rotate(
                   angle: 8 * math.pi / 180,
-                  child: Image.asset(
+                  child: SvgPicture.asset(
                     visuals.assetPath!,
                     height: 104,
                     width: 132,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const SizedBox.shrink(),
                   ),
                 ),
               ),
@@ -519,10 +513,7 @@ class _CategorySortSheetOption extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    option.label,
-                    style: VineTheme.titleMediumFont(),
-                  ),
+                  child: Text(option.label, style: VineTheme.titleMediumFont()),
                 ),
                 if (isSelected)
                   const DivineIcon(

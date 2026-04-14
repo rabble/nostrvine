@@ -2,6 +2,7 @@
 // ABOUTME: Provides consistent bottom nav across screens with/without shell
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,8 +18,8 @@ import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_badge.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Shared bottom navigation bar used by AppShell and standalone profile screens.
 class VineBottomNav extends ConsumerWidget {
@@ -150,17 +151,18 @@ class VineBottomNav extends ConsumerWidget {
               1,
               'explore_tab',
             ),
-            // Camera button in center of bottom nav
-            _CameraButton(
-              onTap: () {
-                Log.info(
-                  '👆 User tapped camera button',
-                  name: 'Navigation',
-                  category: LogCategory.ui,
-                );
-                context.pushToCameraWithPermission();
-              },
-            ),
+            // Camera button in center of bottom nav (hidden on web)
+            if (!kIsWeb)
+              _CameraButton(
+                onTap: () {
+                  Log.info(
+                    '👆 User tapped camera button',
+                    name: 'Navigation',
+                    category: LogCategory.ui,
+                  );
+                  context.pushToCameraWithPermission();
+                },
+              ),
             NotificationBadge(
               count: _inboxUnreadCount(context, ref),
               child: _buildTabButton(

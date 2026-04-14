@@ -2324,6 +2324,68 @@ final class CurrentAuthStateProvider
 
 String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 
+/// Provider that returns current RPC capability and rebuilds on changes.
+///
+/// Widgets and repositories should watch this instead of polling
+/// [AuthService.authRpcCapability] directly.
+
+@ProviderFor(currentAuthRpcCapability)
+const currentAuthRpcCapabilityProvider = CurrentAuthRpcCapabilityProvider._();
+
+/// Provider that returns current RPC capability and rebuilds on changes.
+///
+/// Widgets and repositories should watch this instead of polling
+/// [AuthService.authRpcCapability] directly.
+
+final class CurrentAuthRpcCapabilityProvider
+    extends
+        $FunctionalProvider<
+          AuthRpcCapability,
+          AuthRpcCapability,
+          AuthRpcCapability
+        >
+    with $Provider<AuthRpcCapability> {
+  /// Provider that returns current RPC capability and rebuilds on changes.
+  ///
+  /// Widgets and repositories should watch this instead of polling
+  /// [AuthService.authRpcCapability] directly.
+  const CurrentAuthRpcCapabilityProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'currentAuthRpcCapabilityProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$currentAuthRpcCapabilityHash();
+
+  @$internal
+  @override
+  $ProviderElement<AuthRpcCapability> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AuthRpcCapability create(Ref ref) {
+    return currentAuthRpcCapability(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AuthRpcCapability value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AuthRpcCapability>(value),
+    );
+  }
+}
+
+String _$currentAuthRpcCapabilityHash() =>
+    r'cb273f3377e25d0c88104df14a38d2b502c3f7de';
+
 /// Provider that fetches the list of known accounts from the auth service.
 ///
 /// Invalidate this provider after sign-in or sign-out to refresh the list.
@@ -2500,6 +2562,62 @@ final class ZendeskIdentitySyncProvider
 
 String _$zendeskIdentitySyncHash() =>
     r'e49d4f9cedf56ec4131b30a6f1d9d45dada68bed';
+
+/// Bridges auth state changes to push notification registration.
+///
+/// Registers FCM token on login, deregisters on logout.
+/// Same pattern as [zendeskIdentitySync].
+
+@ProviderFor(pushNotificationSync)
+const pushNotificationSyncProvider = PushNotificationSyncProvider._();
+
+/// Bridges auth state changes to push notification registration.
+///
+/// Registers FCM token on login, deregisters on logout.
+/// Same pattern as [zendeskIdentitySync].
+
+final class PushNotificationSyncProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Bridges auth state changes to push notification registration.
+  ///
+  /// Registers FCM token on login, deregisters on logout.
+  /// Same pattern as [zendeskIdentitySync].
+  const PushNotificationSyncProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pushNotificationSyncProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pushNotificationSyncHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return pushNotificationSync(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$pushNotificationSyncHash() =>
+    r'42aa13bfec4492b045273818e6a4a88b28949b06';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -2892,7 +3010,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'1f41b9c42e06c287a43fe235a3b3774d1a759a49';
+String _$followRepositoryHash() => r'a94622f52c4a1e843f707fa192b08ba65c75d6c2';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -2960,7 +3078,7 @@ final class CuratedListRepositoryProvider
 }
 
 String _$curatedListRepositoryHash() =>
-    r'ac877d48b81aebf77fb573cbeaf70a123ea843d4';
+    r'21aee8babc20a3b93a38c41c1905e0f04f1d877a';
 
 /// Provider for HashtagRepository instance.
 ///
@@ -3308,7 +3426,7 @@ final class BlossomAuthServiceProvider
 }
 
 String _$blossomAuthServiceHash() =>
-    r'e64f2eebfd131f289245c69c1c7dd4f0575bf85d';
+    r'18b397ce487844dd002ada34930c6ce08f0566f8';
 
 /// Media authentication interceptor for handling 401 unauthorized responses
 
@@ -3414,7 +3532,7 @@ final class BlossomUploadServiceProvider
 }
 
 String _$blossomUploadServiceHash() =>
-    r'dd7f21326fc6c7cbc8ea291e9e9ca7c337da54f4';
+    r'8b83e68824cc146d304111a8d88e5ea8fadb2cc7';
 
 /// Upload manager uses only Blossom upload service
 
@@ -4341,9 +4459,16 @@ String _$bugReportServiceHash() => r'a243bf5fae16e223b148a829b14f9857af1c4592';
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Sets auth credentials eagerly so read/send operations work immediately.
-/// The relay subscription is NOT started here — it is driven by the inbox
-/// UI lifecycle via [ConversationListBloc] (#2766).
+/// Sets auth credentials eagerly so read/send operations work immediately,
+/// then starts the gift-wrap subscription so DMs are ingested for the whole
+/// authenticated session — not just while [InboxPage] is mounted (#2931).
+///
+/// Cold-start cost is bounded by two existing mechanisms that landed with
+/// the original lazy-inbox work (#2766):
+/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+///   limits the relay backlog to recent events on every open after the first.
+/// - Decryption is offloaded to a background isolate via
+///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
 /// Uses `keepAlive: true` because the repository must survive transient
 /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -4361,9 +4486,16 @@ const dmRepositoryProvider = DmRepositoryProvider._();
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Sets auth credentials eagerly so read/send operations work immediately.
-/// The relay subscription is NOT started here — it is driven by the inbox
-/// UI lifecycle via [ConversationListBloc] (#2766).
+/// Sets auth credentials eagerly so read/send operations work immediately,
+/// then starts the gift-wrap subscription so DMs are ingested for the whole
+/// authenticated session — not just while [InboxPage] is mounted (#2931).
+///
+/// Cold-start cost is bounded by two existing mechanisms that landed with
+/// the original lazy-inbox work (#2766):
+/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+///   limits the relay backlog to recent events on every open after the first.
+/// - Decryption is offloaded to a background isolate via
+///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
 /// Uses `keepAlive: true` because the repository must survive transient
 /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -4381,9 +4513,16 @@ final class DmRepositoryProvider
   /// and sending encrypted direct messages. Works with any [NostrSigner]
   /// (local keys, Keycast RPC, Amber, etc.).
   ///
-  /// Sets auth credentials eagerly so read/send operations work immediately.
-  /// The relay subscription is NOT started here — it is driven by the inbox
-  /// UI lifecycle via [ConversationListBloc] (#2766).
+  /// Sets auth credentials eagerly so read/send operations work immediately,
+  /// then starts the gift-wrap subscription so DMs are ingested for the whole
+  /// authenticated session — not just while [InboxPage] is mounted (#2931).
+  ///
+  /// Cold-start cost is bounded by two existing mechanisms that landed with
+  /// the original lazy-inbox work (#2766):
+  /// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+  ///   limits the relay backlog to recent events on every open after the first.
+  /// - Decryption is offloaded to a background isolate via
+  ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
   ///
   /// Uses `keepAlive: true` because the repository must survive transient
   /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -4424,7 +4563,7 @@ final class DmRepositoryProvider
   }
 }
 
-String _$dmRepositoryHash() => r'30503db56d4371ec8d639cebcaf711fa372966bd';
+String _$dmRepositoryHash() => r'a2fa1b080fa8ff0db62cc19074de841115603487';
 
 /// Provider for CommentsRepository instance
 ///
@@ -4717,7 +4856,7 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'66aaef86246fb3bb43815502ca215b16454387b7';
+String _$likesRepositoryHash() => r'96460364fea5b82e9717a420d542f8a2a865da48';
 
 /// Provider for RepostsRepository instance
 ///
@@ -4790,4 +4929,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'03658f5c9263b40e6279c5dd325fdbcfd54b4068';
+String _$repostsRepositoryHash() => r'057ff5e60002499eee0dffa809e1ddb72f7c817c';

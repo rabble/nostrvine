@@ -52,29 +52,33 @@ class DivineSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 48),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        readOnly: readOnly,
-        onTap: onTap,
-        onChanged: onChanged,
-        onSubmitted: onSubmitted,
-        style: const TextStyle(color: VineTheme.whiteText),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(
-            color: VineTheme.whiteText.withValues(alpha: 0.6),
+      child: Material(
+        color: Colors.transparent,
+        child: TextField(
+          controller: controller,
+          focusNode: focusNode,
+          readOnly: readOnly,
+          onTap: onTap,
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
+          style: VineTheme.bodyLargeFont(),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: VineTheme.bodyLargeFont(
+              color: VineTheme.onSurfaceMuted55,
+            ),
+            filled: true,
+            fillColor: VineTheme.iconButtonBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            prefixIconConstraints: const BoxConstraints(),
+            prefixIcon: _PrefixIcon(isLoading: isLoading),
+            suffixIconConstraints: const BoxConstraints(),
+            suffixIcon: suffixIcon,
           ),
-          filled: true,
-          fillColor: VineTheme.iconButtonBackground,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          prefixIconConstraints: const BoxConstraints(),
-          prefixIcon: _PrefixIcon(isLoading: isLoading),
-          suffixIcon: suffixIcon,
         ),
       ),
     );
@@ -89,7 +93,7 @@ class _PrefixIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 8),
+      padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
       child: isLoading
           ? const SizedBox(
               width: 24,
@@ -102,10 +106,7 @@ class _PrefixIcon extends StatelessWidget {
                 ),
               ),
             )
-          : const DivineIcon(
-              icon: .search,
-              color: VineTheme.lightText,
-            ),
+          : const DivineIcon(icon: .search, color: VineTheme.onSurfaceMuted55),
     );
   }
 }

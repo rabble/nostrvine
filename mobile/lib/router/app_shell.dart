@@ -11,6 +11,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -23,15 +27,15 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
-import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/widgets/notification_badge.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.child, required this.currentIndex, super.key});
@@ -47,11 +51,12 @@ class _AppShellState extends ConsumerState<AppShell> {
   int get currentIndex => widget.currentIndex;
   Widget get child => widget.child;
 
-  String _titleFor(WidgetRef ref) {
+  String _titleFor(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final ctx = ref.watch(pageContextProvider).asData?.value;
     switch (ctx?.type) {
       case RouteType.home:
-        return 'Home';
+        return l10n.navHome;
       case RouteType.explore:
         // When in feed mode (watching a video), show the tab name
         if (ctx?.videoIndex != null) {
@@ -62,26 +67,26 @@ class _AppShellState extends ConsumerState<AppShell> {
           final classicsAvailable =
               ref.watch(classicVinesAvailableProvider).asData?.value ?? false;
           final tabNames = <String>[];
-          if (classicsAvailable) tabNames.add('Classics');
-          tabNames.addAll(['New Videos', 'Trending']);
-          if (forYouAvailable) tabNames.add('For You');
-          tabNames.add('Lists');
+          if (classicsAvailable) tabNames.add(l10n.navExploreClassics);
+          tabNames.addAll([l10n.navExploreNewVideos, l10n.navExploreTrending]);
+          if (forYouAvailable) tabNames.add(l10n.navExploreForYou);
+          tabNames.add(l10n.navExploreLists);
           if (tabIndex >= 0 && tabIndex < tabNames.length) {
             return tabNames[tabIndex];
           }
-          return 'Explore';
+          return l10n.navExplore;
         }
-        return 'Explore';
+        return l10n.navExplore;
       case RouteType.categoryGallery:
-        return 'Explore';
+        return l10n.navExplore;
       case RouteType.notifications:
-        return 'Notifications';
+        return l10n.navNotifications;
       case RouteType.inbox:
-        return 'Inbox';
+        return l10n.navInbox;
       case RouteType.profile:
         final npub = ctx?.npub ?? '';
         if (npub == 'me') {
-          return 'My Profile';
+          return l10n.navMyProfile;
         }
         // Get user profile to show their display name
         final userIdHex = npubToHexOrNull(npub);
@@ -92,9 +97,9 @@ class _AppShellState extends ConsumerState<AppShell> {
             return displayName;
           }
         }
-        return 'Profile';
+        return l10n.navProfile;
       case RouteType.search:
-        return 'Search';
+        return l10n.navSearch;
       default:
         return '';
     }
@@ -124,6 +129,34 @@ class _AppShellState extends ConsumerState<AppShell> {
     };
   }
 
+  /// Navigates to the given tab at its last known position.
+  void _navigateToTab(BuildContext context, WidgetRef ref, int tabIndex) {
+    final routeType = _routeTypeForTab(tabIndex);
+    final lastIndex = ref
+        .read(lastTabPositionProvider.notifier)
+        .getPosition(routeType);
+
+    switch (tabIndex) {
+      case 0:
+        context.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
+      case 1:
+        if (lastIndex != null) {
+          context.go(ExploreScreen.pathForIndex(lastIndex));
+        } else {
+          context.go(ExploreScreen.path);
+        }
+      case 2:
+        context.go(NotificationsPage.pathForIndex(lastIndex ?? 0));
+      case 3:
+        final authService = ref.read(authServiceProvider);
+        final currentUserHex = authService.currentPublicKeyHex;
+        if (currentUserHex != null) {
+          final npub = NostrKeyUtils.encodePubKey(currentUserHex);
+          context.go(ProfileScreenRouter.pathForNpub(npub));
+        }
+    }
+  }
+
   /// Handles tab tap - navigates to last known position in that tab
   void _handleTabTap(BuildContext context, WidgetRef ref, int tabIndex) {
     final routeType = _routeTypeForTab(tabIndex);
@@ -133,7 +166,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     // Log user interaction
     Log.info(
-      '👆 User tapped bottom nav: tab=$tabIndex (${_tabName(tabIndex)})',
+      '👆 User tapped bottom nav: tab=$tabIndex (${_tabName(context, tabIndex)})',
       name: 'Navigation',
       category: LogCategory.ui,
     );
@@ -170,13 +203,14 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
   }
 
-  String _tabName(int index) {
+  String _tabName(BuildContext context, int index) {
+    final l10n = context.l10n;
     return switch (index) {
-      0 => 'Home',
-      1 => 'Explore',
-      2 => 'Inbox',
-      3 => 'Profile',
-      _ => 'Unknown',
+      0 => l10n.navHome,
+      1 => l10n.navExplore,
+      2 => l10n.navInbox,
+      3 => l10n.navProfile,
+      _ => l10n.navUnknown,
     };
   }
 
@@ -258,7 +292,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _titleFor(ref);
+    final title = _titleFor(context, ref);
 
     // Initialize auto-cleanup provider to ensure only one video plays at a time
     ref.watch(videoControllerAutoCleanupProvider);
@@ -271,6 +305,9 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     // Initialize Zendesk identity sync to keep user identity in sync with auth
     ref.watch(zendeskIdentitySyncProvider);
+
+    // Initialize push notification sync to register FCM token on auth
+    ref.watch(pushNotificationSyncProvider);
 
     // Start block/mute list sync once authenticated (handles post-reinstall login)
     ref.watch(blocklistSyncBridgeProvider);
@@ -305,6 +342,22 @@ class _AppShellState extends ConsumerState<AppShell> {
       data: (ctx) => ctx.type == RouteType.search,
       orElse: () => false,
     );
+
+    // Watch the newSearch feature flag
+    final isNewSearchEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.newSearch),
+    );
+
+    // Explore grid mode manages its own header (search bar + tabs)
+    // when the newSearch feature flag is enabled.
+    final isExploreGrid =
+        isNewSearchEnabled &&
+        pageCtxAsync.maybeWhen(
+          data: (ctx) => ctx.type == RouteType.explore
+              ? ctx.videoIndex == null
+              : currentIndex == 1,
+          orElse: () => currentIndex == 1,
+        );
     final showBackButton = pageCtxAsync.maybeWhen(
       data: (ctx) {
         final isSubRoute = ctx.type == RouteType.search;
@@ -337,7 +390,8 @@ class _AppShellState extends ConsumerState<AppShell> {
       // Home tab uses FeedModeSwitch overlay (menu + mode dropdown + search)
       // instead of the standard AppBar, for full-screen video UX.
       // Inbox uses its own segmented toggle header.
-      appBar: currentIndex == 0 || isInbox
+      // Explore grid manages its own header (search bar + tabs).
+      appBar: currentIndex == 0 || isInbox || isExploreGrid
           ? null
           : DiVineAppBar(
               titleWidget: _buildTappableTitle(context, ref, title),
@@ -368,12 +422,28 @@ class _AppShellState extends ConsumerState<AppShell> {
                       final ctx = ref.read(pageContextProvider).asData?.value;
                       if (ctx == null) return;
 
-                      // Check if we're in a sub-route (hashtag, search, etc.)
-                      // If so, navigate back to parent route
+                      // Check if we're in a sub-route (search, etc.)
+                      // If so, navigate back appropriately
                       switch (ctx.type) {
+                        // TODO(#2470): Remove search case when unified
+                        // search/explore replaces the old search path.
                         case RouteType.search:
-                          // Go back to explore
-                          return context.go(ExploreScreen.path);
+                          if (ctx.videoIndex != null) {
+                            // Feed mode → go back to search grid
+                            return context.go(
+                              SearchScreenPure.pathForTerm(
+                                term: ctx.searchTerm,
+                              ),
+                            );
+                          }
+                          // Grid mode → return to the originating tab
+                          final lastTab =
+                              ref
+                                  .read(tabHistoryProvider.notifier)
+                                  .getCurrentTab() ??
+                              0;
+                          _navigateToTab(context, ref, lastTab);
+                          return;
                         default:
                           break;
                       }
@@ -396,7 +466,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                           // For Notifications, index 0 is the base state
                           case RouteType.notifications when ctx.videoIndex != 0:
                             return context.go(
-                              NotificationsScreen.pathForIndex(0),
+                              NotificationsPage.pathForIndex(0),
                             );
                           default:
                             break;
@@ -409,46 +479,10 @@ class _AppShellState extends ConsumerState<AppShell> {
 
                       // If there's a previous tab in history, navigate to it
                       if (previousTab != null) {
-                        // Navigate to previous tab
-                        final previousRouteType = _routeTypeForTab(previousTab);
-                        final lastIndex = ref
-                            .read(lastTabPositionProvider.notifier)
-                            .getPosition(previousRouteType);
-
                         // Remove current tab from history before navigating
                         tabHistory.navigateBack();
 
-                        // Navigate to previous tab
-                        switch (previousTab) {
-                          case 0:
-                            context.go(
-                              VideoFeedPage.pathForIndex(lastIndex ?? 0),
-                            );
-                          case 1:
-                            if (lastIndex != null) {
-                              return context.go(
-                                ExploreScreen.pathForIndex(lastIndex),
-                              );
-                            } else {
-                              return context.go(ExploreScreen.path);
-                            }
-                          case 2:
-                            return context.go(
-                              NotificationsScreen.pathForIndex(lastIndex ?? 0),
-                            );
-                          case 3:
-                            final authService = ref.read(authServiceProvider);
-                            final currentUserHex =
-                                authService.currentPublicKeyHex;
-                            if (currentUserHex != null) {
-                              final npub = NostrKeyUtils.encodePubKey(
-                                currentUserHex,
-                              );
-                              return context.go(
-                                ProfileScreenRouter.pathForNpub(npub),
-                              );
-                            }
-                        }
+                        _navigateToTab(context, ref, previousTab);
                         return;
                       }
 
@@ -463,12 +497,12 @@ class _AppShellState extends ConsumerState<AppShell> {
                       // Already at home with no history - let system handle exit
                     }
                   : null,
-              actions: isSearchRoute
+              actions: isSearchRoute || isNewSearchEnabled
                   ? const []
                   : [
                       DiVineAppBarAction(
                         icon: SvgIconSource(DivineIconName.search.assetPath),
-                        tooltip: 'Search',
+                        tooltip: context.l10n.navSearchTooltip,
                         onPressed: () {
                           Log.info(
                             '👆 User tapped search button',
@@ -490,86 +524,91 @@ class _AppShellState extends ConsumerState<AppShell> {
           : child,
       // Bottom nav visible for all shell routes (search, tabs, etc.)
       // For search (currentIndex=-1), no tab is highlighted
-      bottomNavigationBar: Container(
-        color: VineTheme.navGreen,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildTabButton(
-                context,
-                ref,
-                DivineIconName.house.assetPath,
-                0,
-                currentIndex,
-                'home_tab',
-              ),
-              _buildTabButton(
-                context,
-                ref,
-                DivineIconName.compass.assetPath,
-                1,
-                currentIndex,
-                'explore_tab',
-              ),
-              // Camera button in center of bottom nav (hidden on web)
-              if (!kIsWeb)
-                Semantics(
-                  identifier: 'camera_button',
-                  button: true,
-                  label: 'Open camera',
-                  child: GestureDetector(
-                    onTap: () {
-                      Log.info(
-                        '👆 User tapped camera button',
-                        name: 'Navigation',
-                        category: LogCategory.ui,
-                      );
-                      context.pushToCameraWithPermission();
-                    },
-                    child: Container(
-                      width: 72,
-                      height: 48,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: VineTheme.cameraButtonGreen,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: SvgPicture.asset(
-                        DivineIconName.cameraRetro.assetPath,
-                        width: 32,
-                        height: 32,
+      // PointerInterceptor ensures the bottom nav receives taps on web
+      // even when HTML platform views (video elements) overlap the area.
+      bottomNavigationBar: PointerInterceptor(
+        intercepting: kIsWeb,
+        child: Container(
+          color: VineTheme.navGreen,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: SafeArea(
+            top: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildTabButton(
+                  context,
+                  ref,
+                  DivineIconName.house.assetPath,
+                  0,
+                  currentIndex,
+                  'home_tab',
+                ),
+                _buildTabButton(
+                  context,
+                  ref,
+                  DivineIconName.compass.assetPath,
+                  1,
+                  currentIndex,
+                  'explore_tab',
+                ),
+                // Camera button in center of bottom nav (hidden on web)
+                if (!kIsWeb)
+                  Semantics(
+                    identifier: 'camera_button',
+                    button: true,
+                    label: context.l10n.navOpenCamera,
+                    child: GestureDetector(
+                      onTap: () {
+                        Log.info(
+                          '👆 User tapped camera button',
+                          name: 'Navigation',
+                          category: LogCategory.ui,
+                        );
+                        context.pushToCameraWithPermission();
+                      },
+                      child: Container(
+                        width: 72,
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: VineTheme.cameraButtonGreen,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: SvgPicture.asset(
+                          DivineIconName.cameraRetro.assetPath,
+                          width: 32,
+                          height: 32,
+                        ),
                       ),
                     ),
                   ),
+                NotificationBadge(
+                  count:
+                      context.watch<DmUnreadCountCubit>().state +
+                      ref.watch(relayNotificationUnreadCountProvider),
+                  child: _buildTabButton(
+                    context,
+                    ref,
+                    DivineIconName.chat.assetPath,
+                    2,
+                    currentIndex,
+                    'inbox_tab',
+                  ),
                 ),
-              NotificationBadge(
-                count:
-                    context.watch<DmUnreadCountCubit>().state +
-                    ref.watch(relayNotificationUnreadCountProvider),
-                child: _buildTabButton(
+                _buildTabButton(
                   context,
                   ref,
-                  DivineIconName.chat.assetPath,
-                  2,
+                  DivineIconName.userCircle.assetPath,
+                  3,
                   currentIndex,
-                  'inbox_tab',
+                  'profile_tab',
                 ),
-              ),
-              _buildTabButton(
-                context,
-                ref,
-                DivineIconName.userCircle.assetPath,
-                3,
-                currentIndex,
-                'profile_tab',
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -4,6 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+
 import 'golden_test_devices.dart';
 
 /// Helper to easily add golden tests to existing widget tests
@@ -191,6 +193,8 @@ extension GoldenTestExtensions on WidgetTester {
     await pumpWidgetBuilder(
       widget,
       wrapper: (child) => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: theme,
         home: useScaffold ? Scaffold(body: Center(child: child)) : child,
       ),

@@ -10,15 +10,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -33,14 +34,14 @@ class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 class _MockPendingVerificationService extends Mock
     implements PendingVerificationService {}
 
-class _MockInviteApiService extends Mock implements InviteApiService {}
+class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
 void main() {
   late _MockEmailVerificationCubit mockCubit;
   late _MockAuthService mockAuthService;
   late _MockKeycastOAuth mockOAuth;
   late _MockPendingVerificationService mockPendingVerification;
-  late _MockInviteApiService mockInviteApiService;
+  late _MockInviteApiClient mockInviteApiClient;
   late StreamController<AuthState> authStateController;
 
   setUp(() {
@@ -48,7 +49,7 @@ void main() {
     mockAuthService = _MockAuthService();
     mockOAuth = _MockKeycastOAuth();
     mockPendingVerification = _MockPendingVerificationService();
-    mockInviteApiService = _MockInviteApiService();
+    mockInviteApiClient = _MockInviteApiClient();
     authStateController = StreamController<AuthState>.broadcast();
 
     // Stub authService stream
@@ -90,11 +91,13 @@ void main() {
         ),
         forceExploreTabNameProvider.overrideWith((ref) => null),
       ],
-      child: RepositoryProvider<InviteApiService>.value(
-        value: mockInviteApiService,
+      child: RepositoryProvider<InviteApiClient>.value(
+        value: mockInviteApiClient,
         child: BlocProvider(
-          create: (_) => InviteGateBloc(inviteApiService: mockInviteApiService),
+          create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             theme: VineTheme.theme,
             routerConfig: GoRouter(
               initialLocation: '/verify-email',
@@ -276,7 +279,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Verification timed out',
+              errorCode: EmailVerificationError.timeout,
             ),
           ),
         );
@@ -292,7 +295,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Error',
+              errorCode: EmailVerificationError.pollFailed,
             ),
           ),
         );
@@ -311,7 +314,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Error',
+              errorCode: EmailVerificationError.pollFailed,
             ),
           ),
         );
@@ -327,13 +330,19 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Verification failed',
+              errorCode: EmailVerificationError.pollFailed,
             ),
           ),
         );
         await tester.pump();
 
-        expect(find.text('Verification failed'), findsOneWidget);
+        // The screen should render the localized message for pollFailed.
+        // Source of truth is app_en.arb — this assertion protects the wiring
+        // between state codes and the l10n mapping.
+        expect(
+          find.text('Verification failed. Please try again.'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('renders invite recovery button when available', (
@@ -345,7 +354,7 @@ void main() {
             verifier: 'test-verifier',
             initialState: const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Invite problem',
+              errorCode: EmailVerificationError.inviteUnknown,
               showInviteGateRecovery: true,
               inviteRecoveryCode: 'AB12-EF34',
             ),
@@ -415,6 +424,8 @@ void main() {
                 forceExploreTabNameProvider.overrideWith((ref) => null),
               ],
               child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 theme: VineTheme.theme,
                 home: BlocProvider<EmailVerificationCubit>.value(
                   value: mockCubit,

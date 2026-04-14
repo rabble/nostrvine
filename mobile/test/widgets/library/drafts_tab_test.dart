@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/widgets/library/drafts_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
@@ -46,6 +47,8 @@ void main() {
     Widget buildWidget() {
       return ProviderScope(
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
           home: Scaffold(
             body: BlocProvider<DraftsLibraryBloc>.value(
@@ -140,6 +143,8 @@ void main() {
       bool enableShrink = false,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: Scaffold(
           body: DraftListTile(

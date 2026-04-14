@@ -9,14 +9,15 @@ import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
+import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Result of normalizing clips to a target aspect ratio.
 class _NormalizationResult {
@@ -172,6 +173,22 @@ class VideoEditorRenderService {
 
   static const _logName = 'VideoEditorRenderService';
 
+  /// Test-only override for [renderVideoToClip].
+  ///
+  /// When set, [renderVideoToClip] delegates to this callback instead of
+  /// running the real render pipeline. Reset to `null` in `tearDown`.
+  @visibleForTesting
+  static Future<(DivineVideoClip, String? proofManifestJson)?> Function({
+    required List<DivineVideoClip> clips,
+    required Map<String, dynamic> editorStateHistory,
+    double originalAudioVolume,
+    double customAudioVolume,
+    bool aiTrainingOptOut,
+    CompleteParameters? parameters,
+    String? taskId,
+  })?
+  renderVideoToClipOverride;
+
   // ─────────────────────────────────────────────────────────────────────────
   // Public API
   // ─────────────────────────────────────────────────────────────────────────
@@ -189,19 +206,32 @@ class VideoEditorRenderService {
   static Future<(DivineVideoClip, String? proofManifestJson)?>
   renderVideoToClip({
     required List<DivineVideoClip> clips,
+    required Map<String, dynamic> editorStateHistory,
     double originalAudioVolume = 1.0,
     double customAudioVolume = 1.0,
     bool aiTrainingOptOut = true,
     CompleteParameters? parameters,
     String? taskId,
   }) async {
+    if (renderVideoToClipOverride != null) {
+      return renderVideoToClipOverride!(
+        clips: clips,
+        editorStateHistory: editorStateHistory,
+        originalAudioVolume: originalAudioVolume,
+        customAudioVolume: customAudioVolume,
+        aiTrainingOptOut: aiTrainingOptOut,
+        parameters: parameters,
+        taskId: taskId,
+      );
+    }
+
     if (clips.isEmpty) return null;
 
     Log.debug(
       '🎬 renderVideoToClip: clips=${clips.length}, '
       'originalAudioVolume=$originalAudioVolume, '
       'customAudioVolume=$customAudioVolume, '
-      'parameters=${parameters?.toMap()}',
+      'parameters=${parameters?.toLogString()}',
       name: _logName,
       category: LogCategory.video,
     );
@@ -228,9 +258,20 @@ class VideoEditorRenderService {
       name: _logName,
       category: LogCategory.video,
     );
+
+    // Ensure all clips have proof attestations before generating the
+    // final combined proof. Clips recorded before the feature was added
+    // or where proof generation failed will be attested now.
+    final attestedClips = await _ensureClipProofs(
+      clips,
+      aiTrainingOptOut: aiTrainingOptOut,
+    );
+
     final proofData = await NativeProofModeService.proofFile(
       File(outputPath),
       aiTrainingOptOut: aiTrainingOptOut,
+      clips: attestedClips,
+      editorStateHistory: editorStateHistory,
     );
     final String? proofManifestJson = proofData != null
         ? jsonEncode(proofData)
@@ -261,6 +302,60 @@ class VideoEditorRenderService {
     );
 
     return (clip, proofManifestJson);
+  }
+
+  /// Ensures every clip has a [proofManifestJson].
+  ///
+  /// Clips that already have proof data are returned as-is. For clips without
+  /// proof, [NativeProofModeService.proofFile] is called on the clip's video
+  /// file and the clip is updated with the result.
+  static Future<List<DivineVideoClip>> _ensureClipProofs(
+    List<DivineVideoClip> clips, {
+    required bool aiTrainingOptOut,
+  }) async {
+    final result = <DivineVideoClip>[];
+    for (final clip in clips) {
+      if (clip.proofManifestJson != null) {
+        result.add(clip);
+        continue;
+      }
+
+      final videoFile = clip.video.file;
+      if (videoFile == null) {
+        result.add(clip);
+        continue;
+      }
+
+      Log.debug(
+        '🔐 Generating missing proof for clip ${clip.id}',
+        name: _logName,
+        category: LogCategory.video,
+      );
+
+      final proofData = await NativeProofModeService.proofFile(
+        File(videoFile.path),
+        aiTrainingOptOut: aiTrainingOptOut,
+      );
+
+      if (proofData != null) {
+        result.add(
+          clip.copyWith(proofManifestJson: jsonEncode(proofData)),
+        );
+        Log.info(
+          '✅ Backfilled proof for clip ${clip.id}',
+          name: _logName,
+          category: LogCategory.video,
+        );
+      } else {
+        Log.warning(
+          '⚠️ Could not generate proof for clip ${clip.id}',
+          name: _logName,
+          category: LogCategory.video,
+        );
+        result.add(clip);
+      }
+    }
+    return result;
   }
 
   /// Renders multiple clips into a single video file with aspect ratio cropping.

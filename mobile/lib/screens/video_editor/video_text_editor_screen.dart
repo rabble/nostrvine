@@ -6,13 +6,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_font_selector.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_style_bar.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class VideoTextEditorScreen extends StatefulWidget {
   const VideoTextEditorScreen({super.key, this.layer});

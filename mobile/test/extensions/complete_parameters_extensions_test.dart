@@ -331,5 +331,75 @@ void main() {
         );
       });
     });
+
+    group('toLogString', () {
+      test('truncates image field when longer than 50 characters', () {
+        final largeImage = Uint8List.fromList(
+          List.generate(200, (i) => i % 256),
+        );
+        final params = _makeParams(image: largeImage);
+        final logStr = params.toLogString();
+
+        // The image field should be truncated
+        expect(logStr, contains('…'));
+        expect(logStr, contains('chars)'));
+        // Should NOT contain the full image list
+        final fullImageStr = largeImage.toList().toString();
+        expect(logStr, isNot(contains(fullImageStr)));
+      });
+
+      test('keeps image field when shorter than 50 characters', () {
+        final smallImage = Uint8List.fromList([1, 2, 3]);
+        final params = _makeParams(image: smallImage);
+        final logStr = params.toLogString();
+
+        // Should contain the full image value
+        expect(logStr, contains('[1, 2, 3]'));
+        // Should NOT contain truncation markers
+        expect(logStr, isNot(contains('…')));
+      });
+
+      test('preserves all non-image fields', () {
+        final params = _makeParams(
+          blur: 3.5,
+          flipX: true,
+          rotateTurns: 2,
+          cropWidth: 100,
+          cropHeight: 200,
+        );
+        final logStr = params.toLogString();
+
+        expect(logStr, contains('blur'));
+        expect(logStr, contains('3.5'));
+        expect(logStr, contains('flipX'));
+        expect(logStr, contains('true'));
+        expect(logStr, contains('rotateTurns'));
+        expect(logStr, contains('cropWidth'));
+        expect(logStr, contains('cropHeight'));
+      });
+
+      test('handles empty image without error', () {
+        final params = _makeParams(image: Uint8List(0));
+        final logStr = params.toLogString();
+
+        expect(logStr, isA<String>());
+        expect(logStr, contains('image'));
+      });
+
+      test(
+        'truncated image shows total length',
+        () {
+          final largeImage = Uint8List.fromList(
+            List.generate(500, (i) => i % 256),
+          );
+          final params = _makeParams(image: largeImage);
+          final logStr = params.toLogString();
+
+          // Should include the total character count of the original
+          final fullLength = largeImage.toList().toString().length;
+          expect(logStr, contains('$fullLength chars'));
+        },
+      );
+    });
   });
 }

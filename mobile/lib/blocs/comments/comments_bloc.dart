@@ -8,16 +8,16 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:meta/meta.dart' show visibleForTesting;
 import 'package:nostr_sdk/event_kind.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'comments_event.dart';
 part 'comments_state.dart';
