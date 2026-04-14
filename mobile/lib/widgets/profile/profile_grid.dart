@@ -298,7 +298,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         controller: widget.scrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           // Profile Header
-          // Profile Header
           SliverToBoxAdapter(
             child: ProfileHeaderWidget(
               userIdHex: widget.userIdHex,

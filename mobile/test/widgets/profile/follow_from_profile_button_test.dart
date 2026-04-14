@@ -83,7 +83,7 @@ void main() {
         expect(find.byType(DivineButton), findsOneWidget);
       });
 
-      testWidgets('shows DivineButton with "Following" when following', (
+      testWidgets('shows icon-only DivineButton when following', (
         tester,
       ) async {
         final otherPubkey = validPubkey('other');
@@ -97,8 +97,11 @@ void main() {
         await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
         await tester.pump();
 
-        expect(find.text('Following'), findsOneWidget);
+        // Following state shows icon-only button (no label text)
+        expect(find.text('Follow'), findsNothing);
         expect(find.byType(DivineButton), findsOneWidget);
+        // Verify it has the userCheck icon
+        expect(find.byType(DivineIcon), findsOneWidget);
       });
     });
 
@@ -128,28 +131,31 @@ void main() {
         );
       });
 
-      testWidgets('shows unfollow confirmation sheet when tapping Following', (
-        tester,
-      ) async {
-        final otherPubkey = validPubkey('other');
-        when(() => mockMyFollowingBloc.state).thenReturn(
-          MyFollowingState(
-            status: MyFollowingStatus.success,
-            followingPubkeys: [otherPubkey],
-          ),
-        );
+      testWidgets(
+        'shows unfollow confirmation sheet when tapping follow button',
+        (
+          tester,
+        ) async {
+          final otherPubkey = validPubkey('other');
+          when(() => mockMyFollowingBloc.state).thenReturn(
+            MyFollowingState(
+              status: MyFollowingStatus.success,
+              followingPubkeys: [otherPubkey],
+            ),
+          );
 
-        await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
-        await tester.pump();
+          await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
+          await tester.pump();
 
-        await tester.tap(find.text('Following'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.byType(DivineButton));
+          await tester.pumpAndSettle();
 
-        // Verify confirmation sheet is shown
-        expect(find.text('Unfollow Test User?'), findsOneWidget);
-        expect(find.text('Cancel'), findsOneWidget);
-        expect(find.text('Unfollow'), findsOneWidget);
-      });
+          // Verify confirmation sheet is shown
+          expect(find.text('Unfollow Test User?'), findsOneWidget);
+          expect(find.text('Cancel'), findsOneWidget);
+          expect(find.text('Unfollow'), findsOneWidget);
+        },
+      );
 
       testWidgets(
         'dispatches MyFollowingToggleRequested when confirming unfollow',
@@ -166,7 +172,7 @@ void main() {
           await tester.pump();
 
           // Open confirmation sheet
-          await tester.tap(find.text('Following'));
+          await tester.tap(find.byType(DivineButton));
           await tester.pumpAndSettle();
 
           // Tap Unfollow to confirm
@@ -196,7 +202,7 @@ void main() {
         await tester.pump();
 
         // Open confirmation sheet
-        await tester.tap(find.text('Following'));
+        await tester.tap(find.byType(DivineButton));
         await tester.pumpAndSettle();
 
         // Tap Cancel
@@ -275,7 +281,7 @@ void main() {
           await tester.pump();
 
           // Open confirmation sheet
-          await tester.tap(find.text('Following'));
+          await tester.tap(find.byType(DivineButton));
           await tester.pumpAndSettle();
 
           // Confirm unfollow

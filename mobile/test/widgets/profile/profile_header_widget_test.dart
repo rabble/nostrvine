@@ -568,8 +568,8 @@ void main() {
       testWidgets('tapping "Show less" collapses bio and shows "Show more"', (
         tester,
       ) async {
-        // Set a phone-like screen size to ensure text wraps
-        tester.view.physicalSize = const Size(400, 800);
+        // Use a taller viewport so expanded bio content stays in bounds
+        tester.view.physicalSize = const Size(400, 1200);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(() => tester.view.resetPhysicalSize());
 
@@ -582,7 +582,6 @@ void main() {
           buildTestWidget(
             userIdHex: testUserHex,
             isOwnProfile: true,
-
             profile: testProfile,
           ),
         );
@@ -590,6 +589,10 @@ void main() {
 
         // First expand
         await tester.tap(find.text('Show more'));
+        await tester.pumpAndSettle();
+
+        // Scroll down to reveal "Show less" if needed
+        await tester.ensureVisible(find.text('Show less'));
         await tester.pumpAndSettle();
 
         // Then collapse

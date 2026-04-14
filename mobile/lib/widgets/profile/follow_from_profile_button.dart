@@ -202,7 +202,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
   }
 }
 
-/// Button showing "Following" state with checkmark icon.
+/// Button showing "Following" state — icon only, no label.
 class _FollowingButton extends StatelessWidget {
   const _FollowingButton({required this.onPressed});
 
@@ -211,11 +211,10 @@ class _FollowingButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DivineButton(
-      expanded: true,
       type: .secondary,
       size: .small,
       onPressed: onPressed,
-      label: 'Following',
+      label: '',
       leadingIcon: .userCheck,
     );
   }
@@ -231,7 +230,6 @@ class _FollowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return DivineButton(
       onPressed: onPressed,
-      expanded: true,
       size: .small,
       leadingIcon: DivineIconName.userPlus,
       label: 'Follow',

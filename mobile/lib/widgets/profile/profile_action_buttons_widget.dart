@@ -65,12 +65,10 @@ class ProfileActionButtons extends StatelessWidget {
       ];
     }
     return [
-      Expanded(
-        child: FollowFromProfileButton(
-          pubkey: userIdHex,
-          displayName: displayName ?? 'user',
-          onBlockedTap: onBlockedTap,
-        ),
+      FollowFromProfileButton(
+        pubkey: userIdHex,
+        displayName: displayName ?? 'user',
+        onBlockedTap: onBlockedTap,
       ),
       Expanded(
         child: DivineButton(

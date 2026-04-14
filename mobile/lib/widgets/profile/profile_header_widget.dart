@@ -149,19 +149,23 @@ class ProfileHeaderWidget extends ConsumerWidget {
       color: VineTheme.surfaceBackground,
       child: Stack(
         children: [
-          // Background: banner image or color gradient (z-index 0)
+          // Background banner — positioned behind the foreground content.
+          // ExcludeSemantics prevents semantics conflicts during route
+          // transitions.
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: _ProfileBanner(
-              bannerUrl: bannerUrl,
-              profileColor: profileColor,
-              height: bannerHeight,
+            child: ExcludeSemantics(
+              child: _ProfileBanner(
+                bannerUrl: bannerUrl,
+                profileColor: profileColor,
+                height: bannerHeight,
+              ),
             ),
           ),
 
-          // Foreground: all profile content (z-index 1)
+          // Foreground content — this Column sizes the Stack.
           Padding(
             padding: EdgeInsets.only(top: safeAreaTop),
             child: Column(
@@ -500,6 +504,9 @@ class _AboutTextState extends State<_AboutText> {
 
 /// The 334px background banner area. Shows a banner image, a color gradient,
 /// or a plain dark background depending on what the profile provides.
+///
+/// Uses a foreground [BoxDecoration] gradient scrim instead of a [Stack] to
+/// avoid parentData assertions during route transitions.
 class _ProfileBanner extends StatelessWidget {
   const _ProfileBanner({
     required this.height,
@@ -513,59 +520,73 @@ class _ProfileBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    // Gradient scrim that fades to the surface background at the bottom.
+    // Applied as foregroundDecoration so it overlays the background content.
+    const scrimDecoration = BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0x0000150D), // surfaceBackground at 0% opacity
+          VineTheme.surfaceBackground,
+        ],
+      ),
+    );
+
+    if (bannerUrl != null) {
+      return _BannerImage(
+        bannerUrl: bannerUrl!,
+        height: height,
+        scrimDecoration: scrimDecoration,
+      );
+    }
+
+    final backgroundGradient = profileColor != null
+        ? LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [profileColor!, profileColor!],
+          )
+        : const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [VineTheme.containerLow, VineTheme.surfaceBackground],
+          );
+
+    return Container(
       width: double.infinity,
       height: height,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Layer 1: background (image or color gradient)
-          if (bannerUrl != null)
-            Image.network(
-              bannerUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  const ColoredBox(color: VineTheme.surfaceBackground),
-            )
-          else if (profileColor != null)
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [profileColor!, profileColor!],
-                ),
-              ),
-            )
-          else
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    VineTheme.containerLow,
-                    VineTheme.surfaceBackground,
-                  ],
-                ),
-              ),
-            ),
+      decoration: BoxDecoration(gradient: backgroundGradient),
+      foregroundDecoration: scrimDecoration,
+    );
+  }
+}
 
-          // Layer 2: gradient scrim fading to bg/surface at the bottom
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  VineTheme.surfaceBackground.withValues(alpha: 0),
-                  VineTheme.surfaceBackground,
-                ],
-                stops: const [0.0, 1.0],
-              ),
-            ),
-          ),
-        ],
+/// Banner with a network image and a gradient scrim overlay.
+/// Separated to handle the [Image.network] error builder cleanly.
+class _BannerImage extends StatelessWidget {
+  const _BannerImage({
+    required this.bannerUrl,
+    required this.height,
+    required this.scrimDecoration,
+  });
+
+  final String bannerUrl;
+  final double height;
+  final BoxDecoration scrimDecoration;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: height,
+      foregroundDecoration: scrimDecoration,
+      clipBehavior: Clip.hardEdge,
+      decoration: const BoxDecoration(color: VineTheme.surfaceBackground),
+      child: Image.network(
+        bannerUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
       ),
     );
   }
