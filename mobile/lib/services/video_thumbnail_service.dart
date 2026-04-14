@@ -575,6 +575,7 @@ class VideoThumbnailService {
           timestamps: batchTimestamps,
           jpegQuality: quality,
         ),
+        nativeLogLevel: .warning,
       );
 
       for (var i = 0; i < bytes.length && i < batchTimestamps.length; i++) {

@@ -32,12 +32,12 @@ class TimelineOverlayStrips extends StatelessWidget {
   final Duration totalDuration;
   final List<int> clipEdgesMs;
   final ValueNotifier<Duration> playheadPosition;
-  final ValueChanged<String>? onItemTapped;
+  final ValueChanged<TimelineOverlayItem>? onItemTapped;
   final OverlayMoveCallback? onItemMoved;
   final OverlayMovingCallback? onItemMoving;
   final OverlayTrimCallback? onItemTrimmed;
   final ValueChanged<bool>? onTrimDragChanged;
-  final ValueChanged<String>? onDragStarted;
+  final ValueChanged<TimelineOverlayItem>? onDragStarted;
   final VoidCallback? onDragEnded;
 
   static List<TimelineOverlayItem> _itemsOfType(

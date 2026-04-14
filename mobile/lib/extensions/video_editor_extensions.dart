@@ -17,11 +17,8 @@ extension VideoEditorExtensions on ProImageEditorState {
     if (index < 0 || index >= audioTracks.length) return;
 
     audioTracks[index] = audioTracks[index].copyWith(
-      startOffset: startTime,
-      duration:
-          ((endTime ?? Duration.zero) - (startTime ?? Duration.zero))
-              .inMilliseconds /
-          1000,
+      startTime: startTime,
+      endTime: endTime ?? Duration.zero,
     );
 
     if (!skipUpdateHistory) {
@@ -33,6 +30,12 @@ extension VideoEditorExtensions on ProImageEditorState {
               .toList(),
         },
       );
+    } else {
+      // Mutate the meta map in-place so the current history entry is updated
+      // directly — matching how setLayerTimeline mutates activeLayers
+      // in-place when skipUpdateHistory is true.
+      stateManager.activeMeta[VideoEditorConstants.audioStateHistoryKey] =
+          audioTracks.map((e) => e.toJson()).toList();
     }
     setState(() {});
   }

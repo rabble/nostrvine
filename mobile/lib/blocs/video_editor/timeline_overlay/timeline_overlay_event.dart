@@ -106,6 +106,21 @@ class TimelineOverlayDragEnded extends TimelineOverlayEvent {
   const TimelineOverlayDragEnded();
 }
 
+/// Signal that a trim gesture started for an item.
+class TimelineOverlayTrimStarted extends TimelineOverlayEvent {
+  const TimelineOverlayTrimStarted(this.itemId);
+
+  final String itemId;
+
+  @override
+  List<Object?> get props => [itemId];
+}
+
+/// Signal that the current trim gesture ended.
+class TimelineOverlayTrimEnded extends TimelineOverlayEvent {
+  const TimelineOverlayTrimEnded();
+}
+
 /// Toggle collapse / expand for a strip type.
 class TimelineOverlayCollapseToggled extends TimelineOverlayEvent {
   const TimelineOverlayCollapseToggled(this.type);

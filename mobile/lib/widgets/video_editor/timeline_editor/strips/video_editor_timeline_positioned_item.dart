@@ -191,6 +191,10 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
   /// Whether haptic feedback has already fired for the current boundary hit.
   bool _hitBoundary = false;
 
+  /// Whether auto-scroll fired on the last drag frame.
+  /// When `true`, snap points and boundary haptics are suppressed.
+  bool _isAutoScrolling = false;
+
   /// Snap controllers for the left and right trim handles.
   late TimelineSnapController _leftSnap;
   late TimelineSnapController _rightSnap;
@@ -228,6 +232,7 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
 
   void _onDragStart() {
     _hitBoundary = false;
+    _isAutoScrolling = false;
     _activeSnap = null;
     _leftSnap.reset();
     _rightSnap.reset();
@@ -245,6 +250,7 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
 
   void _onDragEnd() {
     _hitBoundary = false;
+    _isAutoScrolling = false;
     _activeSnap = null;
     _leftSnap.reset();
     _rightSnap.reset();
@@ -275,7 +281,10 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
 
   void _handleTrimAutoScroll(Offset globalPosition) {
     final scrollable = Scrollable.maybeOf(context, axis: Axis.horizontal);
-    if (scrollable == null) return;
+    if (scrollable == null) {
+      _isAutoScrolling = false;
+      return;
+    }
 
     final renderBox = scrollable.context.findRenderObject()! as RenderBox;
     final localX = renderBox.globalToLocal(globalPosition).dx;
@@ -289,7 +298,10 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
           _autoScrollSpeed * (1 - (viewportWidth - localX) / _autoScrollEdge);
     }
 
-    if (delta == 0) return;
+    if (delta == 0) {
+      _isAutoScrolling = false;
+      return;
+    }
 
     final pos = scrollable.position;
     final before = pos.pixels;
@@ -297,8 +309,12 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
       pos.minScrollExtent,
       pos.maxScrollExtent,
     );
-    if (target == before) return;
+    if (target == before) {
+      _isAutoScrolling = false;
+      return;
+    }
     pos.jumpTo(target);
+    _isAutoScrolling = true;
 
     // Sync video position to match the new scroll offset.
     final seekMs = (target / widget.pixelsPerSecond * 1000).round();
@@ -319,7 +335,8 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
     final effectiveDeltaMs = (_leftSnap.effectiveAccPx / pps * 1000).round();
     final rawStartMs = _leftSnap.originMs + effectiveDeltaMs;
 
-    final snapPoints = widget.snapPointsMs != null
+    // Disable snap points while auto-scrolling to avoid jarring jumps.
+    final snapPoints = !_isAutoScrolling && widget.snapPointsMs != null
         ? Set<int>.of(widget.snapPointsMs!)
         : null;
     final posMs = _leftSnap.update(rawStartMs, snapPoints);
@@ -339,7 +356,8 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
         TimelineConstants.minTrimDuration.inMilliseconds;
     final atBoundary = clampedMs != posMs || atMinTrim;
 
-    if (atBoundary && !_hitBoundary) {
+    // Suppress boundary haptics during auto-scroll.
+    if (atBoundary && !_hitBoundary && !_isAutoScrolling) {
       HapticFeedback.heavyImpact();
     }
     _hitBoundary = atBoundary;
@@ -347,7 +365,7 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
     if (atMinTrim) return;
 
     widget.onTrimChanged?.call(
-      itemId: widget.item.id,
+      item: widget.item,
       isStart: true,
       startTime: Duration(milliseconds: clampedMs),
       endTime: Duration(milliseconds: _rightSnap.originMs),
@@ -362,7 +380,8 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
     final effectiveDeltaMs = (-_rightSnap.effectiveAccPx / pps * 1000).round();
     final rawEndMs = _rightSnap.originMs + effectiveDeltaMs;
 
-    final snapPoints = widget.snapPointsMs != null
+    // Disable snap points while auto-scrolling to avoid jarring jumps.
+    final snapPoints = !_isAutoScrolling && widget.snapPointsMs != null
         ? Set<int>.of(widget.snapPointsMs!)
         : null;
     final posMs = _rightSnap.update(rawEndMs, snapPoints);
@@ -377,7 +396,8 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
         TimelineConstants.minTrimDuration.inMilliseconds;
     final atBoundary = clampedMs != posMs || atMinTrim;
 
-    if (atBoundary && !_hitBoundary) {
+    // Suppress boundary haptics during auto-scroll.
+    if (atBoundary && !_hitBoundary && !_isAutoScrolling) {
       HapticFeedback.heavyImpact();
     }
     _hitBoundary = atBoundary;
@@ -385,7 +405,7 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
     if (atMinTrim) return;
 
     widget.onTrimChanged?.call(
-      itemId: widget.item.id,
+      item: widget.item,
       isStart: false,
       startTime: Duration(milliseconds: _leftSnap.originMs),
       endTime: Duration(milliseconds: clampedMs),

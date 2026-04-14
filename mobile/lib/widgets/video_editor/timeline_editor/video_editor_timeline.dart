@@ -10,9 +10,11 @@ import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_control_bar.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_playhead.dart';
@@ -385,7 +387,7 @@ class _VideoEditorTimelineState
   // -- Overlay callbacks ----------------------------------------------------
 
   void _onOverlayItemMoved({
-    required String itemId,
+    required TimelineOverlayItem item,
     required Duration startTime,
     required int row,
     required bool insertAbove,
@@ -393,15 +395,24 @@ class _VideoEditorTimelineState
     // Sync the new time position to the editor before updating BLoC state so
     // the canvas reflects the move immediately.
     final editor = VideoEditorScope.of(context).editor!;
-    final item = context.read<TimelineOverlayBloc>().state.items.firstWhere(
-      (i) => i.id == itemId,
-    );
     final duration = item.duration;
+
+    // Compute the correct list insertion index from current BLoC row
+    // assignments. targetRow is a visual row number, but the editor
+    // list may have multiple items per row (non-overlapping items
+    // share rows). Using targetRow directly as a list index would
+    // misplace the item.
+    final targetIdx = _targetListIndex(
+      type: item.type,
+      draggedItemId: item.id,
+      targetRow: row,
+      insertAbove: insertAbove,
+    );
 
     switch (item.type) {
       case .layer:
         final layers = editor.activeLayers;
-        final layerIdx = layers.indexWhere((l) => l.id == itemId);
+        final layerIdx = layers.indexWhere((l) => l.id == item.id);
 
         editor.setLayerTimeline(
           index: layerIdx,
@@ -409,9 +420,15 @@ class _VideoEditorTimelineState
           endTime: startTime + duration,
           skipUpdateHistory: true,
         );
+
+        // Reorder layers so the editor array matches the row order.
+        // _assignRows derives rows from list position, so moving a
+        // layer earlier/later in the list determines its row.
+        _reorderEditorList(layers, layerIdx, targetIdx);
+
       case .filter:
         final filters = editor.stateManager.activeFilters;
-        final filterIdx = filters.indexWhere((e) => e.id == itemId);
+        final filterIdx = filters.indexWhere((e) => e.id == item.id);
 
         editor.setFilterTimeline(
           index: filterIdx,
@@ -419,9 +436,12 @@ class _VideoEditorTimelineState
           endTime: startTime + duration,
           skipUpdateHistory: true,
         );
+
+        _reorderEditorList(filters, filterIdx, targetIdx);
+
       case .sound:
         final audioTracks = editor.stateManager.audioTracks;
-        final audioIdx = audioTracks.indexWhere((e) => e.id == itemId);
+        final audioIdx = audioTracks.indexWhere((e) => e.id == item.id);
 
         editor.setSoundTimeline(
           index: audioIdx,
@@ -429,11 +449,13 @@ class _VideoEditorTimelineState
           endTime: startTime + duration,
           skipUpdateHistory: true,
         );
+
+        _reorderEditorList(audioTracks, audioIdx, targetIdx);
     }
 
     context.read<TimelineOverlayBloc>().add(
       TimelineOverlayItemMoved(
-        itemId: itemId,
+        itemId: item.id,
         startTime: startTime,
         row: row,
         insertAbove: insertAbove,
@@ -441,21 +463,68 @@ class _VideoEditorTimelineState
     );
   }
 
+  /// Returns the list index at which the dragged item should be
+  /// inserted so that [_assignRows] places it on [targetRow].
+  ///
+  /// The BLoC items of the same [type] are in the same order as the
+  /// editor list. By looking at their current row assignments we can
+  /// map a visual row number to the correct list position — even when
+  /// multiple non-overlapping items share a single row.
+  ///
+  /// The returned index is relative to the list *without* the dragged
+  /// item (matching what [_reorderEditorList] has after `removeAt`).
+  int _targetListIndex({
+    required TimelineOverlayType type,
+    required String draggedItemId,
+    required int targetRow,
+    required bool insertAbove,
+  }) {
+    final blocItems = context
+        .read<TimelineOverlayBloc>()
+        .state
+        .items
+        .where((i) => i.type == type && i.id != draggedItemId)
+        .toList();
+
+    if (insertAbove) {
+      // Insert before the first item on or after targetRow.
+      final idx = blocItems.indexWhere((i) => i.row >= targetRow);
+      return idx == -1 ? blocItems.length : idx;
+    } else {
+      // Insert after the last item on or before targetRow.
+      final idx = blocItems.lastIndexWhere((i) => i.row <= targetRow);
+      return idx + 1;
+    }
+  }
+
+  /// Reorders an editor list (layers, filters, audioTracks) so that the
+  /// dragged element at [currentIdx] moves to [targetIdx].
+  ///
+  /// [targetIdx] is the insertion position in the list *after* removing
+  /// the dragged element (computed by [_targetListIndex]).
+  void _reorderEditorList<T>(
+    List<T> list,
+    int currentIdx,
+    int targetIdx,
+  ) {
+    if (currentIdx < 0) return;
+
+    final element = list.removeAt(currentIdx);
+    list.insert(targetIdx.clamp(0, list.length), element);
+  }
+
   void _onOverlayItemTrimmed({
-    required String itemId,
+    required TimelineOverlayItem item,
     required Duration startTime,
     required Duration endTime,
     required bool isStart,
   }) {
     final editor = VideoEditorScope.of(context).editor!;
-    final item = context.read<TimelineOverlayBloc>().state.items.firstWhere(
-      (i) => i.id == itemId,
-    );
 
     switch (item.type) {
       case .layer:
         final layers = editor.activeLayers;
-        final layerIdx = layers.indexWhere((l) => l.id == itemId);
+        final layerIdx = layers.indexWhere((l) => l.id == item.id);
 
         editor.setLayerTimeline(
           index: layerIdx,
@@ -465,7 +534,7 @@ class _VideoEditorTimelineState
         );
       case .filter:
         final filters = editor.stateManager.activeFilters;
-        final filterIdx = filters.indexWhere((e) => e.id == itemId);
+        final filterIdx = filters.indexWhere((e) => e.id == item.id);
 
         editor.setFilterTimeline(
           index: filterIdx,
@@ -475,7 +544,7 @@ class _VideoEditorTimelineState
         );
       case .sound:
         final audioTracks = editor.stateManager.audioTracks;
-        final audioIdx = audioTracks.indexWhere((e) => e.id == itemId);
+        final audioIdx = audioTracks.indexWhere((e) => e.id == item.id);
 
         editor.setSoundTimeline(
           index: audioIdx,
@@ -487,7 +556,7 @@ class _VideoEditorTimelineState
 
     context.read<TimelineOverlayBloc>().add(
       TimelineOverlayItemTrimmed(
-        itemId: itemId,
+        itemId: item.id,
         isStart: isStart,
         startTime: startTime,
         endTime: endTime,
@@ -497,14 +566,24 @@ class _VideoEditorTimelineState
 
   void _onOverlayTrimDragChanged(bool isTrimming) {
     setState(() => _isTrimming = isTrimming);
+    final overlayBloc = context.read<TimelineOverlayBloc>();
     if (isTrimming) {
+      // Snapshot history before the trim so undo restores the original
+      // position — matches the pattern used by clip trim and overlay drag.
+      VideoEditorScope.of(context).editor!.addHistory();
       context.read<VideoEditorMainBloc>().add(
         const VideoEditorExternalPauseRequested(isPaused: true),
       );
+      final selectedId = overlayBloc.state.selectedItemId;
+      if (selectedId != null) {
+        overlayBloc.add(TimelineOverlayTrimStarted(selectedId));
+      }
+    } else {
+      overlayBloc.add(const TimelineOverlayTrimEnded());
     }
   }
 
-  void _onOverlayItemTapped(String itemId) {
+  void _onOverlayItemTapped(TimelineOverlayItem item) {
     // Exit clip editing when an overlay item is tapped.
     final clipBloc = context.read<ClipEditorBloc>();
     if (clipBloc.state.isEditing) {
@@ -512,18 +591,18 @@ class _VideoEditorTimelineState
     }
 
     final bloc = context.read<TimelineOverlayBloc>();
-    if (bloc.state.selectedItemId == itemId) {
+    if (bloc.state.selectedItemId == item.id) {
       bloc.add(const TimelineOverlayItemSelected(null));
     } else {
-      bloc.add(TimelineOverlayItemSelected(itemId));
+      bloc.add(TimelineOverlayItemSelected(item.id));
     }
   }
 
-  void _onOverlayDragStarted(String itemId) {
+  void _onOverlayDragStarted(TimelineOverlayItem item) {
     // Snapshot history before the move so undo restores the original position.
     VideoEditorScope.of(context).editor!.addHistory();
     context.read<TimelineOverlayBloc>().add(
-      TimelineOverlayDragStarted(itemId),
+      TimelineOverlayDragStarted(item.id),
     );
     context.read<VideoEditorMainBloc>().add(
       const VideoEditorExternalPauseRequested(isPaused: true),
@@ -531,20 +610,17 @@ class _VideoEditorTimelineState
   }
 
   void _onOverlayItemMoving({
-    required String itemId,
+    required TimelineOverlayItem item,
     required Duration startTime,
   }) {
     // Mirror the position live during drag so the canvas updates every frame,
     // just like trim does via setLayerTimeline/setFilterTimeline.
     final editor = VideoEditorScope.of(context).editor!;
-    final item = context.read<TimelineOverlayBloc>().state.items.firstWhere(
-      (i) => i.id == itemId,
-    );
 
     switch (item.type) {
       case .layer:
         final layers = editor.activeLayers;
-        final layerIdx = layers.indexWhere((l) => l.id == itemId);
+        final layerIdx = layers.indexWhere((l) => l.id == item.id);
 
         editor.setLayerTimeline(
           index: layerIdx,
@@ -553,8 +629,8 @@ class _VideoEditorTimelineState
           skipUpdateHistory: true,
         );
       case .filter:
-        final layers = editor.stateManager.activeFilters;
-        final filterIdx = layers.indexWhere((e) => e.id == itemId);
+        final filters = editor.stateManager.activeFilters;
+        final filterIdx = filters.indexWhere((e) => e.id == item.id);
 
         editor.setFilterTimeline(
           index: filterIdx,
@@ -564,7 +640,7 @@ class _VideoEditorTimelineState
         );
       case .sound:
         final audioTracks = editor.stateManager.audioTracks;
-        final audioIdx = audioTracks.indexWhere((e) => e.id == itemId);
+        final audioIdx = audioTracks.indexWhere((e) => e.id == item.id);
 
         editor.setSoundTimeline(
           index: audioIdx,
@@ -827,28 +903,12 @@ class _TimelineInteractiveBody extends StatelessWidget {
   onTrimChanged;
   final ValueChanged<bool> onTrimDragChanged;
   final ValueChanged<int> onClipTapped;
-  final void Function({
-    required String itemId,
-    required Duration startTime,
-    required int row,
-    required bool insertAbove,
-  })
-  onOverlayItemMoved;
-  final void Function({
-    required String itemId,
-    required Duration startTime,
-  })
-  onOverlayItemMoving;
-  final void Function({
-    required String itemId,
-    required Duration startTime,
-    required Duration endTime,
-    required bool isStart,
-  })
-  onOverlayItemTrimmed;
+  final OverlayMoveCallback onOverlayItemMoved;
+  final OverlayMovingCallback onOverlayItemMoving;
+  final OverlayTrimCallback onOverlayItemTrimmed;
   final ValueChanged<bool> onOverlayTrimDragChanged;
-  final ValueChanged<String> onOverlayItemTapped;
-  final ValueChanged<String> onOverlayDragStarted;
+  final ValueChanged<TimelineOverlayItem> onOverlayItemTapped;
+  final ValueChanged<TimelineOverlayItem> onOverlayDragStarted;
   final VoidCallback onOverlayDragEnded;
 
   @override

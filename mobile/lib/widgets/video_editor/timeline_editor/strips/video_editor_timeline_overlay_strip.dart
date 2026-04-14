@@ -2,6 +2,8 @@
 // ABOUTME: Renders layer / filter / sound items in rows with long-press
 // ABOUTME: drag to reposition (time + row) and trim handles on selection.
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,7 +21,7 @@ import 'package:openvine/widgets/video_editor/timeline_editor/timeline_snap_cont
 /// length so they can grow in either direction).
 typedef OverlayTrimCallback =
     void Function({
-      required String itemId,
+      required TimelineOverlayItem item,
       required Duration startTime,
       required Duration endTime,
       required bool isStart,
@@ -31,7 +33,7 @@ typedef OverlayTrimCallback =
 /// and existing overlapping items shift down.
 typedef OverlayMoveCallback =
     void Function({
-      required String itemId,
+      required TimelineOverlayItem item,
       required Duration startTime,
       required int row,
       required bool insertAbove,
@@ -40,7 +42,7 @@ typedef OverlayMoveCallback =
 /// Called on every drag-move frame with the live (snapped) start time.
 typedef OverlayMovingCallback =
     void Function({
-      required String itemId,
+      required TimelineOverlayItem item,
       required Duration startTime,
     });
 
@@ -102,7 +104,7 @@ class TimelineOverlayStrip extends StatefulWidget {
   final List<int>? snapPointsMs;
 
   /// Called when an item tile is tapped.
-  final ValueChanged<String>? onItemTapped;
+  final ValueChanged<TimelineOverlayItem>? onItemTapped;
 
   /// Called when an item is moved via drag.
   final OverlayMoveCallback? onItemMoved;
@@ -118,7 +120,7 @@ class TimelineOverlayStrip extends StatefulWidget {
   final ValueChanged<bool>? onTrimDragChanged;
 
   /// Called when an item long-press drag starts.
-  final ValueChanged<String>? onDragStarted;
+  final ValueChanged<TimelineOverlayItem>? onDragStarted;
 
   /// Called when the drag gesture ends.
   final VoidCallback? onDragEnded;
@@ -155,6 +157,12 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
   /// Max pixels scrolled per gesture frame when auto-scrolling.
   static const _autoScrollSpeed = 4.0;
 
+  /// Edge distance for horizontal auto-scroll.
+  static const _hAutoScrollEdge = 60.0;
+
+  /// Max pixels scrolled per frame for horizontal auto-scroll.
+  static const _hAutoScrollSpeed = 6.0;
+
   static const double _rowHeight = TimelineConstants.overlayRowHeight;
 
   @override
@@ -181,6 +189,20 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       ? TimelineConstants.trimHandleWidth + 12.0
       : 0.0;
 
+  /// Returns items sorted so the selected item is last (painted on top).
+  List<TimelineOverlayItem> _sortedItems() {
+    final id = widget.selectedItemId;
+    // No selection → original order is fine.
+    if (id == null) return widget.items;
+    final items = List<TimelineOverlayItem>.of(widget.items);
+    final idx = items.indexWhere((item) => item.id == id);
+    // Not found or already last → nothing to move.
+    if (idx == -1 || idx == items.length - 1) return items;
+    // Move selected item to end so it paints on top in the Stack.
+    items.add(items.removeAt(idx));
+    return items;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.items.isEmpty) return const SizedBox.shrink();
@@ -197,7 +219,9 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
           // Drop indicator line — only visible during drag.
           if (dropIndicatorLineY != null)
             TimelineDropIndicatorLine(lineY: dropIndicatorLineY),
-          for (final item in widget.items)
+          // Paint selected item last so its trim handles are never
+          // obscured by adjacent items.
+          for (final item in _sortedItems())
             TimelineOverlayPositionedItem(
               item: item,
               isDragging: _draggingId == item.id,
@@ -213,7 +237,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
               snapPointsMs: widget.snapPointsMs,
               onTrimChanged: widget.onTrimChanged,
               onTrimDragChanged: widget.onTrimDragChanged,
-              onTap: () => widget.onItemTapped?.call(item.id),
+              onTap: () => widget.onItemTapped?.call(item),
               onLongPressStart: () => _onLongPressStart(item),
               onLongPressMoveUpdate: (details) =>
                   _onLongPressMoveUpdate(details, item, displayRowCount),
@@ -236,13 +260,19 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     final newStartMs = _snappedStartMs.clamp(0, maxStartMs);
 
     final rowDelta = (_dragDeltaY / _rowHeight).round();
-    final targetRow = (_dragStartRow + rowDelta).clamp(0, 999);
+    final unclampedRow = _dragStartRow + rowDelta;
+    final targetRow = math.max(0, unclampedRow);
 
-    // Fractional offset within the target row cell.
-    // Negative → upper half → insert above.
-    final subRowOffset = _dragDeltaY / _rowHeight - rowDelta;
-    final insertAbove = subRowOffset < 0;
-
+    // When the unclamped row is out of bounds the user is dragging
+    // far beyond the existing rows → lock insertAbove accordingly
+    // so the indicator doesn't oscillate.
+    final bool insertAbove;
+    if (unclampedRow < 0) {
+      insertAbove = true;
+    } else {
+      final subRowOffset = _dragDeltaY / _rowHeight - rowDelta;
+      insertAbove = subRowOffset < 0;
+    }
     return (
       newStartMs: newStartMs,
       targetRow: targetRow,
@@ -308,7 +338,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     final bloc = context.read<TimelineOverlayBloc>();
     bloc.add(const TimelineOverlayItemSelected(null));
 
-    widget.onDragStarted?.call(item.id);
+    widget.onDragStarted?.call(item);
   }
 
   void _onLongPressMoveUpdate(
@@ -333,9 +363,19 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
             .round()
             .clamp(0, maxStartMs);
 
+    // Auto-scroll when dragging near viewport edges.
+    final isAutoScrollingV = _handleAutoScroll(details.globalPosition);
+    final isAutoScrollingH = _handleHorizontalAutoScroll(
+      details.globalPosition,
+    );
+    final isAutoScrolling = isAutoScrollingV || isAutoScrollingH;
+
     // Expose both left and right edge as snap candidates.
+    // Disable snapping while auto-scrolling to avoid jarring jumps.
     Set<int>? snapPoints;
-    if (widget.snapPointsMs != null && widget.snapPointsMs!.isNotEmpty) {
+    if (!isAutoScrolling &&
+        widget.snapPointsMs != null &&
+        widget.snapPointsMs!.isNotEmpty) {
       snapPoints = {
         ...widget.snapPointsMs!,
         ...widget.snapPointsMs!.map((sp) => sp - itemDurationMs),
@@ -344,11 +384,9 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
     final snappedStartMs = _dragSnap.update(rawStartMs, snapPoints);
 
-    _handleAutoScroll(details.globalPosition);
-
     final clampedStartMs = snappedStartMs.clamp(0, maxStartMs);
     widget.onItemMoving?.call(
-      itemId: item.id,
+      item: item,
       startTime: Duration(milliseconds: clampedStartMs),
     );
 
@@ -365,7 +403,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     if (info == null) return;
 
     widget.onItemMoved?.call(
-      itemId: item.id,
+      item: item,
       startTime: Duration(milliseconds: info.newStartMs),
       row: info.targetRow,
       insertAbove: info.insertAbove,
@@ -384,9 +422,10 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
   // -- Auto-scroll near viewport edges during drag --------------------------
 
-  void _handleAutoScroll(Offset globalPosition) {
+  /// Returns `true` when auto-scrolling was applied this frame.
+  bool _handleAutoScroll(Offset globalPosition) {
     final scrollable = Scrollable.maybeOf(context);
-    if (scrollable == null) return;
+    if (scrollable == null) return false;
 
     final renderBox = scrollable.context.findRenderObject()! as RenderBox;
     final localY = renderBox.globalToLocal(globalPosition).dy;
@@ -404,7 +443,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
           _autoScrollSpeed * (1 - (effectiveBottom - localY) / _autoScrollEdge);
     }
 
-    if (delta == 0) return;
+    if (delta == 0) return false;
 
     final pos = scrollable.position;
     final before = pos.pixels;
@@ -412,11 +451,47 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       pos.minScrollExtent,
       pos.maxScrollExtent,
     );
-    if (target == before) return;
+    if (target == before) return false;
     pos.jumpTo(target);
 
     // Accumulate scroll compensation so the next setState keeps the
     // item under the finger.
     _scrollCompensationY += target - before;
+    return true;
+  }
+
+  /// Horizontal auto-scroll when the finger is near the left/right edge.
+  ///
+  /// Returns `true` when scrolling was applied this frame.
+  bool _handleHorizontalAutoScroll(Offset globalPosition) {
+    final scrollable = Scrollable.maybeOf(context, axis: Axis.horizontal);
+    if (scrollable == null) return false;
+
+    final renderBox = scrollable.context.findRenderObject()! as RenderBox;
+    final localX = renderBox.globalToLocal(globalPosition).dx;
+    final viewportWidth = renderBox.size.width;
+
+    double delta = 0;
+    if (localX < _hAutoScrollEdge) {
+      delta = -_hAutoScrollSpeed * (1 - localX / _hAutoScrollEdge);
+    } else if (localX > viewportWidth - _hAutoScrollEdge) {
+      delta =
+          _hAutoScrollSpeed * (1 - (viewportWidth - localX) / _hAutoScrollEdge);
+    }
+
+    if (delta == 0) return false;
+
+    final pos = scrollable.position;
+    final before = pos.pixels;
+    final target = (before + delta).clamp(
+      pos.minScrollExtent,
+      pos.maxScrollExtent,
+    );
+    if (target == before) return false;
+    pos.jumpTo(target);
+
+    // Compensate the snap controller so the item tracks the finger.
+    _dragSnap.compensateScroll(target - before);
+    return true;
   }
 }

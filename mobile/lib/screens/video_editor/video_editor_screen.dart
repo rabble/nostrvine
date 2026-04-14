@@ -24,7 +24,6 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
-import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -363,7 +362,17 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
     if (!mounted || editor == null || result == null) return;
 
-    result = result.copyWith(id: '${result.id}-${DateTime.now()}');
+    final audioDuration = Duration(
+      milliseconds: ((result.duration ?? 0) * 1000).toInt(),
+    );
+    final clipDuration = _clipEditorBloc.state.totalDuration;
+    final endTime = audioDuration < clipDuration ? audioDuration : clipDuration;
+
+    result = result.copyWith(
+      id: '${result.id}-${DateTime.now()}',
+      startTime: .zero,
+      endTime: endTime,
+    );
     editor.addHistory(
       meta: {
         ...editor.stateManager.activeMeta,

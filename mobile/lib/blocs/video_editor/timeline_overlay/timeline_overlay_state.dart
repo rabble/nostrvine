@@ -6,6 +6,7 @@ class TimelineOverlayState extends Equatable {
     this.items = const [],
     this.selectedItemId,
     this.draggingItemId,
+    this.trimmingItemId,
     this.collapsedTypes = const {},
   });
 
@@ -18,6 +19,9 @@ class TimelineOverlayState extends Equatable {
   /// The item being dragged, or `null`.
   final String? draggingItemId;
 
+  /// The item being trimmed, or `null`.
+  final String? trimmingItemId;
+
   /// Strip types that are in collapsed view.
   final Set<TimelineOverlayType> collapsedTypes;
 
@@ -27,6 +31,8 @@ class TimelineOverlayState extends Equatable {
     bool clearSelectedItemId = false,
     String? draggingItemId,
     bool clearDraggingItemId = false,
+    String? trimmingItemId,
+    bool clearTrimmingItemId = false,
     Set<TimelineOverlayType>? collapsedTypes,
   }) {
     return TimelineOverlayState(
@@ -37,6 +43,9 @@ class TimelineOverlayState extends Equatable {
       draggingItemId: clearDraggingItemId
           ? null
           : (draggingItemId ?? this.draggingItemId),
+      trimmingItemId: clearTrimmingItemId
+          ? null
+          : (trimmingItemId ?? this.trimmingItemId),
       collapsedTypes: collapsedTypes ?? this.collapsedTypes,
     );
   }
@@ -46,6 +55,7 @@ class TimelineOverlayState extends Equatable {
     items,
     selectedItemId,
     draggingItemId,
+    trimmingItemId,
     collapsedTypes,
   ];
 }
