@@ -48,8 +48,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
 
-  /// The number of videos loaded in the profile grid.
-  final int videoCount;
+  /// Server-authoritative video count (from X-Total-Count header).
+  /// When null, the header shows a loading state until ProfileStats resolve.
+  final int? videoCount;
 
   /// Optional profile owned by the parent widget.
   /// When provided, avoids a second profile fetch path.
@@ -192,7 +193,10 @@ class ProfileHeaderWidget extends ConsumerWidget {
                                     count:
                                         watchedStats?.videoCount ?? videoCount,
                                     label: context.l10n.profileVideosLabel,
-                                    isLoading: false,
+                                    isLoading:
+                                        (watchedStats?.videoCount ??
+                                            videoCount) ==
+                                        null,
                                   ),
                                   ProfileFollowersStat(
                                     pubkey: userIdHex,
