@@ -23,6 +23,7 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -330,7 +331,10 @@ class _AuthorInfoSection extends ConsumerWidget {
                         _Nip05Badge(pubkey: video.pubkey),
                       ],
                     ),
-                    Text(video.relativeTime, style: VineTheme.labelSmallFont()),
+                    Text(
+                      '${StringUtils.formatCompactNumber(video.totalLoops)} ${video.totalLoops == 1 ? 'loop' : 'loops'}',
+                      style: VineTheme.labelSmallFont(),
+                    ),
                   ],
                 ),
               ),
