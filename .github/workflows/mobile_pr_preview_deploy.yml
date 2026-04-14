@@ -24,6 +24,9 @@ jobs:
       pull-requests: write
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
       - name: Download preview artifact
         uses: actions/download-artifact@v5
         with:
@@ -76,10 +79,6 @@ jobs:
           echo "PR state: ${{ steps.freshness.outputs.pr_state }}"
           echo "Artifact SHA: ${{ steps.metadata.outputs.head_sha }}"
           echo "Current PR SHA: ${{ steps.freshness.outputs.current_sha }}"
-
-      - name: Check out repository
-        if: ${{ steps.freshness.outputs.deployable == 'true' }}
-        uses: actions/checkout@v4
 
       - name: Extract preview site
         if: ${{ steps.freshness.outputs.deployable == 'true' }}
