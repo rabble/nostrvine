@@ -77,6 +77,10 @@ jobs:
           echo "Artifact SHA: ${{ steps.metadata.outputs.head_sha }}"
           echo "Current PR SHA: ${{ steps.freshness.outputs.current_sha }}"
 
+      - name: Check out repository
+        if: ${{ steps.freshness.outputs.deployable == 'true' }}
+        uses: actions/checkout@v4
+
       - name: Extract preview site
         if: ${{ steps.freshness.outputs.deployable == 'true' }}
         run: tar -xzf artifact/pr-web-preview-site.tar.gz -C artifact
@@ -94,67 +98,46 @@ jobs:
             echo "configured=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Render blocked preview comment
+        if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured != 'true' }}
+        id: blocked_comment
+        env:
+          HEAD_REF: ${{ steps.metadata.outputs.head_ref }}
+          HEAD_SHA: ${{ steps.metadata.outputs.head_sha }}
+          PREVIEW_BRANCH: ${{ steps.metadata.outputs.preview_branch }}
+        run: |
+          updated_at="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          comment_file="${RUNNER_TEMP}/mobile-pr-preview-blocked.md"
+
+          python3 .github/scripts/mobile_pr_preview_comment.py \
+            --mode blocked \
+            --sha "${HEAD_SHA}" \
+            --updated-at "${updated_at}" \
+            --run-url "${run_url}" \
+            --preview-branch "${PREVIEW_BRANCH}" \
+            --head-ref "${HEAD_REF}" \
+            > "${comment_file}"
+
+          echo "comment_file=${comment_file}" >> "$GITHUB_OUTPUT"
+
       - name: Comment missing preview configuration
         if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured != 'true' }}
         uses: actions/github-script@v7
+        env:
+          PREVIEW_COMMENT_FILE: ${{ steps.blocked_comment.outputs.comment_file }}
         with:
           script: |
             const prNumber = Number('${{ steps.metadata.outputs.pr_number }}');
-            const previewBranch = '${{ steps.metadata.outputs.preview_branch }}';
-            const headRef = '${{ steps.metadata.outputs.head_ref }}';
-            const sha = '${{ steps.metadata.outputs.head_sha }}'.slice(0, 7);
-            const runUrl =
-              `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}` +
-              `/actions/runs/${process.env.GITHUB_RUN_ID}`;
-            const updatedAt = new Date()
-              .toISOString()
-              .replace('T', ' ')
-              .replace(/\.\d+Z$/, ' UTC');
+            const fs = require('fs');
+            const body = fs.readFileSync(process.env.PREVIEW_COMMENT_FILE, 'utf8');
 
-            const body = `## Mobile PR Preview
-
-            Last refresh: \`${sha}\` at ${updatedAt} ([preview run](${runUrl}))
-
-            Preview deployment is not configured for this repository yet.
-
-            Missing GitHub Actions secrets:
-            - \`CLOUDFLARE_API_TOKEN\`
-            - \`CLOUDFLARE_ACCOUNT_ID\`
-
-            Once those are added, this workflow will deploy this PR to the existing \`openvine-app\` Pages project on branch \`${previewBranch}\`.
-
-            | Property | Value |
-            | --- | --- |
-            | Preview branch | \`${previewBranch}\` |
-            | PR branch | \`${headRef}\` |
-            | Commit | \`${sha}\` |`;
-
-            const { data: comments } = await github.rest.issues.listComments({
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
+              body,
             });
-
-            const existing = comments.find((comment) =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('## Mobile PR Preview')
-            );
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body,
-              });
-            }
 
       - name: Deploy preview to Cloudflare Pages
         if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured == 'true' }}
@@ -168,59 +151,45 @@ jobs:
             --project-name=openvine-app
             --branch=${{ steps.metadata.outputs.preview_branch }}
 
+      - name: Render deployed preview comment
+        if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured == 'true' }}
+        id: deployed_comment
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+          HEAD_REF: ${{ steps.metadata.outputs.head_ref }}
+          HEAD_SHA: ${{ steps.metadata.outputs.head_sha }}
+          PREVIEW_BRANCH: ${{ steps.metadata.outputs.preview_branch }}
+        run: |
+          updated_at="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          comment_file="${RUNNER_TEMP}/mobile-pr-preview-deployed.md"
+
+          python3 .github/scripts/mobile_pr_preview_comment.py \
+            --mode deployed \
+            --sha "${HEAD_SHA}" \
+            --updated-at "${updated_at}" \
+            --run-url "${run_url}" \
+            --preview-branch "${PREVIEW_BRANCH}" \
+            --head-ref "${HEAD_REF}" \
+            --deployment-url "${DEPLOYMENT_URL}" \
+            > "${comment_file}"
+
+          echo "comment_file=${comment_file}" >> "$GITHUB_OUTPUT"
+
       - name: Comment preview URL on PR
         if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured == 'true' }}
         uses: actions/github-script@v7
+        env:
+          PREVIEW_COMMENT_FILE: ${{ steps.deployed_comment.outputs.comment_file }}
         with:
           script: |
             const prNumber = Number('${{ steps.metadata.outputs.pr_number }}');
-            const headRef = '${{ steps.metadata.outputs.head_ref }}';
-            const previewBranch = '${{ steps.metadata.outputs.preview_branch }}';
-            const sha = '${{ steps.metadata.outputs.head_sha }}'.slice(0, 7);
-            const deploymentUrl = '${{ steps.deploy.outputs.deployment-url }}';
-            const runUrl =
-              `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}` +
-              `/actions/runs/${process.env.GITHUB_RUN_ID}`;
-            const updatedAt = new Date()
-              .toISOString()
-              .replace('T', ' ')
-              .replace(/\.\d+Z$/, ' UTC');
+            const fs = require('fs');
+            const body = fs.readFileSync(process.env.PREVIEW_COMMENT_FILE, 'utf8');
 
-            const body = `## Mobile PR Preview
-
-            Last refresh: \`${sha}\` at ${updatedAt} ([preview run](${runUrl}))
-
-            | Property | Value |
-            | --- | --- |
-            | Preview URL | ${deploymentUrl} |
-            | Pages project | \`openvine-app\` |
-            | Preview branch | \`${previewBranch}\` |
-            | PR branch | \`${headRef}\` |
-            | Commit | \`${sha}\` |`;
-
-            const { data: comments } = await github.rest.issues.listComments({
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
+              body,
             });
-
-            const existing = comments.find((comment) =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('## Mobile PR Preview')
-            );
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body,
-              });
-            }
