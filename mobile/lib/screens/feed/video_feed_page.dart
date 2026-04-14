@@ -466,6 +466,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       videos: pooledVideos,
                       maxLoopDuration: VideoEditorConstants.maxDuration,
                       controller: controller,
+                      nearEndThreshold: 5,
                       onScrollOffsetChanged: (page) =>
                           _pagePosition.value = page,
                       itemBuilder: (context, video, index, {required isActive}) {

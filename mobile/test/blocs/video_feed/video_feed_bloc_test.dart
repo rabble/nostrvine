@@ -114,8 +114,8 @@ void main() {
       );
     }
 
-    /// Page size constant must match the one in video_feed_bloc.dart
-    const pageSize = 5;
+    /// Page size constant must match the one in videos_repository.dart
+    const pageSize = 20;
 
     test('initial state is correct', () {
       final bloc = createBloc();

@@ -22,8 +22,11 @@ export 'package:models/src/nip71_video_kinds.dart' show NIP71VideoKinds;
 const int _videoKind = EventKind.videoVertical;
 
 /// Default number of videos to fetch per page.
-/// Kept small to stay "a couple videos ahead" in the buffer.
-const int _defaultLimit = 5;
+///
+/// Set to 20 so that after client-side filtering (blocklists, NSFW, expired,
+/// missing URLs) the UI still has a comfortable buffer of ~8-12 videos,
+/// reducing visible loading interruptions while scrolling.
+const int _defaultLimit = 20;
 
 /// Timeout for relay search queries.
 ///

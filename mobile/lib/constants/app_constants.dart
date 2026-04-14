@@ -96,7 +96,7 @@ class AppConstants {
   static const int preloadBefore = 2;
 
   /// Number of videos to preload after current position
-  static const int preloadAfter = 3;
+  static const int preloadAfter = 5;
 
   /// Maximum videos to prefetch from grid views (approx 3x3 visible area)
   static const int gridPrefetchLimit = 9;

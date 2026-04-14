@@ -24,9 +24,9 @@ void main() {
         final videos = _createMockVideoEvents(10);
         const currentIndex = 3;
 
-        // Expected: With preloadBefore=2 and preloadAfter=3, should prefetch:
+        // Expected: With preloadBefore=2 and preloadAfter=5, should prefetch:
         // - Before: 1, 2 (preloadBefore=2)
-        // - After: 4, 5, 6 (preloadAfter=3)
+        // - After: 4, 5, 6, 7, 8 (preloadAfter=5)
         // - Skipped: 3 (current)
         final expectedVideoIds = [
           videos[1].id,
@@ -34,6 +34,8 @@ void main() {
           videos[4].id,
           videos[5].id,
           videos[6].id,
+          videos[7].id,
+          videos[8].id,
         ];
 
         // Mock preCacheFiles to verify it's called with correct params
@@ -144,8 +146,14 @@ void main() {
       final videos = _createMockVideoEvents(10);
       const currentIndex = 0;
 
-      // Expected: Only prefetch after (1, 2, 3), not before
-      final expectedVideoIds = [videos[1].id, videos[2].id, videos[3].id];
+      // Expected: Only prefetch after (1, 2, 3, 4, 5), not before
+      final expectedVideoIds = [
+        videos[1].id,
+        videos[2].id,
+        videos[3].id,
+        videos[4].id,
+        videos[5].id,
+      ];
 
       when(
         () => mockCacheManager.preCacheFiles(
@@ -218,6 +226,8 @@ void main() {
       expect(actualVideoIds, contains(videos[2].id)); // preloadBefore
       expect(actualVideoIds, contains(videos[4].id)); // preloadAfter
       expect(actualVideoIds, contains(videos[6].id)); // preloadAfter
+      expect(actualVideoIds, contains(videos[7].id)); // preloadAfter
+      expect(actualVideoIds, contains(videos[8].id)); // preloadAfter
     });
 
     test('SPEC: should handle prefetch errors gracefully', () async {
