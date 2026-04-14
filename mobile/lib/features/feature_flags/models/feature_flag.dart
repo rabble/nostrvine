@@ -37,6 +37,10 @@ enum FeatureFlag {
   integratedApps(
     'Integrated Apps',
     'Enable the integrated Nostr apps directory and sandbox',
+  ),
+  accountSwitching(
+    'Account Switching',
+    'Enable switching between remembered accounts in Settings',
   )
   ;
 

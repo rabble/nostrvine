@@ -49,6 +49,22 @@ void main() {
     late _MockDraftStorageService mockDraftStorageService;
     late _MockLocaleCubit mockLocaleCubit;
     late SharedPreferences sharedPreferences;
+    final twoAccounts = [
+      KnownAccount(
+        pubkeyHex:
+            'abc123pubkeyabc123pubkeyabc123pubkeyabc123pubkeyabc123pubkeyabc1',
+        authSource: AuthenticationSource.automatic,
+        addedAt: DateTime(2024),
+        lastUsedAt: DateTime(2024),
+      ),
+      KnownAccount(
+        pubkeyHex:
+            'def456pubkeydef456pubkeydef456pubkeydef456pubkeydef456pubkeydef4',
+        authSource: AuthenticationSource.automatic,
+        addedAt: DateTime(2024),
+        lastUsedAt: DateTime(2024),
+      ),
+    ];
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
@@ -161,25 +177,26 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets(
+      'hides account action when multiple accounts exist and switching is disabled',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(knownAccounts: twoAccounts));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Switch account'), findsNothing);
+        expect(find.text('Add another account'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
     testWidgets('renders Switch account button when multiple accounts exist', (
       tester,
     ) async {
-      final twoAccounts = [
-        KnownAccount(
-          pubkeyHex:
-              'abc123pubkeyabc123pubkeyabc123pubkeyabc123pubkeyabc123pubkeyabc1',
-          authSource: AuthenticationSource.automatic,
-          addedAt: DateTime(2024),
-          lastUsedAt: DateTime(2024),
-        ),
-        KnownAccount(
-          pubkeyHex:
-              'def456pubkeydef456pubkeydef456pubkeydef456pubkeydef456pubkeydef4',
-          authSource: AuthenticationSource.automatic,
-          addedAt: DateTime(2024),
-          lastUsedAt: DateTime(2024),
-        ),
-      ];
+      await sharedPreferences.setBool('ff_accountSwitching', true);
 
       await tester.pumpWidget(buildSubject(knownAccounts: twoAccounts));
       await tester.pumpAndSettle();

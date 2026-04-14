@@ -37,6 +37,8 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_BLUESKY_PUBLISHING');
       case FeatureFlag.integratedApps:
         return const bool.fromEnvironment('FF_INTEGRATED_APPS');
+      case FeatureFlag.accountSwitching:
+        return const bool.fromEnvironment('FF_ACCOUNT_SWITCHING');
     }
   }
 
@@ -73,6 +75,8 @@ class BuildConfiguration {
         return 'FF_BLUESKY_PUBLISHING';
       case FeatureFlag.integratedApps:
         return 'FF_INTEGRATED_APPS';
+      case FeatureFlag.accountSwitching:
+        return 'FF_ACCOUNT_SWITCHING';
     }
   }
 }

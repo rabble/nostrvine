@@ -3,6 +3,8 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -13,12 +15,15 @@ class SettingsAccountCubit extends Cubit<SettingsAccountState> {
   SettingsAccountCubit({
     required AuthService authService,
     required DraftStorageService draftStorageService,
+    required FeatureFlagService featureFlagService,
   }) : _authService = authService,
        _draftStorageService = draftStorageService,
+       _featureFlagService = featureFlagService,
        super(const SettingsAccountState());
 
   final AuthService _authService;
   final DraftStorageService _draftStorageService;
+  final FeatureFlagService _featureFlagService;
 
   /// Loads the known accounts list and current draft count.
   Future<void> load() async {
@@ -43,6 +48,7 @@ class SettingsAccountCubit extends Cubit<SettingsAccountState> {
   /// Switches to an existing account by signing out and setting the pending
   /// account switch pubkey so WelcomeBloc pre-selects it.
   void switchToAccount(String pubkeyHex) {
+    if (!_featureFlagService.isEnabled(FeatureFlag.accountSwitching)) return;
     if (pubkeyHex == state.currentPubkey) return;
     _authService.pendingAccountSwitchPubkey = pubkeyHex;
     _authService.signOut();
@@ -50,6 +56,7 @@ class SettingsAccountCubit extends Cubit<SettingsAccountState> {
 
   /// Signs out to add a new account (no pending switch pubkey).
   void addNewAccount() {
+    if (!_featureFlagService.isEnabled(FeatureFlag.accountSwitching)) return;
     _authService.signOut();
   }
 }
