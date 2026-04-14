@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:db_client/src/database/connection/connection_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqlite3/sqlite3.dart' as raw_sqlite;
 
 void main() {
   group('prepareDatabaseFile', () {
@@ -102,22 +103,126 @@ void main() {
       expect(File(newPath).existsSync(), isTrue);
     });
 
-    test('never clobbers an existing database at the new location', () async {
-      final legacyFile = File(legacyPath);
-      legacyFile.parent.createSync(recursive: true);
-      legacyFile.writeAsBytesSync(const [1, 2, 3]);
+    test(
+      'replaces near-empty new DB with legacy when both exist',
+      () async {
+        // Legacy DB with conversations (the user's real data).
+        final legacyDb = _createDatabaseWithConversations(legacyPath, 20);
+        legacyDb.dispose();
 
-      final newFile = File(newPath);
-      newFile.parent.createSync(recursive: true);
-      newFile.writeAsBytesSync(const [9, 9, 9]);
+        // New DB with 0 conversations (artifact of relay re-fetch).
+        final newDb = _createDatabaseWithConversations(newPath, 0);
+        newDb.dispose();
 
-      await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
+        await migrateLegacyDatabase(
+          legacyPath: legacyPath,
+          newPath: newPath,
+        );
 
-      // New location untouched, legacy left in place.
-      expect(newFile.readAsBytesSync(), equals(const [9, 9, 9]));
-      expect(legacyFile.existsSync(), isTrue);
-      expect(legacyFile.readAsBytesSync(), equals(const [1, 2, 3]));
-    });
+        // Legacy replaced the new DB.
+        expect(File(legacyPath).existsSync(), isFalse);
+        final resultDb = raw_sqlite.sqlite3.open(newPath);
+        final count =
+            resultDb
+                    .select(
+                      'SELECT COUNT(*) AS cnt FROM conversations',
+                    )
+                    .first['cnt']
+                as int;
+        resultDb.dispose();
+        expect(count, equals(20));
+      },
+    );
+
+    test(
+      'keeps new DB and deletes legacy when new has data above threshold',
+      () async {
+        final legacyDb = _createDatabaseWithConversations(legacyPath, 50);
+        legacyDb.dispose();
+
+        // New DB with conversations above threshold — real user data.
+        final newDb = _createDatabaseWithConversations(
+          newPath,
+          maxConversationsForReplacement + 1,
+        );
+        newDb.dispose();
+
+        await migrateLegacyDatabase(
+          legacyPath: legacyPath,
+          newPath: newPath,
+        );
+
+        // New DB kept, legacy cleaned up.
+        expect(File(newPath).existsSync(), isTrue);
+        expect(File(legacyPath).existsSync(), isFalse);
+        final resultDb = raw_sqlite.sqlite3.open(newPath);
+        final count =
+            resultDb
+                    .select(
+                      'SELECT COUNT(*) AS cnt FROM conversations',
+                    )
+                    .first['cnt']
+                as int;
+        resultDb.dispose();
+        expect(count, equals(maxConversationsForReplacement + 1));
+      },
+    );
+
+    test(
+      'treats new DB without conversations table as empty and replaces it',
+      () async {
+        final legacyDb = _createDatabaseWithConversations(legacyPath, 10);
+        legacyDb.dispose();
+
+        // New DB exists but has no conversations table (incomplete init).
+        final newFile = File(newPath);
+        newFile.parent.createSync(recursive: true);
+        final newDb = raw_sqlite.sqlite3.open(newPath);
+        newDb.execute('CREATE TABLE other_table (id TEXT PRIMARY KEY)');
+        newDb.dispose();
+
+        await migrateLegacyDatabase(
+          legacyPath: legacyPath,
+          newPath: newPath,
+        );
+
+        expect(File(legacyPath).existsSync(), isFalse);
+        final resultDb = raw_sqlite.sqlite3.open(newPath);
+        final count =
+            resultDb
+                    .select(
+                      'SELECT COUNT(*) AS cnt FROM conversations',
+                    )
+                    .first['cnt']
+                as int;
+        resultDb.dispose();
+        expect(count, equals(10));
+      },
+    );
+
+    test(
+      'cleans up sidecars of the replaced new DB before renaming legacy',
+      () async {
+        final legacyDb = _createDatabaseWithConversations(legacyPath, 15);
+        legacyDb.dispose();
+
+        final newDb = _createDatabaseWithConversations(newPath, 0);
+        newDb.dispose();
+        // Simulate stale sidecars on the new DB.
+        File('$newPath-wal').writeAsBytesSync(const [1]);
+        File('$newPath-shm').writeAsBytesSync(const [2]);
+
+        await migrateLegacyDatabase(
+          legacyPath: legacyPath,
+          newPath: newPath,
+        );
+
+        expect(File(newPath).existsSync(), isTrue);
+        // Stale sidecars from the replaced new DB should be gone.
+        // (Legacy sidecars are migrated by the existing logic if present.)
+        expect(File(legacyPath).existsSync(), isFalse);
+      },
+    );
 
     test('no-op when no legacy database exists (fresh install)', () async {
       expect(File(legacyPath).existsSync(), isFalse);
@@ -157,4 +262,34 @@ void main() {
       expect(File('$newPath-shm').existsSync(), isFalse);
     });
   });
+}
+
+/// Creates a real SQLite database at [path] with a conversations table
+/// containing [count] rows. Returns the open database handle so the
+/// caller can dispose it after setup.
+raw_sqlite.Database _createDatabaseWithConversations(String path, int count) {
+  File(path).parent.createSync(recursive: true);
+  final db = raw_sqlite.sqlite3.open(path);
+  db.execute('''
+    CREATE TABLE conversations (
+      id TEXT PRIMARY KEY,
+      participant_pubkeys TEXT NOT NULL DEFAULT '[]',
+      is_group INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL DEFAULT 0,
+      last_message_content TEXT,
+      last_message_timestamp INTEGER,
+      last_message_sender_pubkey TEXT,
+      subject TEXT,
+      is_read INTEGER NOT NULL DEFAULT 1,
+      current_user_has_sent INTEGER NOT NULL DEFAULT 0,
+      owner_pubkey TEXT,
+      dm_protocol TEXT
+    )
+  ''');
+  for (var i = 0; i < count; i++) {
+    db.execute(
+      "INSERT INTO conversations (id, created_at) VALUES ('conv_$i', $i)",
+    );
+  }
+  return db;
 }

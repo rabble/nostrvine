@@ -7,6 +7,7 @@ import 'package:drift/native.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqlite3/sqlite3.dart' as raw_sqlite;
 
 /// Open a database connection for native platforms
 /// Uses file-based SQLite through drift's native implementation
@@ -46,12 +47,21 @@ Future<String> getSharedDatabasePath() async {
   return newPath;
 }
 
+/// If the new DB has at most this many conversations it is considered an
+/// artifact of the relay re-fetch (`limit: 50`) and is safe to replace
+/// with the legacy database that contains the user's real history.
+@visibleForTesting
+const int maxConversationsForReplacement = 5;
+
 /// One-time migration from the pre-PR #2840 Documents-directory location
 /// to the current Application Support location.
 ///
-/// No-op when:
-/// * the new location already has a database (never clobber existing data),
-/// * or the legacy file does not exist (fresh install / post-migration run).
+/// Handles three cases:
+/// 1. New DB does not exist, legacy exists → rename legacy to new.
+/// 2. Both exist but new DB is near-empty (≤ [maxConversationsForReplacement]
+///    conversations) → replace new with legacy. This covers users who went
+///    through the intermediate build that created an empty DB at the new path.
+/// 3. Both exist and new DB has data → keep new, delete legacy as cleanup.
 ///
 /// Also migrates the SQLite `-wal` and `-shm` sidecar files if present, so
 /// any unsynced writes in the write-ahead log are preserved.
@@ -60,14 +70,20 @@ Future<void> migrateLegacyDatabase({
   required String legacyPath,
   required String newPath,
 }) async {
+  final legacyFile = File(legacyPath);
+  if (!legacyFile.existsSync()) return;
+
   final newFile = File(newPath);
   if (newFile.existsSync()) {
-    return;
-  }
-
-  final legacyFile = File(legacyPath);
-  if (!legacyFile.existsSync()) {
-    return;
+    // Both databases exist. Check whether the new DB is near-empty
+    // (artifact of the intermediate build) or has real user data.
+    if (_isNearEmptyDatabase(newPath)) {
+      _deleteDatabaseAndSidecars(newPath);
+    } else {
+      // New DB has real data — keep it, discard orphaned legacy.
+      _deleteDatabaseAndSidecars(legacyPath);
+      return;
+    }
   }
 
   Directory(p.dirname(newPath)).createSync(recursive: true);
@@ -78,6 +94,42 @@ Future<void> migrateLegacyDatabase({
     if (legacySidecar.existsSync()) {
       legacySidecar.renameSync('$newPath$suffix');
     }
+  }
+}
+
+/// Returns `true` when the database at [dbPath] has at most
+/// [maxConversationsForReplacement] conversations, meaning it was likely
+/// created by the relay re-fetch and does not contain meaningful user data.
+///
+/// Returns `true` (treat as empty) when the conversations table does not
+/// exist or the database cannot be opened — both indicate an incomplete
+/// or corrupt database that is safe to replace.
+bool _isNearEmptyDatabase(String dbPath) {
+  try {
+    final db = raw_sqlite.sqlite3.open(dbPath);
+    try {
+      final result = db.select(
+        'SELECT COUNT(*) AS cnt FROM conversations',
+      );
+      final count = result.first['cnt'] as int;
+      return count <= maxConversationsForReplacement;
+    } on raw_sqlite.SqliteException {
+      // Table does not exist or DB is corrupt — treat as empty.
+      return true;
+    } finally {
+      db.dispose();
+    }
+  } on raw_sqlite.SqliteException {
+    // Cannot open the database — treat as empty.
+    return true;
+  }
+}
+
+/// Deletes a database file and its `-wal` / `-shm` sidecars.
+void _deleteDatabaseAndSidecars(String dbPath) {
+  for (final suffix in const ['', '-wal', '-shm']) {
+    final file = File('$dbPath$suffix');
+    if (file.existsSync()) file.deleteSync();
   }
 }
 

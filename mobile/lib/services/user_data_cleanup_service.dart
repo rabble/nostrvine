@@ -62,6 +62,8 @@ class UserDataCleanupService {
   static const List<String> identityChangePrefixes = [
     'following_list_', // follow cache per pubkey
     'relay_discovery_', // relay discovery cache per npub
+    'dm.newestSyncedAt.', // DM sync cursor per pubkey
+    'dm.oldestSyncedAt.', // DM sync cursor per pubkey
   ];
 
   /// Checks if user-specific data should be cleared for the given pubkey.
