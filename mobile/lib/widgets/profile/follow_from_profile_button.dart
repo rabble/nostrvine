@@ -11,8 +11,8 @@ import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:unified_logger/unified_logger.dart';
 import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Page widget that creates the [MyFollowingBloc] and provides it to the view.
 class FollowFromProfileButton extends ConsumerWidget {

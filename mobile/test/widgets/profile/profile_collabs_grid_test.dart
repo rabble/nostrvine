@@ -115,7 +115,7 @@ void main() {
 
         await tester.pumpWidget(buildSubject());
 
-        expect(find.text('No Collabs Yet'), findsOneWidget);
+        expect(find.text('No collabs yet'), findsOneWidget);
         expect(
           find.text('Videos you collaborate on will appear here'),
           findsOneWidget,
@@ -133,7 +133,7 @@ void main() {
 
         await tester.pumpWidget(buildSubject(isOwnProfile: false));
 
-        expect(find.text('No Collabs Yet'), findsOneWidget);
+        expect(find.text('No collabs yet'), findsOneWidget);
         expect(
           find.text('Videos they collaborate on will appear here'),
           findsOneWidget,
