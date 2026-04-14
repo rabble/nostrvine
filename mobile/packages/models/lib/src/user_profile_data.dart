@@ -4,6 +4,32 @@
 
 import 'package:meta/meta.dart';
 
+// ---------------------------------------------------------------------------
+// Shared numeric parse helpers used by all sub-models below.
+// ---------------------------------------------------------------------------
+
+/// Parses [value] as an [int], accepting int, num, or String representations.
+/// Returns 0 for null or unrecognised types.
+int parseIntSafe(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
+/// Parses [value] as a [double], accepting double, num, or String
+/// representations. Returns 0 for null or unrecognised types.
+double parseDoubleSafe(dynamic value) {
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0;
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Sub-models
+// ---------------------------------------------------------------------------
+
 /// Core profile metadata fields from the Funnelcake `/api/users/:pubkey`
 /// response — the `profile` sub-object.
 @immutable
@@ -15,6 +41,7 @@ class UserProfileData {
     this.about,
     this.picture,
     this.banner,
+    this.website,
     this.nip05,
     this.lud16,
   });
@@ -27,6 +54,7 @@ class UserProfileData {
       about: json['about'] as String?,
       picture: json['picture'] as String?,
       banner: json['banner'] as String?,
+      website: json['website'] as String?,
       nip05: json['nip05'] as String?,
       lud16: json['lud16'] as String?,
     );
@@ -38,6 +66,7 @@ class UserProfileData {
   final String? about;
   final String? picture;
   final String? banner;
+  final String? website;
   final String? nip05;
   final String? lud16;
 
@@ -51,6 +80,7 @@ class UserProfileData {
         other.about == about &&
         other.picture == picture &&
         other.banner == banner &&
+        other.website == website &&
         other.nip05 == nip05 &&
         other.lud16 == lud16;
   }
@@ -63,6 +93,7 @@ class UserProfileData {
     about,
     picture,
     banner,
+    website,
     nip05,
     lud16,
   );
@@ -83,20 +114,13 @@ class ProfileSocialData {
 
   factory ProfileSocialData.fromJson(Map<String, dynamic> json) {
     return ProfileSocialData(
-      followerCount: _parseInt(json['follower_count']),
-      followingCount: _parseInt(json['following_count']),
+      followerCount: parseIntSafe(json['follower_count']),
+      followingCount: parseIntSafe(json['following_count']),
     );
   }
 
   final int followerCount;
   final int followingCount;
-
-  static int _parseInt(dynamic value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
-  }
 
   @override
   bool operator ==(Object other) {
@@ -125,20 +149,13 @@ class ProfileStatsData {
 
   factory ProfileStatsData.fromJson(Map<String, dynamic> json) {
     return ProfileStatsData(
-      videoCount: _parseInt(json['video_count']),
-      reactionCount: _parseInt(json['reaction_count']),
+      videoCount: parseIntSafe(json['video_count']),
+      reactionCount: parseIntSafe(json['reaction_count']),
     );
   }
 
   final int videoCount;
   final int reactionCount;
-
-  static int _parseInt(dynamic value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
-  }
 
   @override
   bool operator ==(Object other) {
@@ -168,29 +185,15 @@ class ProfileEngagementData {
 
   factory ProfileEngagementData.fromJson(Map<String, dynamic> json) {
     return ProfileEngagementData(
-      totalReactions: _parseInt(json['total_reactions']),
-      totalLoops: _parseDouble(json['total_loops']),
-      totalViews: _parseInt(json['total_views']),
+      totalReactions: parseIntSafe(json['total_reactions']),
+      totalLoops: parseDoubleSafe(json['total_loops']),
+      totalViews: parseIntSafe(json['total_views']),
     );
   }
 
   final int totalReactions;
   final double totalLoops;
   final int totalViews;
-
-  static int _parseInt(dynamic value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
-  }
-
-  static double _parseDouble(dynamic value) {
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    if (value is String) return double.tryParse(value) ?? 0;
-    return 0;
-  }
 
   @override
   bool operator ==(Object other) {

@@ -2,6 +2,7 @@
 // ABOUTME: Represents a content category with name, video count, and emoji
 
 import 'package:equatable/equatable.dart';
+import 'package:models/src/user_profile_data.dart';
 
 /// A video content category from VLM classification.
 class VideoCategory extends Equatable {
@@ -10,7 +11,7 @@ class VideoCategory extends Equatable {
   factory VideoCategory.fromJson(Map<String, dynamic> json) {
     return VideoCategory(
       name: json['name'] as String? ?? '',
-      videoCount: _parseInt(json['video_count']),
+      videoCount: parseIntSafe(json['video_count']),
     );
   }
 
@@ -45,13 +46,6 @@ class VideoCategory extends Equatable {
 
   @override
   List<Object?> get props => [name, videoCount];
-
-  static int _parseInt(dynamic value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value) ?? 0;
-    return 0;
-  }
 }
 
 const _featuredCategoryOrder = <String>[

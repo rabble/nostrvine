@@ -3661,7 +3661,7 @@ void main() {
       );
 
       test(
-        'returns UserProfileNotPublished for users with all-null profile fields',
+        'returns UserProfileNotPublished for users with all-null profile',
         () async {
           const response = '''
 {

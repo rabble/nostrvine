@@ -557,7 +557,7 @@ void main() {
             () => mockFunnelcakeClient.getUserProfile(testPubkey),
           ).thenAnswer(
             (_) async => UserProfileFound(
-              profile: UserProfileData.fromJson(testPubkey, {
+              profile: UserProfileData.fromJson(testPubkey, const {
                 'display_name': 'REST User',
                 'name': 'restuser',
                 'picture': 'https://example.com/pic.png',
@@ -620,12 +620,12 @@ void main() {
           ).thenAnswer(
             (_) async => UserProfileNotPublished(
               pubkey: testPubkey,
-              social: ProfileSocialData.fromJson({
+              social: ProfileSocialData.fromJson(const {
                 'follower_count': 12,
                 'following_count': 7,
               }),
-              stats: ProfileStatsData.fromJson({'video_count': 3}),
-              engagement: ProfileEngagementData.fromJson({
+              stats: ProfileStatsData.fromJson(const {'video_count': 3}),
+              engagement: ProfileEngagementData.fromJson(const {
                 'total_reactions': 42,
                 'total_loops': 12.6,
               }),
@@ -3219,7 +3219,7 @@ void main() {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(() => mockFunnelcakeClient.getUserProfile(testPubkey)).thenAnswer(
           (_) async => UserProfileFound(
-            profile: UserProfileData.fromJson(testPubkey, {
+            profile: UserProfileData.fromJson(testPubkey, const {
               'display_name': 'Test User',
               'picture': 'https://example.com/avatar.png',
             }),
@@ -3325,7 +3325,7 @@ void main() {
         final testResponse = BulkProfilesResponse(
           profiles: {
             testPubkey: UserProfileFound(
-              profile: UserProfileData.fromJson(testPubkey, {
+              profile: UserProfileData.fromJson(testPubkey, const {
                 'display_name': 'Test User',
                 'picture': 'https://example.com/avatar.png',
               }),
@@ -3586,7 +3586,7 @@ void main() {
           (_) async => BulkProfilesResponse(
             profiles: {
               testPubkey: UserProfileFound(
-                profile: UserProfileData.fromJson(testPubkey, {
+                profile: UserProfileData.fromJson(testPubkey, const {
                   'display_name': 'API User',
                   'picture': 'https://example.com/pic.jpg',
                 }),
@@ -3668,7 +3668,7 @@ void main() {
               testPubkey2: UserProfileFound(
                 profile: UserProfileData.fromJson(
                   testPubkey2,
-                  {'display_name': 'API User'},
+                  const {'display_name': 'API User'},
                 ),
               ),
             },
@@ -3944,7 +3944,7 @@ void main() {
                 testPubkey: UserProfileFound(
                   profile: UserProfileData.fromJson(
                     testPubkey,
-                    {'display_name': 'Real User'},
+                    const {'display_name': 'Real User'},
                   ),
                 ),
                 testPubkey2: const UserProfileNotPublished(pubkey: testPubkey2),

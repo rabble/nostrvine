@@ -215,8 +215,6 @@ class ProfileRepository {
   ///
   /// The `/api/users/{pubkey}` response includes `social`, `stats`, and
   /// `engagement` objects. This method maps them into [ProfileStatsDao]
-  /// fields: follower/following counts, video count, total reactions
-  /// (likes), and total loops (views).
   /// Caches profile stats (social counts, video stats, engagement data) from a
   /// [UserProfileResult] into the local stats DAO.
   Future<void> _cacheProfileStatsFromResult(
@@ -226,18 +224,11 @@ class ProfileRepository {
     final dao = _profileStatsDao;
     if (dao == null) return;
 
-    final social = switch (result) {
-      UserProfileFound() => result.social,
-      UserProfileNotPublished() => result.social,
-    };
-    final stats = switch (result) {
-      UserProfileFound() => result.stats,
-      UserProfileNotPublished() => result.stats,
-    };
-    final engagement = switch (result) {
-      UserProfileFound() => result.engagement,
-      UserProfileNotPublished() => result.engagement,
-    };
+    // Both variants expose social/stats/engagement on the sealed base class,
+    // so no switch is needed here.
+    final social = result.social;
+    final stats = result.stats;
+    final engagement = result.engagement;
 
     if (social == null && stats == null && engagement == null) return;
 

@@ -14,11 +14,11 @@ void main() {
         final alice = UserProfileFound(
           profile: UserProfileData.fromJson(
             'pubkey1',
-            {'name': 'Alice', 'display_name': 'Alice A'},
+            const {'name': 'Alice', 'display_name': 'Alice A'},
           ),
         );
         final bob = UserProfileFound(
-          profile: UserProfileData.fromJson('pubkey2', {'name': 'Bob'}),
+          profile: UserProfileData.fromJson('pubkey2', const {'name': 'Bob'}),
         );
         final response = BulkProfilesResponse(
           profiles: {'pubkey1': alice, 'pubkey2': bob},

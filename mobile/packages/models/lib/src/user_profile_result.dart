@@ -20,8 +20,20 @@ import 'package:models/src/user_profile_data.dart';
 ///
 /// A `null` return from `getUserProfile` (not this type) means the user was
 /// not found at all (404).
+///
+/// Both variants expose [social], [stats], and [engagement] directly on the
+/// base class so callers that only need those fields don't have to switch.
 sealed class UserProfileResult {
   const UserProfileResult();
+
+  /// Social graph counts returned by the API, or `null` if absent.
+  ProfileSocialData? get social;
+
+  /// Content statistics returned by the API, or `null` if absent.
+  ProfileStatsData? get stats;
+
+  /// Engagement totals returned by the API, or `null` if absent.
+  ProfileEngagementData? get engagement;
 }
 
 /// The user exists and has published a Kind 0 profile event.
@@ -37,14 +49,13 @@ final class UserProfileFound extends UserProfileResult {
   /// Core profile metadata (name, picture, etc.).
   final UserProfileData profile;
 
-  /// Social graph counts, present when the API returns a `social` sub-object.
+  @override
   final ProfileSocialData? social;
 
-  /// Content statistics, present when the API returns a `stats` sub-object.
+  @override
   final ProfileStatsData? stats;
 
-  /// Engagement totals, present when the API returns an `engagement`
-  /// sub-object.
+  @override
   final ProfileEngagementData? engagement;
 
   @override
@@ -83,13 +94,13 @@ final class UserProfileNotPublished extends UserProfileResult {
   /// The user's public key (hex format).
   final String pubkey;
 
-  /// Social graph counts, if returned by the API.
+  @override
   final ProfileSocialData? social;
 
-  /// Content statistics, if returned by the API.
+  @override
   final ProfileStatsData? stats;
 
-  /// Engagement totals, if returned by the API.
+  @override
   final ProfileEngagementData? engagement;
 
   @override
