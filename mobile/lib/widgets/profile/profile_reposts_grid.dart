@@ -91,7 +91,6 @@ class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
 
         if (repostedVideos.isEmpty) {
           return ProfileTabEmptyState(
-            icon: DivineIconName.repeat,
             title: context.l10n.profileNoRepostsTitle,
             subtitle: widget.isOwnProfile
                 ? context.l10n.profileRepostsOwnEmpty

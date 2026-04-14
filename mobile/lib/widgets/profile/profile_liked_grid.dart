@@ -91,7 +91,6 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
 
         if (likedVideos.isEmpty) {
           return ProfileTabEmptyState(
-            icon: DivineIconName.heart,
             title: context.l10n.profileNoLikedVideosTitle,
             subtitle: widget.isOwnProfile
                 ? context.l10n.profileLikedOwnEmpty

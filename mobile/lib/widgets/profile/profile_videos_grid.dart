@@ -264,12 +264,10 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         );
       }
       return ProfileTabEmptyState(
-        icon: DivineIconName.videoCamera,
         title: context.l10n.profileNoVideosTitle,
         subtitle: isOwnProfile
             ? context.l10n.profileNoVideosOwnSubtitle
             : context.l10n.profileNoVideosOtherSubtitle,
-        onRefresh: loadMoreProfileVideos,
       );
     }
 

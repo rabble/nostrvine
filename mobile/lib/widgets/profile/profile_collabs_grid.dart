@@ -119,13 +119,10 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
 
         if (collabVideos.isEmpty) {
           return ProfileTabEmptyState(
-            icon: DivineIconName.userCircle,
-            iconColor: VineTheme.onSurfaceMuted,
             title: context.l10n.profileNoCollabsTitle,
             subtitle: widget.isOwnProfile
                 ? context.l10n.profileCollabsOwnEmpty
                 : context.l10n.profileCollabsOtherEmpty,
-            subtitleColor: VineTheme.onSurfaceMuted,
           );
         }
 
