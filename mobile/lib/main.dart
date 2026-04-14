@@ -1462,14 +1462,17 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // in the widget tree by MultiBlocProvider.
     Widget buildApp(Locale? locale) {
       if (!kIsWeb && io.Platform.isAndroid) {
-        return MaterialApp.router(
-          title: 'Divine',
-          debugShowCheckedModeBanner: false,
-          theme: VineTheme.theme,
-          routerConfig: router,
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: VineTheme.statusBarStyle,
+          child: MaterialApp.router(
+            title: 'Divine',
+            debugShowCheckedModeBanner: false,
+            theme: VineTheme.theme,
+            routerConfig: router,
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
         );
       }
       return PopScope(
@@ -1478,14 +1481,17 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           if (didPop) return;
           await handleBackNavigation(router, ref);
         },
-        child: MaterialApp.router(
-          title: 'Divine',
-          debugShowCheckedModeBanner: false,
-          theme: VineTheme.theme,
-          routerConfig: router,
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: VineTheme.statusBarStyle,
+          child: MaterialApp.router(
+            title: 'Divine',
+            debugShowCheckedModeBanner: false,
+            theme: VineTheme.theme,
+            routerConfig: router,
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
         ),
       );
     }
