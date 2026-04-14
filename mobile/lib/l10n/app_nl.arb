@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Video's laden mislukt",
     "feedRetry": "Opnieuw",
     "feedNoFollowedUsers": "Geen gevolgde gebruikers.\nVolg iemand om hun video's hier te zien.",
-    "feedNoVideosForMode": "Geen video's gevonden voor {mode}-feed.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Video's verkennen",
     "feedExternalVideoSlow": "Externe video laadt traag",
     "feedSkip": "Overslaan",

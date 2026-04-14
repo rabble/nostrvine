@@ -13,6 +13,7 @@ import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// A widget that displays text with clickable hashtags and nostr: mentions
 ///
@@ -48,6 +49,12 @@ class ClickableHashtagText extends ConsumerWidget {
   /// Matches @username where username is alphanumeric with underscores
   static final _plainMentionRegex = RegExp('@([a-zA-Z][a-zA-Z0-9_]{0,30})');
 
+  /// Regex to detect plain URLs and bare domains.
+  static final _urlRegex = RegExp(
+    r'(https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)',
+    caseSensitive: false,
+  );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (text.isEmpty) {
@@ -58,9 +65,10 @@ class ClickableHashtagText extends ConsumerWidget {
     final hasHashtags = HashtagExtractor.extractHashtags(text).isNotEmpty;
     final hasNostrUris = _nostrUriRegex.hasMatch(text);
     final hasPlainMentions = _plainMentionRegex.hasMatch(text);
+    final hasUrls = _urlRegex.hasMatch(text);
 
     // If no clickable elements, return simple text
-    if (!hasHashtags && !hasNostrUris && !hasPlainMentions) {
+    if (!hasHashtags && !hasNostrUris && !hasPlainMentions && !hasUrls) {
       return Text(text, style: style, maxLines: maxLines, overflow: overflow);
     }
 
@@ -89,10 +97,11 @@ class ClickableHashtagText extends ConsumerWidget {
     final profileStyle =
         mentionStyle ?? tagStyle.copyWith(fontWeight: FontWeight.w600);
 
-    // Combined regex to find hashtags, nostr: URIs, and plain @mentions
-    // Group 1: hashtag, Group 2: nostr ID, Group 3: plain mention username
+    // Combined regex to find URLs, hashtags, nostr: URIs, and plain @mentions
+    // Group 1: URL, Group 2: hashtag, Group 3: nostr ID,
+    // Group 4: plain mention username
     final combinedRegex = RegExp(
-      r'#(\w+)|nostr:(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)|@([a-zA-Z][a-zA-Z0-9_]{0,30})',
+      r'(https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)|#(\w+)|nostr:(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)|@([a-zA-Z][a-zA-Z0-9_]{0,30})',
       caseSensitive: false,
     );
 
@@ -110,9 +119,11 @@ class ClickableHashtagText extends ConsumerWidget {
 
       final fullMatch = match.group(0)!;
 
-      if (fullMatch.startsWith('#')) {
+      if (_urlRegex.hasMatch(fullMatch)) {
+        spans.add(_buildUrlSpan(fullMatch, tagStyle));
+      } else if (fullMatch.startsWith('#')) {
         // Handle hashtag
-        final hashtag = match.group(1)!;
+        final hashtag = match.group(2)!;
         spans.add(
           TextSpan(
             text: fullMatch,
@@ -123,11 +134,11 @@ class ClickableHashtagText extends ConsumerWidget {
         );
       } else if (fullMatch.startsWith('nostr:')) {
         // Handle nostr: URI
-        final nostrId = match.group(2)!;
+        final nostrId = match.group(3)!;
         spans.add(_buildNostrMentionSpan(context, ref, nostrId, profileStyle));
       } else if (fullMatch.startsWith('@')) {
         // Handle plain @mention (legacy Vine format)
-        final username = match.group(3)!;
+        final username = match.group(4)!;
         spans.add(_buildPlainMentionSpan(context, ref, username, profileStyle));
       }
 
@@ -140,6 +151,18 @@ class ClickableHashtagText extends ConsumerWidget {
     }
 
     return spans;
+  }
+
+  TextSpan _buildUrlSpan(String matchedUrl, TextStyle style) {
+    return TextSpan(
+      text: matchedUrl,
+      style: style,
+      recognizer: TapGestureRecognizer()
+        ..onTap = () {
+          onVideoStateChange?.call();
+          _launchUrl(matchedUrl);
+        },
+    );
   }
 
   /// Build a TextSpan for a nostr mention (npub or nprofile)
@@ -234,5 +257,18 @@ class ClickableHashtagText extends ConsumerWidget {
 
     // Navigate to search with the username pre-filled
     context.goSearch(searchTerm);
+  }
+
+  Future<void> _launchUrl(String rawUrl) async {
+    final normalizedUrl =
+        rawUrl.startsWith(
+          RegExp('https?://', caseSensitive: false),
+        )
+        ? rawUrl
+        : 'https://$rawUrl';
+    final uri = Uri.tryParse(normalizedUrl);
+    if (uri == null) return;
+
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }

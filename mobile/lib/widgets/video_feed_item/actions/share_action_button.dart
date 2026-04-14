@@ -16,7 +16,6 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
@@ -28,6 +27,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:share_plus/share_plus.dart';
@@ -343,9 +343,9 @@ class _UnifiedShareSheetView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.5,
-    );
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.5);
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: Material(

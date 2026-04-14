@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Nie udało się wczytać filmów",
     "feedRetry": "Spróbuj ponownie",
     "feedNoFollowedUsers": "Nie obserwujesz nikogo.\nZacznij obserwować, żeby zobaczyć ich filmy tutaj.",
-    "feedNoVideosForMode": "Nie znaleziono filmów dla kanału {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Odkrywaj filmy",
     "feedExternalVideoSlow": "Zewnętrzny film wczytuje się powoli",
     "feedSkip": "Pomiń",

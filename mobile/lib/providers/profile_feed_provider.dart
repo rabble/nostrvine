@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -58,7 +59,6 @@ class ProfileFeed extends _$ProfileFeed {
     _usingRestApi = false;
     _nextOffset = null;
     _listenersRegistered = false;
-    int? restPageCount;
 
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
@@ -84,12 +84,13 @@ class ProfileFeed extends _$ProfileFeed {
     final sessionCache = ref.read(profileFeedSessionCacheProvider);
     final retainedState = sessionCache.read(userId);
 
+    _registerRetainedRealtimeListeners(videoEventService);
+
     if (retainedState != null && retainedState.videos.isNotEmpty) {
       _usingRestApi = funnelcakeAvailable;
       _nextOffset = estimateNextRestOffset(retainedState);
       _totalVideoCount = retainedState.totalVideoCount;
-      _registerRetainedRealtimeListeners(videoEventService);
-      Future.microtask(() => refresh(retainedState: retainedState));
+      unawaited(Future(() => refresh(retainedState: retainedState)));
       return retainedState.copyWith(
         isRefreshing: true,
         isInitialLoad: false,
@@ -97,166 +98,21 @@ class ProfileFeed extends _$ProfileFeed {
       );
     }
 
-    if (funnelcakeAvailable) {
-      Log.info(
-        'ProfileFeed: Trying Funnelcake REST API first for user=$userId',
-        name: 'ProfileFeedProvider',
-        category: LogCategory.video,
-      );
+    authorVideos = _relayVideosSnapshot(videoEventService);
 
-      try {
-        final result = await funnelcakeClient
-            .getVideosByAuthor(pubkey: userId)
-            .timeout(_restApiTimeout);
-        final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
-        restPageCount = apiVideos.length;
-        _totalVideoCount = result.totalCount;
-
-        if (apiVideos.isNotEmpty) {
-          _usingRestApi = true;
-          // Filter out reposts and store the next REST page offset.
-          final tempAuthorVideos = apiVideos.where((v) => !v.isRepost).toList();
-          _nextOffset = apiVideos.length;
-
-          // Cache metadata for later merging with Nostr data
-          _cacheVideoMetadata(tempAuthorVideos);
-
-          // Enrich with full Nostr event data in the background so we
-          // don't block the initial render waiting on relay round-trips
-          // (up to 5s timeout). Badges appear once enrichment completes.
-          authorVideos = enrichVideosInBackground(
-            tempAuthorVideos,
-            nostrService: ref.read(nostrServiceProvider),
-            onEnriched: (enriched) {
-              if (!ref.mounted) return;
-              final currentState = state.asData?.value;
-              if (currentState == null) return;
-              final enrichedMap = <String, VideoEvent>{
-                for (final v in enriched) v.id: v,
-              };
-              final updated = currentState.videos
-                  .map((v) => enrichedMap[v.id] ?? v)
-                  .toList();
-              state = AsyncData(currentState.copyWith(videos: updated));
-            },
-            callerName: 'ProfileFeedProvider',
-          );
-        } else {
-          Log.warning(
-            'ProfileFeed: REST API returned empty for user=$userId, falling back to Nostr',
-            name: 'ProfileFeedProvider',
-            category: LogCategory.video,
-          );
-          _usingRestApi = false;
+    unawaited(
+      Future(() async {
+        await _refreshFromNostrSource(videoEventService);
+        if (funnelcakeAvailable) {
+          await _refreshFromRestApi(clientOverride: funnelcakeClient);
         }
-      } catch (e) {
-        Log.warning(
-          'ProfileFeed: REST API failed ($e), falling back to Nostr',
-          name: 'ProfileFeedProvider',
-          category: LogCategory.video,
-        );
-        _usingRestApi = false;
-      }
-    }
-
-    // Fall back to Nostr subscription if REST API not used
-    if (!_usingRestApi) {
-      // Start the Nostr subscription in the background so the provider can
-      // return retained, cached, or empty state immediately.
-      unawaited(
-        videoEventService.subscribeToUserVideos(userId).catchError((
-          Object error,
-          StackTrace stackTrace,
-        ) {
-          Log.error(
-            'ProfileFeed: Background Nostr subscribe failed for user=$userId: $error',
-            name: 'ProfileFeedProvider',
-            category: LogCategory.video,
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }),
-      );
-
-      // Return immediately with whatever videos are available.
-      // Progressive updates arrive via the video update/new video listeners
-      // registered below.
-      authorVideos = videoEventService
-          .authorVideos(userId)
-          .where((v) => !v.isRepost)
-          .toList();
-
-      // Apply cached metadata to preserve engagement stats from previous REST API calls
-      authorVideos = _applyMetadataCache(authorVideos);
-
-      // Set up continuous listener for progressive updates from Nostr
-      void onNostrVideosChanged() {
-        if (!ref.mounted) return;
-        final currentVideos = videoEventService
-            .authorVideos(userId)
-            .where((v) => !v.isRepost)
-            .toList();
-
-        // Only update if count actually changed
-        final currentState = state.asData?.value;
-        if (currentState != null &&
-            currentVideos.length != currentState.videos.length) {
-          var updatedVideos = _applyMetadataCache(currentVideos);
-          updatedVideos = videoEventService.filterVideoList(updatedVideos);
-
-          state = AsyncData(
-            VideoFeedState(
-              videos: updatedVideos,
-              hasMoreContent:
-                  updatedVideos.length >= AppConstants.hasMoreContentThreshold,
-              lastUpdated: DateTime.now(),
-            ),
-          );
-        }
-      }
-
-      videoEventService.addListener(onNostrVideosChanged);
-      ref.onDispose(() {
-        videoEventService.removeListener(onNostrVideosChanged);
-      });
-    }
+      }),
+    );
 
     // Check if provider is still mounted after async gap
     if (!ref.mounted) {
       return const VideoFeedState(videos: [], hasMoreContent: false);
     }
-
-    // Register for video update callbacks to auto-refresh when this user's video is updated
-    final unregisterUpdate = videoEventService.addVideoUpdateListener((
-      updated,
-    ) {
-      if (updated.pubkey == userId && ref.mounted) {
-        refreshFromService();
-      }
-    });
-
-    // Register for NEW video callbacks to auto-refresh when this user posts a new video
-    final unregisterNew = videoEventService.addNewVideoListener((
-      newVideo,
-      authorPubkey,
-    ) {
-      if (authorPubkey == userId && ref.mounted) {
-        // CRITICAL FIX: Optimistically add the new video to state immediately
-        // instead of re-fetching from REST API which may have stale data.
-        // This fixes the "video disappears after upload" bug where Funnelcake
-        // hasn't indexed the new video yet but the user expects to see it.
-        _addNewVideoToState(newVideo);
-      }
-    });
-
-    // Clean up callbacks when provider is disposed
-    ref.onDispose(() {
-      unregisterUpdate();
-      unregisterNew();
-    });
-
-    // Apply content filter preferences
-    authorVideos = videoEventService.filterVideoList(authorVideos);
 
     Log.info(
       'ProfileFeed: Initial load complete - ${authorVideos.length} videos for user=$userId (REST API: $_usingRestApi)',
@@ -266,10 +122,9 @@ class ProfileFeed extends _$ProfileFeed {
 
     final initialState = VideoFeedState(
       videos: authorVideos,
-      hasMoreContent: _usingRestApi
-          ? (restPageCount ?? 0) >= AppConstants.paginationBatchSize
-          : authorVideos.length >= AppConstants.hasMoreContentThreshold,
-      isInitialLoad: authorVideos.isEmpty && !_usingRestApi,
+      hasMoreContent:
+          authorVideos.length >= AppConstants.hasMoreContentThreshold,
+      isInitialLoad: authorVideos.isEmpty,
       lastUpdated: DateTime.now(),
       totalVideoCount: _totalVideoCount,
     );
@@ -311,78 +166,7 @@ class ProfileFeed extends _$ProfileFeed {
   /// Refresh state - uses REST API when available, otherwise Nostr with metadata preservation
   /// Call this after a video is updated to sync the provider's state
   void refreshFromService() {
-    // Fix #1: If using REST API, refresh from REST API instead of Nostr
-    if (_usingRestApi) {
-      _refreshFromRestApi();
-      return;
-    }
-
-    // Nostr mode: get videos from service
-    final videoEventService = ref.read(videoEventServiceProvider);
-    // Filter out reposts (originals only)
-    var updatedVideos = videoEventService
-        .authorVideos(userId)
-        .where((v) => !v.isRepost)
-        .toList();
-
-    // Fix #3: Apply cached metadata to preserve engagement stats
-    updatedVideos = _applyMetadataCache(updatedVideos);
-
-    // Apply content filter preferences
-    updatedVideos = videoEventService.filterVideoList(updatedVideos);
-
-    state = AsyncData(
-      VideoFeedState(
-        videos: updatedVideos,
-        hasMoreContent:
-            updatedVideos.length >= AppConstants.hasMoreContentThreshold,
-        lastUpdated: DateTime.now(),
-      ),
-    );
-  }
-
-  List<VideoEvent> _mergeStableTimestampsFromCurrentState(
-    List<VideoEvent> incoming,
-  ) {
-    final currentVideos = state.asData?.value.videos;
-    if (currentVideos == null || currentVideos.isEmpty) return incoming;
-
-    // Build lookup keys because REST API responses can be inconsistent
-    // about addressable identifiers (`d` tag / stableId).
-    //
-    // Known inconsistency:
-    // - Missing d-tags: Many relays don't include 'd' tags on NIP-71 addressable events
-    String? stableKey(VideoEvent v) {
-      final stableId = v.stableId;
-      if (stableId.isEmpty) return null;
-      return '${v.pubkey}:$stableId'.toLowerCase();
-    }
-
-    final existingByKey = <String, VideoEvent>{};
-    for (final v in currentVideos) {
-      final key = stableKey(v);
-      if (key != null) existingByKey[key] = v;
-    }
-
-    return incoming.map((video) {
-      final existing = stableKey(video) != null
-          ? existingByKey[stableKey(video)!]
-          : null;
-      if (existing == null) return video;
-
-      // Funnelcake may return the latest replaceable event's created_at (edit time)
-      // and may omit published_at. Preserve existing timestamps when published_at
-      // isn't present to avoid resetting relative time to "now" after refresh.
-      final hasPublishedAt =
-          video.publishedAt != null && video.publishedAt!.isNotEmpty;
-      if (hasPublishedAt) return video;
-
-      return video.copyWith(
-        createdAt: existing.createdAt,
-        timestamp: existing.timestamp,
-        publishedAt: existing.publishedAt,
-      );
-    }).toList();
+    unawaited(refresh());
   }
 
   /// Optimistically add a newly published video to the profile feed state.
@@ -409,41 +193,10 @@ class ProfileFeed extends _$ProfileFeed {
       return;
     }
 
-    // Check for duplicates (case-insensitive for Nostr IDs)
-    final existingIds = currentState.videos
-        .map((v) => v.id.toLowerCase())
-        .toSet();
-    if (existingIds.contains(newVideo.id.toLowerCase())) {
-      Log.debug(
-        'ProfileFeed: Video ${newVideo.id} already in state, skipping optimistic add',
-        name: 'ProfileFeedProvider',
-        category: LogCategory.video,
-      );
+    final updatedVideos = _mergeVideoLists(currentState.videos, [newVideo]);
+    if (_sameVideoSequence(currentState.videos, updatedVideos)) {
       return;
     }
-
-    // Also deduplicate replaceable/addressable videos by stable identity.
-    // Editing metadata republishes a new event id for the same (pubkey, d-tag),
-    // so id-based dedupe is insufficient and would create a duplicate entry.
-    final newStableKey = '${newVideo.pubkey}:${newVideo.stableId}'
-        .toLowerCase();
-    final existingStableKeys = currentState.videos
-        .map((v) => '${v.pubkey}:${v.stableId}'.toLowerCase())
-        .toSet();
-    if (existingStableKeys.contains(newStableKey)) {
-      Log.debug(
-        'ProfileFeed: Video ${newVideo.id} matches existing stableId=${newVideo.stableId}, skipping optimistic add',
-        name: 'ProfileFeedProvider',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    // Add new video and maintain newest-first sort order.
-    // Simple prepend is insufficient because during initial Nostr subscription
-    // events arrive newest-first, so prepending each one reverses the order.
-    final updatedVideos = <VideoEvent>[newVideo, ...currentState.videos]
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     Log.info(
       'ProfileFeed: Optimistically added new video ${newVideo.id} to state (total: ${updatedVideos.length})',
@@ -451,19 +204,23 @@ class ProfileFeed extends _$ProfileFeed {
       category: LogCategory.video,
     );
 
-    state = AsyncData(
-      VideoFeedState(
+    _emitState(
+      currentState.copyWith(
         videos: updatedVideos,
         hasMoreContent: currentState.hasMoreContent,
+        isInitialLoad: false,
         lastUpdated: DateTime.now(),
       ),
     );
   }
 
   /// Fix #2: Refresh from REST API when in REST API mode
-  Future<void> _refreshFromRestApi() async {
+  Future<void> _refreshFromRestApi({
+    FunnelcakeApiClient? clientOverride,
+  }) async {
     try {
-      final client = ref.read(funnelcakeApiClientProvider);
+      final client = clientOverride ?? ref.read(funnelcakeApiClientProvider);
+      if (client == null) return;
       final result = await client
           .getVideosByAuthor(pubkey: userId)
           .timeout(_restApiTimeout);
@@ -472,52 +229,68 @@ class ProfileFeed extends _$ProfileFeed {
       if (!ref.mounted) return;
 
       _totalVideoCount = result.totalCount;
+      _nextOffset = apiVideos.length;
 
       if (apiVideos.isNotEmpty) {
-        // Filter out reposts
-        var authorVideos = apiVideos.where((v) => !v.isRepost).toList();
-        authorVideos = _mergeStableTimestampsFromCurrentState(authorVideos);
-        _nextOffset = apiVideos.length;
-
-        // Update metadata cache with fresh data
+        final relayVideos = _relayVideosSnapshot(
+          ref.read(videoEventServiceProvider),
+        );
+        final authorVideos = _mergeVideoLists(
+          relayVideos,
+          apiVideos.where((v) => !v.isRepost).toList(),
+        );
         _cacheVideoMetadata(authorVideos);
 
-        // Enrich with full Nostr event data (rawTags, dimensions, etc.)
-        authorVideos = await enrichVideosWithNostrTags(
+        final filteredVideos = ref
+            .read(videoEventServiceProvider)
+            .filterVideoList(authorVideos);
+
+        _usingRestApi = true;
+        _mergeSourceVideos(
+          filteredVideos,
+          hasMoreContent: apiVideos.length >= AppConstants.paginationBatchSize,
+          totalVideoCount: _totalVideoCount,
+          isRefreshing: false,
+          isInitialLoad: false,
+          mergeWithCurrent: false,
+        );
+
+        // Enrich with full Nostr event data in the background.
+        enrichVideosInBackground(
           authorVideos,
           nostrService: ref.read(nostrServiceProvider),
+          onEnriched: (enriched) {
+            if (!ref.mounted) return;
+            final enrichedVideos = ref
+                .read(videoEventServiceProvider)
+                .filterVideoList(enriched);
+            _mergeSourceVideos(
+              enrichedVideos,
+              hasMoreContent:
+                  apiVideos.length >= AppConstants.paginationBatchSize,
+              totalVideoCount: _totalVideoCount,
+              isRefreshing: false,
+              isInitialLoad: false,
+              mergeWithCurrent: false,
+            );
+          },
           callerName: 'ProfileFeedProvider',
         );
 
-        // Apply content filter preferences
-        final videoEventService = ref.read(videoEventServiceProvider);
-        authorVideos = videoEventService.filterVideoList(authorVideos);
-
-        state = AsyncData(
-          VideoFeedState(
-            videos: authorVideos,
-            hasMoreContent:
-                apiVideos.length >= AppConstants.paginationBatchSize,
-            lastUpdated: DateTime.now(),
-            totalVideoCount: _totalVideoCount,
-          ),
-        );
-
         Log.info(
-          'ProfileFeed: Refreshed ${authorVideos.length} videos from REST API for user=$userId',
+          'ProfileFeed: Refreshed ${filteredVideos.length} videos from REST API for user=$userId',
           name: 'ProfileFeedProvider',
           category: LogCategory.video,
         );
       } else {
-        // REST API returned empty — this is valid (e.g. all videos deleted)
-        _nextOffset = 0;
-        state = AsyncData(
-          VideoFeedState(
-            videos: [],
-            hasMoreContent: false,
-            lastUpdated: DateTime.now(),
-            totalVideoCount: _totalVideoCount,
-          ),
+        _usingRestApi = true;
+        _mergeSourceVideos(
+          const <VideoEvent>[],
+          hasMoreContent: false,
+          totalVideoCount: _totalVideoCount,
+          isRefreshing: false,
+          isInitialLoad: false,
+          mergeWithCurrent: false,
         );
 
         Log.info(
@@ -528,14 +301,10 @@ class ProfileFeed extends _$ProfileFeed {
       }
     } catch (e) {
       Log.warning(
-        'ProfileFeed: REST API refresh failed ($e), using Nostr with cached metadata',
+        'ProfileFeed: REST API refresh failed ($e)',
         name: 'ProfileFeedProvider',
         category: LogCategory.video,
       );
-      // Fall back to Nostr with metadata cache on error
-      _usingRestApi = false;
-      _nextOffset = null;
-      refreshFromService();
     }
   }
 
@@ -584,24 +353,20 @@ class ProfileFeed extends _$ProfileFeed {
           category: LogCategory.video,
         );
 
-        final result = await client.getVideosByAuthor(
-          pubkey: userId,
-          offset: offset,
-        );
+        final result = await client
+            .getVideosByAuthor(
+              pubkey: userId,
+              offset: offset,
+            )
+            .timeout(_restApiTimeout);
         final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
 
         if (!ref.mounted) return;
+        _totalVideoCount = result.totalCount ?? _totalVideoCount;
         _nextOffset = offset + apiVideos.length;
 
         if (apiVideos.isNotEmpty) {
-          // Deduplicate and merge (case-insensitive for Nostr IDs)
-          final existingIds = currentState.videos
-              .map((v) => v.id.toLowerCase())
-              .toSet();
-          var newVideos = apiVideos
-              .where((v) => !existingIds.contains(v.id.toLowerCase()))
-              .where((v) => !v.isRepost)
-              .toList();
+          var newVideos = apiVideos.where((v) => !v.isRepost).toList();
 
           // Cache metadata from new videos
           _cacheVideoMetadata(newVideos);
@@ -618,18 +383,19 @@ class ProfileFeed extends _$ProfileFeed {
           newVideos = videoEventService.filterVideoList(newVideos);
 
           if (newVideos.isNotEmpty) {
-            final allVideos = [...currentState.videos, ...newVideos];
+            final allVideos = _mergeVideoLists(currentState.videos, newVideos);
             Log.info(
               'ProfileFeed: Loaded ${newVideos.length} new videos from REST API for user=$userId (total: ${allVideos.length})',
               name: 'ProfileFeedProvider',
               category: LogCategory.video,
             );
 
-            state = AsyncData(
-              VideoFeedState(
+            _emitState(
+              currentState.copyWith(
                 videos: allVideos,
                 hasMoreContent:
                     apiVideos.length >= AppConstants.paginationBatchSize,
+                isLoadingMore: false,
                 lastUpdated: DateTime.now(),
                 totalVideoCount: _totalVideoCount,
               ),
@@ -762,110 +528,13 @@ class ProfileFeed extends _$ProfileFeed {
 
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
-
-    if (funnelcakeAvailable) {
-      try {
-        final client = ref.read(funnelcakeApiClientProvider);
-        final result = await client
-            .getVideosByAuthor(pubkey: userId)
-            .timeout(_restApiTimeout);
-        final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
-
-        if (!ref.mounted) return;
-
-        _totalVideoCount = result.totalCount;
-
-        if (apiVideos.isNotEmpty) {
-          // Reset offset-based pagination
-          _usingRestApi = true;
-          _nextOffset = apiVideos.length;
-
-          // Filter out reposts
-          var authorVideos = apiVideos.where((v) => !v.isRepost).toList();
-          authorVideos = _mergeStableTimestampsFromCurrentState(authorVideos);
-
-          // Cache metadata for future Nostr fallbacks
-          _cacheVideoMetadata(authorVideos);
-
-          // Enrich with full Nostr event data (rawTags, dimensions, etc.)
-          authorVideos = await enrichVideosWithNostrTags(
-            authorVideos,
-            nostrService: ref.read(nostrServiceProvider),
-            callerName: 'ProfileFeedProvider',
-          );
-
-          // Apply content filter preferences
-          final videoEventService = ref.read(videoEventServiceProvider);
-          authorVideos = videoEventService.filterVideoList(authorVideos);
-
-          _emitState(
-            VideoFeedState(
-              videos: authorVideos,
-              hasMoreContent:
-                  apiVideos.length >= AppConstants.paginationBatchSize,
-              lastUpdated: DateTime.now(),
-              totalVideoCount: _totalVideoCount,
-            ),
-          );
-
-          Log.info(
-            'ProfileFeed: Refreshed ${authorVideos.length} videos from REST API for user=$userId',
-            name: 'ProfileFeedProvider',
-            category: LogCategory.video,
-          );
-          return;
-        } else {
-          // REST API returned empty — valid (e.g. all videos deleted)
-          _nextOffset = 0;
-          state = AsyncData(
-            VideoFeedState(
-              videos: [],
-              hasMoreContent: false,
-              lastUpdated: DateTime.now(),
-              totalVideoCount: _totalVideoCount,
-            ),
-          );
-
-          Log.info(
-            'ProfileFeed: REST API refresh returned empty for user=$userId',
-            name: 'ProfileFeedProvider',
-            category: LogCategory.video,
-          );
-          return;
-        }
-      } catch (e) {
-        Log.warning(
-          'ProfileFeed: REST API refresh failed ($e), falling back to Nostr refresh',
-          name: 'ProfileFeedProvider',
-          category: LogCategory.video,
-        );
-      }
-    }
-
-    // Reset REST pagination state before Nostr refresh (but keep metadata cache!)
-    _usingRestApi = false;
-    _nextOffset = null;
-
     final videoEventService = ref.read(videoEventServiceProvider);
-    await videoEventService.subscribeToUserVideos(userId);
+    final refreshFutures = <Future<void>>[
+      _refreshFromNostrSource(videoEventService),
+      if (funnelcakeAvailable) _refreshFromRestApi(),
+    ];
 
-    if (!ref.mounted) return;
-
-    var updatedVideos = videoEventService
-        .authorVideos(userId)
-        .where((v) => !v.isRepost)
-        .toList();
-    updatedVideos = _applyMetadataCache(updatedVideos);
-    updatedVideos = videoEventService.filterVideoList(updatedVideos);
-
-    _emitState(
-      VideoFeedState(
-        videos: updatedVideos,
-        hasMoreContent:
-            updatedVideos.length >= AppConstants.hasMoreContentThreshold,
-        lastUpdated: DateTime.now(),
-      ),
-    );
+    await Future.wait(refreshFutures);
   }
 
   /// Cache metadata from REST API videos for later merging with Nostr data
@@ -913,24 +582,27 @@ class ProfileFeed extends _$ProfileFeed {
 
     void onNostrVideosChanged() {
       if (!ref.mounted) return;
-      final currentVideos = videoEventService
-          .authorVideos(userId)
-          .where((v) => !v.isRepost)
-          .toList();
+      final currentVideos = _relayVideosSnapshot(videoEventService);
 
       final currentState = state.asData?.value;
-      if (currentState == null ||
-          currentVideos.length == currentState.videos.length) {
+      if (currentState == null) {
         return;
       }
 
-      var updatedVideos = _applyMetadataCache(currentVideos);
-      updatedVideos = videoEventService.filterVideoList(updatedVideos);
+      final updatedVideos = _mergeVideoLists(
+        currentState.videos,
+        currentVideos,
+      );
+      if (_sameVideoSequence(currentState.videos, updatedVideos)) {
+        return;
+      }
+
       _emitState(
         currentState.copyWith(
           videos: updatedVideos,
-          hasMoreContent:
-              updatedVideos.length >= AppConstants.hasMoreContentThreshold,
+          hasMoreContent: currentState.totalVideoCount != null
+              ? currentState.hasMoreContent
+              : updatedVideos.length >= AppConstants.hasMoreContentThreshold,
           isRefreshing: false,
           isInitialLoad: false,
           lastUpdated: DateTime.now(),
@@ -964,6 +636,204 @@ class ProfileFeed extends _$ProfileFeed {
       unregisterUpdate();
       unregisterNew();
     });
+  }
+
+  Future<void> _refreshFromNostrSource(
+    VideoEventService videoEventService,
+  ) async {
+    try {
+      await videoEventService.subscribeToUserVideos(userId);
+      if (!ref.mounted) return;
+
+      final relayVideos = _relayVideosSnapshot(videoEventService);
+      final currentState = state.asData?.value;
+      _mergeSourceVideos(
+        relayVideos,
+        hasMoreContent: currentState?.totalVideoCount != null
+            ? currentState!.hasMoreContent
+            : relayVideos.length >= AppConstants.hasMoreContentThreshold,
+        totalVideoCount: currentState?.totalVideoCount,
+        isRefreshing: false,
+        isInitialLoad: false,
+      );
+    } catch (error, stackTrace) {
+      Log.error(
+        'ProfileFeed: Background Nostr subscribe failed for user=$userId: $error',
+        name: 'ProfileFeedProvider',
+        category: LogCategory.video,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  List<VideoEvent> _relayVideosSnapshot(VideoEventService videoEventService) {
+    var videos = videoEventService
+        .authorVideos(userId)
+        .where((v) => !v.isRepost)
+        .toList();
+    videos = _applyMetadataCache(videos);
+    return videoEventService.filterVideoList(videos);
+  }
+
+  void _mergeSourceVideos(
+    List<VideoEvent> incoming, {
+    required bool hasMoreContent,
+    required bool isRefreshing,
+    required bool isInitialLoad,
+    int? totalVideoCount,
+    bool mergeWithCurrent = true,
+  }) {
+    final currentState = state.asData?.value;
+    final currentVideos = mergeWithCurrent
+        ? currentState?.videos ?? const <VideoEvent>[]
+        : const <VideoEvent>[];
+    final mergedVideos = _mergeVideoLists(currentVideos, incoming);
+
+    final nextState =
+        (currentState ??
+                const VideoFeedState(
+                  videos: <VideoEvent>[],
+                  hasMoreContent: false,
+                ))
+            .copyWith(
+              videos: mergedVideos,
+              hasMoreContent: hasMoreContent,
+              isLoadingMore: false,
+              isRefreshing: isRefreshing,
+              isInitialLoad: isInitialLoad,
+              lastUpdated: DateTime.now(),
+              totalVideoCount: totalVideoCount ?? currentState?.totalVideoCount,
+              error: null,
+            );
+
+    if (currentState != null &&
+        _sameVideoSequence(currentState.videos, nextState.videos) &&
+        currentState.hasMoreContent == nextState.hasMoreContent &&
+        currentState.totalVideoCount == nextState.totalVideoCount &&
+        currentState.isRefreshing == nextState.isRefreshing &&
+        currentState.isInitialLoad == nextState.isInitialLoad) {
+      return;
+    }
+
+    _emitState(nextState);
+  }
+
+  List<VideoEvent> _mergeVideoLists(
+    List<VideoEvent> current,
+    List<VideoEvent> incoming,
+  ) {
+    final byKey = <String, VideoEvent>{};
+
+    for (final video in current) {
+      byKey[_canonicalVideoKey(video)] = video;
+    }
+
+    for (final video in incoming) {
+      final key = _canonicalVideoKey(video);
+      final existing = byKey[key];
+      byKey[key] = existing == null ? video : _mergeVideo(existing, video);
+    }
+
+    final merged = byKey.values.toList();
+    merged.sort(_compareVideos);
+    return merged;
+  }
+
+  VideoEvent _mergeVideo(VideoEvent existing, VideoEvent incoming) {
+    final incomingIsNewer =
+        incoming.createdAt > existing.createdAt ||
+        (incoming.createdAt == existing.createdAt &&
+            incoming.id.compareTo(existing.id) < 0);
+    final primary = incomingIsNewer ? incoming : existing;
+    final secondary = incomingIsNewer ? existing : incoming;
+
+    final primaryHasPublishedAt =
+        primary.publishedAt != null && primary.publishedAt!.isNotEmpty;
+    final secondaryHasPublishedAt =
+        secondary.publishedAt != null && secondary.publishedAt!.isNotEmpty;
+    final preserveOriginalTimestamp =
+        !primaryHasPublishedAt && !secondaryHasPublishedAt;
+
+    return primary.copyWith(
+      createdAt: preserveOriginalTimestamp
+          ? math.min(primary.createdAt, secondary.createdAt)
+          : primary.createdAt,
+      timestamp: preserveOriginalTimestamp
+          ? (primary.timestamp.isBefore(secondary.timestamp)
+                ? primary.timestamp
+                : secondary.timestamp)
+          : primary.timestamp,
+      publishedAt: primaryHasPublishedAt
+          ? primary.publishedAt
+          : secondary.publishedAt,
+      rawTags: primary.rawTags.isNotEmpty ? primary.rawTags : secondary.rawTags,
+      contentWarningLabels: primary.contentWarningLabels.isNotEmpty
+          ? primary.contentWarningLabels
+          : secondary.contentWarningLabels,
+      title: primary.title ?? secondary.title,
+      videoUrl: primary.videoUrl ?? secondary.videoUrl,
+      thumbnailUrl: primary.thumbnailUrl ?? secondary.thumbnailUrl,
+      duration: primary.duration ?? secondary.duration,
+      dimensions: primary.dimensions ?? secondary.dimensions,
+      mimeType: primary.mimeType ?? secondary.mimeType,
+      sha256: primary.sha256 ?? secondary.sha256,
+      fileSize: primary.fileSize ?? secondary.fileSize,
+      hashtags: primary.hashtags.isNotEmpty
+          ? primary.hashtags
+          : secondary.hashtags,
+      vineId: primary.vineId ?? secondary.vineId,
+      group: primary.group ?? secondary.group,
+      altText: primary.altText ?? secondary.altText,
+      blurhash: primary.blurhash ?? secondary.blurhash,
+      originalLoops: primary.originalLoops ?? secondary.originalLoops,
+      originalLikes: primary.originalLikes ?? secondary.originalLikes,
+      originalComments: primary.originalComments ?? secondary.originalComments,
+      originalReposts: primary.originalReposts ?? secondary.originalReposts,
+      audioEventId: primary.audioEventId ?? secondary.audioEventId,
+      audioEventRelay: primary.audioEventRelay ?? secondary.audioEventRelay,
+      collaboratorPubkeys: primary.collaboratorPubkeys.isNotEmpty
+          ? primary.collaboratorPubkeys
+          : secondary.collaboratorPubkeys,
+      inspiredByVideo: primary.inspiredByVideo ?? secondary.inspiredByVideo,
+      textTrackRef: primary.textTrackRef ?? secondary.textTrackRef,
+      textTrackContent: primary.textTrackContent ?? secondary.textTrackContent,
+      nostrEventTags: primary.nostrEventTags.isNotEmpty
+          ? primary.nostrEventTags
+          : secondary.nostrEventTags,
+      authorName: primary.authorName ?? secondary.authorName,
+      authorAvatar: primary.authorAvatar ?? secondary.authorAvatar,
+      nostrLikeCount: primary.nostrLikeCount ?? secondary.nostrLikeCount,
+    );
+  }
+
+  String _canonicalVideoKey(VideoEvent video) {
+    return '${video.pubkey}:${video.stableId}'.toLowerCase();
+  }
+
+  int _compareVideos(VideoEvent a, VideoEvent b) {
+    final timestampComparison = _publishedSortKey(
+      b,
+    ).compareTo(_publishedSortKey(a));
+    if (timestampComparison != 0) return timestampComparison;
+    return a.id.compareTo(b.id);
+  }
+
+  int _publishedSortKey(VideoEvent video) {
+    final publishedAt = video.publishedAt;
+    if (publishedAt != null && publishedAt.isNotEmpty) {
+      final parsed = int.tryParse(publishedAt);
+      if (parsed != null) return parsed;
+    }
+    return video.createdAt;
+  }
+
+  bool _sameVideoSequence(List<VideoEvent> left, List<VideoEvent> right) {
+    if (left.length != right.length) return false;
+    for (var i = 0; i < left.length; i++) {
+      if (left[i].id != right[i].id) return false;
+    }
+    return true;
   }
 
   void _emitState(VideoFeedState nextState) {

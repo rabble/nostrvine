@@ -427,42 +427,47 @@ class RelayPool {
         onNotice!(relay.url, json[1] as String);
       }
     } else if (messageType == "AUTH") {
-      // auth needed
-      log('🔐 AUTH challenge received from ${relay.url}');
-      if (json.length < 2) {
-        log("AUTH result not right.");
-        return;
-      }
-
-      final challenge = json[1] as String;
-      log('🔐 Challenge: ${challenge.substring(0, 16)}...');
-      var tags = [
-        ["relay", relay.url],
-        ["challenge", challenge],
-      ];
-      Event? event = Event(
-        localNostr.publicKey,
-        EventKind.authentication,
-        tags,
-        "",
-      );
-      event = await localNostr.nostrSigner.signEvent(event);
-      if (event != null) {
-        log(
-          '🔐 Sending AUTH response for challenge: ${challenge.substring(0, 16)}...',
-        );
-
-        // Track this AUTH event to match with OK response
-        _pendingAuthEvents[event.id] = relay.url;
-
-        relay.send(["AUTH", event.toJson()], forceSend: true);
-        log('🔐 AUTH response sent, waiting for relay confirmation...');
-
-        if (relay.pendingAuthedMessages.isNotEmpty) {
-          log(
-            '🔐 Pending ${relay.pendingAuthedMessages.length} messages for after auth confirmation',
-          );
+      try {
+        // auth needed
+        log('🔐 AUTH challenge received from ${relay.url}');
+        if (json.length < 2) {
+          log("AUTH result not right.");
+          return;
         }
+
+        final challenge = json[1] as String;
+        log('🔐 Challenge: ${challenge.substring(0, 16)}...');
+        var tags = [
+          ["relay", relay.url],
+          ["challenge", challenge],
+        ];
+        // Guard against empty cached pubkey: this path is triggered by
+        // the relay, not a user action, and can race with sign-out,
+        // initial signer load, and account-switch. Refresh from the
+        // signer on demand; StateError falls through to the catch below
+        // and the AUTH response is skipped.
+        final pk = await localNostr.ensurePublicKey();
+        Event? event = Event(pk, EventKind.authentication, tags, "");
+        event = await localNostr.nostrSigner.signEvent(event);
+        if (event != null) {
+          log(
+            '🔐 Sending AUTH response for challenge: ${challenge.substring(0, 16)}...',
+          );
+
+          // Track this AUTH event to match with OK response
+          _pendingAuthEvents[event.id] = relay.url;
+
+          relay.send(["AUTH", event.toJson()], forceSend: true);
+          log('🔐 AUTH response sent, waiting for relay confirmation...');
+
+          if (relay.pendingAuthedMessages.isNotEmpty) {
+            log(
+              '🔐 Pending ${relay.pendingAuthedMessages.length} messages for after auth confirmation',
+            );
+          }
+        }
+      } catch (err, stackTrace) {
+        log('🔐 AUTH handling failed for ${relay.url}: $err\n$stackTrace');
       }
     } else if (messageType == 'COUNT') {
       // NIP-45 COUNT response

@@ -30,6 +30,11 @@ void main() {
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
 
+        // Pre-enable semantics so the handle is disposed at the right time.
+        // Android instrumentation can enable semantics after the framework
+        // records its baseline count, causing a spurious leak assertion.
+        final semanticsHandle = tester.ensureSemantics();
+
         // Launch full app in guarded zone (LOCAL env via --dart-define=DEFAULT_ENV=LOCAL)
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -185,6 +190,7 @@ void main() {
 
         logPhase('Phase 5 complete: welcome screen displayed');
 
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);

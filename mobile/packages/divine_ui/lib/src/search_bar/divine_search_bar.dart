@@ -52,28 +52,33 @@ class DivineSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 48),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        readOnly: readOnly,
-        onTap: onTap,
-        onChanged: onChanged,
-        onSubmitted: onSubmitted,
-        style: VineTheme.bodyLargeFont(),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted55),
-          filled: true,
-          fillColor: VineTheme.iconButtonBackground,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide.none,
+      child: Material(
+        color: Colors.transparent,
+        child: TextField(
+          controller: controller,
+          focusNode: focusNode,
+          readOnly: readOnly,
+          onTap: onTap,
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
+          style: VineTheme.bodyLargeFont(),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: VineTheme.bodyLargeFont(
+              color: VineTheme.onSurfaceMuted55,
+            ),
+            filled: true,
+            fillColor: VineTheme.iconButtonBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            prefixIconConstraints: const BoxConstraints(),
+            prefixIcon: _PrefixIcon(isLoading: isLoading),
+            suffixIconConstraints: const BoxConstraints(),
+            suffixIcon: suffixIcon,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          prefixIconConstraints: const BoxConstraints(),
-          prefixIcon: _PrefixIcon(isLoading: isLoading),
-          suffixIconConstraints: const BoxConstraints(),
-          suffixIcon: suffixIcon,
         ),
       ),
     );

@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "تعذر تحميل مقاطع الفيديو",
     "feedRetry": "إعادة المحاولة",
     "feedNoFollowedUsers": "لا يوجد مستخدمون متابَعون.\nتابِع شخصًا ما لترى مقاطع الفيديو هنا.",
-    "feedNoVideosForMode": "لم يُعثر على مقاطع فيديو لتغذية {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "استكشاف مقاطع الفيديو",
     "feedExternalVideoSlow": "الفيديو الخارجي يُحمَّل ببطء",
     "feedSkip": "تخطي",

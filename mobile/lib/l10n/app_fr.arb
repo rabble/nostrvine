@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Échec du chargement des vidéos",
     "feedRetry": "Réessayer",
     "feedNoFollowedUsers": "Personne suivie.\nSuis quelqu'un pour voir ses vidéos ici.",
-    "feedNoVideosForMode": "Aucune vidéo trouvée pour le fil {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Explorer les vidéos",
     "feedExternalVideoSlow": "Vidéo externe lente à charger",
     "feedSkip": "Passer",

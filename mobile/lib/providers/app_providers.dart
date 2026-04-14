@@ -1131,19 +1131,43 @@ void pushNotificationSync(Ref ref) {
   final authService = ref.watch(authServiceProvider);
 
   Future<void> requestPermissionAndRegister(String pubkey) async {
-    final firebaseMessaging = ref.read(firebaseMessagingProvider);
-    final pushService = ref.read(pushNotificationServiceProvider);
-    final settings = await firebaseMessaging.requestPermission();
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      Log.info(
-        'Push notification permission denied by user',
+    try {
+      final firebaseMessaging = ref.read(firebaseMessagingProvider);
+      final pushService = ref.read(pushNotificationServiceProvider);
+
+      // Only prompt the user if permission has never been decided. Rapid
+      // auth state changes (account switching, E2E tests) otherwise cause
+      // concurrent `requestPermission` calls, and Firebase throws
+      // `PlatformException([firebase_messaging/unknown] A request for
+      // permissions is already running)` — silently losing FCM registration
+      // in production and failing E2E tests via unhandled async errors.
+      final current = await firebaseMessaging.getNotificationSettings();
+      final settings =
+          current.authorizationStatus == AuthorizationStatus.notDetermined
+          ? await firebaseMessaging.requestPermission()
+          : current;
+
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        Log.info(
+          'Push notification permission denied by user',
+          name: 'PushNotificationSync',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      await pushService.register(pubkey);
+    } catch (e) {
+      // Push registration is non-critical — a failure must not propagate
+      // out of this async stream listener. If it did, the uncaught error
+      // would reach the test binding's `handleUncaughtError` and fail the
+      // surrounding integration test.
+      Log.warning(
+        'Push notification registration failed: $e',
         name: 'PushNotificationSync',
         category: LogCategory.system,
       );
-      return;
     }
-
-    await pushService.register(pubkey);
   }
 
   String? lastAuthenticatedPubkey = authService.currentPublicKeyHex;
@@ -1154,15 +1178,25 @@ void pushNotificationSync(Ref ref) {
 
   // React to auth state changes
   final subscription = authService.authStateStream.listen((authState) async {
-    final currentPubkey = authService.currentPublicKeyHex;
-    if (authState == AuthState.authenticated && currentPubkey != null) {
-      lastAuthenticatedPubkey = currentPubkey;
-      await requestPermissionAndRegister(currentPubkey);
-    } else if (authState == AuthState.unauthenticated &&
-        lastAuthenticatedPubkey != null) {
-      await ref
-          .read(pushNotificationServiceProvider)
-          .deregister(lastAuthenticatedPubkey!);
+    try {
+      final currentPubkey = authService.currentPublicKeyHex;
+      if (authState == AuthState.authenticated && currentPubkey != null) {
+        lastAuthenticatedPubkey = currentPubkey;
+        await requestPermissionAndRegister(currentPubkey);
+      } else if (authState == AuthState.unauthenticated &&
+          lastAuthenticatedPubkey != null) {
+        await ref
+            .read(pushNotificationServiceProvider)
+            .deregister(lastAuthenticatedPubkey!);
+      }
+    } catch (e) {
+      // Never let push/deregister errors escape the listener — see
+      // `requestPermissionAndRegister` for context.
+      Log.warning(
+        'Push notification sync listener failed: $e',
+        name: 'PushNotificationSync',
+        category: LogCategory.system,
+      );
     }
   });
 

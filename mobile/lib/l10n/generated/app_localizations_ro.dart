@@ -3444,9 +3444,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun utilizator urmărit.\nUrmărește pe cineva ca să-i vezi videoclipurile aici.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return 'Niciun videoclip găsit pentru feedul $mode.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Explorează videoclipuri';

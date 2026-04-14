@@ -80,13 +80,16 @@ class UserPickerSheet extends ConsumerStatefulWidget {
 }
 
 class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
-  late final UserSearchBloc _searchBloc;
+  UserSearchBloc? _searchBloc;
   final _searchController = TextEditingController();
 
   // For mutualFollowsOnly: local follow list search
   List<UserProfile> _followProfiles = [];
   List<UserProfile> _filteredFollowProfiles = [];
   bool _followListLoaded = false;
+
+  /// Whether the profile repository was unavailable at init time.
+  bool _profileRepoMissing = false;
 
   bool get _useLocalSearch =>
       widget.filterMode == UserPickerFilterMode.mutualFollowsOnly;
@@ -95,7 +98,11 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   void initState() {
     super.initState();
     final profileRepo = ref.read(profileRepositoryProvider);
-    _searchBloc = UserSearchBloc(profileRepository: profileRepo!);
+    if (profileRepo == null) {
+      _profileRepoMissing = true;
+      return;
+    }
+    _searchBloc = UserSearchBloc(profileRepository: profileRepo);
 
     if (_useLocalSearch) {
       _loadFollowProfiles();
@@ -142,7 +149,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   @override
   void dispose() {
     _searchController.dispose();
-    _searchBloc.close();
+    _searchBloc?.close();
     super.dispose();
   }
 
@@ -151,9 +158,9 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
       _filterFollowProfiles(query);
     } else {
       if (query.trim().isEmpty) {
-        _searchBloc.add(const UserSearchCleared());
+        _searchBloc?.add(const UserSearchCleared());
       } else {
-        _searchBloc.add(UserSearchQueryChanged(query));
+        _searchBloc?.add(UserSearchQueryChanged(query));
       }
     }
   }
@@ -180,6 +187,10 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    if (_profileRepoMissing) {
+      return const _ProfileRepoUnavailable();
+    }
+
     final hintText = _useLocalSearch
         ? 'Filter by name...'
         : 'Search by name...';
@@ -242,7 +253,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                   excludePubkeys: widget.excludePubkeys,
                 )
               : _NetworkResults(
-                  searchBloc: _searchBloc,
+                  searchBloc: _searchBloc!,
                   scrollController: widget.scrollController,
                   onUserSelected: _onUserSelected,
                   excludePubkeys: widget.excludePubkeys,
@@ -407,6 +418,26 @@ class _EmptyHint extends StatelessWidget {
           style: VineTheme.bodyMediumFont(
             color: VineTheme.onSurfaceMuted,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileRepoUnavailable extends StatelessWidget {
+  const _ProfileRepoUnavailable();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Text(
+          'User search is unavailable. Please try again later.',
+          style: VineTheme.bodyMediumFont(
+            color: VineTheme.onSurfaceMuted,
+          ),
+          textAlign: TextAlign.center,
         ),
       ),
     );

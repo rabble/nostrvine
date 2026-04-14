@@ -3170,9 +3170,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get feedNoFollowedUsers => 'まだ誰もフォローしてないよ。\n誰かをフォローすると、ここに動画が出るよ。';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return '$modeフィードの動画が見つからない。';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => '動画を探しに行こう';

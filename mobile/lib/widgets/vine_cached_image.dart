@@ -1,6 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/widgets.dart';
-import 'package:openvine/services/image_cache_manager.dart';
+import 'package:media_cache/media_cache.dart';
+
+/// Global image cache singleton backed by [MediaCacheManager].
+final openVineImageCache = MediaCacheManager(
+  config: const MediaCacheConfig.image(cacheKey: 'openvine_image_cache'),
+);
 
 /// A wrapper around [CachedNetworkImage] that always uses
 /// [openVineImageCache] as the cache manager.

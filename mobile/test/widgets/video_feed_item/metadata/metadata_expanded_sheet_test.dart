@@ -14,6 +14,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
@@ -164,6 +165,22 @@ void main() {
 
       expect(find.text('Who knew?'), findsOneWidget);
       expect(find.text('A description'), findsOneWidget);
+    });
+
+    testWidgets('renders description with clickable rich text', (
+      tester,
+    ) async {
+      final video = _makeVideo(
+        title: 'Who knew?',
+        content: 'Read more at https://example.com/docs #proof',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+
+      expect(find.text('Who knew?'), findsOneWidget);
+      expect(find.byType(ClickableHashtagText), findsOneWidget);
     });
 
     testWidgets('hides title section when both are empty', (tester) async {

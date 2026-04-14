@@ -32,6 +32,7 @@ import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
@@ -339,20 +340,26 @@ class _AuthorInfoSection extends ConsumerWidget {
         // Video description
         if (hasTextContent) ...[
           const SizedBox(height: 2),
-          Semantics(
-            identifier: 'video_description',
-            container: true,
-            explicitChildNodes: true,
-            label:
-                'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-            child: ClickableHashtagText(
-              text:
-                  (video.content.isNotEmpty ? video.content : video.title ?? '')
-                      .trim(),
-              style: VineTheme.bodyMediumFont(),
-              hashtagStyle: VineTheme.bodySmallFont(),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => MetadataExpandedSheet.show(context, video),
+            child: Semantics(
+              identifier: 'video_description',
+              container: true,
+              explicitChildNodes: true,
+              label:
+                  'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
+              child: ClickableHashtagText(
+                text:
+                    (video.content.isNotEmpty
+                            ? video.content
+                            : video.title ?? '')
+                        .trim(),
+                style: VineTheme.bodyMediumFont(),
+                hashtagStyle: VineTheme.bodySmallFont(),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
           // Collaborator avatars

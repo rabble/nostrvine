@@ -3349,9 +3349,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geen gevolgde gebruikers.\nVolg iemand om hun video\'s hier te zien.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return 'Geen video\'s gevonden voor $mode-feed.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Video\'s verkennen';

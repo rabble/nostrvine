@@ -17,7 +17,6 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
@@ -25,6 +24,7 @@ import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
