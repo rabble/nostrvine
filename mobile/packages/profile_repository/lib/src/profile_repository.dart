@@ -217,31 +217,39 @@ class ProfileRepository {
   /// `engagement` objects. This method maps them into [ProfileStatsDao]
   /// fields: follower/following counts, video count, total reactions
   /// (likes), and total loops (views).
-  Future<void> _cacheProfileStats(
+  /// Caches profile stats (social counts, video stats, engagement data) from a
+  /// [UserProfileResult] into the local stats DAO.
+  Future<void> _cacheProfileStatsFromResult(
     String pubkey,
-    Map<String, dynamic> data,
+    UserProfileResult result,
   ) async {
     final dao = _profileStatsDao;
     if (dao == null) return;
 
-    final social = data['social'] as Map<String, dynamic>?;
-    final stats = data['stats'] as Map<String, dynamic>?;
-    final engagement = data['engagement'] as Map<String, dynamic>?;
+    final social = switch (result) {
+      UserProfileFound() => result.social,
+      UserProfileNotPublished() => result.social,
+    };
+    final stats = switch (result) {
+      UserProfileFound() => result.stats,
+      UserProfileNotPublished() => result.stats,
+    };
+    final engagement = switch (result) {
+      UserProfileFound() => result.engagement,
+      UserProfileNotPublished() => result.engagement,
+    };
 
-    // Only cache if at least one section is present.
     if (social == null && stats == null && engagement == null) return;
 
-    final likes = (engagement?['total_reactions'] as num?)?.toInt();
-    final loops = (engagement?['total_loops'] as num?)?.round();
     await dao.upsertStats(
       pubkey: pubkey,
-      followerCount: (social?['follower_count'] as num?)?.toInt(),
-      followingCount: (social?['following_count'] as num?)?.toInt(),
-      videoCount: (stats?['video_count'] as num?)?.toInt(),
-      totalLikes: likes,
+      followerCount: social?.followerCount,
+      followingCount: social?.followingCount,
+      videoCount: stats?.videoCount,
+      totalLikes: engagement?.totalReactions,
       // total_loops can be fractional due to a backend aggregation issue;
       // round to the nearest integer.
-      totalViews: loops,
+      totalViews: engagement?.totalLoops.round(),
     );
   }
 
@@ -280,21 +288,23 @@ class ProfileRepository {
     // Step 1: Try Funnelcake REST API (fast, broad coverage).
     if (_funnelcakeApiClient?.isAvailable ?? false) {
       try {
-        final data = await _funnelcakeApiClient!.getUserProfile(pubkey);
-        if (data != null && data['_noProfile'] != true) {
-          final profile = UserProfile.fromFunnelcake(pubkey, data);
-          _knownCached.add(pubkey);
-          await _userProfilesDao.upsertProfile(profile);
-          await _cacheProfileStats(pubkey, data);
-          return profile;
-        }
-        // _noProfile sentinel — user exists but has no Kind 0.
-        // Still cache stats (social/engagement) since the API returns
-        // them even for users without a profile event.
-        if (data != null && data['_noProfile'] == true) {
-          await _cacheProfileStats(pubkey, data);
-          _confirmedMissing.add(pubkey);
-          return null;
+        final result = await _funnelcakeApiClient!.getUserProfile(pubkey);
+        switch (result) {
+          case UserProfileFound():
+            final profile = UserProfile.fromUserProfileFound(result);
+            _knownCached.add(pubkey);
+            await _userProfilesDao.upsertProfile(profile);
+            await _cacheProfileStatsFromResult(pubkey, result);
+            return profile;
+          case UserProfileNotPublished():
+            // User exists but has no Kind 0. Cache stats and skip relay
+            // fallback — the profile genuinely does not exist yet.
+            await _cacheProfileStatsFromResult(pubkey, result);
+            _confirmedMissing.add(pubkey);
+            return null;
+          case null:
+            // 404 — user not found at all; fall through to relay.
+            break;
         }
       } on Exception catch (e) {
         developer.log(
@@ -886,11 +896,11 @@ class ProfileRepository {
 
   /// Fetches a user profile from the Funnelcake REST API.
   ///
-  /// Returns profile data as a map, or null if not found.
-  /// Returns null if Funnelcake API is not available.
+  /// Returns a [UserProfileResult] if the user is known to Funnelcake, or
+  /// `null` if the user was not found or the API is unavailable.
   ///
   /// Throws [FunnelcakeException] subtypes on API errors.
-  Future<Map<String, dynamic>?> getUserProfileFromApi({
+  Future<UserProfileResult?> getUserProfileFromApi({
     required String pubkey,
   }) async {
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
@@ -971,25 +981,22 @@ class ProfileRepository {
         );
         for (final entry in bulkResponse.profiles.entries) {
           final pubkey = entry.key;
-          final data = entry.value;
+          final result = entry.value;
 
-          // Sentinel: user exists in FunnelCake but has never
-          // published a Kind 0 profile. Remove from remaining so
-          // we skip the relay/indexer fallback — the profile truly
-          // doesn't exist.
-          if (data['_noProfile'] == true) {
-            remaining.remove(pubkey);
-            continue;
+          switch (result) {
+            case UserProfileNotPublished():
+              // User exists in Funnelcake but has no Kind 0. Skip relay
+              // fallback — the profile genuinely does not exist yet.
+              remaining.remove(pubkey);
+            case UserProfileFound():
+              final profile = UserProfile.fromUserProfileFound(
+                result,
+                eventIdPrefix: 'rest-bulk',
+              );
+              results[pubkey] = profile;
+              toCache.add(profile);
+              remaining.remove(pubkey);
           }
-
-          final profile = UserProfile.fromFunnelcake(
-            pubkey,
-            data,
-            eventIdPrefix: 'rest-bulk',
-          );
-          results[pubkey] = profile;
-          toCache.add(profile);
-          remaining.remove(pubkey);
         }
       } on Exception catch (e) {
         developer.log(

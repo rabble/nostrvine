@@ -1,15 +1,20 @@
-import 'package:meta/meta.dart';
+// ABOUTME: Response model for the Funnelcake bulk profiles endpoint.
+// ABOUTME: Uses UserProfileResult to carry profile-vs-no-profile state with
+// ABOUTME: proper typing instead of a Map<String, dynamic> sentinel.
 
-/// Response from the bulk profiles endpoint.
+import 'package:meta/meta.dart';
+import 'package:models/src/user_profile_result.dart';
+
+/// Response from the bulk profiles endpoint (`/api/users/bulk`).
 ///
-/// Contains a map of pubkeys to their profile metadata.
+/// [profiles] is keyed by pubkey (hex). Values are [UserProfileFound] for
+/// users who have published a Kind 0 event, or [UserProfileNotPublished] for
+/// users who exist in Funnelcake but have never published one.
 @immutable
 class BulkProfilesResponse {
   /// Creates a new [BulkProfilesResponse].
   const BulkProfilesResponse({required this.profiles});
 
-  /// Profile data keyed by pubkey (hex format).
-  ///
-  /// Each value is the raw profile metadata map from the API.
-  final Map<String, Map<String, dynamic>> profiles;
+  /// Profile results keyed by pubkey (hex format).
+  final Map<String, UserProfileResult> profiles;
 }

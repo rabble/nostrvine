@@ -1182,10 +1182,9 @@ class FunnelcakeApiClient {
   ///
   /// [pubkey] is the user's public key (hex format).
   ///
-  /// Returns the profile metadata map if the user has profile data,
-  /// a sentinel map `{'_noProfile': true, 'pubkey': pubkey}` if the
-  /// user exists but has never published a Kind 0 profile, or `null`
-  /// if the user is not found at all (404).
+  /// Returns [UserProfileFound] if the user has published a Kind 0 profile,
+  /// [UserProfileNotPublished] if the user exists in Funnelcake but has never
+  /// published one, or `null` if the user is not found at all (404).
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not
@@ -1194,7 +1193,7 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<Map<String, dynamic>?> getUserProfile(String pubkey) async {
+  Future<UserProfileResult?> getUserProfile(String pubkey) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }
@@ -1210,48 +1209,39 @@ class FunnelcakeApiClient {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final profile = data['profile'] as Map<String, dynamic>?;
+        final profileJson = data['profile'] as Map<String, dynamic>?;
+        final socialJson = data['social'] as Map<String, dynamic>?;
+        final statsJson = data['stats'] as Map<String, dynamic>?;
+        final engagementJson = data['engagement'] as Map<String, dynamic>?;
 
-        if (profile != null &&
-            (profile['name'] != null || profile['display_name'] != null)) {
-          final result = <String, dynamic>{
-            'pubkey': pubkey,
-            'name': profile['name'],
-            'display_name': profile['display_name'],
-            'about': profile['about'],
-            'picture': profile['picture'],
-            'banner': profile['banner'],
-            'nip05': profile['nip05'],
-            'lud16': profile['lud16'],
-          };
+        final social = socialJson != null
+            ? ProfileSocialData.fromJson(socialJson)
+            : null;
+        final stats = statsJson != null
+            ? ProfileStatsData.fromJson(statsJson)
+            : null;
+        final engagement = engagementJson != null
+            ? ProfileEngagementData.fromJson(engagementJson)
+            : null;
 
-          // Include social/stats/engagement when present so callers
-          // can populate ProfileStats without a second request.
-          final social = data['social'] as Map<String, dynamic>?;
-          final stats = data['stats'] as Map<String, dynamic>?;
-          final engagement = data['engagement'] as Map<String, dynamic>?;
-          if (social != null) result['social'] = social;
-          if (stats != null) result['stats'] = stats;
-          if (engagement != null) result['engagement'] = engagement;
-
-          return result;
+        if (profileJson != null &&
+            (profileJson['name'] != null ||
+                profileJson['display_name'] != null)) {
+          return UserProfileFound(
+            profile: UserProfileData.fromJson(pubkey, profileJson),
+            social: social,
+            stats: stats,
+            engagement: engagement,
+          );
         }
 
-        // User exists in FunnelCake but has never published a
-        // Kind 0 profile event — return sentinel so callers can
-        // skip expensive relay/indexer fallback. Include stats so
-        // callers can still cache engagement data.
-        final sentinel = <String, dynamic>{
-          '_noProfile': true,
-          'pubkey': pubkey,
-        };
-        final social = data['social'] as Map<String, dynamic>?;
-        final stats = data['stats'] as Map<String, dynamic>?;
-        final engagement = data['engagement'] as Map<String, dynamic>?;
-        if (social != null) sentinel['social'] = social;
-        if (stats != null) sentinel['stats'] = stats;
-        if (engagement != null) sentinel['engagement'] = engagement;
-        return sentinel;
+        // User exists in Funnelcake but has never published a Kind 0 event.
+        return UserProfileNotPublished(
+          pubkey: pubkey,
+          social: social,
+          stats: stats,
+          engagement: engagement,
+        );
       } else if (response.statusCode == 404) {
         return null;
       } else {
@@ -1534,8 +1524,8 @@ class FunnelcakeApiClient {
   /// [pubkeys] is the list of public keys to fetch.
   ///
   /// Returns a [BulkProfilesResponse] with a map of pubkey to
-  /// profile metadata. Users that exist but have no profile data
-  /// are included as `{'_noProfile': true}` sentinel entries.
+  /// [UserProfileResult]. Users that exist but have no Kind 0 profile are
+  /// included as [UserProfileNotPublished] entries.
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not
@@ -1562,19 +1552,44 @@ class FunnelcakeApiClient {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final usersData = data['users'] as List<dynamic>? ?? [];
 
-        final result = <String, Map<String, dynamic>>{};
+        final result = <String, UserProfileResult>{};
         for (final user in usersData) {
           if (user is Map<String, dynamic>) {
             final pubkey = user['pubkey']?.toString();
             if (pubkey == null || pubkey.isEmpty) continue;
 
-            final profile = user['profile'] as Map<String, dynamic>?;
-            if (profile != null &&
-                (profile['name'] != null || profile['display_name'] != null)) {
-              result[pubkey] = profile;
+            final profileJson = user['profile'] as Map<String, dynamic>?;
+            final socialJson = user['social'] as Map<String, dynamic>?;
+            final statsJson = user['stats'] as Map<String, dynamic>?;
+            final engagementJson = user['engagement'] as Map<String, dynamic>?;
+
+            final social = socialJson != null
+                ? ProfileSocialData.fromJson(socialJson)
+                : null;
+            final stats = statsJson != null
+                ? ProfileStatsData.fromJson(statsJson)
+                : null;
+            final engagement = engagementJson != null
+                ? ProfileEngagementData.fromJson(engagementJson)
+                : null;
+
+            if (profileJson != null &&
+                (profileJson['name'] != null ||
+                    profileJson['display_name'] != null)) {
+              result[pubkey] = UserProfileFound(
+                profile: UserProfileData.fromJson(pubkey, profileJson),
+                social: social,
+                stats: stats,
+                engagement: engagement,
+              );
             } else {
-              // User exists but has no profile data — sentinel.
-              result[pubkey] = {'_noProfile': true};
+              // User exists in Funnelcake but has no Kind 0 profile event.
+              result[pubkey] = UserProfileNotPublished(
+                pubkey: pubkey,
+                social: social,
+                stats: stats,
+                engagement: engagement,
+              );
             }
           }
         }
@@ -1681,14 +1696,14 @@ class FunnelcakeApiClient {
   /// [offset] is the pagination offset (defaults to 0).
   /// [query] is an optional case-insensitive substring filter.
   ///
-  /// Returns a list of maps with `name` and `video_count` fields.
+  /// Returns a list of [VideoCategory] objects.
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not configured.
   /// - [FunnelcakeApiException] if the request fails.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<List<Map<String, dynamic>>> getCategories({
+  Future<List<VideoCategory>> getCategories({
     int limit = 50,
     int offset = 0,
     String? query,
@@ -1714,7 +1729,9 @@ class FunnelcakeApiClient {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List<dynamic>;
-        return data.cast<Map<String, dynamic>>();
+        return data
+            .map((item) => VideoCategory.fromJson(item as Map<String, dynamic>))
+            .toList();
       } else {
         throw FunnelcakeApiException(
           message: 'Failed to fetch categories',

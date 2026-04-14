@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
+import 'package:models/src/user_profile_result.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:unique_names_generator/unique_names_generator.dart';
 
@@ -113,6 +114,30 @@ class UserProfile {
       rawData: data,
       createdAt: DateTime.now(),
       eventId: '${eventIdPrefix ?? 'rest'}-$pubkey',
+    );
+  }
+
+  /// Creates a [UserProfile] from a typed [UserProfileFound] result.
+  ///
+  /// Use [eventIdPrefix] to distinguish the source (defaults to `'rest'`;
+  /// batch callers pass `'rest-bulk'`).
+  factory UserProfile.fromUserProfileFound(
+    UserProfileFound result, {
+    String? eventIdPrefix,
+  }) {
+    final p = result.profile;
+    return UserProfile(
+      pubkey: p.pubkey,
+      name: p.name,
+      displayName: p.displayName,
+      about: p.about,
+      picture: p.picture,
+      banner: p.banner,
+      nip05: p.nip05,
+      lud16: p.lud16,
+      rawData: const {},
+      createdAt: DateTime.now(),
+      eventId: '${eventIdPrefix ?? 'rest'}-${p.pubkey}',
     );
   }
 
