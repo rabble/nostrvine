@@ -425,6 +425,13 @@ Future<void> _startOpenVineApp() async {
     configureCache: DivineVideoPlayerController.configureCache,
   );
 
+  // Dispose any zombie native players from a previous Dart VM
+  // (e.g. hot restart). Must happen after configureCache so the
+  // global method channel is already registered.
+  if (!kIsWeb) {
+    await DivineVideoPlayerController.disposeAll();
+  }
+
   StartupPerformanceService.instance.completePhase('bindings');
 
   // Initialize crash reporting ASAP so we can use it for logging
