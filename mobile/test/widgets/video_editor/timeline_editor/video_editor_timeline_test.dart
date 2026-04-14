@@ -2,7 +2,6 @@
 // ABOUTME: Validates timeline rendering, scroll content, playhead, and empty state.
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -200,19 +199,14 @@ void main() {
         );
       });
 
-      testWidgets('uses background camera color', (tester) async {
+      testWidgets('does not show controls when not editing', (tester) async {
         final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(clipState: ClipEditorState(clips: clips)),
         );
 
-        final container = tester.widget<Container>(
-          find.byWidgetPredicate(
-            (w) => w is Container && w.color == VineTheme.backgroundCamera,
-          ),
-        );
-        expect(container.color, equals(VineTheme.backgroundCamera));
+        expect(find.text('Done'), findsNothing);
       });
     });
 
@@ -227,10 +221,13 @@ void main() {
           ),
         );
 
-        final playhead = tester.widget<VideoEditorTimelinePlayhead>(
-          find.byType(VideoEditorTimelinePlayhead),
+        final opacity = tester.widget<AnimatedOpacity>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is AnimatedOpacity && widget.child is IgnorePointer,
+          ),
         );
-        expect(playhead.isVisible, isTrue);
+        expect(opacity.opacity, equals(1.0));
       });
 
       testWidgets('playhead is hidden when reordering', (tester) async {
@@ -243,10 +240,13 @@ void main() {
           ),
         );
 
-        final playhead = tester.widget<VideoEditorTimelinePlayhead>(
-          find.byType(VideoEditorTimelinePlayhead),
+        final opacity = tester.widget<AnimatedOpacity>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is AnimatedOpacity && widget.child is IgnorePointer,
+          ),
         );
-        expect(playhead.isVisible, isFalse);
+        expect(opacity.opacity, equals(0.0));
       });
     });
 

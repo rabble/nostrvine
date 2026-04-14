@@ -105,13 +105,13 @@ void main() {
         expect(draft.hasBeenEdited, isTrue);
       });
 
-      test('returns true when draft has editorEditingParameters', () {
+      test('returns false when draft has editorEditingParameters only', () {
         final draft = _minimalDraft().copyWith(
           editorEditingParameters: const {'param': 'value'},
           skipUpdateLastModified: true,
         );
 
-        expect(draft.hasBeenEdited, isTrue);
+        expect(draft.hasBeenEdited, isFalse);
       });
 
       test('returns true when draft has finalRenderedClip', () {
@@ -203,7 +203,7 @@ void main() {
         expect(draft.hasBeenEdited, isTrue);
       });
 
-      test('returns true when allowAudioReuse is true', () {
+      test('returns false when allowAudioReuse is true only', () {
         final draft = DivineVideoDraft(
           id: 'draft_1',
           clips: [_createTestClip()],
@@ -218,7 +218,7 @@ void main() {
           allowAudioReuse: true,
         );
 
-        expect(draft.hasBeenEdited, isTrue);
+        expect(draft.hasBeenEdited, isFalse);
       });
 
       // Guard test: uses toJson() as the source of truth for all
@@ -279,7 +279,6 @@ void main() {
           'description',
           'hashtags',
           'editorStateHistory',
-          'editorEditingParameters',
           'finalRenderedClip',
           'selectedSound',
           'contentWarning',
@@ -289,7 +288,6 @@ void main() {
           'originalAudioVolume',
           'customAudioVolume',
           'expireTime',
-          'allowAudioReuse',
         };
 
         // Fields intentionally excluded from hasBeenEdited:
@@ -302,6 +300,8 @@ void main() {
           'publishAttempts', // lifecycle counter
           'publishError', // transient error
           'proofManifestJson', // auto-generated, not a user edit
+          'editorEditingParameters', // editor internals, not user-facing edit
+          'allowAudioReuse', // publishing option, not edit indicator
         };
 
         final knownFields = {...checkedFields, ...excludedFields};

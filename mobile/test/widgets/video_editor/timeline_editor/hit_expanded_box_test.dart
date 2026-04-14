@@ -2,6 +2,7 @@
 // ABOUTME: logic, height constraints, and update propagation.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/utils/hit_expanded_box.dart';
 
@@ -100,8 +101,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: Center(
               child: HitExpandedBox(
-                height: 40,
-                child: SizedBox(width: 100),
+                child: SizedBox(width: 100, height: 40),
               ),
             ),
           ),
@@ -137,44 +137,58 @@ void main() {
       testWidgets(
         'registers taps on handle in expanded left margin',
         (tester) async {
-          var leftTapped = false;
-
-          await tester.pumpWidget(
-            _buildExpandedHitScene(
-              expandLeft: 30,
-              expandRight: 30,
-              handleWidth: 20,
-              onLeftHandleTap: () => leftTapped = true,
-              onRightHandleTap: () {},
-              onCenterTap: () {},
-            ),
-          );
-
-          // Left handle spans from x=80..100, tap its center at x=90.
-          await tester.tapAt(const Offset(90, 125));
-          expect(leftTapped, isTrue);
-        },
-      );
-
-      testWidgets(
-        'registers taps on handle in expanded right margin',
-        (tester) async {
-          var rightTapped = false;
-
           await tester.pumpWidget(
             _buildExpandedHitScene(
               expandLeft: 30,
               expandRight: 30,
               handleWidth: 20,
               onLeftHandleTap: () {},
-              onRightHandleTap: () => rightTapped = true,
+              onRightHandleTap: () {},
               onCenterTap: () {},
             ),
           );
 
-          // Right handle spans from x=200..220, tap its center at x=210.
-          await tester.tapAt(const Offset(210, 125));
-          expect(rightTapped, isTrue);
+          final renderObject = tester.renderObject<RenderHitExpandedBox>(
+            find.byType(HitExpandedBox),
+          );
+          final result = BoxHitTestResult();
+
+          // Local position in left expanded margin (x < 0).
+          final hit = renderObject.hitTest(
+            result,
+            position: const Offset(-10, 25),
+          );
+
+          expect(hit, isTrue);
+        },
+      );
+
+      testWidgets(
+        'registers taps on handle in expanded right margin',
+        (tester) async {
+          await tester.pumpWidget(
+            _buildExpandedHitScene(
+              expandLeft: 30,
+              expandRight: 30,
+              handleWidth: 20,
+              onLeftHandleTap: () {},
+              onRightHandleTap: () {},
+              onCenterTap: () {},
+            ),
+          );
+
+          final renderObject = tester.renderObject<RenderHitExpandedBox>(
+            find.byType(HitExpandedBox),
+          );
+          final result = BoxHitTestResult();
+
+          // Local position in right expanded margin (x > width).
+          final hit = renderObject.hitTest(
+            result,
+            position: const Offset(110, 25),
+          );
+
+          expect(hit, isTrue);
         },
       );
 
@@ -280,8 +294,7 @@ void main() {
                 rebuildState = setState;
                 return Center(
                   child: HitExpandedBox(
-                    height: height,
-                    child: const SizedBox(width: 100),
+                    child: SizedBox(width: 100, height: height),
                   ),
                 );
               },

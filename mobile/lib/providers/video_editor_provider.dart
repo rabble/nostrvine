@@ -151,8 +151,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     }
     this.draftId = draftId ?? VideoEditorConstants.autoSaveId;
     state = state.copyWith(
-      isAutosavedDraft:
-          this.draftId == VideoEditorConstants.autoSaveId,
+      isAutosavedDraft: this.draftId == VideoEditorConstants.autoSaveId,
     );
   }
 

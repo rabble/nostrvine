@@ -63,6 +63,7 @@ class _MockProVideoEditor extends ProVideoEditor {
   Future<VideoMetadata> getMetadata(
     EditorVideo value, {
     bool checkStreamingOptimization = false,
+    NativeLogLevel? nativeLogLevel,
   }) async {
     return VideoMetadata(
       duration: const Duration(seconds: 3),

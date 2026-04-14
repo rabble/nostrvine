@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
@@ -25,6 +26,10 @@ CompleteParameters _makeParams({
 }) {
   return CompleteParameters(
     blur: blur,
+    originalImageSize: const Size(1080, 1920),
+    temporaryDecodedImageSize: const Size(1080, 1920),
+    bodySize: const Size(400, 800),
+    editorSize: const Size(400, 800),
     matrixFilterList: matrixFilterList ?? const [],
     matrixTuneAdjustmentsList: matrixTuneAdjustmentsList ?? const [],
     startTime: startTime,

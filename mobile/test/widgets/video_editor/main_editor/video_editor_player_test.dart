@@ -11,7 +11,6 @@ void main() {
         final result = computeClipSize(
           widgetSize: const Size(219, 390),
           bodySize: const Size(400, 800),
-          enableFullScreen: false,
           targetAspectRatio: 1,
         );
 
@@ -24,7 +23,6 @@ void main() {
         final result = computeClipSize(
           widgetSize: const Size(640, 360),
           bodySize: const Size(400, 800),
-          enableFullScreen: false,
           targetAspectRatio: 1,
         );
 
@@ -36,7 +34,6 @@ void main() {
         final result = computeClipSize(
           widgetSize: const Size(300, 300),
           bodySize: const Size(400, 800),
-          enableFullScreen: false,
           targetAspectRatio: 1,
         );
 
@@ -50,7 +47,6 @@ void main() {
         final result = computeClipSize(
           widgetSize: const Size(225, 400),
           bodySize: const Size(400, 800),
-          enableFullScreen: false,
           targetAspectRatio: 9 / 16,
         );
 
@@ -63,7 +59,6 @@ void main() {
         final result = computeClipSize(
           widgetSize: const Size(400, 400),
           bodySize: const Size(400, 800),
-          enableFullScreen: false,
           targetAspectRatio: 9 / 16,
         );
 
@@ -73,17 +68,14 @@ void main() {
     });
 
     group('fullscreen mode', () {
-      test('scales bodySize into widget coordinates', () {
+      test('returns target-aspect constrained size from widget bounds', () {
         final result = computeClipSize(
           widgetSize: const Size(219, 390),
           bodySize: const Size(400, 800),
-          enableFullScreen: true,
           targetAspectRatio: 9 / 16,
         );
 
-        // scale = max(400/219, 800/390) = max(1.826, 2.051) = 2.051
-        // clipSize = 400/2.051, 800/2.051 = ~195, ~390
-        expect(result.width, closeTo(195, 1));
+        expect(result.width, closeTo(219, 1));
         expect(result.height, closeTo(390, 1));
       });
     });
@@ -94,7 +86,6 @@ void main() {
         final clipSize = computeClipSize(
           widgetSize: widgetSize,
           bodySize: const Size(400, 800),
-          enableFullScreen: false,
           targetAspectRatio: 1,
         );
 

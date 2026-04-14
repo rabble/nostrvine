@@ -43,8 +43,7 @@ void main() {
       final limit = invocation.namedArguments[#limit] as int? ?? 50;
       final cursor = invocation.namedArguments[#cursor] as String?;
       final effectiveBefore =
-          cursor ??
-              (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
+          cursor ?? (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
       return Uri.parse(
         'https://api.example.com/api/users/$pubkey/notifications',
       ).replace(

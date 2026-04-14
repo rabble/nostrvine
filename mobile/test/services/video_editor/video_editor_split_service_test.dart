@@ -32,8 +32,9 @@ class MockProVideoEditor extends ProVideoEditor {
   @override
   Future<String> renderVideoToFile(
     String outputPath,
-    VideoRenderData renderData,
-  ) async {
+    VideoRenderData renderData, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
     if (shouldThrowError) {
       throw Exception('Render failed');
     }

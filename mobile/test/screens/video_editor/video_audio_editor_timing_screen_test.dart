@@ -21,7 +21,10 @@ class _MockProVideoEditor extends ProVideoEditor {
   }
 
   @override
-  Future<bool> hasAudioTrack(EditorVideo value) async {
+  Future<bool> hasAudioTrack(
+    EditorVideo value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
     return true;
   }
 
@@ -29,6 +32,7 @@ class _MockProVideoEditor extends ProVideoEditor {
   Future<VideoMetadata> getMetadata(
     EditorVideo value, {
     bool checkStreamingOptimization = false,
+    NativeLogLevel? nativeLogLevel,
   }) async {
     return VideoMetadata(
       duration: const Duration(seconds: 10),
@@ -41,7 +45,10 @@ class _MockProVideoEditor extends ProVideoEditor {
   }
 
   @override
-  Future<WaveformData> getWaveform(WaveformConfigs value) async {
+  Future<WaveformData> getWaveform(
+    WaveformConfigs value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
     return WaveformData(
       leftChannel: Float32List(100),
       rightChannel: Float32List(100),
@@ -54,8 +61,9 @@ class _MockProVideoEditor extends ProVideoEditor {
   @override
   Future<String> extractAudioToFile(
     String filePath,
-    AudioExtractConfigs value,
-  ) async {
+    AudioExtractConfigs value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
     return filePath;
   }
 }
