@@ -1,10 +1,51 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+
+class _FakeUrlLauncherPlatform extends UrlLauncherPlatform {
+  String? launchedUrl;
+
+  @override
+  Future<bool> canLaunch(String url) async => true;
+
+  @override
+  Future<bool> launch(
+    String url, {
+    required bool useSafariVC,
+    required bool useWebView,
+    required bool enableJavaScript,
+    required bool enableDomStorage,
+    required bool universalLinksOnly,
+    required Map<String, String> headers,
+    String? webOnlyWindowName,
+  }) async {
+    launchedUrl = url;
+    return true;
+  }
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+}
 
 void main() {
   group('ClickableHashtagText', () {
+    late UrlLauncherPlatform originalUrlLauncherPlatform;
+    late _FakeUrlLauncherPlatform fakeUrlLauncherPlatform;
+
+    setUp(() {
+      originalUrlLauncherPlatform = UrlLauncherPlatform.instance;
+      fakeUrlLauncherPlatform = _FakeUrlLauncherPlatform();
+      UrlLauncherPlatform.instance = fakeUrlLauncherPlatform;
+    });
+
+    tearDown(() {
+      UrlLauncherPlatform.instance = originalUrlLauncherPlatform;
+    });
+
     testWidgets('displays plain text without hashtags correctly', (
       tester,
     ) async {
@@ -169,6 +210,33 @@ void main() {
         // Clear the widget tree before next test
         await tester.pumpWidget(Container());
       }
+    });
+
+    testWidgets('launches bare domains as external links', (tester) async {
+      const textWithLink = 'Read more at example.com/docs';
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: ClickableHashtagText(text: textWithLink)),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.byType(Text));
+      final textSpan = text.textSpan! as TextSpan;
+      final spans = textSpan.children!.cast<TextSpan>();
+      final linkSpan = spans.firstWhere(
+        (span) => span.text == 'example.com/docs',
+      );
+
+      expect(linkSpan.recognizer, isNotNull);
+
+      final recognizer = linkSpan.recognizer! as TapGestureRecognizer;
+      recognizer.onTap!();
+      await tester.pump();
+
+      expect(fakeUrlLauncherPlatform.launchedUrl, 'https://example.com/docs');
     });
 
     // Note: Testing tap functionality and navigation requires integration testing

@@ -15,6 +15,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
@@ -34,6 +35,8 @@ class _MockPlayerState extends Mock implements PlayerState {}
 class _MockCuratedListRepository extends Mock
     implements CuratedListRepository {}
 
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
 // Full 64-character test IDs (never truncate Nostr IDs)
 const _testVideoId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
@@ -47,6 +50,7 @@ void main() {
     late PlayerStream mockStream;
     late PlayerState mockPlayerState;
     late CuratedListRepository mockCuratedListRepository;
+    late VideoEventService mockVideoEventService;
     late MockProfileRepository mockProfileRepository;
     late MockNip05VerificationService mockNip05VerificationService;
     late VideoEvent testVideo;
@@ -64,6 +68,7 @@ void main() {
       mockStream = _MockPlayerStream();
       mockPlayerState = _MockPlayerState();
       mockCuratedListRepository = _MockCuratedListRepository();
+      mockVideoEventService = _MockVideoEventService();
       mockProfileRepository = createMockProfileRepository();
       mockNip05VerificationService = createMockNip05VerificationService();
       playingController = StreamController<bool>.broadcast();
@@ -84,6 +89,9 @@ void main() {
       ).thenAnswer((_) => bufferingController.stream);
       when(() => mockPlayerState.playing).thenReturn(false);
       when(() => mockPlayerState.buffering).thenReturn(false);
+      when(
+        () => mockVideoEventService.getRepostersForVideo(any()),
+      ).thenAnswer((_) async => const <String>[]);
 
       // Stub interactions bloc state
       when(
@@ -120,6 +128,7 @@ void main() {
           curatedListRepositoryProvider.overrideWithValue(
             mockCuratedListRepository,
           ),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         ],
         mockProfileRepository: mockProfileRepository,
         mockNip05VerificationService: mockNip05VerificationService,
@@ -303,6 +312,19 @@ void main() {
 
         expect(find.byType(ListAttributionChip), findsOneWidget);
         expect(find.byIcon(Icons.playlist_play), findsNWidgets(2));
+      });
+
+      testWidgets('opens metadata sheet when tapping the description', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        await tester.tap(find.text('Test video content'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Loops'), findsOneWidget);
+        expect(find.text('Likes'), findsOneWidget);
       });
     });
 
