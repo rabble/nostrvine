@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -96,6 +97,16 @@ class _TopActions extends ConsumerWidget {
       return;
     }
 
+    final hasBeenEdited = ref
+        .read(videoEditorProvider.notifier)
+        .getActiveDraft()
+        .hasBeenEdited;
+
+    if (!hasBeenEdited) {
+      context.pop();
+      return;
+    }
+
     VineBottomSheetPrompt.show(
       context: context,
       sticker: .videoClapBoard,
@@ -150,7 +161,7 @@ class _TopActions extends ConsumerWidget {
     required BuildContext context,
     required WidgetRef ref,
   }) {
-    ref.read(videoEditorProvider.notifier).removeAutosavedDraft();
+    ref.read(videoPublishProvider.notifier).clearAll();
     context.pop();
     context.pop();
   }

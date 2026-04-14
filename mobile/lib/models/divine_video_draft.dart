@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:models/models.dart' show NativeProofData;
@@ -11,6 +12,7 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/path_resolver.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -407,8 +409,11 @@ class DivineVideoDraft {
       (hasTitle ||
           hasDescription ||
           hasHashtags ||
-          editorStateHistory.isNotEmpty ||
-          editorEditingParameters.isNotEmpty ||
+          (editorStateHistory.isNotEmpty &&
+              !mapEquals(
+                editorStateHistory,
+                CompleteParameters.fromMap({}).toMap(),
+              )) ||
           finalRenderedClip != null ||
           selectedSound != null ||
           contentWarning != null ||
@@ -417,6 +422,5 @@ class DivineVideoDraft {
           inspiredByNpub != null ||
           originalAudioVolume != 1.0 ||
           customAudioVolume != 1.0 ||
-          expireTime != null ||
-          allowAudioReuse);
+          expireTime != null);
 }
