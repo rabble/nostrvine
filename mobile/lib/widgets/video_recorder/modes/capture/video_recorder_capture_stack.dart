@@ -14,12 +14,12 @@ import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dar
 class VideoRecorderCaptureStack extends ConsumerWidget {
   const VideoRecorderCaptureStack({super.key});
 
-  void _removeLastClip(
+  void _deleteLastClip(
     BuildContext context,
     WidgetRef ref,
   ) {
     final clipsNotifier = ref.read(clipManagerProvider.notifier);
-    unawaited(clipsNotifier.removeLastClip());
+    unawaited(clipsNotifier.deleteLastRecordedClip());
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -28,7 +28,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
         elevation: 0,
         behavior: .floating,
         margin: .fromLTRB(16, 0, 16, 68),
-        content: DivineSnackbarContainer(label: 'Clip unselected'),
+        content: DivineSnackbarContainer(label: 'Clip deleted'),
       ),
     );
   }
@@ -71,10 +71,10 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                     opacity: hasClips && !isRecording ? 1 : 0,
                     child: DivineIconButton(
                       icon: .arrowCounterClockwise,
-                      semanticLabel: 'Undo last clip',
+                      semanticLabel: 'Delete last clip',
                       type: .ghostSecondary,
                       size: .small,
-                      onPressed: () => _removeLastClip(context, ref),
+                      onPressed: () => _deleteLastClip(context, ref),
                     ),
                   ),
 

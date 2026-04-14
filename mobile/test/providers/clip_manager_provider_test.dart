@@ -144,7 +144,7 @@ void main() {
       expect(state.totalDuration, equals(const Duration(seconds: 3)));
     });
 
-    test('removeLastClip removes last clip', () async {
+    test('deleteLastClip deletes last clip', () async {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
@@ -164,7 +164,7 @@ void main() {
 
       expect(container.read(clipManagerProvider).clips.length, equals(2));
 
-      await notifier.removeLastClip();
+      await notifier.deleteLastRecordedClip();
 
       final state = container.read(clipManagerProvider);
       expect(state.clips.length, equals(1));

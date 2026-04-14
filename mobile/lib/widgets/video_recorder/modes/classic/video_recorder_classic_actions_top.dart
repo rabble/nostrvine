@@ -22,10 +22,12 @@ class VideoRecorderClassicActionsTop extends ConsumerWidget {
         children: [
           DivineIconButton(
             icon: .arrowCounterClockwise,
-            semanticLabel: 'Undo last clip',
+            semanticLabel: 'Delete last clip',
             size: .small,
             type: .ghostSecondary,
-            onPressed: ref.read(clipManagerProvider.notifier).removeLastClip,
+            onPressed: ref
+                .read(clipManagerProvider.notifier)
+                .deleteLastRecordedClip,
           ),
         ],
       ),
