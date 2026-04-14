@@ -10,7 +10,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:rxdart/rxdart.dart';
@@ -20,10 +19,6 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 /// Mock for FollowRepository
 class _MockFollowRepository extends Mock implements FollowRepository {}
-
-/// Mock for ContentBlocklistService
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
 
 /// Create a mock ProfileRepository
 _MockProfileRepository _createMockProfileRepository({
@@ -76,23 +71,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(UserPickerSheet, () {
-    late _MockContentBlocklistService mockBlocklistService;
-
-    setUp(() {
-      mockBlocklistService = _MockContentBlocklistService();
-      when(
-        () => mockBlocklistService.shouldFilterFromFeeds(any()),
-      ).thenReturn(false);
-    });
-
     group('renders', () {
       testWidgets('search text field', (tester) async {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -119,9 +102,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -150,9 +130,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -187,9 +164,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
             ],
@@ -217,9 +191,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -251,9 +222,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -313,9 +281,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
             ],
@@ -363,9 +328,6 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
-                contentBlocklistServiceProvider.overrideWithValue(
-                  mockBlocklistService,
-                ),
                 profileRepositoryProvider.overrideWithValue(mockProfileRepo),
                 followRepositoryProvider.overrideWithValue(mockFollowRepo),
               ],
@@ -395,9 +357,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -427,9 +386,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -462,9 +418,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -493,9 +446,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(
                 _createMockProfileRepository(),
               ),
@@ -557,9 +507,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
-              ),
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
             ],
@@ -595,9 +542,6 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
-                contentBlocklistServiceProvider.overrideWithValue(
-                  mockBlocklistService,
-                ),
                 profileRepositoryProvider.overrideWithValue(null),
                 followRepositoryProvider.overrideWithValue(
                   _createMockFollowRepository(),
@@ -635,9 +579,6 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
-                contentBlocklistServiceProvider.overrideWithValue(
-                  mockBlocklistService,
-                ),
                 profileRepositoryProvider.overrideWithValue(null),
                 followRepositoryProvider.overrideWithValue(
                   _createMockFollowRepository(),

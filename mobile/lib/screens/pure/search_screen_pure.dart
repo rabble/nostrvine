@@ -76,7 +76,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     _tabController.addListener(_onTabChanged);
     _userSearchBloc = UserSearchBloc(
       profileRepository: ref.read(profileRepositoryProvider)!,
-      contentBlocklistService: ref.read(contentBlocklistServiceProvider),
     );
     _hashtagSearchBloc = HashtagSearchBloc(
       hashtagRepository: ref.read(hashtagRepositoryProvider),

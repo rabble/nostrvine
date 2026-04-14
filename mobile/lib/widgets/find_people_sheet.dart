@@ -62,7 +62,6 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
     if (profileRepo != null) {
       _searchBloc = UserSearchBloc(
         profileRepository: profileRepo,
-        contentBlocklistService: ref.read(contentBlocklistServiceProvider),
         searchTimeout: widget.searchTimeout,
       );
     }

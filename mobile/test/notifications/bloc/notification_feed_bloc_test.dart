@@ -10,15 +10,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 
 class _MockNotificationRepository extends Mock
     implements NotificationRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
-
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
 
 /// Test actor helper.
 ActorInfo _actor({
@@ -72,24 +68,26 @@ void main() {
   group(NotificationFeedBloc, () {
     late _MockNotificationRepository mockNotificationRepo;
     late _MockFollowRepository mockFollowRepo;
-    late _MockContentBlocklistService mockBlocklistService;
+
+    setUpAll(() {
+      registerFallbackValue(_single());
+    });
 
     setUp(() {
       mockNotificationRepo = _MockNotificationRepository();
       mockFollowRepo = _MockFollowRepository();
-      mockBlocklistService = _MockContentBlocklistService();
 
       when(
-        () => mockBlocklistService.shouldFilterFromFeeds(any()),
-      ).thenReturn(false);
+        () => mockNotificationRepo.filterRealtimeNotification(any()),
+      ).thenAnswer(
+        (invocation) =>
+            invocation.positionalArguments.first as NotificationItem,
+      );
     });
 
-    NotificationFeedBloc createBloc({
-      ContentBlocklistService? contentBlocklistService,
-    }) => NotificationFeedBloc(
+    NotificationFeedBloc createBloc() => NotificationFeedBloc(
       notificationRepository: mockNotificationRepo,
       followRepository: mockFollowRepo,
-      contentBlocklistService: contentBlocklistService,
     );
 
     group('NotificationFeedStarted', () {
@@ -406,161 +404,15 @@ void main() {
       );
     });
 
-    group('blocklist filtering', () {
+    group('realtime blocklist filtering', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'filters single notification from blocked user on load',
+        'skips realtime notification when repository filter returns null',
         setUp: () {
           when(
-            () => mockBlocklistService.shouldFilterFromFeeds('abc123'),
-          ).thenReturn(true);
-          when(
-            () => mockNotificationRepo.refresh(),
-          ).thenAnswer(
-            (_) async => NotificationPage(
-              items: [_single()],
-              unreadCount: 1,
-            ),
-          );
+            () => mockNotificationRepo.filterRealtimeNotification(any()),
+          ).thenReturn(null);
         },
-        build: () => createBloc(contentBlocklistService: mockBlocklistService),
-        act: (bloc) => bloc.add(NotificationFeedStarted()),
-        expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
-          NotificationFeedState(
-            status: NotificationFeedStatus.loaded,
-            unreadCount: 1,
-            hasMore: false,
-          ),
-        ],
-      );
-
-      blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'keeps non-blocked single notification on load',
-        setUp: () {
-          when(
-            () => mockNotificationRepo.refresh(),
-          ).thenAnswer(
-            (_) async => NotificationPage(
-              items: [_single()],
-              unreadCount: 1,
-            ),
-          );
-        },
-        build: () => createBloc(contentBlocklistService: mockBlocklistService),
-        act: (bloc) => bloc.add(NotificationFeedStarted()),
-        expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
-          NotificationFeedState(
-            status: NotificationFeedStatus.loaded,
-            notifications: [_single()],
-            unreadCount: 1,
-            hasMore: false,
-          ),
-        ],
-      );
-
-      blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'filters blocked actors from grouped notification',
-        setUp: () {
-          when(
-            () => mockBlocklistService.shouldFilterFromFeeds('blocked1'),
-          ).thenReturn(true);
-          when(
-            () => mockNotificationRepo.refresh(),
-          ).thenAnswer(
-            (_) async => NotificationPage(
-              items: [
-                GroupedNotification(
-                  id: 'g1',
-                  type: NotificationKind.like,
-                  actors: [
-                    _actor(pubkey: 'keep1'),
-                    _actor(pubkey: 'blocked1', displayName: 'Blocked'),
-                    _actor(pubkey: 'keep2', displayName: 'Charlie'),
-                  ],
-                  totalCount: 3,
-                  timestamp: DateTime(2026),
-                  targetEventId: 'video1',
-                ),
-              ],
-              unreadCount: 1,
-            ),
-          );
-        },
-        build: () => createBloc(contentBlocklistService: mockBlocklistService),
-        act: (bloc) => bloc.add(NotificationFeedStarted()),
-        expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
-          NotificationFeedState(
-            status: NotificationFeedStatus.loaded,
-            notifications: [
-              GroupedNotification(
-                id: 'g1',
-                type: NotificationKind.like,
-                actors: [
-                  _actor(pubkey: 'keep1'),
-                  _actor(pubkey: 'keep2', displayName: 'Charlie'),
-                ],
-                totalCount: 2,
-                timestamp: DateTime(2026),
-                targetEventId: 'video1',
-              ),
-            ],
-            unreadCount: 1,
-            hasMore: false,
-          ),
-        ],
-      );
-
-      blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'removes grouped notification when all actors are blocked',
-        setUp: () {
-          when(
-            () => mockBlocklistService.shouldFilterFromFeeds('b1'),
-          ).thenReturn(true);
-          when(
-            () => mockBlocklistService.shouldFilterFromFeeds('b2'),
-          ).thenReturn(true);
-          when(
-            () => mockNotificationRepo.refresh(),
-          ).thenAnswer(
-            (_) async => NotificationPage(
-              items: [
-                GroupedNotification(
-                  id: 'g1',
-                  type: NotificationKind.like,
-                  actors: [
-                    _actor(pubkey: 'b1', displayName: 'Blocked1'),
-                    _actor(pubkey: 'b2', displayName: 'Blocked2'),
-                  ],
-                  totalCount: 2,
-                  timestamp: DateTime(2026),
-                ),
-              ],
-              unreadCount: 1,
-            ),
-          );
-        },
-        build: () => createBloc(contentBlocklistService: mockBlocklistService),
-        act: (bloc) => bloc.add(NotificationFeedStarted()),
-        expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
-          NotificationFeedState(
-            status: NotificationFeedStatus.loaded,
-            unreadCount: 1,
-            hasMore: false,
-          ),
-        ],
-      );
-
-      blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'filters blocked user from realtime notification',
-        setUp: () {
-          when(
-            () => mockBlocklistService.shouldFilterFromFeeds('abc123'),
-          ).thenReturn(true);
-        },
-        build: () => createBloc(contentBlocklistService: mockBlocklistService),
+        build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
           notifications: [_single(id: 'existing')],
@@ -572,31 +424,6 @@ void main() {
           ),
         ),
         expect: () => <NotificationFeedState>[],
-      );
-
-      blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'works without contentBlocklistService (null)',
-        setUp: () {
-          when(
-            () => mockNotificationRepo.refresh(),
-          ).thenAnswer(
-            (_) async => NotificationPage(
-              items: [_single()],
-              unreadCount: 1,
-              hasMore: true,
-            ),
-          );
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(NotificationFeedStarted()),
-        expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
-          NotificationFeedState(
-            status: NotificationFeedStatus.loaded,
-            notifications: [_single()],
-            unreadCount: 1,
-          ),
-        ],
       );
     });
   });

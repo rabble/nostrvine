@@ -1591,6 +1591,7 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final env = ref.watch(currentEnvironmentProvider);
 
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
@@ -1600,6 +1601,7 @@ ProfileRepository? profileRepository(Ref ref) {
     indexerRelays: env.indexerRelays,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
+    blockFilter: blocklistService.shouldFilterFromFeeds,
   );
 
   // Pre-load known cached pubkeys and wire into SubscriptionManager
@@ -2164,9 +2166,11 @@ DmRepository dmRepository(Ref ref) {
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final repository = CommentsRepository(
     nostrClient: nostrClient,
     funnelcakeApiClient: funnelcakeClient,
+    blockFilter: blocklistService.shouldFilterFromFeeds,
   );
   ref.onDispose(repository.clearCommentCountCache);
   return repository;

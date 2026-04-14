@@ -46,13 +46,11 @@ class NotificationsPage extends ConsumerWidget {
     }
 
     final followRepository = ref.watch(followRepositoryProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
     return BlocProvider(
       create: (_) => NotificationFeedBloc(
         notificationRepository: notificationRepository,
         followRepository: followRepository,
-        contentBlocklistService: blocklistService,
       )..add(const NotificationFeedStarted()),
       child: const NotificationsView(),
     );

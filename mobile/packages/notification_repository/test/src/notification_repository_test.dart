@@ -43,8 +43,7 @@ void main() {
       final limit = invocation.namedArguments[#limit] as int? ?? 50;
       final cursor = invocation.namedArguments[#cursor] as String?;
       final effectiveBefore =
-          cursor ??
-              (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
+          cursor ?? (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
       return Uri.parse(
         'https://api.example.com/api/users/$pubkey/notifications',
       ).replace(
@@ -893,6 +892,184 @@ void main() {
         expect((page.items[0] as SingleNotification).id, equals('new'));
         expect((page.items[1] as SingleNotification).id, equals('old'));
       });
+    });
+
+    group('block filter', () {
+      const blockedPubkey = 'blocked_pubkey_abc';
+
+      late NotificationRepository filteredRepository;
+
+      setUp(() {
+        filteredRepository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          nostrClient: nostrClient,
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
+      });
+
+      test(
+        'filters single notification from blocked user',
+        () async {
+          stubNotifications([
+            makeNotification(
+              id: 'n_blocked',
+              sourcePubkey: blockedPubkey,
+              referencedEventId: 'video1',
+            ),
+            makeNotification(
+              id: 'n_allowed',
+              sourcePubkey: 'pub_allowed',
+              referencedEventId: 'video2',
+            ),
+          ]);
+          stubProfiles({
+            blockedPubkey: makeProfile(
+              blockedPubkey,
+              displayName: 'Blocked',
+            ),
+            'pub_allowed': makeProfile(
+              'pub_allowed',
+              displayName: 'Allowed',
+            ),
+          });
+
+          final page = await filteredRepository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.first as SingleNotification;
+          expect(item.actor.pubkey, equals('pub_allowed'));
+        },
+      );
+
+      test(
+        'strips blocked actors from grouped notification',
+        () async {
+          // 3 likes on the same video — will be grouped.
+          stubNotifications([
+            makeNotification(
+              id: 'l1',
+              sourcePubkey: 'pub_a',
+              referencedEventId: 'video_x',
+              createdAt: DateTime(2025, 1, 3),
+            ),
+            makeNotification(
+              id: 'l2',
+              sourcePubkey: blockedPubkey,
+              referencedEventId: 'video_x',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'l3',
+              sourcePubkey: 'pub_c',
+              referencedEventId: 'video_x',
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            blockedPubkey: makeProfile(
+              blockedPubkey,
+              displayName: 'Blocked',
+            ),
+            'pub_c': makeProfile('pub_c', displayName: 'Charlie'),
+          });
+
+          final page = await filteredRepository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.first as GroupedNotification;
+          expect(item.actors, hasLength(2));
+          expect(item.totalCount, equals(2));
+          expect(
+            item.actors.map((a) => a.pubkey),
+            isNot(contains(blockedPubkey)),
+          );
+        },
+      );
+
+      test(
+        'removes grouped notification when all actors blocked',
+        () async {
+          // 3 likes on the same video — all from blocked pubkey.
+          stubNotifications([
+            makeNotification(
+              id: 'l1',
+              sourcePubkey: blockedPubkey,
+              referencedEventId: 'video_x',
+              createdAt: DateTime(2025, 1, 3),
+            ),
+            makeNotification(
+              id: 'l2',
+              sourcePubkey: blockedPubkey,
+              referencedEventId: 'video_x',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'l3',
+              sourcePubkey: blockedPubkey,
+              referencedEventId: 'video_x',
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            blockedPubkey: makeProfile(
+              blockedPubkey,
+              displayName: 'Blocked',
+            ),
+          });
+
+          final page = await filteredRepository.getNotifications();
+
+          expect(page.items, isEmpty);
+        },
+      );
+
+      test(
+        'filterRealtimeNotification returns null for blocked single '
+        'notification',
+        () {
+          final item = SingleNotification(
+            id: 'rt1',
+            type: NotificationKind.like,
+            actor: const ActorInfo(
+              pubkey: blockedPubkey,
+              displayName: 'Blocked',
+            ),
+            timestamp: DateTime(2025),
+          );
+
+          final result = filteredRepository.filterRealtimeNotification(item);
+
+          expect(result, isNull);
+        },
+      );
+
+      test(
+        'filterRealtimeNotification returns notification for '
+        'non-blocked user',
+        () {
+          final item = SingleNotification(
+            id: 'rt2',
+            type: NotificationKind.follow,
+            actor: const ActorInfo(
+              pubkey: 'pub_allowed',
+              displayName: 'Allowed',
+            ),
+            timestamp: DateTime(2025),
+          );
+
+          final result = filteredRepository.filterRealtimeNotification(item);
+
+          expect(result, isNotNull);
+          expect(
+            (result! as SingleNotification).actor.pubkey,
+            equals('pub_allowed'),
+          );
+        },
+      );
     });
   });
 }

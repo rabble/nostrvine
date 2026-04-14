@@ -8,6 +8,7 @@ import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:notification_repository/src/blocked_notification_filter.dart';
 import 'package:notification_repository/src/notification_page.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -36,6 +37,7 @@ class NotificationRepository {
     required NotificationsDao notificationsDao,
     required String userPubkey,
     NostrClient? nostrClient,
+    BlockedNotificationFilter? blockFilter,
     Future<Map<String, String>> Function(String url, String method)?
     authHeadersProvider,
   }) : _funnelcakeApiClient = funnelcakeApiClient,
@@ -43,6 +45,7 @@ class NotificationRepository {
        _notificationsDao = notificationsDao,
        _userPubkey = userPubkey,
        _nostrClient = nostrClient,
+       _blockFilter = blockFilter,
        _authHeadersProvider = authHeadersProvider;
 
   final FunnelcakeApiClient _funnelcakeApiClient;
@@ -53,6 +56,7 @@ class NotificationRepository {
   /// Reserved for future WebSocket real-time support.
   // ignore: unused_field
   final NostrClient? _nostrClient;
+  final BlockedNotificationFilter? _blockFilter;
   final Future<Map<String, String>> Function(String url, String method)?
   _authHeadersProvider;
 
@@ -88,7 +92,9 @@ class NotificationRepository {
 
       _lastCursor = response.nextCursor;
 
-      final items = await _enrichAndGroup(response.notifications);
+      final items = _applyBlockFilter(
+        await _enrichAndGroup(response.notifications),
+      );
 
       return NotificationPage(
         items: items,
@@ -150,6 +156,50 @@ class NotificationRepository {
     );
 
     await _notificationsDao.markAllAsRead();
+  }
+
+  /// Filters notifications from blocked/muted users.
+  ///
+  /// - [SingleNotification]: removed if actor is blocked.
+  /// - [GroupedNotification]: blocked actors stripped; entire notification
+  ///   removed if no actors remain.
+  List<NotificationItem> _applyBlockFilter(List<NotificationItem> items) {
+    final filter = _blockFilter;
+    if (filter == null) return items;
+    return items
+        .map(
+          (n) => switch (n) {
+            SingleNotification() => filter(n.actor.pubkey) ? null : n,
+            GroupedNotification() => () {
+              final filtered = n.actors
+                  .where((a) => !filter(a.pubkey))
+                  .toList();
+              if (filtered.isEmpty) return null;
+              if (filtered.length == n.actors.length) return n;
+              return GroupedNotification(
+                id: n.id,
+                type: n.type,
+                actors: filtered,
+                totalCount: filtered.length,
+                timestamp: n.timestamp,
+                isRead: n.isRead,
+                targetEventId: n.targetEventId,
+                videoTitle: n.videoTitle,
+              );
+            }(),
+          },
+        )
+        .whereType<NotificationItem>()
+        .toList();
+  }
+
+  /// Filters a single real-time notification.
+  ///
+  /// Returns `null` if the notification should be hidden (all actors blocked).
+  /// Use this for WebSocket events that bypass [getNotifications].
+  NotificationItem? filterRealtimeNotification(NotificationItem item) {
+    final result = _applyBlockFilter([item]);
+    return result.isEmpty ? null : result.first;
   }
 
   /// Enriches raw relay notifications with profile data and groups them.

@@ -7,7 +7,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -21,12 +20,10 @@ const _pageSize = 50;
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({
     required ProfileRepository profileRepository,
-    ContentBlocklistService? contentBlocklistService,
     this.hasVideos = false,
     this.searchTimeout = const Duration(seconds: 20),
     FeedPerformanceTracker? feedTracker,
   }) : _profileRepository = profileRepository,
-       _contentBlocklistService = contentBlocklistService,
        _feedTracker = feedTracker,
        super(const UserSearchState()) {
     on<UserSearchQueryChanged>(
@@ -38,7 +35,6 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   }
 
   final ProfileRepository _profileRepository;
-  final ContentBlocklistService? _contentBlocklistService;
   final FeedPerformanceTracker? _feedTracker;
 
   /// Whether to filter results to users who have uploaded videos.
@@ -49,14 +45,6 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   /// Set to `null` to disable the timeout entirely, which is useful in widget
   /// tests that rely on `pumpAndSettle()` with internally created blocs.
   final Duration? searchTimeout;
-
-  List<UserProfile> _filterBlockedUsers(List<UserProfile> users) {
-    final service = _contentBlocklistService;
-    if (service == null) return users;
-    return users
-        .where((u) => !service.shouldFilterFromFeeds(u.pubkey))
-        .toList();
-  }
 
   Future<void> _onQueryChanged(
     UserSearchQueryChanged event,
@@ -101,18 +89,17 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
             ? searchStream
             : searchStream.timeout(searchTimeout!),
         onData: (results) {
-          final filtered = _filterBlockedUsers(results);
-          if (!trackedFirst && filtered.isNotEmpty) {
+          if (!trackedFirst && results.isNotEmpty) {
             trackedFirst = true;
             _feedTracker?.markFirstVideosReceived(
               'user_search',
-              filtered.length,
+              results.length,
             );
           }
           return state.copyWith(
             status: UserSearchStatus.loading,
-            results: filtered,
-            resultCount: filtered.length,
+            results: results,
+            resultCount: results.length,
           );
         },
       );
@@ -167,8 +154,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
           )
           .last; // Stream always emits at least once for non-empty queries.
 
-      final filteredMore = _filterBlockedUsers(moreResults);
-      final allResults = [...state.results, ...filteredMore];
+      final allResults = [...state.results, ...moreResults];
 
       emit(
         state.copyWith(
