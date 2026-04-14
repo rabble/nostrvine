@@ -54,6 +54,7 @@ import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
@@ -1641,34 +1642,38 @@ class VideoOverlayActions extends ConsumerWidget {
                       const SizedBox(
                         height: 2,
                       ), // 2px + 10px from avatar container = 12px total
-                      Semantics(
-                        identifier: 'video_description',
-                        container: true,
-                        explicitChildNodes: true,
-                        label:
-                            'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-                        child: ClickableHashtagText(
-                          text:
-                              (video.content.isNotEmpty
-                                      ? video.content
-                                      : video.title ?? '')
-                                  .trim(),
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            color: VineTheme.whiteText,
-                            fontSize: 14,
-                            height: 20 / 14,
-                            letterSpacing: 0.25,
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => MetadataExpandedSheet.show(context, video),
+                        child: Semantics(
+                          identifier: 'video_description',
+                          container: true,
+                          explicitChildNodes: true,
+                          label:
+                              'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
+                          child: ClickableHashtagText(
+                            text:
+                                (video.content.isNotEmpty
+                                        ? video.content
+                                        : video.title ?? '')
+                                    .trim(),
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              color: VineTheme.whiteText,
+                              fontSize: 14,
+                              height: 20 / 14,
+                              letterSpacing: 0.25,
+                            ),
+                            hashtagStyle: const TextStyle(
+                              fontFamily: 'Inter',
+                              color: VineTheme.vineGreen,
+                              fontSize: 14,
+                              height: 20 / 14,
+                              letterSpacing: 0.25,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          hashtagStyle: const TextStyle(
-                            fontFamily: 'Inter',
-                            color: VineTheme.vineGreen,
-                            fontSize: 14,
-                            height: 20 / 14,
-                            letterSpacing: 0.25,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       // Collaborator avatar row (if video has collaborators)
