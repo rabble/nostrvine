@@ -180,7 +180,6 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
 class _CollabsEmptyState extends StatelessWidget {
   const _CollabsEmptyState({required this.isOwnProfile});
 
-  /// Whether this is the current user's own profile.
   final bool isOwnProfile;
 
   @override
@@ -188,41 +187,29 @@ class _CollabsEmptyState extends StatelessWidget {
     slivers: [
       SliverFillRemaining(
         hasScrollBody: false,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.people_outline,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(48, 64, 48, 48),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'No collabs yet',
+                textAlign: TextAlign.center,
+                style: VineTheme.titleMediumFont(
                   color: VineTheme.onSurfaceMuted,
-                  size: 64,
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Collabs Yet',
-                  textAlign: .center,
-                  style: TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isOwnProfile
+                    ? 'Videos you collaborate on will appear here.'
+                    : 'Videos they collaborate on will appear here.',
+                textAlign: TextAlign.center,
+                style: VineTheme.bodyMediumFont(
+                  color: VineTheme.onSurfaceMuted,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  isOwnProfile
-                      ? 'Videos you collaborate on will appear here'
-                      : 'Videos they collaborate on will appear here',
-                  textAlign: .center,
-                  style: const TextStyle(
-                    color: VineTheme.onSurfaceMuted,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

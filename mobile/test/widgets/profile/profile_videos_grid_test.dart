@@ -109,9 +109,9 @@ void main() {
 
         await tester.pumpWidget(buildSubject(userIdHex: _otherPubkey));
 
-        expect(find.text('No Videos Yet'), findsOneWidget);
+        expect(find.text('No videos yet'), findsOneWidget);
         expect(
-          find.text("This user hasn't shared any videos yet"),
+          find.text("This user hasn't shared any videos yet."),
           findsOneWidget,
         );
       });
@@ -123,9 +123,11 @@ void main() {
 
         await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
 
-        expect(find.text('No Videos Yet'), findsOneWidget);
+        expect(find.text('No videos yet'), findsOneWidget);
         expect(
-          find.text('Share your first video to see it here'),
+          find.text(
+            'Your stage is set. Start posting and your videos will live here.',
+          ),
           findsOneWidget,
         );
       });

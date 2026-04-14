@@ -145,11 +145,10 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
   }
 }
 
-/// Empty state shown when user has no liked videos
+/// Empty state shown when user has no liked videos.
 class _LikedEmptyState extends StatelessWidget {
   const _LikedEmptyState({required this.isOwnProfile});
 
-  /// Whether this is the current user's own profile.
   final bool isOwnProfile;
 
   @override
@@ -157,41 +156,30 @@ class _LikedEmptyState extends StatelessWidget {
     slivers: [
       SliverFillRemaining(
         hasScrollBody: false,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.favorite_border,
-                  color: VineTheme.lightText,
-                  size: 64,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(48, 64, 48, 48),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'No likes yet',
+                textAlign: TextAlign.center,
+                style: VineTheme.titleMediumFont(
+                  color: VineTheme.onSurfaceMuted,
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Liked Videos Yet',
-                  textAlign: .center,
-                  style: TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isOwnProfile
+                    ? 'When something catches your eye, tap the '
+                          'heart. Your likes will show up here.'
+                    : 'Videos they like will appear here.',
+                textAlign: TextAlign.center,
+                style: VineTheme.bodyMediumFont(
+                  color: VineTheme.onSurfaceMuted,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  isOwnProfile
-                      ? 'Videos you like will appear here'
-                      : 'Videos they like will appear here',
-                  textAlign: .center,
-                  style: const TextStyle(
-                    color: VineTheme.lightText,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
