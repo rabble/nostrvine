@@ -38,8 +38,13 @@ void main() {
       when(
         () => mockCleanupService.clearUserSpecificData(
           reason: any(named: 'reason'),
+          userPubkey: any(named: 'userPubkey'),
+          deleteUserData: any(named: 'deleteUserData'),
         ),
       ).thenAnswer((_) async => 0);
+      when(
+        () => mockCleanupService.claimLegacyRows(any()),
+      ).thenAnswer((_) async {});
 
       secureStorage = {};
 
@@ -128,45 +133,42 @@ void main() {
       );
     }
 
-    test(
-      'divineOAuth local restore starts in upgrading state '
-      'before RPC is ready',
-      () async {
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'divineOAuth',
-          'tos_accepted': true,
-        });
+    test('divineOAuth local restore starts in upgrading state '
+        'before RPC is ready', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
 
-        arrangeExpiredSessionWithMatchingLocalKeys();
+      arrangeExpiredSessionWithMatchingLocalKeys();
 
-        // refreshSession returns null (failed)
-        when(
-          () => mockOAuthClient.refreshSession(),
-        ).thenAnswer((_) async => null);
+      // refreshSession returns null (failed)
+      when(
+        () => mockOAuthClient.refreshSession(),
+      ).thenAnswer((_) async => null);
 
-        final authService = createAuthService();
+      final authService = createAuthService();
 
-        await runZonedGuarded(
-          () async {
-            await authService.initialize();
+      await runZonedGuarded(
+        () async {
+          await authService.initialize();
 
-            expect(authService.isAuthenticated, isTrue);
-            expect(
-              authService.authenticationSource,
-              equals(AuthenticationSource.divineOAuth),
-            );
-            // RPC capability should not be rpcReady since refresh failed
-            expect(
-              authService.authRpcCapability,
-              isNot(equals(AuthRpcCapability.rpcReady)),
-            );
-          },
-          (error, stack) {
-            // Ignore background relay discovery errors
-          },
-        );
-      },
-    );
+          expect(authService.isAuthenticated, isTrue);
+          expect(
+            authService.authenticationSource,
+            equals(AuthenticationSource.divineOAuth),
+          );
+          // RPC capability should not be rpcReady since refresh failed
+          expect(
+            authService.authRpcCapability,
+            isNot(equals(AuthRpcCapability.rpcReady)),
+          );
+        },
+        (error, stack) {
+          // Ignore background relay discovery errors
+        },
+      );
+    });
 
     test(
       'authRpcCapability defaults to unavailable for non-oauth sources',
@@ -233,54 +235,48 @@ void main() {
       },
     );
 
-    test(
-      'canPublishNostrWritesNow is false when not authenticated',
-      () {
-        final authService = createAuthService();
-        expect(authService.canPublishNostrWritesNow, isFalse);
-      },
-    );
+    test('canPublishNostrWritesNow is false when not authenticated', () {
+      final authService = createAuthService();
+      expect(authService.canPublishNostrWritesNow, isFalse);
+    });
 
-    test(
-      'matching local key authenticates before refresh completes',
-      () async {
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'divineOAuth',
-          'tos_accepted': true,
-        });
+    test('matching local key authenticates before refresh completes', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
 
-        final pubkey = arrangeExpiredSessionWithMatchingLocalKeys();
+      final pubkey = arrangeExpiredSessionWithMatchingLocalKeys();
 
-        // refreshSession hangs forever (simulates slow network)
-        when(
-          () => mockOAuthClient.refreshSession(),
-        ).thenAnswer((_) => Completer<KeycastSession?>().future);
+      // refreshSession hangs forever (simulates slow network)
+      when(
+        () => mockOAuthClient.refreshSession(),
+      ).thenAnswer((_) => Completer<KeycastSession?>().future);
 
-        final authService = createAuthService();
+      final authService = createAuthService();
 
-        await runZonedGuarded(
-          () async {
-            await authService.initialize();
+      await runZonedGuarded(
+        () async {
+          await authService.initialize();
 
-            // Should be authenticated immediately from local keys
-            expect(authService.isAuthenticated, isTrue);
-            expect(authService.currentPublicKeyHex, equals(pubkey));
-            expect(
-              authService.authenticationSource,
-              equals(AuthenticationSource.divineOAuth),
-            );
-            // RPC is upgrading (refresh is still in-flight)
-            expect(
-              authService.authRpcCapability,
-              equals(AuthRpcCapability.upgrading),
-            );
-          },
-          (error, stack) {
-            // Ignore background errors
-          },
-        );
-      },
-    );
+          // Should be authenticated immediately from local keys
+          expect(authService.isAuthenticated, isTrue);
+          expect(authService.currentPublicKeyHex, equals(pubkey));
+          expect(
+            authService.authenticationSource,
+            equals(AuthenticationSource.divineOAuth),
+          );
+          // RPC is upgrading (refresh is still in-flight)
+          expect(
+            authService.authRpcCapability,
+            equals(AuthRpcCapability.upgrading),
+          );
+        },
+        (error, stack) {
+          // Ignore background errors
+        },
+      );
+    });
 
     test(
       'refresh timeout does not block local authenticated startup',
@@ -313,43 +309,37 @@ void main() {
       },
     );
 
-    test(
-      'no local key + no valid session → unauthenticated',
-      () async {
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'divineOAuth',
-          'tos_accepted': true,
-        });
+    test('no local key + no valid session → unauthenticated', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
 
-        // Expired session, no local keys
-        final expiredSession = KeycastSession(
-          bunkerUrl: 'https://login.divine.video/api/nostr',
-          accessToken: 'expired_token',
-          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
-        );
-        secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+      // Expired session, no local keys
+      final expiredSession = KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'expired_token',
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+      );
+      secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
 
-        when(
-          () => mockOAuthClient.refreshSession(),
-        ).thenAnswer((_) async => null);
+      when(
+        () => mockOAuthClient.refreshSession(),
+      ).thenAnswer((_) async => null);
 
-        final authService = createAuthService();
+      final authService = createAuthService();
 
-        await runZonedGuarded(
-          () async {
-            await authService.initialize();
+      await runZonedGuarded(
+        () async {
+          await authService.initialize();
 
-            expect(
-              authService.authState,
-              equals(AuthState.unauthenticated),
-            );
-            expect(authService.hasExpiredOAuthSession, isTrue);
-          },
-          (error, stack) {
-            // Ignore background errors
-          },
-        );
-      },
-    );
+          expect(authService.authState, equals(AuthState.unauthenticated));
+          expect(authService.hasExpiredOAuthSession, isTrue);
+        },
+        (error, stack) {
+          // Ignore background errors
+        },
+      );
+    });
   });
 }

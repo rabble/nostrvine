@@ -52,11 +52,7 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   Future<List<ClipRow>> getClipsByDraftId(String draftId) {
     final query = select(clips)
       ..where((t) => t.draftId.equals(draftId))
-      ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.orderIndex,
-        ),
-      ]);
+      ..orderBy([(t) => OrderingTerm(expression: t.orderIndex)]);
     return query.get();
   }
 
@@ -72,10 +68,7 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     final query = select(clips)
       ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.recordedAt,
-          mode: OrderingMode.desc,
-        ),
+        (t) => OrderingTerm(expression: t.recordedAt, mode: OrderingMode.desc),
       ]);
     if (limit != null) {
       query.limit(limit);
@@ -107,11 +100,7 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   Stream<List<ClipRow>> watchClipsByDraftId(String draftId) {
     final query = select(clips)
       ..where((t) => t.draftId.equals(draftId))
-      ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.orderIndex,
-        ),
-      ]);
+      ..orderBy([(t) => OrderingTerm(expression: t.orderIndex)]);
     return query.watch();
   }
 
@@ -134,19 +123,13 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   /// Get all library clips (no draft association), newest first.
   /// When [ownerPubkey] is provided, returns only clips owned by that
   /// account **plus** legacy clips with no owner.
-  Future<List<ClipRow>> getLibraryClips({
-    int? limit,
-    String? ownerPubkey,
-  }) {
+  Future<List<ClipRow>> getLibraryClips({int? limit, String? ownerPubkey}) {
     final query = select(clips)
       ..where(
         (t) => t.draftId.isNull() & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
       )
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.recordedAt,
-          mode: OrderingMode.desc,
-        ),
+        (t) => OrderingTerm(expression: t.recordedAt, mode: OrderingMode.desc),
       ]);
     if (limit != null) {
       query.limit(limit);
@@ -163,10 +146,7 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
         (t) => t.draftId.isNull() & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
       )
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.recordedAt,
-          mode: OrderingMode.desc,
-        ),
+        (t) => OrderingTerm(expression: t.recordedAt, mode: OrderingMode.desc),
       ]);
     return query.watch();
   }
@@ -179,6 +159,26 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   /// Clear all clips
   Future<int> clearAll() {
     return delete(clips).go();
+  }
+
+  /// Delete all clips owned by [userPubkey].
+  ///
+  /// Legacy clips with NULL ownerPubkey are preserved because they
+  /// cannot be attributed to any specific account.
+  /// Used on destructive sign-out to prevent cross-account data leaks.
+  Future<int> deleteAllForUser(String userPubkey) {
+    return (delete(clips)..where((t) => t.ownerPubkey.equals(userPubkey))).go();
+  }
+
+  /// Claim legacy clips (NULL ownerPubkey) for [ownerPubkey].
+  ///
+  /// Called during session setup so that pre-multi-account clips are
+  /// attributed to the user who created them and stop being visible
+  /// to other accounts via the `_ownedOrLegacy` filter.
+  Future<int> claimLegacyRows(String ownerPubkey) {
+    return (update(clips)..where((t) => t.ownerPubkey.isNull())).write(
+      ClipsCompanion(ownerPubkey: Value(ownerPubkey)),
+    );
   }
 
   /// Check if a filename is referenced by any clip's file_path

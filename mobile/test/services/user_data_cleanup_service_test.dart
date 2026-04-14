@@ -232,6 +232,59 @@ void main() {
         // Matching prefix should be cleared
         expect(prefs.containsKey('following_list_abc123'), isFalse);
       });
+
+      test(
+        'passes userPubkey and deleteUserData to onDatabaseCleanup',
+        () async {
+          String? receivedPubkey;
+          var receivedDeleteUserData = false;
+          service.onDatabaseCleanup =
+              ({String? userPubkey, bool deleteUserData = false}) async {
+                receivedPubkey = userPubkey;
+                receivedDeleteUserData = deleteUserData;
+              };
+
+          await service.clearUserSpecificData(
+            reason: 'explicit_logout',
+            userPubkey: 'abc123',
+            deleteUserData: true,
+          );
+
+          expect(receivedPubkey, equals('abc123'));
+          expect(receivedDeleteUserData, isTrue);
+        },
+      );
+
+      test(
+        'passes deleteUserData=false by default to onDatabaseCleanup',
+        () async {
+          var receivedDeleteUserData = true;
+          service.onDatabaseCleanup =
+              ({String? userPubkey, bool deleteUserData = false}) async {
+                receivedDeleteUserData = deleteUserData;
+              };
+
+          await service.clearUserSpecificData(reason: 'explicit_logout');
+
+          expect(receivedDeleteUserData, isFalse);
+        },
+      );
+
+      test('claimLegacyRows calls onClaimLegacyRows callback', () async {
+        String? receivedPubkey;
+        service.onClaimLegacyRows = (String pubkey) async {
+          receivedPubkey = pubkey;
+        };
+
+        await service.claimLegacyRows('abc123');
+
+        expect(receivedPubkey, equals('abc123'));
+      });
+
+      test('claimLegacyRows is safe when callback not set', () async {
+        // Should not throw
+        await service.claimLegacyRows('abc123');
+      });
     });
 
     group('userSpecificKeys', () {
