@@ -66,7 +66,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   DraftStorageService get _draftService =>
       ref.read(draftStorageServiceProvider);
 
-  bool get isAutosavedDraft => draftId == VideoEditorConstants.autoSaveId;
+  bool get isAutosavedDraft => state.isAutosavedDraft;
 
   int _renderGeneration = 0;
 
@@ -150,6 +150,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       }
     }
     this.draftId = draftId ?? VideoEditorConstants.autoSaveId;
+    state = state.copyWith(
+      isAutosavedDraft:
+          this.draftId == VideoEditorConstants.autoSaveId,
+    );
   }
 
   /// Reset editor state and metadata to defaults.
@@ -565,6 +569,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       category: .video,
     );
     draftId = id;
+    state = state.copyWith(
+      isAutosavedDraft: id == VideoEditorConstants.autoSaveId,
+    );
   }
 
   /// Trigger autosave with debounce to prevent excessive saves.

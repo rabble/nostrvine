@@ -76,6 +76,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   /// [VineBottomSheet.show]).
   late final VideoEditorStickerBloc _stickerBloc;
 
+  /// Manually managed so we can dispatch [ClipEditorInitialized] after the
+  /// video editor provider finishes loading (especially for drafts).
+  late final ClipEditorBloc _clipEditorBloc;
+
   /// Body size notifier, updated by [_CanvasFitter].
   final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
 
@@ -99,6 +103,16 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     );
     _stickerBloc = VideoEditorStickerBloc(onPrecacheStickers: _precacheStickers)
       ..add(const VideoEditorStickerLoad());
+    _clipEditorBloc = ClipEditorBloc(
+      onFinalClipInvalidated: () =>
+          ref.read(videoEditorProvider.notifier).invalidateFinalRenderedClip(),
+    );
+
+    // For non-draft flows clips are already available.
+    final initialClips = ref.read(clipManagerProvider).clips;
+    if (initialClips.isNotEmpty) {
+      _clipEditorBloc.add(ClipEditorInitialized(initialClips));
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -120,6 +134,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       );
 
       if (mounted) {
+        // Clips are now loaded — initialize the clip editor BLoC.
+        final clips = ref.read(clipManagerProvider).clips;
+        _clipEditorBloc.add(ClipEditorInitialized(clips));
+
         _isLoadingDraft.value = false;
       }
     });
@@ -133,6 +151,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       category: LogCategory.video,
     );
     _stickerBloc.close();
+    _clipEditorBloc.close();
     _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
     super.dispose();
@@ -331,8 +350,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 
   Future<void> _openMusicLibrary() async {
-    // If no sound selected, show selection sheet first
-
     var result = await VineBottomSheet.show<AudioEvent>(
       context: context,
       maxChildSize: 1,
@@ -368,66 +385,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         BlocProvider(create: (_) => VideoEditorDrawBloc()),
         BlocProvider(create: (_) => VideoEditorTextBloc()),
         BlocProvider(create: (_) => TimelineOverlayBloc()),
-        BlocProvider(
-          create: (_) {
-            final clips = ref.read(clipManagerProvider).clips;
-            late final ClipEditorBloc bloc;
-            bloc = ClipEditorBloc(
-              splitExecutor:
-                  ({
-                    required sourceClip,
-                    required splitPosition,
-                    required currentClipIndex,
-                  }) async {
-                    await VideoEditorSplitService.splitClip(
-                      sourceClip: sourceClip,
-                      splitPosition: splitPosition,
-                      onClipsCreated: (startClip, endClip) {
-                        bloc.add(
-                          ClipEditorOriginalClipReplaced(
-                            sourceClipId: sourceClip.id,
-                            startClip: startClip,
-                            endClip: endClip,
-                          ),
-                        );
-                      },
-                      onThumbnailExtracted: (clip, thumbnailPath) {
-                        bloc.add(
-                          ClipEditorClipUpdated(
-                            clipId: clip.id,
-                            clip: clip.copyWith(thumbnailPath: thumbnailPath),
-                          ),
-                        );
-                      },
-                      onClipRendered: (clip, video) {
-                        // Read the current clip from BLoC state to avoid
-                        // overwriting fields updated by earlier callbacks
-                        // (e.g. thumbnailPath from onThumbnailExtracted).
-                        final current = bloc.state.clips.where(
-                          (c) => c.id == clip.id,
-                        );
-                        final base = current.isNotEmpty ? current.first : clip;
-                        bloc.add(
-                          ClipEditorClipUpdated(
-                            clipId: clip.id,
-                            clip: base.copyWith(video: video),
-                          ),
-                        );
-                        Log.debug(
-                          '\u2705 Clip rendered: ${clip.id}',
-                          name: 'VideoClipEditorScreen',
-                          category: LogCategory.video,
-                        );
-                      },
-                    );
-
-                    final notifier = ref.read(videoEditorProvider.notifier);
-                    notifier.invalidateFinalRenderedClip();
-                  },
-            )..add(ClipEditorInitialized(clips));
-            return bloc;
-          },
-        ),
+        BlocProvider.value(value: _clipEditorBloc),
       ],
       child: Builder(
         builder: (context) {

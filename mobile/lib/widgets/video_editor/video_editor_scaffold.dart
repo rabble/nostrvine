@@ -116,21 +116,24 @@ class _TimelineSectionState extends State<_TimelineSection> {
         duration: _initialLayoutDone ? _switchDuration : Duration.zero,
         curve: Curves.easeInOut,
         alignment: .bottomCenter,
-        child: Column(
-          mainAxisSize: .min,
-          crossAxisAlignment: .stretch,
-          children: [
-            // Keep timeline always in tree to preserve thumbnail cache.
-            // Offstage hides without unmounting.
-            Offstage(
-              offstage: _hideTimeline,
-              child: const Padding(
-                padding: .only(top: 12),
-                child: VideoEditorTimelineScaffold(),
+        child: ColoredBox(
+          color: VineTheme.backgroundCamera,
+          child: Column(
+            mainAxisSize: .min,
+            crossAxisAlignment: .stretch,
+            children: [
+              // Keep timeline always in tree to preserve thumbnail cache.
+              // Offstage hides without unmounting.
+              Offstage(
+                offstage: _hideTimeline,
+                child: const Padding(
+                  padding: .only(top: 12),
+                  child: VideoEditorTimelineScaffold(),
+                ),
               ),
-            ),
-            if (_hideTimeline) const _BottomActions(),
-          ],
+              if (_hideTimeline) const _BottomActions(),
+            ],
+          ),
         ),
       ),
     );

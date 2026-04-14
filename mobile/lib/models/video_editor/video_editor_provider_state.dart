@@ -21,6 +21,7 @@ class VideoEditorProviderState {
   VideoEditorProviderState({
     this.isProcessing = false,
     this.isSavingDraft = false,
+    this.isAutosavedDraft = true,
     this.allowAudioReuse = true,
     this.title = '',
     this.description = '',
@@ -48,6 +49,9 @@ class VideoEditorProviderState {
 
   /// Whether a draft save operation is currently in progress.
   final bool isSavingDraft;
+
+  /// Whether this session is an autosaved draft (vs. a user-saved draft).
+  final bool isAutosavedDraft;
 
   /// GlobalKey for the delete button to enable hit testing.
   final GlobalKey deleteButtonKey;
@@ -134,6 +138,7 @@ class VideoEditorProviderState {
   VideoEditorProviderState copyWith({
     bool? isProcessing,
     bool? isSavingDraft,
+    bool? isAutosavedDraft,
     bool? allowAudioReuse,
     GlobalKey? deleteButtonKey,
     String? title,
@@ -162,6 +167,7 @@ class VideoEditorProviderState {
     return VideoEditorProviderState(
       isProcessing: isProcessing ?? this.isProcessing,
       isSavingDraft: isSavingDraft ?? this.isSavingDraft,
+      isAutosavedDraft: isAutosavedDraft ?? this.isAutosavedDraft,
       allowAudioReuse: allowAudioReuse ?? this.allowAudioReuse,
       deleteButtonKey: deleteButtonKey ?? this.deleteButtonKey,
       title: title ?? this.title,

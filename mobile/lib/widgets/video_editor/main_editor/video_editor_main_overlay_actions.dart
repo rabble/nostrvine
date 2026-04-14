@@ -52,9 +52,9 @@ class _TopActions extends ConsumerWidget {
     final scope = VideoEditorScope.of(context);
     // Uses `read` because `draftId` is set once during `initialize()` and
     // does not change during the editor session.
-    final isAutosavedDraft = ref
-        .read(videoEditorProvider.notifier)
-        .isAutosavedDraft;
+    final isAutosavedDraft = ref.watch(
+      videoEditorProvider.select((s) => s.isAutosavedDraft),
+    );
 
     return PopScope(
       canPop: !isAutosavedDraft,

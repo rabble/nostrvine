@@ -49,7 +49,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   ProviderSubscription<AudioEvent?>? _soundSubscription;
 
   bool get _isAutosavedDraft =>
-      ref.read(videoEditorProvider.notifier).isAutosavedDraft;
+      ref.read(videoEditorProvider).isAutosavedDraft;
 
   @override
   void initState() {
