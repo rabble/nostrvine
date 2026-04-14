@@ -23,6 +23,8 @@ dependencies:
     path: ../nostr_sdk
   unified_logger:
     path: ../unified_logger
+  video_event_cache:
+    path: ../video_event_cache
 
 dev_dependencies:
   fake_async: ^1.3.3

@@ -97,7 +97,6 @@ import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/services/video_event_service_adapter.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
@@ -1784,7 +1783,7 @@ CurationService curationService(Ref ref) {
 
   return CurationService(
     nostrService: nostrService,
-    videoEventCache: VideoEventServiceAdapter(videoEventService),
+    videoEventCache: videoEventService,
     likesRepository: likesRepository,
     signer: authService.requireIdentity,
     divineTeamPubkeys: AppConstants.divineTeamPubkeys,

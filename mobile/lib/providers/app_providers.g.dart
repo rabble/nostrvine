@@ -3839,7 +3839,7 @@ final class CurationServiceProvider
   }
 }
 
-String _$curationServiceHash() => r'801f26cf5a8dcc70566c0455b34aa4cadb2d3773';
+String _$curationServiceHash() => r'c2e09557d5382b0286cedd6f09854b9537af477e';
 
 /// Content reporting service for NIP-56 compliance
 

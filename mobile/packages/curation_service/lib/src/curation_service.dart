@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:curation_service/src/video_event_cache.dart';
 import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -14,6 +13,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:video_event_cache/video_event_cache.dart';
 
 /// Service for managing NIP-51 video curation sets and content
 /// discovery.

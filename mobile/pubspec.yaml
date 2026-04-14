@@ -61,6 +61,7 @@ workspace:
   - packages/time_formatter
   - packages/tv_static_effect
   - packages/unified_logger
+  - packages/video_event_cache
   - packages/videos_repository
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -158,6 +159,9 @@ dependencies:
 
   # Curation Service - NIP-51 video curation sets and content discovery
   curation_service:
+
+  # Video Event Cache - Abstract interface for video event caching
+  video_event_cache:
 
   # Sound Service - Sound effects (countdown beeps, etc.)
   sound_service:
