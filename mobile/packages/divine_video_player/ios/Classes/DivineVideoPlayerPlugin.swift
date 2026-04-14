@@ -11,6 +11,11 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
     private static var registrar: FlutterPluginRegistrar?
 
     public static func register(with registrar: FlutterPluginRegistrar) {
+        // Hot restart re-calls register(with:) without disposing the
+        // previous engine's players. Clean up zombie players so timers
+        // and observers are released.
+        PlayerRegistry.shared.disposeAll()
+
         self.registrar = registrar
 
         let globalChannel = FlutterMethodChannel(
@@ -49,6 +54,14 @@ public class DivineVideoPlayerPlugin: NSObject, FlutterPlugin {
     }
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        // Methods that require no arguments are handled before the
+        // args guard to avoid returning FlutterMethodNotImplemented.
+        if call.method == "disposeAll" {
+            PlayerRegistry.shared.disposeAll()
+            result(nil)
+            return
+        }
+
         guard let args = call.arguments as? [String: Any] else {
             result(FlutterMethodNotImplemented)
             return
