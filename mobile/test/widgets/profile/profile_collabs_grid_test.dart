@@ -117,7 +117,7 @@ void main() {
 
         expect(find.text('No collabs yet'), findsOneWidget);
         expect(
-          find.text('Videos you collaborate on will appear here'),
+          find.text('Videos you collaborate on will appear here.'),
           findsOneWidget,
         );
       });
@@ -135,7 +135,7 @@ void main() {
 
         expect(find.text('No collabs yet'), findsOneWidget);
         expect(
-          find.text('Videos they collaborate on will appear here'),
+          find.text('Videos they collaborate on will appear here.'),
           findsOneWidget,
         );
       });

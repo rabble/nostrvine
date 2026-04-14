@@ -133,7 +133,7 @@ void main() {
 
         expect(find.text('No likes yet'), findsOneWidget);
         expect(
-          find.text('Videos you like will appear here'),
+          find.text('When something catches your eye, tap the heart. Your likes will show up here.'),
           findsOneWidget,
         );
       });
@@ -151,7 +151,7 @@ void main() {
 
         expect(find.text('No likes yet'), findsOneWidget);
         expect(
-          find.text('Videos they like will appear here'),
+          find.text('Nothing caught their eye yet. Give it time.'),
           findsOneWidget,
         );
       });
