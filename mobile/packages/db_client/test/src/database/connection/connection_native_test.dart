@@ -107,12 +107,10 @@ void main() {
       'replaces near-empty new DB with legacy when both exist',
       () async {
         // Legacy DB with conversations (the user's real data).
-        final legacyDb = _createDatabaseWithConversations(legacyPath, 20);
-        legacyDb.dispose();
+        _createDatabaseWithConversations(legacyPath, 20).dispose();
 
         // New DB with 0 conversations (artifact of relay re-fetch).
-        final newDb = _createDatabaseWithConversations(newPath, 0);
-        newDb.dispose();
+        _createDatabaseWithConversations(newPath, 0).dispose();
 
         await migrateLegacyDatabase(
           legacyPath: legacyPath,
@@ -137,15 +135,13 @@ void main() {
     test(
       'keeps new DB and deletes legacy when new has data above threshold',
       () async {
-        final legacyDb = _createDatabaseWithConversations(legacyPath, 50);
-        legacyDb.dispose();
+        _createDatabaseWithConversations(legacyPath, 50).dispose();
 
         // New DB with conversations above threshold — real user data.
-        final newDb = _createDatabaseWithConversations(
+        _createDatabaseWithConversations(
           newPath,
           maxConversationsForReplacement + 1,
-        );
-        newDb.dispose();
+        ).dispose();
 
         await migrateLegacyDatabase(
           legacyPath: legacyPath,
@@ -171,15 +167,14 @@ void main() {
     test(
       'treats new DB without conversations table as empty and replaces it',
       () async {
-        final legacyDb = _createDatabaseWithConversations(legacyPath, 10);
-        legacyDb.dispose();
+        _createDatabaseWithConversations(legacyPath, 10).dispose();
 
         // New DB exists but has no conversations table (incomplete init).
         final newFile = File(newPath);
         newFile.parent.createSync(recursive: true);
-        final newDb = raw_sqlite.sqlite3.open(newPath);
-        newDb.execute('CREATE TABLE other_table (id TEXT PRIMARY KEY)');
-        newDb.dispose();
+        raw_sqlite.sqlite3.open(newPath)
+          ..execute('CREATE TABLE other_table (id TEXT PRIMARY KEY)')
+          ..dispose();
 
         await migrateLegacyDatabase(
           legacyPath: legacyPath,
@@ -203,11 +198,9 @@ void main() {
     test(
       'cleans up sidecars of the replaced new DB before renaming legacy',
       () async {
-        final legacyDb = _createDatabaseWithConversations(legacyPath, 15);
-        legacyDb.dispose();
+        _createDatabaseWithConversations(legacyPath, 15).dispose();
 
-        final newDb = _createDatabaseWithConversations(newPath, 0);
-        newDb.dispose();
+        _createDatabaseWithConversations(newPath, 0).dispose();
         // Simulate stale sidecars on the new DB.
         File('$newPath-wal').writeAsBytesSync(const [1]);
         File('$newPath-shm').writeAsBytesSync(const [2]);
@@ -269,8 +262,8 @@ void main() {
 /// caller can dispose it after setup.
 raw_sqlite.Database _createDatabaseWithConversations(String path, int count) {
   File(path).parent.createSync(recursive: true);
-  final db = raw_sqlite.sqlite3.open(path);
-  db.execute('''
+  final db = raw_sqlite.sqlite3.open(path)
+    ..execute('''
     CREATE TABLE conversations (
       id TEXT PRIMARY KEY,
       participant_pubkeys TEXT NOT NULL DEFAULT '[]',
