@@ -10,9 +10,13 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
+  flutter:
+    sdk: flutter
   models:
     path: ../models
 
 dev_dependencies:
-  test: ^1.26.3
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
   very_good_analysis: ^10.2.0
