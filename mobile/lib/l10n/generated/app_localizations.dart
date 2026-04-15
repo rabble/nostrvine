@@ -6869,7 +6869,7 @@ abstract class AppLocalizations {
   /// No description provided for @cameraPermissionNotNow.
   ///
   /// In en, this message translates to:
-  /// **'Not Now'**
+  /// **'Not now'**
   String get cameraPermissionNotNow;
 
   /// No description provided for @saveOriginalDownloadFailed.
