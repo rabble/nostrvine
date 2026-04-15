@@ -16,7 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 
-import '../helpers/real_integration_test_helper.dart';
+import '../../helpers/real_integration_test_helper.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -30,6 +30,7 @@ class _FakeEvent extends Fake implements Event {}
 /// Fake [File] for use with registerFallbackValue.
 class _FakeFile extends Fake implements File {}
 
+@Tags(['service'])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

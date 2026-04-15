@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 
+@Tags(['service'])
 void main() {
   group('Vine Tag Integration Tests', () {
     test('VideoEventService filters should include vine tag', () {
