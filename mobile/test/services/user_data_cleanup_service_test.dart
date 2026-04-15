@@ -278,6 +278,8 @@ void main() {
 
         expect(prefixes, contains('following_list_'));
         expect(prefixes, contains('relay_discovery_'));
+        expect(prefixes, contains('dm.newestSyncedAt.'));
+        expect(prefixes, contains('dm.oldestSyncedAt.'));
       });
 
       test('does NOT contain non-dynamic prefixes', () {
@@ -287,6 +289,41 @@ void main() {
         expect(prefixes, isNot(contains('curated_lists')));
         expect(prefixes, isNot(contains('seen_video_ids')));
       });
+    });
+
+    group('DM sync state cleanup', () {
+      test(
+        'clears dm sync cursor keys on identity change',
+        () async {
+          await prefs.setInt('dm.newestSyncedAt.pubkeyA', 1000);
+          await prefs.setInt('dm.oldestSyncedAt.pubkeyA', 500);
+          await prefs.setInt('dm.newestSyncedAt.pubkeyB', 2000);
+          await prefs.setInt('dm.oldestSyncedAt.pubkeyB', 1500);
+
+          await service.clearUserSpecificData(
+            reason: 'identity_change',
+            isIdentityChange: true,
+          );
+
+          expect(prefs.containsKey('dm.newestSyncedAt.pubkeyA'), isFalse);
+          expect(prefs.containsKey('dm.oldestSyncedAt.pubkeyA'), isFalse);
+          expect(prefs.containsKey('dm.newestSyncedAt.pubkeyB'), isFalse);
+          expect(prefs.containsKey('dm.oldestSyncedAt.pubkeyB'), isFalse);
+        },
+      );
+
+      test(
+        'preserves dm sync cursor keys on non-identity-change cleanup',
+        () async {
+          await prefs.setInt('dm.newestSyncedAt.pubkeyA', 1000);
+          await prefs.setInt('dm.oldestSyncedAt.pubkeyA', 500);
+
+          await service.clearUserSpecificData(reason: 'explicit_logout');
+
+          expect(prefs.containsKey('dm.newestSyncedAt.pubkeyA'), isTrue);
+          expect(prefs.containsKey('dm.oldestSyncedAt.pubkeyA'), isTrue);
+        },
+      );
     });
   });
 }

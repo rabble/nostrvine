@@ -96,5 +96,24 @@ void main() {
         expect(state.oldestSyncedAt(pkB), equals(3000));
       },
     );
+
+    test(
+      'clearAll removes sync state for every pubkey and leaves '
+      'non-dm keys intact',
+      () async {
+        await state.recordSeen(pkA, createdAt: 1000);
+        await state.recordSeen(pkA, createdAt: 2000);
+        await state.recordSeen(pkB, createdAt: 3000);
+        await prefs.setString('unrelated_key', 'keep_me');
+
+        await state.clearAll();
+
+        expect(state.newestSyncedAt(pkA), isNull);
+        expect(state.oldestSyncedAt(pkA), isNull);
+        expect(state.newestSyncedAt(pkB), isNull);
+        expect(state.oldestSyncedAt(pkB), isNull);
+        expect(prefs.getString('unrelated_key'), equals('keep_me'));
+      },
+    );
   });
 }

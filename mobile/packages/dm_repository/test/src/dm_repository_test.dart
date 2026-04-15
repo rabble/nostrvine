@@ -60,6 +60,13 @@ class _FakeDmSyncState implements DmSyncState {
     newestOverride = null;
     oldestOverride = null;
   }
+
+  @override
+  Future<void> clearAll() async {
+    newestOverride = null;
+    oldestOverride = null;
+    recorded.clear();
+  }
 }
 
 // Valid 64-character hex pubkeys for testing

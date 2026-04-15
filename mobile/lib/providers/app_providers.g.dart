@@ -2673,7 +2673,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'3c3497cc89997f9995bdee112182fb36a35cc198';
+    r'56d99094bba86b89b54ababd0ab82604bc95cc4e';
 
 /// Subscription manager for centralized subscription management
 
@@ -3839,7 +3839,7 @@ final class CurationServiceProvider
   }
 }
 
-String _$curationServiceHash() => r'8eeffdbdad64deb0b10c3983346c3d3c83a1aa02';
+String _$curationServiceHash() => r'c2e09557d5382b0286cedd6f09854b9537af477e';
 
 /// Content reporting service for NIP-56 compliance
 

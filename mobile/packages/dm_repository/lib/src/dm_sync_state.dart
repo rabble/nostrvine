@@ -51,4 +51,21 @@ class DmSyncState {
     await _prefs.remove('$_newestPrefix$pubkey');
     await _prefs.remove('$_oldestPrefix$pubkey');
   }
+
+  /// Removes all DM sync state entries for every pubkey.
+  ///
+  /// Called during database cleanup to ensure the next login triggers a
+  /// full re-sync from relays instead of using stale `since:` cursors.
+  Future<void> clearAll() async {
+    final keysToRemove = _prefs
+        .getKeys()
+        .where(
+          (key) =>
+              key.startsWith(_newestPrefix) || key.startsWith(_oldestPrefix),
+        )
+        .toList();
+    for (final key in keysToRemove) {
+      await _prefs.remove(key);
+    }
+  }
 }

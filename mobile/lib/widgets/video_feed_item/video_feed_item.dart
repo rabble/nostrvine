@@ -1492,16 +1492,6 @@ class VideoOverlayActions extends ConsumerWidget {
                             profile?.bestDisplayName ??
                             video.authorName ??
                             UserProfile.generatedNameFor(video.pubkey);
-                        final archivedLoops = video.originalLoops ?? 0;
-                        final liveViews =
-                            int.tryParse(video.rawTags['views'] ?? '') ?? 0;
-                        // Always sum archived (original Vine) and live (new diVine)
-                        // loops so migrated videos show their full combined count.
-                        final loopCount = archivedLoops + liveViews;
-                        final hasLoopMetadata =
-                            video.originalLoops != null ||
-                            video.rawTags.containsKey('loops') ||
-                            video.rawTags.containsKey('views');
 
                         void navigateToProfile() {
                           Log.info(
@@ -1579,9 +1569,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                       ],
                                     ),
                                     Text(
-                                      hasLoopMetadata
-                                          ? '${StringUtils.formatCompactNumber(loopCount)} loops'
-                                          : video.relativeTime,
+                                      '${StringUtils.formatCompactNumber(video.totalLoops)} ${video.totalLoops == 1 ? 'loop' : 'loops'}',
                                       style: const TextStyle(
                                         fontFamily: 'Inter',
                                         fontSize: 14,

@@ -3,7 +3,7 @@
 
 import 'dart:io';
 
-import 'package:openvine/services/blurhash_service.dart';
+import 'package:blurhash_service/blurhash_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 
 Future<void> main() async {
