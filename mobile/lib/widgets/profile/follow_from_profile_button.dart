@@ -64,8 +64,11 @@ class FollowFromProfileButton extends ConsumerWidget {
 }
 
 /// View widget that consumes [MyFollowingBloc] state and renders the follow button.
+///
+/// Expects a [MyFollowingBloc] to be available in the widget tree.
+/// Used by [FollowFromProfileButton] (which creates its own bloc)
+/// and by [ProfileActionButtons] (which shares the bloc for row reordering).
 class FollowFromProfileButtonView extends StatelessWidget {
-  @visibleForTesting
   const FollowFromProfileButtonView({
     required this.pubkey,
     required this.displayName,
