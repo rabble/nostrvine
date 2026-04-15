@@ -15,10 +15,19 @@ const _maxSessionAge = Duration(seconds: 60);
 
 /// Service for tracking feed performance and user engagement
 class FeedPerformanceTracker {
-  static final FeedPerformanceTracker _instance =
-      FeedPerformanceTracker._internal();
-  factory FeedPerformanceTracker() => _instance;
-  FeedPerformanceTracker._internal();
+  factory FeedPerformanceTracker() => _instance ??= FeedPerformanceTracker._();
+  FeedPerformanceTracker._();
+
+  static FeedPerformanceTracker? _instance;
+
+  /// Resets the singleton so the next [FeedPerformanceTracker()] call returns a
+  /// fresh instance. Call in test `tearDown` to prevent state leaking between
+  /// test files when tests run in a shared isolate (e.g. VGV optimized runner).
+  @visibleForTesting
+  static void resetInstance() {
+    _instance?._activeSessions.clear();
+    _instance = null;
+  }
 
   /// Creates a testable instance that does not touch [FirebaseAnalytics].
   @visibleForTesting

@@ -15,10 +15,21 @@ const _maxScreenSessionAge = Duration(seconds: 60);
 
 /// Service for tracking screen navigation, performance, and user engagement
 class ScreenAnalyticsService {
-  static final ScreenAnalyticsService _instance =
-      ScreenAnalyticsService._internal();
-  factory ScreenAnalyticsService() => _instance;
-  ScreenAnalyticsService._internal();
+  factory ScreenAnalyticsService() => _instance ??= ScreenAnalyticsService._();
+  ScreenAnalyticsService._();
+
+  static ScreenAnalyticsService? _instance;
+
+  /// Resets the singleton so the next [ScreenAnalyticsService()] call returns a
+  /// fresh instance. Call in test `tearDown` to prevent state leaking between
+  /// test files when tests run in a shared isolate (e.g. VGV optimized runner).
+  @visibleForTesting
+  static void resetInstance() {
+    _instance?._activeSessions.clear();
+    _instance?._currentScreen = null;
+    _instance?._currentScreenStartTime = null;
+    _instance = null;
+  }
 
   /// Creates a testable instance that does not touch [FirebaseAnalytics].
   @visibleForTesting
