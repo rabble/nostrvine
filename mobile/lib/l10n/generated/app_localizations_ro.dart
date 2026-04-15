@@ -4524,67 +4524,67 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get libraryWebUnavailableHeadline =>
-      'Library is available in the mobile app';
+      'Biblioteca e în aplicația mobilă';
 
   @override
   String get libraryWebUnavailableDescription =>
-      'Drafts and clips are saved on your device, so open Divine on your phone to manage them.';
+      'Ciornele și clipurile sunt pe dispozitivul tău — deschide Divine pe telefon ca să le gestionezi.';
 
   @override
-  String get libraryTabDrafts => 'Drafts';
+  String get libraryTabDrafts => 'Ciorne';
 
   @override
-  String get libraryTabClips => 'Clips';
+  String get libraryTabClips => 'Clipuri';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'Save to camera roll';
+  String get librarySaveToCameraRollTooltip => 'Salvează în galerie';
 
   @override
-  String get libraryDeleteSelectedClipsTooltip => 'Delete selected clips';
+  String get libraryDeleteSelectedClipsTooltip => 'Șterge clipurile selectate';
 
   @override
-  String get libraryDeleteClipsTitle => 'Delete Clips';
+  String get libraryDeleteClipsTitle => 'Șterge clipurile';
 
   @override
   String libraryDeleteClipsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '# selected clips',
-      one: '# selected clip',
+      other: '# clipuri selectate',
+      one: '# clip selectat',
     );
-    return 'Are you sure you want to delete $_temp0?';
+    return 'Ștergi $_temp0?';
   }
 
   @override
   String get libraryDeleteClipsWarning =>
-      'This action cannot be undone. The video files will be permanently removed from your device.';
+      'Nu se poate anula. Fișierele video vor fi eliminate definitiv de pe dispozitiv.';
 
   @override
-  String get libraryPreparingVideo => 'Preparing video...';
+  String get libraryPreparingVideo => 'Se pregătește videoclipul...';
 
   @override
-  String get libraryCreateVideo => 'Create Video';
+  String get libraryCreateVideo => 'Creează video';
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count clips',
+      other: '$count clipuri',
       one: '1 clip',
     );
-    return '$_temp0 saved to $destination';
+    return '$_temp0 salvate în $destination';
   }
 
   @override
   String libraryClipsSavePartialResult(int successCount, int failureCount) {
-    return '$successCount saved, $failureCount failed';
+    return '$successCount salvate, $failureCount eșuate';
   }
 
   @override
   String libraryGalleryPermissionDenied(String destination) {
-    return '$destination permission denied';
+    return 'Permisiune refuzată pentru $destination';
   }
 
   @override
@@ -4592,79 +4592,77 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count clips deleted',
-      one: '1 clip deleted',
+      other: '$count clipuri șterse',
+      one: '1 clip șters',
     );
     return '$_temp0';
   }
 
   @override
-  String get libraryCouldNotLoadDrafts => 'Couldn\'t load drafts';
+  String get libraryCouldNotLoadDrafts => 'Nu s-au putut încărca ciornele';
 
   @override
-  String get libraryCouldNotLoadClips => 'Couldn\'t load clips';
+  String get libraryCouldNotLoadClips => 'Nu s-au putut încărca clipurile';
 
   @override
   String get libraryOpenErrorDescription =>
-      'Something went wrong while opening your library. You can try again.';
+      'Ceva nu a mers la deschiderea bibliotecii. Poți încerca din nou.';
 
   @override
-  String get libraryNoDraftsYetTitle => 'No Drafts Yet';
+  String get libraryNoDraftsYetTitle => 'Încă nu ai ciorne';
 
   @override
   String get libraryNoDraftsYetSubtitle =>
-      'Videos you save as draft will appear here';
+      'Videoclipurile salvate ca ciornă apar aici';
 
   @override
-  String get libraryNoClipsYetTitle => 'No Clips Yet';
+  String get libraryNoClipsYetTitle => 'Încă nu ai clipuri';
 
   @override
-  String get libraryNoClipsYetSubtitle =>
-      'Your recorded video clips will appear here';
+  String get libraryNoClipsYetSubtitle => 'Clipurile înregistrate apar aici';
 
   @override
-  String get libraryDraftDeletedSnackbar => 'Draft deleted';
+  String get libraryDraftDeletedSnackbar => 'Ciornă ștearsă';
 
   @override
-  String get libraryDraftDeleteFailedSnackbar => 'Failed to delete draft';
+  String get libraryDraftDeleteFailedSnackbar => 'Nu s-a putut șterge ciorna';
 
   @override
-  String get libraryDraftActionPost => 'Post';
+  String get libraryDraftActionPost => 'Publică';
 
   @override
-  String get libraryDraftActionEdit => 'Edit';
+  String get libraryDraftActionEdit => 'Editează';
 
   @override
-  String get libraryDraftActionDelete => 'Delete draft';
+  String get libraryDraftActionDelete => 'Șterge ciorna';
 
   @override
-  String get libraryDeleteDraftTitle => 'Delete Draft';
+  String get libraryDeleteDraftTitle => 'Șterge ciorna';
 
   @override
   String libraryDeleteDraftMessage(String title) {
-    return 'Are you sure you want to delete \"$title\"?';
+    return 'Ștergi „$title”?';
   }
 
   @override
-  String get libraryDeleteClipTitle => 'Delete Clip';
+  String get libraryDeleteClipTitle => 'Șterge clipul';
 
   @override
-  String get libraryDeleteClipMessage =>
-      'Are you sure you want to delete this clip?';
+  String get libraryDeleteClipMessage => 'Ștergi acest clip?';
 
   @override
-  String get libraryClipSelectionTitle => 'Clips';
+  String get libraryClipSelectionTitle => 'Clipuri';
 
   @override
   String librarySecondsRemaining(String seconds) {
-    return '${seconds}s remaining';
+    return 'Au rămas ${seconds}s';
   }
 
   @override
-  String get libraryAddClips => 'Add';
+  String get libraryAddClips => 'Adaugă';
 
   @override
-  String get libraryRecordVideo => 'Record a Video';
+  String get libraryRecordVideo => 'Înregistrează un video';
 
   @override
   String get routerInvalidCreator => 'Creator invalid';

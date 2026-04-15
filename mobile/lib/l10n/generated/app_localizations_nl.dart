@@ -4409,47 +4409,48 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get libraryWebUnavailableHeadline =>
-      'Library is available in the mobile app';
+      'Bibliotheek is beschikbaar in de mobiele app';
 
   @override
   String get libraryWebUnavailableDescription =>
-      'Drafts and clips are saved on your device, so open Divine on your phone to manage them.';
+      'Concepten en clips worden op je apparaat opgeslagen. Open Divine op je telefoon om ze te beheren.';
 
   @override
-  String get libraryTabDrafts => 'Drafts';
+  String get libraryTabDrafts => 'Concepten';
 
   @override
   String get libraryTabClips => 'Clips';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'Save to camera roll';
+  String get librarySaveToCameraRollTooltip => 'Opslaan in filmrol';
 
   @override
-  String get libraryDeleteSelectedClipsTooltip => 'Delete selected clips';
+  String get libraryDeleteSelectedClipsTooltip =>
+      'Geselecteerde clips verwijderen';
 
   @override
-  String get libraryDeleteClipsTitle => 'Delete Clips';
+  String get libraryDeleteClipsTitle => 'Clips verwijderen';
 
   @override
   String libraryDeleteClipsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '# selected clips',
-      one: '# selected clip',
+      other: '# geselecteerde clips',
+      one: '# geselecteerde clip',
     );
-    return 'Are you sure you want to delete $_temp0?';
+    return 'Weet je zeker dat je $_temp0 wilt verwijderen?';
   }
 
   @override
   String get libraryDeleteClipsWarning =>
-      'This action cannot be undone. The video files will be permanently removed from your device.';
+      'Dit kan niet ongedaan worden gemaakt. De videobestanden worden permanent van je apparaat verwijderd.';
 
   @override
-  String get libraryPreparingVideo => 'Preparing video...';
+  String get libraryPreparingVideo => 'Video voorbereiden...';
 
   @override
-  String get libraryCreateVideo => 'Create Video';
+  String get libraryCreateVideo => 'Video maken';
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {
@@ -4459,17 +4460,17 @@ class AppLocalizationsNl extends AppLocalizations {
       other: '$count clips',
       one: '1 clip',
     );
-    return '$_temp0 saved to $destination';
+    return '$_temp0 opgeslagen in $destination';
   }
 
   @override
   String libraryClipsSavePartialResult(int successCount, int failureCount) {
-    return '$successCount saved, $failureCount failed';
+    return '$successCount opgeslagen, $failureCount mislukt';
   }
 
   @override
   String libraryGalleryPermissionDenied(String destination) {
-    return '$destination permission denied';
+    return 'Toestemming geweigerd voor $destination';
   }
 
   @override
@@ -4477,79 +4478,80 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count clips deleted',
-      one: '1 clip deleted',
+      other: '$count clips verwijderd',
+      one: '1 clip verwijderd',
     );
     return '$_temp0';
   }
 
   @override
-  String get libraryCouldNotLoadDrafts => 'Couldn\'t load drafts';
+  String get libraryCouldNotLoadDrafts =>
+      'Concepten konden niet worden geladen';
 
   @override
-  String get libraryCouldNotLoadClips => 'Couldn\'t load clips';
+  String get libraryCouldNotLoadClips => 'Clips konden niet worden geladen';
 
   @override
   String get libraryOpenErrorDescription =>
-      'Something went wrong while opening your library. You can try again.';
+      'Er ging iets mis bij het openen van je bibliotheek. Probeer het opnieuw.';
 
   @override
-  String get libraryNoDraftsYetTitle => 'No Drafts Yet';
+  String get libraryNoDraftsYetTitle => 'Nog geen concepten';
 
   @override
   String get libraryNoDraftsYetSubtitle =>
-      'Videos you save as draft will appear here';
+      'Video\'\'s die je als concept opslaat, verschijnen hier';
 
   @override
-  String get libraryNoClipsYetTitle => 'No Clips Yet';
+  String get libraryNoClipsYetTitle => 'Nog geen clips';
 
   @override
   String get libraryNoClipsYetSubtitle =>
-      'Your recorded video clips will appear here';
+      'Je opgenomen videoclips verschijnen hier';
 
   @override
-  String get libraryDraftDeletedSnackbar => 'Draft deleted';
+  String get libraryDraftDeletedSnackbar => 'Concept verwijderd';
 
   @override
-  String get libraryDraftDeleteFailedSnackbar => 'Failed to delete draft';
+  String get libraryDraftDeleteFailedSnackbar => 'Concept verwijderen mislukt';
 
   @override
-  String get libraryDraftActionPost => 'Post';
+  String get libraryDraftActionPost => 'Plaatsen';
 
   @override
-  String get libraryDraftActionEdit => 'Edit';
+  String get libraryDraftActionEdit => 'Bewerken';
 
   @override
-  String get libraryDraftActionDelete => 'Delete draft';
+  String get libraryDraftActionDelete => 'Concept verwijderen';
 
   @override
-  String get libraryDeleteDraftTitle => 'Delete Draft';
+  String get libraryDeleteDraftTitle => 'Concept verwijderen';
 
   @override
   String libraryDeleteDraftMessage(String title) {
-    return 'Are you sure you want to delete \"$title\"?';
+    return 'Weet je zeker dat je \"$title\" wilt verwijderen?';
   }
 
   @override
-  String get libraryDeleteClipTitle => 'Delete Clip';
+  String get libraryDeleteClipTitle => 'Clip verwijderen';
 
   @override
   String get libraryDeleteClipMessage =>
-      'Are you sure you want to delete this clip?';
+      'Weet je zeker dat je deze clip wilt verwijderen?';
 
   @override
   String get libraryClipSelectionTitle => 'Clips';
 
   @override
   String librarySecondsRemaining(String seconds) {
-    return '${seconds}s remaining';
+    return 'Nog ${seconds}s';
   }
 
   @override
-  String get libraryAddClips => 'Add';
+  String get libraryAddClips => 'Toevoegen';
 
   @override
-  String get libraryRecordVideo => 'Record a Video';
+  String get libraryRecordVideo => 'Video opnemen';
 
   @override
   String get routerInvalidCreator => 'Ongeldige maker';

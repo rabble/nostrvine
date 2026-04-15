@@ -4444,67 +4444,67 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get libraryWebUnavailableHeadline =>
-      'Library is available in the mobile app';
+      'Mediathek ist in der mobilen App';
 
   @override
   String get libraryWebUnavailableDescription =>
-      'Drafts and clips are saved on your device, so open Divine on your phone to manage them.';
+      'Entwürfe und Clips werden auf deinem Gerät gespeichert. Öffne Divine auf dem Smartphone, um sie zu verwalten.';
 
   @override
-  String get libraryTabDrafts => 'Drafts';
+  String get libraryTabDrafts => 'Entwürfe';
 
   @override
   String get libraryTabClips => 'Clips';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'Save to camera roll';
+  String get librarySaveToCameraRollTooltip => 'In der Fotomediathek speichern';
 
   @override
-  String get libraryDeleteSelectedClipsTooltip => 'Delete selected clips';
+  String get libraryDeleteSelectedClipsTooltip => 'Ausgewählte Clips löschen';
 
   @override
-  String get libraryDeleteClipsTitle => 'Delete Clips';
+  String get libraryDeleteClipsTitle => 'Clips löschen';
 
   @override
   String libraryDeleteClipsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '# selected clips',
-      one: '# selected clip',
+      other: '# ausgewählte Clips',
+      one: '# ausgewählten Clip',
     );
-    return 'Are you sure you want to delete $_temp0?';
+    return 'Möchtest du wirklich $_temp0 löschen?';
   }
 
   @override
   String get libraryDeleteClipsWarning =>
-      'This action cannot be undone. The video files will be permanently removed from your device.';
+      'Das kann nicht rückgängig gemacht werden. Die Videodateien werden dauerhaft von deinem Gerät entfernt.';
 
   @override
-  String get libraryPreparingVideo => 'Preparing video...';
+  String get libraryPreparingVideo => 'Video wird vorbereitet …';
 
   @override
-  String get libraryCreateVideo => 'Create Video';
+  String get libraryCreateVideo => 'Video erstellen';
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count clips',
-      one: '1 clip',
+      other: '$count Clips',
+      one: '1 Clip',
     );
-    return '$_temp0 saved to $destination';
+    return '$_temp0 in $destination gespeichert';
   }
 
   @override
   String libraryClipsSavePartialResult(int successCount, int failureCount) {
-    return '$successCount saved, $failureCount failed';
+    return '$successCount gespeichert, $failureCount fehlgeschlagen';
   }
 
   @override
   String libraryGalleryPermissionDenied(String destination) {
-    return '$destination permission denied';
+    return '$destination: Berechtigung verweigert';
   }
 
   @override
@@ -4512,79 +4512,80 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count clips deleted',
-      one: '1 clip deleted',
+      other: '$count Clips gelöscht',
+      one: '1 Clip gelöscht',
     );
     return '$_temp0';
   }
 
   @override
-  String get libraryCouldNotLoadDrafts => 'Couldn\'t load drafts';
+  String get libraryCouldNotLoadDrafts =>
+      'Entwürfe konnten nicht geladen werden';
 
   @override
-  String get libraryCouldNotLoadClips => 'Couldn\'t load clips';
+  String get libraryCouldNotLoadClips => 'Clips konnten nicht geladen werden';
 
   @override
   String get libraryOpenErrorDescription =>
-      'Something went wrong while opening your library. You can try again.';
+      'Beim Öffnen deiner Mediathek ist etwas schiefgelaufen. Versuch es noch einmal.';
 
   @override
-  String get libraryNoDraftsYetTitle => 'No Drafts Yet';
+  String get libraryNoDraftsYetTitle => 'Noch keine Entwürfe';
 
   @override
   String get libraryNoDraftsYetSubtitle =>
-      'Videos you save as draft will appear here';
+      'Videos, die du als Entwurf speicherst, erscheinen hier';
 
   @override
-  String get libraryNoClipsYetTitle => 'No Clips Yet';
+  String get libraryNoClipsYetTitle => 'Noch keine Clips';
 
   @override
   String get libraryNoClipsYetSubtitle =>
-      'Your recorded video clips will appear here';
+      'Deine aufgenommenen Videoclips erscheinen hier';
 
   @override
-  String get libraryDraftDeletedSnackbar => 'Draft deleted';
+  String get libraryDraftDeletedSnackbar => 'Entwurf gelöscht';
 
   @override
-  String get libraryDraftDeleteFailedSnackbar => 'Failed to delete draft';
+  String get libraryDraftDeleteFailedSnackbar =>
+      'Entwurf konnte nicht gelöscht werden';
 
   @override
-  String get libraryDraftActionPost => 'Post';
+  String get libraryDraftActionPost => 'Posten';
 
   @override
-  String get libraryDraftActionEdit => 'Edit';
+  String get libraryDraftActionEdit => 'Bearbeiten';
 
   @override
-  String get libraryDraftActionDelete => 'Delete draft';
+  String get libraryDraftActionDelete => 'Entwurf löschen';
 
   @override
-  String get libraryDeleteDraftTitle => 'Delete Draft';
+  String get libraryDeleteDraftTitle => 'Entwurf löschen';
 
   @override
   String libraryDeleteDraftMessage(String title) {
-    return 'Are you sure you want to delete \"$title\"?';
+    return '„$title“ wirklich löschen?';
   }
 
   @override
-  String get libraryDeleteClipTitle => 'Delete Clip';
+  String get libraryDeleteClipTitle => 'Clip löschen';
 
   @override
-  String get libraryDeleteClipMessage =>
-      'Are you sure you want to delete this clip?';
+  String get libraryDeleteClipMessage => 'Diesen Clip wirklich löschen?';
 
   @override
   String get libraryClipSelectionTitle => 'Clips';
 
   @override
   String librarySecondsRemaining(String seconds) {
-    return '${seconds}s remaining';
+    return 'Noch ${seconds}s';
   }
 
   @override
-  String get libraryAddClips => 'Add';
+  String get libraryAddClips => 'Hinzufügen';
 
   @override
-  String get libraryRecordVideo => 'Record a Video';
+  String get libraryRecordVideo => 'Video aufnehmen';
 
   @override
   String get routerInvalidCreator => 'Ungültiger Ersteller';

@@ -4351,67 +4351,67 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get libraryWebUnavailableHeadline =>
-      'Library is available in the mobile app';
+      'المكتبة متوفّرة في التطبيق على الجوال';
 
   @override
   String get libraryWebUnavailableDescription =>
-      'Drafts and clips are saved on your device, so open Divine on your phone to manage them.';
+      'تُحفظ المسودات والمقاطع على جهازك. افتح Divine على هاتفك لإدارتها.';
 
   @override
-  String get libraryTabDrafts => 'Drafts';
+  String get libraryTabDrafts => 'مسودات';
 
   @override
-  String get libraryTabClips => 'Clips';
+  String get libraryTabClips => 'مقاطع';
 
   @override
-  String get librarySaveToCameraRollTooltip => 'Save to camera roll';
+  String get librarySaveToCameraRollTooltip => 'حفظ في ألبوم الكاميرا';
 
   @override
-  String get libraryDeleteSelectedClipsTooltip => 'Delete selected clips';
+  String get libraryDeleteSelectedClipsTooltip => 'حذف المقاطع المحددة';
 
   @override
-  String get libraryDeleteClipsTitle => 'Delete Clips';
+  String get libraryDeleteClipsTitle => 'حذف المقاطع';
 
   @override
   String libraryDeleteClipsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '# selected clips',
-      one: '# selected clip',
+      other: '# مقاطع محددة',
+      one: 'مقطع واحد محدد',
     );
-    return 'Are you sure you want to delete $_temp0?';
+    return 'هل تريد حذف $_temp0؟';
   }
 
   @override
   String get libraryDeleteClipsWarning =>
-      'This action cannot be undone. The video files will be permanently removed from your device.';
+      'لا يمكن التراجع. ستُزال ملفات الفيديو نهائيًا من جهازك.';
 
   @override
-  String get libraryPreparingVideo => 'Preparing video...';
+  String get libraryPreparingVideo => 'جاري تجهيز الفيديو...';
 
   @override
-  String get libraryCreateVideo => 'Create Video';
+  String get libraryCreateVideo => 'إنشاء فيديو';
 
   @override
   String libraryClipsSavedToDestination(int count, String destination) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count clips',
-      one: '1 clip',
+      other: '$count مقاطع',
+      one: 'مقطع واحد',
     );
-    return '$_temp0 saved to $destination';
+    return '$_temp0 تم حفظه في $destination';
   }
 
   @override
   String libraryClipsSavePartialResult(int successCount, int failureCount) {
-    return '$successCount saved, $failureCount failed';
+    return 'تم حفظ $successCount، فشل $failureCount';
   }
 
   @override
   String libraryGalleryPermissionDenied(String destination) {
-    return '$destination permission denied';
+    return 'تم رفض إذن $destination';
   }
 
   @override
@@ -4419,79 +4419,77 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count clips deleted',
-      one: '1 clip deleted',
+      other: 'تم حذف $count مقاطع',
+      one: 'تم حذف مقطع واحد',
     );
     return '$_temp0';
   }
 
   @override
-  String get libraryCouldNotLoadDrafts => 'Couldn\'t load drafts';
+  String get libraryCouldNotLoadDrafts => 'تعذّر تحميل المسودات';
 
   @override
-  String get libraryCouldNotLoadClips => 'Couldn\'t load clips';
+  String get libraryCouldNotLoadClips => 'تعذّر تحميل المقاطع';
 
   @override
   String get libraryOpenErrorDescription =>
-      'Something went wrong while opening your library. You can try again.';
+      'حدث خطأ أثناء فتح المكتبة. يمكنك المحاولة مرة أخرى.';
 
   @override
-  String get libraryNoDraftsYetTitle => 'No Drafts Yet';
+  String get libraryNoDraftsYetTitle => 'لا توجد مسودات بعد';
 
   @override
   String get libraryNoDraftsYetSubtitle =>
-      'Videos you save as draft will appear here';
+      'ستُظهر الفيديو الذي تحفظه كمسودة هنا';
 
   @override
-  String get libraryNoClipsYetTitle => 'No Clips Yet';
+  String get libraryNoClipsYetTitle => 'لا توجد مقاطع بعد';
 
   @override
-  String get libraryNoClipsYetSubtitle =>
-      'Your recorded video clips will appear here';
+  String get libraryNoClipsYetSubtitle => 'ستُظهر مقاطع الفيديو المسجّلة هنا';
 
   @override
-  String get libraryDraftDeletedSnackbar => 'Draft deleted';
+  String get libraryDraftDeletedSnackbar => 'تم حذف المسودة';
 
   @override
-  String get libraryDraftDeleteFailedSnackbar => 'Failed to delete draft';
+  String get libraryDraftDeleteFailedSnackbar => 'تعذّر حذف المسودة';
 
   @override
-  String get libraryDraftActionPost => 'Post';
+  String get libraryDraftActionPost => 'نشر';
 
   @override
-  String get libraryDraftActionEdit => 'Edit';
+  String get libraryDraftActionEdit => 'تعديل';
 
   @override
-  String get libraryDraftActionDelete => 'Delete draft';
+  String get libraryDraftActionDelete => 'حذف المسودة';
 
   @override
-  String get libraryDeleteDraftTitle => 'Delete Draft';
+  String get libraryDeleteDraftTitle => 'حذف المسودة';
 
   @override
   String libraryDeleteDraftMessage(String title) {
-    return 'Are you sure you want to delete \"$title\"?';
+    return 'هل تريد حذُ “$title”؟';
   }
 
   @override
-  String get libraryDeleteClipTitle => 'Delete Clip';
+  String get libraryDeleteClipTitle => 'حذف المقطع';
 
   @override
-  String get libraryDeleteClipMessage =>
-      'Are you sure you want to delete this clip?';
+  String get libraryDeleteClipMessage => 'هل تريد حذف هذا المقطع؟';
 
   @override
-  String get libraryClipSelectionTitle => 'Clips';
+  String get libraryClipSelectionTitle => 'مقاطع';
 
   @override
   String librarySecondsRemaining(String seconds) {
-    return '${seconds}s remaining';
+    return 'متبقى $seconds ث';
   }
 
   @override
-  String get libraryAddClips => 'Add';
+  String get libraryAddClips => 'إضافة';
 
   @override
-  String get libraryRecordVideo => 'Record a Video';
+  String get libraryRecordVideo => 'تسجيل فيديو';
 
   @override
   String get routerInvalidCreator => 'منشئ غير صالح';

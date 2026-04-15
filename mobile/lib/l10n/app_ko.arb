@@ -1510,7 +1510,97 @@
             }
         }
     },
+    "libraryAddClips": "추가",
+    "libraryClipSelectionTitle": "클립",
+    "libraryClipsDeletedCount": "{count, plural, =1{클립 1개 삭제됨} other{클립 {count}개 삭제됨}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "{successCount}개 저장, {failureCount}개 실패",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{{destination}에 클립 1개 저장됨} other{{destination}에 클립 {count}개 저장됨}}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "클립을 불러올 수 없어요",
+    "libraryCouldNotLoadDrafts": "임시 저장 영상을 불러올 수 없어요",
+    "libraryCreateVideo": "동영상 만들기",
+    "libraryDeleteClipMessage": "이 클립을 삭제할까요?",
+    "libraryDeleteClipTitle": "클립 삭제",
+    "libraryDeleteClipsMessage": "선택한 클립 {count, plural, =1{1개} other{{count}개}}를 삭제할까요?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "클립 삭제",
+    "libraryDeleteClipsWarning": "되돌릴 수 없어요. 동영상 파일이 기기에서 삭제됩니다.",
     "libraryDeleteConfirm": "삭제",
+    "libraryDeleteDraftMessage": "“{title}”을(를) 삭제할까요?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "임시 저장 삭제",
+    "libraryDeleteSelectedClipsTooltip": "선택한 클립 삭제",
+    "libraryDraftActionDelete": "임시 저장 삭제",
+    "libraryDraftActionEdit": "편집",
+    "libraryDraftActionPost": "게시",
+    "libraryDraftDeleteFailedSnackbar": "임시 저장을 삭제하지 못했어요",
+    "libraryDraftDeletedSnackbar": "임시 저장을 삭제했어요",
+    "libraryGalleryPermissionDenied": "{destination} 권한이 거부되었어요",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "녹화한 클립이 여기에 표시됩니다",
+    "libraryNoClipsYetTitle": "아직 클립이 없어요",
+    "libraryNoDraftsYetSubtitle": "임시 저장으로 저장한 동영상이 여기에 표시됩니다",
+    "libraryNoDraftsYetTitle": "아직 임시 저장이 없어요",
+    "libraryOpenErrorDescription": "라이브러리를 열 때 문제가 생겼어요. 다시 시도해 주세요.",
+    "libraryPreparingVideo": "동영상 준비 중...",
+    "libraryRecordVideo": "동영상 녹화",
+    "librarySaveToCameraRollTooltip": "카메라 롤에 저장",
+    "librarySecondsRemaining": "{seconds}초 남음",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "클립",
+    "libraryTabDrafts": "임시 저장",
+    "libraryWebUnavailableDescription": "임시 저장과 클립은 기기에 저장됩니다. 관리하려면 휴대폰에서 Divine을 열어 주세요.",
+    "libraryWebUnavailableHeadline": "라이브러리는 모바일 앱에서 이용할 수 있어요",
     "notificationFollowBack": "맞팔로우",
     "profileSetupUploadSuccess": "프로필 사진이 성공적으로 업로드되었어요!",
     "proofmodeCheckAiGenerated": "AI 생성 여부 확인",

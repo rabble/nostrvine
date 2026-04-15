@@ -2221,7 +2221,97 @@
             }
         }
     },
+"libraryAddClips": "追加",
+    "libraryClipSelectionTitle": "クリップ",
+    "libraryClipsDeletedCount": "{count, plural, other{{count}件のクリップを削除しました}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "保存 {successCount}、失敗 {failureCount}",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{{destination}に1件のクリップを保存しました} other{{destination}に{count}件のクリップを保存しました}}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "クリップを読み込めませんでした",
+    "libraryCouldNotLoadDrafts": "下書きを読み込めませんでした",
+    "libraryCreateVideo": "動画を作成",
+    "libraryDeleteClipMessage": "このクリップを削除しますか？",
+    "libraryDeleteClipTitle": "クリップを削除",
+    "libraryDeleteClipsMessage": "選択した{count}件のクリップを削除しますか？",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "クリップを削除",
+    "libraryDeleteClipsWarning": "この操作は取り消せません。動画ファイルは端末から完全に削除されます。",
     "libraryDeleteConfirm": "削除",
+    "libraryDeleteDraftMessage": "「{title}」を削除しますか？",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "下書きを削除",
+    "libraryDeleteSelectedClipsTooltip": "選択したクリップを削除",
+    "libraryDraftActionDelete": "下書きを削除",
+    "libraryDraftActionEdit": "編集",
+    "libraryDraftActionPost": "投稿",
+    "libraryDraftDeleteFailedSnackbar": "下書きを削除できませんでした",
+    "libraryDraftDeletedSnackbar": "下書きを削除しました",
+    "libraryGalleryPermissionDenied": "{destination}の権限が拒否されました",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "録画したクリップがここに表示されます",
+    "libraryNoClipsYetTitle": "まだクリップがありません",
+    "libraryNoDraftsYetSubtitle": "下書きとして保存した動画がここに表示されます",
+    "libraryNoDraftsYetTitle": "まだ下書きがありません",
+    "libraryOpenErrorDescription": "ライブラリを開くときに問題が発生しました。もう一度お試しください。",
+    "libraryPreparingVideo": "動画を準備しています…",
+    "libraryRecordVideo": "動画を録画",
+    "librarySaveToCameraRollTooltip": "カメラロールに保存",
+    "librarySecondsRemaining": "残り{seconds}秒",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "クリップ",
+    "libraryTabDrafts": "下書き",
+    "libraryWebUnavailableDescription": "下書きとクリップは端末に保存されます。管理するにはスマートフォンでDivineを開いてください。",
+    "libraryWebUnavailableHeadline": "ライブラリはモバイルアプリで利用できます",
     "notificationFollowBack": "フォローバック",
     "profileSetupUploadSuccess": "プロフィール写真をアップロードしたよ！",
     "proofmodeCheckAiGenerated": "AI生成かチェック",

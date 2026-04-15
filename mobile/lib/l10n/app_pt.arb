@@ -2221,7 +2221,97 @@
             }
         }
     },
+    "libraryAddClips": "Adicionar",
+    "libraryClipSelectionTitle": "Clipes",
+    "libraryClipsDeletedCount": "{count, plural, =1{1 clipe excluído} other{{count} clipes excluídos}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "{successCount} salvos, {failureCount} falharam",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{1 clipe} other{{count} clipes}} salvos em {destination}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "Não foi possível carregar os clipes",
+    "libraryCouldNotLoadDrafts": "Não foi possível carregar os rascunhos",
+    "libraryCreateVideo": "Criar vídeo",
+    "libraryDeleteClipMessage": "Excluir este clipe?",
+    "libraryDeleteClipTitle": "Excluir clipe",
+    "libraryDeleteClipsMessage": "Excluir {count, plural, one{# clipe selecionado} other{# clipes selecionados}}?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "Excluir clipes",
+    "libraryDeleteClipsWarning": "Não dá para desfazer. Os arquivos de vídeo serão removidos permanentemente do dispositivo.",
     "libraryDeleteConfirm": "Excluir",
+    "libraryDeleteDraftMessage": "Excluir \"{title}\"?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "Excluir rascunho",
+    "libraryDeleteSelectedClipsTooltip": "Excluir clipes selecionados",
+    "libraryDraftActionDelete": "Excluir rascunho",
+    "libraryDraftActionEdit": "Editar",
+    "libraryDraftActionPost": "Publicar",
+    "libraryDraftDeleteFailedSnackbar": "Falha ao excluir rascunho",
+    "libraryDraftDeletedSnackbar": "Rascunho excluído",
+    "libraryGalleryPermissionDenied": "Permissão negada para {destination}",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "Seus clipes gravados aparecerão aqui",
+    "libraryNoClipsYetTitle": "Ainda não há clipes",
+    "libraryNoDraftsYetSubtitle": "Vídeos salvos como rascunho aparecerão aqui",
+    "libraryNoDraftsYetTitle": "Ainda não há rascunhos",
+    "libraryOpenErrorDescription": "Algo deu errado ao abrir a biblioteca. Tente de novo.",
+    "libraryPreparingVideo": "Preparando vídeo...",
+    "libraryRecordVideo": "Gravar um vídeo",
+    "librarySaveToCameraRollTooltip": "Salvar na galeria",
+    "librarySecondsRemaining": "Faltam {seconds}s",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "Clipes",
+    "libraryTabDrafts": "Rascunhos",
+    "libraryWebUnavailableDescription": "Rascunhos e clipes ficam no seu dispositivo — abra o Divine no celular para gerenciá-los.",
+    "libraryWebUnavailableHeadline": "A biblioteca fica no app móvel",
     "notificationFollowBack": "Seguir de volta",
     "profileSetupUploadSuccess": "Foto de perfil enviada com sucesso!",
     "proofmodeCheckAiGenerated": "Verificar se gerado por IA",

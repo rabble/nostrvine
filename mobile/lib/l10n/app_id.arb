@@ -2221,7 +2221,97 @@
             }
         }
     },
+    "libraryAddClips": "Tambah",
+    "libraryClipSelectionTitle": "Klip",
+    "libraryClipsDeletedCount": "{count, plural, =1{1 klip dihapus} other{{count} klip dihapus}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "{successCount} tersimpan, {failureCount} gagal",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{1 klip} other{{count} klip}} disimpan ke {destination}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "Tidak bisa memuat klip",
+    "libraryCouldNotLoadDrafts": "Tidak bisa memuat draf",
+    "libraryCreateVideo": "Buat video",
+    "libraryDeleteClipMessage": "Yakin ingin menghapus klip ini?",
+    "libraryDeleteClipTitle": "Hapus klip",
+    "libraryDeleteClipsMessage": "Yakin ingin menghapus {count, plural, one{# klip terpilih} other{# klip terpilih}}?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "Hapus klip",
+    "libraryDeleteClipsWarning": "Tindakan ini tidak bisa dibatalkan. File video akan dihapus permanen dari perangkatmu.",
     "libraryDeleteConfirm": "Hapus",
+    "libraryDeleteDraftMessage": "Yakin ingin menghapus \"{title}\"?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "Hapus draf",
+    "libraryDeleteSelectedClipsTooltip": "Hapus klip terpilih",
+    "libraryDraftActionDelete": "Hapus draf",
+    "libraryDraftActionEdit": "Edit",
+    "libraryDraftActionPost": "Posting",
+    "libraryDraftDeleteFailedSnackbar": "Gagal menghapus draf",
+    "libraryDraftDeletedSnackbar": "Draf dihapus",
+    "libraryGalleryPermissionDenied": "Izin ditolak untuk {destination}",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "Klip video yang kamu rekam akan muncul di sini",
+    "libraryNoClipsYetTitle": "Belum ada klip",
+    "libraryNoDraftsYetSubtitle": "Video yang kamu simpan sebagai draf akan muncul di sini",
+    "libraryNoDraftsYetTitle": "Belum ada draf",
+    "libraryOpenErrorDescription": "Ada masalah saat membuka perpustakaan. Coba lagi.",
+    "libraryPreparingVideo": "Menyiapkan video...",
+    "libraryRecordVideo": "Rekam video",
+    "librarySaveToCameraRollTooltip": "Simpan ke galeri kamera",
+    "librarySecondsRemaining": "Tersisa {seconds} dtk",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "Klip",
+    "libraryTabDrafts": "Draf",
+    "libraryWebUnavailableDescription": "Draf dan klip disimpan di perangkatmu — buka Divine di ponsel untuk mengelolanya.",
+    "libraryWebUnavailableHeadline": "Perpustakaan ada di aplikasi seluler",
     "notificationFollowBack": "Ikuti balik",
     "profileSetupUploadSuccess": "Foto profil berhasil diunggah!",
     "proofmodeCheckAiGenerated": "Periksa apakah dibuat oleh AI",
