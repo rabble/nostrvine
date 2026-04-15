@@ -41,7 +41,9 @@ class DraftsTab extends ConsumerWidget {
             elevation: 0,
             behavior: SnackBarBehavior.floating,
             content: DivineSnackbarContainer(
-              label: isSuccess ? 'Draft deleted' : 'Failed to delete draft',
+              label: isSuccess
+                  ? context.l10n.libraryDraftDeletedSnackbar
+                  : context.l10n.libraryDraftDeleteFailedSnackbar,
             ),
           ),
         );
@@ -58,14 +60,13 @@ class DraftsTab extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Couldn't load drafts",
+                    context.l10n.libraryCouldNotLoadDrafts,
                     textAlign: TextAlign.center,
                     style: VineTheme.titleMediumFont(),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Something went wrong while opening your library. '
-                    'You can try again.',
+                    context.l10n.libraryOpenErrorDescription,
                     textAlign: TextAlign.center,
                     style: VineTheme.bodyLargeFont(
                       color: VineTheme.secondaryText,
@@ -73,7 +74,7 @@ class DraftsTab extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
                   DivineButton(
-                    label: 'Try again',
+                    label: context.l10n.searchTryAgain,
                     type: DivineButtonType.secondary,
                     onPressed: () => context.read<DraftsLibraryBloc>().add(
                       const DraftsLibraryLoadRequested(),
@@ -87,14 +88,10 @@ class DraftsTab extends ConsumerWidget {
           DraftsLibraryDraftDeleted(:final drafts) ||
           DraftsLibraryDeleteFailed(
             :final drafts,
-          ) when drafts.isEmpty => const EmptyLibraryState(
+          ) when drafts.isEmpty => EmptyLibraryState(
             icon: DivineIconName.pencilSimple,
-            // TODO(l10n): Replace with context.l10n when
-            // localization is added.
-            title: 'No Drafts Yet',
-            // TODO(l10n): Replace with context.l10n when
-            // localization is added.
-            subtitle: 'Videos you save as draft will appear here',
+            title: context.l10n.libraryNoDraftsYetTitle,
+            subtitle: context.l10n.libraryNoDraftsYetSubtitle,
           ),
           DraftsLibraryLoaded(:final drafts) ||
           DraftsLibraryDraftDeleted(:final drafts) ||
@@ -128,17 +125,17 @@ class DraftsTab extends ConsumerWidget {
       options: [
         VineBottomSheetActionData(
           iconPath: DivineIconName.paperPlaneTilt.assetPath,
-          label: 'Post',
+          label: context.l10n.libraryDraftActionPost,
           onTap: () => _postDraft(context, ref, draft),
         ),
         VineBottomSheetActionData(
           iconPath: DivineIconName.pencilSimple.assetPath,
-          label: 'Edit',
+          label: context.l10n.libraryDraftActionEdit,
           onTap: () => _openDraft(context, ref, draft),
         ),
         VineBottomSheetActionData(
           iconPath: DivineIconName.trash.assetPath,
-          label: 'Delete draft',
+          label: context.l10n.libraryDraftActionDelete,
           isDestructive: true,
           onTap: () => _deleteDraft(context, ref, draft),
         ),
@@ -207,25 +204,22 @@ class DraftsTab extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        // TODO(l10n): Replace with context.l10n when localization
-        // is added.
-        title: const Text(
-          'Delete Draft',
-          style: TextStyle(color: VineTheme.whiteText),
+        title: Text(
+          context.l10n.libraryDeleteDraftTitle,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
-        // TODO(l10n): Replace with context.l10n when localization
-        // is added.
         content: Text(
-          'Are you sure you want to delete '
-          '"${draft.title.isEmpty ? "Untitled" : draft.title}"?',
+          context.l10n.libraryDeleteDraftMessage(
+            draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
+          ),
           style: const TextStyle(color: VineTheme.whiteText),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: VineTheme.secondaryText),
+            child: Text(
+              context.l10n.commonCancel,
+              style: const TextStyle(color: VineTheme.secondaryText),
             ),
           ),
           ElevatedButton(

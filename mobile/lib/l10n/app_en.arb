@@ -2224,6 +2224,97 @@
 
   "libraryDeleteConfirm": "Delete",
 
+  "libraryWebUnavailableHeadline": "Library is available in the mobile app",
+  "libraryWebUnavailableDescription": "Drafts and clips are saved on your device, so open Divine on your phone to manage them.",
+  "libraryTabDrafts": "Drafts",
+  "libraryTabClips": "Clips",
+  "librarySaveToCameraRollTooltip": "Save to camera roll",
+  "libraryDeleteSelectedClipsTooltip": "Delete selected clips",
+  "libraryDeleteClipsTitle": "Delete Clips",
+  "libraryDeleteClipsMessage": "Are you sure you want to delete {count, plural, one{# selected clip} other{# selected clips}}?",
+  "@libraryDeleteClipsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryDeleteClipsWarning": "This action cannot be undone. The video files will be permanently removed from your device.",
+  "libraryPreparingVideo": "Preparing video...",
+  "libraryCreateVideo": "Create Video",
+  "libraryClipsSavedToDestination": "{count, plural, =1{1 clip} other{{count} clips}} saved to {destination}",
+  "@libraryClipsSavedToDestination": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryClipsSavePartialResult": "{successCount} saved, {failureCount} failed",
+  "@libraryClipsSavePartialResult": {
+    "placeholders": {
+      "successCount": {
+        "type": "int"
+      },
+      "failureCount": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryGalleryPermissionDenied": "{destination} permission denied",
+  "@libraryGalleryPermissionDenied": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryClipsDeletedCount": "{count, plural, =1{1 clip deleted} other{{count} clips deleted}}",
+  "@libraryClipsDeletedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryCouldNotLoadDrafts": "Couldn't load drafts",
+  "libraryCouldNotLoadClips": "Couldn't load clips",
+  "libraryOpenErrorDescription": "Something went wrong while opening your library. You can try again.",
+  "libraryNoDraftsYetTitle": "No Drafts Yet",
+  "libraryNoDraftsYetSubtitle": "Videos you save as draft will appear here",
+  "libraryNoClipsYetTitle": "No Clips Yet",
+  "libraryNoClipsYetSubtitle": "Your recorded video clips will appear here",
+  "libraryDraftDeletedSnackbar": "Draft deleted",
+  "libraryDraftDeleteFailedSnackbar": "Failed to delete draft",
+  "libraryDraftActionPost": "Post",
+  "libraryDraftActionEdit": "Edit",
+  "libraryDraftActionDelete": "Delete draft",
+  "libraryDeleteDraftTitle": "Delete Draft",
+  "libraryDeleteDraftMessage": "Are you sure you want to delete \"{title}\"?",
+  "@libraryDeleteDraftMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteClipTitle": "Delete Clip",
+  "libraryDeleteClipMessage": "Are you sure you want to delete this clip?",
+  "libraryClipSelectionTitle": "Clips",
+  "librarySecondsRemaining": "{seconds}s remaining",
+  "@librarySecondsRemaining": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryAddClips": "Add",
+  "libraryRecordVideo": "Record a Video",
+
   "routerInvalidCreator": "Invalid creator",
   "routerInvalidHashtagRoute": "Invalid hashtag route",
 

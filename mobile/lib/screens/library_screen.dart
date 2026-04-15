@@ -135,9 +135,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: const Text(
-          'Delete Clips',
-          style: TextStyle(color: VineTheme.whiteText),
+        title: Text(
+          context.l10n.libraryDeleteClipsTitle,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
         content: Column(
           mainAxisSize: .min,
@@ -145,23 +145,24 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           spacing: 12,
           children: [
             Text(
-              'Are you sure you want to delete $clipCount '
-              'selected clip${clipCount == 1 ? '' : 's'}?',
+              context.l10n.libraryDeleteClipsMessage(clipCount),
               style: const TextStyle(color: VineTheme.whiteText),
             ),
-            const Text(
-              'This action cannot be undone. The video files will be '
-              'permanently removed from your device.',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+            Text(
+              context.l10n.libraryDeleteClipsWarning,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: VineTheme.secondaryText),
+            child: Text(
+              context.l10n.commonCancel,
+              style: const TextStyle(color: VineTheme.secondaryText),
             ),
           ),
           ElevatedButton(
@@ -266,9 +267,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                       :final failureCount,
                     ):
                       final label = failureCount == 0
-                          ? '$successCount clip${successCount == 1 ? '' : 's'} '
-                                'saved to ${GallerySaveService.destinationName}'
-                          : '$successCount saved, $failureCount failed';
+                          ? context.l10n.libraryClipsSavedToDestination(
+                              successCount,
+                              GallerySaveService.destinationName,
+                            )
+                          : context.l10n.libraryClipsSavePartialResult(
+                              successCount,
+                              failureCount,
+                            );
                       _showSnackBar(
                         context,
                         label: label,
@@ -277,9 +283,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                     case GallerySaveResultPermissionDenied():
                       _showSnackBar(
                         context,
-                        label:
-                            '${GallerySaveService.destinationName} '
-                            'permission denied',
+                        label: context.l10n.libraryGalleryPermissionDenied(
+                          GallerySaveService.destinationName,
+                        ),
                         error: true,
                       );
                     case GallerySaveResultError(:final message):
@@ -297,7 +303,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
                   _showSnackBar(
                     context,
-                    label: '$count clip${count == 1 ? '' : 's'} deleted',
+                    label: context.l10n.libraryClipsDeletedCount(count),
                   );
                 },
               ),
@@ -379,7 +385,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                               ),
                               if (isPreparing)
                                 Text(
-                                  'Preparing video...',
+                                  context.l10n.libraryPreparingVideo,
                                   style: VineTheme.bodyMediumFont(),
                                 ),
                             ],
@@ -406,7 +412,7 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: VineTheme.onPrimary,
       appBar: DiVineAppBar(
-        title: 'Library',
+        title: context.l10n.profileLibraryLabel,
         backgroundColor: VineTheme.onPrimary,
         surfaceTintColor: VineTheme.transparent,
         shape: const Border(
@@ -428,14 +434,13 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Library is available in the mobile app',
+                context.l10n.libraryWebUnavailableHeadline,
                 textAlign: TextAlign.center,
                 style: VineTheme.titleMediumFont(),
               ),
               const SizedBox(height: 12),
               Text(
-                'Drafts and clips are saved on your device, so open Divine '
-                'on your phone to manage them.',
+                context.l10n.libraryWebUnavailableDescription,
                 textAlign: TextAlign.center,
                 style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
               ),
@@ -467,7 +472,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
       selector: (state) => state.selectedClipIds.isNotEmpty,
       builder: (context, hasSelection) {
         return DiVineAppBar(
-          title: 'Library',
+          title: context.l10n.profileLibraryLabel,
           backgroundColor: VineTheme.onPrimary,
           surfaceTintColor: VineTheme.transparent,
           shape: const Border(
@@ -489,14 +494,15 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
                       DivineIconName.downloadSimple.assetPath,
                     ),
                     onPressed: onSaveToGallery,
-                    tooltip: 'Save to camera roll',
-                    semanticLabel: 'Save to camera roll',
+                    tooltip: context.l10n.librarySaveToCameraRollTooltip,
+                    semanticLabel: context.l10n.librarySaveToCameraRollTooltip,
                   ),
                   DiVineAppBarAction(
                     icon: SvgIconSource(DivineIconName.trash.assetPath),
                     onPressed: onDelete,
-                    tooltip: 'Delete selected clips',
-                    semanticLabel: 'Delete selected clips',
+                    tooltip: context.l10n.libraryDeleteSelectedClipsTooltip,
+                    semanticLabel:
+                        context.l10n.libraryDeleteSelectedClipsTooltip,
                     iconColor: VineTheme.error,
                   ),
                 ]
@@ -514,10 +520,10 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
             labelPadding: const .symmetric(horizontal: 16),
             isScrollable: true,
             tabAlignment: .start,
-            tabs: const [
-              Tab(text: 'Drafts'),
-              Tab(text: 'Clips'),
-              Tab(text: 'Sounds'),
+            tabs: [
+              Tab(text: context.l10n.libraryTabDrafts),
+              Tab(text: context.l10n.libraryTabClips),
+              Tab(text: context.l10n.soundsTitle),
             ],
           ),
         );
@@ -596,7 +602,7 @@ class _CreateVideoFab extends StatelessWidget {
       onPressed: onPressed,
       icon: const DivineIcon(icon: .pencilSimple, color: VineTheme.whiteText),
       label: Text(
-        'Create Video',
+        context.l10n.libraryCreateVideo,
         style: VineTheme.titleSmallFont(),
       ),
       backgroundColor: VineTheme.primary,
