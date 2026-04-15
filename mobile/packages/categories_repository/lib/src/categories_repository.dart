@@ -50,11 +50,9 @@ class CategoriesRepository {
       return _cache!;
     }
 
-    final categoriesJson = await _funnelcakeApiClient.getCategories(limit: 100);
-    final categories = categoriesJson
-        .map(VideoCategory.fromJson)
-        .where((c) => c.name.isNotEmpty && c.videoCount > 0)
-        .toList();
+    final categories = (await _funnelcakeApiClient.getCategories(
+      limit: 100,
+    )).where((c) => c.name.isNotEmpty && c.videoCount > 0).toList();
 
     final indexedCategories = categories.indexed.toList()
       ..sort((left, right) {
