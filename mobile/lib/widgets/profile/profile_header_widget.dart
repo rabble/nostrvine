@@ -112,6 +112,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final watchedStats = ref
         .watch(userProfileStatsReactiveProvider(userIdHex))
         .value;
+    final resolvedVideoCount = watchedStats?.videoCount ?? videoCount;
 
     // Use profile color as header background (like original Vine)
     // Color covers avatar/stats, then fades to dark for name/bio readability
@@ -189,17 +190,10 @@ class ProfileHeaderWidget extends ConsumerWidget {
                                     MainAxisAlignment.spaceEvenly,
                                 spacing: 12,
                                 children: [
-                                  Builder(
-                                    builder: (context) {
-                                      final resolvedCount =
-                                          watchedStats?.videoCount ??
-                                          videoCount;
-                                      return ProfileStatColumn(
-                                        count: resolvedCount,
-                                        label: context.l10n.profileVideosLabel,
-                                        isLoading: resolvedCount == null,
-                                      );
-                                    },
+                                  ProfileStatColumn(
+                                    count: resolvedVideoCount,
+                                    label: context.l10n.profileVideosLabel,
+                                    isLoading: resolvedVideoCount == null,
                                   ),
                                   ProfileFollowersStat(
                                     pubkey: userIdHex,

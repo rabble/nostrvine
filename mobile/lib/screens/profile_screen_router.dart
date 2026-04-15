@@ -713,6 +713,7 @@ class _ProfileDataView extends ConsumerWidget {
           displayName: displayName,
           videos: value.videos,
           totalVideoCount: value.totalVideoCount,
+          isFetchingTotalCount: value.isFetchingTotalCount,
           videoIndex: videoIndex,
           scrollController: scrollController,
           onSetupProfile: onSetupProfile,
@@ -742,6 +743,7 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.onOpenClips,
     required this.onOpenAnalytics,
     this.totalVideoCount,
+    this.isFetchingTotalCount = false,
     this.refreshNotifier,
     this.displayName,
     super.key,
@@ -761,6 +763,11 @@ class ProfileViewSwitcher extends StatelessWidget {
 
   /// Total video count from the server's X-Total-Count header.
   final int? totalVideoCount;
+
+  /// Whether the REST call that resolves [totalVideoCount] is in flight.
+  /// When true and [totalVideoCount] is null, the header shows a loading
+  /// dash instead of falling back to `videos.length`.
+  final bool isFetchingTotalCount;
 
   /// Optional notifier to trigger BLoC refresh when its value changes.
   final ValueNotifier<int>? refreshNotifier;
@@ -789,6 +796,7 @@ class ProfileViewSwitcher extends StatelessWidget {
             displayName: displayName,
             videos: videos,
             totalVideoCount: totalVideoCount,
+            isLoadingVideos: isFetchingTotalCount,
             scrollController: scrollController,
             onSetupProfile: onSetupProfile,
             onEditProfile: onEditProfile,
