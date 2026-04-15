@@ -2,11 +2,13 @@
 // ABOUTME: video editor timeline. Handles add/remove/move/trim/select/drag
 // ABOUTME: and collapse state for all three strip types.
 
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -63,6 +65,15 @@ class TimelineOverlayBloc
           startTime: track.startTime,
           endTime: track.endTime ?? .zero,
           label: track.title ?? track.pubkey,
+          maxDuration: track.duration != null
+              ? Duration(
+                  milliseconds: math.min(
+                    (track.duration! * 1000).round() -
+                        track.startOffset.inMilliseconds,
+                    VideoEditorConstants.maxDuration.inMilliseconds,
+                  ),
+                )
+              : VideoEditorConstants.maxDuration,
           waveformLeftChannel: leftCache[track.id],
           waveformRightChannel: rightCache[track.id],
         ),
@@ -101,6 +112,7 @@ class TimelineOverlayBloc
           ..._assignRows(filters),
           ..._assignRows(layers),
         ],
+        audioTracks: event.audioTracks,
         clearSelectedItemId: state.trimmingItemId == null,
         // Preserve draggingItemId/trimmingItemId when active so the
         // BlocListener in the canvas doesn't fire mid-gesture.

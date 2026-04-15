@@ -364,11 +364,26 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
 
     if (atMinTrim) return;
 
+    var newStartMs = clampedMs;
+    var newEndMs = _rightSnap.originMs;
+
+    // When maxDuration is set (e.g. sound items), the item cannot grow
+    // beyond that limit. Convert the excess into a move instead.
+    final maxMs = widget.item.maxDuration?.inMilliseconds;
+    if (maxMs != null && (newEndMs - newStartMs) > maxMs) {
+      newEndMs = newStartMs + maxMs;
+      // Clamp the end within the timeline.
+      if (newEndMs > widget.totalDuration.inMilliseconds) {
+        newEndMs = widget.totalDuration.inMilliseconds;
+        newStartMs = newEndMs - maxMs;
+      }
+    }
+
     widget.onTrimChanged?.call(
       item: widget.item,
       isStart: true,
-      startTime: Duration(milliseconds: clampedMs),
-      endTime: Duration(milliseconds: _rightSnap.originMs),
+      startTime: Duration(milliseconds: newStartMs),
+      endTime: Duration(milliseconds: newEndMs),
     );
   }
 
@@ -404,11 +419,26 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
 
     if (atMinTrim) return;
 
+    var newStartMs = _leftSnap.originMs;
+    var newEndMs = clampedMs;
+
+    // When maxDuration is set (e.g. sound items), the item cannot grow
+    // beyond that limit. Convert the excess into a move instead.
+    final maxMs = widget.item.maxDuration?.inMilliseconds;
+    if (maxMs != null && (newEndMs - newStartMs) > maxMs) {
+      newStartMs = newEndMs - maxMs;
+      // Clamp the start within the timeline.
+      if (newStartMs < 0) {
+        newStartMs = 0;
+        newEndMs = maxMs;
+      }
+    }
+
     widget.onTrimChanged?.call(
       item: widget.item,
       isStart: false,
-      startTime: Duration(milliseconds: _leftSnap.originMs),
-      endTime: Duration(milliseconds: clampedMs),
+      startTime: Duration(milliseconds: newStartMs),
+      endTime: Duration(milliseconds: newEndMs),
     );
   }
 }

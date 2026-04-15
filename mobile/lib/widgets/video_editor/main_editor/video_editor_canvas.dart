@@ -20,6 +20,7 @@ import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bl
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
@@ -369,8 +370,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
 
     // Initialize audio if selected
-    final selectedSound = ref.read(videoEditorProvider).selectedSound;
-    await _loadAudio(selectedSound);
+    await _syncAudioTracks();
     Log.info(
       '🎬 Video player ready',
       name: 'VideoEditorCanvas',
@@ -378,15 +378,23 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
   }
 
-  /// Sets or clears the native audio overlay track.
+  /// Syncs native audio overlay tracks from the [TimelineOverlayBloc]
+  /// sound items.
   ///
-  /// Uses the video player's built-in audio overlay support so that
-  /// synchronisation, loop handling, and drift correction happen on
-  /// the native side automatically.
-  Future<void> _loadAudio(AudioEvent? sound) async {
+  /// Reads timeline positions (`startTime` / `endTime`) from the BLoC
+  /// state and combines them with the source [AudioEvent] from the
+  /// Riverpod provider (URL, asset path, start offset).
+  Future<void> _syncAudioTracks() async {
     if (_videoPlayer == null) return;
 
-    if (sound == null || sound.url == null) {
+    final overlayState = context.read<TimelineOverlayBloc>().state;
+    final audioEvents = overlayState.audioTracks;
+
+    final soundItems = overlayState.items
+        .where((item) => item.type == TimelineOverlayType.sound)
+        .toList();
+
+    if (soundItems.isEmpty || audioEvents.isEmpty) {
       await _videoPlayer!.removeAllAudioTracks();
       Log.info(
         '🎵 Audio cleared',
@@ -396,25 +404,46 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       return;
     }
 
+    // Index audio events by ID for fast lookup.
+    final audioById = {
+      for (final e in audioEvents) e.id: e,
+    };
+
     final customVolume = ref.read(videoEditorProvider).customAudioVolume;
 
-    final AudioTrack track;
-    if (sound.isBundled && sound.assetPath != null) {
-      track = await AudioTrack.asset(
-        sound.assetPath!,
-        volume: customVolume,
-        trackStart: sound.startOffset,
-      );
-    } else {
-      track = AudioTrack.network(
-        sound.url!,
-        volume: customVolume,
-        trackStart: sound.startOffset,
-      );
+    final tracks = <AudioTrack>[];
+    for (final item in soundItems) {
+      final sound = audioById[item.id];
+      if (sound == null || sound.url == null) continue;
+
+      final AudioTrack track;
+      if (sound.isBundled && sound.assetPath != null) {
+        track = await AudioTrack.asset(
+          sound.assetPath!,
+          volume: customVolume,
+          videoStartTime: item.startTime,
+          videoEndTime: item.endTime,
+          trackStart: sound.startOffset,
+        );
+      } else {
+        track = AudioTrack.network(
+          sound.url!,
+          volume: customVolume,
+          videoStartTime: item.startTime,
+          videoEndTime: item.endTime,
+          trackStart: sound.startOffset,
+        );
+      }
+      tracks.add(track);
+    }
+
+    if (tracks.isEmpty) {
+      await _videoPlayer!.removeAllAudioTracks();
+      return;
     }
 
     try {
-      await _videoPlayer!.setAudioTracks([track]);
+      await _videoPlayer!.setAudioTracks(tracks);
     } catch (e, stackTrace) {
       Log.error(
         '🎵 Failed to load audio: $e',
@@ -427,8 +456,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
 
     Log.info(
-      '🎵 Audio loaded via native overlay: ${sound.title} '
-      '(trackStart: ${sound.startOffset.inMilliseconds}ms)',
+      '🎵 Audio synced: ${tracks.length} track(s)',
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
@@ -565,17 +593,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
     final targetAspectRatio = clip.targetAspectRatio;
 
-    // Listen for sound changes to reload audio overlay track
-    ref.listen<AudioEvent?>(
-      videoEditorProvider.select((s) => s.selectedSound),
-      (previous, next) {
-        if (previous?.url != next?.url ||
-            previous?.startOffset != next?.startOffset) {
-          _loadAudio(next);
-        }
-      },
-    );
-
     // Live volume preview: sync player volumes when state changes
     ref.listen<double>(
       videoEditorProvider.select((s) => s.originalAudioVolume),
@@ -624,6 +641,33 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                     current.trimmingItemId == null),
             listener: (context, state) {
               _onStateHistoryChange(scope, bloc);
+            },
+          ),
+          // Sync native audio tracks when audio sources change
+          // (sound added/removed) or a sound item is dragged/trimmed.
+          BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+            listenWhen: (previous, current) {
+              // Audio sources changed (add / remove / replace).
+              if (previous.audioTracks != current.audioTracks) return true;
+
+              // Sound item drag/trim ended.
+              final dragEnded =
+                  previous.draggingItemId != null &&
+                  current.draggingItemId == null;
+              final trimEnded =
+                  previous.trimmingItemId != null &&
+                  current.trimmingItemId == null;
+              if (!dragEnded && !trimEnded) return false;
+
+              final changedId =
+                  previous.draggingItemId ?? previous.trimmingItemId;
+              final item = current.items
+                  .where((i) => i.id == changedId)
+                  .firstOrNull;
+              return item?.type == TimelineOverlayType.sound;
+            },
+            listener: (context, state) {
+              _syncAudioTracks();
             },
           ),
           // Update native player clip boundaries when trim handle is

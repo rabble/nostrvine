@@ -87,6 +87,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   /// Body size notifier, updated by [_CanvasFitter].
   final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
 
+  /// Tracks the previous audio tracks to detect offset changes.
+  List<AudioEvent> _previousAudioTracks = const [];
+
   ProImageEditorState? get _editor => _editorKey.currentState;
 
   DivineVideoClip? get _clip => ref.read(clipManagerProvider).firstClipOrNull;
@@ -373,7 +376,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       milliseconds: ((result.duration ?? 0) * 1000).toInt(),
     );
     final clipDuration = _clipEditorBloc.state.totalDuration;
-    final endTime = audioDuration < clipDuration ? audioDuration : clipDuration;
+    const maxDuration = VideoEditorConstants.maxDuration;
+    final endTime = [audioDuration, clipDuration, maxDuration].reduce(
+      (a, b) => a < b ? a : b,
+    );
 
     result = result.copyWith(
       id: '${result.id}-${DateTime.now()}',
@@ -389,8 +395,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         ],
       },
     );
-
-    unawaited(_extractWaveform(result));
   }
 
   /// Extracts waveform data for an audio track and updates the timeline
@@ -449,45 +453,71 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         BlocProvider.value(value: _timelineOverlayBloc),
         BlocProvider.value(value: _clipEditorBloc),
       ],
-      child: Builder(
-        builder: (context) {
-          final clip = ref.watch(
-            clipManagerProvider.select((s) => s.firstClipOrNull),
-          );
-          return VideoEditorScope(
-            editorKey: _editorKey,
-            removeAreaKey: _removeAreaKey,
-            originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
-            bodySizeNotifier: _bodySizeNotifier,
-            fromLibrary: widget.fromLibrary,
-            onOpenClipsEditor: () {
-              final mainBloc = context.read<VideoEditorMainBloc>();
-              final clipEditorBloc = context.read<ClipEditorBloc>();
-              _openClipsEditor(
-                mainBloc: mainBloc,
-                clipEditorBloc: clipEditorBloc,
-              );
-            },
-            onAddStickers: _addStickers,
-            onAdjustVolume: _adjustVolume,
-            onAddEditTextLayer: ([layer]) {
-              final mainBloc = context.read<VideoEditorMainBloc>();
-              final textBloc = context.read<VideoEditorTextBloc>();
+      child: BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+        listenWhen: (previous, current) =>
+            previous.audioTracks != current.audioTracks,
+        listener: (context, state) {
+          final previousById = {
+            for (final a in _previousAudioTracks) a.id: a,
+          };
+          _previousAudioTracks = state.audioTracks;
 
-              return _addEditTextLayer(
-                mainBloc: mainBloc,
-                textBloc: textBloc,
-                layer: layer,
-              );
-            },
-            onOpenMusicLibrary: _openMusicLibrary,
-            child: ValueListenableBuilder<bool>(
-              valueListenable: _isLoadingDraft,
-              builder: (_, isLoading, _) =>
-                  VideoEditorScaffold(isLoading: isLoading),
-            ),
-          );
+          final existingWaveformIds = state.items
+              .where((i) => i.waveformLeftChannel != null)
+              .map((i) => i.id)
+              .toSet();
+
+          for (final audio in state.audioTracks) {
+            final hadWaveform = existingWaveformIds.contains(audio.id);
+            final prev = previousById[audio.id];
+            final offsetChanged =
+                prev != null && prev.startOffset != audio.startOffset;
+
+            if (!hadWaveform || offsetChanged) {
+              unawaited(_extractWaveform(audio));
+            }
+          }
         },
+        child: Builder(
+          builder: (context) {
+            final clip = ref.watch(
+              clipManagerProvider.select((s) => s.firstClipOrNull),
+            );
+            return VideoEditorScope(
+              editorKey: _editorKey,
+              removeAreaKey: _removeAreaKey,
+              originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
+              bodySizeNotifier: _bodySizeNotifier,
+              fromLibrary: widget.fromLibrary,
+              onOpenClipsEditor: () {
+                final mainBloc = context.read<VideoEditorMainBloc>();
+                final clipEditorBloc = context.read<ClipEditorBloc>();
+                _openClipsEditor(
+                  mainBloc: mainBloc,
+                  clipEditorBloc: clipEditorBloc,
+                );
+              },
+              onAddStickers: _addStickers,
+              onAdjustVolume: _adjustVolume,
+              onAddEditTextLayer: ([layer]) {
+                final mainBloc = context.read<VideoEditorMainBloc>();
+                final textBloc = context.read<VideoEditorTextBloc>();
+
+                return _addEditTextLayer(
+                  mainBloc: mainBloc,
+                  textBloc: textBloc,
+                  layer: layer,
+                );
+              },
+              onOpenMusicLibrary: _openMusicLibrary,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: _isLoadingDraft,
+                builder: (_, isLoading, _) =>
+                    VideoEditorScaffold(isLoading: isLoading),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

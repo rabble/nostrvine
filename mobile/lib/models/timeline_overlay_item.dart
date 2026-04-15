@@ -34,6 +34,7 @@ class TimelineOverlayItem extends Equatable {
     this.row = 0,
     this.label = '',
     this.layer,
+    this.maxDuration,
     this.waveformLeftChannel,
     this.waveformRightChannel,
   });
@@ -60,6 +61,12 @@ class TimelineOverlayItem extends Equatable {
   /// The original layer data.
   final Layer? layer;
 
+  /// Maximum allowed duration for this item.
+  ///
+  /// When set (e.g. for sound items), trimming cannot extend
+  /// the item beyond this duration — the item moves instead.
+  final Duration? maxDuration;
+
   /// Left audio waveform amplitude samples for sound items.
   final Float32List? waveformLeftChannel;
 
@@ -80,6 +87,7 @@ class TimelineOverlayItem extends Equatable {
     int? row,
     String? label,
     Layer? layer,
+    Duration? maxDuration,
     Float32List? waveformLeftChannel,
     Float32List? waveformRightChannel,
   }) {
@@ -91,6 +99,7 @@ class TimelineOverlayItem extends Equatable {
       row: row ?? this.row,
       label: label ?? this.label,
       layer: layer ?? this.layer,
+      maxDuration: maxDuration ?? this.maxDuration,
       waveformLeftChannel: waveformLeftChannel ?? this.waveformLeftChannel,
       waveformRightChannel: waveformRightChannel ?? this.waveformRightChannel,
     );
@@ -105,6 +114,7 @@ class TimelineOverlayItem extends Equatable {
     row,
     label,
     layer,
+    maxDuration,
     waveformLeftChannel,
     waveformRightChannel,
   ];

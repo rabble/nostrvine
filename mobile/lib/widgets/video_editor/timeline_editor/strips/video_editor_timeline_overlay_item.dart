@@ -97,7 +97,8 @@ class TimelineOverlayItemTile extends StatelessWidget {
                 ? _SoundContent(
                     label: item.label,
                     color: foregroundColor,
-                    duration: item.duration,
+                    currentDuration: item.duration,
+                    maxDuration: item.maxDuration,
                     leftChannel: item.waveformLeftChannel,
                     rightChannel: item.waveformRightChannel,
                   )
@@ -145,23 +146,30 @@ class _PaintPreview extends StatelessWidget {
 }
 
 /// Sound-item content: label text at top, waveform bars at bottom.
+///
+/// The waveform is always rendered at [maxDuration] width and clipped
+/// by the parent so trimming doesn't re-scale the bars.
 class _SoundContent extends StatelessWidget {
   const _SoundContent({
     required this.label,
     required this.color,
-    required this.duration,
+    required this.currentDuration,
+    this.maxDuration,
     this.leftChannel,
     this.rightChannel,
   });
 
   final String label;
   final Color color;
-  final Duration duration;
+  final Duration currentDuration;
+  final Duration? maxDuration;
   final Float32List? leftChannel;
   final Float32List? rightChannel;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveMax = maxDuration ?? currentDuration;
+
     return Padding(
       padding: const .fromLTRB(0, 8, 0, 4),
       child: Column(
@@ -179,17 +187,37 @@ class _SoundContent extends StatelessWidget {
           ),
 
           Expanded(
-            child: CustomPaint(
-              painter: StereoWaveformPainter(
-                leftChannel: leftChannel ?? Float32List(0),
-                rightChannel: rightChannel,
-                progress: 1, // No progress indicator needed
-                activeColor: VineTheme.accentPurple,
-                inactiveColor: VineTheme.accentPurple,
-                audioDuration: duration,
-                maxDuration: duration,
-                barWidth: TimelineConstants.soundWaveformBarWidth,
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final currentUs = currentDuration.inMicroseconds;
+                final maxUs = effectiveMax.inMicroseconds;
+                final waveformWidth = currentUs > 0 && maxUs > 0
+                    ? constraints.maxWidth * maxUs / currentUs
+                    : constraints.maxWidth;
+
+                return ClipRect(
+                  child: OverflowBox(
+                    minWidth: 0,
+                    maxWidth: waveformWidth,
+                    alignment: .centerLeft,
+                    child: SizedBox(
+                      width: waveformWidth,
+                      child: CustomPaint(
+                        painter: StereoWaveformPainter(
+                          leftChannel: leftChannel ?? Float32List(0),
+                          rightChannel: rightChannel,
+                          progress: 1,
+                          activeColor: VineTheme.accentPurple,
+                          inactiveColor: VineTheme.accentPurple,
+                          audioDuration: effectiveMax,
+                          maxDuration: effectiveMax,
+                          barWidth: TimelineConstants.soundWaveformBarWidth,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
