@@ -110,9 +110,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               const SizedBox(height: 8),
 
               // Back button
-              AuthBackButton(
-                onPressed: _isLoading ? null : () => context.pop(),
-              ),
+              AuthBackButton(enabled: !_isLoading),
 
               const SizedBox(height: 32),
 

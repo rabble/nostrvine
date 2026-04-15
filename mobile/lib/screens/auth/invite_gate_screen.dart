@@ -500,7 +500,7 @@ class _InviteSheetPage extends StatelessWidget {
               child: Row(
                 children: [
                   if (showBackButton)
-                    AuthBackButton(onPressed: () => context.pop())
+                    const AuthBackButton()
                   else
                     const SizedBox(width: 48, height: 48),
                 ],
