@@ -2,6 +2,7 @@
 // ABOUTME: Verifies that overlay visibility and tab switches pause/resume the
 // ABOUTME: pooled video feed
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
