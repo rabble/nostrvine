@@ -40,19 +40,20 @@ class SearchResultsView extends StatelessWidget {
                   .read<SearchResultsFilterCubit>()
                   .filterChanged(.videos),
             ),
+            const SliverBottomSafeArea(),
           ],
         ),
         SearchResultsFilter.people => const CustomScrollView(
-          slivers: [PeopleSection(showAll: true)],
+          slivers: [PeopleSection(showAll: true), SliverBottomSafeArea()],
         ),
         SearchResultsFilter.tags => const CustomScrollView(
-          slivers: [TagsSection(showAll: true)],
+          slivers: [TagsSection(showAll: true), SliverBottomSafeArea()],
         ),
         SearchResultsFilter.lists => const CustomScrollView(
-          slivers: [ListsSection(showAll: true)],
+          slivers: [ListsSection(showAll: true), SliverBottomSafeArea()],
         ),
         SearchResultsFilter.videos => const CustomScrollView(
-          slivers: [VideosSection(showAll: true)],
+          slivers: [VideosSection(showAll: true), SliverBottomSafeArea()],
         ),
       },
     );

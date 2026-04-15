@@ -3319,9 +3319,15 @@ class AppLocalizationsTr extends AppLocalizations {
       'Takip edilen kullanıcı yok.\nVideolarını burada görmek için birini takip et.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return '$mode akışı için video bulunamadı.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Videoları Keşfet';

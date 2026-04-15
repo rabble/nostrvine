@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 // Hide Drift table class to avoid collision with ProfileStats domain model.
@@ -13,7 +14,11 @@ import 'package:profile_repository/profile_repository.dart';
 
 class MockNostrClient extends Mock implements NostrClient {}
 
-class MockEvent extends Mock implements Event {}
+class MockEvent extends Mock implements Event {
+  @override
+  DateTime get createdAtDateTime =>
+      DateTime.fromMillisecondsSinceEpoch(createdAt * 1000, isUtc: true);
+}
 
 class MockUserProfilesDao extends Mock implements UserProfilesDao {}
 
@@ -53,6 +58,7 @@ void main() {
     });
 
     setUp(() {
+      UserProfile? storedProfile;
       mockNostrClient = MockNostrClient();
       mockProfileEvent = MockEvent();
       mockUserProfilesDao = MockUserProfilesDao();
@@ -95,12 +101,20 @@ void main() {
           profileContent: any(named: 'profileContent'),
         ),
       ).thenAnswer((_) async => mockProfileEvent);
-      when(
-        () => mockUserProfilesDao.getProfile(any()),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockUserProfilesDao.upsertProfile(any()),
-      ).thenAnswer((_) async {});
+      when(() => mockUserProfilesDao.getProfile(any())).thenAnswer((
+        invocation,
+      ) async {
+        final pubkey = invocation.positionalArguments.first as String;
+        if (storedProfile?.pubkey == pubkey) {
+          return storedProfile;
+        }
+        return null;
+      });
+      when(() => mockUserProfilesDao.upsertProfile(any())).thenAnswer((
+        invocation,
+      ) async {
+        storedProfile = invocation.positionalArguments.first as UserProfile;
+      });
     });
 
     /// Helper to create a current profile with given content
@@ -606,17 +620,9 @@ void main() {
             (_) async => {
               '_noProfile': true,
               'pubkey': testPubkey,
-              'social': {
-                'follower_count': 12,
-                'following_count': 7,
-              },
-              'stats': {
-                'video_count': 3,
-              },
-              'engagement': {
-                'total_reactions': 42,
-                'total_loops': 12.6,
-              },
+              'social': {'follower_count': 12, 'following_count': 7},
+              'stats': {'video_count': 3},
+              'engagement': {'total_reactions': 42, 'total_loops': 12.6},
             },
           );
 
@@ -797,8 +803,8 @@ void main() {
 
         test('handles uncaught Error without hanging', () async {
           // Throw an Error (not Exception) so it escapes
-          // _fetchFromConnectedRelays' catch and hits the
-          // Completer's catchError safety net.
+          // _fetchFromConnectedRelays' catch; the safe() wrapper's
+          // on Object clause handles it.
           when(
             () => mockNostrClient.fetchProfile(testPubkey),
           ).thenThrow(StateError('unexpected'));
@@ -818,58 +824,181 @@ void main() {
         });
 
         test('returns relay result when indexer is slower', () async {
+          final relayCompleter = Completer<Event?>();
+          final indexerCompleter = Completer<List<Event>>();
           when(
             () => mockNostrClient.fetchProfile(testPubkey),
-          ).thenAnswer((_) async => mockProfileEvent);
+          ).thenAnswer((_) => relayCompleter.future);
           when(
             () => mockNostrClient.queryEvents(
               any(),
               tempRelays: any(named: 'tempRelays'),
               useCache: any(named: 'useCache'),
             ),
-          ).thenAnswer((_) async => <Event>[]);
+          ).thenAnswer((_) => indexerCompleter.future);
 
-          final result = await profileRepository.fetchFreshProfile(
+          final fetchFuture = profileRepository.fetchFreshProfile(
             pubkey: testPubkey,
+          );
+          relayCompleter.complete(mockProfileEvent);
+
+          final result = await fetchFuture.timeout(
+            const Duration(milliseconds: 50),
           );
 
           expect(result, isNotNull);
           expect(result!.displayName, equals('Test User'));
+
+          indexerCompleter.complete(<Event>[]);
+        });
+
+        test('upgrades cached profile when slower indexer is newer', () async {
+          final indexerCompleter = Completer<List<Event>>();
+          // Connected relay returns older event (createdAt = 1704067200)
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => mockProfileEvent);
+          // Indexer returns newer event (createdAt = 1704153600)
+          final indexerEvent = MockEvent();
+          when(() => indexerEvent.kind).thenReturn(0);
+          when(() => indexerEvent.pubkey).thenReturn(testPubkey);
+          when(() => indexerEvent.createdAt).thenReturn(1704153600);
+          when(() => indexerEvent.id).thenReturn('idx_$testEventId');
+          when(
+            () => indexerEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Indexer Name'}));
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) => indexerCompleter.future);
+
+          final fetchFuture = profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+          final firstResult = await fetchFuture.timeout(
+            const Duration(milliseconds: 50),
+          );
+
+          expect(firstResult, isNotNull);
+          expect(firstResult!.displayName, equals('Test User'));
+          verify(
+            () => mockUserProfilesDao.upsertProfile(
+              any(
+                that: isA<UserProfile>().having(
+                  (profile) => profile.displayName,
+                  'displayName',
+                  equals('Test User'),
+                ),
+              ),
+            ),
+          ).called(1);
+
+          indexerCompleter.complete([indexerEvent]);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockUserProfilesDao.upsertProfile(
+              any(
+                that: isA<UserProfile>().having(
+                  (profile) => profile.displayName,
+                  'displayName',
+                  equals('Indexer Name'),
+                ),
+              ),
+            ),
+          ).called(1);
         });
 
         test(
-          'returns first result without waiting for slower sources',
+          'keeps cached relay profile when slower indexer is older',
           () async {
-            // Connected relay returns immediately
+            final indexerCompleter = Completer<List<Event>>();
             when(
               () => mockNostrClient.fetchProfile(testPubkey),
             ).thenAnswer((_) async => mockProfileEvent);
-            // Indexer also has a result but connected relay wins
             final indexerEvent = MockEvent();
             when(() => indexerEvent.kind).thenReturn(0);
             when(() => indexerEvent.pubkey).thenReturn(testPubkey);
-            when(() => indexerEvent.createdAt).thenReturn(1704153600);
-            when(() => indexerEvent.id).thenReturn('idx_$testEventId');
+            when(() => indexerEvent.createdAt).thenReturn(1703977200);
+            when(() => indexerEvent.id).thenReturn('idx_old_$testEventId');
             when(
               () => indexerEvent.content,
-            ).thenReturn(jsonEncode({'display_name': 'Indexer Name'}));
+            ).thenReturn(jsonEncode({'display_name': 'Old Indexer'}));
             when(
               () => mockNostrClient.queryEvents(
                 any(),
                 tempRelays: any(named: 'tempRelays'),
                 useCache: any(named: 'useCache'),
               ),
-            ).thenAnswer((_) async => [indexerEvent]);
+            ).thenAnswer((_) => indexerCompleter.future);
 
-            final result = await profileRepository.fetchFreshProfile(
+            final fetchFuture = profileRepository.fetchFreshProfile(
               pubkey: testPubkey,
             );
+            final firstResult = await fetchFuture.timeout(
+              const Duration(milliseconds: 50),
+            );
 
-            // First-result-wins: connected relay completes first
-            expect(result, isNotNull);
-            expect(result!.displayName, equals('Test User'));
+            expect(firstResult, isNotNull);
+            expect(firstResult!.displayName, equals('Test User'));
+
+            indexerCompleter.complete([indexerEvent]);
+            await Future<void>.delayed(Duration.zero);
+
+            verifyNever(
+              () => mockUserProfilesDao.upsertProfile(
+                any(
+                  that: isA<UserProfile>().having(
+                    (profile) => profile.displayName,
+                    'displayName',
+                    equals('Old Indexer'),
+                  ),
+                ),
+              ),
+            );
           },
         );
+
+        test('picks newer relay profile over older indexer profile', () async {
+          // Connected relay returns newer event (createdAt = 1704153600)
+          final newerRelayEvent = MockEvent();
+          when(() => newerRelayEvent.kind).thenReturn(0);
+          when(() => newerRelayEvent.pubkey).thenReturn(testPubkey);
+          when(() => newerRelayEvent.createdAt).thenReturn(1704153600);
+          when(() => newerRelayEvent.id).thenReturn('new_$testEventId');
+          when(
+            () => newerRelayEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Relay Name'}));
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => newerRelayEvent);
+          // Indexer returns older event (createdAt = 1704067200)
+          final indexerEvent = MockEvent();
+          when(() => indexerEvent.kind).thenReturn(0);
+          when(() => indexerEvent.pubkey).thenReturn(testPubkey);
+          when(() => indexerEvent.createdAt).thenReturn(1704067200);
+          when(() => indexerEvent.id).thenReturn('idx_$testEventId');
+          when(
+            () => indexerEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Old Indexer'}));
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => [indexerEvent]);
+
+          final result = await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.displayName, equals('Relay Name'));
+        });
       });
     });
 

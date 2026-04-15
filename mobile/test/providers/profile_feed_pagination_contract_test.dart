@@ -142,6 +142,10 @@ void main() {
         () {},
       );
       when(
+        () => mockVideoEventService.subscribeToUserVideos(userId),
+      ).thenAnswer((_) async {});
+      when(() => mockVideoEventService.authorVideos(userId)).thenReturn([]);
+      when(
         () => mockVideoEventService.filterVideoList(any()),
       ).thenAnswer((invocation) {
         return invocation.positionalArguments.single as List<VideoEvent>;
@@ -173,7 +177,7 @@ void main() {
     }
 
     test(
-      'initial REST state keeps hasMoreContent true when a full page filters down',
+      'REST hydration keeps hasMoreContent true when a full page filters down',
       () async {
         when(
           () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
@@ -189,10 +193,129 @@ void main() {
         final container = createContainer();
         await container.read(funnelcakeAvailableProvider.future);
 
-        final state = await container.read(profileFeedProvider(userId).future);
+        await container.read(profileFeedProvider(userId).future);
 
+        final hydrated = Completer<VideoFeedState>();
+        final subscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 9 &&
+                value.hasMoreContent &&
+                !hydrated.isCompleted) {
+              hydrated.complete(value);
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        final state = await hydrated.future.timeout(
+          const Duration(milliseconds: 200),
+        );
         expect(state.videos.length, 9);
         expect(state.hasMoreContent, isTrue);
+      },
+    );
+
+    test(
+      'initial load returns relay videos without waiting for a slower REST response',
+      () async {
+        final restCompleter = Completer<VideosByAuthorResponse>();
+        addTearDown(() {
+          if (!restCompleter.isCompleted) {
+            restCompleter.complete(_videoStats(count: 0, pubkey: userId));
+          }
+        });
+
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
+        ).thenAnswer((_) => restCompleter.future);
+        when(
+          () => mockVideoEventService.authorVideos(userId),
+        ).thenReturn([
+          _relayVideo(
+            id: 'relay-head',
+            pubkey: userId,
+            stableId: 'relay-head',
+            createdAt: DateTime(2026, 3, 30, 12, 0, 30),
+          ),
+        ]);
+
+        final container = createContainer();
+        await container.read(funnelcakeAvailableProvider.future);
+
+        final state = await container
+            .read(profileFeedProvider(userId).future)
+            .timeout(const Duration(milliseconds: 100));
+
+        expect(state.videos.map((v) => v.id), ['relay-head']);
+        expect(state.isInitialLoad, isFalse);
+      },
+    );
+
+    test(
+      'late REST merge keeps relay head item and adds REST pagination metadata',
+      () async {
+        final restCompleter = Completer<VideosByAuthorResponse>();
+        addTearDown(() {
+          if (!restCompleter.isCompleted) {
+            restCompleter.complete(_videoStats(count: 0, pubkey: userId));
+          }
+        });
+
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
+        ).thenAnswer((_) => restCompleter.future);
+        when(
+          () => mockVideoEventService.authorVideos(userId),
+        ).thenReturn([
+          _relayVideo(
+            id: 'relay-head',
+            pubkey: userId,
+            stableId: 'relay-head',
+            createdAt: DateTime(2026, 3, 30, 12, 0, 30),
+          ),
+        ]);
+
+        final container = createContainer();
+        await container.read(funnelcakeAvailableProvider.future);
+
+        final initialState = await container
+            .read(profileFeedProvider(userId).future)
+            .timeout(const Duration(milliseconds: 100));
+        expect(initialState.videos.map((v) => v.id), ['relay-head']);
+
+        final merged = Completer<VideoFeedState>();
+        final subscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 3 &&
+                value.totalVideoCount == 12 &&
+                !merged.isCompleted) {
+              merged.complete(value);
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        restCompleter.complete(
+          _videoStats(count: 2, pubkey: userId, startIndex: 1, totalCount: 12),
+        );
+
+        final mergedState = await merged.future.timeout(
+          const Duration(milliseconds: 200),
+        );
+        expect(
+          mergedState.videos.map((v) => v.id),
+          ['relay-head', 'video-1', 'video-2'],
+        );
+        expect(mergedState.hasMoreContent, isFalse);
+        expect(mergedState.totalVideoCount, 12);
       },
     );
 
@@ -219,9 +342,6 @@ void main() {
 
         expect(state.videos, isEmpty);
         expect(state.hasMoreContent, isFalse);
-        verify(
-          () => mockVideoEventService.subscribeToUserVideos(userId),
-        ).called(1);
       },
     );
 
@@ -241,6 +361,23 @@ void main() {
         final notifier = container.read(profileFeedProvider(userId).notifier);
 
         await container.read(profileFeedProvider(userId).future);
+
+        final initialHydrated = Completer<void>();
+        final initialSubscription = container
+            .listen<AsyncValue<VideoFeedState>>(
+              profileFeedProvider(userId),
+              (previous, next) {
+                final value = next.asData?.value;
+                if (value != null &&
+                    value.videos.length == 50 &&
+                    !initialHydrated.isCompleted) {
+                  initialHydrated.complete();
+                }
+              },
+              fireImmediately: true,
+            );
+        addTearDown(initialSubscription.close);
+        await initialHydrated.future.timeout(const Duration(milliseconds: 200));
 
         final completer = Completer<void>();
         final subscription = container.listen<AsyncValue<VideoFeedState>>(
@@ -287,8 +424,26 @@ void main() {
         await container.read(funnelcakeAvailableProvider.future);
         final notifier = container.read(profileFeedProvider(userId).notifier);
 
-        final initialState = await container.read(
-          profileFeedProvider(userId).future,
+        await container.read(profileFeedProvider(userId).future);
+
+        final hydrated = Completer<VideoFeedState>();
+        final subscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 50 &&
+                value.hasMoreContent &&
+                !hydrated.isCompleted) {
+              hydrated.complete(value);
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        final initialState = await hydrated.future.timeout(
+          const Duration(milliseconds: 200),
         );
         expect(initialState.videos.length, 50);
         expect(initialState.hasMoreContent, isTrue);
@@ -307,6 +462,77 @@ void main() {
             offset: 50,
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'REST loadMore dedupes replaceable videos by stable identity',
+      () async {
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
+        ).thenAnswer((_) async => _videoStats(count: 50, pubkey: userId));
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(
+            pubkey: userId,
+            offset: 50,
+          ),
+        ).thenAnswer(
+          (_) async => VideosByAuthorResponse(
+            videos: [
+              _videoStat(
+                id: 'video-0-replacement',
+                pubkey: userId,
+                stableId: 'video-0',
+                createdAt: DateTime(2026, 3, 30, 12, 1),
+              ),
+              _videoStat(
+                id: 'video-50',
+                pubkey: userId,
+                stableId: 'video-50',
+                createdAt: DateTime(2026, 3, 30, 11, 10),
+              ),
+            ],
+            totalCount: 51,
+          ),
+        );
+
+        final container = createContainer();
+        await container.read(funnelcakeAvailableProvider.future);
+        final notifier = container.read(profileFeedProvider(userId).notifier);
+
+        await container.read(profileFeedProvider(userId).future);
+
+        final hydrated = Completer<void>();
+        final subscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 50 &&
+                value.hasMoreContent &&
+                !hydrated.isCompleted) {
+              hydrated.complete();
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await hydrated.future.timeout(const Duration(milliseconds: 200));
+
+        await notifier.loadMore();
+
+        final updatedState = container
+            .read(profileFeedProvider(userId))
+            .requireValue;
+        expect(updatedState.videos.length, 51);
+        expect(
+          updatedState.videos.where((video) => video.stableId == 'video-0'),
+          hasLength(1),
+        );
+        expect(
+          updatedState.videos.any((video) => video.id == 'video-50'),
+          isTrue,
+        );
       },
     );
   });
@@ -339,4 +565,45 @@ VideosByAuthorResponse _videoStats({
     );
   });
   return VideosByAuthorResponse(videos: videos, totalCount: totalCount);
+}
+
+VideoStats _videoStat({
+  required String id,
+  required String pubkey,
+  required String stableId,
+  required DateTime createdAt,
+}) {
+  return VideoStats(
+    id: id,
+    pubkey: pubkey,
+    createdAt: createdAt,
+    kind: 22,
+    dTag: stableId,
+    title: 'Video $id',
+    thumbnail: 'https://example.com/$id.jpg',
+    videoUrl: 'https://example.com/$id.mp4',
+    reactions: 1,
+    comments: 1,
+    reposts: 1,
+    engagementScore: 1,
+  );
+}
+
+VideoEvent _relayVideo({
+  required String id,
+  required String pubkey,
+  required String stableId,
+  required DateTime createdAt,
+}) {
+  return VideoEvent(
+    id: id,
+    pubkey: pubkey,
+    createdAt: createdAt.millisecondsSinceEpoch ~/ 1000,
+    content: 'Relay video $id',
+    timestamp: createdAt,
+    title: 'Relay video $id',
+    videoUrl: 'https://example.com/$id.mp4',
+    vineId: stableId,
+    rawTags: {'d': stableId},
+  );
 }

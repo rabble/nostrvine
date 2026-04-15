@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "No se pudieron cargar los videos",
     "feedRetry": "Reintentar",
     "feedNoFollowedUsers": "Todavía no seguís a nadie.\nSeguí a alguien para ver sus videos acá.",
-    "feedNoVideosForMode": "No hay videos para el feed {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Explorar videos",
     "feedExternalVideoSlow": "Un video externo se carga lento",
     "feedSkip": "Saltar",

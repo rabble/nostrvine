@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "動画の読み込みがうまくいかなかった",
     "feedRetry": "もう一回",
     "feedNoFollowedUsers": "まだ誰もフォローしてないよ。\n誰かをフォローすると、ここに動画が出るよ。",
-    "feedNoVideosForMode": "{mode}フィードの動画が見つからない。",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "動画を探しに行こう",
     "feedExternalVideoSlow": "外部動画の読み込みに時間がかかってる",
     "feedSkip": "スキップ",

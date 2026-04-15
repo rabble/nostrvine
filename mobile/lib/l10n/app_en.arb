@@ -1725,14 +1725,9 @@
   "feedFailedToLoadVideos": "Failed to load videos",
   "feedRetry": "Retry",
   "feedNoFollowedUsers": "No followed users.\nFollow someone to see their videos here.",
-  "feedNoVideosForMode": "No videos found for {mode} feed.",
-  "@feedNoVideosForMode": {
-    "placeholders": {
-      "mode": {
-        "type": "String"
-      }
-    }
-  },
+  "feedForYouEmpty": "Your For You feed is empty.\nExplore videos and follow creators to shape it.",
+  "feedFollowingEmpty": "No videos from people you follow yet.\nFind creators you like and follow them.",
+  "feedLatestEmpty": "No new videos yet.\nCheck back soon.",
   "feedExploreVideos": "Explore Videos",
   "feedExternalVideoSlow": "External video loading slowly",
   "feedSkip": "Skip",

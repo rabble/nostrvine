@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 
 /// Video description overlay showing title/content and loop count.
 ///
@@ -29,37 +30,41 @@ class VideoDescriptionOverlay extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Video title with clickable hashtags
-          Semantics(
-            identifier: 'video_description',
-            container: true,
-            explicitChildNodes: true,
-            label: 'Video description',
-            child: ClickableHashtagText(
-              text: video.content.isNotEmpty
-                  ? video.content
-                  : video.title ?? '',
-              style: const TextStyle(
-                color: VineTheme.whiteText,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                height: 1.3,
-                shadows: [
-                  Shadow(blurRadius: 8),
-                  Shadow(offset: Offset(2, 2), blurRadius: 4),
-                ],
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => MetadataExpandedSheet.show(context, video),
+            child: Semantics(
+              identifier: 'video_description',
+              container: true,
+              explicitChildNodes: true,
+              label: 'Video description',
+              child: ClickableHashtagText(
+                text: video.content.isNotEmpty
+                    ? video.content
+                    : video.title ?? '',
+                style: const TextStyle(
+                  color: VineTheme.whiteText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
+                  shadows: [
+                    Shadow(blurRadius: 8),
+                    Shadow(offset: Offset(2, 2), blurRadius: 4),
+                  ],
+                ),
+                hashtagStyle: const TextStyle(
+                  color: VineTheme.vineGreen,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
+                  shadows: [
+                    Shadow(blurRadius: 8),
+                    Shadow(offset: Offset(2, 2), blurRadius: 4),
+                  ],
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
-              hashtagStyle: const TextStyle(
-                color: VineTheme.vineGreen,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                height: 1.3,
-                shadows: [
-                  Shadow(blurRadius: 8),
-                  Shadow(offset: Offset(2, 2), blurRadius: 4),
-                ],
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(height: 4),

@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Videolar yüklenemedi",
     "feedRetry": "Tekrar Dene",
     "feedNoFollowedUsers": "Takip edilen kullanıcı yok.\nVideolarını burada görmek için birini takip et.",
-    "feedNoVideosForMode": "{mode} akışı için video bulunamadı.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Videoları Keşfet",
     "feedExternalVideoSlow": "Harici video yavaş yükleniyor",
     "feedSkip": "Atla",

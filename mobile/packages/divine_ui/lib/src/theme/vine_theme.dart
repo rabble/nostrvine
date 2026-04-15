@@ -2,6 +2,7 @@
 // ABOUTME: Matches the classic Vine app aesthetic with proper styling
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Vine-inspired theme with characteristic green colors and clean design.
@@ -205,6 +206,17 @@ class VineTheme {
         letterSpacing: 0.5,
         color: color,
       );
+
+  /// Status bar style for dark backgrounds: light icons on both platforms.
+  ///
+  /// [SystemUiOverlayStyle.light] uses `statusBarBrightness: Brightness.light`
+  /// which causes **dark** icons on iOS. This constant sets the correct
+  /// brightness per platform so icons are always visible on dark backgrounds.
+  static const SystemUiOverlayStyle statusBarStyle = SystemUiOverlayStyle(
+    statusBarColor: transparent,
+    statusBarIconBrightness: Brightness.light, // Android
+    statusBarBrightness: Brightness.dark, // iOS
+  );
 
   // Classic Vine green color palette
 
@@ -487,6 +499,7 @@ class VineTheme {
       foregroundColor: whiteText,
       elevation: 1,
       centerTitle: true,
+      systemOverlayStyle: statusBarStyle,
       titleTextStyle: TextStyle(
         color: whiteText,
         fontSize: 20,

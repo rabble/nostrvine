@@ -36,8 +36,8 @@ jobs:
             // ═══════════════════════════════════════════════
 
             async function run() {
-              // Step 1: "Closes #none" — dev dismissed suggestions, auto-create
-              const nonePattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#none/i;
+              // Step 1: "Closes #none" or "Relates to #none" — dev dismissed suggestions, auto-create
+              const nonePattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|relates?\s+to|part\s+of|refs?)\s+#none/i;
               if (nonePattern.test(body)) {
                 console.log(`PR #${pr.number} has "Closes #none" — creating issue.`);
                 const cleanBody = body.replace(nonePattern, '').trim();
@@ -46,11 +46,14 @@ jobs:
                 return;
               }
 
-              // Step 2: Already linked via closing keywords in body?
+              // Step 2: Already linked via closing or relation keywords in body?
               const closingPattern = /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
-              const bodyMatches = [...body.matchAll(closingPattern)];
-              if (bodyMatches.length > 0) {
-                console.log(`PR #${pr.number} linked to: ${bodyMatches.map(m => '#' + m[1]).join(', ')}`);
+              const relationPattern = /(?:relates?\s+to|part\s+of|refs?)\s+#(\d+)/gi;
+              const closingMatches = [...body.matchAll(closingPattern)];
+              const relationMatches = [...body.matchAll(relationPattern)];
+              const allMatches = [...closingMatches, ...relationMatches];
+              if (allMatches.length > 0) {
+                console.log(`PR #${pr.number} linked to: ${allMatches.map(m => '#' + m[1]).join(', ')}`);
                 await cleanup();
                 return;
               }
@@ -238,7 +241,7 @@ jobs:
                 '',
                 issueList,
                 '',
-                '**To link:** edit the PR description and add `Closes #<number>`.',
+                '**To link:** edit the PR description and add `Closes #<number>` (if this PR will close the issue) or `Relates to #<number>` (if the PR is related but doesn\'t close it).',
                 'If none of these match, add `Closes #none` and a new tracking issue will be created automatically.',
                 '',
                 '*This comment and the `needs-issue` label will be removed once an issue is linked.*',

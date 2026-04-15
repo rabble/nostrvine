@@ -2617,7 +2617,7 @@ final class PushNotificationSyncProvider
 }
 
 String _$pushNotificationSyncHash() =>
-    r'fed5d3b0d5d729c415c77b8d0a88c090abf4095d';
+    r'42aa13bfec4492b045273818e6a4a88b28949b06';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -2673,7 +2673,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'3c3497cc89997f9995bdee112182fb36a35cc198';
+    r'56d99094bba86b89b54ababd0ab82604bc95cc4e';
 
 /// Subscription manager for centralized subscription management
 
