@@ -210,13 +210,8 @@ class ProfileRepository {
     });
   }
 
-  /// Extracts social/stats/engagement fields from a REST API response
-  /// and caches them in [ProfileStatsDao].
-  ///
-  /// The `/api/users/{pubkey}` response includes `social`, `stats`, and
-  /// `engagement` objects. This method maps them into [ProfileStatsDao]
   /// Caches profile stats (social counts, video stats, engagement data) from a
-  /// [UserProfileResult] into the local stats DAO.
+  /// [UserProfileResult] into the local [ProfileStatsDao].
   Future<void> _cacheProfileStatsFromResult(
     String pubkey,
     UserProfileResult result,

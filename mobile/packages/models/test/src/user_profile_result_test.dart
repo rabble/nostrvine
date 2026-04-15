@@ -17,6 +17,7 @@ void main() {
         'banner': 'https://example.com/banner.jpg',
         'nip05': 'alice@example.com',
         'lud16': 'alice@walletofsatoshi.com',
+        'website': 'https://example.com',
       });
 
       expect(data.pubkey, equals(_pubkey));
@@ -27,6 +28,7 @@ void main() {
       expect(data.banner, equals('https://example.com/banner.jpg'));
       expect(data.nip05, equals('alice@example.com'));
       expect(data.lud16, equals('alice@walletofsatoshi.com'));
+      expect(data.website, equals('https://example.com'));
     });
 
     test('fromJson handles missing optional fields', () {
