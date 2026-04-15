@@ -27,6 +27,6 @@ tags:
     timeout: 10m
   skip_very_good_optimization:
 
-# Test randomization
-shuffle: false
+# Test randomization — enabled to catch order-dependent tests early.
+shuffle: true
 chain_stack_traces: true
