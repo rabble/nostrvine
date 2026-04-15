@@ -608,6 +608,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{تكرار} other{تكرارات}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "ليس Divine",
     "metadataBadgeHumanMade": "من صنع البشر",
     "metadataSoundsLabel": "أصوات",
@@ -619,7 +630,14 @@
     "metadataCollaboratorsLabel": "المتعاونون",
     "metadataInspiredByLabel": "مستوحى من",
     "metadataRepostedByLabel": "أعاد نشره",
-    "metadataLoopsLabel": "التكرارات",
+    "metadataLoopsLabel": "{count, plural, =1{تكرار} other{التكرارات}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "الإعجابات",
     "metadataCommentsLabel": "التعليقات",
     "metadataRepostsLabel": "إعادات النشر",

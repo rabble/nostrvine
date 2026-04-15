@@ -347,6 +347,17 @@
     "videoActionHideSubtitles": "자막 숨기기",
     "videoActionShowSubtitles": "자막 표시",
     "videoDescriptionLoops": "루프 {count}회",
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, other{루프}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Divine 아님",
     "metadataBadgeHumanMade": "사람 제작",
     "metadataSoundsLabel": "사운드",
@@ -358,7 +369,14 @@
     "metadataCollaboratorsLabel": "콜라보레이터",
     "metadataInspiredByLabel": "영감",
     "metadataRepostedByLabel": "리포스트",
-    "metadataLoopsLabel": "루프",
+    "metadataLoopsLabel": "{count, plural, other{루프}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "좋아요",
     "metadataCommentsLabel": "댓글",
     "metadataRepostsLabel": "리포스트",

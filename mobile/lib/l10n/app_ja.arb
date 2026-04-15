@@ -608,6 +608,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount}{count, plural, other{ループ}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Divine 以外",
     "metadataBadgeHumanMade": "人間が制作",
     "metadataSoundsLabel": "サウンド",
@@ -619,7 +630,14 @@
     "metadataCollaboratorsLabel": "コラボレーター",
     "metadataInspiredByLabel": "インスパイア元",
     "metadataRepostedByLabel": "リポスト元",
-    "metadataLoopsLabel": "ループ",
+    "metadataLoopsLabel": "{count, plural, other{ループ}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "いいね",
     "metadataCommentsLabel": "コメント",
     "metadataRepostsLabel": "リポスト",

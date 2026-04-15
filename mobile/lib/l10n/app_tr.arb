@@ -608,6 +608,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{döngü} other{döngüler}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Divine Değil",
     "metadataBadgeHumanMade": "İnsan Yapımı",
     "metadataSoundsLabel": "Sesler",
@@ -619,7 +630,14 @@
     "metadataCollaboratorsLabel": "İşbirlikçiler",
     "metadataInspiredByLabel": "İlham alındı",
     "metadataRepostedByLabel": "Yeniden paylaşan",
-    "metadataLoopsLabel": "Döngüler",
+    "metadataLoopsLabel": "{count, plural, =1{Döngü} other{Döngüler}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "Beğeniler",
     "metadataCommentsLabel": "Yorumlar",
     "metadataRepostsLabel": "Yeniden Paylaşımlar",

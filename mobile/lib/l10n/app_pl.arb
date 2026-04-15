@@ -608,6 +608,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{pętla} few{pętle} many{pętli} other{pętli}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Nie Divine",
     "metadataBadgeHumanMade": "Zrobione przez człowieka",
     "metadataSoundsLabel": "Dźwięki",
@@ -619,7 +630,14 @@
     "metadataCollaboratorsLabel": "Współtwórcy",
     "metadataInspiredByLabel": "Zainspirowane przez",
     "metadataRepostedByLabel": "Repostowane przez",
-    "metadataLoopsLabel": "Pętle",
+    "metadataLoopsLabel": "{count, plural, =1{Pętla} few{Pętle} many{Pętli} other{Pętli}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "Polubienia",
     "metadataCommentsLabel": "Komentarze",
     "metadataRepostsLabel": "Reposty",

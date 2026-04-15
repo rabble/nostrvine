@@ -608,6 +608,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Bukan Divine",
     "metadataBadgeHumanMade": "Buatan Manusia",
     "metadataSoundsLabel": "Suara",
@@ -619,7 +630,14 @@
     "metadataCollaboratorsLabel": "Kolaborator",
     "metadataInspiredByLabel": "Terinspirasi oleh",
     "metadataRepostedByLabel": "Di-repost oleh",
-    "metadataLoopsLabel": "Loop",
+    "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loop}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "Suka",
     "metadataCommentsLabel": "Komentar",
     "metadataRepostsLabel": "Repost",

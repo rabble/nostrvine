@@ -608,6 +608,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{bucle} other{bucles}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "No es de Divine",
     "metadataBadgeHumanMade": "Hecho por humanos",
     "metadataSoundsLabel": "Sonidos",
@@ -619,7 +630,14 @@
     "metadataCollaboratorsLabel": "Colaboradores",
     "metadataInspiredByLabel": "Inspirado en",
     "metadataRepostedByLabel": "Reposteado por",
-    "metadataLoopsLabel": "Loops",
+    "metadataLoopsLabel": "{count, plural, =1{Bucle} other{Bucles}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "Me gusta",
     "metadataCommentsLabel": "Comentarios",
     "metadataRepostsLabel": "Reposts",

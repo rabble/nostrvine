@@ -46,6 +46,10 @@ const _audioPubkey =
 const _audioEventId =
     '1111111111111111111111111111111111111111111111111111111111111111';
 
+AppLocalizations _l10n(WidgetTester tester) => AppLocalizations.of(
+  tester.element(find.byType(Scaffold).first),
+);
+
 UserProfile _makeProfile(String pubkey, String name) => UserProfile(
   pubkey: pubkey,
   displayName: name,
@@ -65,6 +69,7 @@ VideoEvent _makeVideo({
   String? title,
   String content = '',
   Map<String, String> rawTags = const {},
+  int originalLoops = 1500,
 }) => VideoEvent(
   id: 'test_video_id_00000000000000000000000000000000000000000000000000',
   pubkey: _creatorPubkey,
@@ -79,7 +84,7 @@ VideoEvent _makeVideo({
   inspiredByVideo: inspiredByVideo,
   reposterPubkeys: reposterPubkeys,
   audioEventId: audioEventId,
-  originalLoops: 1500,
+  originalLoops: originalLoops,
   rawTags: rawTags,
 );
 
@@ -114,9 +119,9 @@ void main() {
     when(
       () => mockRepostersCubit.stream,
     ).thenAnswer((_) => const Stream.empty());
-    when(() => mockRepostersCubit.state).thenReturn(
-      const VideoRepostersState(isLoading: false),
-    );
+    when(
+      () => mockRepostersCubit.state,
+    ).thenReturn(const VideoRepostersState(isLoading: false));
     when(() => mockRepostersCubit.close()).thenAnswer((_) async {});
   });
 
@@ -167,9 +172,7 @@ void main() {
       expect(find.text('A description'), findsOneWidget);
     });
 
-    testWidgets('renders description with clickable rich text', (
-      tester,
-    ) async {
+    testWidgets('renders description with clickable rich text', (tester) async {
       final video = _makeVideo(
         title: 'Who knew?',
         content: 'Read more at https://example.com/docs #proof',
@@ -212,17 +215,30 @@ void main() {
       expect(find.text('250'), findsOneWidget); // likeCount
       expect(find.text('42'), findsOneWidget); // commentCount
       expect(find.text('15'), findsOneWidget); // repostCount
-      expect(find.text('Loops'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(
+        find.text(l10n.metadataLoopsLabel(video.totalLoops)),
+        findsOneWidget,
+      );
       expect(find.text('Likes'), findsOneWidget);
       expect(find.text('Comments'), findsOneWidget);
       expect(find.text('Reposts'), findsOneWidget);
     });
 
+    testWidgets('uses singular Loop label when count is 1', (tester) async {
+      final video = _makeVideo(originalLoops: 1);
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataStatsRow(video: video)),
+      );
+
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.metadataLoopsLabel(1)), findsOneWidget);
+    });
+
     testWidgets('shows dash when loading', (tester) async {
       when(() => mockInteractionsBloc.state).thenReturn(
-        const VideoInteractionsState(
-          status: VideoInteractionsStatus.loading,
-        ),
+        const VideoInteractionsState(status: VideoInteractionsStatus.loading),
       );
 
       final video = _makeVideo();
@@ -262,9 +278,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group(MetadataBadgesRow, () {
     testWidgets('renders Human-Made badge when hasProofMode', (tester) async {
-      final video = _makeVideo(
-        rawTags: {'verification': 'verified_mobile'},
-      );
+      final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
       await tester.pumpWidget(
         buildSubject(child: MetadataBadgesRow(video: video)),
       );
@@ -284,9 +298,7 @@ void main() {
 
     testWidgets('renders both badges with dot separator', (tester) async {
       // hasProofMode but not Divine hosted
-      final video = _makeVideo(
-        rawTags: {'verification': 'verified_web'},
-      );
+      final video = _makeVideo(rawTags: {'verification': 'verified_web'});
       await tester.pumpWidget(
         buildSubject(child: MetadataBadgesRow(video: video)),
       );
@@ -529,9 +541,7 @@ void main() {
       final video = _makeVideo();
 
       await tester.pumpWidget(
-        buildSubject(
-          child: MetadataRepostedBySection(video: video),
-        ),
+        buildSubject(child: MetadataRepostedBySection(video: video)),
       );
       await tester.pumpAndSettle();
 
@@ -592,9 +602,9 @@ void main() {
       await tester.pumpWidget(
         buildSubject(
           providerOverrides: [
-            soundByIdProvider(_audioEventId).overrideWith(
-              (ref) async => _testAudio,
-            ),
+            soundByIdProvider(
+              _audioEventId,
+            ).overrideWith((ref) async => _testAudio),
             userProfileReactiveProvider(_audioPubkey).overrideWith(
               (ref) =>
                   Stream.value(_makeProfile(_audioPubkey, 'Audio Creator')),
@@ -661,9 +671,9 @@ void main() {
             fetchUserProfileProvider(_reposterPubkey).overrideWith(
               (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
             ),
-            soundByIdProvider(_audioEventId).overrideWith(
-              (ref) async => _testAudio,
-            ),
+            soundByIdProvider(
+              _audioEventId,
+            ).overrideWith((ref) async => _testAudio),
             userProfileReactiveProvider(_audioPubkey).overrideWith(
               (ref) =>
                   Stream.value(_makeProfile(_audioPubkey, 'Audio Creator')),
@@ -682,7 +692,11 @@ void main() {
       );
 
       // Stats
-      expect(find.text('Loops'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(
+        find.text(l10n.metadataLoopsLabel(video.totalLoops)),
+        findsOneWidget,
+      );
       expect(find.text('Likes'), findsOneWidget);
 
       // Badges row (Human-Made from verification, not Classic Vine)
@@ -725,10 +739,7 @@ void main() {
     testWidgets('renders only populated sections for sparse video', (
       tester,
     ) async {
-      final video = _makeVideo(
-        title: 'Simple video',
-        hashtags: ['hello'],
-      );
+      final video = _makeVideo(title: 'Simple video', hashtags: ['hello']);
 
       await tester.pumpWidget(
         buildSubject(

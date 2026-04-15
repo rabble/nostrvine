@@ -608,6 +608,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Niet Divine",
     "metadataBadgeHumanMade": "Door mensen gemaakt",
     "metadataSoundsLabel": "Geluiden",
@@ -619,7 +630,14 @@
     "metadataCollaboratorsLabel": "Samenwerkers",
     "metadataInspiredByLabel": "Geïnspireerd door",
     "metadataRepostedByLabel": "Gerepost door",
-    "metadataLoopsLabel": "Loops",
+    "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loops}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "Likes",
     "metadataCommentsLabel": "Reacties",
     "metadataRepostsLabel": "Reposts",

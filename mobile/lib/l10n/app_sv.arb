@@ -608,6 +608,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loopar}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Inte Divine",
     "metadataBadgeHumanMade": "Gjord av människa",
     "metadataSoundsLabel": "Ljud",
@@ -619,7 +630,14 @@
     "metadataCollaboratorsLabel": "Samarbetspartner",
     "metadataInspiredByLabel": "Inspirerad av",
     "metadataRepostedByLabel": "Återpublicerad av",
-    "metadataLoopsLabel": "Loopar",
+    "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loopar}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "Gillamarkeringar",
     "metadataCommentsLabel": "Kommentarer",
     "metadataRepostsLabel": "Återpubliceringar",

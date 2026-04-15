@@ -608,6 +608,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{buclă} other{bucle}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Nu e Divine",
     "metadataBadgeHumanMade": "Făcut de om",
     "metadataSoundsLabel": "Sunete",
@@ -619,7 +630,14 @@
     "metadataCollaboratorsLabel": "Colaboratori",
     "metadataInspiredByLabel": "Inspirat de",
     "metadataRepostedByLabel": "Redistribuit de",
-    "metadataLoopsLabel": "Bucle",
+    "metadataLoopsLabel": "{count, plural, =1{Buclă} other{Bucle}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "Aprecieri",
     "metadataCommentsLabel": "Comentarii",
     "metadataRepostsLabel": "Redistribuiri",

@@ -1569,7 +1569,12 @@ class VideoOverlayActions extends ConsumerWidget {
                                       ],
                                     ),
                                     Text(
-                                      '${StringUtils.formatCompactNumber(video.totalLoops)} ${video.totalLoops == 1 ? 'loop' : 'loops'}',
+                                      context.l10n.videoFeedLoopCountLine(
+                                        StringUtils.formatCompactNumber(
+                                          video.totalLoops,
+                                        ),
+                                        video.totalLoops,
+                                      ),
                                       style: const TextStyle(
                                         fontFamily: 'Inter',
                                         fontSize: 14,
@@ -2188,10 +2193,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _ContentWarningBadge._humanize(
-                              context,
-                              label,
-                            ),
+                            _ContentWarningBadge._humanize(context, label),
                             style: const TextStyle(
                               color: VineTheme.whiteText,
                               fontSize: 15,
@@ -2200,10 +2202,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _ContentWarningBadge._describe(
-                              context,
-                              label,
-                            ),
+                            _ContentWarningBadge._describe(context, label),
                             style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 13,

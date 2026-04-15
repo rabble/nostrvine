@@ -1214,6 +1214,17 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تكرارات',
+      one: 'تكرار',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'ليس Divine';
 
   @override
@@ -1247,7 +1258,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get metadataRepostedByLabel => 'أعاد نشره';
 
   @override
-  String get metadataLoopsLabel => 'التكرارات';
+  String metadataLoopsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'التكرارات',
+      one: 'تكرار',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get metadataLikesLabel => 'الإعجابات';

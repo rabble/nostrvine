@@ -2206,6 +2206,12 @@ abstract class AppLocalizations {
   /// **'{count} loops'**
   String videoDescriptionLoops(String count);
 
+  /// No description provided for @videoFeedLoopCountLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{compactCount} {count, plural, =1{loop} other{loops}}'**
+  String videoFeedLoopCountLine(String compactCount, int count);
+
   /// No description provided for @metadataBadgeNotDivine.
   ///
   /// In en, this message translates to:
@@ -2275,8 +2281,8 @@ abstract class AppLocalizations {
   /// No description provided for @metadataLoopsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Loops'**
-  String get metadataLoopsLabel;
+  /// **'{count, plural, =1{Loop} other{Loops}}'**
+  String metadataLoopsLabel(int count);
 
   /// No description provided for @metadataLikesLabel.
   ///

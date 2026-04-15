@@ -608,6 +608,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{boucle} other{boucles}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Pas Divine",
     "metadataBadgeHumanMade": "Fait main",
     "metadataSoundsLabel": "Sons",
@@ -619,7 +630,14 @@
     "metadataCollaboratorsLabel": "Collaborateurs",
     "metadataInspiredByLabel": "Inspiré par",
     "metadataRepostedByLabel": "Reposté par",
-    "metadataLoopsLabel": "Loops",
+    "metadataLoopsLabel": "{count, plural, =1{Boucle} other{Boucles}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "J'aime",
     "metadataCommentsLabel": "Commentaires",
     "metadataRepostsLabel": "Reposts",
