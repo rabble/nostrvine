@@ -75,8 +75,6 @@ class _VideoEditorTimelineClipStripState
     with SingleTickerProviderStateMixin {
   static const _animDuration = Duration(milliseconds: 250);
 
-  /// FIXME(hm21): Use a service
-
   /// Drives reorder shrink/grow timing so we can react to completion
   /// instead of guessing with [Future.delayed].
   late final AnimationController _reorderAnimController;
