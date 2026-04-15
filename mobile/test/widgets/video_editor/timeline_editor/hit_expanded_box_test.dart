@@ -2,7 +2,6 @@
 // ABOUTME: logic, height constraints, and update propagation.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/utils/hit_expanded_box.dart';
 
@@ -137,58 +136,46 @@ void main() {
       testWidgets(
         'registers taps on handle in expanded left margin',
         (tester) async {
+          var leftTapped = false;
+
           await tester.pumpWidget(
             _buildExpandedHitScene(
               expandLeft: 30,
               expandRight: 30,
               handleWidth: 20,
-              onLeftHandleTap: () {},
+              onLeftHandleTap: () => leftTapped = true,
               onRightHandleTap: () {},
               onCenterTap: () {},
             ),
           );
 
-          final renderObject = tester.renderObject<RenderHitExpandedBox>(
-            find.byType(HitExpandedBox),
-          );
-          final result = BoxHitTestResult();
+          // Left handle is outside main content bounds: x in [80, 100].
+          await tester.tapAt(const Offset(90, 125));
 
-          // Local position in left expanded margin (x < 0).
-          final hit = renderObject.hitTest(
-            result,
-            position: const Offset(-10, 25),
-          );
-
-          expect(hit, isTrue);
+          expect(leftTapped, isTrue);
         },
       );
 
       testWidgets(
         'registers taps on handle in expanded right margin',
         (tester) async {
+          var rightTapped = false;
+
           await tester.pumpWidget(
             _buildExpandedHitScene(
               expandLeft: 30,
               expandRight: 30,
               handleWidth: 20,
               onLeftHandleTap: () {},
-              onRightHandleTap: () {},
+              onRightHandleTap: () => rightTapped = true,
               onCenterTap: () {},
             ),
           );
 
-          final renderObject = tester.renderObject<RenderHitExpandedBox>(
-            find.byType(HitExpandedBox),
-          );
-          final result = BoxHitTestResult();
+          // Right handle is outside main content bounds: x in [200, 220].
+          await tester.tapAt(const Offset(210, 125));
 
-          // Local position in right expanded margin (x > width).
-          final hit = renderObject.hitTest(
-            result,
-            position: const Offset(110, 25),
-          );
-
-          expect(hit, isTrue);
+          expect(rightTapped, isTrue);
         },
       );
 

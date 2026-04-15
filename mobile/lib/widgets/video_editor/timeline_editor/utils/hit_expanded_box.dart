@@ -123,6 +123,13 @@ class RenderHitExpandedBox extends RenderProxyBox {
     // child's full paint transform (includes scroll offsets), and
     // recurse.
     if (node is RenderObjectWithChildMixin<RenderBox>) {
+      // Try the node's own hitTest first so nodes such as
+      // RenderPointerListener with HitTestBehavior.opaque can register
+      // hits on themselves.
+      if (node.hitTest(result, position: position)) {
+        return true;
+      }
+
       final singleChildNode = node as RenderObjectWithChildMixin<RenderBox>;
       final child = singleChildNode.child;
       if (child == null) {
