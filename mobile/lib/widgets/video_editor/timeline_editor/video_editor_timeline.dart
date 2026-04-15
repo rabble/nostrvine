@@ -268,8 +268,6 @@ class _VideoEditorTimelineState
     );
   }
 
-  /// FIXME(hm21): Use a service
-
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {

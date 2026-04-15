@@ -62,11 +62,7 @@ class _VideoEditorCanvasState extends State<VideoEditorCanvas> {
         }
       },
       child: Padding(
-        padding: .only(
-          // FIXME(hm21) Remove or keep depending on coming design decisions
-          // bottom:  VideoEditorConstants.bottomBarHeight,
-          top: MediaQuery.viewPaddingOf(context).top,
-        ),
+        padding: .only(top: MediaQuery.viewPaddingOf(context).top),
         child: _CanvasFitter(
           builder: (bodySize, renderSize) =>
               _VideoEditor(renderSize: renderSize, bodySize: bodySize),
@@ -709,9 +705,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         child: ProImageEditor.video(
           _proVideoController,
           key: scope.editorKey,
-
-          /// TODO(@hm21): Once all subeditors have been implemented,
-          /// separate the configs/callbacks for better readability.
           configs: ProImageEditorConfigs(
             stateHistory:
                 !_hasImportedHistory &&
