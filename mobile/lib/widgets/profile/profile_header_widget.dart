@@ -189,14 +189,17 @@ class ProfileHeaderWidget extends ConsumerWidget {
                                     MainAxisAlignment.spaceEvenly,
                                 spacing: 12,
                                 children: [
-                                  ProfileStatColumn(
-                                    count:
-                                        watchedStats?.videoCount ?? videoCount,
-                                    label: context.l10n.profileVideosLabel,
-                                    isLoading:
-                                        (watchedStats?.videoCount ??
-                                            videoCount) ==
-                                        null,
+                                  Builder(
+                                    builder: (context) {
+                                      final resolvedCount =
+                                          watchedStats?.videoCount ??
+                                          videoCount;
+                                      return ProfileStatColumn(
+                                        count: resolvedCount,
+                                        label: context.l10n.profileVideosLabel,
+                                        isLoading: resolvedCount == null,
+                                      );
+                                    },
                                   ),
                                   ProfileFollowersStat(
                                     pubkey: userIdHex,
