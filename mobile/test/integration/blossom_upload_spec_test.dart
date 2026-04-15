@@ -1,6 +1,7 @@
 // ABOUTME: TDD integration test for Blossom BUD-01 protocol against live divine.video server
 // ABOUTME: Tests complete upload flow with proper authentication and response handling
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';

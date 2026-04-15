@@ -25,6 +25,7 @@
 // - Human Activity Integration: Natural interaction capture and bot detection
 // - Performance: Rapid start/stop cycles and resource cleanup
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

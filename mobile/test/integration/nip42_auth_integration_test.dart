@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for NIP-42 authentication with Nostr relays
 // ABOUTME: Tests actual relay connection and AUTH flow in real app environment
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:nostr_client/nostr_client.dart';

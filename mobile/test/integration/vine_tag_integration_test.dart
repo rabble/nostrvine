@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for vine tag requirement across all services
 // ABOUTME: Tests complete vine tag workflow from event creation to relay querying
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';

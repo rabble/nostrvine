@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for complete search navigation flow with real router
 // ABOUTME: Tests URL updates, search term persistence, and video feed navigation
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

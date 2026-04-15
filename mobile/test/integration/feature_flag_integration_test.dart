@@ -1,6 +1,7 @@
 // ABOUTME: Integration tests for complete feature flag system end-to-end functionality
 // ABOUTME: Validates flag service, providers, widgets, and screen working together
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

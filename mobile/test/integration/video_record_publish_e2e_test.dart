@@ -1,6 +1,7 @@
 // ABOUTME: End-to-end test for complete video recording, upload, and publishing flow
 // ABOUTME: Tests video creation → Blossom upload → Nostr publish → relay verification
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';

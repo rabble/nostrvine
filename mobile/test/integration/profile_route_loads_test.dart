@@ -1,6 +1,7 @@
 // ABOUTME: Integration test proving profile route renders videos with overlays
 // ABOUTME: Tests the full router → provider → service → UI pipeline
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

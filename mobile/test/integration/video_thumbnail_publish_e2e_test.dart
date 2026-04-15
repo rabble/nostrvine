@@ -1,6 +1,7 @@
 // ABOUTME: End-to-end test for video thumbnail extraction and Nostr event publishing
 // ABOUTME: Tests video file → thumbnail extraction → base64 embedding → Nostr event creation
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:convert';
 import 'dart:io';
 

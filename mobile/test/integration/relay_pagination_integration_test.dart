@@ -1,6 +1,7 @@
 // ABOUTME: Integration test that verifies pagination works with real relay server
 // ABOUTME: Tests that we actually get new kind 34236 video events when scrolling
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';

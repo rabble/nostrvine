@@ -1,6 +1,7 @@
 // ABOUTME: Integration tests for ThumbnailApiService that hit real OpenVine API servers
 // ABOUTME: Tests actual network calls, server responses, and end-to-end thumbnail generation
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';

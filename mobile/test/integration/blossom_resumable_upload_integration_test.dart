@@ -1,6 +1,7 @@
 // ABOUTME: Integration-style coverage for the Divine resumable Blossom upload flow
 // ABOUTME: Verifies capability discovery, opaque uploadUrl handling, and canonical completion URLs
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';

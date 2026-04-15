@@ -1,6 +1,7 @@
 // ABOUTME: Minimal Blossom upload test using direct HTTP auth without embedded relay
 // ABOUTME: Tests real server upload with manual auth event creation to avoid platform plugins
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';

@@ -1,6 +1,7 @@
 // ABOUTME: Integration test to verify reactive pagination works correctly
 // ABOUTME: Tests VideoEventService ChangeNotifier behavior and loadMoreEvents functionality
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

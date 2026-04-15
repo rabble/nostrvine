@@ -1,6 +1,7 @@
 // ABOUTME: Live integration test for Blossom upload with REAL auth
 // ABOUTME: Tests streaming upload to server with generated throwaway keys
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:convert';
 import 'dart:io';
 

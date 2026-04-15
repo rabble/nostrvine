@@ -5,9 +5,10 @@
 exclude:
   - test/old_files/**
   - test/**/old_files/**
-  - test/manual/**        # Manual/debug scripts that hit real endpoints
-  - test/**/*.mocks.dart  # Mock files are generated, not run
-  - test/**/*.g.dart      # Generated files
+  - test/manual/**           # Manual/debug scripts that hit real endpoints
+  - test/integration/**      # Integration tests use IntegrationTestWidgetsFlutterBinding
+  - test/**/*.mocks.dart     # Mock files are generated, not run
+  - test/**/*.g.dart         # Generated files
 
 # Test timeouts (in seconds)
 # Default timeout for all tests
@@ -24,6 +25,7 @@ reporter: expanded
 tags:
   integration:
     timeout: 10m
+  skip_very_good_optimization:
 
 # Test randomization
 shuffle: false

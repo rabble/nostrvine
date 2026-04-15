@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for bug report upload to Blossom server
 // ABOUTME: Tests end-to-end flow: collect diagnostics → upload to Blossom → send NIP-17 DM
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';

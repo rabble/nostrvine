@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for complete auto-draft flow from recording to publish
 // ABOUTME: Validates end-to-end behavior: record → auto-draft → edit → publish → retry
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/services.dart';

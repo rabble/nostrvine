@@ -1,6 +1,7 @@
 // ABOUTME: End-to-end integration test for ProofMode data flow
 // ABOUTME: Verifies proof data flows from recording → draft → upload → Nostr publish
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';

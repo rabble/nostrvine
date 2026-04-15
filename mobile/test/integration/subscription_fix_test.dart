@@ -1,6 +1,7 @@
 // ABOUTME: Integration test to verify classic vines and open feed subscriptions work correctly
 // ABOUTME: Tests the fix for subscription duplicate checking bug
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';

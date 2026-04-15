@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for VideoPlayerController backend functionality
 // ABOUTME: Tests native AVPlayer/ExoPlayer work correctly (baseline for media_kit → native migration)
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:video_player/video_player.dart';
 

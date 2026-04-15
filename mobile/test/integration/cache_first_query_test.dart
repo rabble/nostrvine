@@ -1,6 +1,7 @@
 // ABOUTME: Integration tests for cache-first query strategy
 // ABOUTME: Verifies that cached events are returned instantly before relay queries
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:async';
 import 'dart:io';
 

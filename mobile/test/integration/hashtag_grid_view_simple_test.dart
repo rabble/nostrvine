@@ -1,6 +1,7 @@
 // ABOUTME: Simple integration test for HashtagFeedScreen grid view
 // ABOUTME: Verifies hashtag feed shows grid when embedded and list when standalone
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

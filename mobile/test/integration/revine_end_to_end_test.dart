@@ -1,6 +1,7 @@
 // ABOUTME: End-to-end test for revine functionality to verify the complete fix
 // ABOUTME: Tests from revining a video to seeing it appear in the user's profile
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
 import 'package:unified_logger/unified_logger.dart';

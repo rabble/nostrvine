@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for Blossom upload to verify actual server response
 // ABOUTME: Uses real BlossomUploadService to see what fields the server returns
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';

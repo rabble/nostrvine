@@ -1,6 +1,7 @@
 // ABOUTME: Comprehensive end-to-end test for video upload → thumbnail → Nostr publishing flow
 // ABOUTME: Tests the complete flow from local video file through Blossom upload to Nostr event creation
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';

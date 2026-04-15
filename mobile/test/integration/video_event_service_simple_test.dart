@@ -1,6 +1,7 @@
 // ABOUTME: Simple test to verify the bug where VideoEventService isn't receiving events
 // ABOUTME: Uses mock NostrService to isolate the issue from platform dependencies
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';

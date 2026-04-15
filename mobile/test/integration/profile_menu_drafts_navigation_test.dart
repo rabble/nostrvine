@@ -1,6 +1,7 @@
 // ABOUTME: TDD integration test for navigating to VineDraftsScreen from profile menu
 // ABOUTME: Ensures users can access their drafts from the profile screen
 
+@Tags(['skip_very_good_optimization', 'integration'])
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
