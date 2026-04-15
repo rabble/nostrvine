@@ -22,7 +22,7 @@ CompleteParameters _makeParams({
   bool isTransformed = false,
   List<Layer>? layers,
   List<VideoClip>? videoClips,
-  AudioTrack? customAudioTrack,
+  List<AudioTrack>? audioTracks,
 }) {
   return CompleteParameters(
     blur: blur,
@@ -45,7 +45,7 @@ CompleteParameters _makeParams({
     isTransformed: isTransformed,
     layers: layers ?? const [],
     videoClips: videoClips ?? const [],
-    customAudioTrack: customAudioTrack,
+    audioTracks: audioTracks ?? const [],
   );
 }
 
@@ -194,9 +194,9 @@ void main() {
         );
       });
 
-      test('returns false when customAudioTrack differs', () {
+      test('returns false when audioTracks differ', () {
         expect(
-          _makeParams(customAudioTrack: _makeAudioTrack()).deepEquals(
+          _makeParams(audioTracks: [_makeAudioTrack()]).deepEquals(
             _makeParams(),
           ),
           isFalse,
@@ -307,10 +307,10 @@ void main() {
         expect(a.diff(b), contains('matrixTuneAdjustmentsList'));
       });
 
-      test('reports customAudioTrack when it differs', () {
+      test('reports audioTracks when they differ', () {
         final a = _makeParams();
-        final b = _makeParams(customAudioTrack: _makeAudioTrack());
-        expect(a.diff(b), contains('customAudioTrack'));
+        final b = _makeParams(audioTracks: [_makeAudioTrack()]);
+        expect(a.diff(b), contains('audioTracks'));
       });
 
       test('reports startTime and endTime when they differ', () {

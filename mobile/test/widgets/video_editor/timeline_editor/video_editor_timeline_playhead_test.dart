@@ -67,10 +67,15 @@ void main() {
       testWidgets('renders with $VineTheme onSurface color', (tester) async {
         await tester.pumpWidget(_buildWidget(isReordering: false));
 
-        final coloredBox = tester.widget<ColoredBox>(
-          find.byType(ColoredBox),
+        final decoratedBox = tester.widget<DecoratedBox>(
+          find.byType(DecoratedBox),
         );
-        expect(coloredBox.color, equals(VineTheme.onSurface));
+        final decoration = decoratedBox.decoration as BoxDecoration;
+
+        expect(
+          decoration.color,
+          equals(VineTheme.onSurface),
+        );
       });
     });
 

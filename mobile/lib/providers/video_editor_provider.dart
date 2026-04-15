@@ -952,19 +952,40 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     final baseParams =
         state.editorEditingParameters ?? CompleteParameters.fromMap({});
 
-    if (soundTrack == null) return baseParams;
+    final audioTracks = baseParams.audioTracksFromMeta;
 
     return baseParams.copyWith(
-      customAudioTrack: AudioTrack(
-        id: soundTrack.id,
-        title: soundTrack.title ?? '',
-        subtitle: soundTrack.source ?? '',
-        duration: Duration(seconds: soundTrack.duration?.toInt() ?? 0),
-        audio: soundTrack.isBundled
-            ? EditorAudio.asset(soundTrack.assetPath!)
-            : EditorAudio.network(soundTrack.url!),
-        startTime: soundTrack.startOffset,
-      ),
+      audioTracks: [
+        for (final track in audioTracks)
+          AudioTrack(
+            id: track.id,
+            title: track.title ?? '',
+            subtitle: track.source ?? '',
+            duration: Duration(seconds: track.duration?.toInt() ?? 0),
+            audio: track.isBundled
+                ? EditorAudio.asset(track.assetPath!)
+                : EditorAudio.network(track.url!),
+            startTime: track.startTime,
+            endTime: track.endTime,
+            audioStartTime: track.startOffset,
+            audioEndTime:
+                track.startOffset +
+                Duration(milliseconds: ((track.duration ?? 0) * 1000).toInt()),
+            volume: track.volume,
+          ),
+
+        if (soundTrack != null)
+          AudioTrack(
+            id: soundTrack.id,
+            title: soundTrack.title ?? '',
+            subtitle: soundTrack.source ?? '',
+            duration: Duration(seconds: soundTrack.duration?.toInt() ?? 0),
+            audio: soundTrack.isBundled
+                ? EditorAudio.asset(soundTrack.assetPath!)
+                : EditorAudio.network(soundTrack.url!),
+            startTime: soundTrack.startOffset,
+          ),
+      ],
     );
   }
 }

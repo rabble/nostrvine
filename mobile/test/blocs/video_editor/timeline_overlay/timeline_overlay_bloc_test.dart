@@ -5,6 +5,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -77,14 +78,23 @@ void main() {
           ),
         ),
         expect: () => [
-          const TimelineOverlayState(
-            items: [
+          TimelineOverlayState(
+            items: const [
               TimelineOverlayItem(
                 id: 'sound-1',
                 type: TimelineOverlayType.sound,
                 startTime: Duration(seconds: 1),
                 endTime: Duration(seconds: 4),
                 label: 'Beat',
+                maxDuration: VideoEditorConstants.maxDuration,
+              ),
+            ],
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: const Duration(seconds: 1),
+                end: const Duration(seconds: 4),
+                title: 'Beat',
               ),
             ],
           ),
@@ -125,7 +135,11 @@ void main() {
             totalVideoDuration: Duration(seconds: 8),
           ),
         ),
-        expect: () => <TimelineOverlayState>[],
+        expect: () => const [
+          TimelineOverlayState(
+            trimmingItemId: 'sound-1',
+          ),
+        ],
       );
     });
 
@@ -351,7 +365,7 @@ void main() {
 
     group(TimelineOverlayTotalDurationChanged, () {
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
-        'currently emits no state changes',
+        'clamps item end time to the provided total duration',
         build: TimelineOverlayBloc.new,
         seed: () => TimelineOverlayState(
           items: [
@@ -366,7 +380,18 @@ void main() {
         act: (bloc) => bloc.add(
           const TimelineOverlayTotalDurationChanged(Duration(seconds: 5)),
         ),
-        expect: () => <TimelineOverlayState>[],
+        expect: () => [
+          TimelineOverlayState(
+            items: [
+              _item(
+                id: 'layer-1',
+                type: TimelineOverlayType.layer,
+                start: const Duration(seconds: 2),
+                end: const Duration(seconds: 5),
+              ),
+            ],
+          ),
+        ],
       );
     });
   });

@@ -729,19 +729,22 @@ class VideoEditorRenderService {
       'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
     );
 
-    final hasCustomAudio =
-        customAudioVolume > 0 && parameters?.customAudioTrack != null;
+    final customTracks = parameters?.audioTracks ?? const <AudioTrack>[];
+    final hasCustomAudio = customAudioVolume > 0 && customTracks.isNotEmpty;
 
     final audioTracks = <VideoAudioTrack>[];
     if (hasCustomAudio) {
-      final audioPath = await parameters?.customAudioTrack?.audio
-          .safeFilePath();
-      if (audioPath != null) {
+      for (final track in customTracks) {
+        final audioPath = await track.audio.safeFilePath();
         audioTracks.add(
           VideoAudioTrack(
             path: audioPath,
             volume: customAudioVolume,
-            audioStartTime: parameters?.customAudioTrack?.startTime,
+            startTime: track.startTime,
+            endTime: track.endTime,
+            audioStartTime: track.audioStartTime,
+            audioEndTime: track.audioEndTime,
+            loop: track.loop,
           ),
         );
       }

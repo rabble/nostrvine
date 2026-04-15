@@ -110,15 +110,22 @@ class TimelineOverlayBloc
         ),
     ];
 
+    final newItems = [
+      ..._assignRows(sounds),
+      ..._assignRows(filters),
+      ..._assignRows(layers),
+    ];
+
+    // Only clear selection if the selected item no longer exists.
+    final selectedStillExists =
+        state.selectedItemId != null &&
+        newItems.any((i) => i.id == state.selectedItemId);
+
     emit(
       state.copyWith(
-        items: [
-          ..._assignRows(sounds),
-          ..._assignRows(filters),
-          ..._assignRows(layers),
-        ],
+        items: newItems,
         audioTracks: event.audioTracks,
-        clearSelectedItemId: state.trimmingItemId == null,
+        clearSelectedItemId: !selectedStillExists,
         // Preserve draggingItemId/trimmingItemId when active so the
         // BlocListener in the canvas doesn't fire mid-gesture.
         clearDraggingItemId: state.draggingItemId == null,
@@ -373,6 +380,7 @@ class TimelineOverlayBloc
     emit(
       state.copyWith(
         items: _recalculateRows(state.items),
+        clearTrimmingItemId: true,
       ),
     );
   }

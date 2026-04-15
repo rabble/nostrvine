@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Deep equality extension for [CompleteParameters].
 ///
@@ -7,6 +10,21 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 /// so two instances with identical bytes are considered unequal.
 /// This extension compares all fields with proper list/byte equality.
 extension CompleteParametersEquality on CompleteParameters {
+  List<AudioEvent> get audioTracksFromMeta {
+    try {
+      final raw = meta[VideoEditorConstants.audioStateHistoryKey];
+      if (raw is! List) return [];
+      return raw.cast<Map<String, dynamic>>().map(AudioEvent.fromJson).toList();
+    } catch (e) {
+      Log.warning(
+        'Failed to parse audioTracks from meta: $e',
+        name: 'CompleteParametersEquality',
+        category: LogCategory.video,
+      );
+      return [];
+    }
+  }
+
   /// Returns `true` when all fields match [other] by value,
   /// including byte-level comparison of [image].
   ///
@@ -30,7 +48,7 @@ extension CompleteParametersEquality on CompleteParameters {
       if (flipX != other.flipX) 'flipX',
       if (flipY != other.flipY) 'flipY',
       if (isTransformed != other.isTransformed) 'isTransformed',
-      if (customAudioTrack != other.customAudioTrack) 'customAudioTrack',
+      if (!listEquals(audioTracks, other.audioTracks)) 'audioTracks',
       if (!listEquals(layers, other.layers)) 'layers',
       if (!listEquals(videoClips, other.videoClips)) 'videoClips',
       if (!listEquals(matrixFilterList, other.matrixFilterList))
