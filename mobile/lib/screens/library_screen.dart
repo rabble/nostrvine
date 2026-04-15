@@ -432,13 +432,13 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            spacing: 12,
             children: [
               Text(
                 context.l10n.libraryWebUnavailableHeadline,
                 textAlign: TextAlign.center,
                 style: VineTheme.titleMediumFont(),
               ),
-              const SizedBox(height: 12),
               Text(
                 context.l10n.libraryWebUnavailableDescription,
                 textAlign: TextAlign.center,
