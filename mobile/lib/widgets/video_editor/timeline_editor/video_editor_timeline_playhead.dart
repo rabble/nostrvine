@@ -25,7 +25,12 @@ class VideoEditorTimelinePlayhead extends StatelessWidget {
           child: SizedBox(
             width: TimelineConstants.playheadWidth,
             height: .infinity,
-            child: ColoredBox(color: VineTheme.onSurface),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: VineTheme.onSurface,
+                boxShadow: [BoxShadow(color: VineTheme.backgroundCamera)],
+              ),
+            ),
           ),
         ),
       ),
