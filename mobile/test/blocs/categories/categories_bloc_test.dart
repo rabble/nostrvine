@@ -4,13 +4,12 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:categories_repository/categories_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
-import 'package:openvine/models/video_category.dart';
-import 'package:openvine/repositories/categories_repository.dart';
 
 class _MockCategoriesRepository extends Mock implements CategoriesRepository {}
 
