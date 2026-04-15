@@ -23,6 +23,7 @@ import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
@@ -152,6 +153,40 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
       ConversationPage.pathForId(widget.pubkey),
       extra: [widget.pubkey],
     );
+  }
+
+  Future<void> _shareProfile() async {
+    final l10n = context.l10n;
+    final shareTextFn = l10n.profileShareText;
+    final shareSubjectFn = l10n.profileShareSubject;
+
+    try {
+      final profile = await ref
+          .read(profileRepositoryProvider)
+          ?.getCachedProfile(pubkey: widget.pubkey);
+      final displayName = profile?.bestDisplayName ?? 'User';
+      final npub = NostrKeyUtils.encodePubKey(widget.pubkey);
+      final shareText = shareTextFn(displayName, npub);
+
+      await SharePlus.instance.share(
+        ShareParams(
+          text: shareText,
+          subject: shareSubjectFn(displayName),
+        ),
+      );
+    } catch (e) {
+      Log.error(
+        'Error sharing profile: $e',
+        name: 'OtherProfileView',
+        category: LogCategory.ui,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.profileShareFailed(e))),
+        );
+      }
+    }
   }
 
   Future<void> _more() async {
@@ -344,7 +379,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               onBack: context.pop,
               onMore: _more,
               onMessageUser: _messageUser,
-              onShareProfile: _more,
+              onShareProfile: _shareProfile,
               onBlockedTap: _showUnblockConfirmation,
               displayNameHint: widget.displayNameHint,
               avatarUrlHint: widget.avatarUrlHint,
