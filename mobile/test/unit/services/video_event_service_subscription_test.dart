@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for VideoEventService subscription duplicate checking
 // ABOUTME: Tests that different subscription parameters are properly allowed and not wrongly rejected as duplicates
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';

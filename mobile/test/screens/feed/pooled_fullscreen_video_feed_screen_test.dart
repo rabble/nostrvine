@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for PooledFullscreenVideoFeedScreen
 // ABOUTME: Tests state rendering and BLoC event dispatching
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
