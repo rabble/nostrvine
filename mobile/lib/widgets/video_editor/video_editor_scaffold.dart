@@ -71,29 +71,27 @@ class _TimelineSection extends StatefulWidget {
   State<_TimelineSection> createState() => _TimelineSectionState();
 }
 
-class _TimelineSectionState extends State<_TimelineSection> {
-  /// What is currently rendered — only updated via postFrameCallback so
-  /// the content change never coincides with AnimatedSize's first layout.
-  bool _hideTimeline = false;
+class _TimelineSectionState extends State<_TimelineSection>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final CurvedAnimation _animation;
 
-  /// False until the initial layout has fully settled. Prevents AnimatedSize
-  /// from animating the initial appearance (0 → full height).
-  bool _initialLayoutDone = false;
+  static bool _shouldHide(SubEditorType? type) =>
+      type == .draw || type == .filter;
 
   @override
   void initState() {
     super.initState();
-    // Wait two frames for the timeline's initial layout (including
-    // thumbnails) to fully settle before enabling animated transitions.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _initialLayoutDone = true);
-      });
-    });
+    _controller = AnimationController(vsync: this, duration: _switchDuration);
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
   }
 
-  static bool _shouldHide(SubEditorType? type) =>
-      type == .draw || type == .filter;
+  @override
+  void dispose() {
+    _animation.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,39 +99,34 @@ class _TimelineSectionState extends State<_TimelineSection> {
       listenWhen: (prev, curr) =>
           _shouldHide(prev.openSubEditor) != _shouldHide(curr.openSubEditor),
       listener: (context, state) {
-        final target = _shouldHide(state.openSubEditor);
-        // Defer content swap by one frame so AnimatedSize has finished
-        // its current performLayout before children change size. This
-        // avoids "RenderAnimatedSize was mutated in its own
-        // performLayout".
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _hideTimeline != target) {
-            setState(() => _hideTimeline = target);
-          }
-        });
+        if (_shouldHide(state.openSubEditor)) {
+          _controller.forward();
+        } else {
+          _controller.reverse();
+        }
       },
-      child: AnimatedSize(
-        duration: _initialLayoutDone ? _switchDuration : Duration.zero,
-        curve: Curves.easeInOut,
-        alignment: .bottomCenter,
-        child: ColoredBox(
-          color: VineTheme.backgroundCamera,
-          child: Column(
-            mainAxisSize: .min,
-            crossAxisAlignment: .stretch,
-            children: [
-              // Keep timeline always in tree to preserve thumbnail cache.
-              // Offstage hides without unmounting.
-              Offstage(
-                offstage: _hideTimeline,
-                child: const Padding(
-                  padding: .only(top: 12),
-                  child: VideoEditorTimelineScaffold(),
-                ),
+      child: ColoredBox(
+        color: VineTheme.backgroundCamera,
+        child: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .stretch,
+          children: [
+            // Keep timeline always in tree to preserve thumbnail
+            // cache. SizeTransition clips without unmounting.
+            SizeTransition(
+              sizeFactor: ReverseAnimation(_animation),
+              axisAlignment: -1,
+              child: const Padding(
+                padding: .only(top: 12),
+                child: VideoEditorTimelineScaffold(),
               ),
-              if (_hideTimeline) const _BottomActions(),
-            ],
-          ),
+            ),
+            SizeTransition(
+              sizeFactor: _animation,
+              axisAlignment: -1,
+              child: const _BottomActions(),
+            ),
+          ],
         ),
       ),
     );
