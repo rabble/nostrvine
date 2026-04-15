@@ -31,6 +31,7 @@ import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticke
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
 import 'package:openvine/widgets/video_editor/video_editor_scaffold.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// The main video editor screen for adding layers (text, stickers, effects).
@@ -79,6 +80,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   /// video editor provider finishes loading (especially for drafts).
   late final ClipEditorBloc _clipEditorBloc;
 
+  /// Manually managed so [_extractWaveform] can dispatch events without
+  /// needing a child context below [MultiBlocProvider].
+  late final TimelineOverlayBloc _timelineOverlayBloc;
+
   /// Body size notifier, updated by [_CanvasFitter].
   final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
 
@@ -106,6 +111,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       onFinalClipInvalidated: () =>
           ref.read(videoEditorProvider.notifier).invalidateFinalRenderedClip(),
     );
+    _timelineOverlayBloc = TimelineOverlayBloc();
 
     // For non-draft flows clips are already available.
     final initialClips = ref.read(clipManagerProvider).clips;
@@ -151,6 +157,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     );
     _stickerBloc.close();
     _clipEditorBloc.close();
+    _timelineOverlayBloc.close();
     _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
     super.dispose();
@@ -382,6 +389,52 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         ],
       },
     );
+
+    unawaited(_extractWaveform(result));
+  }
+
+  /// Extracts waveform data for an audio track and updates the timeline
+  /// overlay with the samples.
+  Future<void> _extractWaveform(AudioEvent audio) async {
+    final path = audio.isBundled ? audio.assetPath : audio.url;
+    if (path == null) return;
+
+    try {
+      final video = audio.isBundled
+          ? EditorVideo.asset(path)
+          : EditorVideo.network(path);
+      final data = await ProVideoEditor.instance.getWaveform(
+        WaveformConfigs(
+          video: video,
+          startTime: audio.startOffset,
+          endTime:
+              audio.startOffset +
+              Duration(
+                milliseconds:
+                    ((audio.duration ??
+                                VideoEditorConstants.maxDuration.inSeconds) *
+                            1000)
+                        .toInt(),
+              ),
+        ),
+      );
+      if (!mounted) return;
+      _timelineOverlayBloc.add(
+        TimelineOverlayWaveformLoaded(
+          itemId: audio.id,
+          leftChannel: data.leftChannel,
+          rightChannel: data.rightChannel,
+        ),
+      );
+    } catch (e, s) {
+      Log.error(
+        'Failed to extract timeline waveform: $e',
+        name: 'VideoEditorScreen',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: s,
+      );
+    }
   }
 
   @override
@@ -393,7 +446,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         BlocProvider(create: (_) => VideoEditorFilterBloc()),
         BlocProvider(create: (_) => VideoEditorDrawBloc()),
         BlocProvider(create: (_) => VideoEditorTextBloc()),
-        BlocProvider(create: (_) => TimelineOverlayBloc()),
+        BlocProvider.value(value: _timelineOverlayBloc),
         BlocProvider.value(value: _clipEditorBloc),
       ],
       child: Builder(

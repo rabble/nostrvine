@@ -2,7 +2,7 @@
 // ABOUTME: video editor timeline. Handles add/remove/move/trim/select/drag
 // ABOUTME: and collapse state for all three strip types.
 
-import 'dart:ui' show Color;
+import 'dart:typed_data';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
@@ -35,12 +35,26 @@ class TimelineOverlayBloc
     on<TimelineOverlayTrimEnded>(_onTrimEnded);
     on<TimelineOverlayCollapseToggled>(_onCollapseToggled);
     on<TimelineOverlayTotalDurationChanged>(_onTotalDurationChanged);
+    on<TimelineOverlayWaveformLoaded>(_onWaveformLoaded);
   }
 
   void _onUpdateItems(
     TimelineOverlayItemsUpdate event,
     Emitter<TimelineOverlayState> emit,
   ) {
+    // Cache waveform data from previous state so we don't lose it
+    // when items are rebuilt.
+    final leftCache = <String, Float32List>{
+      for (final item in state.items)
+        if (item.waveformLeftChannel != null)
+          item.id: item.waveformLeftChannel!,
+    };
+    final rightCache = <String, Float32List>{
+      for (final item in state.items)
+        if (item.waveformRightChannel != null)
+          item.id: item.waveformRightChannel!,
+    };
+
     final sounds = <TimelineOverlayItem>[
       for (final track in event.audioTracks)
         TimelineOverlayItem(
@@ -49,6 +63,8 @@ class TimelineOverlayBloc
           startTime: track.startTime,
           endTime: track.endTime ?? .zero,
           label: track.title ?? track.pubkey,
+          waveformLeftChannel: leftCache[track.id],
+          waveformRightChannel: rightCache[track.id],
         ),
     ];
 
@@ -417,5 +433,22 @@ class TimelineOverlayBloc
       );
     } 
     emit(state.copyWith(items: updated));*/
+  }
+
+  void _onWaveformLoaded(
+    TimelineOverlayWaveformLoaded event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    final updated = [
+      for (final item in state.items)
+        if (item.id == event.itemId)
+          item.copyWith(
+            waveformLeftChannel: event.leftChannel,
+            waveformRightChannel: event.rightChannel,
+          )
+        else
+          item,
+    ];
+    emit(state.copyWith(items: updated));
   }
 }

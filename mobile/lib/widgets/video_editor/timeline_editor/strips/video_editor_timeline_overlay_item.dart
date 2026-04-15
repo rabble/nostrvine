@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// Visual representation of a single overlay item.
@@ -51,7 +54,13 @@ class TimelineOverlayItemTile extends StatelessWidget {
             : VineTheme.whiteText;
 
       default:
-        foregroundColor = VineTheme.whiteText;
+        // Sound items use the violet palette from the Figma spec;
+        // other overlay types fall back to the strip color.
+        if (item.type == .sound) {
+          foregroundColor = VineTheme.accentVioletVariant;
+        } else {
+          foregroundColor = VineTheme.whiteText;
+        }
         backgroundColor = color;
     }
 
@@ -84,22 +93,30 @@ class TimelineOverlayItemTile extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: isSelected ? .zero : radius,
-            child: Align(
-              alignment: .centerLeft,
-              child: Padding(
-                padding: const .symmetric(horizontal: 6),
-                child: item.layer is PaintLayer
-                    ? _PaintPreview(layer: item.layer! as PaintLayer)
-                    : Text(
-                        item.label,
-                        style: VineTheme.labelMediumFont(
-                          color: foregroundColor,
-                        ).copyWith(fontFamily: fontFamily),
-                        maxLines: 1,
-                        overflow: .ellipsis,
-                      ),
-              ),
-            ),
+            child: item.type == .sound
+                ? _SoundContent(
+                    label: item.label,
+                    color: foregroundColor,
+                    duration: item.duration,
+                    leftChannel: item.waveformLeftChannel,
+                    rightChannel: item.waveformRightChannel,
+                  )
+                : Align(
+                    alignment: .centerLeft,
+                    child: Padding(
+                      padding: const .symmetric(horizontal: 6),
+                      child: item.layer is PaintLayer
+                          ? _PaintPreview(layer: item.layer! as PaintLayer)
+                          : Text(
+                              item.label,
+                              style: VineTheme.labelMediumFont(
+                                color: foregroundColor,
+                              ).copyWith(fontFamily: fontFamily),
+                              maxLines: 1,
+                              overflow: .ellipsis,
+                            ),
+                    ),
+                  ),
           ),
         ),
       ),
@@ -122,6 +139,60 @@ class _PaintPreview extends StatelessWidget {
           item: layer.item,
           scale: layer.scale,
         ),
+      ),
+    );
+  }
+}
+
+/// Sound-item content: label text at top, waveform bars at bottom.
+class _SoundContent extends StatelessWidget {
+  const _SoundContent({
+    required this.label,
+    required this.color,
+    required this.duration,
+    this.leftChannel,
+    this.rightChannel,
+  });
+
+  final String label;
+  final Color color;
+  final Duration duration;
+  final Float32List? leftChannel;
+  final Float32List? rightChannel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const .fromLTRB(0, 8, 0, 4),
+      child: Column(
+        crossAxisAlignment: .stretch,
+        spacing: 4,
+        children: [
+          Padding(
+            padding: const .symmetric(horizontal: 8),
+            child: Text(
+              label,
+              style: VineTheme.labelMediumFont(color: color),
+              maxLines: 1,
+              overflow: .ellipsis,
+            ),
+          ),
+
+          Expanded(
+            child: CustomPaint(
+              painter: StereoWaveformPainter(
+                leftChannel: leftChannel ?? Float32List(0),
+                rightChannel: rightChannel,
+                progress: 1, // No progress indicator needed
+                activeColor: VineTheme.accentPurple,
+                inactiveColor: VineTheme.accentPurple,
+                audioDuration: duration,
+                maxDuration: duration,
+                barWidth: TimelineConstants.soundWaveformBarWidth,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

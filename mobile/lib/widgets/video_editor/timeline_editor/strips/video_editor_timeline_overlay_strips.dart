@@ -83,17 +83,20 @@ class TimelineOverlayStrips extends StatelessWidget {
       (
         items: soundItems,
         type: TimelineOverlayType.sound,
-        color: VineTheme.likeRed,
+        color: VineTheme.accentVioletBackground,
+        rowHeight: TimelineConstants.soundOverlayRowHeight,
       ),
       (
         items: filterItems,
         type: TimelineOverlayType.filter,
         color: VineTheme.success,
+        rowHeight: TimelineConstants.overlayRowHeight,
       ),
       (
         items: layerItems,
         type: TimelineOverlayType.layer,
         color: VineTheme.primary,
+        rowHeight: TimelineConstants.overlayRowHeight,
       ),
     ];
 
@@ -125,6 +128,7 @@ class TimelineOverlayStrips extends StatelessWidget {
                 pixelsPerSecond: pixelsPerSecond,
                 totalDuration: totalDuration,
                 color: config.color,
+                rowHeight: config.rowHeight,
                 isCollapsed: collapsedTypes.contains(config.type),
                 selectedItemId: selectedItemId,
                 snapPointsMs: snapPointsMs,

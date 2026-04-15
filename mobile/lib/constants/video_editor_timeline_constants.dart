@@ -66,11 +66,20 @@ abstract class TimelineConstants {
   /// Height of a single row in an overlay strip.
   static const double overlayRowHeight = 40;
 
+  /// Height of a single row in the sound overlay strip.
+  ///
+  /// Taller than other overlays to accommodate the waveform
+  /// visualisation below the label text.
+  static const double soundOverlayRowHeight = 64;
+
   /// Vertical gap between the clip strip and the first overlay strip.
   static const double overlayStripTopGap = 8;
 
   /// Vertical gap between different overlay strip sections.
   static const double overlayStripGap = 4;
+
+  /// Bar width for the compact sound-overlay waveform.
+  static const double soundWaveformBarWidth = 1;
 
   /// Vertical gap between overlay rows within a strip.
   static const double overlayRowGap = 6;

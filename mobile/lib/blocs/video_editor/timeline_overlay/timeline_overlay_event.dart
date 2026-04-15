@@ -143,3 +143,19 @@ class TimelineOverlayTotalDurationChanged extends TimelineOverlayEvent {
   @override
   List<Object?> get props => [totalDuration];
 }
+
+/// Attach extracted waveform samples to a sound item.
+class TimelineOverlayWaveformLoaded extends TimelineOverlayEvent {
+  const TimelineOverlayWaveformLoaded({
+    required this.itemId,
+    required this.leftChannel,
+    this.rightChannel,
+  });
+
+  final String itemId;
+  final Float32List leftChannel;
+  final Float32List? rightChannel;
+
+  @override
+  List<Object?> get props => [itemId, leftChannel, rightChannel];
+}

@@ -62,6 +62,7 @@ class TimelineOverlayStrip extends StatefulWidget {
     required this.pixelsPerSecond,
     required this.totalDuration,
     required this.color,
+    this.rowHeight = TimelineConstants.overlayRowHeight,
     this.isCollapsed = false,
     this.selectedItemId,
     this.snapPointsMs,
@@ -92,6 +93,9 @@ class TimelineOverlayStrip extends StatefulWidget {
 
   /// Background colour for item tiles.
   final Color color;
+
+  /// Height of a single row in this strip.
+  final double rowHeight;
 
   /// Whether the strip is in collapsed mode (single-row summary).
   final bool isCollapsed;
@@ -163,7 +167,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
   /// Max pixels scrolled per frame for horizontal auto-scroll.
   static const _hAutoScrollSpeed = 6.0;
 
-  static const double _rowHeight = TimelineConstants.overlayRowHeight;
+  double get _effectiveRowHeight => widget.rowHeight;
 
   @override
   void initState() {
@@ -213,7 +217,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
     return SizedBox(
       width: widget.totalWidth,
-      height: displayRowCount * _rowHeight,
+      height: displayRowCount * _effectiveRowHeight,
       child: Stack(
         clipBehavior: .none,
         children: [
@@ -230,7 +234,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
               isSelected: widget.selectedItemId == item.id,
               snappedStartMs: _snappedStartMs,
               dragDeltaY: _dragDeltaY,
-              rowHeight: _rowHeight,
+              rowHeight: _effectiveRowHeight,
               pixelsPerSecond: widget.pixelsPerSecond,
               totalDuration: widget.totalDuration,
               color: widget.color,
@@ -261,7 +265,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     final maxStartMs = (widget.totalDuration - item.duration).inMilliseconds;
     final newStartMs = _snappedStartMs.clamp(0, maxStartMs);
 
-    final rowDelta = (_dragDeltaY / _rowHeight).round();
+    final rowDelta = (_dragDeltaY / _effectiveRowHeight).round();
     final unclampedRow = _dragStartRow + rowDelta;
     final targetRow = math.max(0, unclampedRow);
 
@@ -272,7 +276,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     if (unclampedRow < 0) {
       insertAbove = true;
     } else {
-      final subRowOffset = _dragDeltaY / _rowHeight - rowDelta;
+      final subRowOffset = _dragDeltaY / _effectiveRowHeight - rowDelta;
       insertAbove = subRowOffset < 0;
     }
     return (
@@ -315,8 +319,8 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     // Above: line at the top of the target row.
     // Below: line at the bottom of the target row.
     return info.insertAbove
-        ? info.targetRow * _rowHeight
-        : (info.targetRow + 1) * _rowHeight;
+        ? info.targetRow * _effectiveRowHeight
+        : (info.targetRow + 1) * _effectiveRowHeight;
   }
 
   // -- Long-press drag callbacks -------------------------------------------

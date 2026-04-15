@@ -2,6 +2,8 @@
 // ABOUTME: video editor timeline. Each item has a time position, duration,
 // ABOUTME: row assignment, and trim state.
 
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -32,6 +34,8 @@ class TimelineOverlayItem extends Equatable {
     this.row = 0,
     this.label = '',
     this.layer,
+    this.waveformLeftChannel,
+    this.waveformRightChannel,
   });
 
   /// Unique identifier.
@@ -56,6 +60,12 @@ class TimelineOverlayItem extends Equatable {
   /// The original layer data.
   final Layer? layer;
 
+  /// Left audio waveform amplitude samples for sound items.
+  final Float32List? waveformLeftChannel;
+
+  /// Right audio waveform amplitude samples for sound items.
+  final Float32List? waveformRightChannel;
+
   /// Start time in seconds for layout calculations.
   double get startTimeInSeconds => startTime.inMilliseconds / 1000.0;
   double get durationInSeconds => duration.inMilliseconds / 1000;
@@ -70,6 +80,8 @@ class TimelineOverlayItem extends Equatable {
     int? row,
     String? label,
     Layer? layer,
+    Float32List? waveformLeftChannel,
+    Float32List? waveformRightChannel,
   }) {
     return TimelineOverlayItem(
       id: id ?? this.id,
@@ -79,6 +91,8 @@ class TimelineOverlayItem extends Equatable {
       row: row ?? this.row,
       label: label ?? this.label,
       layer: layer ?? this.layer,
+      waveformLeftChannel: waveformLeftChannel ?? this.waveformLeftChannel,
+      waveformRightChannel: waveformRightChannel ?? this.waveformRightChannel,
     );
   }
 
@@ -91,5 +105,7 @@ class TimelineOverlayItem extends Equatable {
     row,
     label,
     layer,
+    waveformLeftChannel,
+    waveformRightChannel,
   ];
 }
