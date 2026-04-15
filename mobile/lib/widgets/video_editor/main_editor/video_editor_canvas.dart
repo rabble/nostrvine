@@ -83,6 +83,8 @@ class _VideoEditor extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorState extends ConsumerState<_VideoEditor> {
+  static const _isolatesInitialisationDelay = Duration(milliseconds: 500);
+
   late final ProVideoController _proVideoController;
   final _isPlayerReadyNotifier = ValueNotifier<bool>(false);
   DivineVideoPlayerController? _videoPlayer;
@@ -718,6 +720,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               captureImageByteFormat: .rawStraightRgba,
               enableBackgroundGeneration: false,
               enableUseOriginalBytes: false,
+              processorConfigs: const ProcessorConfigs(
+                numberOfBackgroundProcessors: 4,
+                processorMode: .limit,
+                initializationDelay: _isolatesInitialisationDelay,
+              ),
               customPixelRatio: max(
                 1,
                 max(
