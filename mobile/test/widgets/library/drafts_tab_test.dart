@@ -78,9 +78,7 @@ void main() {
       });
 
       testWidgets('friendly error and retry when error state', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const DraftsLibraryError(message: 'Failed to load drafts'),
-        );
+        when(() => mockBloc.state).thenReturn(const DraftsLibraryError());
 
         await tester.pumpWidget(buildWidget());
 
