@@ -275,7 +275,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         BlocProvider<ProfileCollabVideosBloc>.value(value: _collabVideosBloc!),
         BlocProvider<ProfileCommentsBloc>.value(value: _commentsBloc!),
       ],
-      child: TabBarView(
+      child: ColoredBox(
+        color: VineTheme.surfaceContainerHigh,
+        child: TabBarView(
         controller: _tabController,
         children: [
           ProfileVideosGrid(
@@ -289,6 +291,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           ProfileCollabsGrid(isOwnProfile: widget.isOwnProfile),
           ProfileCommentsGrid(isOwnProfile: widget.isOwnProfile),
         ],
+        ),
       ),
     );
 
