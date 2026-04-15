@@ -71,6 +71,7 @@ import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
+import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
@@ -698,6 +699,24 @@ Future<void> _startOpenVineApp() async {
       } catch (_) {}
       // Still show the error widget (dark placeholder) but don't report
       // as fatal.
+      FlutterError.presentError(details);
+      return;
+    }
+
+    final recoverableReason = classifyRecoverableFlutterError(details);
+    if (recoverableReason != null) {
+      Log.warning(
+        'Recoverable Flutter resource load error (non-fatal): '
+        '${details.exception}',
+        name: 'Main',
+      );
+      try {
+        FirebaseCrashlytics.instance.recordError(
+          details.exception,
+          details.stack,
+          reason: recoverableReason,
+        );
+      } catch (_) {}
       FlutterError.presentError(details);
       return;
     }
