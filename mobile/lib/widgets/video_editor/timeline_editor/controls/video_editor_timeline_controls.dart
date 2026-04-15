@@ -30,7 +30,8 @@ class VideoEditorTimelineControls extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
+      child: Container(
+        width: double.infinity,
         padding: const .fromLTRB(16, 16, 16, 8),
         child: SafeArea(
           top: false,

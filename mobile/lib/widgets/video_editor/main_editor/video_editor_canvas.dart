@@ -848,6 +848,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                   scope.fittedBoxScale /
                   2,
               safeArea: const EditorSafeArea.none(),
+              enableEdit: false,
               style: const PaintEditorStyle(
                 background: VineTheme.backgroundCamera,
               ),

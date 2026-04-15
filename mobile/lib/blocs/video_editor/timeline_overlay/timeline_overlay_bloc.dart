@@ -57,13 +57,15 @@ class TimelineOverlayBloc
           item.id: item.waveformRightChannel!,
     };
 
+    final total = event.totalVideoDuration;
+
     final sounds = <TimelineOverlayItem>[
       for (final track in event.audioTracks)
         TimelineOverlayItem(
           id: track.id,
           type: .sound,
           startTime: track.startTime,
-          endTime: track.endTime ?? .zero,
+          endTime: _clampEnd(track.endTime ?? .zero, total),
           label: track.title ?? track.pubkey,
           maxDuration: track.duration != null
               ? Duration(
@@ -88,7 +90,10 @@ class TimelineOverlayBloc
             id: event.filters[i].id,
             type: .filter,
             startTime: event.filters[i].startTime ?? .zero,
-            endTime: event.filters[i].endTime ?? event.totalVideoDuration,
+            endTime: _clampEnd(
+              event.filters[i].endTime ?? total,
+              total,
+            ),
             label: event.filters[i].name,
           ),
     ];
@@ -99,7 +104,7 @@ class TimelineOverlayBloc
           id: layer.id,
           type: .layer,
           startTime: layer.startTime ?? .zero,
-          endTime: layer.endTime ?? event.totalVideoDuration,
+          endTime: _clampEnd(layer.endTime ?? total, total),
           label: _labelForLayer(layer),
           layer: layer,
         ),
@@ -368,7 +373,6 @@ class TimelineOverlayBloc
     emit(
       state.copyWith(
         items: _recalculateRows(state.items),
-        clearTrimmingItemId: true,
       ),
     );
   }
@@ -393,59 +397,27 @@ class TimelineOverlayBloc
     TimelineOverlayTotalDurationChanged event,
     Emitter<TimelineOverlayState> emit,
   ) {
-    /* final totalMs = event.totalDuration.inMilliseconds;
-    if (totalMs <= 0) return;
+    final totalDuration = event.totalDuration;
+    if (totalDuration <= Duration.zero) return;
 
     final updated = <TimelineOverlayItem>[];
     for (final item in state.items) {
-      var startMs = item.startTime.inMilliseconds;
-      var durationMs = item.duration.inMilliseconds;
-      var trimStartMs = item.trimStart.inMilliseconds;
-      var trimEndMs = item.trimEnd.inMilliseconds;
+      if (item.startTime >= totalDuration) continue;
 
-      // Shrink duration so the raw end doesn't exceed totalDuration.
-      final rawEndMs = startMs + durationMs;
-      if (rawEndMs > totalMs + trimEndMs) {
-        durationMs = totalMs - startMs + trimEndMs;
-      }
-
-      // If startTime itself is beyond totalDuration, clamp it.
-      if (startMs >= totalMs) {
-        startMs = (totalMs - (durationMs - trimStartMs - trimEndMs)).clamp(
-          0,
-          totalMs,
-        );
-      }
-
-      // Ensure visual end (start + duration - trimStart - trimEnd)
-      // does not exceed totalDuration.
-      final visualEndMs = startMs + durationMs - trimStartMs - trimEndMs;
-      if (visualEndMs > totalMs) {
-        final excess = visualEndMs - totalMs;
-        trimEndMs += excess;
-      }
-
-      // Ensure visual start (startTime + trimStart) >= 0.
-      final visualStartMs = startMs + trimStartMs;
-      if (visualStartMs < 0) {
-        trimStartMs = -startMs;
-      }
-
-      // Check that there is still visible duration.
-      final trimmedMs = durationMs - trimStartMs - trimEndMs;
-      if (trimmedMs <= 0) continue;
+      final clampedEnd = _clampEnd(item.endTime, totalDuration);
+      if (clampedEnd <= item.startTime) continue;
 
       updated.add(
-        item.copyWith(
-          startTime: Duration(milliseconds: startMs),
-          duration: Duration(milliseconds: durationMs),
-          trimStart: Duration(milliseconds: trimStartMs),
-          trimEnd: Duration(milliseconds: trimEndMs),
-        ),
+        clampedEnd == item.endTime ? item : item.copyWith(endTime: clampedEnd),
       );
-    } 
-    emit(state.copyWith(items: updated));*/
+    }
+
+    emit(state.copyWith(items: _recalculateRows(updated)));
   }
+
+  /// Returns [endTime] clamped to [totalDuration].
+  static Duration _clampEnd(Duration endTime, Duration totalDuration) =>
+      endTime > totalDuration ? totalDuration : endTime;
 
   void _onWaveformLoaded(
     TimelineOverlayWaveformLoaded event,
