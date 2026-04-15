@@ -156,17 +156,6 @@ class _OtherProfileButtons extends StatelessWidget {
           onBlockedTap: onBlockedTap,
         );
 
-        final messageButton = Expanded(
-          child: DivineButton(
-            expanded: true,
-            leadingIcon: .envelopeSimple,
-            type: .secondary,
-            size: .small,
-            label: 'Message',
-            onPressed: onMessageUser,
-          ),
-        );
-
         final shareButton = DivineIconButton(
           icon: .shareFat,
           type: .secondary,
@@ -174,9 +163,38 @@ class _OtherProfileButtons extends StatelessWidget {
           onPressed: onShareProfile,
         );
 
-        final children = isFollowing
-            ? [messageButton, followButton, shareButton]
-            : [followButton, messageButton, shareButton];
+        final List<Widget> children;
+
+        if (isFollowing) {
+          // Following: [Message (expanded)] [Following] [Share]
+          children = [
+            Expanded(
+              child: DivineButton(
+                expanded: true,
+                leadingIcon: .envelopeSimple,
+                type: .secondary,
+                size: .small,
+                label: 'Message',
+                onPressed: onMessageUser,
+              ),
+            ),
+            followButton,
+            shareButton,
+          ];
+        } else {
+          // Not following: [Follow (expanded)] [Message (icon)] [Share]
+          children = [
+            Expanded(child: followButton),
+            DivineButton(
+              leadingIcon: .envelopeSimple,
+              type: .secondary,
+              size: .small,
+              label: '',
+              onPressed: onMessageUser,
+            ),
+            shareButton,
+          ];
+        }
 
         return _ActionButtonsRow(children: children);
       },
