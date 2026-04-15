@@ -278,10 +278,17 @@ class ProfileRepository {
         switch (result) {
           case UserProfileFound():
             final profile = UserProfile.fromUserProfileFound(result);
-            _knownCached.add(pubkey);
-            await _userProfilesDao.upsertProfile(profile);
+            // Funnelcake profiles use DateTime.now() as a synthetic createdAt
+            // (the REST API does not expose the Nostr event timestamp), so
+            // _cacheProfileIfNewer cannot reliably guard against overwriting a
+            // freshly-saved bio. Only cache when no local profile exists yet.
+            final existing = await _userProfilesDao.getProfile(pubkey);
+            if (existing == null) {
+              _knownCached.add(pubkey);
+              await _userProfilesDao.upsertProfile(profile);
+            }
             await _cacheProfileStatsFromResult(pubkey, result);
-            return profile;
+            return existing ?? profile;
           case UserProfileNotPublished():
             // User exists but has no Kind 0. Cache stats and skip relay
             // fallback — the profile genuinely does not exist yet.
@@ -396,15 +403,22 @@ class ProfileRepository {
       final events = await _nostrClient
           .queryEvents(
             [
-              Filter(kinds: [0], authors: [pubkey], limit: 1),
+              Filter(kinds: [0], authors: [pubkey], limit: 5),
             ],
             tempRelays: _indexerRelays,
             useCache: false,
           )
           .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
 
-      if (events.isNotEmpty && events.first.kind == 0) {
-        final profile = UserProfile.fromNostrEvent(events.first);
+      // Relays do not guarantee newest-first ordering, so pick the event
+      // with the highest createdAt to avoid overwriting a freshly saved
+      // profile with stale metadata.
+      final kind0Events = events.where((e) => e.kind == 0).toList();
+      if (kind0Events.isNotEmpty) {
+        final newest = kind0Events.reduce(
+          (a, b) => b.createdAt > a.createdAt ? b : a,
+        );
+        final profile = UserProfile.fromNostrEvent(newest);
         developer.log(
           'Fetched from indexer relay: ${profile.bestDisplayName}',
           name: 'ProfileRepository.fetchFreshProfile',
