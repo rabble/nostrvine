@@ -1960,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Om video's op te slaan, geef je in Instellingen toegang tot Foto's.",
     "saveOriginalOpenSettings": "Instellingen openen",
     "saveOriginalNotNow": "Niet nu",
+    "cameraPermissionNotNow": "Niet nu",
     "saveOriginalDownloadFailed": "Download mislukt",
     "saveOriginalDismiss": "Sluiten",
     "saveOriginalDownloadingVideo": "Video downloaden",
@@ -2422,5 +2423,15 @@
     "timeYesterday": "Gisteren",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "Camera wordt nog niet ondersteund op het web",
+    "cameraPermissionWebUnsupportedDescription": "Camerabeelden opnemen en video opnemen zijn nog niet beschikbaar in de webversie.",
+    "cameraPermissionBackToFeed": "Terug naar feed",
+    "cameraPermissionErrorTitle": "Machtigingsfout",
+    "cameraPermissionErrorDescription": "Er is iets misgegaan bij het controleren van machtigingen.",
+    "cameraPermissionRetry": "Opnieuw proberen",
+    "cameraPermissionAllowAccessTitle": "Toegang tot camera en microfoon toestaan",
+    "cameraPermissionAllowAccessDescription": "Hiermee kun je video's rechtstreeks in de app opnemen en bewerken, verder niets.",
+    "cameraPermissionContinue": "Doorgaan",
+    "cameraPermissionGoToSettings": "Naar instellingen"
 }

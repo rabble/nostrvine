@@ -3860,6 +3860,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get saveOriginalNotNow => 'Şimdi Değil';
 
   @override
+  String get cameraPermissionNotNow => 'Şimdi Değil';
+
+  @override
   String get saveOriginalDownloadFailed => 'İndirme Başarısız';
 
   @override
@@ -4618,4 +4621,39 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Ortala';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'Kamera henüz web\'de desteklenmiyor';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'Kamera ile çekim ve kayıt henüz web sürümünde kullanılamıyor.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Akışa geri dön';
+
+  @override
+  String get cameraPermissionErrorTitle => 'İzin hatası';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'İzinler kontrol edilirken bir sorun oluştu.';
+
+  @override
+  String get cameraPermissionRetry => 'Tekrar dene';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Kamera ve mikrofona erişime izin ver';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Bu, videoları doğrudan uygulama içinde çekip düzenlemeni sağlar, daha fazlasını değil.';
+
+  @override
+  String get cameraPermissionContinue => 'Devam et';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Ayarlara git';
 }

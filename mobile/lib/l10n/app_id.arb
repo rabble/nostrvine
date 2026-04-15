@@ -1960,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Untuk menyimpan video, izinkan akses Foto di Pengaturan.",
     "saveOriginalOpenSettings": "Buka Pengaturan",
     "saveOriginalNotNow": "Nanti Saja",
+    "cameraPermissionNotNow": "Nanti Saja",
     "saveOriginalDownloadFailed": "Unduhan Gagal",
     "saveOriginalDismiss": "Tutup",
     "saveOriginalDownloadingVideo": "Mengunduh Video",
@@ -2422,5 +2423,15 @@
     "timeYesterday": "Kemarin",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "Kamera belum didukung di web",
+    "cameraPermissionWebUnsupportedDescription": "Pengambilan gambar dan perekaman kamera belum tersedia di versi web.",
+    "cameraPermissionBackToFeed": "Kembali ke feed",
+    "cameraPermissionErrorTitle": "Kesalahan izin",
+    "cameraPermissionErrorDescription": "Terjadi kesalahan saat memeriksa izin.",
+    "cameraPermissionRetry": "Coba lagi",
+    "cameraPermissionAllowAccessTitle": "Izinkan akses kamera & mikrofon",
+    "cameraPermissionAllowAccessDescription": "Ini memungkinkan Anda merekam dan mengedit video langsung di aplikasi, tidak lebih.",
+    "cameraPermissionContinue": "Lanjutkan",
+    "cameraPermissionGoToSettings": "Buka pengaturan"
 }

@@ -3922,6 +3922,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get saveOriginalNotNow => 'Nicht jetzt';
 
   @override
+  String get cameraPermissionNotNow => 'Nicht jetzt';
+
+  @override
   String get saveOriginalDownloadFailed => 'Download fehlgeschlagen';
 
   @override
@@ -4688,4 +4691,39 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Zentriert';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'Kamera wird im Web noch nicht unterstützt';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'Kameraaufnahme und -aufzeichnung sind in der Webversion noch nicht verfügbar.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Zurück zum Feed';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Berechtigungsfehler';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'Beim Prüfen der Berechtigungen ist etwas schiefgelaufen.';
+
+  @override
+  String get cameraPermissionRetry => 'Erneut versuchen';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Kamera- und Mikrofonzugriff erlauben';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Damit kannst du Videos direkt hier in der App aufnehmen und bearbeiten, sonst nichts.';
+
+  @override
+  String get cameraPermissionContinue => 'Weiter';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Zu den Einstellungen';
 }

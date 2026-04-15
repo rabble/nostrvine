@@ -1960,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Aby zapisać filmy, zezwól na dostęp do Zdjęć w Ustawieniach.",
     "saveOriginalOpenSettings": "Otwórz Ustawienia",
     "saveOriginalNotNow": "Nie teraz",
+    "cameraPermissionNotNow": "Nie teraz",
     "saveOriginalDownloadFailed": "Pobieranie nieudane",
     "saveOriginalDismiss": "Odrzuć",
     "saveOriginalDownloadingVideo": "Pobieranie filmu",
@@ -2422,5 +2423,15 @@
     "timeYesterday": "Wczoraj",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "Aparat nie jest jeszcze obsługiwany w wersji webowej",
+    "cameraPermissionWebUnsupportedDescription": "Robienie zdjęć i nagrywanie kamerą nie są jeszcze dostępne w wersji webowej.",
+    "cameraPermissionBackToFeed": "Wróć do feedu",
+    "cameraPermissionErrorTitle": "Błąd uprawnień",
+    "cameraPermissionErrorDescription": "Wystąpił błąd podczas sprawdzania uprawnień.",
+    "cameraPermissionRetry": "Spróbuj ponownie",
+    "cameraPermissionAllowAccessTitle": "Zezwól na dostęp do aparatu i mikrofonu",
+    "cameraPermissionAllowAccessDescription": "To pozwala nagrywać i edytować filmy bezpośrednio w aplikacji i nic więcej.",
+    "cameraPermissionContinue": "Kontynuuj",
+    "cameraPermissionGoToSettings": "Przejdź do ustawień"
 }

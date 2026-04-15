@@ -1960,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Pentru a salva videoclipuri, permite accesul la Poze în Setări.",
     "saveOriginalOpenSettings": "Deschide setările",
     "saveOriginalNotNow": "Nu acum",
+    "cameraPermissionNotNow": "Nu acum",
     "saveOriginalDownloadFailed": "Descărcare eșuată",
     "saveOriginalDismiss": "Respinge",
     "saveOriginalDownloadingVideo": "Se descarcă videoclipul",
@@ -2422,5 +2423,15 @@
     "timeYesterday": "Ieri",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "Camera nu este încă acceptată pe web",
+    "cameraPermissionWebUnsupportedDescription": "Captura și înregistrarea cu camera nu sunt încă disponibile în versiunea web.",
+    "cameraPermissionBackToFeed": "Înapoi la feed",
+    "cameraPermissionErrorTitle": "Eroare de permisiuni",
+    "cameraPermissionErrorDescription": "A apărut o eroare la verificarea permisiunilor.",
+    "cameraPermissionRetry": "Încearcă din nou",
+    "cameraPermissionAllowAccessTitle": "Permite accesul la cameră și microfon",
+    "cameraPermissionAllowAccessDescription": "Aceasta îți permite să capturezi și să editezi videoclipuri direct în aplicație, nimic mai mult.",
+    "cameraPermissionContinue": "Continuă",
+    "cameraPermissionGoToSettings": "Mergi la setări"
 }

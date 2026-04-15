@@ -3834,6 +3834,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get saveOriginalNotNow => 'ليس الآن';
 
   @override
+  String get cameraPermissionNotNow => 'ليس الآن';
+
+  @override
   String get saveOriginalDownloadFailed => 'فشل التنزيل';
 
   @override
@@ -4590,4 +4593,39 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'وسط';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'الكاميرا غير مدعومة على الويب بعد';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'التقاط الكاميرا وتسجيلها غير متاحين في إصدار الويب بعد.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'العودة إلى الخلاصة';
+
+  @override
+  String get cameraPermissionErrorTitle => 'خطأ في الأذونات';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'حدث خطأ أثناء التحقق من الأذونات.';
+
+  @override
+  String get cameraPermissionRetry => 'إعادة المحاولة';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'السماح بالوصول إلى الكاميرا والميكروفون';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'يتيح لك هذا التقاط الفيديوهات وتعديلها مباشرة داخل التطبيق، ولا شيء أكثر.';
+
+  @override
+  String get cameraPermissionContinue => 'متابعة';
+
+  @override
+  String get cameraPermissionGoToSettings => 'الذهاب إلى الإعدادات';
 }

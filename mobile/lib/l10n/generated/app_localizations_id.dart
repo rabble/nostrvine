@@ -3852,6 +3852,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get saveOriginalNotNow => 'Nanti Saja';
 
   @override
+  String get cameraPermissionNotNow => 'Nanti Saja';
+
+  @override
   String get saveOriginalDownloadFailed => 'Unduhan Gagal';
 
   @override
@@ -4609,4 +4612,39 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Tengah';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'Kamera belum didukung di web';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'Pengambilan gambar dan perekaman kamera belum tersedia di versi web.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Kembali ke feed';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Kesalahan izin';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'Terjadi kesalahan saat memeriksa izin.';
+
+  @override
+  String get cameraPermissionRetry => 'Coba lagi';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Izinkan akses kamera & mikrofon';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Ini memungkinkan Anda merekam dan mengedit video langsung di aplikasi, tidak lebih.';
+
+  @override
+  String get cameraPermissionContinue => 'Lanjutkan';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Buka pengaturan';
 }

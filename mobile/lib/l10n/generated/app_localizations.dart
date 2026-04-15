@@ -6866,6 +6866,12 @@ abstract class AppLocalizations {
   /// **'Not Now'**
   String get saveOriginalNotNow;
 
+  /// No description provided for @cameraPermissionNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get cameraPermissionNotNow;
+
   /// No description provided for @saveOriginalDownloadFailed.
   ///
   /// In en, this message translates to:
@@ -8263,6 +8269,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Center'**
   String get textAlignCenter;
+
+  /// No description provided for @cameraPermissionWebUnsupportedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera not supported on web yet'**
+  String get cameraPermissionWebUnsupportedTitle;
+
+  /// No description provided for @cameraPermissionWebUnsupportedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera capture and recording are not available in the web version yet.'**
+  String get cameraPermissionWebUnsupportedDescription;
+
+  /// No description provided for @cameraPermissionBackToFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to feed'**
+  String get cameraPermissionBackToFeed;
+
+  /// No description provided for @cameraPermissionErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission Error'**
+  String get cameraPermissionErrorTitle;
+
+  /// No description provided for @cameraPermissionErrorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong while checking permissions.'**
+  String get cameraPermissionErrorDescription;
+
+  /// No description provided for @cameraPermissionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get cameraPermissionRetry;
+
+  /// No description provided for @cameraPermissionAllowAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow camera & microphone access'**
+  String get cameraPermissionAllowAccessTitle;
+
+  /// No description provided for @cameraPermissionAllowAccessDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This allows you to capture and edit videos right here in the app, nothing more.'**
+  String get cameraPermissionAllowAccessDescription;
+
+  /// No description provided for @cameraPermissionContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get cameraPermissionContinue;
+
+  /// No description provided for @cameraPermissionGoToSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to settings'**
+  String get cameraPermissionGoToSettings;
 }
 
 class _AppLocalizationsDelegate

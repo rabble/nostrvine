@@ -3995,6 +3995,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get saveOriginalNotNow => 'Nu acum';
 
   @override
+  String get cameraPermissionNotNow => 'Nu acum';
+
+  @override
   String get saveOriginalDownloadFailed => 'Descărcare eșuată';
 
   @override
@@ -4769,4 +4772,39 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Centru';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'Camera nu este încă acceptată pe web';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'Captura și înregistrarea cu camera nu sunt încă disponibile în versiunea web.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Înapoi la feed';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Eroare de permisiuni';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'A apărut o eroare la verificarea permisiunilor.';
+
+  @override
+  String get cameraPermissionRetry => 'Încearcă din nou';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Permite accesul la cameră și microfon';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Aceasta îți permite să capturezi și să editezi videoclipuri direct în aplicație, nimic mai mult.';
+
+  @override
+  String get cameraPermissionContinue => 'Continuă';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Mergi la setări';
 }

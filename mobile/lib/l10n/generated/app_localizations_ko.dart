@@ -3710,6 +3710,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get saveOriginalNotNow => '나중에';
 
   @override
+  String get cameraPermissionNotNow => '나중에';
+
+  @override
   String get saveOriginalDownloadFailed => '다운로드 실패';
 
   @override
@@ -4463,4 +4466,36 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get textAlignCenter => '가운데';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle => '카메라는 아직 웹에서 지원되지 않습니다';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      '카메라 촬영 및 녹화는 웹 버전에서 아직 사용할 수 없습니다.';
+
+  @override
+  String get cameraPermissionBackToFeed => '피드로 돌아가기';
+
+  @override
+  String get cameraPermissionErrorTitle => '권한 오류';
+
+  @override
+  String get cameraPermissionErrorDescription => '권한을 확인하는 중 문제가 발생했습니다.';
+
+  @override
+  String get cameraPermissionRetry => '다시 시도';
+
+  @override
+  String get cameraPermissionAllowAccessTitle => '카메라 및 마이크 접근 허용';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      '이렇게 하면 앱에서 바로 동영상을 촬영하고 편집할 수 있으며, 그 외 용도는 없습니다.';
+
+  @override
+  String get cameraPermissionContinue => '계속';
+
+  @override
+  String get cameraPermissionGoToSettings => '설정으로 이동';
 }

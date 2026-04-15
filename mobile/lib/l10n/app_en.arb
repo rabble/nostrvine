@@ -1963,6 +1963,7 @@
   "saveOriginalPhotosAccessMessage": "To save videos, allow Photos access in Settings.",
   "saveOriginalOpenSettings": "Open Settings",
   "saveOriginalNotNow": "Not Now",
+  "cameraPermissionNotNow": "Not now",
   "saveOriginalDownloadFailed": "Download Failed",
   "saveOriginalDismiss": "Dismiss",
   "saveOriginalDownloadingVideo": "Downloading Video",
@@ -2428,5 +2429,15 @@
   "textBackgroundTransparent": "Transparent",
   "textAlignLeft": "Left",
   "textAlignRight": "Right",
-  "textAlignCenter": "Center"
+  "textAlignCenter": "Center",
+  "cameraPermissionWebUnsupportedTitle": "Camera not supported on web yet",
+  "cameraPermissionWebUnsupportedDescription": "Camera capture and recording are not available in the web version yet.",
+  "cameraPermissionBackToFeed": "Back to feed",
+  "cameraPermissionErrorTitle": "Permission Error",
+  "cameraPermissionErrorDescription": "Something went wrong while checking permissions.",
+  "cameraPermissionRetry": "Retry",
+  "cameraPermissionAllowAccessTitle": "Allow camera & microphone access",
+  "cameraPermissionAllowAccessDescription": "This allows you to capture and edit videos right here in the app, nothing more.",
+  "cameraPermissionContinue": "Continue",
+  "cameraPermissionGoToSettings": "Go to settings"
 }

@@ -1960,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "لحفظ مقاطع الفيديو، اسمح بالوصول إلى الصور في الإعدادات.",
     "saveOriginalOpenSettings": "فتح الإعدادات",
     "saveOriginalNotNow": "ليس الآن",
+    "cameraPermissionNotNow": "ليس الآن",
     "saveOriginalDownloadFailed": "فشل التنزيل",
     "saveOriginalDismiss": "إخفاء",
     "saveOriginalDownloadingVideo": "جارٍ تنزيل الفيديو",
@@ -2422,5 +2423,15 @@
     "timeYesterday": "أمس",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "الكاميرا غير مدعومة على الويب بعد",
+    "cameraPermissionWebUnsupportedDescription": "التقاط الكاميرا وتسجيلها غير متاحين في إصدار الويب بعد.",
+    "cameraPermissionBackToFeed": "العودة إلى الخلاصة",
+    "cameraPermissionErrorTitle": "خطأ في الأذونات",
+    "cameraPermissionErrorDescription": "حدث خطأ أثناء التحقق من الأذونات.",
+    "cameraPermissionRetry": "إعادة المحاولة",
+    "cameraPermissionAllowAccessTitle": "السماح بالوصول إلى الكاميرا والميكروفون",
+    "cameraPermissionAllowAccessDescription": "يتيح لك هذا التقاط الفيديوهات وتعديلها مباشرة داخل التطبيق، ولا شيء أكثر.",
+    "cameraPermissionContinue": "متابعة",
+    "cameraPermissionGoToSettings": "الذهاب إلى الإعدادات"
 }

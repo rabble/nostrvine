@@ -1960,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "動画を保存するには、設定で写真へのアクセスを許可してね。",
     "saveOriginalOpenSettings": "設定を開く",
     "saveOriginalNotNow": "今はいい",
+    "cameraPermissionNotNow": "今はいい",
     "saveOriginalDownloadFailed": "ダウンロードがうまくいかなかった",
     "saveOriginalDismiss": "閉じる",
     "saveOriginalDownloadingVideo": "動画をダウンロード中",
@@ -2422,5 +2423,15 @@
     "timeYesterday": "昨日",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "カメラはまだWebでサポートされていません",
+    "cameraPermissionWebUnsupportedDescription": "カメラでの撮影と録画は、Web版ではまだ利用できません。",
+    "cameraPermissionBackToFeed": "フィードに戻る",
+    "cameraPermissionErrorTitle": "権限エラー",
+    "cameraPermissionErrorDescription": "権限の確認中に問題が発生しました。",
+    "cameraPermissionRetry": "再試行",
+    "cameraPermissionAllowAccessTitle": "カメラとマイクへのアクセスを許可",
+    "cameraPermissionAllowAccessDescription": "これにより、アプリ内で動画の撮影と編集ができるようになります。それ以外の用途はありません。",
+    "cameraPermissionContinue": "続行",
+    "cameraPermissionGoToSettings": "設定に移動"
 }

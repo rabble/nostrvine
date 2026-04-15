@@ -1960,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Para guardar videos, permití el acceso a Fotos en Ajustes.",
     "saveOriginalOpenSettings": "Abrir Ajustes",
     "saveOriginalNotNow": "Ahora no",
+    "cameraPermissionNotNow": "Ahora no",
     "saveOriginalDownloadFailed": "Falló la descarga",
     "saveOriginalDismiss": "Descartar",
     "saveOriginalDownloadingVideo": "Descargando video",
@@ -2422,5 +2423,15 @@
     "timeYesterday": "Ayer",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "La cámara todavía no es compatible en la web",
+    "cameraPermissionWebUnsupportedDescription": "La captura y grabación con cámara todavía no están disponibles en la versión web.",
+    "cameraPermissionBackToFeed": "Volver al feed",
+    "cameraPermissionErrorTitle": "Error de permisos",
+    "cameraPermissionErrorDescription": "Algo salió mal al verificar los permisos.",
+    "cameraPermissionRetry": "Reintentar",
+    "cameraPermissionAllowAccessTitle": "Permitir acceso a cámara y micrófono",
+    "cameraPermissionAllowAccessDescription": "Esto te permite capturar y editar videos aquí mismo en la app, nada más.",
+    "cameraPermissionContinue": "Continuar",
+    "cameraPermissionGoToSettings": "Ir a ajustes"
 }
