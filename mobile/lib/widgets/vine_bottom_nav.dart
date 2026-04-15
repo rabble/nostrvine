@@ -2,7 +2,6 @@
 // ABOUTME: Provides consistent bottom nav across screens with/without shell
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -151,18 +150,17 @@ class VineBottomNav extends ConsumerWidget {
               1,
               'explore_tab',
             ),
-            // Camera button in center of bottom nav (hidden on web)
-            if (!kIsWeb)
-              _CameraButton(
-                onTap: () {
-                  Log.info(
-                    '👆 User tapped camera button',
-                    name: 'Navigation',
-                    category: LogCategory.ui,
-                  );
-                  context.pushToCameraWithPermission();
-                },
-              ),
+            // Camera button in center of bottom nav
+            _CameraButton(
+              onTap: () {
+                Log.info(
+                  '👆 User tapped camera button',
+                  name: 'Navigation',
+                  category: LogCategory.ui,
+                );
+                context.pushToCameraWithPermission();
+              },
+            ),
             NotificationBadge(
               count: _inboxUnreadCount(context, ref),
               child: _buildTabButton(

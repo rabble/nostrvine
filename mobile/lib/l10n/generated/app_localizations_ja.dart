@@ -3695,6 +3695,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get saveOriginalNotNow => '今はいい';
 
   @override
+  String get cameraPermissionNotNow => '今はいい';
+
+  @override
   String get saveOriginalDownloadFailed => 'ダウンロードがうまくいかなかった';
 
   @override
@@ -4448,4 +4451,36 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get textAlignCenter => '中央';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle => 'カメラはまだWebでサポートされていません';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'カメラでの撮影と録画は、Web版ではまだ利用できません。';
+
+  @override
+  String get cameraPermissionBackToFeed => 'フィードに戻る';
+
+  @override
+  String get cameraPermissionErrorTitle => '権限エラー';
+
+  @override
+  String get cameraPermissionErrorDescription => '権限の確認中に問題が発生しました。';
+
+  @override
+  String get cameraPermissionRetry => '再試行';
+
+  @override
+  String get cameraPermissionAllowAccessTitle => 'カメラとマイクへのアクセスを許可';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'これにより、アプリ内で動画の撮影と編集ができるようになります。それ以外の用途はありません。';
+
+  @override
+  String get cameraPermissionContinue => '続行';
+
+  @override
+  String get cameraPermissionGoToSettings => '設定に移動';
 }

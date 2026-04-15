@@ -1960,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "För att spara videor, tillåt fotoåtkomst i Inställningar.",
     "saveOriginalOpenSettings": "Öppna inställningar",
     "saveOriginalNotNow": "Inte nu",
+    "cameraPermissionNotNow": "Inte nu",
     "saveOriginalDownloadFailed": "Nedladdning misslyckades",
     "saveOriginalDismiss": "Avfärda",
     "saveOriginalDownloadingVideo": "Laddar ner video",
@@ -2422,5 +2423,15 @@
     "timeYesterday": "Igår",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "Kameran stöds inte på webben än",
+    "cameraPermissionWebUnsupportedDescription": "Kamerainspelning och videoinspelning är ännu inte tillgängliga i webbversionen.",
+    "cameraPermissionBackToFeed": "Tillbaka till flödet",
+    "cameraPermissionErrorTitle": "Behörighetsfel",
+    "cameraPermissionErrorDescription": "Något gick fel när behörigheterna kontrollerades.",
+    "cameraPermissionRetry": "Försök igen",
+    "cameraPermissionAllowAccessTitle": "Tillåt åtkomst till kamera och mikrofon",
+    "cameraPermissionAllowAccessDescription": "Detta låter dig spela in och redigera videor direkt i appen, inget mer.",
+    "cameraPermissionContinue": "Fortsätt",
+    "cameraPermissionGoToSettings": "Gå till inställningar"
 }

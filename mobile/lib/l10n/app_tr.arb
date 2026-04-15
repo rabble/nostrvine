@@ -1960,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Videoları kaydetmek için Ayarlar'dan Fotoğraf erişimine izin ver.",
     "saveOriginalOpenSettings": "Ayarları Aç",
     "saveOriginalNotNow": "Şimdi Değil",
+    "cameraPermissionNotNow": "Şimdi Değil",
     "saveOriginalDownloadFailed": "İndirme Başarısız",
     "saveOriginalDismiss": "Kapat",
     "saveOriginalDownloadingVideo": "Video İndiriliyor",
@@ -2422,5 +2423,15 @@
     "timeYesterday": "Dün",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "Kamera henüz web'de desteklenmiyor",
+    "cameraPermissionWebUnsupportedDescription": "Kamera ile çekim ve kayıt henüz web sürümünde kullanılamıyor.",
+    "cameraPermissionBackToFeed": "Akışa geri dön",
+    "cameraPermissionErrorTitle": "İzin hatası",
+    "cameraPermissionErrorDescription": "İzinler kontrol edilirken bir sorun oluştu.",
+    "cameraPermissionRetry": "Tekrar dene",
+    "cameraPermissionAllowAccessTitle": "Kamera ve mikrofona erişime izin ver",
+    "cameraPermissionAllowAccessDescription": "Bu, videoları doğrudan uygulama içinde çekip düzenlemeni sağlar, daha fazlasını değil.",
+    "cameraPermissionContinue": "Devam et",
+    "cameraPermissionGoToSettings": "Ayarlara git"
 }

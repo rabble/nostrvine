@@ -3870,6 +3870,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get saveOriginalNotNow => 'Inte nu';
 
   @override
+  String get cameraPermissionNotNow => 'Inte nu';
+
+  @override
   String get saveOriginalDownloadFailed => 'Nedladdning misslyckades';
 
   @override
@@ -4628,4 +4631,39 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Centrera';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'Kameran stöds inte på webben än';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'Kamerainspelning och videoinspelning är ännu inte tillgängliga i webbversionen.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Tillbaka till flödet';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Behörighetsfel';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'Något gick fel när behörigheterna kontrollerades.';
+
+  @override
+  String get cameraPermissionRetry => 'Försök igen';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Tillåt åtkomst till kamera och mikrofon';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Detta låter dig spela in och redigera videor direkt i appen, inget mer.';
+
+  @override
+  String get cameraPermissionContinue => 'Fortsätt';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Gå till inställningar';
 }
