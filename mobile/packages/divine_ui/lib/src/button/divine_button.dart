@@ -163,16 +163,32 @@ class _DivineButtonContent extends StatelessWidget {
   /// Icon size is 24px for both variants.
   static const double _iconSize = 24;
 
-  EdgeInsets get _padding => switch (size) {
-    DivineButtonSize.small => const EdgeInsets.symmetric(
-      horizontal: 16,
-      vertical: 8,
-    ),
-    DivineButtonSize.base => const EdgeInsets.symmetric(
-      horizontal: 24,
-      vertical: 12,
-    ),
-  };
+  /// Whether the button has no text label (icon-only mode).
+  ///
+  /// When true, padding and spacing match `DivineIconButton` for
+  /// visual parity between a label-less [DivineButton] and a
+  /// `DivineIconButton`.
+  bool get _noLabel => label.isEmpty;
+
+  EdgeInsets get _padding {
+    if (_noLabel) {
+      // Match DivineIconButton padding for icon-only mode.
+      return switch (size) {
+        DivineButtonSize.small => const EdgeInsets.all(8),
+        DivineButtonSize.base => const EdgeInsets.all(12),
+      };
+    }
+    return switch (size) {
+      DivineButtonSize.small => const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ),
+      DivineButtonSize.base => const EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: 12,
+      ),
+    };
+  }
 
   double get _borderRadius => switch (size) {
     DivineButtonSize.small => 16,
@@ -256,25 +272,26 @@ class _DivineButtonContent extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation<Color>(_foregroundColor),
             ),
           ),
-          const SizedBox(width: 8),
+          if (!_noLabel) const SizedBox(width: 8),
         ] else if (leadingIcon != null) ...[
           DivineIcon(
             icon: leadingIcon!,
             color: _foregroundColor,
           ),
-          const SizedBox(width: 8),
+          if (!_noLabel) const SizedBox(width: 8),
         ],
-        Flexible(
-          child: Text(
-            label,
-            style: _textStyle,
-            textAlign: .center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        if (!_noLabel)
+          Flexible(
+            child: Text(
+              label,
+              style: _textStyle,
+              textAlign: .center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
         if (trailingIcon != null) ...[
-          const SizedBox(width: 8),
+          if (!_noLabel) const SizedBox(width: 8),
           DivineIcon(
             icon: trailingIcon!,
             color: _foregroundColor,
