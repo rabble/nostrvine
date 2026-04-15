@@ -2,7 +2,6 @@
 // ABOUTME: Displays a masonry grid of video clip thumbnails with selection support
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -92,13 +91,10 @@ class ClipsTab extends StatelessWidget {
           return EmptyLibraryState(
             icon: DivineIconName.filmSlate,
             // TODO(l10n): Replace with context.l10n when localization is added.
-            title: kIsWeb ? 'No Clips in the browser' : 'No Clips Yet',
+            title: 'No Clips Yet',
             // TODO(l10n): Replace with context.l10n when localization is added.
-            subtitle: kIsWeb
-                ? 'Recorded clips live in the mobile app. '
-                      'Use Divine on your phone to record and manage them.'
-                : 'Your recorded video clips will appear here',
-            showRecordButton: !isSelectionMode && !kIsWeb,
+            subtitle: 'Your recorded video clips will appear here',
+            showRecordButton: !isSelectionMode,
           );
         }
 

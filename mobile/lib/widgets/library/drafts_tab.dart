@@ -5,7 +5,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,29 +87,15 @@ class DraftsTab extends ConsumerWidget {
           DraftsLibraryDraftDeleted(:final drafts) ||
           DraftsLibraryDeleteFailed(
             :final drafts,
-          ) when drafts.isEmpty =>
-            kIsWeb
-                ? const EmptyLibraryState(
-                    icon: DivineIconName.pencilSimple,
-                    // TODO(l10n): Replace with context.l10n when
-                    // localization is added.
-                    title: 'No drafts in the browser',
-                    // TODO(l10n): Replace with context.l10n when
-                    // localization is added.
-                    subtitle:
-                        'Drafts you save on the mobile app stay on your device. '
-                        'Open Divine on your phone to edit them.',
-                    showRecordButton: false,
-                  )
-                : const EmptyLibraryState(
-                    icon: DivineIconName.pencilSimple,
-                    // TODO(l10n): Replace with context.l10n when
-                    // localization is added.
-                    title: 'No Drafts Yet',
-                    // TODO(l10n): Replace with context.l10n when
-                    // localization is added.
-                    subtitle: 'Videos you save as draft will appear here',
-                  ),
+          ) when drafts.isEmpty => const EmptyLibraryState(
+            icon: DivineIconName.pencilSimple,
+            // TODO(l10n): Replace with context.l10n when
+            // localization is added.
+            title: 'No Drafts Yet',
+            // TODO(l10n): Replace with context.l10n when
+            // localization is added.
+            subtitle: 'Videos you save as draft will appear here',
+          ),
           DraftsLibraryLoaded(:final drafts) ||
           DraftsLibraryDraftDeleted(:final drafts) ||
           DraftsLibraryDeleteFailed(:final drafts) => ListView.builder(

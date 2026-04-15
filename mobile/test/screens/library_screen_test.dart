@@ -2,6 +2,7 @@
 // ABOUTME: Covers tabs, navigation, and empty states
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -168,6 +169,30 @@ void main() {
         expect(find.byType(EmptyLibraryState), findsOneWidget);
         expect(find.text('No Clips Yet'), findsOneWidget);
       });
+    });
+
+    group('web', () {
+      testWidgets(
+        'shows mobile-app intercept instead of tabs',
+        (tester) async {
+          await tester.pumpWidget(buildWidget());
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('Library is available in the mobile app'),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining(
+              'Drafts and clips are saved on your device',
+            ),
+            findsOneWidget,
+          );
+          expect(find.text('Drafts'), findsNothing);
+          expect(find.text('Clips'), findsNothing);
+        },
+        skip: !kIsWeb,
+      );
     });
   });
 }

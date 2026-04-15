@@ -2,6 +2,7 @@
 // ABOUTME: Shows tabs for clips and drafts with preview, delete, and import options
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -219,6 +220,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return const _LibraryWebUnavailableScreen();
+    }
+
     final editorClips = widget.selectionMode
         ? widget.editorClips
         : ref.watch(clipManagerProvider.select((s) => s.clips));
@@ -387,6 +392,56 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Full-screen message when Library is opened on web (drafts/clips are device-local).
+class _LibraryWebUnavailableScreen extends StatelessWidget {
+  const _LibraryWebUnavailableScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: VineTheme.onPrimary,
+      appBar: DiVineAppBar(
+        title: 'Library',
+        backgroundColor: VineTheme.onPrimary,
+        surfaceTintColor: VineTheme.transparent,
+        shape: const Border(
+          bottom: BorderSide(color: VineTheme.outlineDisabled),
+        ),
+        showBackButton: true,
+        onBackPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(VideoFeedPage.pathForIndex(0));
+          }
+        },
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Library is available in the mobile app',
+                textAlign: TextAlign.center,
+                style: VineTheme.titleMediumFont(),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Drafts and clips are saved on your device, so open Divine '
+                'on your phone to manage them.',
+                textAlign: TextAlign.center,
+                style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
