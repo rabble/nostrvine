@@ -1,12 +1,11 @@
 // ABOUTME: BLoC for fetching and managing video categories from Funnelcake API
 // ABOUTME: Handles loading categories list and videos within a selected category
 
+import 'package:categories_repository/categories_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
-import 'package:openvine/models/video_category.dart';
-import 'package:openvine/repositories/categories_repository.dart';
 
 part 'categories_event.dart';
 part 'categories_state.dart';
