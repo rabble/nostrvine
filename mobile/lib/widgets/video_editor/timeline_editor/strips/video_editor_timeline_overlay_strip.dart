@@ -189,16 +189,17 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       ? TimelineConstants.trimHandleWidth + 12.0
       : 0.0;
 
-  /// Returns items sorted so the selected item is last (painted on top).
+  /// Returns items sorted so the dragged or selected item is last
+  /// (painted on top in the [Stack]).
   List<TimelineOverlayItem> _sortedItems() {
-    final id = widget.selectedItemId;
-    // No selection → original order is fine.
-    if (id == null) return widget.items;
+    final topId = _draggingId ?? widget.selectedItemId;
+    // No active item → original order is fine.
+    if (topId == null) return widget.items;
     final items = List<TimelineOverlayItem>.of(widget.items);
-    final idx = items.indexWhere((item) => item.id == id);
+    final idx = items.indexWhere((item) => item.id == topId);
     // Not found or already last → nothing to move.
     if (idx == -1 || idx == items.length - 1) return items;
-    // Move selected item to end so it paints on top in the Stack.
+    // Move item to end so it paints on top in the Stack.
     items.add(items.removeAt(idx));
     return items;
   }
@@ -214,7 +215,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       width: widget.totalWidth,
       height: displayRowCount * _rowHeight,
       child: Stack(
-        clipBehavior: Clip.none,
+        clipBehavior: .none,
         children: [
           // Drop indicator line — only visible during drag.
           if (dropIndicatorLineY != null)
@@ -223,6 +224,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
           // obscured by adjacent items.
           for (final item in _sortedItems())
             TimelineOverlayPositionedItem(
+              key: ValueKey(item.id),
               item: item,
               isDragging: _draggingId == item.id,
               isSelected: widget.selectedItemId == item.id,

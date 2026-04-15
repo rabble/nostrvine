@@ -3,6 +3,7 @@
 // ABOUTME: row assignment, and trim state.
 
 import 'package:equatable/equatable.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// The type of overlay on the timeline.
 enum TimelineOverlayType {
@@ -30,6 +31,7 @@ class TimelineOverlayItem extends Equatable {
     required this.endTime,
     this.row = 0,
     this.label = '',
+    this.layer,
   });
 
   /// Unique identifier.
@@ -51,6 +53,9 @@ class TimelineOverlayItem extends Equatable {
   /// Human-readable label (e.g. "Blur", "Beat Drop", "Hello World").
   final String label;
 
+  /// The original layer data.
+  final Layer? layer;
+
   /// Start time in seconds for layout calculations.
   double get startTimeInSeconds => startTime.inMilliseconds / 1000.0;
   double get durationInSeconds => duration.inMilliseconds / 1000;
@@ -64,6 +69,7 @@ class TimelineOverlayItem extends Equatable {
     Duration? endTime,
     int? row,
     String? label,
+    Layer? layer,
   }) {
     return TimelineOverlayItem(
       id: id ?? this.id,
@@ -72,6 +78,7 @@ class TimelineOverlayItem extends Equatable {
       endTime: endTime ?? this.endTime,
       row: row ?? this.row,
       label: label ?? this.label,
+      layer: layer ?? this.layer,
     );
   }
 
@@ -83,5 +90,6 @@ class TimelineOverlayItem extends Equatable {
     endTime,
     row,
     label,
+    layer,
   ];
 }

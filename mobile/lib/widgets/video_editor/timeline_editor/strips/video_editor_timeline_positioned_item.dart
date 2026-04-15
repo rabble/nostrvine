@@ -263,7 +263,6 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
       padding: EdgeInsets.symmetric(horizontal: widget.trimExpansion),
       child: TimelineTrimHandles(
         height: widget.height - TimelineConstants.overlayRowGap,
-        handleColor: widget.color,
         onDragStart: _onDragStart,
         onDragEnd: _onDragEnd,
         onLeftDragUpdate: _onLeftTrim,
@@ -274,6 +273,7 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
           width: widget.width,
           height: widget.height,
           color: widget.color,
+          isSelected: true,
         ),
       ),
     );

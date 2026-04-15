@@ -147,8 +147,6 @@ void main() {
           const TimelineOverlayItemMoved(
             itemId: 'layer-1',
             startTime: Duration(seconds: 3),
-            row: 9,
-            insertAbove: true,
           ),
         ),
         expect: () => [

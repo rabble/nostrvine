@@ -2,6 +2,8 @@
 // ABOUTME: video editor timeline. Handles add/remove/move/trim/select/drag
 // ABOUTME: and collapse state for all three strip types.
 
+import 'dart:ui' show Color;
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -72,6 +74,7 @@ class TimelineOverlayBloc
           startTime: layer.startTime ?? .zero,
           endTime: layer.endTime ?? event.totalVideoDuration,
           label: _labelForLayer(layer),
+          layer: layer,
         ),
     ];
 
@@ -210,7 +213,7 @@ class TimelineOverlayBloc
     TimelineOverlayItemMoved event,
     Emitter<TimelineOverlayState> emit,
   ) {
-    final items = List<TimelineOverlayItem>.from(state.items);
+    var items = List<TimelineOverlayItem>.from(state.items);
     final idx = items.indexWhere((i) => i.id == event.itemId);
     if (idx == -1) return;
 
@@ -218,16 +221,53 @@ class TimelineOverlayBloc
     final newStartTime = event.startTime ?? old.startTime;
     final endTimeShift = newStartTime - old.startTime;
 
-    // Only update start/end time here. Row assignment is handled by
-    // _assignRows when _syncMainCapabilities fires from the editor
-    // state change — that avoids a 1-frame flicker from conflicting
-    // row logic.
-    items[idx] = old.copyWith(
+    final moved = old.copyWith(
       startTime: newStartTime,
       endTime: old.endTime + endTimeShift,
+      row: event.row ?? old.row,
     );
 
+    final hasOverlap = items.any(
+      (i) =>
+          i.id != moved.id &&
+          i.type == moved.type &&
+          i.row == moved.row &&
+          i.startTime < moved.endTime &&
+          moved.startTime < i.endTime,
+    );
+
+    if (hasOverlap) {
+      if (event.insertAbove) {
+        // Keep the moved item at its row; push existing items down.
+        items = _shiftRowsDown(items, moved.type, moved.row, moved.id);
+        items[idx] = moved;
+      } else {
+        // Place the moved item one row below; push existing items down.
+        final targetRow = moved.row + 1;
+        items = _shiftRowsDown(items, moved.type, targetRow, moved.id);
+        items[idx] = moved.copyWith(row: targetRow);
+      }
+    } else {
+      items[idx] = moved;
+    }
+
     emit(state.copyWith(items: items));
+  }
+
+  /// Shift all items of [type] with row >= [fromRow] down by one row,
+  /// excluding the item with [excludeId].
+  static List<TimelineOverlayItem> _shiftRowsDown(
+    List<TimelineOverlayItem> items,
+    TimelineOverlayType type,
+    int fromRow,
+    String excludeId,
+  ) {
+    return items.map((i) {
+      if (i.id != excludeId && i.type == type && i.row >= fromRow) {
+        return i.copyWith(row: i.row + 1);
+      }
+      return i;
+    }).toList();
   }
 
   void _onItemTrimmed(

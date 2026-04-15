@@ -93,7 +93,7 @@ class TimelineOverlayStrips extends StatelessWidget {
       (
         items: layerItems,
         type: TimelineOverlayType.layer,
-        color: VineTheme.accentPink,
+        color: VineTheme.primary,
       ),
     ];
 
