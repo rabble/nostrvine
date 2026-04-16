@@ -26,9 +26,12 @@ workspace:
   - packages/app_update_repository
   - packages/app_version_client
   - packages/blossom_upload_service
+  - packages/blurhash_service
+  - packages/categories_repository
   - packages/comments_repository
   - packages/count_formatter
   - packages/curated_list_repository
+  - packages/curation_service
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
@@ -54,9 +57,11 @@ workspace:
   - packages/profile_repository
   - packages/reposts_repository
   - packages/sound_service
+  - packages/sounds_repository
   - packages/time_formatter
   - packages/tv_static_effect
   - packages/unified_logger
+  - packages/video_event_cache
   - packages/videos_repository
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -146,8 +151,23 @@ dependencies:
   blurhash_dart: ^1.2.1 # Generate blurhash for progressive image loading
   skeletonizer: ^2.1.2 # Skeleton loading animations with shimmer effect
 
+  # Blurhash Service - Blurhash generation and decoding for image placeholders
+  blurhash_service:
+
+  # Categories Repository - Video categories from Funnelcake API
+  categories_repository:
+
+  # Curation Service - NIP-51 video curation sets and content discovery
+  curation_service:
+
+  # Video Event Cache - Abstract interface for video event caching
+  video_event_cache:
+
   # Sound Service - Sound effects (countdown beeps, etc.)
   sound_service:
+
+  # Sounds Repository - Kind 1063 audio events from Nostr relays
+  sounds_repository:
 
   # Notification Repository - Notification enrichment and grouping
   notification_repository:

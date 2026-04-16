@@ -6,15 +6,14 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/models/vine_sound.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/repositories/sounds_repository.dart';
 import 'package:openvine/services/sound_library_service.dart';
+import 'package:sounds_repository/sounds_repository.dart';
 
 // Mock classes
 class MockNostrClient extends Mock implements NostrClient {}

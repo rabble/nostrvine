@@ -1,6 +1,6 @@
+import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' hide AudioTrack;
 
 extension VideoEditorExtensions on ProImageEditorState {

@@ -8,10 +8,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart' show InspiredByInfo;
+import 'package:models/models.dart' show AudioEvent, InspiredByInfo;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
@@ -201,7 +200,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     // Trim for storage (but after hashtag extraction)
     final cleanedTitle = rawTitle.trim();
     final cleanedDescription = rawDescription.trim();
-    final tagLimit = VideoEditorConstants.tagLimit;
+    const tagLimit = VideoEditorConstants.tagLimit;
 
     // Only extract hashtags when text changes, not when tags are manually edited
     final Set<String> allTags;

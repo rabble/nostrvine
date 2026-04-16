@@ -4,9 +4,11 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 
@@ -19,6 +21,11 @@ extension CameraPermissionNavigation on BuildContext {
   /// Returns `true` if navigation occurred.
   Future<bool> pushToCameraWithPermission() async {
     final bloc = read<CameraPermissionBloc>();
+
+    if (kIsWeb) {
+      await pushWithVideoPause(VideoRecorderScreen.path);
+      return true;
+    }
 
     final status = await _resolvePermissionStatus(bloc);
     if (!mounted) return false;
@@ -37,16 +44,14 @@ extension CameraPermissionNavigation on BuildContext {
     await VineBottomSheetPrompt.show<void>(
       context: this,
       sticker: DivineStickerName.skeletonKey,
-      title: 'Allow camera & microphone access',
-      subtitle:
-          'This allows you to capture and edit videos '
-          'right here in the app, nothing more.',
-      primaryButtonText: 'Continue',
+      title: l10n.cameraPermissionAllowAccessTitle,
+      subtitle: l10n.cameraPermissionAllowAccessDescription,
+      primaryButtonText: l10n.cameraPermissionContinue,
       onPrimaryPressed: () {
         permissionRequested = true;
         Navigator.of(this).pop();
       },
-      secondaryButtonText: 'Not now',
+      secondaryButtonText: l10n.cameraPermissionNotNow,
       onSecondaryPressed: () => Navigator.of(this).pop(),
     );
 

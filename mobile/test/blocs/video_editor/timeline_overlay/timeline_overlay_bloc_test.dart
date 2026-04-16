@@ -4,9 +4,9 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 

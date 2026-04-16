@@ -7,12 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:patrol/patrol.dart';
 
 import '../helpers/db_helpers.dart';
+import '../helpers/http_helpers.dart';
 import '../helpers/navigation_helpers.dart';
 import '../helpers/test_setup.dart';
 
@@ -29,6 +31,7 @@ void main() {
         // ── Setup ──
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -39,39 +42,72 @@ void main() {
         final authService = container.read(authServiceProvider);
 
         // ════════════════════════════════════════════════════════════
-        // Phase 1: Register + Verify (create OAuth session)
+        // Phase 1: Generate local keys, then register with Keycast
+        //          passing the nsec so both share the same pubkey.
+        //
+        // This mirrors the real "started anonymous → secured account"
+        // flow where the user's local nsec is imported into Keycast
+        // via headlessRegister(nsec: ...).
         // ════════════════════════════════════════════════════════════
 
-        await navigateToCreateAccount(tester);
-        await registerNewUser(tester, testEmail, testPassword);
-
-        final foundVerifyScreen = await waitForText(
-          tester,
-          'Complete your registration',
+        // 1a. Generate local private key
+        final keyStorage = container.read(secureKeyStorageProvider);
+        final privateKey = generatePrivateKey();
+        final nsec = Nip19.encodePrivateKey(privateKey);
+        final keyContainer = await tester.runAsync(
+          () => keyStorage.importFromNsec(nsec),
         );
+        final localPubkey = keyContainer!.publicKeyHex;
+        logPhase('Phase 1a: local keys generated — pubkey=$localPubkey');
+
+        // 1b. Register with Keycast passing the same nsec
+        final oauthClient = container.read(oauthClientProvider);
+        final result = (await tester.runAsync(
+          () => oauthClient.headlessRegister(
+            email: testEmail,
+            password: testPassword,
+            nsec: nsec,
+            scope: 'policy:full',
+          ),
+        ))!;
+        final registerResult = result.$1;
+        final verifier = result.$2;
         expect(
-          foundVerifyScreen,
+          registerResult.success,
           isTrue,
-          reason: 'Should navigate to email verification screen',
+          reason: 'headlessRegister with nsec should succeed',
+        );
+        logPhase(
+          'Phase 1b: registered with Keycast — '
+          'pubkey=${registerResult.pubkey}',
         );
 
+        // 1c. Verify email + exchange code + sign in
         final verifyToken = await getVerificationToken(testEmail);
         expect(verifyToken, isNotEmpty);
+        await callVerifyEmail(verifyToken);
 
-        final emailListener = container.read(
-          emailVerificationListenerProvider,
-        );
-        await emailListener.handleUri(
-          Uri.parse(
-            'https://login.divine.video/verify-email?token=$verifyToken',
-          ),
-        );
+        // Poll until Keycast issues the authorization code
+        String? authCode;
+        for (var i = 0; i < 30; i++) {
+          final poll = await tester.runAsync(
+            () => oauthClient.pollForCode(registerResult.deviceCode!),
+          );
+          if (poll!.code != null) {
+            authCode = poll.code;
+            break;
+          }
+          await tester.pump(const Duration(milliseconds: 500));
+        }
+        expect(authCode, isNotNull, reason: 'Polling should return auth code');
 
-        final leftVerifyScreen = await waitForTextGone(
-          tester,
-          'Complete your registration',
+        final tokenResponse = await tester.runAsync(
+          () => oauthClient.exchangeCode(code: authCode!, verifier: verifier),
         );
-        expect(leftVerifyScreen, isTrue);
+        final session = KeycastSession.fromTokenResponse(tokenResponse!);
+        await tester.runAsync(
+          () => authService.signInWithDivineOAuth(session),
+        );
         await pumpUntilSettled(tester);
 
         expect(authService.isAuthenticated, isTrue);
@@ -79,24 +115,13 @@ void main() {
           authService.authenticationSource,
           equals(AuthenticationSource.divineOAuth),
         );
+        expect(
+          authService.currentPublicKeyHex,
+          equals(localPubkey),
+          reason: 'OAuth pubkey must match local key pubkey',
+        );
 
-        logPhase('Phase 1 complete: user registered and authenticated');
-
-        // ════════════════════════════════════════════════════════════
-        // Phase 1b: Plant local private keys for fallback
-        // ════════════════════════════════════════════════════════════
-        // OAuth-only users have no local private keys (only a
-        // public-key container). When the OAuth session expires and
-        // refresh fails, initialize() falls back to
-        // _keyStorage.hasKeys() → getKeyContainer(). Without local
-        // private keys, the user becomes fully unauthenticated.
-        // Real users who started anonymous before upgrading to OAuth
-        // already have local keys. We simulate this by generating
-        // and storing keys after OAuth registration.
-
-        final keyStorage = container.read(secureKeyStorageProvider);
-        await keyStorage.generateAndStoreKeys();
-        logPhase('Phase 1b: planted local private keys for fallback');
+        logPhase('Phase 1c: authenticated via OAuth with matching local key');
 
         // ════════════════════════════════════════════════════════════
         // Phase 2: Kill both tokens to trigger expired session state
@@ -197,6 +222,7 @@ void main() {
 
         logPhase('Phase 6: logged in, expired session banner cleared');
 
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);

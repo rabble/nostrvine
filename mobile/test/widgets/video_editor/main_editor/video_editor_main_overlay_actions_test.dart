@@ -266,7 +266,7 @@ void main() {
         'autosaved draft without edits closes directly',
         (tester) async {
           await tester.pumpWidget(
-            buildWidget(isAutosavedDraft: true, hasBeenEdited: false),
+            buildWidget(isAutosavedDraft: true),
           );
 
           await tester.tap(find.bySemanticsLabel('Close'));
@@ -300,7 +300,6 @@ void main() {
             buildWidget(
               isAutosavedDraft: true,
               hasBeenEdited: true,
-              saveAsDraftSucceeds: true,
             ),
           );
 

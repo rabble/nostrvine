@@ -97,6 +97,7 @@ void main() {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         // Pre-register B so we can login without polling
         final pubkeyB = await _registerAndVerifyViaApi(emailB, password);
@@ -255,6 +256,7 @@ void main() {
 
         logPhase('Phase 5 complete: signing works');
 
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);
@@ -272,6 +274,7 @@ void main() {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         // Use unique emails for this test case
         final emailA2 = 'log2-rst-a-$ts@test.divine.video';
@@ -382,30 +385,38 @@ void main() {
         // ── Phase 4b: Sign back in as A ──
         logPhase('-- Phase 4b: Sign back in as A --');
 
-        final foundLogBackIn = await waitForText(
-          tester,
-          'Log back in',
-          maxSeconds: 10,
-        );
-
-        if (foundLogBackIn) {
-          await tester.tap(find.text('Log back in'));
-          await pumpUntilSettled(tester, maxSeconds: 15);
+        // After deleting B and reinitializing, A's archived OAuth session
+        // may be restored automatically (multi-account archive/restore).
+        // Only navigate the sign-in flow if not already authenticated as A.
+        if (authService.isAuthenticated &&
+            authService.currentPublicKeyHex == pubkeyA) {
+          logPhase('Phase 4b: already authenticated as A after reinitialize');
         } else {
-          await navigateToLoginOptions(tester);
-          await loginWithCredentials(tester, emailA2, password);
-          await pumpUntilSettled(tester, maxSeconds: 15);
-        }
+          final foundLogBackIn = await waitForText(
+            tester,
+            'Log back in',
+            maxSeconds: 10,
+          );
 
-        var authenticated = false;
-        for (var i = 0; i < 60; i++) {
-          await tester.pump(const Duration(milliseconds: 250));
-          if (authService.isAuthenticated) {
-            authenticated = true;
-            break;
+          if (foundLogBackIn) {
+            await tester.tap(find.text('Log back in'));
+            await pumpUntilSettled(tester, maxSeconds: 15);
+          } else {
+            await navigateToLoginOptions(tester);
+            await loginWithCredentials(tester, emailA2, password);
+            await pumpUntilSettled(tester, maxSeconds: 15);
           }
+
+          var authenticated = false;
+          for (var i = 0; i < 60; i++) {
+            await tester.pump(const Duration(milliseconds: 250));
+            if (authService.isAuthenticated) {
+              authenticated = true;
+              break;
+            }
+          }
+          expect(authenticated, isTrue);
         }
-        expect(authenticated, isTrue);
 
         expect(authService.currentPublicKeyHex, equals(pubkeyA));
         expect(
@@ -423,6 +434,7 @@ void main() {
 
         logPhase('Phase 4b complete: signing works after restart');
 
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);
@@ -447,6 +459,7 @@ void main() {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -550,6 +563,7 @@ void main() {
 
         logPhase('Phase 5 complete: signing works');
 
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);

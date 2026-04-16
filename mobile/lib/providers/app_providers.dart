@@ -6,8 +6,10 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:curation_service/curation_service.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -25,6 +27,7 @@ import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/config/app_config.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
@@ -34,7 +37,6 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/repositories/categories_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -58,7 +60,6 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/crosspost_api_client.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/email_verification_listener.dart';
@@ -1130,19 +1131,43 @@ void pushNotificationSync(Ref ref) {
   final authService = ref.watch(authServiceProvider);
 
   Future<void> requestPermissionAndRegister(String pubkey) async {
-    final firebaseMessaging = ref.read(firebaseMessagingProvider);
-    final pushService = ref.read(pushNotificationServiceProvider);
-    final settings = await firebaseMessaging.requestPermission();
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      Log.info(
-        'Push notification permission denied by user',
+    try {
+      final firebaseMessaging = ref.read(firebaseMessagingProvider);
+      final pushService = ref.read(pushNotificationServiceProvider);
+
+      // Only prompt the user if permission has never been decided. Rapid
+      // auth state changes (account switching, E2E tests) otherwise cause
+      // concurrent `requestPermission` calls, and Firebase throws
+      // `PlatformException([firebase_messaging/unknown] A request for
+      // permissions is already running)` — silently losing FCM registration
+      // in production and failing E2E tests via unhandled async errors.
+      final current = await firebaseMessaging.getNotificationSettings();
+      final settings =
+          current.authorizationStatus == AuthorizationStatus.notDetermined
+          ? await firebaseMessaging.requestPermission()
+          : current;
+
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        Log.info(
+          'Push notification permission denied by user',
+          name: 'PushNotificationSync',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      await pushService.register(pubkey);
+    } catch (e) {
+      // Push registration is non-critical — a failure must not propagate
+      // out of this async stream listener. If it did, the uncaught error
+      // would reach the test binding's `handleUncaughtError` and fail the
+      // surrounding integration test.
+      Log.warning(
+        'Push notification registration failed: $e',
         name: 'PushNotificationSync',
         category: LogCategory.system,
       );
-      return;
     }
-
-    await pushService.register(pubkey);
   }
 
   String? lastAuthenticatedPubkey = authService.currentPublicKeyHex;
@@ -1153,15 +1178,25 @@ void pushNotificationSync(Ref ref) {
 
   // React to auth state changes
   final subscription = authService.authStateStream.listen((authState) async {
-    final currentPubkey = authService.currentPublicKeyHex;
-    if (authState == AuthState.authenticated && currentPubkey != null) {
-      lastAuthenticatedPubkey = currentPubkey;
-      await requestPermissionAndRegister(currentPubkey);
-    } else if (authState == AuthState.unauthenticated &&
-        lastAuthenticatedPubkey != null) {
-      await ref
-          .read(pushNotificationServiceProvider)
-          .deregister(lastAuthenticatedPubkey!);
+    try {
+      final currentPubkey = authService.currentPublicKeyHex;
+      if (authState == AuthState.authenticated && currentPubkey != null) {
+        lastAuthenticatedPubkey = currentPubkey;
+        await requestPermissionAndRegister(currentPubkey);
+      } else if (authState == AuthState.unauthenticated &&
+          lastAuthenticatedPubkey != null) {
+        await ref
+            .read(pushNotificationServiceProvider)
+            .deregister(lastAuthenticatedPubkey!);
+      }
+    } catch (e) {
+      // Never let push/deregister errors escape the listener — see
+      // `requestPermissionAndRegister` for context.
+      Log.warning(
+        'Push notification sync listener failed: $e',
+        name: 'PushNotificationSync',
+        category: LogCategory.system,
+      );
     }
   });
 
@@ -1279,6 +1314,9 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
     await db.conversationsDao.clearAll();
     await db.notificationsDao.clearAll();
     await NotificationServiceEnhanced.instance.clearAllData();
+    // Clear DM sync cursors so the next login triggers a full re-fetch
+    // from relays instead of using stale `since:` boundaries.
+    await DmSyncState(prefs).clearAll();
   };
 
   return service;
@@ -1557,6 +1595,7 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final env = ref.watch(currentEnvironmentProvider);
 
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
@@ -1566,6 +1605,7 @@ ProfileRepository? profileRepository(Ref ref) {
     indexerRelays: env.indexerRelays,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
+    blockFilter: blocklistService.shouldFilterFromFeeds,
   );
 
   // Pre-load known cached pubkeys and wire into SubscriptionManager
@@ -1782,9 +1822,10 @@ CurationService curationService(Ref ref) {
 
   return CurationService(
     nostrService: nostrService,
-    videoEventService: videoEventService,
+    videoEventCache: videoEventService,
     likesRepository: likesRepository,
-    authService: authService,
+    signer: authService.requireIdentity,
+    divineTeamPubkeys: AppConstants.divineTeamPubkeys,
   );
 }
 
@@ -2130,9 +2171,11 @@ DmRepository dmRepository(Ref ref) {
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final repository = CommentsRepository(
     nostrClient: nostrClient,
     funnelcakeApiClient: funnelcakeClient,
+    blockFilter: blocklistService.shouldFilterFromFeeds,
   );
   ref.onDispose(repository.clearCommentCountCache);
   return repository;

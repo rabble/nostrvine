@@ -1,0 +1,26 @@
+# ABOUTME: CI workflow for the sounds_repository package.
+# ABOUTME: Runs tests, formatting, and analysis only when sounds_repository files change.
+
+name: Sounds Repository CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/sounds_repository/**"
+      - ".github/workflows/sounds_repository.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/sounds_repository/**"
+      - ".github/workflows/sounds_repository.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/sounds_repository"

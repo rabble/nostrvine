@@ -2,12 +2,14 @@
 // ABOUTME: Shows tabs for clips and drafts with preview, delete, and import options
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -170,6 +172,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return const _LibraryWebUnavailableScreen();
+    }
+
     final editorClips = widget.selectionMode
         ? widget.editorClips
         : ref.watch(clipManagerProvider.select((s) => s.clips));
@@ -224,9 +230,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                       :final failureCount,
                     ):
                       final label = failureCount == 0
-                          ? '$successCount clip${successCount == 1 ? '' : 's'} '
-                                'saved to ${GallerySaveService.destinationName}'
-                          : '$successCount saved, $failureCount failed';
+                          ? context.l10n.libraryClipsSavedToDestination(
+                              successCount,
+                              GallerySaveService.destinationName,
+                            )
+                          : context.l10n.libraryClipsSavePartialResult(
+                              successCount,
+                              failureCount,
+                            );
                       _showSnackBar(
                         context,
                         label: label,
@@ -235,9 +246,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                     case GallerySaveResultPermissionDenied():
                       _showSnackBar(
                         context,
-                        label:
-                            '${GallerySaveService.destinationName} '
-                            'permission denied',
+                        label: context.l10n.libraryGalleryPermissionDenied(
+                          GallerySaveService.destinationName,
+                        ),
                         error: true,
                       );
                     case GallerySaveResultError(:final message):
@@ -255,7 +266,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
                   _showSnackBar(
                     context,
-                    label: '$count clip${count == 1 ? '' : 's'} deleted',
+                    label: context.l10n.libraryClipsDeletedCount(count),
                   );
                 },
               ),
@@ -323,7 +334,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                               ),
                               if (isPreparing)
                                 Text(
-                                  'Preparing video...',
+                                  context.l10n.libraryPreparingVideo,
                                   style: VineTheme.bodyMediumFont(),
                                 ),
                             ],
@@ -336,6 +347,55 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Full-screen message when Library is opened on web (drafts/clips are device-local).
+class _LibraryWebUnavailableScreen extends StatelessWidget {
+  const _LibraryWebUnavailableScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: VineTheme.onPrimary,
+      appBar: DiVineAppBar(
+        title: context.l10n.profileLibraryLabel,
+        backgroundColor: VineTheme.onPrimary,
+        surfaceTintColor: VineTheme.transparent,
+        shape: const Border(
+          bottom: BorderSide(color: VineTheme.outlineDisabled),
+        ),
+        showBackButton: true,
+        onBackPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(VideoFeedPage.pathForIndex(0));
+          }
+        },
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            spacing: 12,
+            children: [
+              Text(
+                context.l10n.libraryWebUnavailableHeadline,
+                textAlign: TextAlign.center,
+                style: VineTheme.titleMediumFont(),
+              ),
+              Text(
+                context.l10n.libraryWebUnavailableDescription,
+                textAlign: TextAlign.center,
+                style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -361,7 +421,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
       selector: (state) => state.selectedClipIds.isNotEmpty,
       builder: (context, hasSelection) {
         return DiVineAppBar(
-          title: 'My library',
+          title: context.l10n.profileLibraryLabel,
           style: DiVineAppBarStyle(titleStyle: VineTheme.titleMediumFont()),
           backgroundColor: VineTheme.onPrimary,
           surfaceTintColor: VineTheme.transparent,
@@ -404,9 +464,9 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
             isScrollable: true,
             tabAlignment: .start,
             tabs: [
-              const Tab(text: 'Drafts'),
-              const Tab(text: 'Clips'),
-              if (enableSoundTab) const Tab(text: 'Sounds'),
+              Tab(text: context.l10n.libraryTabDrafts),
+              Tab(text: context.l10n.libraryTabClips),
+              if (enableSoundTab) Tab(text: context.l10n.soundsTitle),
             ],
           ),
         );

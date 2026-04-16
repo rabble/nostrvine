@@ -69,9 +69,20 @@ void main() {
     late _MockNotificationRepository mockNotificationRepo;
     late _MockFollowRepository mockFollowRepo;
 
+    setUpAll(() {
+      registerFallbackValue(_single());
+    });
+
     setUp(() {
       mockNotificationRepo = _MockNotificationRepository();
       mockFollowRepo = _MockFollowRepository();
+
+      when(
+        () => mockNotificationRepo.filterRealtimeNotification(any()),
+      ).thenAnswer(
+        (invocation) =>
+            invocation.positionalArguments.first as NotificationItem,
+      );
     });
 
     NotificationFeedBloc createBloc() => NotificationFeedBloc(
@@ -390,6 +401,29 @@ void main() {
         act: (bloc) => bloc.add(NotificationFeedFollowBack('pub123')),
         expect: () => <NotificationFeedState>[],
         errors: () => [isA<Exception>()],
+      );
+    });
+
+    group('realtime blocklist filtering', () {
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'skips realtime notification when repository filter returns null',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.filterRealtimeNotification(any()),
+          ).thenReturn(null);
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_single(id: 'existing')],
+          unreadCount: 1,
+        ),
+        act: (bloc) => bloc.add(
+          NotificationFeedRealtimeReceived(
+            _single(id: 'blocked-notif'),
+          ),
+        ),
+        expect: () => <NotificationFeedState>[],
       );
     });
   });

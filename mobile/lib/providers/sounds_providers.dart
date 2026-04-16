@@ -1,11 +1,11 @@
 // ABOUTME: Riverpod providers for the sounds/audio reuse feature.
 // ABOUTME: Provides reactive state management for sounds from SoundsRepository.
 
-import 'package:openvine/models/audio_event.dart';
+import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
-import 'package:openvine/repositories/sounds_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sounds_repository/sounds_repository.dart';
 
 part 'sounds_providers.g.dart';
 

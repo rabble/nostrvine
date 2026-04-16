@@ -1,3 +1,4 @@
+// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'blossom_resumable_upload_session.dart';

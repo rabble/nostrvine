@@ -3331,9 +3331,15 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga följda användare.\nFölj någon för att se deras videor här.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return 'Inga videor hittades för flödet $mode.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Upptäck videor';
@@ -3864,6 +3870,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get saveOriginalNotNow => 'Inte nu';
 
   @override
+  String get cameraPermissionNotNow => 'Inte nu';
+
+  @override
   String get saveOriginalDownloadFailed => 'Nedladdning misslyckades';
 
   @override
@@ -4381,6 +4390,148 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryDeleteConfirm => 'Radera';
 
   @override
+  String get libraryWebUnavailableHeadline => 'Biblioteket finns i mobilappen';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Utkast och klipp sparas på enheten — öppna Divine i mobilen för att hantera dem.';
+
+  @override
+  String get libraryTabDrafts => 'Utkast';
+
+  @override
+  String get libraryTabClips => 'Klipp';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Spara i kamerarullen';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'Ta bort valda klipp';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Ta bort klipp';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# valda klipp',
+      one: '# valt klipp',
+    );
+    return 'Vill du ta bort $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Det går inte att ångra. Videofilerna tas bort permanent från enheten.';
+
+  @override
+  String get libraryPreparingVideo => 'Förbereder video...';
+
+  @override
+  String get libraryCreateVideo => 'Skapa video';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klipp',
+      one: '1 klipp',
+    );
+    return '$_temp0 sparade i $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount sparade, $failureCount misslyckades';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'Behörighet nekad för $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klipp borttagna',
+      one: '1 klipp borttaget',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts => 'Det gick inte att ladda utkast';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Det gick inte att ladda klipp';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Något gick fel när biblioteket öppnades. Försök igen.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Inga utkast än';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Videor du sparar som utkast visas här';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Inga klipp än';
+
+  @override
+  String get libraryNoClipsYetSubtitle => 'Dina inspelade videoklipp visas här';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Utkast borttaget';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar =>
+      'Det gick inte att ta bort utkastet';
+
+  @override
+  String get libraryDraftActionPost => 'Publicera';
+
+  @override
+  String get libraryDraftActionEdit => 'Redigera';
+
+  @override
+  String get libraryDraftActionDelete => 'Ta bort utkast';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Ta bort utkast';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'Vill du ta bort \"$title\"?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Ta bort klipp';
+
+  @override
+  String get libraryDeleteClipMessage => 'Vill du ta bort det här klippet?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Klipp';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return '${seconds}s kvar';
+  }
+
+  @override
+  String get libraryAddClips => 'Lägg till';
+
+  @override
+  String get libraryRecordVideo => 'Spela in video';
+
+  @override
   String get routerInvalidCreator => 'Ogiltig skapare';
 
   @override
@@ -4622,4 +4773,39 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Centrera';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'Kameran stöds inte på webben än';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'Kamerainspelning och videoinspelning är ännu inte tillgängliga i webbversionen.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Tillbaka till flödet';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Behörighetsfel';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'Något gick fel när behörigheterna kontrollerades.';
+
+  @override
+  String get cameraPermissionRetry => 'Försök igen';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Tillåt åtkomst till kamera och mikrofon';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Detta låter dig spela in och redigera videor direkt i appen, inget mer.';
+
+  @override
+  String get cameraPermissionContinue => 'Fortsätt';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Gå till inställningar';
 }

@@ -29,7 +29,13 @@ mixin _$VideoFeedState {
  Set<String> get listOnlyVideoIds;/// Total video count from the server's X-Total-Count header.
 /// When available, this is more accurate than `videos.length` which
 /// only reflects the number of loaded videos.
- int? get totalVideoCount;
+ int? get totalVideoCount;/// Whether a REST call that will resolve [totalVideoCount] is currently
+/// in flight. Stays `true` from the moment the fetch starts until it
+/// settles (success, empty, or failure). UI uses this to distinguish
+/// "still loading, authoritative count may still arrive" from
+/// "settled, no authoritative count available — fall back to
+/// videos.length".
+ bool get isFetchingTotalCount;
 /// Create a copy of VideoFeedState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -40,16 +46,16 @@ $VideoFeedStateCopyWith<VideoFeedState> get copyWith => _$VideoFeedStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VideoFeedState&&const DeepCollectionEquality().equals(other.videos, videos)&&(identical(other.hasMoreContent, hasMoreContent) || other.hasMoreContent == hasMoreContent)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.isInitialLoad, isInitialLoad) || other.isInitialLoad == isInitialLoad)&&(identical(other.error, error) || other.error == error)&&(identical(other.lastUpdated, lastUpdated) || other.lastUpdated == lastUpdated)&&const DeepCollectionEquality().equals(other.videoListSources, videoListSources)&&const DeepCollectionEquality().equals(other.listOnlyVideoIds, listOnlyVideoIds)&&(identical(other.totalVideoCount, totalVideoCount) || other.totalVideoCount == totalVideoCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is VideoFeedState&&const DeepCollectionEquality().equals(other.videos, videos)&&(identical(other.hasMoreContent, hasMoreContent) || other.hasMoreContent == hasMoreContent)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.isInitialLoad, isInitialLoad) || other.isInitialLoad == isInitialLoad)&&(identical(other.error, error) || other.error == error)&&(identical(other.lastUpdated, lastUpdated) || other.lastUpdated == lastUpdated)&&const DeepCollectionEquality().equals(other.videoListSources, videoListSources)&&const DeepCollectionEquality().equals(other.listOnlyVideoIds, listOnlyVideoIds)&&(identical(other.totalVideoCount, totalVideoCount) || other.totalVideoCount == totalVideoCount)&&(identical(other.isFetchingTotalCount, isFetchingTotalCount) || other.isFetchingTotalCount == isFetchingTotalCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(videos),hasMoreContent,isLoadingMore,isRefreshing,isInitialLoad,error,lastUpdated,const DeepCollectionEquality().hash(videoListSources),const DeepCollectionEquality().hash(listOnlyVideoIds),totalVideoCount);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(videos),hasMoreContent,isLoadingMore,isRefreshing,isInitialLoad,error,lastUpdated,const DeepCollectionEquality().hash(videoListSources),const DeepCollectionEquality().hash(listOnlyVideoIds),totalVideoCount,isFetchingTotalCount);
 
 @override
 String toString() {
-  return 'VideoFeedState(videos: $videos, hasMoreContent: $hasMoreContent, isLoadingMore: $isLoadingMore, isRefreshing: $isRefreshing, isInitialLoad: $isInitialLoad, error: $error, lastUpdated: $lastUpdated, videoListSources: $videoListSources, listOnlyVideoIds: $listOnlyVideoIds, totalVideoCount: $totalVideoCount)';
+  return 'VideoFeedState(videos: $videos, hasMoreContent: $hasMoreContent, isLoadingMore: $isLoadingMore, isRefreshing: $isRefreshing, isInitialLoad: $isInitialLoad, error: $error, lastUpdated: $lastUpdated, videoListSources: $videoListSources, listOnlyVideoIds: $listOnlyVideoIds, totalVideoCount: $totalVideoCount, isFetchingTotalCount: $isFetchingTotalCount)';
 }
 
 
@@ -60,7 +66,7 @@ abstract mixin class $VideoFeedStateCopyWith<$Res>  {
   factory $VideoFeedStateCopyWith(VideoFeedState value, $Res Function(VideoFeedState) _then) = _$VideoFeedStateCopyWithImpl;
 @useResult
 $Res call({
- List<VideoEvent> videos, bool hasMoreContent, bool isLoadingMore, bool isRefreshing, bool isInitialLoad, String? error, DateTime? lastUpdated, Map<String, Set<String>> videoListSources, Set<String> listOnlyVideoIds, int? totalVideoCount
+ List<VideoEvent> videos, bool hasMoreContent, bool isLoadingMore, bool isRefreshing, bool isInitialLoad, String? error, DateTime? lastUpdated, Map<String, Set<String>> videoListSources, Set<String> listOnlyVideoIds, int? totalVideoCount, bool isFetchingTotalCount
 });
 
 
@@ -77,7 +83,7 @@ class _$VideoFeedStateCopyWithImpl<$Res>
 
 /// Create a copy of VideoFeedState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? videos = null,Object? hasMoreContent = null,Object? isLoadingMore = null,Object? isRefreshing = null,Object? isInitialLoad = null,Object? error = freezed,Object? lastUpdated = freezed,Object? videoListSources = null,Object? listOnlyVideoIds = null,Object? totalVideoCount = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? videos = null,Object? hasMoreContent = null,Object? isLoadingMore = null,Object? isRefreshing = null,Object? isInitialLoad = null,Object? error = freezed,Object? lastUpdated = freezed,Object? videoListSources = null,Object? listOnlyVideoIds = null,Object? totalVideoCount = freezed,Object? isFetchingTotalCount = null,}) {
   return _then(_self.copyWith(
 videos: null == videos ? _self.videos : videos // ignore: cast_nullable_to_non_nullable
 as List<VideoEvent>,hasMoreContent: null == hasMoreContent ? _self.hasMoreContent : hasMoreContent // ignore: cast_nullable_to_non_nullable
@@ -89,7 +95,8 @@ as String?,lastUpdated: freezed == lastUpdated ? _self.lastUpdated : lastUpdated
 as DateTime?,videoListSources: null == videoListSources ? _self.videoListSources : videoListSources // ignore: cast_nullable_to_non_nullable
 as Map<String, Set<String>>,listOnlyVideoIds: null == listOnlyVideoIds ? _self.listOnlyVideoIds : listOnlyVideoIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,totalVideoCount: freezed == totalVideoCount ? _self.totalVideoCount : totalVideoCount // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,isFetchingTotalCount: null == isFetchingTotalCount ? _self.isFetchingTotalCount : isFetchingTotalCount // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -171,10 +178,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<VideoEvent> videos,  bool hasMoreContent,  bool isLoadingMore,  bool isRefreshing,  bool isInitialLoad,  String? error,  DateTime? lastUpdated,  Map<String, Set<String>> videoListSources,  Set<String> listOnlyVideoIds,  int? totalVideoCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<VideoEvent> videos,  bool hasMoreContent,  bool isLoadingMore,  bool isRefreshing,  bool isInitialLoad,  String? error,  DateTime? lastUpdated,  Map<String, Set<String>> videoListSources,  Set<String> listOnlyVideoIds,  int? totalVideoCount,  bool isFetchingTotalCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _VideoFeedState() when $default != null:
-return $default(_that.videos,_that.hasMoreContent,_that.isLoadingMore,_that.isRefreshing,_that.isInitialLoad,_that.error,_that.lastUpdated,_that.videoListSources,_that.listOnlyVideoIds,_that.totalVideoCount);case _:
+return $default(_that.videos,_that.hasMoreContent,_that.isLoadingMore,_that.isRefreshing,_that.isInitialLoad,_that.error,_that.lastUpdated,_that.videoListSources,_that.listOnlyVideoIds,_that.totalVideoCount,_that.isFetchingTotalCount);case _:
   return orElse();
 
 }
@@ -192,10 +199,10 @@ return $default(_that.videos,_that.hasMoreContent,_that.isLoadingMore,_that.isRe
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<VideoEvent> videos,  bool hasMoreContent,  bool isLoadingMore,  bool isRefreshing,  bool isInitialLoad,  String? error,  DateTime? lastUpdated,  Map<String, Set<String>> videoListSources,  Set<String> listOnlyVideoIds,  int? totalVideoCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<VideoEvent> videos,  bool hasMoreContent,  bool isLoadingMore,  bool isRefreshing,  bool isInitialLoad,  String? error,  DateTime? lastUpdated,  Map<String, Set<String>> videoListSources,  Set<String> listOnlyVideoIds,  int? totalVideoCount,  bool isFetchingTotalCount)  $default,) {final _that = this;
 switch (_that) {
 case _VideoFeedState():
-return $default(_that.videos,_that.hasMoreContent,_that.isLoadingMore,_that.isRefreshing,_that.isInitialLoad,_that.error,_that.lastUpdated,_that.videoListSources,_that.listOnlyVideoIds,_that.totalVideoCount);}
+return $default(_that.videos,_that.hasMoreContent,_that.isLoadingMore,_that.isRefreshing,_that.isInitialLoad,_that.error,_that.lastUpdated,_that.videoListSources,_that.listOnlyVideoIds,_that.totalVideoCount,_that.isFetchingTotalCount);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -209,10 +216,10 @@ return $default(_that.videos,_that.hasMoreContent,_that.isLoadingMore,_that.isRe
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<VideoEvent> videos,  bool hasMoreContent,  bool isLoadingMore,  bool isRefreshing,  bool isInitialLoad,  String? error,  DateTime? lastUpdated,  Map<String, Set<String>> videoListSources,  Set<String> listOnlyVideoIds,  int? totalVideoCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<VideoEvent> videos,  bool hasMoreContent,  bool isLoadingMore,  bool isRefreshing,  bool isInitialLoad,  String? error,  DateTime? lastUpdated,  Map<String, Set<String>> videoListSources,  Set<String> listOnlyVideoIds,  int? totalVideoCount,  bool isFetchingTotalCount)?  $default,) {final _that = this;
 switch (_that) {
 case _VideoFeedState() when $default != null:
-return $default(_that.videos,_that.hasMoreContent,_that.isLoadingMore,_that.isRefreshing,_that.isInitialLoad,_that.error,_that.lastUpdated,_that.videoListSources,_that.listOnlyVideoIds,_that.totalVideoCount);case _:
+return $default(_that.videos,_that.hasMoreContent,_that.isLoadingMore,_that.isRefreshing,_that.isInitialLoad,_that.error,_that.lastUpdated,_that.videoListSources,_that.listOnlyVideoIds,_that.totalVideoCount,_that.isFetchingTotalCount);case _:
   return null;
 
 }
@@ -224,7 +231,7 @@ return $default(_that.videos,_that.hasMoreContent,_that.isLoadingMore,_that.isRe
 
 
 class _VideoFeedState extends VideoFeedState {
-  const _VideoFeedState({required final  List<VideoEvent> videos, required this.hasMoreContent, this.isLoadingMore = false, this.isRefreshing = false, this.isInitialLoad = false, this.error, this.lastUpdated, final  Map<String, Set<String>> videoListSources = const {}, final  Set<String> listOnlyVideoIds = const {}, this.totalVideoCount}): _videos = videos,_videoListSources = videoListSources,_listOnlyVideoIds = listOnlyVideoIds,super._();
+  const _VideoFeedState({required final  List<VideoEvent> videos, required this.hasMoreContent, this.isLoadingMore = false, this.isRefreshing = false, this.isInitialLoad = false, this.error, this.lastUpdated, final  Map<String, Set<String>> videoListSources = const {}, final  Set<String> listOnlyVideoIds = const {}, this.totalVideoCount, this.isFetchingTotalCount = false}): _videos = videos,_videoListSources = videoListSources,_listOnlyVideoIds = listOnlyVideoIds,super._();
   
 
 /// List of videos in the feed
@@ -275,6 +282,13 @@ class _VideoFeedState extends VideoFeedState {
 /// When available, this is more accurate than `videos.length` which
 /// only reflects the number of loaded videos.
 @override final  int? totalVideoCount;
+/// Whether a REST call that will resolve [totalVideoCount] is currently
+/// in flight. Stays `true` from the moment the fetch starts until it
+/// settles (success, empty, or failure). UI uses this to distinguish
+/// "still loading, authoritative count may still arrive" from
+/// "settled, no authoritative count available — fall back to
+/// videos.length".
+@override@JsonKey() final  bool isFetchingTotalCount;
 
 /// Create a copy of VideoFeedState
 /// with the given fields replaced by the non-null parameter values.
@@ -286,16 +300,16 @@ _$VideoFeedStateCopyWith<_VideoFeedState> get copyWith => __$VideoFeedStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VideoFeedState&&const DeepCollectionEquality().equals(other._videos, _videos)&&(identical(other.hasMoreContent, hasMoreContent) || other.hasMoreContent == hasMoreContent)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.isInitialLoad, isInitialLoad) || other.isInitialLoad == isInitialLoad)&&(identical(other.error, error) || other.error == error)&&(identical(other.lastUpdated, lastUpdated) || other.lastUpdated == lastUpdated)&&const DeepCollectionEquality().equals(other._videoListSources, _videoListSources)&&const DeepCollectionEquality().equals(other._listOnlyVideoIds, _listOnlyVideoIds)&&(identical(other.totalVideoCount, totalVideoCount) || other.totalVideoCount == totalVideoCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _VideoFeedState&&const DeepCollectionEquality().equals(other._videos, _videos)&&(identical(other.hasMoreContent, hasMoreContent) || other.hasMoreContent == hasMoreContent)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.isRefreshing, isRefreshing) || other.isRefreshing == isRefreshing)&&(identical(other.isInitialLoad, isInitialLoad) || other.isInitialLoad == isInitialLoad)&&(identical(other.error, error) || other.error == error)&&(identical(other.lastUpdated, lastUpdated) || other.lastUpdated == lastUpdated)&&const DeepCollectionEquality().equals(other._videoListSources, _videoListSources)&&const DeepCollectionEquality().equals(other._listOnlyVideoIds, _listOnlyVideoIds)&&(identical(other.totalVideoCount, totalVideoCount) || other.totalVideoCount == totalVideoCount)&&(identical(other.isFetchingTotalCount, isFetchingTotalCount) || other.isFetchingTotalCount == isFetchingTotalCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_videos),hasMoreContent,isLoadingMore,isRefreshing,isInitialLoad,error,lastUpdated,const DeepCollectionEquality().hash(_videoListSources),const DeepCollectionEquality().hash(_listOnlyVideoIds),totalVideoCount);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_videos),hasMoreContent,isLoadingMore,isRefreshing,isInitialLoad,error,lastUpdated,const DeepCollectionEquality().hash(_videoListSources),const DeepCollectionEquality().hash(_listOnlyVideoIds),totalVideoCount,isFetchingTotalCount);
 
 @override
 String toString() {
-  return 'VideoFeedState(videos: $videos, hasMoreContent: $hasMoreContent, isLoadingMore: $isLoadingMore, isRefreshing: $isRefreshing, isInitialLoad: $isInitialLoad, error: $error, lastUpdated: $lastUpdated, videoListSources: $videoListSources, listOnlyVideoIds: $listOnlyVideoIds, totalVideoCount: $totalVideoCount)';
+  return 'VideoFeedState(videos: $videos, hasMoreContent: $hasMoreContent, isLoadingMore: $isLoadingMore, isRefreshing: $isRefreshing, isInitialLoad: $isInitialLoad, error: $error, lastUpdated: $lastUpdated, videoListSources: $videoListSources, listOnlyVideoIds: $listOnlyVideoIds, totalVideoCount: $totalVideoCount, isFetchingTotalCount: $isFetchingTotalCount)';
 }
 
 
@@ -306,7 +320,7 @@ abstract mixin class _$VideoFeedStateCopyWith<$Res> implements $VideoFeedStateCo
   factory _$VideoFeedStateCopyWith(_VideoFeedState value, $Res Function(_VideoFeedState) _then) = __$VideoFeedStateCopyWithImpl;
 @override @useResult
 $Res call({
- List<VideoEvent> videos, bool hasMoreContent, bool isLoadingMore, bool isRefreshing, bool isInitialLoad, String? error, DateTime? lastUpdated, Map<String, Set<String>> videoListSources, Set<String> listOnlyVideoIds, int? totalVideoCount
+ List<VideoEvent> videos, bool hasMoreContent, bool isLoadingMore, bool isRefreshing, bool isInitialLoad, String? error, DateTime? lastUpdated, Map<String, Set<String>> videoListSources, Set<String> listOnlyVideoIds, int? totalVideoCount, bool isFetchingTotalCount
 });
 
 
@@ -323,7 +337,7 @@ class __$VideoFeedStateCopyWithImpl<$Res>
 
 /// Create a copy of VideoFeedState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? videos = null,Object? hasMoreContent = null,Object? isLoadingMore = null,Object? isRefreshing = null,Object? isInitialLoad = null,Object? error = freezed,Object? lastUpdated = freezed,Object? videoListSources = null,Object? listOnlyVideoIds = null,Object? totalVideoCount = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? videos = null,Object? hasMoreContent = null,Object? isLoadingMore = null,Object? isRefreshing = null,Object? isInitialLoad = null,Object? error = freezed,Object? lastUpdated = freezed,Object? videoListSources = null,Object? listOnlyVideoIds = null,Object? totalVideoCount = freezed,Object? isFetchingTotalCount = null,}) {
   return _then(_VideoFeedState(
 videos: null == videos ? _self._videos : videos // ignore: cast_nullable_to_non_nullable
 as List<VideoEvent>,hasMoreContent: null == hasMoreContent ? _self.hasMoreContent : hasMoreContent // ignore: cast_nullable_to_non_nullable
@@ -335,7 +349,8 @@ as String?,lastUpdated: freezed == lastUpdated ? _self.lastUpdated : lastUpdated
 as DateTime?,videoListSources: null == videoListSources ? _self._videoListSources : videoListSources // ignore: cast_nullable_to_non_nullable
 as Map<String, Set<String>>,listOnlyVideoIds: null == listOnlyVideoIds ? _self._listOnlyVideoIds : listOnlyVideoIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,totalVideoCount: freezed == totalVideoCount ? _self.totalVideoCount : totalVideoCount // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,isFetchingTotalCount: null == isFetchingTotalCount ? _self.isFetchingTotalCount : isFetchingTotalCount // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

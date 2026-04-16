@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -19,6 +20,7 @@ typedef SubtitlePollDelay = Future<void> Function(Duration duration);
 const _maxBlossomPollAttempts = 4;
 const _maxBlossomPollWait = Duration(seconds: 15);
 const _defaultBlossomRetryAfter = Duration(seconds: 3);
+const _subtitleVisibilityPreferenceKey = 'subtitle_visibility_enabled';
 
 final subtitleHttpClientProvider = Provider<http.Client>((ref) {
   final client = http.Client();
@@ -38,6 +40,15 @@ Duration _parseRetryAfter(Map<String, String> headers) {
   if (seconds == null || seconds <= 0) return _defaultBlossomRetryAfter;
 
   return Duration(seconds: seconds);
+}
+
+Uri? _parseHttpSubtitleUrl(String? textTrackRef) {
+  if (textTrackRef == null || textTrackRef.isEmpty) return null;
+
+  final uri = Uri.tryParse(textTrackRef);
+  if (uri == null) return null;
+  if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+  return uri;
 }
 
 Future<List<SubtitleCue>?> _fetchBlossomSubtitles({
@@ -101,6 +112,22 @@ Future<List<SubtitleCue>> subtitleCues(
     return SubtitleService.parseVtt(textTrackContent);
   }
 
+  final directSubtitleUrl = _parseHttpSubtitleUrl(textTrackRef);
+  if (directSubtitleUrl != null) {
+    final client = ref.read(subtitleHttpClientProvider);
+    try {
+      final response = await client.get(directSubtitleUrl);
+      if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
+        return SubtitleService.parseVtt(response.body);
+      }
+    } catch (e) {
+      developer.log(
+        'Direct VTT fetch failed for $directSubtitleUrl: $e',
+        name: 'subtitleCues',
+      );
+    }
+  }
+
   // Blossom path: fetch VTT from media server by sha256
   if (sha256 != null && sha256.isNotEmpty) {
     final vttUrl = Uri.parse('https://media.divine.video/$sha256/vtt');
@@ -160,10 +187,18 @@ Future<List<SubtitleCue>> subtitleCues(
 @riverpod
 class SubtitleVisibility extends _$SubtitleVisibility {
   @override
-  bool build() => false;
+  bool build() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    return prefs.getBool(_subtitleVisibilityPreferenceKey) ?? true;
+  }
+
+  /// Persist a known subtitle visibility state globally.
+  Future<void> setEnabled(bool enabled) async {
+    state = enabled;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_subtitleVisibilityPreferenceKey, enabled);
+  }
 
   /// Toggle subtitle visibility globally.
-  void toggle() {
-    state = !state;
-  }
+  Future<void> toggle() => setEnabled(!state);
 }

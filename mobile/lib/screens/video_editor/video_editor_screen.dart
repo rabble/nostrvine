@@ -8,7 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart' show StickerData;
+import 'package:models/models.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
@@ -18,7 +18,6 @@ import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.d
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';

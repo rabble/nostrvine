@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
+import 'package:models/src/user_profile_result.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:unique_names_generator/unique_names_generator.dart';
 
@@ -90,29 +91,28 @@ class UserProfile {
     eventId: json['event_id'] as String,
   );
 
-  /// Creates a [UserProfile] from a Funnelcake REST API response.
+  /// Creates a [UserProfile] from a typed [UserProfileFound] result.
   ///
-  /// Both single-profile and batch endpoints return the same shape, so this
-  /// factory works for either. Use [eventIdPrefix] to distinguish the source
-  /// (defaults to `'rest'`; batch callers pass `'rest-bulk'`).
-  factory UserProfile.fromFunnelcake(
-    String pubkey,
-    Map<String, dynamic> data, {
+  /// Use [eventIdPrefix] to distinguish the source (defaults to `'rest'`;
+  /// batch callers pass `'rest-bulk'`).
+  factory UserProfile.fromUserProfileFound(
+    UserProfileFound result, {
     String? eventIdPrefix,
   }) {
+    final p = result.profile;
     return UserProfile(
-      pubkey: pubkey,
-      name: data['name'] as String?,
-      displayName: data['display_name'] as String?,
-      about: data['about'] as String?,
-      picture: data['picture'] as String?,
-      banner: data['banner'] as String?,
-      website: data['website'] as String?,
-      nip05: data['nip05'] as String?,
-      lud16: data['lud16'] as String?,
-      rawData: data,
+      pubkey: p.pubkey,
+      name: p.name,
+      displayName: p.displayName,
+      about: p.about,
+      picture: p.picture,
+      banner: p.banner,
+      website: p.website,
+      nip05: p.nip05,
+      lud16: p.lud16,
+      rawData: const {},
       createdAt: DateTime.now(),
-      eventId: '${eventIdPrefix ?? 'rest'}-$pubkey',
+      eventId: '${eventIdPrefix ?? 'rest'}-${p.pubkey}',
     );
   }
 

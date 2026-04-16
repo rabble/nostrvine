@@ -2,7 +2,7 @@
 // ABOUTME: Keeps the categories discovery list and gallery screens visually consistent.
 
 import 'package:flutter/material.dart';
-import 'package:openvine/models/video_category.dart';
+import 'package:models/models.dart' show VideoCategory;
 
 class CategoryVisuals {
   const CategoryVisuals({

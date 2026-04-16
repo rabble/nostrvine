@@ -43,6 +43,9 @@ class DivineVideoPlayerController {
   /// Seeded from the current time so that IDs are unique across hot
   /// restarts. Without this, Dart's static reset would reuse id 0
   /// while the native side still holds a zombie player with that ID.
+  ///
+  /// The modulo keeps the value within int32 range because platform
+  /// channels transmit integers as 32-bit on the native side.
   static int _nextId = DateTime.now().microsecondsSinceEpoch % 1000000;
 
   /// The next player ID that will be assigned by [initialize].

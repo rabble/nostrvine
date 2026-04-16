@@ -1,0 +1,23 @@
+name: blurhash_service
+description: >
+  Blurhash generation and decoding service for image placeholders.
+version: 0.0.1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ^3.41.1
+
+dependencies:
+  blurhash_dart: ^1.2.1
+  flutter:
+    sdk: flutter
+  image: ^4.1.7
+  unified_logger:
+    path: ../unified_logger
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^10.2.0

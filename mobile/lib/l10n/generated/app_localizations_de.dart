@@ -3377,9 +3377,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine abonnierten Nutzer.\nFolge jemandem, um hier seine Videos zu sehen.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return 'Keine Videos für den $mode-Feed gefunden.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Videos entdecken';
@@ -3916,6 +3922,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get saveOriginalNotNow => 'Nicht jetzt';
 
   @override
+  String get cameraPermissionNotNow => 'Nicht jetzt';
+
+  @override
   String get saveOriginalDownloadFailed => 'Download fehlgeschlagen';
 
   @override
@@ -4437,6 +4446,151 @@ class AppLocalizationsDe extends AppLocalizations {
   String get libraryDeleteConfirm => 'Löschen';
 
   @override
+  String get libraryWebUnavailableHeadline =>
+      'Mediathek ist in der mobilen App';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Entwürfe und Clips werden auf deinem Gerät gespeichert. Öffne Divine auf dem Smartphone, um sie zu verwalten.';
+
+  @override
+  String get libraryTabDrafts => 'Entwürfe';
+
+  @override
+  String get libraryTabClips => 'Clips';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'In der Fotomediathek speichern';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'Ausgewählte Clips löschen';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Clips löschen';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# ausgewählte Clips',
+      one: '# ausgewählten Clip',
+    );
+    return 'Möchtest du wirklich $_temp0 löschen?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Das kann nicht rückgängig gemacht werden. Die Videodateien werden dauerhaft von deinem Gerät entfernt.';
+
+  @override
+  String get libraryPreparingVideo => 'Video wird vorbereitet …';
+
+  @override
+  String get libraryCreateVideo => 'Video erstellen';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Clips',
+      one: '1 Clip',
+    );
+    return '$_temp0 in $destination gespeichert';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount gespeichert, $failureCount fehlgeschlagen';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return '$destination: Berechtigung verweigert';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Clips gelöscht',
+      one: '1 Clip gelöscht',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts =>
+      'Entwürfe konnten nicht geladen werden';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Clips konnten nicht geladen werden';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Beim Öffnen deiner Mediathek ist etwas schiefgelaufen. Versuch es noch einmal.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Noch keine Entwürfe';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Videos, die du als Entwurf speicherst, erscheinen hier';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Noch keine Clips';
+
+  @override
+  String get libraryNoClipsYetSubtitle =>
+      'Deine aufgenommenen Videoclips erscheinen hier';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Entwurf gelöscht';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar =>
+      'Entwurf konnte nicht gelöscht werden';
+
+  @override
+  String get libraryDraftActionPost => 'Posten';
+
+  @override
+  String get libraryDraftActionEdit => 'Bearbeiten';
+
+  @override
+  String get libraryDraftActionDelete => 'Entwurf löschen';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Entwurf löschen';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return '„$title“ wirklich löschen?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Clip löschen';
+
+  @override
+  String get libraryDeleteClipMessage => 'Diesen Clip wirklich löschen?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Clips';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'Noch ${seconds}s';
+  }
+
+  @override
+  String get libraryAddClips => 'Hinzufügen';
+
+  @override
+  String get libraryRecordVideo => 'Video aufnehmen';
+
+  @override
   String get routerInvalidCreator => 'Ungültiger Ersteller';
 
   @override
@@ -4682,4 +4836,39 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Zentriert';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'Kamera wird im Web noch nicht unterstützt';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'Kameraaufnahme und -aufzeichnung sind in der Webversion noch nicht verfügbar.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Zurück zum Feed';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Berechtigungsfehler';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'Beim Prüfen der Berechtigungen ist etwas schiefgelaufen.';
+
+  @override
+  String get cameraPermissionRetry => 'Erneut versuchen';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Kamera- und Mikrofonzugriff erlauben';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Damit kannst du Videos direkt hier in der App aufnehmen und bearbeiten, sonst nichts.';
+
+  @override
+  String get cameraPermissionContinue => 'Weiter';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Zu den Einstellungen';
 }

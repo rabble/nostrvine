@@ -19,7 +19,6 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';

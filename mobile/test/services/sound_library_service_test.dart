@@ -2,7 +2,7 @@
 // ABOUTME: Validates manifest loading, search, and custom sound import functionality
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/vine_sound.dart';
+import 'package:models/models.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

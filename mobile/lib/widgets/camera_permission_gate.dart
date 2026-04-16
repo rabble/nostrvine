@@ -2,12 +2,14 @@
 // ABOUTME: Renders permission UI or camera based on CameraPermissionBloc state
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:tv_static_effect/tv_static_effect.dart';
@@ -126,13 +128,24 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
           name: 'CameraPermissionGate',
           category: LogCategory.video,
         );
+
+        if (kIsWeb) {
+          return _PermissionScreen(
+            title: context.l10n.cameraPermissionWebUnsupportedTitle,
+            description: context.l10n.cameraPermissionWebUnsupportedDescription,
+            buttonLabel: context.l10n.cameraPermissionBackToFeed,
+            onAction: _popBack,
+            onClose: _popBack,
+          );
+        }
+
         return switch (state) {
           CameraPermissionInitial() => const _LoadingIndicator(),
           CameraPermissionLoading() => const _LoadingIndicator(),
           CameraPermissionError() => _PermissionScreen(
-            title: 'Permission Error',
-            description: 'Something went wrong while checking permissions.',
-            buttonLabel: 'Retry',
+            title: context.l10n.cameraPermissionErrorTitle,
+            description: context.l10n.cameraPermissionErrorDescription,
+            buttonLabel: context.l10n.cameraPermissionRetry,
             onAction: () {
               context.read<CameraPermissionBloc>().add(
                 const CameraPermissionRefresh(),
@@ -144,11 +157,9 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
           CameraPermissionLoaded(:final status) => switch (status) {
             CameraPermissionStatus.authorized => widget.child,
             CameraPermissionStatus.canRequest => _PermissionScreen(
-              title: 'Allow camera & microphone access',
-              description:
-                  'This allows you to capture and edit videos '
-                  'right here in the app, nothing more.',
-              buttonLabel: 'Continue',
+              title: context.l10n.cameraPermissionAllowAccessTitle,
+              description: context.l10n.cameraPermissionAllowAccessDescription,
+              buttonLabel: context.l10n.cameraPermissionContinue,
               onAction: () {
                 context.read<CameraPermissionBloc>().add(
                   const CameraPermissionRequest(),
@@ -157,11 +168,9 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
               onClose: _popBack,
             ),
             CameraPermissionStatus.requiresSettings => _PermissionScreen(
-              title: 'Allow camera & microphone access',
-              description:
-                  'This allows you to capture and edit videos '
-                  'right here in the app, nothing more.',
-              buttonLabel: 'Go to settings',
+              title: context.l10n.cameraPermissionAllowAccessTitle,
+              description: context.l10n.cameraPermissionAllowAccessDescription,
+              buttonLabel: context.l10n.cameraPermissionGoToSettings,
               onAction: () {
                 context.read<CameraPermissionBloc>().add(
                   const CameraPermissionOpenSettings(),

@@ -7,7 +7,10 @@ const localHost = '10.0.2.2';
 /// Local Docker stack port mappings.
 const localKeycastPort = 43000;
 const localRelayPort = 47777;
-const localApiPort = 43001;
+
+/// REST API port — shares the funnelcake-proxy with the relay (nginx routes
+/// `/api/*` to funnelcake-api, everything else to the relay WebSocket).
+const int localApiPort = localRelayPort;
 const localBlossomPort = 43003;
 const localInvitePort = 43004;
 const productionApiBaseUrl = 'https://api.divine.video';

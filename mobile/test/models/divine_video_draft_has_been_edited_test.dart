@@ -2,8 +2,7 @@
 // ABOUTME: Validates detection of edits beyond initial recording
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show InspiredByInfo;
-import 'package:openvine/models/audio_event.dart';
+import 'package:models/models.dart' show AudioEvent, InspiredByInfo;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';

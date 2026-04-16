@@ -241,9 +241,109 @@ void main() {
     });
   });
 
+  group('BlossomAuthService - error handling', () {
+    test(
+      'createGetAuthHeader returns null when signing fails',
+      () async {
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await blossomAuthService.createGetAuthHeader(
+          sha256Hash: 'abc123',
+        );
+
+        expect(result, isNull);
+      },
+    );
+
+    test(
+      'createGetAuthHeader returns null when signing throws',
+      () async {
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenThrow(Exception('signing error'));
+
+        final result = await blossomAuthService.createGetAuthHeader(
+          sha256Hash: 'abc123',
+        );
+
+        expect(result, isNull);
+      },
+    );
+
+    test(
+      'createGetAuthHeader handles short hash in logging',
+      () async {
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => const BlossomSignedEvent(
+            json: {'id': 'e1', 'kind': 24242, 'tags': <List<String>>[]},
+          ),
+        );
+
+        final result = await blossomAuthService.createGetAuthHeader(
+          sha256Hash: 'short',
+        );
+
+        expect(result, isNotNull);
+        expect(result, startsWith('Nostr '));
+      },
+    );
+
+    test(
+      'createGetAuthHeader omits server tag when serverUrl is empty',
+      () async {
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => const BlossomSignedEvent(
+            json: {'id': 'e1', 'kind': 24242, 'tags': <List<String>>[]},
+          ),
+        );
+
+        await blossomAuthService.createGetAuthHeader(
+          sha256Hash: 'abc123def456',
+          serverUrl: '',
+        );
+
+        final captured = verify(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
+          ),
+        ).captured;
+
+        final tags = captured[0] as List<List<String>>;
+        expect(tags.any((tag) => tag[0] == 'server'), isFalse);
+      },
+    );
+  });
+
   group('BlossomAuthService - cache management', () {
     test('clearCache removes all cached tokens', () async {
-      // Arrange
       when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
 
       const signedEvent = BlossomSignedEvent(
@@ -264,23 +364,64 @@ void main() {
         ),
       ).thenAnswer((_) async => signedEvent);
 
-      // Create cached token
+      // Create a cached token
       await blossomAuthService.createGetAuthHeader(sha256Hash: 'abc123');
 
-      // Act
+      // Clear the cache
       blossomAuthService.clearCache();
 
       // Second call should create new token (not use cache)
       await blossomAuthService.createGetAuthHeader(sha256Hash: 'abc123');
 
-      // Assert
       verify(
         () => mockAuthProvider.createAndSignEvent(
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
         ),
-      ).called(2); // Called twice, not cached
+      ).called(2);
+    });
+
+    test('cacheStats returns correct statistics', () async {
+      when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+
+      const signedEvent = BlossomSignedEvent(
+        json: {
+          'id': 'event123',
+          'kind': 24242,
+          'tags': [
+            ['t', 'get'],
+          ],
+        },
+      );
+
+      when(
+        () => mockAuthProvider.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+
+      // Cache a token
+      await blossomAuthService.createGetAuthHeader(sha256Hash: 'abc123');
+
+      final stats = blossomAuthService.cacheStats;
+
+      expect(stats['total_cached'], equals(1));
+      expect(stats['valid_headers'], equals(1));
+      expect(stats['expired_headers'], equals(0));
+      expect(stats['is_authenticated'], isTrue);
+      expect(stats['cleanup_interval_minutes'], equals(15));
+      expect(stats['token_validity_hours'], equals(1));
+    });
+
+    test('canCreateHeaders returns authentication status', () {
+      when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+      expect(blossomAuthService.canCreateHeaders, isTrue);
+
+      when(() => mockAuthProvider.isAuthenticated).thenReturn(false);
+      expect(blossomAuthService.canCreateHeaders, isFalse);
     });
   });
 }

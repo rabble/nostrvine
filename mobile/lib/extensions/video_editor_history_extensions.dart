@@ -1,5 +1,5 @@
+import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 extension VideoEditorHistoryExtensions on StateManager {
