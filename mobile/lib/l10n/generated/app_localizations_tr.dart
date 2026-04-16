@@ -2933,11 +2933,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Bu videoyu silmek istediğinden emin misin?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
+      'Bu video Divine uygulamasından kalıcı olarak silinir. Başka röleler kullanan üçüncü taraf Nostr istemcilerinde görünmeye devam edebilir.';
 
   @override
   String get shareMenuCancel => 'İptal';

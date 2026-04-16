@@ -2987,11 +2987,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Bist du sicher, dass du dieses Video löschen willst?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Damit wird eine Löschanfrage (NIP-09) an alle Relays gesendet. Manche Relays behalten die Inhalte möglicherweise trotzdem.';
+      'Dieses Video wird dauerhaft aus Divine gelöscht. Es kann in anderen Nostr-Clients, die andere Relays nutzen, weiterhin sichtbar sein.';
 
   @override
   String get shareMenuCancel => 'Abbrechen';

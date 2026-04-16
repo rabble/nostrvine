@@ -1500,8 +1500,7 @@
         }
     },
     "shareMenuClose": "Stäng",
-    "shareMenuDeleteConfirmation": "Är du säker på att du vill ta bort den här videon?",
-    "shareMenuDeleteWarning": "Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.",
+    "shareMenuDeleteConfirmation": "Den här videon raderas permanent från Divine. Den kan fortfarande synas i andra Nostr-klienter som använder andra reläer.",
     "shareMenuCancel": "Avbryt",
     "shareMenuDelete": "Ta bort",
     "shareMenuDeletingContent": "Tar bort innehåll...",

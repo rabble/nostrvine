@@ -3045,11 +3045,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Sigur vrei să ștergi acest videoclip?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.';
+      'Acest videoclip va fi șters definitiv din Divine. Poate să apară în continuare în alți clienți Nostr care folosesc alte relay-uri.';
 
   @override
   String get shareMenuCancel => 'Anulează';

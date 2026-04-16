@@ -1500,8 +1500,7 @@
         }
     },
     "shareMenuClose": "Schließen",
-    "shareMenuDeleteConfirmation": "Bist du sicher, dass du dieses Video löschen willst?",
-    "shareMenuDeleteWarning": "Damit wird eine Löschanfrage (NIP-09) an alle Relays gesendet. Manche Relays behalten die Inhalte möglicherweise trotzdem.",
+    "shareMenuDeleteConfirmation": "Dieses Video wird dauerhaft aus Divine gelöscht. Es kann in anderen Nostr-Clients, die andere Relays nutzen, weiterhin sichtbar sein.",
     "shareMenuCancel": "Abbrechen",
     "shareMenuDelete": "Löschen",
     "shareMenuDeletingContent": "Inhalt wird gelöscht...",

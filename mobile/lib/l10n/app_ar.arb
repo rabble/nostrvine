@@ -1500,8 +1500,7 @@
         }
     },
     "shareMenuClose": "إغلاق",
-    "shareMenuDeleteConfirmation": "هل أنت متأكد من رغبتك في حذف هذا الفيديو؟",
-    "shareMenuDeleteWarning": "سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.",
+    "shareMenuDeleteConfirmation": "سيتم حذف هذا الفيديو نهائيًا من Divine. قد يظل ظاهرًا في عملاء Nostr الآخرين الذين يستخدمون محولات مختلفة.",
     "shareMenuCancel": "إلغاء",
     "shareMenuDelete": "حذف",
     "shareMenuDeletingContent": "جاري حذف المحتوى...",

@@ -1500,8 +1500,7 @@
         }
     },
     "shareMenuClose": "Zamknij",
-    "shareMenuDeleteConfirmation": "Na pewno chcesz usunąć ten film?",
-    "shareMenuDeleteWarning": "To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.",
+    "shareMenuDeleteConfirmation": "Ten film zostanie trwale usunięty z Divine. Może nadal być widoczny w innych klientach Nostr korzystających z innych przekaźników.",
     "shareMenuCancel": "Anuluj",
     "shareMenuDelete": "Usuń",
     "shareMenuDeletingContent": "Usuwanie treści...",

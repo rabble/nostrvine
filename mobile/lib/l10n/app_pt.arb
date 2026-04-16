@@ -1500,8 +1500,7 @@
         }
     },
     "shareMenuClose": "Fechar",
-    "shareMenuDeleteConfirmation": "Tem certeza que quer excluir este vídeo?",
-    "shareMenuDeleteWarning": "Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.",
+    "shareMenuDeleteConfirmation": "Este vídeo será excluído permanentemente do Divine. Ele ainda pode aparecer em outros clientes Nostr que usam outros relays.",
     "shareMenuCancel": "Cancelar",
     "shareMenuDelete": "Excluir",
     "shareMenuDeletingContent": "Excluindo conteúdo...",

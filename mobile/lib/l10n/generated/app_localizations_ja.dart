@@ -2795,11 +2795,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuClose => '閉じる';
 
   @override
-  String get shareMenuDeleteConfirmation => 'この動画を本当に削除する?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではキャッシュが残ることもあるよ。';
+  String get shareMenuDeleteConfirmation =>
+      'この動画は Divine から完全に削除されます。別のリレーを使うほかの Nostr クライアントでは表示されることがあります。';
 
   @override
   String get shareMenuCancel => 'キャンセル';

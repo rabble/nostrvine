@@ -2918,11 +2918,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'هل أنت متأكد من رغبتك في حذف هذا الفيديو؟';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.';
+      'سيتم حذف هذا الفيديو نهائيًا من Divine. قد يظل ظاهرًا في عملاء Nostr الآخرين الذين يستخدمون محولات مختلفة.';
 
   @override
   String get shareMenuCancel => 'إلغاء';

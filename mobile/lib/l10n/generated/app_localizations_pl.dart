@@ -3041,11 +3041,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuClose => 'Zamknij';
 
   @override
-  String get shareMenuDeleteConfirmation => 'Na pewno chcesz usunąć ten film?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
+  String get shareMenuDeleteConfirmation =>
+      'Ten film zostanie trwale usunięty z Divine. Może nadal być widoczny w innych klientach Nostr korzystających z innych przekaźników.';
 
   @override
   String get shareMenuCancel => 'Anuluj';

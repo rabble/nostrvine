@@ -1500,8 +1500,7 @@
         }
     },
     "shareMenuClose": "Închide",
-    "shareMenuDeleteConfirmation": "Sigur vrei să ștergi acest videoclip?",
-    "shareMenuDeleteWarning": "Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.",
+    "shareMenuDeleteConfirmation": "Acest videoclip va fi șters definitiv din Divine. Poate să apară în continuare în alți clienți Nostr care folosesc alte relay-uri.",
     "shareMenuCancel": "Anulează",
     "shareMenuDelete": "Șterge",
     "shareMenuDeletingContent": "Se șterge conținutul...",

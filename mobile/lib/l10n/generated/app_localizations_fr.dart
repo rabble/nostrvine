@@ -2992,11 +2992,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Tu es sûr de vouloir supprimer cette vidéo ?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Cette action envoie une requête de suppression (NIP-09) à tous les relays. Certains relays peuvent garder le contenu.';
+      'Cette vidéo sera supprimée définitivement de Divine. Elle peut encore apparaître sur d\'autres clients Nostr qui utilisent d\'autres relays.';
 
   @override
   String get shareMenuCancel => 'Annuler';

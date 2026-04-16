@@ -2973,11 +2973,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Tem certeza que quer excluir este vídeo?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.';
+      'Este vídeo será excluído permanentemente do Divine. Ele ainda pode aparecer em outros clientes Nostr que usam outros relays.';
 
   @override
   String get shareMenuCancel => 'Cancelar';

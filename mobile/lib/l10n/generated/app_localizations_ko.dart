@@ -2807,11 +2807,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuClose => '닫기';
 
   @override
-  String get shareMenuDeleteConfirmation => '이 영상을 정말 삭제할까요?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
+  String get shareMenuDeleteConfirmation =>
+      '이 영상은 Divine에서 영구적으로 삭제돼요. 다른 릴레이를 쓰는 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
 
   @override
   String get shareMenuCancel => '취소';

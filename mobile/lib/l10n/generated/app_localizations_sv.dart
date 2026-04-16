@@ -2945,11 +2945,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Är du säker på att du vill ta bort den här videon?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.';
+      'Den här videon raderas permanent från Divine. Den kan fortfarande synas i andra Nostr-klienter som använder andra reläer.';
 
   @override
   String get shareMenuCancel => 'Avbryt';

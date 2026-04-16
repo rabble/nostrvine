@@ -5201,14 +5201,8 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuDeleteConfirmation.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to delete this video?'**
+  /// **'This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.'**
   String get shareMenuDeleteConfirmation;
-
-  /// No description provided for @shareMenuDeleteWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This will send a delete request (NIP-09) to all relays. Some relays may still retain the content.'**
-  String get shareMenuDeleteWarning;
 
   /// No description provided for @shareMenuCancel.
   ///

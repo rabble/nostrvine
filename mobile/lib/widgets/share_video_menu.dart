@@ -1040,14 +1040,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           dialogContext.l10n.shareMenuDeleteConfirmation,
           style: const TextStyle(color: VineTheme.whiteText),
         ),
-        const SizedBox(height: 12),
-        Text(
-          dialogContext.l10n.shareMenuDeleteWarning,
-          style: const TextStyle(
-            color: VineTheme.secondaryText,
-            fontSize: 12,
-          ),
-        ),
       ],
     ),
     actions: [

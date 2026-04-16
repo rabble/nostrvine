@@ -2923,11 +2923,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuClose => 'Tutup';
 
   @override
-  String get shareMenuDeleteConfirmation => 'Yakin mau menghapus video ini?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.';
+  String get shareMenuDeleteConfirmation =>
+      'Video ini akan dihapus permanen dari Divine. Video ini mungkin masih muncul di klien Nostr lain yang memakai relay berbeda.';
 
   @override
   String get shareMenuCancel => 'Batal';
