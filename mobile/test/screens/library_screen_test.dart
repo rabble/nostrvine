@@ -280,6 +280,8 @@ void main() {
                 clipManagerProvider.overrideWith(ClipManagerNotifier.new),
               ],
               child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 theme: VineTheme.theme,
                 home: MockGoRouterProvider(
                   goRouter: mockGoRouter,
@@ -354,6 +356,8 @@ void main() {
                 clipManagerProvider.overrideWith(ClipManagerNotifier.new),
               ],
               child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 theme: VineTheme.theme,
                 home: MockGoRouterProvider(
                   goRouter: mockGoRouter,
