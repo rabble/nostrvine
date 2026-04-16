@@ -2903,7 +2903,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteVideo => 'حذف الفيديو';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => 'إزالة هذا المحتوى نهائيًا';
+  String get shareMenuDeleteVideoSubtitle =>
+      'أزِل هذا الفيديو من Divine. قد يظل ظاهرًا في عملاء Nostr آخرين.';
 
   @override
   String get shareMenuVideoInTheseLists => 'الفيديو في هذه القوائم:';
@@ -2930,7 +2931,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeletingContent => 'جاري حذف المحتوى...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'تم إرسال طلب الحذف بنجاح';
+  String get shareMenuDeleteRequestSent => 'تم حذف الفيديو';
 
   @override
   String shareMenuFailedToDeleteContent(String error) {
@@ -3001,7 +3002,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'سيرسل هذا طلب حذف إلى المحولات. ملاحظة: قد تحتفظ بعض المحولات بنسخ مخزّنة.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'تم طلب حذف الفيديو';
+  String get shareMenuVideoDeletionRequested => 'تم حذف الفيديو';
 
   @override
   String shareMenuFailedToDeleteVideo(String error) {

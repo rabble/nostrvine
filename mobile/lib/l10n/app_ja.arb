@@ -1489,7 +1489,7 @@
     "shareMenuEditVideo": "動画を編集",
     "shareMenuEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
     "shareMenuDeleteVideo": "動画を削除",
-    "shareMenuDeleteVideoSubtitle": "このコンテンツを完全に削除",
+    "shareMenuDeleteVideoSubtitle": "この動画を Divine から削除します。他の Nostr クライアントでは表示されることがあります。",
     "shareMenuVideoInTheseLists": "この動画が入ってるリスト:",
     "shareMenuVideoCount": "{count}本の動画",
     "@shareMenuVideoCount": {
@@ -1504,7 +1504,7 @@
     "shareMenuCancel": "キャンセル",
     "shareMenuDelete": "削除",
     "shareMenuDeletingContent": "コンテンツを削除中...",
-    "shareMenuDeleteRequestSent": "削除リクエストを送ったよ",
+    "shareMenuDeleteRequestSent": "動画を削除したよ",
     "shareMenuFailedToDeleteContent": "コンテンツの削除がうまくいかなかった: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1546,7 +1546,7 @@
     },
     "shareMenuDeleteVideoQuestion": "動画を削除する?",
     "shareMenuDeleteRelayWarning": "リレーに削除リクエストを送るよ。注意: 一部のリレーにはキャッシュが残ることもあるよ。",
-    "shareMenuVideoDeletionRequested": "動画の削除をリクエストしたよ",
+    "shareMenuVideoDeletionRequested": "動画を削除したよ",
     "shareMenuFailedToDeleteVideo": "動画の削除がうまくいかなかった: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

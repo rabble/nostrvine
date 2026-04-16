@@ -2918,7 +2918,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Videoyu Sil';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
+  String get shareMenuDeleteVideoSubtitle =>
+      'Bu videoyu Divine uygulamasından kaldırır. Diğer Nostr istemcilerinde görünmeye devam edebilir.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Video şu listelerde:';
@@ -2945,7 +2946,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeletingContent => 'İçerik siliniyor...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'Silme isteği başarıyla gönderildi';
+  String get shareMenuDeleteRequestSent => 'Video silindi';
 
   @override
   String shareMenuFailedToDeleteContent(String error) {
@@ -3017,7 +3018,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video silme isteği alındı';
+  String get shareMenuVideoDeletionRequested => 'Video silindi';
 
   @override
   String shareMenuFailedToDeleteVideo(String error) {

@@ -1489,7 +1489,7 @@
     "shareMenuEditVideo": "Editează videoclipul",
     "shareMenuEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
     "shareMenuDeleteVideo": "Șterge videoclipul",
-    "shareMenuDeleteVideoSubtitle": "Elimină definitiv acest conținut",
+    "shareMenuDeleteVideoSubtitle": "Elimină acest videoclip din Divine. Alți clienți Nostr îl pot afișa în continuare.",
     "shareMenuVideoInTheseLists": "Videoclipul e în aceste liste:",
     "shareMenuVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
     "@shareMenuVideoCount": {
@@ -1504,7 +1504,7 @@
     "shareMenuCancel": "Anulează",
     "shareMenuDelete": "Șterge",
     "shareMenuDeletingContent": "Se șterge conținutul...",
-    "shareMenuDeleteRequestSent": "Cererea de ștergere a fost trimisă cu succes",
+    "shareMenuDeleteRequestSent": "Videoclip șters",
     "shareMenuFailedToDeleteContent": "N-am putut șterge conținutul: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1546,7 +1546,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Ștergi videoclipul?",
     "shareMenuDeleteRelayWarning": "Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.",
-    "shareMenuVideoDeletionRequested": "Cerere de ștergere a videoclipului trimisă",
+    "shareMenuVideoDeletionRequested": "Videoclip șters",
     "shareMenuFailedToDeleteVideo": "N-am putut șterge videoclipul: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

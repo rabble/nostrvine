@@ -2793,7 +2793,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideo => '영상 삭제';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
+  String get shareMenuDeleteVideoSubtitle =>
+      '이 영상을 Divine에서 지워요. 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
 
   @override
   String get shareMenuVideoInTheseLists => '영상이 다음 리스트에 있어요:';
@@ -2820,7 +2821,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeletingContent => '콘텐츠 삭제 중...';
 
   @override
-  String get shareMenuDeleteRequestSent => '삭제 요청을 보냈어요';
+  String get shareMenuDeleteRequestSent => '영상을 삭제했어요';
 
   @override
   String shareMenuFailedToDeleteContent(String error) {
@@ -2891,7 +2892,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '릴레이에 삭제 요청을 보내요. 참고: 일부 릴레이에는 캐시된 사본이 남아 있을 수 있어요.';
 
   @override
-  String get shareMenuVideoDeletionRequested => '영상 삭제를 요청했어요';
+  String get shareMenuVideoDeletionRequested => '영상을 삭제했어요';
 
   @override
   String shareMenuFailedToDeleteVideo(String error) {

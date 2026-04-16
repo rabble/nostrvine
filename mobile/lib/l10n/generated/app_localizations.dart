@@ -5177,7 +5177,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuDeleteVideoSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Permanently remove this content'**
+  /// **'Remove this video from Divine. It may still appear on other Nostr clients.'**
   String get shareMenuDeleteVideoSubtitle;
 
   /// No description provided for @shareMenuVideoInTheseLists.
@@ -5225,7 +5225,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuDeleteRequestSent.
   ///
   /// In en, this message translates to:
-  /// **'Delete request sent successfully'**
+  /// **'Video deleted'**
   String get shareMenuDeleteRequestSent;
 
   /// No description provided for @shareMenuFailedToDeleteContent.
@@ -5351,7 +5351,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuVideoDeletionRequested.
   ///
   /// In en, this message translates to:
-  /// **'Video deletion requested'**
+  /// **'Video deleted'**
   String get shareMenuVideoDeletionRequested;
 
   /// No description provided for @shareMenuFailedToDeleteVideo.

@@ -3019,7 +3019,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Usuń film';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => 'Trwale usuń tę treść';
+  String get shareMenuDeleteVideoSubtitle =>
+      'Usuń ten film z Divine. Inne klienty Nostr mogą go nadal pokazywać.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Film jest na tych listach:';
@@ -3054,8 +3055,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeletingContent => 'Usuwanie treści...';
 
   @override
-  String get shareMenuDeleteRequestSent =>
-      'Żądanie usunięcia wysłane pomyślnie';
+  String get shareMenuDeleteRequestSent => 'Film usunięty';
 
   @override
   String shareMenuFailedToDeleteContent(String error) {
@@ -3126,7 +3126,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'To wyślе żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Zażądano usunięcia filmu';
+  String get shareMenuVideoDeletionRequested => 'Film usunięty';
 
   @override
   String shareMenuFailedToDeleteVideo(String error) {

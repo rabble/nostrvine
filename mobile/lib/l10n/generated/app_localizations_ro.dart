@@ -3023,7 +3023,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Șterge videoclipul';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => 'Elimină definitiv acest conținut';
+  String get shareMenuDeleteVideoSubtitle =>
+      'Elimină acest videoclip din Divine. Alți clienți Nostr îl pot afișa în continuare.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Videoclipul e în aceste liste:';
@@ -3057,8 +3058,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeletingContent => 'Se șterge conținutul...';
 
   @override
-  String get shareMenuDeleteRequestSent =>
-      'Cererea de ștergere a fost trimisă cu succes';
+  String get shareMenuDeleteRequestSent => 'Videoclip șters';
 
   @override
   String shareMenuFailedToDeleteContent(String error) {
@@ -3130,8 +3130,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.';
 
   @override
-  String get shareMenuVideoDeletionRequested =>
-      'Cerere de ștergere a videoclipului trimisă';
+  String get shareMenuVideoDeletionRequested => 'Videoclip șters';
 
   @override
   String shareMenuFailedToDeleteVideo(String error) {

@@ -1489,7 +1489,7 @@
     "shareMenuEditVideo": "Ubah Video",
     "shareMenuEditVideoSubtitle": "Perbarui judul, deskripsi, dan hashtag",
     "shareMenuDeleteVideo": "Hapus Video",
-    "shareMenuDeleteVideoSubtitle": "Hapus konten ini secara permanen",
+    "shareMenuDeleteVideoSubtitle": "Hapus video ini dari Divine. Klien Nostr lain mungkin masih menampilkannya.",
     "shareMenuVideoInTheseLists": "Video ada di daftar ini:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {
@@ -1504,7 +1504,7 @@
     "shareMenuCancel": "Batal",
     "shareMenuDelete": "Hapus",
     "shareMenuDeletingContent": "Menghapus konten...",
-    "shareMenuDeleteRequestSent": "Permintaan hapus berhasil dikirim",
+    "shareMenuDeleteRequestSent": "Video dihapus",
     "shareMenuFailedToDeleteContent": "Gagal menghapus konten: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1546,7 +1546,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Hapus Video?",
     "shareMenuDeleteRelayWarning": "Ini akan mengirim permintaan hapus ke relay. Catatan: Beberapa relay mungkin masih punya salinan cache.",
-    "shareMenuVideoDeletionRequested": "Penghapusan video diminta",
+    "shareMenuVideoDeletionRequested": "Video dihapus",
     "shareMenuFailedToDeleteVideo": "Gagal menghapus video: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

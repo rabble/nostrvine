@@ -2930,7 +2930,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoSubtitle =>
-      'Ta bort det här innehållet permanent';
+      'Ta bort videon från Divine. Andra Nostr-klienter kan fortfarande visa den.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Videon finns i de här listorna:';
@@ -2957,7 +2957,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuDeletingContent => 'Tar bort innehåll...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'Borttagningsbegäran skickad';
+  String get shareMenuDeleteRequestSent => 'Videon borttagen';
 
   @override
   String shareMenuFailedToDeleteContent(String error) {
@@ -3028,7 +3028,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Videoborttagning begärd';
+  String get shareMenuVideoDeletionRequested => 'Videon borttagen';
 
   @override
   String shareMenuFailedToDeleteVideo(String error) {

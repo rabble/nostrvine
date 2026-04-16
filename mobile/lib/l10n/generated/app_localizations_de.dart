@@ -2972,7 +2972,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoSubtitle =>
-      'Diesen Inhalt dauerhaft entfernen';
+      'Dieses Video aus Divine entfernen. Es kann in anderen Nostr-Clients weiterhin sichtbar sein.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Video ist in diesen Listen:';
@@ -2999,7 +2999,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareMenuDeletingContent => 'Inhalt wird gelöscht...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'Löschanfrage erfolgreich gesendet';
+  String get shareMenuDeleteRequestSent => 'Video gelöscht';
 
   @override
   String shareMenuFailedToDeleteContent(String error) {
@@ -3070,7 +3070,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Damit wird eine Löschanfrage an die Relays gesendet. Hinweis: Manche Relays haben möglicherweise noch zwischengespeicherte Kopien.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video-Löschung angefordert';
+  String get shareMenuVideoDeletionRequested => 'Video gelöscht';
 
   @override
   String shareMenuFailedToDeleteVideo(String error) {

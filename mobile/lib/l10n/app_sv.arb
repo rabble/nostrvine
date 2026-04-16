@@ -1489,7 +1489,7 @@
     "shareMenuEditVideo": "Redigera video",
     "shareMenuEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
     "shareMenuDeleteVideo": "Ta bort video",
-    "shareMenuDeleteVideoSubtitle": "Ta bort det här innehållet permanent",
+    "shareMenuDeleteVideoSubtitle": "Ta bort videon från Divine. Andra Nostr-klienter kan fortfarande visa den.",
     "shareMenuVideoInTheseLists": "Videon finns i de här listorna:",
     "shareMenuVideoCount": "{count} videor",
     "@shareMenuVideoCount": {
@@ -1504,7 +1504,7 @@
     "shareMenuCancel": "Avbryt",
     "shareMenuDelete": "Ta bort",
     "shareMenuDeletingContent": "Tar bort innehåll...",
-    "shareMenuDeleteRequestSent": "Borttagningsbegäran skickad",
+    "shareMenuDeleteRequestSent": "Videon borttagen",
     "shareMenuFailedToDeleteContent": "Kunde inte ta bort innehåll: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1546,7 +1546,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Ta bort video?",
     "shareMenuDeleteRelayWarning": "Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.",
-    "shareMenuVideoDeletionRequested": "Videoborttagning begärd",
+    "shareMenuVideoDeletionRequested": "Videon borttagen",
     "shareMenuFailedToDeleteVideo": "Kunde inte ta bort videon: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

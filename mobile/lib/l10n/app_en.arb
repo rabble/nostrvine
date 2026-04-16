@@ -1489,7 +1489,7 @@
   "shareMenuEditVideo": "Edit Video",
   "shareMenuEditVideoSubtitle": "Update title, description, and hashtags",
   "shareMenuDeleteVideo": "Delete Video",
-  "shareMenuDeleteVideoSubtitle": "Permanently remove this content",
+  "shareMenuDeleteVideoSubtitle": "Remove this video from Divine. It may still appear on other Nostr clients.",
   "shareMenuVideoInTheseLists": "Video is in these lists:",
   "shareMenuVideoCount": "{count} videos",
   "@shareMenuVideoCount": {
@@ -1504,7 +1504,7 @@
   "shareMenuCancel": "Cancel",
   "shareMenuDelete": "Delete",
   "shareMenuDeletingContent": "Deleting content...",
-  "shareMenuDeleteRequestSent": "Delete request sent successfully",
+  "shareMenuDeleteRequestSent": "Video deleted",
   "shareMenuFailedToDeleteContent": "Failed to delete content: {error}",
   "@shareMenuFailedToDeleteContent": {
     "placeholders": {
@@ -1546,7 +1546,7 @@
   },
   "shareMenuDeleteVideoQuestion": "Delete Video?",
   "shareMenuDeleteRelayWarning": "This will send a deletion request to relays. Note: Some relays may still have cached copies.",
-  "shareMenuVideoDeletionRequested": "Video deletion requested",
+  "shareMenuVideoDeletionRequested": "Video deleted",
   "shareMenuFailedToDeleteVideo": "Failed to delete video: {error}",
   "@shareMenuFailedToDeleteVideo": {
     "placeholders": {

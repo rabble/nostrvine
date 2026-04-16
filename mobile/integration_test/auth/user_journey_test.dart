@@ -414,15 +414,15 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
         logPhase('Confirmed deletion');
 
-        // Wait for "Video deletion requested" snackbar (confirms success)
+        // Wait for "Video deleted" snackbar (confirms success)
         final foundSnackbar = await waitForText(
           tester,
-          'Video deletion requested',
+          'Video deleted',
         );
         expect(
           foundSnackbar,
           isTrue,
-          reason: 'Should see "Video deletion requested" snackbar',
+          reason: 'Should see "Video deleted" snackbar',
         );
         logPhase('Delete snackbar confirmed');
 

@@ -1489,7 +1489,7 @@
     "shareMenuEditVideo": "تعديل الفيديو",
     "shareMenuEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "shareMenuDeleteVideo": "حذف الفيديو",
-    "shareMenuDeleteVideoSubtitle": "إزالة هذا المحتوى نهائيًا",
+    "shareMenuDeleteVideoSubtitle": "أزِل هذا الفيديو من Divine. قد يظل ظاهرًا في عملاء Nostr آخرين.",
     "shareMenuVideoInTheseLists": "الفيديو في هذه القوائم:",
     "shareMenuVideoCount": "{count} فيديو",
     "@shareMenuVideoCount": {
@@ -1504,7 +1504,7 @@
     "shareMenuCancel": "إلغاء",
     "shareMenuDelete": "حذف",
     "shareMenuDeletingContent": "جاري حذف المحتوى...",
-    "shareMenuDeleteRequestSent": "تم إرسال طلب الحذف بنجاح",
+    "shareMenuDeleteRequestSent": "تم حذف الفيديو",
     "shareMenuFailedToDeleteContent": "فشل حذف المحتوى: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1546,7 +1546,7 @@
     },
     "shareMenuDeleteVideoQuestion": "حذف الفيديو؟",
     "shareMenuDeleteRelayWarning": "سيرسل هذا طلب حذف إلى المحولات. ملاحظة: قد تحتفظ بعض المحولات بنسخ مخزّنة.",
-    "shareMenuVideoDeletionRequested": "تم طلب حذف الفيديو",
+    "shareMenuVideoDeletionRequested": "تم حذف الفيديو",
     "shareMenuFailedToDeleteVideo": "فشل حذف الفيديو: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

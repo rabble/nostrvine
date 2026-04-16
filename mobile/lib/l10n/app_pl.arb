@@ -1489,7 +1489,7 @@
     "shareMenuEditVideo": "Edytuj film",
     "shareMenuEditVideoSubtitle": "Zaktualizuj tytuł, opis i hashtagi",
     "shareMenuDeleteVideo": "Usuń film",
-    "shareMenuDeleteVideoSubtitle": "Trwale usuń tę treść",
+    "shareMenuDeleteVideoSubtitle": "Usuń ten film z Divine. Inne klienty Nostr mogą go nadal pokazywać.",
     "shareMenuVideoInTheseLists": "Film jest na tych listach:",
     "shareMenuVideoCount": "{count, plural, one{1 film} few{{count} filmy} many{{count} filmów} other{{count} filmu}}",
     "@shareMenuVideoCount": {
@@ -1504,7 +1504,7 @@
     "shareMenuCancel": "Anuluj",
     "shareMenuDelete": "Usuń",
     "shareMenuDeletingContent": "Usuwanie treści...",
-    "shareMenuDeleteRequestSent": "Żądanie usunięcia wysłane pomyślnie",
+    "shareMenuDeleteRequestSent": "Film usunięty",
     "shareMenuFailedToDeleteContent": "Nie udało się usunąć treści: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1546,7 +1546,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Usunąć film?",
     "shareMenuDeleteRelayWarning": "To wyślе żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.",
-    "shareMenuVideoDeletionRequested": "Zażądano usunięcia filmu",
+    "shareMenuVideoDeletionRequested": "Film usunięty",
     "shareMenuFailedToDeleteVideo": "Nie udało się usunąć filmu: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

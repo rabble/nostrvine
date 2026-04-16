@@ -1489,7 +1489,7 @@
     "shareMenuEditVideo": "Videoyu Düzenle",
     "shareMenuEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "shareMenuDeleteVideo": "Videoyu Sil",
-    "shareMenuDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
+    "shareMenuDeleteVideoSubtitle": "Bu videoyu Divine uygulamasından kaldırır. Diğer Nostr istemcilerinde görünmeye devam edebilir.",
     "shareMenuVideoInTheseLists": "Video şu listelerde:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {
@@ -1504,7 +1504,7 @@
     "shareMenuCancel": "İptal",
     "shareMenuDelete": "Sil",
     "shareMenuDeletingContent": "İçerik siliniyor...",
-    "shareMenuDeleteRequestSent": "Silme isteği başarıyla gönderildi",
+    "shareMenuDeleteRequestSent": "Video silindi",
     "shareMenuFailedToDeleteContent": "İçerik silinemedi: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1546,7 +1546,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
     "shareMenuDeleteRelayWarning": "Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.",
-    "shareMenuVideoDeletionRequested": "Video silme isteği alındı",
+    "shareMenuVideoDeletionRequested": "Video silindi",
     "shareMenuFailedToDeleteVideo": "Video silinemedi: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {

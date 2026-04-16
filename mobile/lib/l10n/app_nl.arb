@@ -1489,7 +1489,7 @@
     "shareMenuEditVideo": "Video bewerken",
     "shareMenuEditVideoSubtitle": "Titel, beschrijving en hashtags bijwerken",
     "shareMenuDeleteVideo": "Video verwijderen",
-    "shareMenuDeleteVideoSubtitle": "Deze inhoud definitief verwijderen",
+    "shareMenuDeleteVideoSubtitle": "Verwijder deze video uit Divine. Andere Nostr-clients kunnen hem nog tonen.",
     "shareMenuVideoInTheseLists": "Video staat in deze lijsten:",
     "shareMenuVideoCount": "{count} video's",
     "@shareMenuVideoCount": {
@@ -1504,7 +1504,7 @@
     "shareMenuCancel": "Annuleren",
     "shareMenuDelete": "Verwijderen",
     "shareMenuDeletingContent": "Inhoud verwijderen...",
-    "shareMenuDeleteRequestSent": "Verwijderverzoek succesvol verstuurd",
+    "shareMenuDeleteRequestSent": "Video verwijderd",
     "shareMenuFailedToDeleteContent": "Inhoud verwijderen mislukt: {error}",
     "@shareMenuFailedToDeleteContent": {
         "placeholders": {
@@ -1546,7 +1546,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Video verwijderen?",
     "shareMenuDeleteRelayWarning": "Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopieën.",
-    "shareMenuVideoDeletionRequested": "Video-verwijdering aangevraagd",
+    "shareMenuVideoDeletionRequested": "Video verwijderd",
     "shareMenuFailedToDeleteVideo": "Video verwijderen mislukt: {error}",
     "@shareMenuFailedToDeleteVideo": {
         "placeholders": {
