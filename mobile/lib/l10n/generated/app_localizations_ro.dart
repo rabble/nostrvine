@@ -3630,13 +3630,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navMyProfile => 'Profilul meu';
 
   @override
-  String get navSearch => 'Caută';
-
-  @override
   String get navNotifications => 'Notificări';
-
-  @override
-  String get navSearchTooltip => 'Caută';
 
   @override
   String get navOpenCamera => 'Deschide camera';

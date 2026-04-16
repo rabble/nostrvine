@@ -1,12 +1,12 @@
-// ABOUTME: End-to-end test for revine functionality to verify the complete fix
-// ABOUTME: Tests from revining a video to seeing it appear in the user's profile
+// ABOUTME: Unit tests for the revine model flow (create → process → filter → display)
+// ABOUTME: Exercises model logic in memory; no network or real services involved
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
 import 'package:unified_logger/unified_logger.dart';
 
 void main() {
-  group('Revine End-to-End Integration Test', () {
+  group('Revine Flow', () {
     const userPubkey = 'user123';
     const authorPubkey = 'author456';
 

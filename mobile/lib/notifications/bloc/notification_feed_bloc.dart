@@ -66,11 +66,12 @@ class NotificationFeedBloc
 
     try {
       final page = await _notificationRepository.refresh();
+      final filtered = page.items;
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: filtered,
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -119,11 +120,12 @@ class NotificationFeedBloc
   ) async {
     try {
       final page = await _notificationRepository.refresh();
+      final filtered = page.items;
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: filtered,
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -141,11 +143,12 @@ class NotificationFeedBloc
   ) async {
     try {
       final page = await _notificationRepository.refresh();
+      final filtered = page.items;
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: filtered,
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -164,7 +167,10 @@ class NotificationFeedBloc
     NotificationFeedRealtimeReceived event,
     Emitter<NotificationFeedState> emit,
   ) {
-    final incoming = event.notification;
+    final incoming = _notificationRepository.filterRealtimeNotification(
+      event.notification,
+    );
+    if (incoming == null) return;
 
     // Deduplicate — skip if we already have this notification by ID,
     // or if a grouped notification already covers this target event.

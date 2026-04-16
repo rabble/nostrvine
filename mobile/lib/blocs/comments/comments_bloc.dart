@@ -858,11 +858,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   ) {
     final comment = event.comment;
 
-    // Skip if already in the map (dedup with optimistic posts)
+    // Skip if already in the map (dedup with optimistic posts).
+    // Blocked/muted authors are already filtered by the repository's
+    // watchComments stream, so no additional check is needed here.
     if (state.commentsById.containsKey(comment.id)) return;
-
-    // Skip if author is blocked
-    if (_contentBlocklistService.isBlocked(comment.authorPubkey)) return;
 
     final updatedCommentsById = {...state.commentsById, comment.id: comment};
 

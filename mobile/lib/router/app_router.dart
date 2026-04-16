@@ -53,7 +53,6 @@ import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
@@ -355,58 +354,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                   builder: (_) => const LikedVideosScreenRouter(),
                   settings: const RouteSettings(
                     name: LikedVideosScreenRouter.routeName,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // SEARCH route - empty search
-          GoRoute(
-            path: SearchScreenPure.path,
-            name: SearchScreenPure.routeName,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.searchEmpty,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const SearchScreenPure(embedded: true),
-                  settings: const RouteSettings(
-                    name: SearchScreenPure.routeName,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // SEARCH route - with term, grid mode
-          GoRoute(
-            path: SearchScreenPure.pathWithTerm,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.searchGrid,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const SearchScreenPure(embedded: true),
-                  settings: const RouteSettings(
-                    name: SearchScreenPure.routeName,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // SEARCH route - with term and index, feed mode
-          GoRoute(
-            path: SearchScreenPure.pathWithTermAndIndex,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.searchFeed,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const SearchScreenPure(embedded: true),
-                  settings: const RouteSettings(
-                    name: SearchScreenPure.routeName,
                   ),
                 ),
               ),
@@ -888,10 +835,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             sourceVideo = extra['sourceVideo'] as VideoEvent?;
           }
           if (sound != null) {
-            return SoundDetailScreen(
-              sound: sound,
-              sourceVideo: sourceVideo,
-            );
+            return SoundDetailScreen(sound: sound, sourceVideo: sourceVideo);
           }
           // Wrap in a loader that fetches the sound by ID
           return SoundDetailLoader(soundId: soundId);

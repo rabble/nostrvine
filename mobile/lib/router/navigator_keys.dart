@@ -29,21 +29,6 @@ class NavigatorKeys {
     debugLabel: 'notifications',
   );
 
-  /// Search navigator key for empty search state.
-  static final searchEmpty = GlobalKey<NavigatorState>(
-    debugLabel: 'search-empty',
-  );
-
-  /// Search navigator key for grid mode (with search term, no index).
-  static final searchGrid = GlobalKey<NavigatorState>(
-    debugLabel: 'search-grid',
-  );
-
-  /// Search navigator key for feed mode (with search term and index).
-  static final searchFeed = GlobalKey<NavigatorState>(
-    debugLabel: 'search-feed',
-  );
-
   /// Inbox tab navigator key (Messages + Notifications).
   static final inbox = GlobalKey<NavigatorState>(debugLabel: 'inbox');
 

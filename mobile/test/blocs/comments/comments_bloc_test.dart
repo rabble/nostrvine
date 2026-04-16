@@ -110,6 +110,9 @@ void main() {
       when(
         () => mockContentBlocklistService.isBlocked(any()),
       ).thenReturn(false);
+      when(
+        () => mockContentBlocklistService.shouldFilterFromFeeds(any()),
+      ).thenReturn(false);
     });
 
     // Video kind 34236 for NIP-71 addressable short videos
@@ -2456,6 +2459,10 @@ void main() {
               .having((s) => s.mentionSuggestions, 'suggestions', isEmpty),
         ],
       );
+
+      // Blocklist filtering for mention suggestions is now handled at the
+      // repository level (ProfileRepository.blockFilter + CommentsRepository
+      // .blockFilter), not in the BLoC. See repository-level tests.
     });
 
     group('MentionSuggestionsCleared', () {
@@ -2737,35 +2744,6 @@ void main() {
               id: validId('existing'),
               content: 'Already here',
               authorPubkey: validId('someone'),
-              createdAt: DateTime.now(),
-              rootEventId: validId('root'),
-              rootAuthorPubkey: validId('author'),
-            ),
-          ),
-        ),
-        expect: () => <CommentsState>[],
-      );
-
-      blocTest<CommentsBloc, CommentsState>(
-        'skips comment from blocked user',
-        setUp: () {
-          when(
-            () => mockContentBlocklistService.isBlocked(validId('blocked')),
-          ).thenReturn(true);
-        },
-        seed: () => CommentsState(
-          status: CommentsStatus.success,
-          rootEventId: validId('root'),
-          rootEventKind: testRootEventKind,
-          rootAuthorPubkey: validId('author'),
-        ),
-        build: createBloc,
-        act: (bloc) => bloc.add(
-          NewCommentReceived(
-            Comment(
-              id: validId('blockedComment'),
-              content: 'From blocked user',
-              authorPubkey: validId('blocked'),
               createdAt: DateTime.now(),
               rootEventId: validId('root'),
               rootAuthorPubkey: validId('author'),

@@ -3515,13 +3515,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navMyProfile => 'Min profil';
 
   @override
-  String get navSearch => 'Sök';
-
-  @override
   String get navNotifications => 'Aviseringar';
-
-  @override
-  String get navSearchTooltip => 'Sök';
 
   @override
   String get navOpenCamera => 'Öppna kamera';

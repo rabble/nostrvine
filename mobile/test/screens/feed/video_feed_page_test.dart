@@ -404,7 +404,7 @@ void main() {
     testWidgets('syncs controller to a non-home route on initial mount', (
       tester,
     ) async {
-      await tester.pumpWidget(buildSubjectWithInitialLocation('/search'));
+      await tester.pumpWidget(buildSubjectWithInitialLocation('/explore'));
       await tester.pump();
 
       verify(() => videoFeedController.setActive(active: false)).called(1);
@@ -470,8 +470,8 @@ void main() {
 
         clearInteractions(videoFeedController);
 
-        // Navigate to search tab
-        locationController.add('/search');
+        // Navigate to explore tab
+        locationController.add('/explore');
         await tester.pump();
 
         verify(() => videoFeedController.setActive(active: false)).called(1);
@@ -487,7 +487,7 @@ void main() {
       // Start on home, navigate away
       locationController.add('/home/0');
       await tester.pump();
-      locationController.add('/search');
+      locationController.add('/explore');
       await tester.pump();
 
       clearInteractions(videoFeedController);
@@ -511,12 +511,12 @@ void main() {
       // Start on home, navigate away
       locationController.add('/home/0');
       await tester.pump();
-      locationController.add('/search');
+      locationController.add('/explore');
       await tester.pump();
 
       clearInteractions(videoFeedController);
 
-      // Open and close overlay while on search tab
+      // Open and close overlay while on explore tab
       container
           .read(overlayVisibilityProvider.notifier)
           .setBottomSheetOpen(true);
