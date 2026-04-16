@@ -2,6 +2,7 @@
 // ABOUTME: Reusable between own profile and others' profile screens
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -353,6 +354,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           SliverPersistentHeader(
             pinned: true,
             delegate: _StickyBarDelegate(
+              statusBarOpacity: _statusBarOpacity,
               actionButtons: ProfileActionButtons(
                 userIdHex: widget.userIdHex,
                 isOwnProfile: widget.isOwnProfile,
@@ -516,10 +518,12 @@ class _StickyBarDelegate extends SliverPersistentHeaderDelegate {
   _StickyBarDelegate({
     required this.actionButtons,
     required this.tabBar,
+    required this.statusBarOpacity,
   });
 
   final Widget actionButtons;
   final TabBar tabBar;
+  final ValueListenable<double> statusBarOpacity;
 
   static const double _actionButtonsHeight = 80;
 
@@ -547,7 +551,17 @@ class _StickyBarDelegate extends SliverPersistentHeaderDelegate {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(height: _actionButtonsHeight, child: actionButtons),
+        SizedBox(
+          height: _actionButtonsHeight,
+          child: ValueListenableBuilder<double>(
+            valueListenable: statusBarOpacity,
+            builder: (_, opacity, child) => Opacity(
+              opacity: (1 - opacity).clamp(0.0, 1.0),
+              child: child,
+            ),
+            child: actionButtons,
+          ),
+        ),
         tabBar,
       ],
     ),
