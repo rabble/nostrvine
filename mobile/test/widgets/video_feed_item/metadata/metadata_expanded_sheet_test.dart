@@ -223,9 +223,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Playback'), findsOneWidget);
       expect(find.text('Captions'), findsOneWidget);
-      expect(find.text('Applies to all videos'), findsOneWidget);
       expect(find.byType(Switch), findsOneWidget);
     });
 
@@ -258,6 +256,18 @@ void main() {
       final captionsY = tester.getTopLeft(find.text('Captions')).dy;
 
       expect(captionsY, greaterThan(titleY));
+    });
+
+    testWidgets('keeps captions label adjacent to the toggle', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: _makeVideo())),
+      );
+      await tester.pumpAndSettle();
+
+      final labelRight = tester.getTopRight(find.text('Captions')).dx;
+      final switchLeft = tester.getTopLeft(find.byType(Switch)).dx;
+
+      expect(switchLeft - labelRight, lessThanOrEqualTo(24));
     });
 
     testWidgets('toggling captions switch updates global provider state', (
@@ -377,6 +387,20 @@ void main() {
       );
 
       expect(find.textContaining('Human-Made'), findsOneWidget);
+    });
+
+    testWidgets('renders Human-Made badge without the divine logo', (
+      tester,
+    ) async {
+      final video = _makeVideo(
+        rawTags: {'verification': 'verified_mobile'},
+      );
+      await tester.pumpWidget(
+        buildSubject(child: MetadataBadgesRow(video: video)),
+      );
+
+      expect(find.textContaining('Human-Made'), findsOneWidget);
+      expect(find.byType(DivineIcon), findsNothing);
     });
 
     testWidgets('renders Not Divine badge for external videos', (tester) async {
