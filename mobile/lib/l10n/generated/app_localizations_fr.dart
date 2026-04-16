@@ -3012,6 +3012,26 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'La suppression n\'est pas prête. Réessaie dans un instant.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Tu peux supprimer uniquement tes propres vidéos.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Reconnecte-toi, puis réessaie de supprimer.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Impossible de signer la demande de suppression. Réessaie.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Impossible de supprimer cette vidéo. Réessaie.';
+
+  @override
   String get shareMenuFollowSetName => 'Nom de l\'ensemble d\'abonnements';
 
   @override

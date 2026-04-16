@@ -3003,6 +3003,26 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'L\'eliminazione non è ancora pronta. Riprova tra un attimo.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Puoi eliminare solo i tuoi video.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Accedi di nuovo, poi riprova a eliminare.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Non è stato possibile firmare la richiesta di eliminazione. Riprova.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Non è stato possibile eliminare questo video. Riprova.';
+
+  @override
   String get shareMenuFollowSetName => 'Nome set di follow';
 
   @override

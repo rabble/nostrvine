@@ -2993,6 +2993,26 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'A exclusão ainda não está pronta. Tenta de novo daqui a pouco.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Só podes apagar os teus próprios vídeos.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Inicia sessão outra vez e tenta apagar.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Não foi possível assinar o pedido de exclusão. Tenta de novo.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Não foi possível apagar este vídeo. Tenta de novo.';
+
+  @override
   String get shareMenuFollowSetName => 'Nome da coleção de seguidos';
 
   @override

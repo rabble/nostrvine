@@ -3066,6 +3066,26 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Ștergerea nu e încă gata. Încearcă din nou peste un moment.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Poți șterge doar propriile videoclipuri.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Autentifică-te din nou, apoi încearcă să ștergi.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Nu am putut semna cererea de ștergere. Încearcă din nou.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Nu am putut șterge acest videoclip. Încearcă din nou.';
+
+  @override
   String get shareMenuFollowSetName => 'Numele setului de urmărire';
 
   @override

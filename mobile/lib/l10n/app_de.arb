@@ -1513,6 +1513,11 @@
             }
         }
     },
+    "shareMenuDeleteFailedNotInitialized": "Löschen ist noch nicht bereit. Versuch es gleich noch einmal.",
+    "shareMenuDeleteFailedNotOwner": "Du kannst nur deine eigenen Videos löschen.",
+    "shareMenuDeleteFailedNotAuthenticated": "Melde dich erneut an und versuch es nochmal.",
+    "shareMenuDeleteFailedCouldNotSign": "Die Löschanfrage konnte nicht signiert werden. Versuch es nochmal.",
+    "shareMenuDeleteFailedGeneric": "Dieses Video konnte nicht gelöscht werden. Versuch es nochmal.",
     "shareMenuFollowSetName": "Follow-Set-Name",
     "shareMenuFollowSetNameHint": "z.B. Content-Creator, Musiker usw.",
     "shareMenuDescriptionOptional": "Beschreibung (optional)",

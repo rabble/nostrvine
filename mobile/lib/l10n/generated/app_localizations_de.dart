@@ -3007,6 +3007,26 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Löschen ist noch nicht bereit. Versuch es gleich noch einmal.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Du kannst nur deine eigenen Videos löschen.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Melde dich erneut an und versuch es nochmal.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Die Löschanfrage konnte nicht signiert werden. Versuch es nochmal.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Dieses Video konnte nicht gelöscht werden. Versuch es nochmal.';
+
+  @override
   String get shareMenuFollowSetName => 'Follow-Set-Name';
 
   @override

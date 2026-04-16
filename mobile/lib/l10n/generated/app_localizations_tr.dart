@@ -2954,6 +2954,26 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Silme henüz hazır değil. Birazdan tekrar dene.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Yalnızca kendi videolarını silebilirsin.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Tekrar giriş yap, sonra silmeyi dene.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Silme isteği imzalanamadı. Tekrar dene.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Bu video silinemedi. Tekrar dene.';
+
+  @override
   String get shareMenuFollowSetName => 'Takip Seti Adı';
 
   @override

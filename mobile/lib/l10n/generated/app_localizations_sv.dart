@@ -2965,6 +2965,26 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Borttagningen är inte redo än. Försök igen om en stund.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Du kan bara ta bort dina egna videor.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Logga in igen och försök ta bort.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Kunde inte signera borttagningsbegäran. Försök igen.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Kunde inte ta bort den här videon. Försök igen.';
+
+  @override
   String get shareMenuFollowSetName => 'Namn på följsamling';
 
   @override

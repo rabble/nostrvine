@@ -1513,6 +1513,11 @@
             }
         }
     },
+    "shareMenuDeleteFailedNotInitialized": "Usuwanie nie jest jeszcze gotowe. Spróbuj ponownie za chwilę.",
+    "shareMenuDeleteFailedNotOwner": "Możesz usuwać tylko własne filmy.",
+    "shareMenuDeleteFailedNotAuthenticated": "Zaloguj się ponownie i spróbuj usunąć.",
+    "shareMenuDeleteFailedCouldNotSign": "Nie udało się podpisać żądania usunięcia. Spróbuj ponownie.",
+    "shareMenuDeleteFailedGeneric": "Nie udało się usunąć tego filmu. Spróbuj ponownie.",
     "shareMenuFollowSetName": "Nazwa zestawu obserwowanych",
     "shareMenuFollowSetNameHint": "np. Twórcy treści, Muzycy itp.",
     "shareMenuDescriptionOptional": "Opis (opcjonalnie)",

@@ -2945,6 +2945,26 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Penghapusan belum siap. Coba lagi sebentar lagi.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Kamu cuma bisa menghapus video milikmu sendiri.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Masuk lagi, lalu coba hapus.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Tidak bisa menandatangani permintaan hapus. Coba lagi.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Tidak bisa menghapus video ini. Coba lagi.';
+
+  @override
   String get shareMenuFollowSetName => 'Nama Set Ikuti';
 
   @override

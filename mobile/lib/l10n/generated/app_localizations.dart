@@ -5234,6 +5234,36 @@ abstract class AppLocalizations {
   /// **'Failed to delete content: {error}'**
   String shareMenuFailedToDeleteContent(String error);
 
+  /// No description provided for @shareMenuDeleteFailedNotInitialized.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion isn\'t ready yet. Try again in a moment.'**
+  String get shareMenuDeleteFailedNotInitialized;
+
+  /// No description provided for @shareMenuDeleteFailedNotOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'You can only delete your own videos.'**
+  String get shareMenuDeleteFailedNotOwner;
+
+  /// No description provided for @shareMenuDeleteFailedNotAuthenticated.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again, then try deleting.'**
+  String get shareMenuDeleteFailedNotAuthenticated;
+
+  /// No description provided for @shareMenuDeleteFailedCouldNotSign.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign the delete request. Try again.'**
+  String get shareMenuDeleteFailedCouldNotSign;
+
+  /// No description provided for @shareMenuDeleteFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete this video. Try again.'**
+  String get shareMenuDeleteFailedGeneric;
+
   /// No description provided for @shareMenuFollowSetName.
   ///
   /// In en, this message translates to:

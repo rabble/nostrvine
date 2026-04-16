@@ -19,6 +19,7 @@ import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/social_service.dart';
+import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
@@ -1112,9 +1113,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   child: Text(
                     result.success
                         ? context.l10n.shareMenuDeleteRequestSent
-                        : context.l10n.shareMenuFailedToDeleteContent(
-                            result.error ?? '',
-                          ),
+                        : localizedDeleteFailureMessage(context, result),
                   ),
                 ),
               ],
@@ -1160,7 +1159,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.shareMenuFailedToDeleteContent('$e'),
+              context.l10n.shareMenuDeleteFailedGeneric,
             ),
             backgroundColor: VineTheme.error,
           ),
@@ -1857,7 +1856,18 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
           );
         }
       } else {
-        throw Exception(result.error ?? 'Unknown error');
+        if (mounted) {
+          setState(() => _isDeleting = false);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                localizedDeleteFailureMessage(context, result),
+              ),
+              backgroundColor: VineTheme.error,
+            ),
+          );
+        }
       }
     } catch (e) {
       Log.error(
@@ -1872,7 +1882,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.shareMenuFailedToDeleteVideo('$e'),
+              context.l10n.shareMenuDeleteFailedGeneric,
             ),
             backgroundColor: VineTheme.error,
           ),

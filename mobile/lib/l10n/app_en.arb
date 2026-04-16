@@ -1513,6 +1513,11 @@
       }
     }
   },
+  "shareMenuDeleteFailedNotInitialized": "Deletion isn't ready yet. Try again in a moment.",
+  "shareMenuDeleteFailedNotOwner": "You can only delete your own videos.",
+  "shareMenuDeleteFailedNotAuthenticated": "Sign in again, then try deleting.",
+  "shareMenuDeleteFailedCouldNotSign": "Couldn't sign the delete request. Try again.",
+  "shareMenuDeleteFailedGeneric": "Couldn't delete this video. Try again.",
   "shareMenuFollowSetName": "Follow Set Name",
   "shareMenuFollowSetNameHint": "e.g., Content Creators, Musicians, etc.",
   "shareMenuDescriptionOptional": "Description (optional)",

@@ -2817,6 +2817,22 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      '削除の準備がまだだよ。少し待ってからもう一度試してね。';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner => '自分の動画だけ削除できるよ。';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated => 'もう一度ログインしてから削除してね。';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign => '削除リクエストに署名できなかったよ。もう一度試してね。';
+
+  @override
+  String get shareMenuDeleteFailedGeneric => 'この動画を削除できなかったよ。もう一度試してね。';
+
+  @override
   String get shareMenuFollowSetName => 'フォローセット名';
 
   @override

@@ -3009,6 +3009,26 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'El borrado no está listo todavía. Probá de nuevo en un momento.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Solo podés borrar tus propios videos.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Volvé a iniciar sesión y probá borrar de nuevo.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'No pudimos firmar el pedido de borrado. Probá de nuevo.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'No pudimos borrar este video. Probá de nuevo.';
+
+  @override
   String get shareMenuFollowSetName => 'Nombre del set de seguidos';
 
   @override

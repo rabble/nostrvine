@@ -1513,6 +1513,11 @@
             }
         }
     },
+    "shareMenuDeleteFailedNotInitialized": "Silme henüz hazır değil. Birazdan tekrar dene.",
+    "shareMenuDeleteFailedNotOwner": "Yalnızca kendi videolarını silebilirsin.",
+    "shareMenuDeleteFailedNotAuthenticated": "Tekrar giriş yap, sonra silmeyi dene.",
+    "shareMenuDeleteFailedCouldNotSign": "Silme isteği imzalanamadı. Tekrar dene.",
+    "shareMenuDeleteFailedGeneric": "Bu video silinemedi. Tekrar dene.",
     "shareMenuFollowSetName": "Takip Seti Adı",
     "shareMenuFollowSetNameHint": "örn. İçerik Üreticileri, Müzisyenler vb.",
     "shareMenuDescriptionOptional": "Açıklama (opsiyonel)",

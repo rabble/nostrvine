@@ -3063,6 +3063,26 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Usuwanie nie jest jeszcze gotowe. Spróbuj ponownie za chwilę.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Możesz usuwać tylko własne filmy.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Zaloguj się ponownie i spróbuj usunąć.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Nie udało się podpisać żądania usunięcia. Spróbuj ponownie.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Nie udało się usunąć tego filmu. Spróbuj ponownie.';
+
+  @override
   String get shareMenuFollowSetName => 'Nazwa zestawu obserwowanych';
 
   @override

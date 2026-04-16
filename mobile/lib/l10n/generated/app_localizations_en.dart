@@ -2961,6 +2961,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Deletion isn\'t ready yet. Try again in a moment.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'You can only delete your own videos.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Sign in again, then try deleting.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Couldn\'t sign the delete request. Try again.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Couldn\'t delete this video. Try again.';
+
+  @override
   String get shareMenuFollowSetName => 'Follow Set Name';
 
   @override

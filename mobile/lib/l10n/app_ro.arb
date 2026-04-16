@@ -1513,6 +1513,11 @@
             }
         }
     },
+    "shareMenuDeleteFailedNotInitialized": "Ștergerea nu e încă gata. Încearcă din nou peste un moment.",
+    "shareMenuDeleteFailedNotOwner": "Poți șterge doar propriile videoclipuri.",
+    "shareMenuDeleteFailedNotAuthenticated": "Autentifică-te din nou, apoi încearcă să ștergi.",
+    "shareMenuDeleteFailedCouldNotSign": "Nu am putut semna cererea de ștergere. Încearcă din nou.",
+    "shareMenuDeleteFailedGeneric": "Nu am putut șterge acest videoclip. Încearcă din nou.",
     "shareMenuFollowSetName": "Numele setului de urmărire",
     "shareMenuFollowSetNameHint": "ex. Creatori de conținut, Muzicieni etc.",
     "shareMenuDescriptionOptional": "Descriere (opțional)",

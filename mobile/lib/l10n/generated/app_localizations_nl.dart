@@ -2980,6 +2980,26 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Verwijderen is nog niet klaar. Probeer het zo meteen opnieuw.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Je kunt alleen je eigen video\'s verwijderen.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Log opnieuw in en probeer te verwijderen.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Kon het verwijderverzoek niet ondertekenen. Probeer opnieuw.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Kon deze video niet verwijderen. Probeer opnieuw.';
+
+  @override
   String get shareMenuFollowSetName => 'Naam volgset';
 
   @override

@@ -1513,6 +1513,11 @@
             }
         }
     },
+    "shareMenuDeleteFailedNotInitialized": "Verwijderen is nog niet klaar. Probeer het zo meteen opnieuw.",
+    "shareMenuDeleteFailedNotOwner": "Je kunt alleen je eigen video's verwijderen.",
+    "shareMenuDeleteFailedNotAuthenticated": "Log opnieuw in en probeer te verwijderen.",
+    "shareMenuDeleteFailedCouldNotSign": "Kon het verwijderverzoek niet ondertekenen. Probeer opnieuw.",
+    "shareMenuDeleteFailedGeneric": "Kon deze video niet verwijderen. Probeer opnieuw.",
     "shareMenuFollowSetName": "Naam volgset",
     "shareMenuFollowSetNameHint": "Bijv. content creators, muzikanten, enz.",
     "shareMenuDescriptionOptional": "Beschrijving (optioneel)",

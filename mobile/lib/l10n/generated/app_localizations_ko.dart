@@ -2829,6 +2829,22 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      '삭제 준비가 아직 안 됐어요. 잠시 뒤에 다시 시도해요.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner => '내가 올린 영상만 삭제할 수 있어요.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated => '다시 로그인한 뒤 삭제를 시도해요.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign => '삭제 요청에 서명하지 못했어요. 다시 시도해요.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric => '이 영상을 삭제하지 못했어요. 다시 시도해요.';
+
+  @override
   String get shareMenuFollowSetName => '팔로우 세트 이름';
 
   @override

@@ -2939,6 +2939,26 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get shareMenuDeleteFailedNotInitialized =>
+      'الحذف غير جاهز بعد. حاول مرة أخرى بعد لحظة.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'يمكنك حذف مقاطع الفيديو الخاصة بك فقط.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'سجّل الدخول مرة أخرى، ثم حاول الحذف.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'لم نتمكن من توقيع طلب الحذف. حاول مرة أخرى.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'تعذّر حذف هذا الفيديو. حاول مرة أخرى.';
+
+  @override
   String get shareMenuFollowSetName => 'اسم مجموعة المتابعة';
 
   @override

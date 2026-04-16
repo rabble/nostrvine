@@ -1513,6 +1513,11 @@
             }
         }
     },
+    "shareMenuDeleteFailedNotInitialized": "El borrado no está listo todavía. Probá de nuevo en un momento.",
+    "shareMenuDeleteFailedNotOwner": "Solo podés borrar tus propios videos.",
+    "shareMenuDeleteFailedNotAuthenticated": "Volvé a iniciar sesión y probá borrar de nuevo.",
+    "shareMenuDeleteFailedCouldNotSign": "No pudimos firmar el pedido de borrado. Probá de nuevo.",
+    "shareMenuDeleteFailedGeneric": "No pudimos borrar este video. Probá de nuevo.",
     "shareMenuFollowSetName": "Nombre del set de seguidos",
     "shareMenuFollowSetNameHint": "ej: Creadores de contenido, Músicos, etc.",
     "shareMenuDescriptionOptional": "Descripción (opcional)",

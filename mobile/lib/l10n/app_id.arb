@@ -1513,6 +1513,11 @@
             }
         }
     },
+    "shareMenuDeleteFailedNotInitialized": "Penghapusan belum siap. Coba lagi sebentar lagi.",
+    "shareMenuDeleteFailedNotOwner": "Kamu cuma bisa menghapus video milikmu sendiri.",
+    "shareMenuDeleteFailedNotAuthenticated": "Masuk lagi, lalu coba hapus.",
+    "shareMenuDeleteFailedCouldNotSign": "Tidak bisa menandatangani permintaan hapus. Coba lagi.",
+    "shareMenuDeleteFailedGeneric": "Tidak bisa menghapus video ini. Coba lagi.",
     "shareMenuFollowSetName": "Nama Set Ikuti",
     "shareMenuFollowSetNameHint": "contoh: Kreator Konten, Musisi, dll.",
     "shareMenuDescriptionOptional": "Deskripsi (opsional)",
