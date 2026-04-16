@@ -37,6 +37,7 @@ class WebVideoFeed extends StatefulWidget {
     this.onNearEnd,
     this.nearEndThreshold = 3,
     this.headers = const {},
+    this.controllerFactory = defaultWebVideoPlayerControllerFactory,
     super.key,
   });
 
@@ -61,6 +62,9 @@ class WebVideoFeed extends StatefulWidget {
   /// HTTP headers for video requests.
   final Map<String, String> headers;
 
+  /// Factory used to create underlying web video controllers.
+  final WebVideoPlayerControllerFactory controllerFactory;
+
   @override
   State<WebVideoFeed> createState() => _WebVideoFeedState();
 }
@@ -71,6 +75,7 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
 
   // Track web player keys to control playback
   final Map<int, GlobalKey<WebVideoPlayerState>> _playerKeys = {};
+  final Map<int, VideoPlayerController> _controllers = {};
 
   @override
   void initState() {
@@ -138,6 +143,13 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
               url: videoUrl,
               autoPlay: isActive,
               headers: widget.headers,
+              controllerFactory: widget.controllerFactory,
+              onInitialized: (controller) {
+                if (!mounted) return;
+                setState(() {
+                  _controllers[index] = controller;
+                });
+              },
             ),
             // Custom overlay layer
             if (widget.itemBuilder != null)
@@ -146,7 +158,8 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
                 video,
                 index,
                 isActive: isActive,
-                controller: playerKey.currentState?.controller,
+                controller:
+                    _controllers[index] ?? playerKey.currentState?.controller,
               ),
           ],
         );
