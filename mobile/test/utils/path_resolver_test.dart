@@ -1,8 +1,9 @@
 // ABOUTME: Tests for path_resolver — web-safe document root joining
 //
 // `getDocumentsPath` on web is covered by the web-only test below; run it with
-// `flutter test test/utils/path_resolver_test.dart --platform chrome`.
-// `flutter build web` only checks compilation, not this runtime branch.
+// `flutter test test/utils/path_resolver_test.dart --platform chrome` (manual /
+// local — not executed in CI). `flutter build web` only checks compilation, not
+// this runtime branch.
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_test/flutter_test.dart';
