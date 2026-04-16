@@ -50,29 +50,20 @@ class RealIntegrationTestHelper {
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(prefsChannel, (MethodCall methodCall) async {
-          if (methodCall.method == 'getAll') {
-            return <String, dynamic>{};
+          switch (methodCall.method) {
+            case 'getAll':
+              return <String, dynamic>{};
+            case 'setString':
+            case 'setStringList':
+            case 'setBool':
+            case 'setInt':
+            case 'setDouble':
+            case 'remove':
+            case 'clear':
+              return true;
+            default:
+              return null;
           }
-          if (methodCall.method == 'setString' ||
-              methodCall.method == 'setStringList') {
-            return true;
-          }
-          if (methodCall.method == 'setBool') {
-            return true;
-          }
-          if (methodCall.method == 'setInt') {
-            return true;
-          }
-          if (methodCall.method == 'setDouble') {
-            return true;
-          }
-          if (methodCall.method == 'remove') {
-            return true;
-          }
-          if (methodCall.method == 'clear') {
-            return true;
-          }
-          return null;
         });
 
     // Mock connectivity
@@ -97,16 +88,12 @@ class RealIntegrationTestHelper {
         .setMockMethodCallHandler(secureStorageChannel, (
           MethodCall methodCall,
         ) async {
-          if (methodCall.method == 'write') {
-            return null;
+          switch (methodCall.method) {
+            case 'readAll':
+              return <String, String>{};
+            default:
+              return null;
           }
-          if (methodCall.method == 'read') {
-            return null;
-          }
-          if (methodCall.method == 'readAll') {
-            return <String, String>{};
-          }
-          return null;
         });
 
     // Mock path_provider
@@ -117,16 +104,16 @@ class RealIntegrationTestHelper {
         .setMockMethodCallHandler(pathProviderChannel, (
           MethodCall methodCall,
         ) async {
-          if (methodCall.method == 'getApplicationDocumentsDirectory') {
-            return '/tmp/test_documents';
+          switch (methodCall.method) {
+            case 'getApplicationDocumentsDirectory':
+              return '/tmp/test_documents';
+            case 'getTemporaryDirectory':
+              return '/tmp';
+            case 'getApplicationSupportDirectory':
+              return '/tmp/test_support';
+            default:
+              return null;
           }
-          if (methodCall.method == 'getTemporaryDirectory') {
-            return '/tmp';
-          }
-          if (methodCall.method == 'getApplicationSupportDirectory') {
-            return '/tmp/test_support';
-          }
-          return null;
         });
   }
 
