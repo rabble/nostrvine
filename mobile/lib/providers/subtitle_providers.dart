@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -19,6 +20,7 @@ typedef SubtitlePollDelay = Future<void> Function(Duration duration);
 const _maxBlossomPollAttempts = 4;
 const _maxBlossomPollWait = Duration(seconds: 15);
 const _defaultBlossomRetryAfter = Duration(seconds: 3);
+const _subtitleVisibilityPreferenceKey = 'subtitle_visibility_enabled';
 
 final subtitleHttpClientProvider = Provider<http.Client>((ref) {
   final client = http.Client();
@@ -160,10 +162,18 @@ Future<List<SubtitleCue>> subtitleCues(
 @riverpod
 class SubtitleVisibility extends _$SubtitleVisibility {
   @override
-  bool build() => false;
+  bool build() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    return prefs.getBool(_subtitleVisibilityPreferenceKey) ?? true;
+  }
+
+  /// Persist a known subtitle visibility state globally.
+  Future<void> setEnabled(bool enabled) async {
+    state = enabled;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_subtitleVisibilityPreferenceKey, enabled);
+  }
 
   /// Toggle subtitle visibility globally.
-  void toggle() {
-    state = !state;
-  }
+  Future<void> toggle() => setEnabled(!state);
 }

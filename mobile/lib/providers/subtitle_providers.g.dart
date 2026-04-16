@@ -233,7 +233,7 @@ final class SubtitleVisibilityProvider
 }
 
 String _$subtitleVisibilityHash() =>
-    r'01e50dcdb7681118380f1e6ce2e216dafcb0e35b';
+    r'0252e5d29e864a6abd314f6e42d42a9d0cfc76b1';
 
 /// Tracks global subtitle visibility (CC on/off).
 ///
