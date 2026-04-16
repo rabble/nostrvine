@@ -543,8 +543,9 @@ void main() {
 
         // Should have no SizedBox(width: 8) spacers between icon and label
         final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
-        final spacers =
-            sizedBoxes.where((sb) => sb.width == 8 && sb.height == null);
+        final spacers = sizedBoxes.where(
+          (sb) => sb.width == 8 && sb.height == null,
+        );
         expect(spacers, isEmpty);
       });
     });
