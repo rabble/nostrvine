@@ -128,4 +128,48 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'does not render a dedicated captions button in the action rail',
+    (
+      tester,
+    ) async {
+      final subtitleVideo = testVideo.copyWith(
+        textTrackRef: '39307:${testVideo.pubkey}:subtitles:${testVideo.id}',
+      );
+
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: BlocProvider<VideoInteractionsBloc>.value(
+                value: mockInteractionsBloc,
+                child: VideoOverlayActions(
+                  video: subtitleVideo,
+                  isVisible: true,
+                  isActive: true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.identifier == 'cc_button',
+        ),
+        findsNothing,
+      );
+    },
+  );
 }

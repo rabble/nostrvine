@@ -4399,6 +4399,147 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryDeleteConfirm => 'Sil';
 
   @override
+  String get libraryWebUnavailableHeadline => 'Kitaplık mobil uygulamada';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Taslaklar ve klipler cihazında saklanır; yönetmek için Divine’ı telefonda aç.';
+
+  @override
+  String get libraryTabDrafts => 'Taslaklar';
+
+  @override
+  String get libraryTabClips => 'Klipler';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Kamera kaydına kaydet';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'Seçili klipleri sil';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Klipleri sil';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# seçili klibi',
+      one: '# seçili klibi',
+    );
+    return '$_temp0 silmek istiyor musun?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Geri alınamaz. Video dosyaları cihazından kalıcı olarak silinir.';
+
+  @override
+  String get libraryPreparingVideo => 'Video hazırlanıyor...';
+
+  @override
+  String get libraryCreateVideo => 'Video oluştur';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip',
+      one: '1 klip',
+    );
+    return '$_temp0 $destination konumuna kaydedildi';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount kaydedildi, $failureCount başarısız';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return '$destination izni reddedildi';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip silindi',
+      one: '1 klip silindi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts => 'Taslaklar yüklenemedi';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Klipler yüklenemedi';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Kitaplık açılırken bir sorun oldu. Tekrar deneyebilirsin.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Henüz taslak yok';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Taslak olarak kaydettiğin videolar burada görünür';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Henüz klip yok';
+
+  @override
+  String get libraryNoClipsYetSubtitle => 'Kaydettiğin videolar burada görünür';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Taslak silindi';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar => 'Taslak silinemedi';
+
+  @override
+  String get libraryDraftActionPost => 'Paylaş';
+
+  @override
+  String get libraryDraftActionEdit => 'Düzenle';
+
+  @override
+  String get libraryDraftActionDelete => 'Taslağı sil';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Taslağı sil';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return '\"$title\" silinsin mi?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Klibi sil';
+
+  @override
+  String get libraryDeleteClipMessage => 'Bu klibi silmek istiyor musun?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Klipler';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return '$seconds sn kaldı';
+  }
+
+  @override
+  String get libraryAddClips => 'Ekle';
+
+  @override
+  String get libraryRecordVideo => 'Video kaydet';
+
+  @override
   String get routerInvalidCreator => 'Geçersiz içerik üretici';
 
   @override

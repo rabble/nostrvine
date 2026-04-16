@@ -94,6 +94,7 @@ class ProfileFeed extends _$ProfileFeed {
       return retainedState.copyWith(
         isRefreshing: true,
         isInitialLoad: false,
+        isFetchingTotalCount: funnelcakeAvailable,
         error: null,
       );
     }
@@ -125,6 +126,7 @@ class ProfileFeed extends _$ProfileFeed {
       hasMoreContent:
           authorVideos.length >= AppConstants.hasMoreContentThreshold,
       isInitialLoad: authorVideos.isEmpty,
+      isFetchingTotalCount: funnelcakeAvailable,
       lastUpdated: DateTime.now(),
       totalVideoCount: _totalVideoCount,
     );
@@ -305,6 +307,11 @@ class ProfileFeed extends _$ProfileFeed {
         name: 'ProfileFeedProvider',
         category: LogCategory.video,
       );
+      if (!ref.mounted) return;
+      final currentState = state.asData?.value;
+      if (currentState != null && currentState.isFetchingTotalCount) {
+        _emitState(currentState.copyWith(isFetchingTotalCount: false));
+      }
     }
   }
 
@@ -515,19 +522,20 @@ class ProfileFeed extends _$ProfileFeed {
       category: LogCategory.video,
     );
 
+    final funnelcakeAvailable =
+        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
     final currentState = retainedState ?? state.asData?.value;
     if (currentState != null && ref.mounted) {
       state = AsyncData(
         currentState.copyWith(
           isRefreshing: true,
           isInitialLoad: false,
+          isFetchingTotalCount: funnelcakeAvailable,
           error: null,
         ),
       );
     }
 
-    final funnelcakeAvailable =
-        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
     final videoEventService = ref.read(videoEventServiceProvider);
     final refreshFutures = <Future<void>>[
       _refreshFromNostrSource(videoEventService),
@@ -655,6 +663,7 @@ class ProfileFeed extends _$ProfileFeed {
         totalVideoCount: currentState?.totalVideoCount,
         isRefreshing: false,
         isInitialLoad: false,
+        isFetchingTotalCount: currentState?.isFetchingTotalCount ?? false,
       );
     } catch (error, stackTrace) {
       Log.error(
@@ -683,6 +692,7 @@ class ProfileFeed extends _$ProfileFeed {
     required bool isInitialLoad,
     int? totalVideoCount,
     bool mergeWithCurrent = true,
+    bool isFetchingTotalCount = false,
   }) {
     final currentState = state.asData?.value;
     final currentVideos = mergeWithCurrent
@@ -702,6 +712,7 @@ class ProfileFeed extends _$ProfileFeed {
               isLoadingMore: false,
               isRefreshing: isRefreshing,
               isInitialLoad: isInitialLoad,
+              isFetchingTotalCount: isFetchingTotalCount,
               lastUpdated: DateTime.now(),
               totalVideoCount: totalVideoCount ?? currentState?.totalVideoCount,
               error: null,
@@ -712,7 +723,8 @@ class ProfileFeed extends _$ProfileFeed {
         currentState.hasMoreContent == nextState.hasMoreContent &&
         currentState.totalVideoCount == nextState.totalVideoCount &&
         currentState.isRefreshing == nextState.isRefreshing &&
-        currentState.isInitialLoad == nextState.isInitialLoad) {
+        currentState.isInitialLoad == nextState.isInitialLoad &&
+        currentState.isFetchingTotalCount == nextState.isFetchingTotalCount) {
       return;
     }
 
@@ -851,6 +863,7 @@ class ProfileFeed extends _$ProfileFeed {
             isLoadingMore: false,
             isRefreshing: false,
             isInitialLoad: false,
+            isFetchingTotalCount: false,
             error: null,
           ),
         );

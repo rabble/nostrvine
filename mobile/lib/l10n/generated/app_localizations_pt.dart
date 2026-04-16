@@ -4445,6 +4445,149 @@ class AppLocalizationsPt extends AppLocalizations {
   String get libraryDeleteConfirm => 'Excluir';
 
   @override
+  String get libraryWebUnavailableHeadline => 'A biblioteca fica no app móvel';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Rascunhos e clipes ficam no seu dispositivo — abra o Divine no celular para gerenciá-los.';
+
+  @override
+  String get libraryTabDrafts => 'Rascunhos';
+
+  @override
+  String get libraryTabClips => 'Clipes';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Salvar na galeria';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'Excluir clipes selecionados';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Excluir clipes';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# clipes selecionados',
+      one: '# clipe selecionado',
+    );
+    return 'Excluir $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Não dá para desfazer. Os arquivos de vídeo serão removidos permanentemente do dispositivo.';
+
+  @override
+  String get libraryPreparingVideo => 'Preparando vídeo...';
+
+  @override
+  String get libraryCreateVideo => 'Criar vídeo';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clipes',
+      one: '1 clipe',
+    );
+    return '$_temp0 salvos em $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount salvos, $failureCount falharam';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'Permissão negada para $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clipes excluídos',
+      one: '1 clipe excluído',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts =>
+      'Não foi possível carregar os rascunhos';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Não foi possível carregar os clipes';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Algo deu errado ao abrir a biblioteca. Tente de novo.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Ainda não há rascunhos';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Vídeos salvos como rascunho aparecerão aqui';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Ainda não há clipes';
+
+  @override
+  String get libraryNoClipsYetSubtitle =>
+      'Seus clipes gravados aparecerão aqui';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Rascunho excluído';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar => 'Falha ao excluir rascunho';
+
+  @override
+  String get libraryDraftActionPost => 'Publicar';
+
+  @override
+  String get libraryDraftActionEdit => 'Editar';
+
+  @override
+  String get libraryDraftActionDelete => 'Excluir rascunho';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Excluir rascunho';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'Excluir \"$title\"?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Excluir clipe';
+
+  @override
+  String get libraryDeleteClipMessage => 'Excluir este clipe?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Clipes';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'Faltam ${seconds}s';
+  }
+
+  @override
+  String get libraryAddClips => 'Adicionar';
+
+  @override
+  String get libraryRecordVideo => 'Gravar um vídeo';
+
+  @override
   String get routerInvalidCreator => 'Criador inválido';
 
   @override

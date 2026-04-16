@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/widgets/library/drafts_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
@@ -19,6 +20,8 @@ class _MockDraftsLibraryBloc
     implements DraftsLibraryBloc {}
 
 void main() {
+  final en = AppLocalizationsEn();
+
   group(DraftsTab, () {
     late _MockDraftsLibraryBloc mockBloc;
 
@@ -77,14 +80,14 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('error message when error state', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const DraftsLibraryError(message: 'Failed to load drafts'),
-        );
+      testWidgets('friendly error and retry when error state', (tester) async {
+        when(() => mockBloc.state).thenReturn(const DraftsLibraryError());
 
         await tester.pumpWidget(buildWidget());
 
-        expect(find.text('Failed to load drafts'), findsOneWidget);
+        expect(find.text(en.libraryCouldNotLoadDrafts), findsOneWidget);
+        expect(find.text(en.searchTryAgain), findsOneWidget);
+        expect(find.text('Failed to load drafts'), findsNothing);
       });
 
       testWidgets('$EmptyLibraryState when no drafts', (tester) async {
@@ -95,7 +98,7 @@ void main() {
         await tester.pumpWidget(buildWidget());
 
         expect(find.byType(EmptyLibraryState), findsOneWidget);
-        expect(find.text('No Drafts Yet'), findsOneWidget);
+        expect(find.text(en.libraryNoDraftsYetTitle), findsOneWidget);
       });
 
       testWidgets('drafts list when drafts are loaded', (tester) async {
@@ -170,7 +173,7 @@ void main() {
         buildWidget(draft: createDraft(title: '')),
       );
 
-      expect(find.text('Untitled'), findsOneWidget);
+      expect(find.text(en.draftUntitled), findsOneWidget);
     });
 
     testWidgets('calls onTap when tapped', (tester) async {

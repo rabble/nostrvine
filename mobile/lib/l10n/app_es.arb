@@ -2240,7 +2240,97 @@
             }
         }
     },
+    "libraryAddClips": "Añadir",
+    "libraryClipSelectionTitle": "Clips",
+    "libraryClipsDeletedCount": "{count, plural, =1{Se eliminó 1 clip} other{Se eliminaron {count} clips}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "{successCount} guardados, {failureCount} fallidos",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{1 clip} other{{count} clips}} guardados en {destination}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "No se pudieron cargar los clips",
+    "libraryCouldNotLoadDrafts": "No se pudieron cargar los borradores",
+    "libraryCreateVideo": "Crear video",
+    "libraryDeleteClipMessage": "¿Seguro que quieres eliminar este clip?",
+    "libraryDeleteClipTitle": "Eliminar clip",
+    "libraryDeleteClipsMessage": "¿Seguro que quieres eliminar {count, plural, one{# clip seleccionado} other{# clips seleccionados}}?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "Eliminar clips",
+    "libraryDeleteClipsWarning": "No se puede deshacer. Los archivos de video se eliminarán permanentemente de tu dispositivo.",
     "libraryDeleteConfirm": "Eliminar",
+    "libraryDeleteDraftMessage": "¿Seguro que quieres eliminar \"{title}\"?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "Eliminar borrador",
+    "libraryDeleteSelectedClipsTooltip": "Eliminar clips seleccionados",
+    "libraryDraftActionDelete": "Eliminar borrador",
+    "libraryDraftActionEdit": "Editar",
+    "libraryDraftActionPost": "Publicar",
+    "libraryDraftDeleteFailedSnackbar": "No se pudo eliminar el borrador",
+    "libraryDraftDeletedSnackbar": "Borrador eliminado",
+    "libraryGalleryPermissionDenied": "Permiso denegado para {destination}",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "Tus clips de video grabados aparecerán aquí",
+    "libraryNoClipsYetTitle": "Aún no hay clips",
+    "libraryNoDraftsYetSubtitle": "Los videos que guardes como borrador aparecerán aquí",
+    "libraryNoDraftsYetTitle": "Aún no hay borradores",
+    "libraryOpenErrorDescription": "Algo salió mal al abrir tu biblioteca. Puedes intentarlo de nuevo.",
+    "libraryPreparingVideo": "Preparando video...",
+    "libraryRecordVideo": "Grabar un video",
+    "librarySaveToCameraRollTooltip": "Guardar en el carrete",
+    "librarySecondsRemaining": "Quedan {seconds}s",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "Clips",
+    "libraryTabDrafts": "Borradores",
+    "libraryWebUnavailableDescription": "Los borradores y clips se guardan en tu dispositivo; abre Divine en el teléfono para gestionarlos.",
+    "libraryWebUnavailableHeadline": "La biblioteca está en la app móvil",
     "notificationFollowBack": "Seguir de vuelta",
     "profileSetupUploadSuccess": "¡Foto de perfil subida con éxito!",
     "proofmodeCheckAiGenerated": "Verificar si fue generado por IA",

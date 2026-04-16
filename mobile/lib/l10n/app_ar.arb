@@ -2240,7 +2240,97 @@
             }
         }
     },
+    "libraryAddClips": "إضافة",
+    "libraryClipSelectionTitle": "مقاطع",
+    "libraryClipsDeletedCount": "{count, plural, =1{تم حذف مقطع واحد} other{تم حذف {count} مقاطع}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "تم حفظ {successCount}، فشل {failureCount}",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{مقطع واحد} other{{count} مقاطع}} تم حفظه في {destination}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "تعذّر تحميل المقاطع",
+    "libraryCouldNotLoadDrafts": "تعذّر تحميل المسودات",
+    "libraryCreateVideo": "إنشاء فيديو",
+    "libraryDeleteClipMessage": "هل تريد حذف هذا المقطع؟",
+    "libraryDeleteClipTitle": "حذف المقطع",
+    "libraryDeleteClipsMessage": "هل تريد حذف {count, plural, one{مقطع واحد محدد} other{# مقاطع محددة}}؟",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "حذف المقاطع",
+    "libraryDeleteClipsWarning": "لا يمكن التراجع. ستُزال ملفات الفيديو نهائيًا من جهازك.",
     "libraryDeleteConfirm": "حذف",
+    "libraryDeleteDraftMessage": "\u0647\u0644 \u062a\u0631\u064a\u062f \u062d\u0630\u064f \u201c{title}\u201d\u061f",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "حذف المسودة",
+    "libraryDeleteSelectedClipsTooltip": "حذف المقاطع المحددة",
+    "libraryDraftActionDelete": "حذف المسودة",
+    "libraryDraftActionEdit": "تعديل",
+    "libraryDraftActionPost": "نشر",
+    "libraryDraftDeleteFailedSnackbar": "تعذّر حذف المسودة",
+    "libraryDraftDeletedSnackbar": "تم حذف المسودة",
+    "libraryGalleryPermissionDenied": "تم رفض إذن {destination}",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "ستُظهر مقاطع الفيديو المسجّلة هنا",
+    "libraryNoClipsYetTitle": "لا توجد مقاطع بعد",
+    "libraryNoDraftsYetSubtitle": "ستُظهر الفيديو الذي تحفظه كمسودة هنا",
+    "libraryNoDraftsYetTitle": "لا توجد مسودات بعد",
+    "libraryOpenErrorDescription": "حدث خطأ أثناء فتح المكتبة. يمكنك المحاولة مرة أخرى.",
+    "libraryPreparingVideo": "جاري تجهيز الفيديو...",
+    "libraryRecordVideo": "تسجيل فيديو",
+    "librarySaveToCameraRollTooltip": "حفظ في ألبوم الكاميرا",
+    "librarySecondsRemaining": "متبقى {seconds} ث",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "مقاطع",
+    "libraryTabDrafts": "مسودات",
+    "libraryWebUnavailableDescription": "تُحفظ المسودات والمقاطع على جهازك. افتح Divine على هاتفك لإدارتها.",
+    "libraryWebUnavailableHeadline": "المكتبة متوفّرة في التطبيق على الجوال",
     "notificationFollowBack": "متابعة بالمقابل",
     "profileSetupUploadSuccess": "تم رفع صورة الملف الشخصي بنجاح!",
     "proofmodeCheckAiGenerated": "التحقق إذا كان مُنشأً بالذكاء الاصطناعي",

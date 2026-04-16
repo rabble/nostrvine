@@ -19,6 +19,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -358,78 +359,23 @@ class _CommentContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEmoji = _isEmojiOnly(content);
+    final baseStyle = TextStyle(
+      color: VineTheme.onSurface,
+      fontSize: isEmoji ? _emojiOnlyFontSize : 14,
+      height: isEmoji ? null : 20 / 14,
+    );
     return TapRegion(
       onTapOutside: (_) => FocusScope.of(context).unfocus(),
-      child: Text.rich(
-        _buildContentSpans(context),
-        style: TextStyle(
-          color: VineTheme.onSurface,
-          fontSize: isEmoji ? _emojiOnlyFontSize : null,
+      child: ClickableHashtagText(
+        text: content,
+        style: baseStyle,
+        hashtagStyle: baseStyle.copyWith(
+          color: VineTheme.info,
+          fontWeight: FontWeight.w500,
         ),
-      ),
-    );
-  }
-
-  TextSpan _buildContentSpans(BuildContext context) {
-    // Match nostr:npub1... pattern
-    final mentionPattern = RegExp('nostr:(npub1[a-zA-Z0-9]{58,})');
-    final spans = <InlineSpan>[];
-    var lastEnd = 0;
-
-    for (final match in mentionPattern.allMatches(content)) {
-      // Text before mention
-      if (match.start > lastEnd) {
-        spans.add(TextSpan(text: content.substring(lastEnd, match.start)));
-      }
-
-      // Mention span
-      final npub = match.group(1)!;
-      spans.add(
-        WidgetSpan(
-          alignment: PlaceholderAlignment.baseline,
-          baseline: TextBaseline.alphabetic,
-          child: _MentionLink(npub: npub),
-        ),
-      );
-      lastEnd = match.end;
-    }
-
-    // Remaining text
-    if (lastEnd < content.length) {
-      spans.add(TextSpan(text: content.substring(lastEnd)));
-    }
-
-    if (spans.isEmpty) {
-      return TextSpan(text: content);
-    }
-
-    return TextSpan(children: spans);
-  }
-}
-
-/// Inline mention link that resolves profile name and navigates to profile.
-class _MentionLink extends ConsumerWidget {
-  const _MentionLink({required this.npub});
-
-  final String npub;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    String displayText;
-    try {
-      final hexPubkey = NostrKeyUtils.decode(npub);
-      final profile = ref.watch(userProfileReactiveProvider(hexPubkey)).value;
-      displayText = profile?.displayName ?? profile?.name ?? npub;
-    } catch (_) {
-      displayText = npub;
-    }
-
-    return GestureDetector(
-      onTap: () => context.push(OtherProfileScreen.pathForNpub(npub)),
-      child: Text(
-        '@$displayText',
-        style: VineTheme.labelLargeFont(
+        mentionStyle: baseStyle.copyWith(
           color: VineTheme.tabIndicatorGreen,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

@@ -4390,6 +4390,149 @@ class AppLocalizationsId extends AppLocalizations {
   String get libraryDeleteConfirm => 'Hapus';
 
   @override
+  String get libraryWebUnavailableHeadline =>
+      'Perpustakaan ada di aplikasi seluler';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Draf dan klip disimpan di perangkatmu — buka Divine di ponsel untuk mengelolanya.';
+
+  @override
+  String get libraryTabDrafts => 'Draf';
+
+  @override
+  String get libraryTabClips => 'Klip';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Simpan ke galeri kamera';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'Hapus klip terpilih';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Hapus klip';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# klip terpilih',
+      one: '# klip terpilih',
+    );
+    return 'Yakin ingin menghapus $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Tindakan ini tidak bisa dibatalkan. File video akan dihapus permanen dari perangkatmu.';
+
+  @override
+  String get libraryPreparingVideo => 'Menyiapkan video...';
+
+  @override
+  String get libraryCreateVideo => 'Buat video';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip',
+      one: '1 klip',
+    );
+    return '$_temp0 disimpan ke $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount tersimpan, $failureCount gagal';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'Izin ditolak untuk $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klip dihapus',
+      one: '1 klip dihapus',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts => 'Tidak bisa memuat draf';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Tidak bisa memuat klip';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Ada masalah saat membuka perpustakaan. Coba lagi.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Belum ada draf';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Video yang kamu simpan sebagai draf akan muncul di sini';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Belum ada klip';
+
+  @override
+  String get libraryNoClipsYetSubtitle =>
+      'Klip video yang kamu rekam akan muncul di sini';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Draf dihapus';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar => 'Gagal menghapus draf';
+
+  @override
+  String get libraryDraftActionPost => 'Posting';
+
+  @override
+  String get libraryDraftActionEdit => 'Edit';
+
+  @override
+  String get libraryDraftActionDelete => 'Hapus draf';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Hapus draf';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'Yakin ingin menghapus \"$title\"?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Hapus klip';
+
+  @override
+  String get libraryDeleteClipMessage => 'Yakin ingin menghapus klip ini?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Klip';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'Tersisa $seconds dtk';
+  }
+
+  @override
+  String get libraryAddClips => 'Tambah';
+
+  @override
+  String get libraryRecordVideo => 'Rekam video';
+
+  @override
   String get routerInvalidCreator => 'Kreator tidak valid';
 
   @override

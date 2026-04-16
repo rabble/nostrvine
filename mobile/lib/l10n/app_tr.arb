@@ -2240,7 +2240,97 @@
             }
         }
     },
+    "libraryAddClips": "Ekle",
+    "libraryClipSelectionTitle": "Klipler",
+    "libraryClipsDeletedCount": "{count, plural, =1{1 klip silindi} other{{count} klip silindi}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "{successCount} kaydedildi, {failureCount} başarısız",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{1 klip} other{{count} klip}} {destination} konumuna kaydedildi",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "Klipler yüklenemedi",
+    "libraryCouldNotLoadDrafts": "Taslaklar yüklenemedi",
+    "libraryCreateVideo": "Video oluştur",
+    "libraryDeleteClipMessage": "Bu klibi silmek istiyor musun?",
+    "libraryDeleteClipTitle": "Klibi sil",
+    "libraryDeleteClipsMessage": "{count, plural, one{# seçili klibi} other{# seçili klibi}} silmek istiyor musun?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "Klipleri sil",
+    "libraryDeleteClipsWarning": "Geri alınamaz. Video dosyaları cihazından kalıcı olarak silinir.",
     "libraryDeleteConfirm": "Sil",
+    "libraryDeleteDraftMessage": "\"{title}\" silinsin mi?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "Taslağı sil",
+    "libraryDeleteSelectedClipsTooltip": "Seçili klipleri sil",
+    "libraryDraftActionDelete": "Taslağı sil",
+    "libraryDraftActionEdit": "Düzenle",
+    "libraryDraftActionPost": "Paylaş",
+    "libraryDraftDeleteFailedSnackbar": "Taslak silinemedi",
+    "libraryDraftDeletedSnackbar": "Taslak silindi",
+    "libraryGalleryPermissionDenied": "{destination} izni reddedildi",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "Kaydettiğin videolar burada görünür",
+    "libraryNoClipsYetTitle": "Henüz klip yok",
+    "libraryNoDraftsYetSubtitle": "Taslak olarak kaydettiğin videolar burada görünür",
+    "libraryNoDraftsYetTitle": "Henüz taslak yok",
+    "libraryOpenErrorDescription": "Kitaplık açılırken bir sorun oldu. Tekrar deneyebilirsin.",
+    "libraryPreparingVideo": "Video hazırlanıyor...",
+    "libraryRecordVideo": "Video kaydet",
+    "librarySaveToCameraRollTooltip": "Kamera kaydına kaydet",
+    "librarySecondsRemaining": "{seconds} sn kaldı",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "Klipler",
+    "libraryTabDrafts": "Taslaklar",
+    "libraryWebUnavailableDescription": "Taslaklar ve klipler cihazında saklanır; yönetmek için Divine’ı telefonda aç.",
+    "libraryWebUnavailableHeadline": "Kitaplık mobil uygulamada",
     "notificationFollowBack": "Geri takip et",
     "profileSetupUploadSuccess": "Profil fotoğrafı başarıyla yüklendi!",
     "proofmodeCheckAiGenerated": "Yapay zeka ile oluşturulup oluşturulmadığını kontrol et",

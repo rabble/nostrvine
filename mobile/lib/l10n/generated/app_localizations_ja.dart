@@ -4229,6 +4229,137 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryDeleteConfirm => '削除';
 
   @override
+  String get libraryWebUnavailableHeadline => 'ライブラリはモバイルアプリで利用できます';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      '下書きとクリップは端末に保存されます。管理するにはスマートフォンでDivineを開いてください。';
+
+  @override
+  String get libraryTabDrafts => '下書き';
+
+  @override
+  String get libraryTabClips => 'クリップ';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'カメラロールに保存';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => '選択したクリップを削除';
+
+  @override
+  String get libraryDeleteClipsTitle => 'クリップを削除';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    return '選択した$count件のクリップを削除しますか？';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning => 'この操作は取り消せません。動画ファイルは端末から完全に削除されます。';
+
+  @override
+  String get libraryPreparingVideo => '動画を準備しています…';
+
+  @override
+  String get libraryCreateVideo => '動画を作成';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$destinationに$count件のクリップを保存しました',
+      one: '$destinationに1件のクリップを保存しました',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '保存 $successCount、失敗 $failureCount';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return '$destinationの権限が拒否されました';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件のクリップを削除しました',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts => '下書きを読み込めませんでした';
+
+  @override
+  String get libraryCouldNotLoadClips => 'クリップを読み込めませんでした';
+
+  @override
+  String get libraryOpenErrorDescription => 'ライブラリを開くときに問題が発生しました。もう一度お試しください。';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'まだ下書きがありません';
+
+  @override
+  String get libraryNoDraftsYetSubtitle => '下書きとして保存した動画がここに表示されます';
+
+  @override
+  String get libraryNoClipsYetTitle => 'まだクリップがありません';
+
+  @override
+  String get libraryNoClipsYetSubtitle => '録画したクリップがここに表示されます';
+
+  @override
+  String get libraryDraftDeletedSnackbar => '下書きを削除しました';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar => '下書きを削除できませんでした';
+
+  @override
+  String get libraryDraftActionPost => '投稿';
+
+  @override
+  String get libraryDraftActionEdit => '編集';
+
+  @override
+  String get libraryDraftActionDelete => '下書きを削除';
+
+  @override
+  String get libraryDeleteDraftTitle => '下書きを削除';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return '「$title」を削除しますか？';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'クリップを削除';
+
+  @override
+  String get libraryDeleteClipMessage => 'このクリップを削除しますか？';
+
+  @override
+  String get libraryClipSelectionTitle => 'クリップ';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return '残り$seconds秒';
+  }
+
+  @override
+  String get libraryAddClips => '追加';
+
+  @override
+  String get libraryRecordVideo => '動画を録画';
+
+  @override
   String get routerInvalidCreator => '無効なクリエイター';
 
   @override

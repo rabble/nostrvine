@@ -38,6 +38,8 @@ export 'src/social_counts.dart';
 export 'src/trending_hashtag.dart';
 export 'src/user_list.dart';
 export 'src/user_profile.dart';
+export 'src/user_profile_data.dart';
+export 'src/user_profile_result.dart';
 export 'src/video_attribution.dart';
 export 'src/video_category.dart';
 export 'src/video_editor/sticker_data.dart';

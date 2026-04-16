@@ -4473,6 +4473,152 @@ class AppLocalizationsFr extends AppLocalizations {
   String get libraryDeleteConfirm => 'Supprimer';
 
   @override
+  String get libraryWebUnavailableHeadline =>
+      'La bibliothèque est dans l’appli mobile';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Les brouillons et clips sont enregistrés sur ton appareil : ouvre Divine sur ton téléphone pour les gérer.';
+
+  @override
+  String get libraryTabDrafts => 'Brouillons';
+
+  @override
+  String get libraryTabClips => 'Clips';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Enregistrer dans Pellicule';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip =>
+      'Supprimer les clips sélectionnés';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Supprimer les clips';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# clips sélectionnés',
+      one: '# clip sélectionné',
+    );
+    return 'Supprimer $_temp0 ?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Action irréversible. Les fichiers vidéo seront définitivement supprimés de ton appareil.';
+
+  @override
+  String get libraryPreparingVideo => 'Préparation de la vidéo...';
+
+  @override
+  String get libraryCreateVideo => 'Créer une vidéo';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips',
+      one: '1 clip',
+    );
+    return '$_temp0 enregistré(s) dans $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount enregistrés, $failureCount échecs';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'Permission refusée pour $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips supprimés',
+      one: '1 clip supprimé',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts =>
+      'Impossible de charger les brouillons';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Impossible de charger les clips';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Un problème est survenu en ouvrant ta bibliothèque. Réessaie.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Pas encore de brouillons';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Les vidéos enregistrées en brouillon apparaîtront ici';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Pas encore de clips';
+
+  @override
+  String get libraryNoClipsYetSubtitle =>
+      'Tes clips enregistrés apparaîtront ici';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Brouillon supprimé';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar =>
+      'Échec de la suppression du brouillon';
+
+  @override
+  String get libraryDraftActionPost => 'Publier';
+
+  @override
+  String get libraryDraftActionEdit => 'Modifier';
+
+  @override
+  String get libraryDraftActionDelete => 'Supprimer le brouillon';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Supprimer le brouillon';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'Supprimer « $title » ?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Supprimer le clip';
+
+  @override
+  String get libraryDeleteClipMessage => 'Supprimer ce clip ?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Clips';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'Il reste ${seconds}s';
+  }
+
+  @override
+  String get libraryAddClips => 'Ajouter';
+
+  @override
+  String get libraryRecordVideo => 'Enregistrer une vidéo';
+
+  @override
   String get routerInvalidCreator => 'Créateur non valide';
 
   @override

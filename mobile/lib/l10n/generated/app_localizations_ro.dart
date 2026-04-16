@@ -4545,6 +4545,148 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryDeleteConfirm => 'Șterge';
 
   @override
+  String get libraryWebUnavailableHeadline =>
+      'Biblioteca e în aplicația mobilă';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Ciornele și clipurile sunt pe dispozitivul tău — deschide Divine pe telefon ca să le gestionezi.';
+
+  @override
+  String get libraryTabDrafts => 'Ciorne';
+
+  @override
+  String get libraryTabClips => 'Clipuri';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Salvează în galerie';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'Șterge clipurile selectate';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Șterge clipurile';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# clipuri selectate',
+      one: '# clip selectat',
+    );
+    return 'Ștergi $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Nu se poate anula. Fișierele video vor fi eliminate definitiv de pe dispozitiv.';
+
+  @override
+  String get libraryPreparingVideo => 'Se pregătește videoclipul...';
+
+  @override
+  String get libraryCreateVideo => 'Creează video';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clipuri',
+      one: '1 clip',
+    );
+    return '$_temp0 salvate în $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount salvate, $failureCount eșuate';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'Permisiune refuzată pentru $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clipuri șterse',
+      one: '1 clip șters',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts => 'Nu s-au putut încărca ciornele';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Nu s-au putut încărca clipurile';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Ceva nu a mers la deschiderea bibliotecii. Poți încerca din nou.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Încă nu ai ciorne';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Videoclipurile salvate ca ciornă apar aici';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Încă nu ai clipuri';
+
+  @override
+  String get libraryNoClipsYetSubtitle => 'Clipurile înregistrate apar aici';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Ciornă ștearsă';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar => 'Nu s-a putut șterge ciorna';
+
+  @override
+  String get libraryDraftActionPost => 'Publică';
+
+  @override
+  String get libraryDraftActionEdit => 'Editează';
+
+  @override
+  String get libraryDraftActionDelete => 'Șterge ciorna';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Șterge ciorna';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'Ștergi „$title”?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Șterge clipul';
+
+  @override
+  String get libraryDeleteClipMessage => 'Ștergi acest clip?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Clipuri';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'Au rămas ${seconds}s';
+  }
+
+  @override
+  String get libraryAddClips => 'Adaugă';
+
+  @override
+  String get libraryRecordVideo => 'Înregistrează un video';
+
+  @override
   String get routerInvalidCreator => 'Creator invalid';
 
   @override

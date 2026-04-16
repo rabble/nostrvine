@@ -103,6 +103,23 @@ class ProfileGridView extends ConsumerStatefulWidget {
   /// Error message if video loading failed, shown in the videos tab.
   final String? videoLoadError;
 
+  /// Resolve the video count to display in the profile header given the
+  /// three possible sources: the authoritative total from the server
+  /// ([totalVideoCount]), whether a fetch that would resolve that total
+  /// is still in flight ([isLoadingVideos]), and the number of currently
+  /// loaded videos ([loadedVideosLength]).
+  ///
+  /// Returns `null` when no number is ready to display — the header maps
+  /// that to a loading dash. Returns a number otherwise.
+  @visibleForTesting
+  static int? resolveDisplayVideoCount({
+    required int? totalVideoCount,
+    required bool isLoadingVideos,
+    required int loadedVideosLength,
+  }) {
+    return totalVideoCount ?? (isLoadingVideos ? null : loadedVideosLength);
+  }
+
   @override
   ConsumerState<ProfileGridView> createState() => _ProfileGridViewState();
 }
@@ -298,7 +315,11 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
             child: ProfileHeaderWidget(
               userIdHex: widget.userIdHex,
               isOwnProfile: widget.isOwnProfile,
-              videoCount: widget.totalVideoCount ?? widget.videos.length,
+              videoCount: ProfileGridView.resolveDisplayVideoCount(
+                totalVideoCount: widget.totalVideoCount,
+                isLoadingVideos: widget.isLoadingVideos,
+                loadedVideosLength: widget.videos.length,
+              ),
               profile: widget.profile,
               onSetupProfile: widget.onSetupProfile,
               displayNameHint: widget.displayNameHint,

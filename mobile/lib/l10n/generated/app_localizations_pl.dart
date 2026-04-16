@@ -4540,6 +4540,157 @@ class AppLocalizationsPl extends AppLocalizations {
   String get libraryDeleteConfirm => 'Usuń';
 
   @override
+  String get libraryWebUnavailableHeadline =>
+      'Biblioteka jest w aplikacji mobilnej';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Wersje robocze i klipy są na urządzeniu — otwórz Divine w telefonie, żeby nimi zarządzać.';
+
+  @override
+  String get libraryTabDrafts => 'Wersje robocze';
+
+  @override
+  String get libraryTabClips => 'Klify';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Zapisz w albumie';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'Usuń wybrane klipy';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Usuń klipy';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# wybranych klipów',
+      many: '# wybranych klipów',
+      few: '# wybrane klipy',
+      one: '# wybrany klip',
+    );
+    return 'Na pewno usunąć $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Tego nie cofniesz. Pliki wideo zostaną trwale usunięte z urządzenia.';
+
+  @override
+  String get libraryPreparingVideo => 'Przygotowywanie wideo...';
+
+  @override
+  String get libraryCreateVideo => 'Utwórz wideo';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zapisano $count klipów',
+      many: 'Zapisano $count klipów',
+      few: 'Zapisano $count klipy',
+      one: 'Zapisano 1 klip',
+    );
+    return '$_temp0 w $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return 'Zapisano $successCount, niepowodzeń: $failureCount';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'Odmowa uprawnień: $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Usunięto $count klipów',
+      many: 'Usunięto $count klipów',
+      few: 'Usunięto $count klipy',
+      one: 'Usunięto 1 klip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts =>
+      'Nie udało się wczytać wersji roboczych';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Nie udało się wczytać klipów';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Coś poszło nie tak przy otwieraniu biblioteki. Możesz spróbować ponownie.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Brak wersji roboczych';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Wideo zapisane jako wersja robocza pojawi się tutaj';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Brak klipów';
+
+  @override
+  String get libraryNoClipsYetSubtitle =>
+      'Nagrane klipy wideo pojawią się tutaj';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Usunięto wersję roboczą';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar =>
+      'Nie udało się usunąć wersji roboczej';
+
+  @override
+  String get libraryDraftActionPost => 'Opublikuj';
+
+  @override
+  String get libraryDraftActionEdit => 'Edytuj';
+
+  @override
+  String get libraryDraftActionDelete => 'Usuń wersję roboczą';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Usuń wersję roboczą';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'Na pewno usunąć „$title”?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Usuń klip';
+
+  @override
+  String get libraryDeleteClipMessage => 'Na pewno usunąć ten klip?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Klify';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'Zostało ${seconds}s';
+  }
+
+  @override
+  String get libraryAddClips => 'Dodaj';
+
+  @override
+  String get libraryRecordVideo => 'Nagraj wideo';
+
+  @override
   String get routerInvalidCreator => 'Nieprawidłowy twórca';
 
   @override
