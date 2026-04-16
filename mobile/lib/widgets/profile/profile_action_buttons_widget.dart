@@ -24,6 +24,7 @@ class ProfileActionButtons extends ConsumerWidget {
     required this.userIdHex,
     required this.isOwnProfile,
     this.displayName,
+    this.onEditProfile,
     this.onOpenClips,
     this.onMessageUser,
     this.onShareProfile,
@@ -36,6 +37,7 @@ class ProfileActionButtons extends ConsumerWidget {
 
   /// Display name for unfollow confirmation (required when not own profile).
   final String? displayName;
+  final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
   final VoidCallback? onMessageUser;
   final VoidCallback? onShareProfile;
@@ -91,6 +93,12 @@ class ProfileActionButtons extends ConsumerWidget {
           label: 'My Library',
           onPressed: onOpenClips,
         ),
+      ),
+      DivineIconButton(
+        icon: .pencilSimpleLine,
+        type: .secondary,
+        size: .small,
+        onPressed: onEditProfile,
       ),
       DivineIconButton(
         icon: .shareFat,

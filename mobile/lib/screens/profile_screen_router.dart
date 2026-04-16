@@ -108,6 +108,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         onEditProfile: _editProfile,
         onOpenClips: _openClips,
         onMore: _more,
+        onShareProfile: _shareProfile,
         refreshNotifier: _refreshNotifier,
       ),
     };
@@ -203,30 +204,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       scrollable: false,
       children: [
         InkWell(
-          onTap: () => Navigator.of(context).pop('share'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                SvgPicture.asset(
-                  DivineIconName.shareFatDuo.assetPath,
-                  width: 24,
-                  height: 24,
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.whiteText,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  context.l10n.profileShareProfile,
-                  style: VineTheme.titleMediumFont(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        InkWell(
           onTap: () => Navigator.of(context).pop('copy_npub'),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -271,9 +248,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (!mounted) return;
 
-    if (result == 'share') {
-      await _shareProfile(userIdHex);
-    } else if (result == 'copy_npub') {
+    if (result == 'copy_npub') {
       await _copyNpub(userIdHex);
     } else if (result == 'embed_code') {
       await _copyEmbedCode(userIdHex);
@@ -335,6 +310,7 @@ class _ProfileContentView extends ConsumerWidget {
     required this.onEditProfile,
     required this.onOpenClips,
     required this.onMore,
+    required this.onShareProfile,
     required this.refreshNotifier,
   });
 
@@ -344,6 +320,7 @@ class _ProfileContentView extends ConsumerWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
+  final void Function(String userIdHex) onShareProfile;
   final ValueNotifier<int> refreshNotifier;
 
   @override
@@ -406,6 +383,7 @@ class _ProfileContentView extends ConsumerWidget {
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
       onMore: onMore,
+      onShareProfile: onShareProfile,
       refreshNotifier: refreshNotifier,
     );
   }
@@ -463,6 +441,7 @@ class _ProfileDataView extends ConsumerWidget {
     required this.onEditProfile,
     required this.onOpenClips,
     required this.onMore,
+    required this.onShareProfile,
     required this.refreshNotifier,
     this.displayName,
   });
@@ -476,6 +455,7 @@ class _ProfileDataView extends ConsumerWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
+  final void Function(String userIdHex) onShareProfile;
   final ValueNotifier<int> refreshNotifier;
 
   @override
@@ -530,6 +510,7 @@ class _ProfileDataView extends ConsumerWidget {
           onEditProfile: onEditProfile,
           onOpenClips: onOpenClips,
           onMore: onMore,
+          onShareProfile: onShareProfile,
           refreshNotifier: refreshNotifier,
         ),
       },
@@ -550,6 +531,7 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.scrollController,
     required this.onOpenClips,
     required this.onMore,
+    required this.onShareProfile,
     this.onEditProfile,
     this.profileStats,
     this.refreshNotifier,
@@ -568,6 +550,7 @@ class ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback? onEditProfile;
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
+  final void Function(String userIdHex) onShareProfile;
 
   /// Optional notifier to trigger BLoC refresh when its value changes.
   final ValueNotifier<int>? refreshNotifier;
@@ -599,7 +582,8 @@ class ProfileViewSwitcher extends StatelessWidget {
             scrollController: scrollController,
             onEditProfile: onEditProfile,
             onOpenClips: onOpenClips,
-            onShareProfile: () => onMore(userIdHex),
+            onMore: () => onMore(userIdHex),
+            onShareProfile: () => onShareProfile(userIdHex),
             refreshNotifier: refreshNotifier,
           );
   }

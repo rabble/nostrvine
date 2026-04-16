@@ -192,14 +192,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                           size: DivineIconButtonSize.small,
                           onPressed: onBack,
                         ),
-                      if (isOwnProfile && onEditProfile != null)
-                        DivineIconButton(
-                          icon: DivineIconName.pencilSimpleLine,
-                          type: DivineIconButtonType.ghostSecondary,
-                          size: DivineIconButtonSize.small,
-                          onPressed: onEditProfile,
-                        )
-                      else if (!isOwnProfile && onMore != null)
+                      if (onMore != null)
                         DivineIconButton(
                           icon: DivineIconName.dotsThree,
                           type: DivineIconButtonType.ghostSecondary,

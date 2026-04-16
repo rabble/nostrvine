@@ -322,6 +322,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               userIdHex: widget.userIdHex,
               isOwnProfile: widget.isOwnProfile,
               displayName: widget.displayName,
+              onEditProfile: widget.onEditProfile,
               onOpenClips: widget.onOpenClips,
               onMessageUser: widget.onMessageUser,
               onShareProfile: widget.onShareProfile,
