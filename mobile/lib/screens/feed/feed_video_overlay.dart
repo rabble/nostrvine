@@ -23,6 +23,7 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -32,6 +33,7 @@ import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
@@ -329,7 +331,10 @@ class _AuthorInfoSection extends ConsumerWidget {
                         _Nip05Badge(pubkey: video.pubkey),
                       ],
                     ),
-                    Text(video.relativeTime, style: VineTheme.labelSmallFont()),
+                    Text(
+                      '${StringUtils.formatCompactNumber(video.totalLoops)} ${video.totalLoops == 1 ? 'loop' : 'loops'}',
+                      style: VineTheme.labelSmallFont(),
+                    ),
                   ],
                 ),
               ),
@@ -339,20 +344,26 @@ class _AuthorInfoSection extends ConsumerWidget {
         // Video description
         if (hasTextContent) ...[
           const SizedBox(height: 2),
-          Semantics(
-            identifier: 'video_description',
-            container: true,
-            explicitChildNodes: true,
-            label:
-                'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-            child: ClickableHashtagText(
-              text:
-                  (video.content.isNotEmpty ? video.content : video.title ?? '')
-                      .trim(),
-              style: VineTheme.bodyMediumFont(),
-              hashtagStyle: VineTheme.bodySmallFont(),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => MetadataExpandedSheet.show(context, video),
+            child: Semantics(
+              identifier: 'video_description',
+              container: true,
+              explicitChildNodes: true,
+              label:
+                  'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
+              child: ClickableHashtagText(
+                text:
+                    (video.content.isNotEmpty
+                            ? video.content
+                            : video.title ?? '')
+                        .trim(),
+                style: VineTheme.bodyMediumFont(),
+                hashtagStyle: VineTheme.bodySmallFont(),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
           // Collaborator avatars

@@ -29,6 +29,7 @@ void main() {
         // ── Setup ──
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         // Launch the full app (LOCAL env via --dart-define)
         launchAppGuarded(app.main);
@@ -316,6 +317,7 @@ void main() {
         );
 
         // Cleanup
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);

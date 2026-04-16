@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
+import 'package:nostr_sdk/nostr_sdk.dart' show Nip19;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_setup.dart';
@@ -245,11 +246,44 @@ void main() {
       expect(await storageService.hasKeys(), isFalse);
     });
 
-    // Note: saveIdentity and getSavedIdentities methods need to be implemented
-    // test('should handle multiple saved identities', () async {
-    //   await storageService.initialize();
-    //   // TODO: Implement saveIdentity and getSavedIdentities in SecureKeyStorage
-    // });
+    test('importFromNsec archives previous identity in PRIMARY', () async {
+      await storageService.initialize();
+
+      // Import identity A into PRIMARY
+      final privateKeyA = generatePrivateKey();
+      final nsecA = Nip19.encodePrivateKey(privateKeyA);
+      final containerA = await storageService.importFromNsec(nsecA);
+      final npubA = containerA.npub;
+      containerA.dispose();
+
+      // Verify A is in PRIMARY
+      final primaryBeforeSwitch = await storageService.getKeyContainer();
+      expect(primaryBeforeSwitch!.npub, equals(npubA));
+      primaryBeforeSwitch.dispose();
+
+      // Import identity B — should archive A first
+      final privateKeyB = generatePrivateKey();
+      final nsecB = Nip19.encodePrivateKey(privateKeyB);
+      final containerB = await storageService.importFromNsec(nsecB);
+      final npubB = containerB.npub;
+      containerB.dispose();
+
+      // PRIMARY should now be B
+      final primaryAfterSwitch = await storageService.getKeyContainer();
+      expect(primaryAfterSwitch!.npub, equals(npubB));
+      primaryAfterSwitch.dispose();
+
+      // A should be archived in per-identity slot
+      final archivedA = await storageService.getIdentityKeyContainer(npubA);
+      expect(
+        archivedA,
+        isNotNull,
+        reason:
+            'Previous identity A should be archived to '
+            'nostr_identity_$npubA, not silently lost',
+      );
+      archivedA?.dispose();
+    });
   });
 
   group('Security Configuration', () {

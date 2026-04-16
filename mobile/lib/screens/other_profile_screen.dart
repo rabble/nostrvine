@@ -394,6 +394,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               displayName: displayName,
               videos: value.videos,
               totalVideoCount: value.totalVideoCount,
+              isLoadingVideos: value.isFetchingTotalCount,
               scrollController: _scrollController,
               onBlockedTap: _showUnblockConfirmation,
               displayNameHint: widget.displayNameHint,

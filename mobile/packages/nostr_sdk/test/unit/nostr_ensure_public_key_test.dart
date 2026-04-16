@@ -1,4 +1,4 @@
-// ABOUTME: Tests for Nostr._ensurePublicKey() lazy-refresh guard.
+// ABOUTME: Tests for Nostr.ensurePublicKey() lazy-refresh guard.
 // ABOUTME: Verifies that event-sending methods refresh the cached public key
 // ABOUTME: when it is empty, and throw StateError when the signer has no key.
 
@@ -33,7 +33,7 @@ class _NullKeySigner implements NostrSigner {
 }
 
 void main() {
-  group('Nostr _ensurePublicKey guard', () {
+  group('Nostr ensurePublicKey guard', () {
     const testPrivateKey =
         '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12';
     const testEventId =

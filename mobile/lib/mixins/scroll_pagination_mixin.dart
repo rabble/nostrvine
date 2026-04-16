@@ -79,8 +79,10 @@ mixin ScrollPaginationMixin<T extends StatefulWidget> on State<T> {
     if (_pendingPaginationLoad != null) return;
     if (!canLoadMore()) return;
 
-    final position = paginationScrollController.position;
-    if (position.pixels < position.maxScrollExtent - _threshold) {
+    final isNearBottom = paginationScrollController.positions.any(
+      (position) => position.pixels >= position.maxScrollExtent - _threshold,
+    );
+    if (!isNearBottom) {
       return;
     }
 

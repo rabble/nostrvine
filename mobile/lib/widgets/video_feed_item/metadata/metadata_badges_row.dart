@@ -56,40 +56,30 @@ class MetadataBadgesRow extends StatelessWidget {
   }
 }
 
-/// "Human-Made" badge with divine icon and "HM" superscript.
+/// "Human-Made" badge with "HM" superscript.
 class _HumanMadeBadge extends StatelessWidget {
   const _HumanMadeBadge();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      spacing: 4,
-      children: [
-        const DivineIcon(
-          icon: DivineIconName.logo,
-          color: VineTheme.vineGreen,
-        ),
-        Text.rich(
+    return Text.rich(
+      TextSpan(
+        children: [
           TextSpan(
-            children: [
-              TextSpan(
-                text: 'Human-Made',
-                style: VineTheme.titleSmallFont(),
-              ),
-              WidgetSpan(
-                alignment: PlaceholderAlignment.top,
-                child: Text(
-                  'HM',
-                  style: VineTheme.titleSmallFont().copyWith(
-                    fontSize: VineTheme.titleSmallFont().fontSize! / 1.555,
-                  ),
-                ),
-              ),
-            ],
+            text: 'Human-Made',
+            style: VineTheme.titleSmallFont(),
           ),
-        ),
-      ],
+          WidgetSpan(
+            alignment: PlaceholderAlignment.top,
+            child: Text(
+              'HM',
+              style: VineTheme.titleSmallFont().copyWith(
+                fontSize: VineTheme.titleSmallFont().fontSize! / 1.555,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

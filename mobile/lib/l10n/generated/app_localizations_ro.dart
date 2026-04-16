@@ -3444,9 +3444,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun utilizator urmărit.\nUrmărește pe cineva ca să-i vezi videoclipurile aici.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return 'Niciun videoclip găsit pentru feedul $mode.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Explorează videoclipuri';
@@ -3989,6 +3995,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get saveOriginalNotNow => 'Nu acum';
 
   @override
+  String get cameraPermissionNotNow => 'Nu acum';
+
+  @override
   String get saveOriginalDownloadFailed => 'Descărcare eșuată';
 
   @override
@@ -4517,6 +4526,148 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryDeleteConfirm => 'Șterge';
 
   @override
+  String get libraryWebUnavailableHeadline =>
+      'Biblioteca e în aplicația mobilă';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Ciornele și clipurile sunt pe dispozitivul tău — deschide Divine pe telefon ca să le gestionezi.';
+
+  @override
+  String get libraryTabDrafts => 'Ciorne';
+
+  @override
+  String get libraryTabClips => 'Clipuri';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Salvează în galerie';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'Șterge clipurile selectate';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Șterge clipurile';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# clipuri selectate',
+      one: '# clip selectat',
+    );
+    return 'Ștergi $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Nu se poate anula. Fișierele video vor fi eliminate definitiv de pe dispozitiv.';
+
+  @override
+  String get libraryPreparingVideo => 'Se pregătește videoclipul...';
+
+  @override
+  String get libraryCreateVideo => 'Creează video';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clipuri',
+      one: '1 clip',
+    );
+    return '$_temp0 salvate în $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount salvate, $failureCount eșuate';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'Permisiune refuzată pentru $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clipuri șterse',
+      one: '1 clip șters',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts => 'Nu s-au putut încărca ciornele';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Nu s-au putut încărca clipurile';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Ceva nu a mers la deschiderea bibliotecii. Poți încerca din nou.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Încă nu ai ciorne';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Videoclipurile salvate ca ciornă apar aici';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Încă nu ai clipuri';
+
+  @override
+  String get libraryNoClipsYetSubtitle => 'Clipurile înregistrate apar aici';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Ciornă ștearsă';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar => 'Nu s-a putut șterge ciorna';
+
+  @override
+  String get libraryDraftActionPost => 'Publică';
+
+  @override
+  String get libraryDraftActionEdit => 'Editează';
+
+  @override
+  String get libraryDraftActionDelete => 'Șterge ciorna';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Șterge ciorna';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'Ștergi „$title”?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Șterge clipul';
+
+  @override
+  String get libraryDeleteClipMessage => 'Ștergi acest clip?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Clipuri';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'Au rămas ${seconds}s';
+  }
+
+  @override
+  String get libraryAddClips => 'Adaugă';
+
+  @override
+  String get libraryRecordVideo => 'Înregistrează un video';
+
+  @override
   String get routerInvalidCreator => 'Creator invalid';
 
   @override
@@ -4763,4 +4914,39 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Centru';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'Camera nu este încă acceptată pe web';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'Captura și înregistrarea cu camera nu sunt încă disponibile în versiunea web.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Înapoi la feed';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Eroare de permisiuni';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'A apărut o eroare la verificarea permisiunilor.';
+
+  @override
+  String get cameraPermissionRetry => 'Încearcă din nou';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Permite accesul la cameră și microfon';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Aceasta îți permite să capturezi și să editezi videoclipuri direct în aplicație, nimic mai mult.';
+
+  @override
+  String get cameraPermissionContinue => 'Continuă';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Mergi la setări';
 }

@@ -11,14 +11,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' as model show AspectRatio;
+import 'package:models/models.dart' as model show AspectRatio, AudioEvent;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
@@ -362,7 +361,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Uses the video player's built-in audio overlay support so that
   /// synchronisation, loop handling, and drift correction happen on
   /// the native side automatically.
-  Future<void> _loadAudio(AudioEvent? sound) async {
+  Future<void> _loadAudio(model.AudioEvent? sound) async {
     if (_videoPlayer == null) return;
 
     if (sound == null || sound.url == null) {
@@ -530,7 +529,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     final targetAspectRatio = clip.targetAspectRatio;
 
     // Listen for sound changes to reload audio overlay track
-    ref.listen<AudioEvent?>(
+    ref.listen<model.AudioEvent?>(
       videoEditorProvider.select((s) => s.selectedSound),
       (previous, next) {
         if (previous?.url != next?.url ||

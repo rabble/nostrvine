@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Nie udało się wczytać filmów",
     "feedRetry": "Spróbuj ponownie",
     "feedNoFollowedUsers": "Nie obserwujesz nikogo.\nZacznij obserwować, żeby zobaczyć ich filmy tutaj.",
-    "feedNoVideosForMode": "Nie znaleziono filmów dla kanału {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Odkrywaj filmy",
     "feedExternalVideoSlow": "Zewnętrzny film wczytuje się powoli",
     "feedSkip": "Pomiń",
@@ -1968,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Aby zapisać filmy, zezwól na dostęp do Zdjęć w Ustawieniach.",
     "saveOriginalOpenSettings": "Otwórz Ustawienia",
     "saveOriginalNotNow": "Nie teraz",
+    "cameraPermissionNotNow": "Nie teraz",
     "saveOriginalDownloadFailed": "Pobieranie nieudane",
     "saveOriginalDismiss": "Odrzuć",
     "saveOriginalDownloadingVideo": "Pobieranie filmu",
@@ -2229,7 +2222,97 @@
             }
         }
     },
+    "libraryAddClips": "Dodaj",
+    "libraryClipSelectionTitle": "Klify",
+    "libraryClipsDeletedCount": "{count, plural, =1{Usunięto 1 klip} few{Usunięto {count} klipy} many{Usunięto {count} klipów} other{Usunięto {count} klipów}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "Zapisano {successCount}, niepowodzeń: {failureCount}",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{Zapisano 1 klip} few{Zapisano {count} klipy} many{Zapisano {count} klipów} other{Zapisano {count} klipów}} w {destination}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "Nie udało się wczytać klipów",
+    "libraryCouldNotLoadDrafts": "Nie udało się wczytać wersji roboczych",
+    "libraryCreateVideo": "Utwórz wideo",
+    "libraryDeleteClipMessage": "Na pewno usunąć ten klip?",
+    "libraryDeleteClipTitle": "Usuń klip",
+    "libraryDeleteClipsMessage": "Na pewno usunąć {count, plural, one{# wybrany klip} few{# wybrane klipy} many{# wybranych klipów} other{# wybranych klipów}}?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "Usuń klipy",
+    "libraryDeleteClipsWarning": "Tego nie cofniesz. Pliki wideo zostaną trwale usunięte z urządzenia.",
     "libraryDeleteConfirm": "Usuń",
+    "libraryDeleteDraftMessage": "Na pewno usunąć „{title}”?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "Usuń wersję roboczą",
+    "libraryDeleteSelectedClipsTooltip": "Usuń wybrane klipy",
+    "libraryDraftActionDelete": "Usuń wersję roboczą",
+    "libraryDraftActionEdit": "Edytuj",
+    "libraryDraftActionPost": "Opublikuj",
+    "libraryDraftDeleteFailedSnackbar": "Nie udało się usunąć wersji roboczej",
+    "libraryDraftDeletedSnackbar": "Usunięto wersję roboczą",
+    "libraryGalleryPermissionDenied": "Odmowa uprawnień: {destination}",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "Nagrane klipy wideo pojawią się tutaj",
+    "libraryNoClipsYetTitle": "Brak klipów",
+    "libraryNoDraftsYetSubtitle": "Wideo zapisane jako wersja robocza pojawi się tutaj",
+    "libraryNoDraftsYetTitle": "Brak wersji roboczych",
+    "libraryOpenErrorDescription": "Coś poszło nie tak przy otwieraniu biblioteki. Możesz spróbować ponownie.",
+    "libraryPreparingVideo": "Przygotowywanie wideo...",
+    "libraryRecordVideo": "Nagraj wideo",
+    "librarySaveToCameraRollTooltip": "Zapisz w albumie",
+    "librarySecondsRemaining": "Zostało {seconds}s",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "Klify",
+    "libraryTabDrafts": "Wersje robocze",
+    "libraryWebUnavailableDescription": "Wersje robocze i klipy są na urządzeniu — otwórz Divine w telefonie, żeby nimi zarządzać.",
+    "libraryWebUnavailableHeadline": "Biblioteka jest w aplikacji mobilnej",
     "notificationFollowBack": "Zaobserwuj",
     "profileSetupUploadSuccess": "Zdjęcie profilowe przesłane pomyślnie!",
     "proofmodeCheckAiGenerated": "Sprawdź, czy wygenerowane przez AI",
@@ -2430,5 +2513,15 @@
     "timeYesterday": "Wczoraj",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "Aparat nie jest jeszcze obsługiwany w wersji webowej",
+    "cameraPermissionWebUnsupportedDescription": "Robienie zdjęć i nagrywanie kamerą nie są jeszcze dostępne w wersji webowej.",
+    "cameraPermissionBackToFeed": "Wróć do feedu",
+    "cameraPermissionErrorTitle": "Błąd uprawnień",
+    "cameraPermissionErrorDescription": "Wystąpił błąd podczas sprawdzania uprawnień.",
+    "cameraPermissionRetry": "Spróbuj ponownie",
+    "cameraPermissionAllowAccessTitle": "Zezwól na dostęp do aparatu i mikrofonu",
+    "cameraPermissionAllowAccessDescription": "To pozwala nagrywać i edytować filmy bezpośrednio w aplikacji i nic więcej.",
+    "cameraPermissionContinue": "Kontynuuj",
+    "cameraPermissionGoToSettings": "Przejdź do ustawień"
 }

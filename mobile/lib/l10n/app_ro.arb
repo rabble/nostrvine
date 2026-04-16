@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "N-am putut încărca videoclipurile",
     "feedRetry": "Reîncearcă",
     "feedNoFollowedUsers": "Niciun utilizator urmărit.\nUrmărește pe cineva ca să-i vezi videoclipurile aici.",
-    "feedNoVideosForMode": "Niciun videoclip găsit pentru feedul {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Explorează videoclipuri",
     "feedExternalVideoSlow": "Videoclipul extern se încarcă încet",
     "feedSkip": "Sari peste",
@@ -1968,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Pentru a salva videoclipuri, permite accesul la Poze în Setări.",
     "saveOriginalOpenSettings": "Deschide setările",
     "saveOriginalNotNow": "Nu acum",
+    "cameraPermissionNotNow": "Nu acum",
     "saveOriginalDownloadFailed": "Descărcare eșuată",
     "saveOriginalDismiss": "Respinge",
     "saveOriginalDownloadingVideo": "Se descarcă videoclipul",
@@ -2229,7 +2222,97 @@
             }
         }
     },
+    "libraryAddClips": "Adaugă",
+    "libraryClipSelectionTitle": "Clipuri",
+    "libraryClipsDeletedCount": "{count, plural, =1{1 clip șters} other{{count} clipuri șterse}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "{successCount} salvate, {failureCount} eșuate",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{1 clip} other{{count} clipuri}} salvate în {destination}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "Nu s-au putut încărca clipurile",
+    "libraryCouldNotLoadDrafts": "Nu s-au putut încărca ciornele",
+    "libraryCreateVideo": "Creează video",
+    "libraryDeleteClipMessage": "Ștergi acest clip?",
+    "libraryDeleteClipTitle": "Șterge clipul",
+    "libraryDeleteClipsMessage": "Ștergi {count, plural, one{# clip selectat} other{# clipuri selectate}}?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "Șterge clipurile",
+    "libraryDeleteClipsWarning": "Nu se poate anula. Fișierele video vor fi eliminate definitiv de pe dispozitiv.",
     "libraryDeleteConfirm": "Șterge",
+    "libraryDeleteDraftMessage": "Ștergi „{title}”?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "Șterge ciorna",
+    "libraryDeleteSelectedClipsTooltip": "Șterge clipurile selectate",
+    "libraryDraftActionDelete": "Șterge ciorna",
+    "libraryDraftActionEdit": "Editează",
+    "libraryDraftActionPost": "Publică",
+    "libraryDraftDeleteFailedSnackbar": "Nu s-a putut șterge ciorna",
+    "libraryDraftDeletedSnackbar": "Ciornă ștearsă",
+    "libraryGalleryPermissionDenied": "Permisiune refuzată pentru {destination}",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "Clipurile înregistrate apar aici",
+    "libraryNoClipsYetTitle": "Încă nu ai clipuri",
+    "libraryNoDraftsYetSubtitle": "Videoclipurile salvate ca ciornă apar aici",
+    "libraryNoDraftsYetTitle": "Încă nu ai ciorne",
+    "libraryOpenErrorDescription": "Ceva nu a mers la deschiderea bibliotecii. Poți încerca din nou.",
+    "libraryPreparingVideo": "Se pregătește videoclipul...",
+    "libraryRecordVideo": "Înregistrează un video",
+    "librarySaveToCameraRollTooltip": "Salvează în galerie",
+    "librarySecondsRemaining": "Au rămas {seconds}s",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "Clipuri",
+    "libraryTabDrafts": "Ciorne",
+    "libraryWebUnavailableDescription": "Ciornele și clipurile sunt pe dispozitivul tău — deschide Divine pe telefon ca să le gestionezi.",
+    "libraryWebUnavailableHeadline": "Biblioteca e în aplicația mobilă",
     "notificationFollowBack": "Urmărește înapoi",
     "profileSetupUploadSuccess": "Fotografia de profil a fost încărcată cu succes!",
     "proofmodeCheckAiGenerated": "Verifică dacă este generat de AI",
@@ -2430,5 +2513,15 @@
     "timeYesterday": "Ieri",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "Camera nu este încă acceptată pe web",
+    "cameraPermissionWebUnsupportedDescription": "Captura și înregistrarea cu camera nu sunt încă disponibile în versiunea web.",
+    "cameraPermissionBackToFeed": "Înapoi la feed",
+    "cameraPermissionErrorTitle": "Eroare de permisiuni",
+    "cameraPermissionErrorDescription": "A apărut o eroare la verificarea permisiunilor.",
+    "cameraPermissionRetry": "Încearcă din nou",
+    "cameraPermissionAllowAccessTitle": "Permite accesul la cameră și microfon",
+    "cameraPermissionAllowAccessDescription": "Aceasta îți permite să capturezi și să editezi videoclipuri direct în aplicație, nimic mai mult.",
+    "cameraPermissionContinue": "Continuă",
+    "cameraPermissionGoToSettings": "Mergi la setări"
 }

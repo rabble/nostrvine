@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Video's laden mislukt",
     "feedRetry": "Opnieuw",
     "feedNoFollowedUsers": "Geen gevolgde gebruikers.\nVolg iemand om hun video's hier te zien.",
-    "feedNoVideosForMode": "Geen video's gevonden voor {mode}-feed.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Video's verkennen",
     "feedExternalVideoSlow": "Externe video laadt traag",
     "feedSkip": "Overslaan",
@@ -1968,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Om video's op te slaan, geef je in Instellingen toegang tot Foto's.",
     "saveOriginalOpenSettings": "Instellingen openen",
     "saveOriginalNotNow": "Niet nu",
+    "cameraPermissionNotNow": "Niet nu",
     "saveOriginalDownloadFailed": "Download mislukt",
     "saveOriginalDismiss": "Sluiten",
     "saveOriginalDownloadingVideo": "Video downloaden",
@@ -2229,7 +2222,97 @@
             }
         }
     },
+    "libraryAddClips": "Toevoegen",
+    "libraryClipSelectionTitle": "Clips",
+    "libraryClipsDeletedCount": "{count, plural, =1{1 clip verwijderd} other{{count} clips verwijderd}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "{successCount} opgeslagen, {failureCount} mislukt",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{1 clip} other{{count} clips}} opgeslagen in {destination}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "Clips konden niet worden geladen",
+    "libraryCouldNotLoadDrafts": "Concepten konden niet worden geladen",
+    "libraryCreateVideo": "Video maken",
+    "libraryDeleteClipMessage": "Weet je zeker dat je deze clip wilt verwijderen?",
+    "libraryDeleteClipTitle": "Clip verwijderen",
+    "libraryDeleteClipsMessage": "Weet je zeker dat je {count, plural, one{# geselecteerde clip} other{# geselecteerde clips}} wilt verwijderen?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "Clips verwijderen",
+    "libraryDeleteClipsWarning": "Dit kan niet ongedaan worden gemaakt. De videobestanden worden permanent van je apparaat verwijderd.",
     "libraryDeleteConfirm": "Verwijderen",
+    "libraryDeleteDraftMessage": "Weet je zeker dat je \"{title}\" wilt verwijderen?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "Concept verwijderen",
+    "libraryDeleteSelectedClipsTooltip": "Geselecteerde clips verwijderen",
+    "libraryDraftActionDelete": "Concept verwijderen",
+    "libraryDraftActionEdit": "Bewerken",
+    "libraryDraftActionPost": "Plaatsen",
+    "libraryDraftDeleteFailedSnackbar": "Concept verwijderen mislukt",
+    "libraryDraftDeletedSnackbar": "Concept verwijderd",
+    "libraryGalleryPermissionDenied": "Toestemming geweigerd voor {destination}",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "Je opgenomen videoclips verschijnen hier",
+    "libraryNoClipsYetTitle": "Nog geen clips",
+    "libraryNoDraftsYetSubtitle": "Video''s die je als concept opslaat, verschijnen hier",
+    "libraryNoDraftsYetTitle": "Nog geen concepten",
+    "libraryOpenErrorDescription": "Er ging iets mis bij het openen van je bibliotheek. Probeer het opnieuw.",
+    "libraryPreparingVideo": "Video voorbereiden...",
+    "libraryRecordVideo": "Video opnemen",
+    "librarySaveToCameraRollTooltip": "Opslaan in filmrol",
+    "librarySecondsRemaining": "Nog {seconds}s",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "Clips",
+    "libraryTabDrafts": "Concepten",
+    "libraryWebUnavailableDescription": "Concepten en clips worden op je apparaat opgeslagen. Open Divine op je telefoon om ze te beheren.",
+    "libraryWebUnavailableHeadline": "Bibliotheek is beschikbaar in de mobiele app",
     "notificationFollowBack": "Terugvolgen",
     "profileSetupUploadSuccess": "Profielfoto succesvol geüpload!",
     "proofmodeCheckAiGenerated": "Controleren of AI-gegenereerd",
@@ -2430,5 +2513,15 @@
     "timeYesterday": "Gisteren",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "Camera wordt nog niet ondersteund op het web",
+    "cameraPermissionWebUnsupportedDescription": "Camerabeelden opnemen en video opnemen zijn nog niet beschikbaar in de webversie.",
+    "cameraPermissionBackToFeed": "Terug naar feed",
+    "cameraPermissionErrorTitle": "Machtigingsfout",
+    "cameraPermissionErrorDescription": "Er is iets misgegaan bij het controleren van machtigingen.",
+    "cameraPermissionRetry": "Opnieuw proberen",
+    "cameraPermissionAllowAccessTitle": "Toegang tot camera en microfoon toestaan",
+    "cameraPermissionAllowAccessDescription": "Hiermee kun je video's rechtstreeks in de app opnemen en bewerken, verder niets.",
+    "cameraPermissionContinue": "Doorgaan",
+    "cameraPermissionGoToSettings": "Naar instellingen"
 }

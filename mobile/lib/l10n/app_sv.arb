@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Kunde inte läsa in videor",
     "feedRetry": "Försök igen",
     "feedNoFollowedUsers": "Inga följda användare.\nFölj någon för att se deras videor här.",
-    "feedNoVideosForMode": "Inga videor hittades för flödet {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Upptäck videor",
     "feedExternalVideoSlow": "Extern video laddar långsamt",
     "feedSkip": "Hoppa över",
@@ -1968,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "För att spara videor, tillåt fotoåtkomst i Inställningar.",
     "saveOriginalOpenSettings": "Öppna inställningar",
     "saveOriginalNotNow": "Inte nu",
+    "cameraPermissionNotNow": "Inte nu",
     "saveOriginalDownloadFailed": "Nedladdning misslyckades",
     "saveOriginalDismiss": "Avfärda",
     "saveOriginalDownloadingVideo": "Laddar ner video",
@@ -2229,7 +2222,97 @@
             }
         }
     },
+    "libraryAddClips": "Lägg till",
+    "libraryClipSelectionTitle": "Klipp",
+    "libraryClipsDeletedCount": "{count, plural, =1{1 klipp borttaget} other{{count} klipp borttagna}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "{successCount} sparade, {failureCount} misslyckades",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{1 klipp} other{{count} klipp}} sparade i {destination}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "Det gick inte att ladda klipp",
+    "libraryCouldNotLoadDrafts": "Det gick inte att ladda utkast",
+    "libraryCreateVideo": "Skapa video",
+    "libraryDeleteClipMessage": "Vill du ta bort det här klippet?",
+    "libraryDeleteClipTitle": "Ta bort klipp",
+    "libraryDeleteClipsMessage": "Vill du ta bort {count, plural, one{# valt klipp} other{# valda klipp}}?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "Ta bort klipp",
+    "libraryDeleteClipsWarning": "Det går inte att ångra. Videofilerna tas bort permanent från enheten.",
     "libraryDeleteConfirm": "Radera",
+    "libraryDeleteDraftMessage": "Vill du ta bort \"{title}\"?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "Ta bort utkast",
+    "libraryDeleteSelectedClipsTooltip": "Ta bort valda klipp",
+    "libraryDraftActionDelete": "Ta bort utkast",
+    "libraryDraftActionEdit": "Redigera",
+    "libraryDraftActionPost": "Publicera",
+    "libraryDraftDeleteFailedSnackbar": "Det gick inte att ta bort utkastet",
+    "libraryDraftDeletedSnackbar": "Utkast borttaget",
+    "libraryGalleryPermissionDenied": "Behörighet nekad för {destination}",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "Dina inspelade videoklipp visas här",
+    "libraryNoClipsYetTitle": "Inga klipp än",
+    "libraryNoDraftsYetSubtitle": "Videor du sparar som utkast visas här",
+    "libraryNoDraftsYetTitle": "Inga utkast än",
+    "libraryOpenErrorDescription": "Något gick fel när biblioteket öppnades. Försök igen.",
+    "libraryPreparingVideo": "Förbereder video...",
+    "libraryRecordVideo": "Spela in video",
+    "librarySaveToCameraRollTooltip": "Spara i kamerarullen",
+    "librarySecondsRemaining": "{seconds}s kvar",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "Klipp",
+    "libraryTabDrafts": "Utkast",
+    "libraryWebUnavailableDescription": "Utkast och klipp sparas på enheten — öppna Divine i mobilen för att hantera dem.",
+    "libraryWebUnavailableHeadline": "Biblioteket finns i mobilappen",
     "notificationFollowBack": "Följ tillbaka",
     "profileSetupUploadSuccess": "Profilbilden laddades upp!",
     "proofmodeCheckAiGenerated": "Kontrollera om AI-genererat",
@@ -2430,5 +2513,15 @@
     "timeYesterday": "Igår",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "Kameran stöds inte på webben än",
+    "cameraPermissionWebUnsupportedDescription": "Kamerainspelning och videoinspelning är ännu inte tillgängliga i webbversionen.",
+    "cameraPermissionBackToFeed": "Tillbaka till flödet",
+    "cameraPermissionErrorTitle": "Behörighetsfel",
+    "cameraPermissionErrorDescription": "Något gick fel när behörigheterna kontrollerades.",
+    "cameraPermissionRetry": "Försök igen",
+    "cameraPermissionAllowAccessTitle": "Tillåt åtkomst till kamera och mikrofon",
+    "cameraPermissionAllowAccessDescription": "Detta låter dig spela in och redigera videor direkt i appen, inget mer.",
+    "cameraPermissionContinue": "Fortsätt",
+    "cameraPermissionGoToSettings": "Gå till inställningar"
 }

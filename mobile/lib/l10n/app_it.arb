@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Impossibile caricare i video",
     "feedRetry": "Riprova",
     "feedNoFollowedUsers": "Nessun utente seguito.\nSegui qualcuno per vedere i suoi video qui.",
-    "feedNoVideosForMode": "Nessun video trovato per il feed {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Esplora video",
     "feedExternalVideoSlow": "Video esterno in caricamento lento",
     "feedSkip": "Salta",
@@ -1968,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Per salvare i video, consenti l'accesso a Foto nelle Impostazioni.",
     "saveOriginalOpenSettings": "Apri impostazioni",
     "saveOriginalNotNow": "Non ora",
+    "cameraPermissionNotNow": "Non ora",
     "saveOriginalDownloadFailed": "Download fallito",
     "saveOriginalDismiss": "Ignora",
     "saveOriginalDownloadingVideo": "Download video",
@@ -2229,7 +2222,97 @@
             }
         }
     },
+    "libraryAddClips": "Aggiungi",
+    "libraryClipSelectionTitle": "Clip",
+    "libraryClipsDeletedCount": "{count, plural, =1{1 clip eliminato} other{{count} clip eliminati}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "{successCount} salvati, {failureCount} non riusciti",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{1 clip} other{{count} clip}} salvati in {destination}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "Impossibile caricare le clip",
+    "libraryCouldNotLoadDrafts": "Impossibile caricare le bozze",
+    "libraryCreateVideo": "Crea video",
+    "libraryDeleteClipMessage": "Eliminare questa clip?",
+    "libraryDeleteClipTitle": "Elimina clip",
+    "libraryDeleteClipsMessage": "Vuoi eliminare {count, plural, one{# clip selezionata} other{# clip selezionate}}?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "Elimina clip",
+    "libraryDeleteClipsWarning": "Azione irreversibile. I file video verranno rimossi definitivamente dal dispositivo.",
     "libraryDeleteConfirm": "Elimina",
+    "libraryDeleteDraftMessage": "Vuoi eliminare \"{title}\"?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "Elimina bozza",
+    "libraryDeleteSelectedClipsTooltip": "Elimina clip selezionate",
+    "libraryDraftActionDelete": "Elimina bozza",
+    "libraryDraftActionEdit": "Modifica",
+    "libraryDraftActionPost": "Pubblica",
+    "libraryDraftDeleteFailedSnackbar": "Eliminazione bozza non riuscita",
+    "libraryDraftDeletedSnackbar": "Bozza eliminata",
+    "libraryGalleryPermissionDenied": "Permesso negato per {destination}",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "Le clip registrate appariranno qui",
+    "libraryNoClipsYetTitle": "Ancora nessuna clip",
+    "libraryNoDraftsYetSubtitle": "I video salvati come bozza appariranno qui",
+    "libraryNoDraftsYetTitle": "Ancora nessuna bozza",
+    "libraryOpenErrorDescription": "Qualcosa è andato storto aprendo la libreria. Riprova.",
+    "libraryPreparingVideo": "Preparazione video...",
+    "libraryRecordVideo": "Registra un video",
+    "librarySaveToCameraRollTooltip": "Salva nel rullino",
+    "librarySecondsRemaining": "Ancora {seconds}s",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "Clip",
+    "libraryTabDrafts": "Bozze",
+    "libraryWebUnavailableDescription": "Bozze e clip sono salvate sul dispositivo: apri Divine sul telefono per gestirle.",
+    "libraryWebUnavailableHeadline": "La libreria è nell’app mobile",
     "notificationFollowBack": "Segui a tua volta",
     "profileSetupUploadSuccess": "Foto profilo caricata con successo!",
     "proofmodeCheckAiGenerated": "Verifica se generato dall'IA",
@@ -2430,5 +2513,15 @@
     "timeYesterday": "Ieri",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "La fotocamera non è ancora supportata sul web",
+    "cameraPermissionWebUnsupportedDescription": "L'acquisizione e la registrazione con fotocamera non sono ancora disponibili nella versione web.",
+    "cameraPermissionBackToFeed": "Torna al feed",
+    "cameraPermissionErrorTitle": "Errore di autorizzazione",
+    "cameraPermissionErrorDescription": "Si è verificato un errore durante il controllo delle autorizzazioni.",
+    "cameraPermissionRetry": "Riprova",
+    "cameraPermissionAllowAccessTitle": "Consenti accesso a fotocamera e microfono",
+    "cameraPermissionAllowAccessDescription": "Questo ti consente di registrare e modificare video direttamente nell'app, niente di più.",
+    "cameraPermissionContinue": "Continua",
+    "cameraPermissionGoToSettings": "Vai alle impostazioni"
 }

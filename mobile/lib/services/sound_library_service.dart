@@ -4,7 +4,7 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
-import 'package:openvine/models/vine_sound.dart';
+import 'package:models/models.dart' show VineSound;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 

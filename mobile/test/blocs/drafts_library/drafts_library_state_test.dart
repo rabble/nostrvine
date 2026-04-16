@@ -121,23 +121,13 @@ void main() {
     group(DraftsLibraryError, () {
       test('supports value equality', () {
         expect(
-          const DraftsLibraryError(message: 'error message'),
-          equals(const DraftsLibraryError(message: 'error message')),
+          const DraftsLibraryError(),
+          equals(const DraftsLibraryError()),
         );
       });
 
-      test('different messages are not equal', () {
-        expect(
-          const DraftsLibraryError(message: 'error 1'),
-          isNot(equals(const DraftsLibraryError(message: 'error 2'))),
-        );
-      });
-
-      test('props contains message', () {
-        expect(
-          const DraftsLibraryError(message: 'error').props,
-          ['error'],
-        );
+      test('props matches base state', () {
+        expect(const DraftsLibraryError().props, isEmpty);
       });
     });
   });

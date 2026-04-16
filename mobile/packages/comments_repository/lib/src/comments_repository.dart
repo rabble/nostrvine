@@ -6,6 +6,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:comments_repository/src/blocked_comment_filter.dart';
 import 'package:comments_repository/src/exceptions.dart';
 import 'package:comments_repository/src/models/models.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -40,11 +41,14 @@ class CommentsRepository {
   CommentsRepository({
     required NostrClient nostrClient,
     FunnelcakeApiClient? funnelcakeApiClient,
+    BlockedCommentFilter? blockFilter,
   }) : _nostrClient = nostrClient,
-       _funnelcakeApiClient = funnelcakeApiClient;
+       _funnelcakeApiClient = funnelcakeApiClient,
+       _blockFilter = blockFilter;
 
   final NostrClient _nostrClient;
   final FunnelcakeApiClient? _funnelcakeApiClient;
+  final BlockedCommentFilter? _blockFilter;
 
   /// In-memory cache of comment counts keyed by root event ID.
   ///
@@ -113,7 +117,7 @@ class CommentsRepository {
             if (thread.totalCount > 0) {
               _commentCountCache[rootEventId] = thread.totalCount;
             }
-            return thread;
+            return _filterThread(thread);
           }
         } on FunnelcakeException {
           // Fall back to relay query when REST bootstrap is unavailable.
@@ -182,7 +186,7 @@ class CommentsRepository {
         _commentCountCache[rootEventId] = thread.totalCount;
       }
 
-      return thread;
+      return _filterThread(thread);
     } on Exception catch (e) {
       throw LoadCommentsFailedException('Failed to load comments: $e');
     }
@@ -476,11 +480,13 @@ class CommentsRepository {
       // to prevent consumers from processing duplicates.
       final seenIds = <String>{};
 
+      final filter = _blockFilter;
       return eventStream
           .where((event) => seenIds.add(event.id))
           .map((event) => _eventToComment(event, rootEventId, rootEventKind))
           .where((comment) => comment != null)
-          .cast<Comment>();
+          .cast<Comment>()
+          .where((c) => !(filter?.call(c.authorPubkey) ?? false));
     } on Exception catch (e) {
       throw WatchCommentsFailedException('Failed to watch comments: $e');
     }
@@ -532,6 +538,27 @@ class CommentsRepository {
     } on Exception catch (e) {
       throw LoadCommentsByAuthorFailedException(e.toString());
     }
+  }
+
+  /// Removes comments authored by blocked/muted users from a thread.
+  ///
+  /// Replies to filtered comments are kept — consumers that build threaded
+  /// views already treat orphaned replies (missing parent) as root-level items.
+  /// The original [CommentThread.totalCount] (server-authoritative) is
+  /// preserved so pagination logic remains correct.
+  CommentThread _filterThread(CommentThread thread) {
+    final filter = _blockFilter;
+    if (filter == null) return thread;
+    final filtered = thread.comments
+        .where((c) => !filter(c.authorPubkey))
+        .toList();
+    if (filtered.length == thread.comments.length) return thread;
+    return thread.copyWith(
+      comments: filtered,
+      commentCache: Map<String, Comment>.unmodifiable({
+        for (final c in filtered) c.id: c,
+      }),
+    );
   }
 
   // ---------------------------------------------------------------------------

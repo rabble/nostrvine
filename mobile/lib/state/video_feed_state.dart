@@ -44,6 +44,14 @@ sealed class VideoFeedState with _$VideoFeedState {
     /// When available, this is more accurate than `videos.length` which
     /// only reflects the number of loaded videos.
     int? totalVideoCount,
+
+    /// Whether a REST call that will resolve [totalVideoCount] is currently
+    /// in flight. Stays `true` from the moment the fetch starts until it
+    /// settles (success, empty, or failure). UI uses this to distinguish
+    /// "still loading, authoritative count may still arrive" from
+    /// "settled, no authoritative count available — fall back to
+    /// videos.length".
+    @Default(false) bool isFetchingTotalCount,
   }) = _VideoFeedState;
 
   const VideoFeedState._();

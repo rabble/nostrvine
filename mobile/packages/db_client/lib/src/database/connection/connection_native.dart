@@ -34,6 +34,9 @@ Future<String> getSharedDatabasePath() async {
   final appSupportDir = await getApplicationSupportDirectory();
   final newPath = buildSharedDatabasePath(appSupportDir.path);
 
+  // Check cache version and wipe stale database if needed.
+  applyDbCacheVersionReset(newPath);
+
   final docDir = await getApplicationDocumentsDirectory();
   final legacyPath = p.join(
     docDir.path,
@@ -46,12 +49,71 @@ Future<String> getSharedDatabasePath() async {
   return newPath;
 }
 
+/// Bump this version to force a full database reset on next app launch.
+///
+/// All local data is re-fetchable from Nostr relays, so the database is
+/// effectively a cache. When a schema change, path migration, or data
+/// corruption requires a clean slate, increment this constant.
+///
+/// Version history:
+///   1 — initial (implicit, no version file exists yet)
+///   2 — force reset to recover from PR #2840 path-change data loss
+@visibleForTesting
+const int dbCacheVersion = 2;
+
+/// File name written next to the database to track [dbCacheVersion].
+@visibleForTesting
+const String dbVersionFileName = 'divine_db.version';
+
+/// Reads the stored cache version from a file next to the database.
+/// Returns `null` when the version file does not exist (first run with
+/// this mechanism).
+@visibleForTesting
+int? readDbCacheVersion(String dbDir) {
+  final file = File(p.join(dbDir, dbVersionFileName));
+  if (!file.existsSync()) return null;
+  return int.tryParse(file.readAsStringSync().trim());
+}
+
+/// Writes [version] to the version file next to the database.
+@visibleForTesting
+void writeDbCacheVersion(String dbDir, int version) {
+  final dir = Directory(dbDir);
+  if (!dir.existsSync()) dir.createSync(recursive: true);
+  File(p.join(dbDir, dbVersionFileName)).writeAsStringSync('$version');
+}
+
+/// Deletes the database and its `-wal` / `-shm` sidecars when the stored
+/// cache version is stale. Writes the current [dbCacheVersion] afterwards.
+///
+/// On first run (no version file), writes the current version without
+/// deleting anything — existing users are not wiped by the mechanism's
+/// introduction.
+@visibleForTesting
+void applyDbCacheVersionReset(String dbPath) {
+  final dbDir = p.dirname(dbPath);
+  final stored = readDbCacheVersion(dbDir);
+
+  if (stored == null) {
+    // First run with version tracking — adopt current version, no wipe.
+    writeDbCacheVersion(dbDir, dbCacheVersion);
+    return;
+  }
+
+  if (stored < dbCacheVersion) {
+    _deleteDatabaseAndSidecars(dbPath);
+    writeDbCacheVersion(dbDir, dbCacheVersion);
+  }
+}
+
 /// One-time migration from the pre-PR #2840 Documents-directory location
 /// to the current Application Support location.
 ///
-/// No-op when:
-/// * the new location already has a database (never clobber existing data),
-/// * or the legacy file does not exist (fresh install / post-migration run).
+/// Handles three cases:
+/// 1. Legacy does not exist → no-op (fresh install or already migrated).
+/// 2. Legacy exists, new does not → rename legacy to new.
+/// 3. Both exist → the legacy DB predates the path change and contains the
+///    user's real history. Replace the new DB with the legacy one.
 ///
 /// Also migrates the SQLite `-wal` and `-shm` sidecar files if present, so
 /// any unsynced writes in the write-ahead log are preserved.
@@ -60,14 +122,14 @@ Future<void> migrateLegacyDatabase({
   required String legacyPath,
   required String newPath,
 }) async {
+  final legacyFile = File(legacyPath);
+  if (!legacyFile.existsSync()) return;
+
   final newFile = File(newPath);
   if (newFile.existsSync()) {
-    return;
-  }
-
-  final legacyFile = File(legacyPath);
-  if (!legacyFile.existsSync()) {
-    return;
+    // Both databases exist. The legacy DB predates the path change and
+    // has more history — always prefer it.
+    _deleteDatabaseAndSidecars(newPath);
   }
 
   Directory(p.dirname(newPath)).createSync(recursive: true);
@@ -78,6 +140,14 @@ Future<void> migrateLegacyDatabase({
     if (legacySidecar.existsSync()) {
       legacySidecar.renameSync('$newPath$suffix');
     }
+  }
+}
+
+/// Deletes a database file and its `-wal` / `-shm` sidecars.
+void _deleteDatabaseAndSidecars(String dbPath) {
+  for (final suffix in const ['', '-wal', '-shm']) {
+    final file = File('$dbPath$suffix');
+    if (file.existsSync()) file.deleteSync();
   }
 }
 
