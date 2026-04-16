@@ -83,7 +83,6 @@ class VideoEditorToolbar extends StatelessWidget {
                 icon: doneIcon,
                 semanticLabel: doneSemanticLabel,
                 size: .small,
-                type: .tertiary,
                 onPressed: onDone,
               ),
             ),

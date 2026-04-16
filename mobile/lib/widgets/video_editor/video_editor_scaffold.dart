@@ -227,13 +227,28 @@ class _AddElementFab extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return FloatingActionButton(
-      tooltip: 'Add element',
-      backgroundColor: VineTheme.primary,
-      onPressed: () => VideoEditorMainActionsSheet.show(context),
-      child: const DivineIcon(
-        icon: .plus,
-        color: VineTheme.onPrimary,
+    return Semantics(
+      button: true,
+      label: 'Add element',
+      child: GestureDetector(
+        onTap: () => VideoEditorMainActionsSheet.show(context),
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: ShapeDecoration(
+            color: VineTheme.surfaceContainer,
+            shape: RoundedRectangleBorder(
+              side: const BorderSide(width: 2, color: VineTheme.outlineMuted),
+              borderRadius: .circular(24),
+            ),
+          ),
+          child: const Center(
+            child: DivineIcon(
+              icon: .plus,
+              color: VineTheme.primary,
+            ),
+          ),
+        ),
       ),
     );
   }
