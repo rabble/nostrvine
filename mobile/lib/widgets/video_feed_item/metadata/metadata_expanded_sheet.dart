@@ -146,7 +146,10 @@ class _CaptionsSettingSection extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Switch(
                   value: captionsEnabled,
-                  activeThumbColor: VineTheme.vineGreen,
+                  activeThumbColor: VineTheme.whiteText,
+                  activeTrackColor: VineTheme.vineGreen,
+                  inactiveThumbColor: VineTheme.whiteText,
+                  inactiveTrackColor: VineTheme.surfaceContainer,
                   onChanged: (value) {
                     ref
                         .read(subtitleVisibilityProvider.notifier)

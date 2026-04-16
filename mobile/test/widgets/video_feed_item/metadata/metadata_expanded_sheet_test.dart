@@ -237,6 +237,10 @@ void main() {
 
       final switchWidget = tester.widget<Switch>(find.byType(Switch));
       expect(switchWidget.value, isTrue);
+      expect(switchWidget.activeThumbColor, VineTheme.whiteText);
+      expect(switchWidget.activeTrackColor, VineTheme.vineGreen);
+      expect(switchWidget.inactiveThumbColor, VineTheme.whiteText);
+      expect(switchWidget.inactiveTrackColor, VineTheme.surfaceContainer);
     });
 
     testWidgets('renders captions after the primary metadata content', (
