@@ -803,17 +803,19 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoGridDeleteVideo => 'Hapus Video';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'Hapus konten ini secara permanen';
+  String get videoGridDeleteVideoSubtitle =>
+      'Hapus video ini dari Divine. Klien Nostr lain mungkin masih menampilkannya.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Hapus Video';
 
   @override
-  String get videoGridDeleteConfirmMessage => 'Yakin mau menghapus video ini?';
+  String get videoGridDeleteConfirmMessage =>
+      'Video ini akan dihapus permanen dari Divine. Video ini mungkin masih muncul di klien Nostr lain yang memakai relay berbeda.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.';
+      'Ini akan mengirim permintaan hapus ke relay. Catatan: Beberapa relay mungkin masih punya salinan cache.';
 
   @override
   String get videoGridDeleteCancel => 'Batal';

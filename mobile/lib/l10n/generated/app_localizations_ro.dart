@@ -849,18 +849,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoGridDeleteVideo => 'Șterge videoclipul';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'Elimină definitiv acest conținut';
+  String get videoGridDeleteVideoSubtitle =>
+      'Elimină acest videoclip din Divine. Alți clienți Nostr îl pot afișa în continuare.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Șterge videoclipul';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      'Sigur vrei să ștergi acest videoclip?';
+      'Acest videoclip va fi șters definitiv din Divine. Poate să apară în continuare în alți clienți Nostr care folosesc alte relay-uri.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.';
+      'Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.';
 
   @override
   String get videoGridDeleteCancel => 'Anulează';

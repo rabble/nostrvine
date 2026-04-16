@@ -809,18 +809,18 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoGridDeleteVideoSubtitle =>
-      'Ta bort det här innehållet permanent';
+      'Ta bort videon från Divine. Andra Nostr-klienter kan fortfarande visa den.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Ta bort video';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      'Är du säker på att du vill ta bort den här videon?';
+      'Den här videon raderas permanent från Divine. Den kan fortfarande synas i andra Nostr-klienter som använder andra reläer.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.';
+      'Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.';
 
   @override
   String get videoGridDeleteCancel => 'Avbryt';

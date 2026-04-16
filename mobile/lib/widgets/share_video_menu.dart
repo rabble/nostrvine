@@ -1059,7 +1059,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     ],
   );
 
-  /// Delete the user's content using NIP-09
+  /// Deletes the user's own video via [contentDeletionServiceProvider].
   Future<void> _deleteContent() async {
     // Capture the router before any navigation happens
     // This allows us to navigate after the bottom sheet is dismissed

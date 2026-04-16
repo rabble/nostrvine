@@ -803,18 +803,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoGridDeleteVideo => 'Videoyu Sil';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
+  String get videoGridDeleteVideoSubtitle =>
+      'Bu videoyu Divine uygulamasından kaldırır. Diğer Nostr istemcilerinde görünmeye devam edebilir.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Videoyu Sil';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      'Bu videoyu silmek istediğinden emin misin?';
+      'Bu video Divine uygulamasından kalıcı olarak silinir. Başka röleler kullanan üçüncü taraf Nostr istemcilerinde görünmeye devam edebilir.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
+      'Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.';
 
   @override
   String get videoGridDeleteCancel => 'İptal';

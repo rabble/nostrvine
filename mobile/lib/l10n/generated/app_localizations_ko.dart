@@ -758,17 +758,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteVideo => '영상 삭제';
 
   @override
-  String get videoGridDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
+  String get videoGridDeleteVideoSubtitle =>
+      '이 영상을 Divine에서 지워요. 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
 
   @override
   String get videoGridDeleteConfirmTitle => '영상 삭제';
 
   @override
-  String get videoGridDeleteConfirmMessage => '이 영상을 정말 삭제할까요?';
+  String get videoGridDeleteConfirmMessage =>
+      '이 영상은 Divine에서 영구적으로 삭제돼요. 다른 릴레이를 쓰는 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
+      '릴레이에 삭제 요청을 보내요. 참고: 일부 릴레이에는 캐시된 사본이 남아 있을 수 있어요.';
 
   @override
   String get videoGridDeleteCancel => '취소';

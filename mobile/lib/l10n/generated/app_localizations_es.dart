@@ -831,18 +831,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoGridDeleteVideo => 'Eliminar video';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'Sacá este contenido para siempre';
+  String get videoGridDeleteVideoSubtitle =>
+      'Sacá este video de Divine. Otros clientes Nostr todavía pueden mostrarlo.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Eliminar video';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      '¿Seguro que querés eliminar este video?';
+      'Este video se elimina para siempre de Divine. Todavía puede verse en otros clientes Nostr que usen otros relays.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'Esto envía un pedido de eliminación (NIP-09) a todos los relays. Algunos relays todavía pueden mantener el contenido.';
+      'Esto envía un pedido de eliminación a los relays. Nota: algunos relays todavía pueden tener copias en caché.';
 
   @override
   String get videoGridDeleteCancel => 'Cancelar';
