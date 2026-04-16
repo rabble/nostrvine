@@ -806,6 +806,13 @@ class VideoEditorRenderService {
           : null,
       blur: parameters?.blur,
       colorFilters: [
+        ...?parameters?.tuneAdjustments.map(
+          (t) => ColorFilter(
+            matrix: t.matrix,
+            startTime: t.startTime,
+            endTime: t.endTime,
+          ),
+        ),
         ...?parameters?.filterStates.expand(
           (f) => f.matrices.map(
             (matrix) => ColorFilter(
@@ -813,13 +820,6 @@ class VideoEditorRenderService {
               startTime: f.startTime,
               endTime: f.endTime,
             ),
-          ),
-        ),
-        ...?parameters?.tuneAdjustments.map(
-          (t) => ColorFilter(
-            matrix: t.matrix,
-            startTime: t.startTime,
-            endTime: t.endTime,
           ),
         ),
       ],

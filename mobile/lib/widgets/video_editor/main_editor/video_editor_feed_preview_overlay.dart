@@ -52,33 +52,35 @@ class VideoEditorFeedPreviewOverlay extends ConsumerWidget {
         duration: _animationDuration,
         opacity: isFeedPreviewVisible ? 0.3 : 0.0,
         curve: Curves.easeInOut,
-        child: FittedBox(
-          child: SizedBox(
-            width: screenSize.width,
-            height:
-                screenSize.height -
-                kBottomNavigationBarHeight -
-                viewPadding.bottom,
-            child: Stack(
-              fit: .expand,
-              children: [
-                const FeedModeSwitch(isPreviewMode: true),
+        child: Center(
+          child: FittedBox(
+            child: SizedBox(
+              width: screenSize.width,
+              height:
+                  screenSize.height -
+                  kBottomNavigationBarHeight -
+                  viewPadding.bottom,
+              child: Stack(
+                fit: .expand,
+                children: [
+                  const FeedModeSwitch(isPreviewMode: true),
 
-                VideoOverlayActions(
-                  video: VideoEvent(
-                    id: 'preview',
-                    pubkey: publicKey,
-                    timestamp: DateTime.now(),
-                    createdAt: DateTime.now().millisecondsSinceEpoch,
-                    content: 'Avoid placing content behind these areas.',
+                  VideoOverlayActions(
+                    video: VideoEvent(
+                      id: 'preview',
+                      pubkey: publicKey,
+                      timestamp: DateTime.now(),
+                      createdAt: DateTime.now().millisecondsSinceEpoch,
+                      content: 'Avoid placing content behind these areas.',
+                    ),
+                    isVisible: true,
+                    isActive: true,
+                    isPreviewMode: true,
+                    isFullscreen: true,
+                    showBottomGradient: false,
                   ),
-                  isVisible: true,
-                  isActive: true,
-                  isPreviewMode: true,
-                  isFullscreen: true,
-                  showBottomGradient: false,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

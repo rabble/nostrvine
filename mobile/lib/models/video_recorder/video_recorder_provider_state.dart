@@ -111,7 +111,6 @@ class VideoRecorderProviderState {
     double? cameraSensorAspectRatio,
     Offset? focusPoint,
     bool? canRecord,
-    bool? hasSegments,
     bool? isCameraInitialized,
     bool? canSwitchCamera,
     bool? hasFlash,
