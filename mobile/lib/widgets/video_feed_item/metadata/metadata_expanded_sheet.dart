@@ -13,6 +13,7 @@ import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_stats_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.dart';
@@ -97,7 +98,6 @@ class _MetadataContent extends StatelessWidget {
         bottom: MediaQuery.paddingOf(context).bottom + 16,
       ),
       children: [
-        const _CaptionsSettingSection(),
         _TitleSection(video: video),
         MetadataBadgesRow(video: video),
         MetadataStatsRow(video: video),
@@ -110,6 +110,7 @@ class _MetadataContent extends StatelessWidget {
         MetadataInspiredBySection(video: video),
         MetadataRepostedBySection(video: video),
         MetadataSoundsSection(video: video),
+        const _CaptionsSettingSection(),
       ],
     );
   }
@@ -123,39 +124,40 @@ class _CaptionsSettingSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final captionsEnabled = ref.watch(subtitleVisibilityProvider);
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: VineTheme.outlineDisabled),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text('Captions', style: VineTheme.titleSmallFont()),
+    return MetadataSection(
+      label: 'Playback',
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 4,
+              children: [
+                Text('Captions', style: VineTheme.titleMediumFont()),
+                Text(
+                  'Applies to all videos',
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-            Semantics(
-              button: true,
-              toggled: captionsEnabled,
-              label: captionsEnabled
-                  ? 'Captions enabled for all videos'
-                  : 'Captions disabled for all videos',
-              child: Switch(
-                value: captionsEnabled,
-                activeThumbColor: VineTheme.vineGreen,
-                onChanged: (value) {
-                  ref
-                      .read(subtitleVisibilityProvider.notifier)
-                      .setEnabled(
-                        value,
-                      );
-                },
-              ),
+          ),
+          Semantics(
+            button: true,
+            toggled: captionsEnabled,
+            label: captionsEnabled
+                ? 'Captions enabled for all videos'
+                : 'Captions disabled for all videos',
+            child: Switch(
+              value: captionsEnabled,
+              activeThumbColor: VineTheme.vineGreen,
+              onChanged: (value) {
+                ref.read(subtitleVisibilityProvider.notifier).setEnabled(value);
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

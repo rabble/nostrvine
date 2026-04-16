@@ -223,7 +223,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.text('Playback'), findsOneWidget);
       expect(find.text('Captions'), findsOneWidget);
+      expect(find.text('Applies to all videos'), findsOneWidget);
       expect(find.byType(Switch), findsOneWidget);
     });
 
@@ -237,6 +239,25 @@ void main() {
 
       final switchWidget = tester.widget<Switch>(find.byType(Switch));
       expect(switchWidget.value, isTrue);
+    });
+
+    testWidgets('renders captions after the primary metadata content', (
+      tester,
+    ) async {
+      final video = _makeVideo(
+        title: 'Why',
+        content: 'Because',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+      await tester.pumpAndSettle();
+
+      final titleY = tester.getTopLeft(find.text('Why')).dy;
+      final captionsY = tester.getTopLeft(find.text('Captions')).dy;
+
+      expect(captionsY, greaterThan(titleY));
     });
 
     testWidgets('toggling captions switch updates global provider state', (
