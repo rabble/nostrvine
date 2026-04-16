@@ -3570,13 +3570,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navMyProfile => 'Mon profil';
 
   @override
-  String get navSearch => 'Recherche';
-
-  @override
   String get navNotifications => 'Notifications';
-
-  @override
-  String get navSearchTooltip => 'Recherche';
 
   @override
   String get navOpenCamera => 'Ouvrir la caméra';

@@ -3621,13 +3621,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get navMyProfile => 'Mój profil';
 
   @override
-  String get navSearch => 'Szukaj';
-
-  @override
   String get navNotifications => 'Powiadomienia';
-
-  @override
-  String get navSearchTooltip => 'Szukaj';
 
   @override
   String get navOpenCamera => 'Otwórz aparat';

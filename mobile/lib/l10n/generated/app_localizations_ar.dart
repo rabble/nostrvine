@@ -3482,13 +3482,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navMyProfile => 'ملفي الشخصي';
 
   @override
-  String get navSearch => 'بحث';
-
-  @override
   String get navNotifications => 'الإشعارات';
-
-  @override
-  String get navSearchTooltip => 'بحث';
 
   @override
   String get navOpenCamera => 'فتح الكاميرا';

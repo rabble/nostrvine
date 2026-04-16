@@ -6218,23 +6218,11 @@ abstract class AppLocalizations {
   /// **'My Profile'**
   String get navMyProfile;
 
-  /// No description provided for @navSearch.
-  ///
-  /// In en, this message translates to:
-  /// **'Search'**
-  String get navSearch;
-
   /// No description provided for @navNotifications.
   ///
   /// In en, this message translates to:
   /// **'Notifications'**
   String get navNotifications;
-
-  /// No description provided for @navSearchTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Search'**
-  String get navSearchTooltip;
 
   /// No description provided for @navOpenCamera.
   ///

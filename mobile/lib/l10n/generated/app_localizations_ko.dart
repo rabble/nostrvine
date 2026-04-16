@@ -3362,13 +3362,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get navMyProfile => '내 프로필';
 
   @override
-  String get navSearch => '검색';
-
-  @override
   String get navNotifications => '알림';
-
-  @override
-  String get navSearchTooltip => '검색';
 
   @override
   String get navOpenCamera => '카메라 열기';

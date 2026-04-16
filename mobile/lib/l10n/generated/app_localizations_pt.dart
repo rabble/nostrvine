@@ -3544,13 +3544,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get navMyProfile => 'Meu perfil';
 
   @override
-  String get navSearch => 'Buscar';
-
-  @override
   String get navNotifications => 'Notificações';
-
-  @override
-  String get navSearchTooltip => 'Buscar';
 
   @override
   String get navOpenCamera => 'Abrir câmera';

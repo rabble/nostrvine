@@ -3504,13 +3504,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get navMyProfile => 'Profilim';
 
   @override
-  String get navSearch => 'Ara';
-
-  @override
   String get navNotifications => 'Bildirimler';
-
-  @override
-  String get navSearchTooltip => 'Ara';
 
   @override
   String get navOpenCamera => 'Kamerayı aç';

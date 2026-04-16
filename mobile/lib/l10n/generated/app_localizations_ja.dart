@@ -3349,13 +3349,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get navMyProfile => 'マイプロフィール';
 
   @override
-  String get navSearch => '検索';
-
-  @override
   String get navNotifications => '通知';
-
-  @override
-  String get navSearchTooltip => '検索';
 
   @override
   String get navOpenCamera => 'カメラを開く';

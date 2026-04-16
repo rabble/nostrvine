@@ -88,7 +88,6 @@ class FeedModeSwitch extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    const SizedBox.shrink(),
                   ],
                 );
               },
