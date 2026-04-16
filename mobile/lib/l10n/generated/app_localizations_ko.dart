@@ -1131,13 +1131,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionLike => '좋아요';
 
   @override
-  String get videoActionAutoLabel => 'Auto';
+  String get videoActionAutoLabel => '자동';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance => '자동 넘김 켜기';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance => '자동 넘김 끄기';
 
   @override
   String get videoActionRemoveRepost => '리포스트 취소';

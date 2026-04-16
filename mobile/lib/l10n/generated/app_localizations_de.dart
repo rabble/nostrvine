@@ -1227,10 +1227,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance =>
+      'Automatisches Weiterblättern aktivieren';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance =>
+      'Automatisches Weiterblättern deaktivieren';
 
   @override
   String get videoActionRemoveRepost => 'Repost entfernen';

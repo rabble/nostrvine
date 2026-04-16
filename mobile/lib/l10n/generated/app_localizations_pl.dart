@@ -1230,10 +1230,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance =>
+      'Włącz automatyczne przechodzenie dalej';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance =>
+      'Wyłącz automatyczne przechodzenie dalej';
 
   @override
   String get videoActionRemoveRepost => 'Usuń repost';

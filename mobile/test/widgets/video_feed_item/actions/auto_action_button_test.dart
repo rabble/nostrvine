@@ -10,8 +10,10 @@ void main() {
   Widget buildSubject({
     required bool isEnabled,
     VoidCallback? onPressed,
+    Locale? locale,
   }) {
     return MaterialApp(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
@@ -43,6 +45,19 @@ void main() {
       await tester.pumpWidget(buildSubject(isEnabled: true));
 
       expect(find.bySemanticsLabel('Disable auto advance'), findsOneWidget);
+    });
+
+    testWidgets('renders translated semantics for Spanish locale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(isEnabled: false, locale: const Locale('es')),
+      );
+
+      expect(
+        find.bySemanticsLabel('Activar avance automático'),
+        findsOneWidget,
+      );
     });
   });
 }

@@ -1124,13 +1124,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoActionLike => 'いいね';
 
   @override
-  String get videoActionAutoLabel => 'Auto';
+  String get videoActionAutoLabel => '自動';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance => '自動送りをオンにする';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance => '自動送りをオフにする';
 
   @override
   String get videoActionRemoveRepost => 'リポストを取り消す';

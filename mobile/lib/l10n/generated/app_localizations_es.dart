@@ -1229,10 +1229,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance => 'Activar avance automático';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance => 'Desactivar avance automático';
 
   @override
   String get videoActionRemoveRepost => 'Quitar repost';

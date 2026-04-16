@@ -1191,13 +1191,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionLike => 'الإعجاب بالفيديو';
 
   @override
-  String get videoActionAutoLabel => 'Auto';
+  String get videoActionAutoLabel => 'تلقائي';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance => 'تفعيل التقدّم التلقائي';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance => 'إيقاف التقدّم التلقائي';
 
   @override
   String get videoActionRemoveRepost => 'إزالة إعادة النشر';

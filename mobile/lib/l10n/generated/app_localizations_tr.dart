@@ -1189,13 +1189,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionLike => 'Videoyu beğen';
 
   @override
-  String get videoActionAutoLabel => 'Auto';
+  String get videoActionAutoLabel => 'Otomatik';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance => 'Otomatik ilerlemeyi aç';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance => 'Otomatik ilerlemeyi kapat';
 
   @override
   String get videoActionRemoveRepost => 'Yeniden paylaşımı kaldır';

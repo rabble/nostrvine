@@ -1217,10 +1217,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance => 'Automatisch doorgaan inschakelen';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance =>
+      'Automatisch doorgaan uitschakelen';
 
   @override
   String get videoActionRemoveRepost => 'Repost verwijderen';

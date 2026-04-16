@@ -1236,10 +1236,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance => 'Activer le passage automatique';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance =>
+      'Désactiver le passage automatique';
 
   @override
   String get videoActionRemoveRepost => 'Supprimer le repost';

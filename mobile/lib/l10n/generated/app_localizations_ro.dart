@@ -1244,10 +1244,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance => 'Activează avansarea automată';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance => 'Dezactivează avansarea automată';
 
   @override
   String get videoActionRemoveRepost => 'Elimină redistribuirea';

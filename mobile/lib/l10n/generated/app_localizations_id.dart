@@ -1183,13 +1183,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoActionLike => 'Suka video';
 
   @override
-  String get videoActionAutoLabel => 'Auto';
+  String get videoActionAutoLabel => 'Otomatis';
 
   @override
-  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+  String get videoActionEnableAutoAdvance => 'Aktifkan lanjut otomatis';
 
   @override
-  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+  String get videoActionDisableAutoAdvance => 'Nonaktifkan lanjut otomatis';
 
   @override
   String get videoActionRemoveRepost => 'Hapus repost';
