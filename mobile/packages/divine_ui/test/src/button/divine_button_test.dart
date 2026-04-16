@@ -523,7 +523,6 @@ void main() {
           buildTestWidget(
             label: '',
             leadingIcon: DivineIconName.heart,
-            size: DivineButtonSize.base,
             onPressed: () {},
           ),
         );
