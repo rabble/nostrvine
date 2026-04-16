@@ -411,14 +411,6 @@
     "videoGridDeleteConfirm": "Hapus",
     "videoGridDeletingContent": "Menghapus konten...",
     "videoGridDeleteSuccess": "Permintaan hapus berhasil dikirim",
-    "videoGridDeleteFailure": "Gagal menghapus konten: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Klasik",
     "exploreTabNew": "Baru",
     "exploreTabPopular": "Populer",
@@ -1505,14 +1497,6 @@
     "shareMenuDelete": "Hapus",
     "shareMenuDeletingContent": "Menghapus konten...",
     "shareMenuDeleteRequestSent": "Video dihapus",
-    "shareMenuFailedToDeleteContent": "Gagal menghapus konten: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuDeleteFailedNotInitialized": "Penghapusan belum siap. Coba lagi sebentar lagi.",
     "shareMenuDeleteFailedNotOwner": "Kamu cuma bisa menghapus video milikmu sendiri.",
     "shareMenuDeleteFailedNotAuthenticated": "Masuk lagi, lalu coba hapus.",
@@ -1552,14 +1536,6 @@
     "shareMenuDeleteVideoQuestion": "Hapus Video?",
     "shareMenuDeleteRelayWarning": "Ini akan mengirim permintaan hapus ke relay. Catatan: Beberapa relay mungkin masih punya salinan cache.",
     "shareMenuVideoDeletionRequested": "Video dihapus",
-    "shareMenuFailedToDeleteVideo": "Gagal menghapus video: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuContentLabels": "Label konten",
     "shareMenuAddContentLabels": "Tambah label konten",
     "shareMenuClearAll": "Bersihkan semua",

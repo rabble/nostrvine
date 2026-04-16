@@ -835,11 +835,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Borttagningsbegäran skickad';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Kunde inte ta bort innehåll: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klassiker';
 
   @override
@@ -2960,11 +2955,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Videon borttagen';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Kunde inte ta bort innehåll: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'Borttagningen är inte redo än. Försök igen om en stund.';
 
@@ -3049,11 +3039,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Videon borttagen';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Kunde inte ta bort videon: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Innehållsetiketter';

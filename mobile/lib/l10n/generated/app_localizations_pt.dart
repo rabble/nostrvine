@@ -861,11 +861,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Solicitação de exclusão enviada com sucesso';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Falha ao excluir conteúdo: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Clássicos';
 
   @override
@@ -2988,11 +2983,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Vídeo excluído';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Falha ao excluir conteúdo: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'A exclusão ainda não está pronta. Tenta de novo daqui a pouco.';
 
@@ -3078,11 +3068,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Vídeo excluído';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Falha ao excluir vídeo: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Rótulos de conteúdo';

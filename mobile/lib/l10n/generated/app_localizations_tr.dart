@@ -830,11 +830,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Silme isteği başarıyla gönderildi';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'İçerik silinemedi: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klasikler';
 
   @override
@@ -2950,11 +2945,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Video silindi';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'İçerik silinemedi: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'Silme henüz hazır değil. Birazdan tekrar dene.';
 
@@ -3040,11 +3030,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video silindi';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Video silinemedi: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'İçerik etiketleri';

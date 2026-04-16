@@ -821,11 +821,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoGridDeleteSuccess => 'تم إرسال طلب الحذف بنجاح';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'فشل حذف المحتوى: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'الكلاسيكيات';
 
   @override
@@ -2935,11 +2930,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'تم حذف الفيديو';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'فشل حذف المحتوى: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'الحذف غير جاهز بعد. حاول مرة أخرى بعد لحظة.';
 
@@ -3024,11 +3014,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'تم حذف الفيديو';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'فشل حذف الفيديو: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'وسوم المحتوى';

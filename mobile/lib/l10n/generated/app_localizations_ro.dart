@@ -877,11 +877,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cererea de ștergere a fost trimisă cu succes';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'N-am putut șterge conținutul: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Clasice';
 
   @override
@@ -3062,11 +3057,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Videoclip șters';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'N-am putut șterge conținutul: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'Ștergerea nu e încă gata. Încearcă din nou peste un moment.';
 
@@ -3152,11 +3142,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Videoclip șters';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'N-am putut șterge videoclipul: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Etichete de conținut';

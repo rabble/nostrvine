@@ -783,11 +783,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoGridDeleteSuccess => '削除リクエストを送ったよ';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'コンテンツの削除がうまくいかなかった: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'クラシック';
 
   @override
@@ -2814,11 +2809,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteRequestSent => '動画を削除したよ';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'コンテンツの削除がうまくいかなかった: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       '削除の準備がまだだよ。少し待ってからもう一度試してね。';
 
@@ -2898,11 +2888,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => '動画を削除したよ';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return '動画の削除がうまくいかなかった: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'コンテンツラベル';

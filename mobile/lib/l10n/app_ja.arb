@@ -411,14 +411,6 @@
     "videoGridDeleteConfirm": "削除",
     "videoGridDeletingContent": "コンテンツを削除中...",
     "videoGridDeleteSuccess": "削除リクエストを送ったよ",
-    "videoGridDeleteFailure": "コンテンツの削除がうまくいかなかった: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "クラシック",
     "exploreTabNew": "新着",
     "exploreTabPopular": "人気",
@@ -1505,14 +1497,6 @@
     "shareMenuDelete": "削除",
     "shareMenuDeletingContent": "コンテンツを削除中...",
     "shareMenuDeleteRequestSent": "動画を削除したよ",
-    "shareMenuFailedToDeleteContent": "コンテンツの削除がうまくいかなかった: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuDeleteFailedNotInitialized": "削除の準備がまだだよ。少し待ってからもう一度試してね。",
     "shareMenuDeleteFailedNotOwner": "自分の動画だけ削除できるよ。",
     "shareMenuDeleteFailedNotAuthenticated": "もう一度ログインしてから削除してね。",
@@ -1552,14 +1536,6 @@
     "shareMenuDeleteVideoQuestion": "動画を削除する?",
     "shareMenuDeleteRelayWarning": "リレーに削除リクエストを送るよ。注意: 一部のリレーにはキャッシュが残ることもあるよ。",
     "shareMenuVideoDeletionRequested": "動画を削除したよ",
-    "shareMenuFailedToDeleteVideo": "動画の削除がうまくいかなかった: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuContentLabels": "コンテンツラベル",
     "shareMenuAddContentLabels": "コンテンツラベルを追加",
     "shareMenuClearAll": "すべてクリア",

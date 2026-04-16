@@ -860,11 +860,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Żądanie usunięcia wysłane pomyślnie';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Nie udało się usunąć treści: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klasyki';
 
   @override
@@ -3059,11 +3054,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Film usunięty';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Nie udało się usunąć treści: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'Usuwanie nie jest jeszcze gotowe. Spróbuj ponownie za chwilę.';
 
@@ -3148,11 +3138,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Film usunięty';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Nie udało się usunąć filmu: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Etykiety treści';

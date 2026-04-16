@@ -411,14 +411,6 @@
     "videoGridDeleteConfirm": "Șterge",
     "videoGridDeletingContent": "Se șterge conținutul...",
     "videoGridDeleteSuccess": "Cererea de ștergere a fost trimisă cu succes",
-    "videoGridDeleteFailure": "N-am putut șterge conținutul: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Clasice",
     "exploreTabNew": "Noi",
     "exploreTabPopular": "Populare",
@@ -1505,14 +1497,6 @@
     "shareMenuDelete": "Șterge",
     "shareMenuDeletingContent": "Se șterge conținutul...",
     "shareMenuDeleteRequestSent": "Videoclip șters",
-    "shareMenuFailedToDeleteContent": "N-am putut șterge conținutul: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuDeleteFailedNotInitialized": "Ștergerea nu e încă gata. Încearcă din nou peste un moment.",
     "shareMenuDeleteFailedNotOwner": "Poți șterge doar propriile videoclipuri.",
     "shareMenuDeleteFailedNotAuthenticated": "Autentifică-te din nou, apoi încearcă să ștergi.",
@@ -1552,14 +1536,6 @@
     "shareMenuDeleteVideoQuestion": "Ștergi videoclipul?",
     "shareMenuDeleteRelayWarning": "Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.",
     "shareMenuVideoDeletionRequested": "Videoclip șters",
-    "shareMenuFailedToDeleteVideo": "N-am putut șterge videoclipul: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuContentLabels": "Etichete de conținut",
     "shareMenuAddContentLabels": "Adaugă etichete de conținut",
     "shareMenuClearAll": "Șterge tot",

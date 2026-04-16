@@ -785,11 +785,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteSuccess => '삭제 요청을 보냈어요';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return '콘텐츠를 삭제하지 못했어요: $error';
-  }
-
-  @override
   String get exploreTabClassics => '클래식';
 
   @override
@@ -2826,11 +2821,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteRequestSent => '영상을 삭제했어요';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return '콘텐츠 삭제에 실패했어요: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       '삭제 준비가 아직 안 됐어요. 잠시 뒤에 다시 시도해요.';
 
@@ -2911,11 +2901,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => '영상을 삭제했어요';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return '영상 삭제에 실패했어요: $error';
-  }
 
   @override
   String get shareMenuContentLabels => '콘텐츠 라벨';

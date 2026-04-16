@@ -858,11 +858,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Richiesta di eliminazione inviata con successo';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Impossibile eliminare il contenuto: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Classici';
 
   @override
@@ -2998,11 +2993,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Video eliminato';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Impossibile eliminare il contenuto: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'L\'eliminazione non è ancora pronta. Riprova tra un attimo.';
 
@@ -3089,11 +3079,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video eliminato';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Impossibile eliminare il video: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Etichette contenuto';

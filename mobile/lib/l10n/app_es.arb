@@ -411,14 +411,6 @@
     "videoGridDeleteConfirm": "Eliminar",
     "videoGridDeletingContent": "Eliminando contenido...",
     "videoGridDeleteSuccess": "Pedido de eliminación enviado con éxito",
-    "videoGridDeleteFailure": "No se pudo eliminar el contenido: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Clásicos",
     "exploreTabNew": "Nuevos",
     "exploreTabPopular": "Populares",
@@ -1505,14 +1497,6 @@
     "shareMenuDelete": "Eliminar",
     "shareMenuDeletingContent": "Eliminando contenido...",
     "shareMenuDeleteRequestSent": "Video eliminado",
-    "shareMenuFailedToDeleteContent": "No se pudo eliminar el contenido: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuDeleteFailedNotInitialized": "El borrado no está listo todavía. Probá de nuevo en un momento.",
     "shareMenuDeleteFailedNotOwner": "Solo podés borrar tus propios videos.",
     "shareMenuDeleteFailedNotAuthenticated": "Volvé a iniciar sesión y probá borrar de nuevo.",
@@ -1552,14 +1536,6 @@
     "shareMenuDeleteVideoQuestion": "¿Eliminar video?",
     "shareMenuDeleteRelayWarning": "Esto envía un pedido de eliminación a los relays. Nota: algunos relays todavía pueden tener copias en caché.",
     "shareMenuVideoDeletionRequested": "Video eliminado",
-    "shareMenuFailedToDeleteVideo": "No se pudo eliminar el video: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuContentLabels": "Etiquetas de contenido",
     "shareMenuAddContentLabels": "Agregar etiquetas de contenido",
     "shareMenuClearAll": "Limpiar todo",

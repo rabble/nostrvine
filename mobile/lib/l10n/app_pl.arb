@@ -411,14 +411,6 @@
     "videoGridDeleteConfirm": "Usuń",
     "videoGridDeletingContent": "Usuwanie treści...",
     "videoGridDeleteSuccess": "Żądanie usunięcia wysłane pomyślnie",
-    "videoGridDeleteFailure": "Nie udało się usunąć treści: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Klasyki",
     "exploreTabNew": "Nowe",
     "exploreTabPopular": "Popularne",
@@ -1505,14 +1497,6 @@
     "shareMenuDelete": "Usuń",
     "shareMenuDeletingContent": "Usuwanie treści...",
     "shareMenuDeleteRequestSent": "Film usunięty",
-    "shareMenuFailedToDeleteContent": "Nie udało się usunąć treści: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuDeleteFailedNotInitialized": "Usuwanie nie jest jeszcze gotowe. Spróbuj ponownie za chwilę.",
     "shareMenuDeleteFailedNotOwner": "Możesz usuwać tylko własne filmy.",
     "shareMenuDeleteFailedNotAuthenticated": "Zaloguj się ponownie i spróbuj usunąć.",
@@ -1552,14 +1536,6 @@
     "shareMenuDeleteVideoQuestion": "Usunąć film?",
     "shareMenuDeleteRelayWarning": "To wyślе żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.",
     "shareMenuVideoDeletionRequested": "Film usunięty",
-    "shareMenuFailedToDeleteVideo": "Nie udało się usunąć filmu: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuContentLabels": "Etykiety treści",
     "shareMenuAddContentLabels": "Dodaj etykiety treści",
     "shareMenuClearAll": "Wyczyść wszystko",

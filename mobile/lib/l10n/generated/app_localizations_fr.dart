@@ -868,11 +868,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Demande de suppression envoyée avec succès';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Échec de la suppression : $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Classiques';
 
   @override
@@ -3007,11 +3002,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Vidéo supprimée';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Échec de la suppression du contenu : $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'La suppression n\'est pas prête. Réessaie dans un instant.';
 
@@ -3097,11 +3087,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Vidéo supprimée';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Échec de la suppression de la vidéo : $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Étiquettes de contenu';

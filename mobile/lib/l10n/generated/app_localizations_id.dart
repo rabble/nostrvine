@@ -830,11 +830,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Permintaan hapus berhasil dikirim';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Gagal menghapus konten: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klasik';
 
   @override
@@ -2942,11 +2937,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Video dihapus';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Gagal menghapus konten: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'Penghapusan belum siap. Coba lagi sebentar lagi.';
 
@@ -3032,11 +3022,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video dihapus';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Gagal menghapus video: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Label konten';

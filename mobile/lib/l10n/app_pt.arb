@@ -411,14 +411,6 @@
     "videoGridDeleteConfirm": "Excluir",
     "videoGridDeletingContent": "Excluindo conteúdo...",
     "videoGridDeleteSuccess": "Solicitação de exclusão enviada com sucesso",
-    "videoGridDeleteFailure": "Falha ao excluir conteúdo: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Clássicos",
     "exploreTabNew": "Novos",
     "exploreTabPopular": "Populares",
@@ -1505,14 +1497,6 @@
     "shareMenuDelete": "Excluir",
     "shareMenuDeletingContent": "Excluindo conteúdo...",
     "shareMenuDeleteRequestSent": "Vídeo excluído",
-    "shareMenuFailedToDeleteContent": "Falha ao excluir conteúdo: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuDeleteFailedNotInitialized": "A exclusão ainda não está pronta. Tenta de novo daqui a pouco.",
     "shareMenuDeleteFailedNotOwner": "Só podes apagar os teus próprios vídeos.",
     "shareMenuDeleteFailedNotAuthenticated": "Inicia sessão outra vez e tenta apagar.",
@@ -1552,14 +1536,6 @@
     "shareMenuDeleteVideoQuestion": "Excluir vídeo?",
     "shareMenuDeleteRelayWarning": "Isso vai enviar uma solicitação de exclusão para os relays. Nota: alguns relays ainda podem ter cópias em cache.",
     "shareMenuVideoDeletionRequested": "Vídeo excluído",
-    "shareMenuFailedToDeleteVideo": "Falha ao excluir vídeo: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuContentLabels": "Rótulos de conteúdo",
     "shareMenuAddContentLabels": "Adicionar rótulos de conteúdo",
     "shareMenuClearAll": "Limpar tudo",

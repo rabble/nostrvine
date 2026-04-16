@@ -1546,12 +1546,6 @@ abstract class AppLocalizations {
   /// **'Delete request sent successfully'**
   String get videoGridDeleteSuccess;
 
-  /// No description provided for @videoGridDeleteFailure.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete content: {error}'**
-  String videoGridDeleteFailure(Object error);
-
   /// No description provided for @exploreTabClassics.
   ///
   /// In en, this message translates to:
@@ -5228,12 +5222,6 @@ abstract class AppLocalizations {
   /// **'Video deleted'**
   String get shareMenuDeleteRequestSent;
 
-  /// No description provided for @shareMenuFailedToDeleteContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete content: {error}'**
-  String shareMenuFailedToDeleteContent(String error);
-
   /// No description provided for @shareMenuDeleteFailedNotInitialized.
   ///
   /// In en, this message translates to:
@@ -5383,12 +5371,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Video deleted'**
   String get shareMenuVideoDeletionRequested;
-
-  /// No description provided for @shareMenuFailedToDeleteVideo.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete video: {error}'**
-  String shareMenuFailedToDeleteVideo(String error);
 
   /// No description provided for @shareMenuContentLabels.
   ///

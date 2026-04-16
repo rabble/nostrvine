@@ -411,14 +411,6 @@
     "videoGridDeleteConfirm": "Sil",
     "videoGridDeletingContent": "İçerik siliniyor...",
     "videoGridDeleteSuccess": "Silme isteği başarıyla gönderildi",
-    "videoGridDeleteFailure": "İçerik silinemedi: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Klasikler",
     "exploreTabNew": "Yeni",
     "exploreTabPopular": "Popüler",
@@ -1505,14 +1497,6 @@
     "shareMenuDelete": "Sil",
     "shareMenuDeletingContent": "İçerik siliniyor...",
     "shareMenuDeleteRequestSent": "Video silindi",
-    "shareMenuFailedToDeleteContent": "İçerik silinemedi: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuDeleteFailedNotInitialized": "Silme henüz hazır değil. Birazdan tekrar dene.",
     "shareMenuDeleteFailedNotOwner": "Yalnızca kendi videolarını silebilirsin.",
     "shareMenuDeleteFailedNotAuthenticated": "Tekrar giriş yap, sonra silmeyi dene.",
@@ -1552,14 +1536,6 @@
     "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
     "shareMenuDeleteRelayWarning": "Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.",
     "shareMenuVideoDeletionRequested": "Video silindi",
-    "shareMenuFailedToDeleteVideo": "Video silinemedi: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuContentLabels": "İçerik etiketleri",
     "shareMenuAddContentLabels": "İçerik etiketleri ekle",
     "shareMenuClearAll": "Tümünü temizle",

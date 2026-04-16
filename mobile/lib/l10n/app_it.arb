@@ -411,14 +411,6 @@
     "videoGridDeleteConfirm": "Elimina",
     "videoGridDeletingContent": "Eliminazione contenuto...",
     "videoGridDeleteSuccess": "Richiesta di eliminazione inviata con successo",
-    "videoGridDeleteFailure": "Impossibile eliminare il contenuto: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Classici",
     "exploreTabNew": "Nuovi",
     "exploreTabPopular": "Popolari",
@@ -1505,14 +1497,6 @@
     "shareMenuDelete": "Elimina",
     "shareMenuDeletingContent": "Eliminazione contenuto...",
     "shareMenuDeleteRequestSent": "Video eliminato",
-    "shareMenuFailedToDeleteContent": "Impossibile eliminare il contenuto: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuDeleteFailedNotInitialized": "L'eliminazione non è ancora pronta. Riprova tra un attimo.",
     "shareMenuDeleteFailedNotOwner": "Puoi eliminare solo i tuoi video.",
     "shareMenuDeleteFailedNotAuthenticated": "Accedi di nuovo, poi riprova a eliminare.",
@@ -1552,14 +1536,6 @@
     "shareMenuDeleteVideoQuestion": "Eliminare il video?",
     "shareMenuDeleteRelayWarning": "Verrà inviata una richiesta di eliminazione ai relay. Nota: alcuni relay potrebbero avere ancora copie in cache.",
     "shareMenuVideoDeletionRequested": "Video eliminato",
-    "shareMenuFailedToDeleteVideo": "Impossibile eliminare il video: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuContentLabels": "Etichette contenuto",
     "shareMenuAddContentLabels": "Aggiungi etichette contenuto",
     "shareMenuClearAll": "Cancella tutto",

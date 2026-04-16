@@ -411,14 +411,6 @@
     "videoGridDeleteConfirm": "Verwijderen",
     "videoGridDeletingContent": "Inhoud verwijderen...",
     "videoGridDeleteSuccess": "Verwijderverzoek succesvol verstuurd",
-    "videoGridDeleteFailure": "Inhoud verwijderen mislukt: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Klassiekers",
     "exploreTabNew": "Nieuw",
     "exploreTabPopular": "Populair",
@@ -1505,14 +1497,6 @@
     "shareMenuDelete": "Verwijderen",
     "shareMenuDeletingContent": "Inhoud verwijderen...",
     "shareMenuDeleteRequestSent": "Video verwijderd",
-    "shareMenuFailedToDeleteContent": "Inhoud verwijderen mislukt: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuDeleteFailedNotInitialized": "Verwijderen is nog niet klaar. Probeer het zo meteen opnieuw.",
     "shareMenuDeleteFailedNotOwner": "Je kunt alleen je eigen video's verwijderen.",
     "shareMenuDeleteFailedNotAuthenticated": "Log opnieuw in en probeer te verwijderen.",
@@ -1552,14 +1536,6 @@
     "shareMenuDeleteVideoQuestion": "Video verwijderen?",
     "shareMenuDeleteRelayWarning": "Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopieën.",
     "shareMenuVideoDeletionRequested": "Video verwijderd",
-    "shareMenuFailedToDeleteVideo": "Video verwijderen mislukt: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuContentLabels": "Inhoudslabels",
     "shareMenuAddContentLabels": "Inhoudslabels toevoegen",
     "shareMenuClearAll": "Alles wissen",

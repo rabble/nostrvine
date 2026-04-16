@@ -411,14 +411,6 @@
     "videoGridDeleteConfirm": "Ta bort",
     "videoGridDeletingContent": "Tar bort innehåll...",
     "videoGridDeleteSuccess": "Borttagningsbegäran skickad",
-    "videoGridDeleteFailure": "Kunde inte ta bort innehåll: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Klassiker",
     "exploreTabNew": "Nytt",
     "exploreTabPopular": "Populärt",
@@ -1505,14 +1497,6 @@
     "shareMenuDelete": "Ta bort",
     "shareMenuDeletingContent": "Tar bort innehåll...",
     "shareMenuDeleteRequestSent": "Videon borttagen",
-    "shareMenuFailedToDeleteContent": "Kunde inte ta bort innehåll: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuDeleteFailedNotInitialized": "Borttagningen är inte redo än. Försök igen om en stund.",
     "shareMenuDeleteFailedNotOwner": "Du kan bara ta bort dina egna videor.",
     "shareMenuDeleteFailedNotAuthenticated": "Logga in igen och försök ta bort.",
@@ -1552,14 +1536,6 @@
     "shareMenuDeleteVideoQuestion": "Ta bort video?",
     "shareMenuDeleteRelayWarning": "Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.",
     "shareMenuVideoDeletionRequested": "Videon borttagen",
-    "shareMenuFailedToDeleteVideo": "Kunde inte ta bort videon: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
     "shareMenuContentLabels": "Innehållsetiketter",
     "shareMenuAddContentLabels": "Lägg till innehållsetiketter",
     "shareMenuClearAll": "Rensa alla",

@@ -843,11 +843,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Delete request sent successfully';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Failed to delete content: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Classics';
 
   @override
@@ -2957,11 +2952,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Video deleted';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Failed to delete content: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'Deletion isn\'t ready yet. Try again in a moment.';
 
@@ -3047,11 +3037,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video deleted';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Failed to delete video: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Content labels';

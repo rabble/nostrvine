@@ -849,11 +849,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Verwijderverzoek succesvol verstuurd';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Inhoud verwijderen mislukt: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klassiekers';
 
   @override
@@ -2975,11 +2970,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Video verwijderd';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Inhoud verwijderen mislukt: $error';
-  }
-
-  @override
   String get shareMenuDeleteFailedNotInitialized =>
       'Verwijderen is nog niet klaar. Probeer het zo meteen opnieuw.';
 
@@ -3065,11 +3055,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video verwijderd';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Video verwijderen mislukt: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Inhoudslabels';
