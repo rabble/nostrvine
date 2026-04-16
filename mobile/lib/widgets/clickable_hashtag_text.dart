@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
+import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -185,13 +186,16 @@ class ClickableHashtagText extends ConsumerWidget {
     }
 
     // Try to get cached profile (reactive provider handles background fetch)
-    final profile = ref.read(userProfileReactiveProvider(hexPubkey)).value;
+    final profile = ref.watch(userProfileReactiveProvider(hexPubkey)).value;
 
-    // Display name: @username if available, otherwise @truncated_npub
-    final displayName = profile?.bestDisplayName;
-    final displayText = displayName != null
-        ? '@$displayName'
-        : '@${NostrKeyUtils.truncateNpub(hexPubkey)}';
+    final displayText = switch (profile) {
+      UserProfile(:final displayName?) when displayName.isNotEmpty =>
+        '@$displayName',
+      UserProfile(:final name?) when name.isNotEmpty => '@$name',
+      UserProfile(:final displayNip05?) when displayNip05.isNotEmpty =>
+        displayNip05,
+      _ => '@${NostrKeyUtils.truncateNpub(hexPubkey)}',
+    };
 
     return TextSpan(
       text: displayText,

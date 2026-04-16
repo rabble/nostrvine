@@ -2,8 +2,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:url_launcher_platform_interface/link.dart';
@@ -300,6 +302,48 @@ void main() {
       final spans = textSpan.children!.cast<TextSpan>();
       final mentionSpan = spans.firstWhere(
         (span) => span.text != null && span.text!.startsWith('@npub1'),
+      );
+
+      expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());
+    });
+
+    testWidgets('uses display nip05 when no profile name is available', (
+      tester,
+    ) async {
+      final npub = NostrKeyUtils.encodePubKey(_testHexPubkey);
+      final textWithMention = 'Find me at $npub';
+      final profile = UserProfile(
+        pubkey: _testHexPubkey,
+        nip05: '_@alice.divine.video',
+        rawData: const {},
+        createdAt: DateTime.utc(2026, 4, 16),
+        eventId:
+            'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            userProfileReactiveProvider(_testHexPubkey).overrideWith(
+              (ref) => Stream.value(profile),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: ClickableHashtagText(text: textWithMention)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(find.byType(Text));
+      expect(text.textSpan, isNotNull);
+
+      final textSpan = text.textSpan! as TextSpan;
+      final spans = textSpan.children!.cast<TextSpan>();
+      final mentionSpan = spans.firstWhere(
+        (span) => span.text == '@alice.divine.video',
       );
 
       expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());
