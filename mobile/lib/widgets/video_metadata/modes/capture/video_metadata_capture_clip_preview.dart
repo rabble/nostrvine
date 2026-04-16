@@ -100,7 +100,7 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                       VideoClipEditorProcessingOverlay(
                         clip: clip,
                         isProcessing:
-                            state.finalRenderedClip == null &&
+                            state.finalRenderedClip == null ||
                             state.isProcessing,
                         inactivePlaceholder: Center(
                           child: DivineIconButton(

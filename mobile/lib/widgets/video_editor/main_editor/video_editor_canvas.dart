@@ -93,7 +93,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   bool _isInitialized = false;
   bool _isImportingHistory = false;
-  bool _hasImportedHistory = false;
 
   bool get _isLayerBeingTransformed => _selectedLayer != null;
 
@@ -752,10 +751,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           _proVideoController,
           key: scope.editorKey,
           configs: ProImageEditorConfigs(
-            stateHistory:
-                !_hasImportedHistory &&
-                    !_isImportingHistory &&
-                    editorStateHistory.isNotEmpty
+            stateHistory: !_isImportingHistory && editorStateHistory.isNotEmpty
                 ? StateHistoryConfigs(
                     initStateHistory: .fromMap(editorStateHistory),
                   )
@@ -901,7 +897,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             mainEditorCallbacks: MainEditorCallbacks(
               onAfterViewInit: () {
                 _isInitialized = true;
-                _hasImportedHistory = true;
                 _syncMainCapabilities(scope, bloc);
               },
               onDone: _handleDone,
@@ -1010,6 +1005,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 );
                 _syncMainCapabilities(scope, bloc);
               },
+              onRedo: () => _syncMainCapabilities(scope, bloc),
+              onUndo: () => _syncMainCapabilities(scope, bloc),
               onCreateTextLayer: scope.onAddEditTextLayer,
               onEditTextLayer: scope.onAddEditTextLayer,
               helperLines: HelperLinesCallbacks(

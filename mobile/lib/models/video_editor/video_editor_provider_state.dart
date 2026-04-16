@@ -152,6 +152,7 @@ class VideoEditorProviderState {
     bool clearProofManifestJson = false,
     Map<String, dynamic>? editorStateHistory,
     CompleteParameters? editorEditingParameters,
+    bool clearEditorEditingParameters = false,
     Set<String>? collaboratorPubkeys,
     Set<String>? pendingCollaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
@@ -180,7 +181,9 @@ class VideoEditorProviderState {
           : (finalRenderedClip ?? this.finalRenderedClip),
       editorStateHistory: editorStateHistory ?? this.editorStateHistory,
       editorEditingParameters:
-          editorEditingParameters ?? this.editorEditingParameters,
+          clearEditorEditingParameters || clearFinalRenderedClip
+          ? null
+          : editorEditingParameters ?? this.editorEditingParameters,
       collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
       pendingCollaboratorPubkeys:
           pendingCollaboratorPubkeys ?? this.pendingCollaboratorPubkeys,

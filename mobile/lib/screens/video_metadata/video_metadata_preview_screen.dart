@@ -198,9 +198,7 @@ class _VideoPlayerWidget extends StatelessWidget {
               borderRadius: .circular(16),
               child: DivineVideoPlayer(
                 controller: controller,
-                placeholder: VideoMetadataCapturePreviewThumbnail(
-                  clip: clip,
-                ),
+                placeholder: VideoMetadataCapturePreviewThumbnail(clip: clip),
               ),
             ),
           );
