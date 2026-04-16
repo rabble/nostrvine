@@ -570,6 +570,14 @@ class BlossomUploadService {
       );
     }
 
+    Log.info(
+      '📤 Resumable init: POST $serverUrl/upload/init '
+      '(file: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB)',
+      name: 'BlossomUploadService',
+      category: LogCategory.video,
+    );
+    final initStopwatch = Stopwatch()..start();
+
     final response = await dio.post<dynamic>(
       '$serverUrl/upload/init',
       data: {
@@ -585,6 +593,14 @@ class BlossomUploadService {
         },
         validateStatus: _validateHttpStatus,
       ),
+    );
+    initStopwatch.stop();
+
+    Log.info(
+      '📤 Resumable init response: ${response.statusCode} '
+      'in ${initStopwatch.elapsedMilliseconds}ms',
+      name: 'BlossomUploadService',
+      category: LogCategory.video,
     );
 
     final responseData = response.data;
@@ -612,6 +628,15 @@ class BlossomUploadService {
         'Resumable upload init response is missing required fields',
       );
     }
+
+    final totalChunks = (fileSize / chunkSize).ceil();
+    Log.info(
+      '📤 Resumable session created: uploadId=$uploadId, '
+      'chunkSize=${(chunkSize / 1024).toStringAsFixed(0)}KB, '
+      'totalChunks=$totalChunks, nextOffset=$nextOffset',
+      name: 'BlossomUploadService',
+      category: LogCategory.video,
+    );
 
     return BlossomResumableUploadSession(
       uploadId: uploadId,
@@ -662,6 +687,18 @@ class BlossomUploadService {
   }) async {
     var currentSession = session;
     final fileReader = await file.open();
+    final totalChunks = (fileSize / currentSession.chunkSize).ceil();
+    var chunkIndex = 0;
+    final uploadStopwatch = Stopwatch()..start();
+
+    Log.info(
+      '📤 Chunk upload starting: '
+      '${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB '
+      'in ~$totalChunks chunks '
+      '(${(currentSession.chunkSize / 1024).toStringAsFixed(0)}KB each)',
+      name: 'BlossomUploadService',
+      category: LogCategory.video,
+    );
 
     try {
       while (currentSession.nextOffset < fileSize) {
@@ -671,6 +708,7 @@ class BlossomUploadService {
           fileSize,
         );
         final chunkLength = endExclusive - start;
+        chunkIndex++;
 
         await fileReader.setPosition(start);
         final chunkBytes = await fileReader.read(chunkLength);
@@ -679,6 +717,7 @@ class BlossomUploadService {
         // Chunk bytes are already in memory so retries are cheap.
         late Response<dynamic> response;
         var chunkAttempt = 0;
+        final chunkStopwatch = Stopwatch()..start();
         while (true) {
           try {
             response = await dio.put<dynamic>(
@@ -739,6 +778,20 @@ class BlossomUploadService {
           );
         }
 
+        chunkStopwatch.stop();
+        final chunkMs = chunkStopwatch.elapsedMilliseconds;
+        final chunkSpeed = chunkMs > 0
+            ? (chunkLength / 1024 / (chunkMs / 1000)).toStringAsFixed(0)
+            : '?';
+        Log.debug(
+          '📤 Chunk $chunkIndex/$totalChunks: '
+          '${(chunkLength / 1024).toStringAsFixed(0)}KB '
+          'in ${chunkMs}ms (${chunkSpeed}KB/s) '
+          '[${(endExclusive / fileSize * 100).toStringAsFixed(0)}%]',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+
         currentSession = currentSession.copyWith(
           nextOffset: _parseUploadOffset(response.headers) ?? endExclusive,
           expiresAt:
@@ -747,6 +800,19 @@ class BlossomUploadService {
         );
         onResumableSessionUpdated?.call(currentSession);
       }
+
+      uploadStopwatch.stop();
+      final totalMs = uploadStopwatch.elapsedMilliseconds;
+      final avgSpeed = totalMs > 0
+          ? (fileSize / 1024 / 1024 / (totalMs / 1000)).toStringAsFixed(2)
+          : '?';
+      Log.info(
+        '📤 Chunk upload complete: $chunkIndex chunks, '
+        '${(totalMs / 1000).toStringAsFixed(1)}s total, '
+        '${avgSpeed}MB/s avg',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
 
       return currentSession;
     } finally {
@@ -785,6 +851,14 @@ class BlossomUploadService {
       _addProofModeHeaders(headers, proofManifestJson);
     }
 
+    Log.info(
+      '📤 Completing resumable upload: '
+      '${session.uploadId}',
+      name: 'BlossomUploadService',
+      category: LogCategory.video,
+    );
+    final completeStopwatch = Stopwatch()..start();
+
     final response = await dio.post<dynamic>(
       '$serverUrl/upload/${session.uploadId}/complete',
       data: {'sha256': fileHash},
@@ -792,6 +866,14 @@ class BlossomUploadService {
         headers: headers,
         validateStatus: _validateHttpStatus,
       ),
+    );
+    completeStopwatch.stop();
+
+    Log.info(
+      '📤 Complete response: ${response.statusCode} '
+      'in ${completeStopwatch.elapsedMilliseconds}ms',
+      name: 'BlossomUploadService',
+      category: LogCategory.video,
     );
 
     return _parseUploadResponse(
