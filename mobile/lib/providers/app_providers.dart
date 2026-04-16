@@ -1738,10 +1738,10 @@ final mediaViewerAuthServiceProvider = Provider<MediaViewerAuthService>((ref) {
 @riverpod
 MediaAuthInterceptor mediaAuthInterceptor(Ref ref) {
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
-  final blossomAuthService = ref.watch(blossomAuthServiceProvider);
+  final mediaViewerAuthService = ref.watch(mediaViewerAuthServiceProvider);
   return MediaAuthInterceptor(
     ageVerificationService: ageVerificationService,
-    blossomAuthService: blossomAuthService,
+    mediaViewerAuthService: mediaViewerAuthService,
   );
 }
 

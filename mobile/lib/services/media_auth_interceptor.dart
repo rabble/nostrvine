@@ -1,27 +1,28 @@
-// ABOUTME: Intercepts 401 unauthorized media requests and handles Blossom authentication
+// ABOUTME: Intercepts 401 unauthorized media requests and handles viewer authentication
 // ABOUTME: Coordinates age verification and signed auth header creation for age-restricted content
 
-import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service for intercepting unauthorized media requests and handling authentication flow
 class MediaAuthInterceptor {
   MediaAuthInterceptor({
     required AgeVerificationService ageVerificationService,
-    required BlossomAuthService blossomAuthService,
+    required MediaViewerAuthService mediaViewerAuthService,
   }) : _ageVerificationService = ageVerificationService,
-       _blossomAuthService = blossomAuthService;
+       _mediaViewerAuthService = mediaViewerAuthService;
 
   final AgeVerificationService _ageVerificationService;
-  final BlossomAuthService _blossomAuthService;
+  final MediaViewerAuthService _mediaViewerAuthService;
 
   /// Handle 401 unauthorized response from Blossom media server
-  /// Returns auth header if user verifies adult content access, null otherwise
-  Future<String?> handleUnauthorizedMedia({
+  /// Returns request headers if user verifies adult content access, null otherwise
+  Future<Map<String, String>?> handleUnauthorizedMedia({
     required BuildContext context,
-    required String sha256Hash,
+    String? sha256Hash,
+    String? url,
     String? serverUrl,
     String? category,
   }) async {
@@ -49,8 +50,9 @@ class MediaAuthInterceptor {
           name: 'MediaAuthInterceptor',
           category: LogCategory.system,
         );
-        return await _blossomAuthService.createGetAuthHeader(
+        return await _mediaViewerAuthService.createAuthHeaders(
           sha256Hash: sha256Hash,
+          url: url,
           serverUrl: serverUrl,
         );
       }
@@ -91,8 +93,9 @@ class MediaAuthInterceptor {
       );
 
       // Create auth header after verification
-      return await _blossomAuthService.createGetAuthHeader(
+      return await _mediaViewerAuthService.createAuthHeaders(
         sha256Hash: sha256Hash,
+        url: url,
         serverUrl: serverUrl,
       );
     } catch (e) {
@@ -106,7 +109,7 @@ class MediaAuthInterceptor {
   }
 
   /// Check if we can create auth headers (user is authenticated with Nostr)
-  bool get canCreateAuthHeaders => _blossomAuthService.canCreateHeaders;
+  bool get canCreateAuthHeaders => _mediaViewerAuthService.canCreateHeaders;
 
   /// Returns true if adult content should be filtered from feeds entirely
   bool get shouldFilterContent =>
