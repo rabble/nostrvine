@@ -12,7 +12,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
@@ -24,6 +26,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.da
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
@@ -194,6 +197,95 @@ void main() {
       expect(find.byType(MetadataStatsRow), findsOneWidget);
       // No title text should appear.
       expect(find.text('Who knew?'), findsNothing);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Captions setting
+  // ---------------------------------------------------------------------------
+  group('Captions setting', () {
+    testWidgets('renders captions row even when video has no subtitles', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final video = _makeVideo();
+
+      await tester.pumpWidget(
+        buildSubject(
+          providerOverrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MetadataExpandedSheet(video: video),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Captions'), findsOneWidget);
+      expect(find.byType(Switch), findsOneWidget);
+    });
+
+    testWidgets('defaults captions switch to on from global preference', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        buildSubject(
+          providerOverrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MetadataExpandedSheet(video: _makeVideo()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final switchWidget = tester.widget<Switch>(find.byType(Switch));
+      expect(switchWidget.value, isTrue);
+    });
+
+    testWidgets('toggling captions switch updates global provider state', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MultiBlocProvider(
+                providers: [
+                  BlocProvider<VideoInteractionsBloc>.value(
+                    value: mockInteractionsBloc,
+                  ),
+                  BlocProvider<VideoRepostersCubit>.value(
+                    value: mockRepostersCubit,
+                  ),
+                ],
+                child: MetadataExpandedSheet(video: _makeVideo()),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      expect(container.read(subtitleVisibilityProvider), isFalse);
+      expect(prefs.getBool('subtitle_visibility_enabled'), isFalse);
     });
   });
 

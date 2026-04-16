@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
@@ -96,6 +97,7 @@ class _MetadataContent extends StatelessWidget {
         bottom: MediaQuery.paddingOf(context).bottom + 16,
       ),
       children: [
+        const _CaptionsSettingSection(),
         _TitleSection(video: video),
         MetadataBadgesRow(video: video),
         MetadataStatsRow(video: video),
@@ -109,6 +111,52 @@ class _MetadataContent extends StatelessWidget {
         MetadataRepostedBySection(video: video),
         MetadataSoundsSection(video: video),
       ],
+    );
+  }
+}
+
+/// Global captions preference row for the metadata sheet.
+class _CaptionsSettingSection extends ConsumerWidget {
+  const _CaptionsSettingSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final captionsEnabled = ref.watch(subtitleVisibilityProvider);
+
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: VineTheme.outlineDisabled),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text('Captions', style: VineTheme.titleSmallFont()),
+            ),
+            Semantics(
+              button: true,
+              toggled: captionsEnabled,
+              label: captionsEnabled
+                  ? 'Captions enabled for all videos'
+                  : 'Captions disabled for all videos',
+              child: Switch(
+                value: captionsEnabled,
+                activeThumbColor: VineTheme.vineGreen,
+                onChanged: (value) {
+                  ref
+                      .read(subtitleVisibilityProvider.notifier)
+                      .setEnabled(
+                        value,
+                      );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
