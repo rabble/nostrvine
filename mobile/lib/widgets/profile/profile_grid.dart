@@ -278,19 +278,19 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       child: ColoredBox(
         color: VineTheme.surfaceContainerHigh,
         child: TabBarView(
-        controller: _tabController,
-        children: [
-          ProfileVideosGrid(
-            videos: widget.videos,
-            userIdHex: widget.userIdHex,
-            isLoading: widget.isLoadingVideos,
-            errorMessage: widget.videoLoadError,
-          ),
-          ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
-          ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
-          ProfileCollabsGrid(isOwnProfile: widget.isOwnProfile),
-          ProfileCommentsGrid(isOwnProfile: widget.isOwnProfile),
-        ],
+          controller: _tabController,
+          children: [
+            ProfileVideosGrid(
+              videos: widget.videos,
+              userIdHex: widget.userIdHex,
+              isLoading: widget.isLoadingVideos,
+              errorMessage: widget.videoLoadError,
+            ),
+            ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
+            ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
+            ProfileCollabsGrid(isOwnProfile: widget.isOwnProfile),
+            ProfileCommentsGrid(isOwnProfile: widget.isOwnProfile),
+          ],
         ),
       ),
     );
