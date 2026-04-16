@@ -27,6 +27,7 @@ import 'package:openvine/screens/feed/feed_auto_advance_completion_listener.dart
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
+import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -971,22 +972,16 @@ class _PooledFullscreenItemContentState
     unawaited(feedState.animateToPage(widget.index + 1));
   }
 
-  /// Triggers the existing age verification flow. Matches the pattern used
-  /// by the legacy [VideoErrorOverlay].
+  /// Triggers age verification and retries pooled playback with viewer auth.
   Future<void> _verifyAgeForVideo(
     BuildContext context,
     VideoEvent video,
   ) async {
-    final ageVerificationService = ref.read(ageVerificationServiceProvider);
-    final verified = await ageVerificationService.verifyAdultContentAccess(
-      context,
-    );
-    if (!verified || !context.mounted) return;
-    // Clear the cached moderated status so a retry can re-classify the
-    // video if the auth cookie now unlocks it.
-    context.read<VideoPlaybackStatusCubit>().report(
-      video.id,
-      PlaybackStatus.ready,
+    await retryAgeRestrictedPooledVideo(
+      context: context,
+      ref: ref,
+      video: video,
+      index: widget.index,
     );
   }
 

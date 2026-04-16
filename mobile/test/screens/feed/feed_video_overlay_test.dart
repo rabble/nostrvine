@@ -13,14 +13,19 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
+import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../../helpers/test_provider_overrides.dart';
+import '../../test_data/video_test_data.dart';
 
 class _MockVideoInteractionsBloc
     extends MockBloc<VideoInteractionsEvent, VideoInteractionsState>
@@ -36,6 +41,12 @@ class _MockCuratedListRepository extends Mock
     implements CuratedListRepository {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
+
+class _MockVideoFeedController extends Mock implements VideoFeedController {}
+
+class _FakeBuildContext extends Fake implements BuildContext {}
 
 // Full 64-character test IDs (never truncate Nostr IDs)
 const _testVideoId =
@@ -60,6 +71,8 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(const VideoInteractionsSubscriptionRequested());
+      registerFallbackValue(_FakeBuildContext());
+      registerFallbackValue(<String, String>{});
     });
 
     setUp(() {
@@ -125,13 +138,29 @@ void main() {
       bool showAutoButton = false,
       bool isAutoEnabled = false,
       VoidCallback? onAutoPressed,
+      VideoFeedController? feedController,
+      List<dynamic>? additionalOverrides,
     }) {
+      final overlay = FeedVideoOverlay(
+        video: testVideo,
+        isActive: isActive,
+        pagePosition: pagePositionOverride ?? pagePosition,
+        index: index,
+        player: includePlayer ? (player ?? mockPlayer) : null,
+        firstFrameFuture: firstFrameFuture,
+        listSources: listSources,
+        showAutoButton: showAutoButton,
+        isAutoEnabled: isAutoEnabled,
+        onAutoPressed: onAutoPressed,
+      );
+
       return testMaterialApp(
         additionalOverrides: [
           curatedListRepositoryProvider.overrideWithValue(
             mockCuratedListRepository,
           ),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          ...?additionalOverrides,
         ],
         mockProfileRepository: mockProfileRepository,
         mockNip05VerificationService: mockNip05VerificationService,
@@ -145,18 +174,12 @@ void main() {
                 create: (_) => VideoPlaybackStatusCubit(),
               ),
             ],
-            child: FeedVideoOverlay(
-              video: testVideo,
-              isActive: isActive,
-              pagePosition: pagePositionOverride ?? pagePosition,
-              index: index,
-              player: includePlayer ? (player ?? mockPlayer) : null,
-              firstFrameFuture: firstFrameFuture,
-              listSources: listSources,
-              showAutoButton: showAutoButton,
-              isAutoEnabled: isAutoEnabled,
-              onAutoPressed: onAutoPressed,
-            ),
+            child: feedController == null
+                ? overlay
+                : VideoPoolProvider(
+                    feedController: feedController,
+                    child: overlay,
+                  ),
           ),
         ),
       );
@@ -242,6 +265,81 @@ void main() {
 
         expect(find.byType(ProofModeBadgeRow), findsOneWidget);
       });
+
+      testWidgets(
+        'verify age retries pooled playback with viewer auth headers',
+        (tester) async {
+          const sha256 =
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          const videoUrl = 'https://media.divine.video/$sha256/720p.mp4';
+          const headers = {'Authorization': 'Nostr viewer-token'};
+          final mockMediaAuthInterceptor = _MockMediaAuthInterceptor();
+          final mockFeedController = _MockVideoFeedController();
+
+          testVideo = createTestVideoEvent(
+            id: _testVideoId,
+            pubkey: _testPubkey,
+            videoUrl: videoUrl,
+            sha256: sha256,
+          );
+
+          when(
+            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+              context: any(named: 'context'),
+              sha256Hash: sha256,
+              url: videoUrl,
+              serverUrl: 'https://media.divine.video',
+              category: 'video',
+            ),
+          ).thenAnswer((_) async => headers);
+          when(
+            () => mockFeedController.updateRequestHeadersAndRetry(0, headers),
+          ).thenReturn(null);
+
+          await tester.pumpWidget(
+            buildSubject(
+              feedController: mockFeedController,
+              additionalOverrides: [
+                mediaAuthInterceptorProvider.overrideWithValue(
+                  mockMediaAuthInterceptor,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FeedVideoOverlay)),
+          );
+          cubit.report(testVideo.id, PlaybackStatus.ageRestricted);
+          await tester.pump();
+
+          expect(find.byType(ModeratedContentOverlay), findsOneWidget);
+          expect(
+            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+            findsOneWidget,
+          );
+
+          await tester.tap(
+            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+          );
+          await tester.pump();
+
+          verify(
+            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+              context: any(named: 'context'),
+              sha256Hash: sha256,
+              url: videoUrl,
+              serverUrl: 'https://media.divine.video',
+              category: 'video',
+            ),
+          ).called(1);
+          verify(
+            () => mockFeedController.updateRequestHeadersAndRetry(0, headers),
+          ).called(1);
+          expect(cubit.state.statusFor(testVideo.id), PlaybackStatus.ready);
+        },
+      );
 
       testWidgets('renders $ListAttributionChip when listSources is provided', (
         tester,

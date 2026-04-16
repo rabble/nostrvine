@@ -14,9 +14,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -35,6 +39,10 @@ class MockPlayer extends Mock implements Player {}
 class MockPlayerStream extends Mock implements PlayerStream {}
 
 class MockPlayerState extends Mock implements PlayerState {}
+
+class MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
+
+class _FakeBuildContext extends Fake implements BuildContext {}
 
 // Full 64-character test IDs
 const testVideoId1 =
@@ -70,6 +78,9 @@ void stubVideoFeedController(
     () => controller.setActive(active: any(named: 'active')),
   ).thenReturn(null);
   when(() => controller.addVideos(any())).thenReturn(null);
+  when(
+    () => controller.updateRequestHeadersAndRetry(any(), any()),
+  ).thenReturn(null);
   when(() => controller.addListener(any())).thenReturn(null);
   when(() => controller.removeListener(any())).thenReturn(null);
   when(controller.dispose).thenReturn(null);
@@ -120,6 +131,8 @@ void main() {
       registerFallbackValue(const FullscreenFeedVideoCacheStarted(index: 0));
       registerFallbackValue(Duration.zero);
       registerFallbackValue(LoadState.none);
+      registerFallbackValue(_FakeBuildContext());
+      registerFallbackValue(<String, String>{});
     });
 
     setUp(() async {
@@ -503,6 +516,79 @@ void main() {
           );
 
           expect(find.byType(PooledVideoFeed), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'verify age retries pooled playback with viewer auth headers',
+        (tester) async {
+          const sha256 =
+              'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+          const videoUrl = 'https://media.divine.video/$sha256/720p.mp4';
+          const headers = {'Authorization': 'Nostr fullscreen-token'};
+          final mockMediaAuthInterceptor = MockMediaAuthInterceptor();
+          final video = createTestVideoEvent(
+            id: testVideoId1,
+            pubkey: testPubkey,
+            videoUrl: videoUrl,
+            sha256: sha256,
+          );
+
+          when(
+            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+              context: any(named: 'context'),
+              sha256Hash: sha256,
+              url: videoUrl,
+              serverUrl: 'https://media.divine.video',
+              category: 'video',
+            ),
+          ).thenAnswer((_) async => headers);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: [video],
+              ),
+              additionalOverrides: [
+                mediaAuthInterceptorProvider.overrideWithValue(
+                  mockMediaAuthInterceptor,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+          cubit.report(video.id, PlaybackStatus.ageRestricted);
+          await tester.pump();
+
+          expect(find.byType(ModeratedContentOverlay), findsOneWidget);
+          expect(
+            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+            findsOneWidget,
+          );
+
+          await tester.tap(
+            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+          );
+          await tester.pump();
+
+          verify(
+            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+              context: any(named: 'context'),
+              sha256Hash: sha256,
+              url: videoUrl,
+              serverUrl: 'https://media.divine.video',
+              category: 'video',
+            ),
+          ).called(1);
+          verify(
+            () => defaultController.updateRequestHeadersAndRetry(0, headers),
+          ).called(1);
+          expect(cubit.state.statusFor(video.id), PlaybackStatus.ready);
         },
       );
     });
