@@ -1,6 +1,8 @@
 // ABOUTME: Profile header widget showing avatar, stats, name, and bio
 // ABOUTME: Reusable between own profile and others' profile screens
 
+import 'dart:ui';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -697,29 +699,36 @@ class _ProfileAvatarWithColor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const avatarSize = 144.0;
-    final avatar = UserAvatar(imageUrl: imageUrl, size: avatarSize);
+    final hasAvatar = imageUrl != null && imageUrl!.isNotEmpty;
+    final avatarWidget = UserAvatar(imageUrl: imageUrl, size: avatarSize);
+    final avatar = hasAvatar
+        ? GestureDetector(
+            onTap: () => _showAvatarLightbox(context, imageUrl),
+            child: avatarWidget,
+          )
+        : avatarWidget;
 
     if (pendingActions.isEmpty) return avatar;
 
     // The label overlaps the avatar bottom, so we need extra space below.
-    return GestureDetector(
-      onTap: onActionTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
-        children: [
-          // Reserve space for label overflow below the avatar.
-          const SizedBox(width: avatarSize, height: avatarSize + 16),
-          avatar,
-          Positioned(
-            bottom: 0,
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        // Reserve space for label overflow below the avatar.
+        const SizedBox(width: avatarSize, height: avatarSize + 16),
+        avatar,
+        Positioned(
+          bottom: 0,
+          child: GestureDetector(
+            onTap: onActionTap,
             child: _ProfileActionLabel(
               action: pendingActions.first,
               badgeCount: pendingActions.length,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -816,6 +825,60 @@ class _ProfileActionLabel extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Avatar lightbox
+// ---------------------------------------------------------------------------
+
+void _showAvatarLightbox(BuildContext context, String? imageUrl) {
+  showGeneralDialog<void>(
+    context: context,
+    barrierColor: VineTheme.transparent,
+    barrierDismissible: true,
+    barrierLabel: 'Close avatar',
+    pageBuilder: (context, _, _) => _AvatarLightbox(imageUrl: imageUrl),
+  );
+}
+
+class _AvatarLightbox extends StatelessWidget {
+  const _AvatarLightbox({this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final safeAreaTop = MediaQuery.of(context).padding.top;
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pop(),
+      child: SizedBox.expand(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+          child: ColoredBox(
+            color: VineTheme.scrim65,
+            child: Stack(
+              children: [
+                Center(
+                  child: UserAvatar(imageUrl: imageUrl, size: 288),
+                ),
+                Positioned(
+                  top: safeAreaTop + 12,
+                  left: 12,
+                  child: DivineIconButton(
+                    icon: DivineIconName.x,
+                    type: DivineIconButtonType.ghostSecondary,
+                    size: DivineIconButtonSize.small,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
