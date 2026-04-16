@@ -24,7 +24,7 @@ void main() {
       );
 
       expect(find.text('Delete'), findsOneWidget);
-      expect(find.text('Copy'), findsOneWidget);
+      expect(find.text('Duplicate'), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
       expect(find.text('Edit'), findsNothing);
       expect(find.text('Split'), findsNothing);

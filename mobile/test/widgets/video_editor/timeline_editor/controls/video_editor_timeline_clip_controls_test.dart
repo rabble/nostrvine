@@ -47,7 +47,7 @@ void main() {
       await tester.pumpWidget(build());
 
       expect(find.text('Done'), findsOneWidget);
-      expect(find.text('Copy'), findsOneWidget);
+      expect(find.text('Duplicate'), findsOneWidget);
       expect(find.text('Split'), findsOneWidget);
       expect(find.text('Delete'), findsNothing);
     });
