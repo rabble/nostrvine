@@ -57,6 +57,8 @@ void main() {
     Widget buildWidget({
       bool selectionMode = false,
       int initialTabIndex = 0,
+      bool enableSoundTab = true,
+      List<DivineVideoClip> editorClips = const [],
     }) {
       return ProviderScope(
         overrides: [
@@ -74,6 +76,8 @@ void main() {
           home: LibraryScreen(
             selectionMode: selectionMode,
             initialTabIndex: initialTabIndex,
+            enableSoundTab: enableSoundTab,
+            editorClips: editorClips,
           ),
         ),
       );
@@ -130,6 +134,34 @@ void main() {
     });
 
     group('tab navigation', () {
+      testWidgets('hides Sounds tab when enableSoundTab is false', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(enableSoundTab: false));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Drafts'), findsOneWidget);
+        expect(find.text('Clips'), findsOneWidget);
+        expect(find.text('Sounds'), findsNothing);
+      });
+
+      testWidgets('tab flow stays stable with only Drafts and Clips', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(enableSoundTab: false, initialTabIndex: 1),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ClipsTab), findsOneWidget);
+
+        await tester.tap(find.text('Drafts'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DraftsTab), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets('can switch to $ClipsTab', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
@@ -182,6 +214,90 @@ void main() {
     });
 
     group('_createVideoFromSelected', () {
+      testWidgets(
+        'selection mode does not return clips already in editorClips',
+        (tester) async {
+          final existingClip = DivineVideoClip(
+            id: 'existing-clip',
+            video: EditorVideo.file('/test/existing.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: models.AspectRatio.vertical,
+            originalAspectRatio: 9 / 16,
+            thumbnailPath: '/test/existing.jpg',
+            ghostFramePath: '/test/existing_ghost.jpg',
+          );
+          final newClip = DivineVideoClip(
+            id: 'new-clip',
+            video: EditorVideo.file('/test/new.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: models.AspectRatio.vertical,
+            originalAspectRatio: 9 / 16,
+            thumbnailPath: '/test/new.jpg',
+            ghostFramePath: '/test/new_ghost.jpg',
+          );
+
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [existingClip, newClip]);
+          when(
+            () => mockClipLibraryService.recoverMissingAssets(any()),
+          ).thenAnswer((_) async => [existingClip, newClip]);
+
+          final mockGoRouter = MockGoRouter();
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                gallerySaveServiceProvider.overrideWithValue(
+                  mockGallerySaveService,
+                ),
+                clipLibraryServiceProvider.overrideWithValue(
+                  mockClipLibraryService,
+                ),
+                draftStorageServiceProvider.overrideWithValue(
+                  mockDraftStorageService,
+                ),
+                clipManagerProvider.overrideWith(ClipManagerNotifier.new),
+              ],
+              child: MaterialApp(
+                theme: VineTheme.theme,
+                home: MockGoRouterProvider(
+                  goRouter: mockGoRouter,
+                  child: LibraryScreen(
+                    selectionMode: true,
+                    initialTabIndex: 1,
+                    editorClips: [existingClip],
+                    enableSoundTab: false,
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final cards = find.byType(VideoClipThumbnailCard);
+          expect(cards, findsNWidgets(2));
+
+          await tester.tap(cards.at(0));
+          await tester.tap(cards.at(1));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Select').first);
+          await tester.pumpAndSettle();
+
+          final captured = verify(
+            () => mockGoRouter.pop<List<DivineVideoClip>>(captureAny()),
+          ).captured;
+          expect(captured, hasLength(1));
+
+          final clips = captured.first as List<DivineVideoClip>;
+          expect(clips.map((c) => c.id), isNot(contains('existing-clip')));
+          expect(clips.map((c) => c.id), contains('new-clip'));
+        },
+      );
+
       testWidgets(
         'selection mode pops with selected clips when Add is tapped',
         (tester) async {

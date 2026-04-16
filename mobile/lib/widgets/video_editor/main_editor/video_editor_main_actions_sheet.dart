@@ -48,6 +48,7 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                 child: _ItemButton(
                   icon: .images,
                   label: 'Clips',
+                  semanticLabel: 'Open clips editor',
                   onTap: () {
                     Navigator.pop(context);
                     scope.onOpenClipsEditor();
@@ -59,6 +60,7 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                 child: _ItemButton(
                   icon: .waveform,
                   label: 'Audio',
+                  semanticLabel: 'Open audio editor',
                   onTap: () {
                     Navigator.pop(context);
                     scope.onOpenMusicLibrary();
@@ -70,6 +72,7 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                 child: _ItemButton(
                   icon: .textAa,
                   label: 'Text',
+                  semanticLabel: 'Open text editor',
                   onTap: () {
                     Navigator.pop(context);
                     scope.editor?.openTextEditor();
@@ -81,6 +84,7 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                 child: _ItemButton(
                   icon: .scribble,
                   label: 'Draw',
+                  semanticLabel: 'Open draw editor',
                   onTap: () {
                     Navigator.pop(context);
                     scope.editor?.openPaintEditor();
@@ -92,6 +96,7 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                 child: _ItemButton(
                   icon: .fadersHorizontal,
                   label: 'Effects',
+                  semanticLabel: 'Open effects editor',
                   onTap: () {
                     Navigator.pop(context);
                     scope.editor?.openFilterEditor();
@@ -111,11 +116,13 @@ class _ItemButton extends StatelessWidget {
     required this.onTap,
     required this.icon,
     required this.label,
+    required this.semanticLabel,
   });
 
   final VoidCallback onTap;
   final DivineIconName icon;
   final String label;
+  final String semanticLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -124,12 +131,14 @@ class _ItemButton extends StatelessWidget {
       spacing: 8,
       children: [
         Semantics(
-          label: label,
+          label: semanticLabel,
           button: true,
           child: GestureDetector(
             onTap: onTap,
             child: ConstrainedBox(
               constraints: const BoxConstraints(
+                minWidth: 48,
+                minHeight: 48,
                 maxWidth: 72,
                 maxHeight: 72,
               ),

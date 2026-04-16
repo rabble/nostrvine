@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,7 +31,7 @@ typedef SplitExecutor =
 ///
 /// Supports undo/redo for clip mutations.
 class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
-  ClipEditorBloc({required VoidCallback this.onFinalClipInvalidated})
+  ClipEditorBloc({required void Function() this.onFinalClipInvalidated})
     : super(const ClipEditorState()) {
     // Clip data
     on<ClipEditorInitialized>(_onInitialized);
@@ -70,7 +68,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     // Split
     on<ClipEditorOriginalClipReplaced>(_onOriginalClipReplaced);
-    on<ClipEditorSplitRequested>(_onSplitRequested);
+    on<ClipEditorSplitRequested>(
+      _onSplitRequested,
+      transformer: droppable(),
+    );
 
     // Trim
     on<ClipEditorTrimUpdated>(_onTrimUpdated, transformer: restartable());
@@ -78,7 +79,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     on<ClipEditorTrimDragEnded>(_onTrimDragEnded);
   }
 
-  final VoidCallback? onFinalClipInvalidated;
+  final void Function()? onFinalClipInvalidated;
 
   /// Pushes the current clip list onto the undo stack and clears redo.
   ClipEditorState _pushUndo(ClipEditorState s) {

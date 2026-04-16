@@ -3,10 +3,13 @@
 
 import 'dart:io';
 
-import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;
+import 'package:divine_camera/divine_camera.dart'
+    show DivineCameraLens, DivineVideoQuality;
+import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -17,6 +20,7 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -90,6 +94,36 @@ class _SpyGallerySaveService implements GallerySaveService {
   }) async {
     saveVideoToGalleryCalled = true;
     return const GallerySaveSuccess();
+  }
+}
+
+class _SpyCameraService extends MockCameraService {
+  _SpyCameraService.create({
+    required super.onUpdateState,
+    required super.onAutoStopped,
+  }) : super.create();
+
+  int initializeCalls = 0;
+  int disposeCalls = 0;
+
+  @override
+  Future<void> initialize({
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    DivineCameraLens initialLens = DivineCameraLens.front,
+    bool enableAutoLensSwitch = false,
+  }) async {
+    initializeCalls++;
+    await super.initialize(
+      videoQuality: videoQuality,
+      initialLens: initialLens,
+      enableAutoLensSwitch: enableAutoLensSwitch,
+    );
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposeCalls++;
+    await super.dispose();
   }
 }
 
@@ -1046,6 +1080,87 @@ void main() {
               const MethodChannel('divine_video_player'),
               null,
             );
+      },
+    );
+  });
+
+  group('VideoRecorderNotifier - Library Navigation', () {
+    testWidgets(
+      'openLibrary navigates to clips-no-sound and reinitializes camera on return',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final spyCamera = _SpyCameraService.create(
+          onUpdateState: ({forceCameraRebuild}) {},
+          onAutoStopped: (_) {},
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(spyCamera),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(videoRecorderProvider.notifier).initialize();
+        expect(spyCamera.initializeCalls, equals(1));
+        expect(spyCamera.disposeCalls, equals(0));
+
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      container
+                          .read(videoRecorderProvider.notifier)
+                          .openLibrary(context);
+                    },
+                    child: const Text('Open library'),
+                  ),
+                ),
+              ),
+            ),
+            GoRoute(
+              name: LibraryScreen.clipsNoSoundRouteName,
+              path: LibraryScreen.clipsNoSoundPath,
+              builder: (context, state) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: context.pop,
+                    child: const Text('Close library'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open library'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Close library'), findsOneWidget);
+        expect(spyCamera.disposeCalls, equals(1));
+
+        await tester.tap(find.text('Close library'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Open library'), findsOneWidget);
+        expect(spyCamera.initializeCalls, equals(2));
       },
     );
   });

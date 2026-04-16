@@ -146,8 +146,15 @@ class _TopActions extends ConsumerWidget {
       draftSaved = false;
     }
     if (!context.mounted) return;
-    context.pop();
-    context.pop();
+
+    if (draftSaved) {
+      // Success: close prompt + close editor.
+      context.pop();
+      context.pop();
+    } else {
+      // Failure: close only prompt and keep editor open.
+      context.pop();
+    }
 
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     scaffoldMessenger.showSnackBar(

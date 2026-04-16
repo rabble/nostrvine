@@ -10,6 +10,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
@@ -20,12 +25,62 @@ class _MockVideoEditorMainBloc
     extends MockBloc<VideoEditorMainEvent, VideoEditorMainState>
     implements VideoEditorMainBloc {}
 
+class _MockDivineVideoDraft extends Mock implements DivineVideoDraft {}
+
+class _FakeVideoEditorNotifier extends VideoEditorNotifier {
+  _FakeVideoEditorNotifier({
+    required this.initialState,
+    required this.activeDraft,
+    this.saveAsDraftSucceeds = true,
+    this.saveAsDraftThrows = false,
+  });
+
+  final VideoEditorProviderState initialState;
+  final DivineVideoDraft activeDraft;
+  final bool saveAsDraftSucceeds;
+  final bool saveAsDraftThrows;
+
+  int saveAsDraftCalls = 0;
+
+  @override
+  VideoEditorProviderState build() => initialState;
+
+  @override
+  DivineVideoDraft getActiveDraft({
+    bool isAutosave = false,
+    String? draftId,
+  }) => activeDraft;
+
+  @override
+  Future<bool> saveAsDraft({bool enforceCreateNewDraft = false}) async {
+    saveAsDraftCalls++;
+    if (saveAsDraftThrows) {
+      throw StateError('save failed');
+    }
+    return saveAsDraftSucceeds;
+  }
+}
+
+class _FakeVideoPublishNotifier extends VideoPublishNotifier {
+  int clearAllCalls = 0;
+
+  @override
+  VideoPublishProviderState build() => const VideoPublishProviderState();
+
+  @override
+  Future<void> clearAll({bool keepAutosavedDraft = false}) async {
+    clearAllCalls++;
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoEditorMainOverlayActions, () {
     late _MockVideoEditorMainBloc mockBloc;
     late MockGoRouter mockGoRouter;
+    late _FakeVideoEditorNotifier fakeVideoEditorNotifier;
+    late _FakeVideoPublishNotifier fakeVideoPublishNotifier;
 
     setUp(() {
       mockBloc = _MockVideoEditorMainBloc();
@@ -38,12 +93,35 @@ void main() {
       when(() => mockGoRouter.pop<Object?>(any())).thenAnswer((_) async {});
     });
 
-    Widget buildWidget({VideoEditorMainState? state}) {
+    Widget buildWidget({
+      VideoEditorMainState? state,
+      bool isAutosavedDraft = false,
+      bool hasBeenEdited = false,
+      bool saveAsDraftSucceeds = true,
+      bool saveAsDraftThrows = false,
+    }) {
       if (state != null) {
         when(() => mockBloc.state).thenReturn(state);
       }
 
+      final mockDraft = _MockDivineVideoDraft();
+      when(() => mockDraft.hasBeenEdited).thenReturn(hasBeenEdited);
+
+      fakeVideoEditorNotifier = _FakeVideoEditorNotifier(
+        initialState: VideoEditorProviderState(
+          isAutosavedDraft: isAutosavedDraft,
+        ),
+        activeDraft: mockDraft,
+        saveAsDraftSucceeds: saveAsDraftSucceeds,
+        saveAsDraftThrows: saveAsDraftThrows,
+      );
+      fakeVideoPublishNotifier = _FakeVideoPublishNotifier();
+
       return ProviderScope(
+        overrides: [
+          videoEditorProvider.overrideWith(() => fakeVideoEditorNotifier),
+          videoPublishProvider.overrideWith(() => fakeVideoPublishNotifier),
+        ],
         child: MockGoRouterProvider(
           goRouter: mockGoRouter,
           child: MaterialApp(
@@ -181,6 +259,102 @@ void main() {
           await tester.tap(find.bySemanticsLabel('Close'));
 
           verify(() => mockGoRouter.pop<Object?>(any())).called(1);
+        },
+      );
+
+      testWidgets(
+        'autosaved draft without edits closes directly',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(isAutosavedDraft: true, hasBeenEdited: false),
+          );
+
+          await tester.tap(find.bySemanticsLabel('Close'));
+          await tester.pumpAndSettle();
+
+          verify(() => mockGoRouter.pop<Object?>(any())).called(1);
+          expect(find.text('Save your draft?'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'autosaved draft with edits shows save/discard prompt',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
+          );
+
+          await tester.tap(find.bySemanticsLabel('Close'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Save your draft?'), findsOneWidget);
+          expect(find.text('Save draft'), findsOneWidget);
+          expect(find.text('Discard changes'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'save draft action calls saveAsDraft, closes twice and shows success snackbar',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              isAutosavedDraft: true,
+              hasBeenEdited: true,
+              saveAsDraftSucceeds: true,
+            ),
+          );
+
+          await tester.tap(find.bySemanticsLabel('Close'));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Save draft'));
+          await tester.pumpAndSettle();
+
+          expect(fakeVideoEditorNotifier.saveAsDraftCalls, equals(1));
+          verify(() => mockGoRouter.pop<Object?>(any())).called(2);
+          expect(find.text('Saved to library'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'discard action clears publish state and closes twice',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
+          );
+
+          await tester.tap(find.bySemanticsLabel('Close'));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Discard changes'));
+          await tester.pumpAndSettle();
+
+          expect(fakeVideoPublishNotifier.clearAllCalls, equals(1));
+          verify(() => mockGoRouter.pop<Object?>(any())).called(2);
+        },
+      );
+
+      testWidgets(
+        'save draft failure keeps editor open and shows failure snackbar',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              isAutosavedDraft: true,
+              hasBeenEdited: true,
+              saveAsDraftThrows: true,
+            ),
+          );
+
+          await tester.tap(find.bySemanticsLabel('Close'));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Save draft'));
+          await tester.pumpAndSettle();
+
+          expect(fakeVideoEditorNotifier.saveAsDraftCalls, equals(1));
+          verify(() => mockGoRouter.pop<Object?>(any())).called(1);
+          expect(find.text('Failed to save'), findsOneWidget);
+          expect(find.bySemanticsLabel('Close'), findsOneWidget);
         },
       );
     });

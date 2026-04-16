@@ -40,32 +40,6 @@ class TimelineOverlayStrips extends StatelessWidget {
   final ValueChanged<TimelineOverlayItem>? onDragStarted;
   final VoidCallback? onDragEnded;
 
-  static List<TimelineOverlayItem> _itemsOfType(
-    List<TimelineOverlayItem> items,
-    TimelineOverlayType type,
-  ) {
-    final filtered = items.where((i) => i.type == type).toList()
-      ..sort((a, b) {
-        final rowCmp = a.row.compareTo(b.row);
-        if (rowCmp != 0) return rowCmp;
-        return a.startTime.compareTo(b.startTime);
-      });
-    return filtered;
-  }
-
-  static int _rowCountForType(
-    List<TimelineOverlayItem> items,
-    TimelineOverlayType type,
-  ) {
-    var maxRow = -1;
-    for (final item in items) {
-      if (item.type == type && item.row > maxRow) {
-        maxRow = item.row;
-      }
-    }
-    return maxRow + 1;
-  }
-
   @override
   Widget build(BuildContext context) {
     final (:items, :selectedItemId, :collapsedTypes) = context.select(
@@ -76,24 +50,50 @@ class TimelineOverlayStrips extends StatelessWidget {
       ),
     );
 
-    final soundItems = _itemsOfType(items, .sound);
-    final filterItems = _itemsOfType(items, .filter);
-    final layerItems = _itemsOfType(items, .layer);
+    final soundItems = <TimelineOverlayItem>[];
+    final filterItems = <TimelineOverlayItem>[];
+    final layerItems = <TimelineOverlayItem>[];
+
+    var maxSoundRow = -1;
+    var maxFilterRow = -1;
+    var maxLayerRow = -1;
+
+    for (final item in items) {
+      switch (item.type) {
+        case TimelineOverlayType.sound:
+          soundItems.add(item);
+          if (item.row > maxSoundRow) maxSoundRow = item.row;
+        case TimelineOverlayType.filter:
+          filterItems.add(item);
+          if (item.row > maxFilterRow) maxFilterRow = item.row;
+        case TimelineOverlayType.layer:
+          layerItems.add(item);
+          if (item.row > maxLayerRow) maxLayerRow = item.row;
+      }
+    }
+
+    final soundRowCount = maxSoundRow + 1;
+    final filterRowCount = maxFilterRow + 1;
+    final layerRowCount = maxLayerRow + 1;
+
     final stripConfigs = [
       (
         items: soundItems,
+        rowCount: soundRowCount,
         type: TimelineOverlayType.sound,
         color: VineTheme.accentVioletBackground,
         rowHeight: TimelineConstants.soundOverlayRowHeight,
       ),
       (
         items: filterItems,
+        rowCount: filterRowCount,
         type: TimelineOverlayType.filter,
         color: VineTheme.success,
         rowHeight: TimelineConstants.overlayRowHeight,
       ),
       (
         items: layerItems,
+        rowCount: layerRowCount,
         type: TimelineOverlayType.layer,
         color: VineTheme.primary,
         rowHeight: TimelineConstants.overlayRowHeight,
@@ -123,7 +123,7 @@ class TimelineOverlayStrips extends StatelessWidget {
             if (config.items.isNotEmpty)
               TimelineOverlayStrip(
                 items: config.items,
-                rowCount: _rowCountForType(items, config.type),
+                rowCount: config.rowCount,
                 totalWidth: totalWidth,
                 pixelsPerSecond: pixelsPerSecond,
                 totalDuration: totalDuration,

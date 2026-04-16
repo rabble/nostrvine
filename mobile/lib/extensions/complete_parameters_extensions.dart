@@ -15,11 +15,13 @@ extension CompleteParametersEquality on CompleteParameters {
       final raw = meta[VideoEditorConstants.audioStateHistoryKey];
       if (raw is! List) return [];
       return raw.cast<Map<String, dynamic>>().map(AudioEvent.fromJson).toList();
-    } catch (e) {
-      Log.warning(
-        'Failed to parse audioTracks from meta: $e',
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to parse audioTracks from meta',
         name: 'CompleteParametersEquality',
         category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
       );
       return [];
     }

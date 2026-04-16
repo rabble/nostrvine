@@ -46,6 +46,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
                 _ControlButton(
                   icon: .trash,
                   label: 'Delete',
+                  semanticLabel: 'Delete selected item',
                   onPressed: onDelete,
                   type: .error,
                 ),
@@ -53,23 +54,27 @@ class VideoEditorTimelineControls extends StatelessWidget {
                 _ControlButton(
                   icon: .pencilSimple,
                   label: 'Edit',
+                  semanticLabel: 'Edit selected item',
                   onPressed: onEdit,
                 ),
               if (onDuplicated != null)
                 _ControlButton(
                   icon: .copy,
                   label: 'Duplicate',
+                  semanticLabel: 'Duplicate selected item',
                   onPressed: onDuplicated,
                 ),
               if (onSplit != null)
                 _ControlButton(
                   icon: .scissors,
                   label: 'Split',
+                  semanticLabel: 'Split selected clip',
                   onPressed: onSplit,
                 ),
               _ControlButton(
                 icon: .check,
                 label: 'Done',
+                semanticLabel: 'Finish timeline editing',
                 onPressed: onDone,
               ),
             ],
@@ -84,12 +89,14 @@ class _ControlButton extends StatelessWidget {
   const _ControlButton({
     required this.icon,
     required this.label,
+    required this.semanticLabel,
     required this.onPressed,
     this.type = .secondary,
   });
 
   final DivineIconName icon;
   final String label;
+  final String semanticLabel;
   final VoidCallback? onPressed;
   final DivineIconButtonType type;
 
@@ -100,6 +107,7 @@ class _ControlButton extends StatelessWidget {
       children: [
         DivineIconButton(
           icon: icon,
+          semanticLabel: semanticLabel,
           onPressed: onPressed,
           type: type,
           size: .small,

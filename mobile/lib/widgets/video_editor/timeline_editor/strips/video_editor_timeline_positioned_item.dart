@@ -139,6 +139,7 @@ class _OverlayItemGestureWrapper extends StatelessWidget {
     return Semantics(
       label: semanticLabel,
       hint: 'Long press to drag',
+      button: true,
       child: GestureDetector(
         onTap: onTap,
         onLongPressStart: (_) => onLongPressStart(),
