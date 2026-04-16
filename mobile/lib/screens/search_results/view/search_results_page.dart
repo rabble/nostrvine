@@ -41,9 +41,7 @@ class SearchResultsPage extends ConsumerWidget {
           ),
         ),
         BlocProvider(
-          create: (_) => UserSearchBloc(
-            profileRepository: profileRepository,
-          ),
+          create: (_) => UserSearchBloc(profileRepository: profileRepository),
         ),
         BlocProvider(create: (_) => SearchResultsFilterCubit()),
         BlocProvider(
