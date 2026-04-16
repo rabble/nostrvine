@@ -28,6 +28,8 @@ import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../helpers/test_provider_overrides.dart';
+
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
 
@@ -134,7 +136,14 @@ void main() {
     }
 
     return UncontrolledProviderScope(
-      container: ProviderContainer(overrides: providerOverrides),
+      container: ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(
+            createMockSharedPreferences(),
+          ),
+          ...providerOverrides,
+        ],
+      ),
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
