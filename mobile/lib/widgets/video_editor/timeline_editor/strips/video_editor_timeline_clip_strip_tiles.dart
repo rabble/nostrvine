@@ -310,40 +310,52 @@ class _ClipContainer extends StatelessWidget {
     return natural.clamp(1, 1000);
   }
 
-  /// Maps a visual slot index to the nearest available [StripThumbnail] path.
+  /// Maps a visual slot index to a [StripThumbnail] path that falls
+  /// within the slot's time range.
   ///
-  /// Slots map across the full clip duration so thumbnails stay at fixed
-  /// positions regardless of trimming.
+  /// Each slot owns a fixed time window `[slotStart, slotEnd)`. Only a
+  /// thumbnail whose timestamp falls inside that window is returned.
+  /// This guarantees a slot never changes its image once a matching
+  /// thumbnail has been loaded — new thumbnails for *other* slots
+  /// don't cause a reassignment.
   String? _thumbnailForSlot(int slotIndex, int slotCount) {
     if (stripThumbnails.isEmpty) return null;
 
     final durationMs = clip.duration.inMilliseconds;
     if (durationMs <= 0) return stripThumbnails.first.path;
 
-    // Time at the center of this visual slot.
-    final slotTimeMs = durationMs * (slotIndex + 0.5) / slotCount;
+    // Fixed time window for this slot.
+    final slotStartMs = durationMs * slotIndex / slotCount;
+    final slotEndMs = durationMs * (slotIndex + 1) / slotCount;
+    final slotCenterMs = (slotStartMs + slotEndMs) / 2;
 
-    // Binary search for the closest thumbnail by timestamp.
+    // Binary search for the first thumbnail at or after slotStartMs.
     var lo = 0;
-    var hi = stripThumbnails.length - 1;
+    var hi = stripThumbnails.length;
     while (lo < hi) {
       final mid = (lo + hi) ~/ 2;
-      if (stripThumbnails[mid].timestamp.inMilliseconds < slotTimeMs) {
+      if (stripThumbnails[mid].timestamp.inMilliseconds < slotStartMs) {
         lo = mid + 1;
       } else {
         hi = mid;
       }
     }
-    // lo is the first thumbnail at or after slotTimeMs.
-    // Compare with the previous one to find which is closer.
-    if (lo > 0) {
-      final distLo = (slotTimeMs - stripThumbnails[lo].timestamp.inMilliseconds)
-          .abs();
-      final distPrev =
-          (slotTimeMs - stripThumbnails[lo - 1].timestamp.inMilliseconds).abs();
-      if (distPrev < distLo) return stripThumbnails[lo - 1].path;
+
+    // Scan candidates within [slotStartMs, slotEndMs) and pick the
+    // one closest to the slot center.
+    String? bestPath;
+    var bestDist = double.infinity;
+    for (var i = lo; i < stripThumbnails.length; i++) {
+      final tsMs = stripThumbnails[i].timestamp.inMilliseconds;
+      if (tsMs >= slotEndMs) break;
+      final dist = (tsMs - slotCenterMs).abs();
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestPath = stripThumbnails[i].path;
+      }
     }
-    return stripThumbnails[lo].path;
+
+    return bestPath;
   }
 
   @override

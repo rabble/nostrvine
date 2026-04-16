@@ -513,6 +513,7 @@ class VideoThumbnailService {
     int thumbsPerSecond = 1,
     int quality = _thumbnailQuality,
     int batchSize = 6,
+    List<Duration>? priorityTimestamps,
   }) async* {
     if (duration <= Duration.zero) return;
 
@@ -524,6 +525,7 @@ class VideoThumbnailService {
       thumbsPerSecond: thumbsPerSecond,
       quality: quality,
       batchSize: batchSize,
+      priorityTimestamps: priorityTimestamps,
     );
   }
 
@@ -550,16 +552,35 @@ class VideoThumbnailService {
     required int thumbsPerSecond,
     required int quality,
     required int batchSize,
+    List<Duration>? priorityTimestamps,
   }) async* {
     final durationMs = duration.inMilliseconds;
     // Enough frames to cover every visual slot at the requested density.
     final count = ((durationMs / 1000) * thumbsPerSecond).ceil().clamp(1, 500);
 
     // Extract center-first so the strip gets useful visual coverage quickly.
-    final allTimestamps = _buildProgressiveStripTimestamps(
+    final densityTimestamps = _buildProgressiveStripTimestamps(
       durationMs: durationMs,
       count: count,
     );
+
+    // Priority timestamps go first (the exact frames the visible slots
+    // need at the current zoom), followed by the full-density set with
+    // duplicates removed.
+    final List<Duration> allTimestamps;
+    if (priorityTimestamps != null && priorityTimestamps.isNotEmpty) {
+      final seenMs = <int>{};
+      final merged = <Duration>[];
+      for (final ts in priorityTimestamps) {
+        if (seenMs.add(ts.inMilliseconds)) merged.add(ts);
+      }
+      for (final ts in densityTimestamps) {
+        if (seenMs.add(ts.inMilliseconds)) merged.add(ts);
+      }
+      allTimestamps = merged;
+    } else {
+      allTimestamps = densityTimestamps;
+    }
 
     final cacheDir = await getTemporaryDirectory();
     final batchId = '${clipId}_${DateTime.now().millisecondsSinceEpoch}';

@@ -153,7 +153,36 @@ class _VideoEditorTimelineClipStripState
     _thumbnails.sync(
       clips: widget.clips,
       devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+      priorityTimestamps: _computeSlotTimestamps(),
     );
+  }
+
+  /// Computes the exact timestamps that the currently visible thumbnail
+  /// slots need at the current zoom level.
+  ///
+  /// Each clip is divided into `ceil(clipWidth / thumbnailWidth)` slots.
+  /// The center-time of every slot is returned so the generator can
+  /// produce those frames first — giving instant visual coverage.
+  Map<String, List<Duration>> _computeSlotTimestamps() {
+    final result = <String, List<Duration>>{};
+
+    for (final clip in widget.clips) {
+      final clipPx = _clipWidth(clip);
+      final durationMs = clip.duration.inMilliseconds;
+      if (clipPx <= 0 || durationMs <= 0) continue;
+
+      final slotCount = (clipPx / TimelineConstants.thumbnailWidth)
+          .ceil()
+          .clamp(1, 1000);
+      final timestamps = <Duration>[];
+      for (var i = 0; i < slotCount; i++) {
+        final centerMs = durationMs * (i + 0.5) / slotCount;
+        timestamps.add(Duration(milliseconds: centerMs.round()));
+      }
+      result[clip.id] = timestamps;
+    }
+
+    return result;
   }
 
   double _clipWidth(DivineVideoClip clip) {
