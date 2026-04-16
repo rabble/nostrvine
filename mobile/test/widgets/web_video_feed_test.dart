@@ -8,11 +8,16 @@ import 'package:video_player_platform_interface/video_player_platform_interface.
 
 class _FakeVideoPlayerController extends ValueNotifier<VideoPlayerValue>
     implements VideoPlayerController {
-  _FakeVideoPlayerController()
-    : super(const VideoPlayerValue(duration: Duration.zero));
+  _FakeVideoPlayerController({
+    this.initializeError,
+  }) : super(const VideoPlayerValue(duration: Duration.zero));
+
+  final Exception? initializeError;
 
   @override
   Future<void> initialize() async {
+    final error = initializeError;
+    if (error != null) throw error;
     value = const VideoPlayerValue(
       duration: Duration(seconds: 6),
       isInitialized: true,
@@ -48,7 +53,6 @@ class _FakeVideoPlayerController extends ValueNotifier<VideoPlayerValue>
   Future<void> dispose() async => super.dispose();
 
   int get textureId => 0;
-
   @override
   int get playerId => 0;
 
@@ -130,13 +134,13 @@ class _FakeVideoPlayerPlatform extends video_platform.VideoPlayerPlatform {
   Future<void> setMixWithOthers(bool mixWithOthers) async {}
 }
 
-VideoEvent _makeVideo() => VideoEvent(
-  id: 'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+VideoEvent _makeVideo(String id, String videoUrl) => VideoEvent(
+  id: id,
   pubkey: 'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3',
   createdAt: 1700000000,
   content: 'Test video',
   timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
-  videoUrl: 'https://example.com/video.mp4',
+  videoUrl: videoUrl,
 );
 
 void main() {
@@ -159,7 +163,12 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: WebVideoFeed(
-          videos: [_makeVideo()],
+          videos: [
+            _makeVideo(
+              'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+              'https://example.com/video.mp4',
+            ),
+          ],
           controllerFactory: ({required url, required headers}) => controller,
           itemBuilder:
               (
@@ -184,4 +193,50 @@ void main() {
 
     expect(find.text('ready'), findsOneWidget);
   });
+
+  testWidgets(
+    'auto-skips when the active web video load error is confirmed removable',
+    (tester) async {
+      final firstController = _FakeVideoPlayerController(
+        initializeError: Exception('load failed'),
+      );
+      final secondController = _FakeVideoPlayerController();
+      final handledIndexes = <int>[];
+      final activeIndexes = <int>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: WebVideoFeed(
+            videos: [
+              _makeVideo(
+                'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+                'https://example.com/missing.mp4',
+              ),
+              _makeVideo(
+                'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a1',
+                'https://example.com/ok.mp4',
+              ),
+            ],
+            controllerFactory: ({required url, required headers}) {
+              return url.toString().contains('missing')
+                  ? firstController
+                  : secondController;
+            },
+            onActiveVideoChanged: (video, index) {
+              activeIndexes.add(index);
+            },
+            onActiveVideoLoadError: (video, index) async {
+              handledIndexes.add(index);
+              return true;
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(handledIndexes, [0]);
+      expect(activeIndexes, contains(1));
+    },
+  );
 }

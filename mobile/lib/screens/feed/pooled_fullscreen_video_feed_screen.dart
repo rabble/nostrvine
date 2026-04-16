@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -79,6 +80,23 @@ double _scrollDrivenOpacity(double distance) {
     )!;
   }
   return 0.0;
+}
+
+Future<bool> confirmWebVideoNotFound(
+  String videoUrl, {
+  http.Client? client,
+}) async {
+  final effectiveClient = client ?? http.Client();
+  try {
+    final response = await effectiveClient.head(Uri.parse(videoUrl));
+    return response.statusCode == 404;
+  } catch (_) {
+    return false;
+  } finally {
+    if (client == null) {
+      effectiveClient.close();
+    }
+  }
 }
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
@@ -268,6 +286,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
   late final ValueNotifier<double> _pagePosition;
+  final Set<String> _handledWebNotFoundVideoIds = <String>{};
 
   @override
   void didChangeDependencies() {
@@ -359,6 +378,21 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     if (isAtEnd) {
       _triggerLoadMore();
     }
+  }
+
+  Future<bool> _handleWebVideoLoadError(VideoEvent video, int index) async {
+    final videoUrl = video.videoUrl;
+    if (videoUrl == null || videoUrl.isEmpty) return false;
+    if (!_handledWebNotFoundVideoIds.add(video.id)) return false;
+
+    final isNotFound = await confirmWebVideoNotFound(videoUrl);
+    if (!mounted || !isNotFound) {
+      _handledWebNotFoundVideoIds.remove(video.id);
+      return false;
+    }
+
+    ref.read(videoEventServiceProvider).removeVideoCompletely(video.id);
+    return true;
   }
 
   /// Creates a VideoFeedController with hooks wired to dispatch BLoC events.
@@ -504,6 +538,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       );
                       widget.onPageChanged?.call(index);
                     },
+                    onActiveVideoLoadError: _handleWebVideoLoadError,
                     onNearEnd: (index) => _onNearEnd(state, index),
                     itemBuilder:
                         (

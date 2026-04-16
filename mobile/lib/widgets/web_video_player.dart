@@ -1,6 +1,8 @@
 // ABOUTME: Web-native video player using Flutter's video_player package
 // ABOUTME: Drop-in replacement for media_kit Video widget on web platforms
 
+import 'dart:math' as math;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -103,12 +105,18 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
       }
 
       await controller.setLooping(widget.looping);
-      if (widget.autoPlay) {
-        await controller.play();
-      }
-
       setState(() => _isInitialized = true);
       widget.onInitialized?.call(controller);
+
+      if (widget.autoPlay) {
+        try {
+          await controller.play();
+        } on Exception {
+          // Browser autoplay policy can reject play() after the media is
+          // fully initialized. Keep the player available instead of showing
+          // a false load failure.
+        }
+      }
     } on Exception {
       await controller.dispose();
       if (!mounted) return;
@@ -191,18 +199,70 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
-      child: FittedBox(
-        fit: widget.fit,
-        child: SizedBox(
-          width: controller.value.size.width,
-          height: controller.value.size.height,
-          // The underlying HTML video element can otherwise swallow taps that
-          // should go to the overlay action buttons.
-          child: IgnorePointer(
-            child: VideoPlayer(controller),
-          ),
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final viewportSize = constraints.biggest;
+          final fittedSize = _fittedVideoSize(
+            videoSize: controller.value.size,
+            viewportSize: viewportSize,
+            fit: widget.fit,
+          );
+
+          return Center(
+            child: ClipRect(
+              child: OverflowBox(
+                minWidth: fittedSize.width,
+                maxWidth: fittedSize.width,
+                minHeight: fittedSize.height,
+                maxHeight: fittedSize.height,
+                child: SizedBox(
+                  width: fittedSize.width,
+                  height: fittedSize.height,
+                  // The underlying HTML video element can otherwise swallow
+                  // taps that should go to the overlay action buttons.
+                  child: IgnorePointer(
+                    child: VideoPlayer(controller),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
+}
+
+Size _fittedVideoSize({
+  required Size videoSize,
+  required Size viewportSize,
+  required BoxFit fit,
+}) {
+  if (videoSize.width <= 0 ||
+      videoSize.height <= 0 ||
+      !viewportSize.width.isFinite ||
+      !viewportSize.height.isFinite ||
+      viewportSize.width <= 0 ||
+      viewportSize.height <= 0) {
+    return videoSize;
+  }
+
+  final widthScale = viewportSize.width / videoSize.width;
+  final heightScale = viewportSize.height / videoSize.height;
+
+  final scale = switch (fit) {
+    BoxFit.contain => math.min(widthScale, heightScale),
+    BoxFit.cover => math.max(widthScale, heightScale),
+    BoxFit.fill => null,
+    BoxFit.fitWidth => widthScale,
+    BoxFit.fitHeight => heightScale,
+    BoxFit.none => 1.0,
+    BoxFit.scaleDown => math.min(1.0, math.min(widthScale, heightScale)),
+  };
+
+  if (scale == null) {
+    return viewportSize;
+  }
+
+  return Size(videoSize.width * scale, videoSize.height * scale);
 }

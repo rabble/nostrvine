@@ -1,6 +1,8 @@
 // ABOUTME: Web-native video feed using Flutter's video_player package
 // ABOUTME: Replaces PooledVideoFeed on web where media_kit is not available
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
@@ -23,6 +25,12 @@ typedef WebVideoFeedItemBuilder =
 /// Callback when active video changes in the web feed.
 typedef WebOnActiveVideoChanged = void Function(VideoEvent video, int index);
 
+/// Callback when the active web video fails to load.
+///
+/// Return `true` to auto-advance to the next page after the error is handled.
+typedef WebOnActiveVideoLoadError =
+    Future<bool> Function(VideoEvent video, int index);
+
 /// A vertical-scrolling video feed for web platforms.
 ///
 /// Uses Flutter's [video_player] package (HTML5 video via video_player_web_hls)
@@ -34,6 +42,7 @@ class WebVideoFeed extends StatefulWidget {
     this.itemBuilder,
     this.initialIndex = 0,
     this.onActiveVideoChanged,
+    this.onActiveVideoLoadError,
     this.onNearEnd,
     this.nearEndThreshold = 3,
     this.headers = const {},
@@ -52,6 +61,9 @@ class WebVideoFeed extends StatefulWidget {
 
   /// Called when active video changes.
   final WebOnActiveVideoChanged? onActiveVideoChanged;
+
+  /// Called when the active video fails to load.
+  final WebOnActiveVideoLoadError? onActiveVideoLoadError;
 
   /// Called when near the end of the list for pagination.
   final void Function(int index)? onNearEnd;
@@ -76,6 +88,7 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
   // Track web player keys to control playback
   final Map<int, GlobalKey<WebVideoPlayerState>> _playerKeys = {};
   final Map<int, VideoPlayerController> _controllers = {};
+  final Set<String> _handlingErrorVideoIds = {};
 
   @override
   void initState() {
@@ -116,6 +129,30 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
     );
   }
 
+  Future<void> _handleActiveVideoLoadError(VideoEvent video, int index) async {
+    if (!mounted || index != _currentIndex) return;
+
+    final handler = widget.onActiveVideoLoadError;
+    if (handler == null) return;
+    if (!_handlingErrorVideoIds.add(video.id)) return;
+
+    try {
+      final shouldAdvance = await handler(video, index);
+      if (!mounted || index != _currentIndex || !shouldAdvance) return;
+
+      final nextIndex = index + 1;
+      if (nextIndex >= widget.videos.length) return;
+
+      await _pageController.animateToPage(
+        nextIndex,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    } finally {
+      _handlingErrorVideoIds.remove(video.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PageView.builder(
@@ -149,6 +186,9 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
                 setState(() {
                   _controllers[index] = controller;
                 });
+              },
+              onError: () {
+                unawaited(_handleActiveVideoLoadError(video, index));
               },
             ),
             // Custom overlay layer
