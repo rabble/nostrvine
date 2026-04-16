@@ -3319,14 +3319,14 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Feed Untukmu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => 'Belum ada video baru.\nCek lagi nanti.';
 
   @override
   String get feedExploreVideos => 'Jelajahi Video';
