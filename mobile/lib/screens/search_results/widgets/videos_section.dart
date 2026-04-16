@@ -93,16 +93,19 @@ class _VideosContent extends StatefulWidget {
 
 class _VideosContentState extends State<_VideosContent> {
   late final StreamController<List<VideoEvent>> _videosStreamController;
+  late final StreamController<bool> _hasMoreStreamController;
 
   @override
   void initState() {
     super.initState();
     _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+    _hasMoreStreamController = StreamController<bool>.broadcast();
   }
 
   @override
   void dispose() {
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -114,6 +117,9 @@ class _VideosContentState extends State<_VideosContent> {
         initialIndex: index,
         onLoadMore: () =>
             context.read<VideoSearchBloc>().add(const VideoSearchLoadMore()),
+        hasMoreStream: _hasMoreStreamController.stream.startWith(
+          context.read<VideoSearchBloc>().state.hasMore,
+        ),
         contextTitle: 'Search Results',
         trafficSource: ViewTrafficSource.search,
         sourceDetail: context.read<VideoSearchBloc>().state.query,
@@ -124,9 +130,11 @@ class _VideosContentState extends State<_VideosContent> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<VideoSearchBloc, VideoSearchState>(
-      listenWhen: (prev, curr) => prev.videos != curr.videos,
+      listenWhen: (prev, curr) =>
+          prev.videos != curr.videos || prev.hasMore != curr.hasMore,
       listener: (context, state) {
         _videosStreamController.add(state.videos);
+        _hasMoreStreamController.add(state.hasMore);
       },
       child: _VideosGrid(showAll: widget.showAll, onVideoTap: _onVideoTap),
     );

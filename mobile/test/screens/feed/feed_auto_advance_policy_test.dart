@@ -49,18 +49,15 @@ void main() {
       expect(instruction, FeedAutoAdvanceInstruction.wrap);
     });
 
-    test(
-      'returns wrap instead of paginate while a load more is already in flight',
-      () {
-        final instruction = decideFeedAutoAdvance(
-          currentIndex: 2,
-          itemCount: 3,
-          hasMore: true,
-          isLoadingMore: true,
-        );
+    test('returns noop while a load more is already in flight', () {
+      final instruction = decideFeedAutoAdvance(
+        currentIndex: 2,
+        itemCount: 3,
+        hasMore: true,
+        isLoadingMore: true,
+      );
 
-        expect(instruction, FeedAutoAdvanceInstruction.wrap);
-      },
-    );
+      expect(instruction, FeedAutoAdvanceInstruction.noop);
+    });
   });
 }

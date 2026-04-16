@@ -23,6 +23,9 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_completion_listener.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_policy.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_session.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -90,6 +93,7 @@ class PooledFullscreenVideoFeedArgs {
     required this.videosStream,
     required this.initialIndex,
     this.onLoadMore,
+    this.hasMoreStream,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -105,6 +109,9 @@ class PooledFullscreenVideoFeedArgs {
 
   /// Callback to trigger pagination on the source.
   final VoidCallback? onLoadMore;
+
+  /// Stream of whether the source can paginate further.
+  final Stream<bool>? hasMoreStream;
 
   /// Optional title for context display.
   final String? contextTitle;
@@ -145,6 +152,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     required this.videosStream,
     required this.initialIndex,
     this.onLoadMore,
+    this.hasMoreStream,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -156,6 +164,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   final Stream<List<VideoEvent>> videosStream;
   final int initialIndex;
   final VoidCallback? onLoadMore;
+  final Stream<bool>? hasMoreStream;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -182,6 +191,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
           create: (_) => FullscreenFeedBloc(
             videosStream: videosStream,
             initialIndex: initialIndex,
+            hasMoreStream: hasMoreStream,
             onLoadMore: onLoadMore,
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
@@ -261,6 +271,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
   late final ValueNotifier<double> _pagePosition;
+  late final FeedAutoAdvanceSession _autoAdvanceSession;
+  final _feedKey = GlobalKey<PooledVideoFeedState>();
+  bool _pendingAutoAdvanceAfterPagination = false;
 
   @override
   void didChangeDependencies() {
@@ -279,12 +292,14 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     super.initState();
     final initialIndex = context.read<FullscreenFeedBloc>().state.currentIndex;
     _pagePosition = ValueNotifier<double>(initialIndex.toDouble());
+    _autoAdvanceSession = FeedAutoAdvanceSession();
   }
 
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
     _controller?.dispose();
+    _autoAdvanceSession.dispose();
     _pagePosition.dispose();
     super.dispose();
   }
@@ -335,6 +350,100 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
       controller.addVideos(newVideos);
     }
     _lastPooledVideos = state.pooledVideos;
+  }
+
+  void _updateAutoAdvanceSession(void Function() update) {
+    final wasEnabled = _autoAdvanceSession.autoEnabled;
+    final wasSuppressed = _autoAdvanceSession.autoSuppressed;
+    final hadPendingPagination = _pendingAutoAdvanceAfterPagination;
+
+    update();
+
+    if (!mounted) return;
+
+    if (wasEnabled != _autoAdvanceSession.autoEnabled ||
+        wasSuppressed != _autoAdvanceSession.autoSuppressed ||
+        hadPendingPagination != _pendingAutoAdvanceAfterPagination) {
+      setState(() {});
+    }
+  }
+
+  void _toggleAutoAdvance() {
+    _updateAutoAdvanceSession(() {
+      _autoAdvanceSession.toggle();
+      if (!_autoAdvanceSession.isEffectivelyActive) {
+        _pendingAutoAdvanceAfterPagination = false;
+      }
+    });
+  }
+
+  void _suppressAutoAdvance() {
+    _updateAutoAdvanceSession(() {
+      _autoAdvanceSession.suppressForInteraction();
+      _pendingAutoAdvanceAfterPagination = false;
+    });
+  }
+
+  void _resumeAutoAdvanceAfterSwipe() {
+    _updateAutoAdvanceSession(() {
+      _autoAdvanceSession.resumeAfterSwipe();
+      _pendingAutoAdvanceAfterPagination = false;
+    });
+  }
+
+  void _animateToPage(int index) {
+    final feedState = _feedKey.currentState;
+    if (feedState == null || feedState.controller.videoCount == 0) return;
+
+    final targetIndex = index.clamp(0, feedState.controller.videoCount - 1);
+    if (targetIndex == feedState.controller.currentIndex) return;
+
+    unawaited(feedState.animateToPage(targetIndex));
+  }
+
+  void _handleAutoAdvanceCompleted() {
+    if (!_autoAdvanceSession.isEffectivelyActive) return;
+
+    final state = context.read<FullscreenFeedBloc>().state;
+    final instruction = decideFeedAutoAdvance(
+      currentIndex: state.currentIndex,
+      itemCount: state.videos.length,
+      hasMore: state.canLoadMore,
+      isLoadingMore: state.isLoadingMore,
+    );
+
+    switch (instruction) {
+      case FeedAutoAdvanceInstruction.next:
+        _pendingAutoAdvanceAfterPagination = false;
+        _animateToPage(state.currentIndex + 1);
+      case FeedAutoAdvanceInstruction.paginate:
+        _pendingAutoAdvanceAfterPagination = true;
+        _triggerLoadMore();
+      case FeedAutoAdvanceInstruction.wrap:
+        _pendingAutoAdvanceAfterPagination = false;
+        _animateToPage(0);
+      case FeedAutoAdvanceInstruction.noop:
+        break;
+    }
+  }
+
+  void _continuePendingAutoAdvance(FullscreenFeedState state) {
+    if (!_pendingAutoAdvanceAfterPagination || state.isLoadingMore) return;
+
+    if (state.currentIndex < state.videos.length - 1) {
+      _updateAutoAdvanceSession(() {
+        _pendingAutoAdvanceAfterPagination = false;
+      });
+      _animateToPage(state.currentIndex + 1);
+      return;
+    }
+
+    if (!state.canLoadMore) {
+      _updateAutoAdvanceSession(() {
+        _pendingAutoAdvanceAfterPagination = false;
+      });
+      _animateToPage(0);
+    }
   }
 
   void _triggerLoadMore() {
@@ -399,6 +508,13 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
           listenWhen: (prev, curr) => prev.videos.length != curr.videos.length,
           listener: (context, state) => _handleVideosChanged(state),
+        ),
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) =>
+              prev.videos.length != curr.videos.length ||
+              prev.isLoadingMore != curr.isLoadingMore ||
+              prev.canLoadMore != curr.canLoadMore,
+          listener: (context, state) => _continuePendingAutoAdvance(state),
         ),
         // Open comments sheet once the first video is ready (notification deep-link)
         if (widget.autoOpenComments)
@@ -489,6 +605,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                     initialIndex: state.currentIndex,
                     onActiveVideoChanged: (video, index) {
                       _pagePosition.value = index.toDouble();
+                      _resumeAutoAdvanceAfterSwipe();
                       FeedPerformanceTracker().startVideoSwipeTracking(
                         video.id,
                       );
@@ -515,10 +632,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                         },
                   )
                 : PooledVideoFeed(
+                    key: _feedKey,
                     videos: state.pooledVideos,
                     controller: _controller,
                     initialIndex: state.currentIndex,
                     onActiveVideoChanged: (video, index) {
+                      _resumeAutoAdvanceAfterSwipe();
                       FeedPerformanceTracker().startVideoSwipeTracking(
                         video.id,
                       );
@@ -570,6 +689,13 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                         trafficSource: widget.trafficSource,
                         sourceDetail: widget.sourceDetail,
                         isOwnVideo: isOwnVideo,
+                        showAutoButton: true,
+                        isAutoEnabled: _autoAdvanceSession.autoEnabled,
+                        isAutoAdvanceActive:
+                            _autoAdvanceSession.isEffectivelyActive,
+                        onAutoPressed: _toggleAutoAdvance,
+                        onInteracted: _suppressAutoAdvance,
+                        onAutoAdvanceCompleted: _handleAutoAdvanceCompleted,
                       );
                     },
                   ),
@@ -587,9 +713,15 @@ class _PooledFullscreenItem extends ConsumerWidget {
     required this.isActive,
     required this.isOwnVideo,
     required this.pagePosition,
+    required this.showAutoButton,
+    required this.isAutoEnabled,
+    required this.isAutoAdvanceActive,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
+    this.onAutoPressed,
+    this.onInteracted,
+    this.onAutoAdvanceCompleted,
   });
 
   final VideoEvent video;
@@ -597,9 +729,15 @@ class _PooledFullscreenItem extends ConsumerWidget {
   final bool isActive;
   final bool isOwnVideo;
   final ValueNotifier<double> pagePosition;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final bool isAutoAdvanceActive;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
+  final VoidCallback? onAutoAdvanceCompleted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -633,6 +771,12 @@ class _PooledFullscreenItem extends ConsumerWidget {
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
         isOwnVideo: isOwnVideo,
+        showAutoButton: showAutoButton,
+        isAutoEnabled: isAutoEnabled,
+        isAutoAdvanceActive: isAutoAdvanceActive,
+        onAutoPressed: onAutoPressed,
+        onInteracted: onInteracted,
+        onAutoAdvanceCompleted: onAutoAdvanceCompleted,
       ),
     );
   }
@@ -692,9 +836,15 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
     required this.isActive,
     required this.isOwnVideo,
     required this.pagePosition,
+    required this.showAutoButton,
+    required this.isAutoEnabled,
+    required this.isAutoAdvanceActive,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
+    this.onAutoPressed,
+    this.onInteracted,
+    this.onAutoAdvanceCompleted,
   });
 
   final VideoEvent video;
@@ -702,9 +852,15 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
   final bool isActive;
   final bool isOwnVideo;
   final ValueNotifier<double> pagePosition;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final bool isAutoAdvanceActive;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
+  final VoidCallback? onAutoAdvanceCompleted;
 
   @override
   ConsumerState<_PooledFullscreenItemContent> createState() =>
@@ -735,6 +891,11 @@ class _PooledFullscreenItemContentState
       offset: details.localPosition,
       id: ++_heartTriggerId,
     );
+  }
+
+  void _handlePlayerTap() {
+    widget.onInteracted?.call();
+    VideoPoolProvider.feedOf(context).togglePlayPause();
   }
 
   @override
@@ -795,6 +956,7 @@ class _PooledFullscreenItemContentState
         isActive: widget.isActive,
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: widget.isActive,
+        onTap: _handlePlayerTap,
         onDoubleTap: _handleDoubleTapLike,
         videoBuilder: (context, videoController, player) =>
             PooledVideoMetricsTracker(
@@ -859,45 +1021,54 @@ class _PooledFullscreenItemContentState
           }
           return MediaQuery(
             data: MediaQueryData.fromView(View.of(context)),
-            child: Stack(
-              children: [
-                if (player != null)
-                  PausedVideoPlayOverlay(
-                    player: player,
-                    firstFrameFuture:
-                        videoController?.waitUntilFirstFrameRendered,
-                    isVisible: widget.isActive,
+            child: FeedAutoAdvanceCompletionListener(
+              player: player,
+              isEnabled: widget.isActive && widget.isAutoAdvanceActive,
+              onCompleted: widget.onAutoAdvanceCompleted ?? () {},
+              child: Stack(
+                children: [
+                  if (player != null)
+                    PausedVideoPlayOverlay(
+                      player: player,
+                      firstFrameFuture:
+                          videoController?.waitUntilFirstFrameRendered,
+                      isVisible: widget.isActive,
+                    ),
+                  // Subtitle overlay — needs player position stream
+                  if (video.hasSubtitles && player != null)
+                    Positioned.fill(
+                      child: _SubtitleLayer(video: video, player: player),
+                    ),
+                  ValueListenableBuilder<double>(
+                    valueListenable: widget.pagePosition,
+                    builder: (context, page, _) {
+                      final distance = (page - widget.index).abs().clamp(
+                        0.0,
+                        1.0,
+                      );
+                      return VideoOverlayActions(
+                        video: video,
+                        // isVisible:true — scroll opacity handles fading;
+                        // the hard-cut guard is not needed in fullscreen.
+                        isVisible: true,
+                        isActive: widget.isActive,
+                        overlayOpacity: _scrollDrivenOpacity(distance),
+                        hasBottomNavigation: false,
+                        contextTitle: widget.contextTitle,
+                        isFullscreen: true,
+                        topOffset: widget.isOwnVideo ? 64 : 8,
+                        showAutoButton: widget.showAutoButton,
+                        isAutoEnabled: widget.isAutoEnabled,
+                        onAutoPressed: widget.onAutoPressed,
+                        onInteracted: widget.onInteracted,
+                      );
+                    },
                   ),
-                // Subtitle overlay — needs player position stream
-                if (video.hasSubtitles && player != null)
                   Positioned.fill(
-                    child: _SubtitleLayer(video: video, player: player),
+                    child: DoubleTapHeartOverlay(trigger: _heartTrigger),
                   ),
-                ValueListenableBuilder<double>(
-                  valueListenable: widget.pagePosition,
-                  builder: (context, page, _) {
-                    final distance = (page - widget.index).abs().clamp(
-                      0.0,
-                      1.0,
-                    );
-                    return VideoOverlayActions(
-                      video: video,
-                      // isVisible:true — scroll opacity handles fading;
-                      // the hard-cut guard is not needed in fullscreen.
-                      isVisible: true,
-                      isActive: widget.isActive,
-                      overlayOpacity: _scrollDrivenOpacity(distance),
-                      hasBottomNavigation: false,
-                      contextTitle: widget.contextTitle,
-                      isFullscreen: true,
-                      topOffset: widget.isOwnVideo ? 64 : 8,
-                    );
-                  },
-                ),
-                Positioned.fill(
-                  child: DoubleTapHeartOverlay(trigger: _heartTrigger),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },

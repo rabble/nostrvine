@@ -20,5 +20,9 @@ FeedAutoAdvanceInstruction decideFeedAutoAdvance({
     return FeedAutoAdvanceInstruction.paginate;
   }
 
+  if (hasMore && isLoadingMore) {
+    return FeedAutoAdvanceInstruction.noop;
+  }
+
   return FeedAutoAdvanceInstruction.wrap;
 }

@@ -19,6 +19,9 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_completion_listener.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_policy.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_session.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -134,6 +137,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Tracks which feed mode the current controller was built for.
   FeedMode? controllerMode;
 
+  late final FeedAutoAdvanceSession _autoAdvanceSession;
+  bool _pendingAutoAdvanceAfterPagination = false;
+
   /// Whether this state owns (and should dispose) the controller.
   bool get ownsController => widget.controller == null;
 
@@ -141,6 +147,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void initState() {
     super.initState();
     _pagePosition = ValueNotifier<double>(0);
+    _autoAdvanceSession = FeedAutoAdvanceSession();
     WidgetsBinding.instance.addObserver(this);
     // Use injected controller if provided (for testing)
     if (!ownsController) controller = widget.controller;
@@ -157,6 +164,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   @override
   void dispose() {
     if (ownsController) controller?.dispose();
+    _autoAdvanceSession.dispose();
     _pagePosition.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -177,6 +185,107 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     if (nextIndex >= feedState.controller.videoCount) return;
 
     unawaited(feedState.animateToPage(nextIndex));
+  }
+
+  void _updateAutoAdvanceSession(void Function() update) {
+    final wasEnabled = _autoAdvanceSession.autoEnabled;
+    final wasSuppressed = _autoAdvanceSession.autoSuppressed;
+    final hadPendingPagination = _pendingAutoAdvanceAfterPagination;
+
+    update();
+
+    if (!mounted) return;
+
+    if (wasEnabled != _autoAdvanceSession.autoEnabled ||
+        wasSuppressed != _autoAdvanceSession.autoSuppressed ||
+        hadPendingPagination != _pendingAutoAdvanceAfterPagination) {
+      setState(() {});
+    }
+  }
+
+  void _toggleAutoAdvance() {
+    _updateAutoAdvanceSession(() {
+      _autoAdvanceSession.toggle();
+      if (!_autoAdvanceSession.isEffectivelyActive) {
+        _pendingAutoAdvanceAfterPagination = false;
+      }
+    });
+  }
+
+  void _suppressAutoAdvance() {
+    _updateAutoAdvanceSession(() {
+      _autoAdvanceSession.suppressForInteraction();
+      _pendingAutoAdvanceAfterPagination = false;
+    });
+  }
+
+  void _resumeAutoAdvanceAfterSwipe() {
+    _updateAutoAdvanceSession(() {
+      _autoAdvanceSession.resumeAfterSwipe();
+      _pendingAutoAdvanceAfterPagination = false;
+    });
+  }
+
+  int _currentFeedIndex() {
+    final feedState = _feedKey.currentState;
+    if (feedState != null) return feedState.controller.currentIndex;
+    return controller?.currentIndex ?? 0;
+  }
+
+  void _animateToFeedPage(int index) {
+    final feedState = _feedKey.currentState;
+    if (feedState == null || feedState.controller.videoCount == 0) return;
+
+    final targetIndex = index.clamp(0, feedState.controller.videoCount - 1);
+    if (targetIndex == feedState.controller.currentIndex) return;
+
+    unawaited(feedState.animateToPage(targetIndex));
+  }
+
+  void _handleAutoAdvanceCompleted() {
+    if (!_autoAdvanceSession.isEffectivelyActive) return;
+
+    final state = context.read<VideoFeedBloc>().state;
+    final instruction = decideFeedAutoAdvance(
+      currentIndex: _currentFeedIndex(),
+      itemCount: state.videos.length,
+      hasMore: state.hasMore,
+      isLoadingMore: state.isLoadingMore,
+    );
+
+    switch (instruction) {
+      case FeedAutoAdvanceInstruction.next:
+        _pendingAutoAdvanceAfterPagination = false;
+        _animateToFeedPage(_currentFeedIndex() + 1);
+      case FeedAutoAdvanceInstruction.paginate:
+        _pendingAutoAdvanceAfterPagination = true;
+        context.read<VideoFeedBloc>().add(const VideoFeedLoadMoreRequested());
+      case FeedAutoAdvanceInstruction.wrap:
+        _pendingAutoAdvanceAfterPagination = false;
+        _animateToFeedPage(0);
+      case FeedAutoAdvanceInstruction.noop:
+        break;
+    }
+  }
+
+  void _continuePendingAutoAdvance(VideoFeedState state) {
+    if (!_pendingAutoAdvanceAfterPagination || state.isLoadingMore) return;
+
+    final currentIndex = _currentFeedIndex();
+    if (currentIndex < state.videos.length - 1) {
+      _updateAutoAdvanceSession(() {
+        _pendingAutoAdvanceAfterPagination = false;
+      });
+      _animateToFeedPage(currentIndex + 1);
+      return;
+    }
+
+    if (!state.hasMore) {
+      _updateAutoAdvanceSession(() {
+        _pendingAutoAdvanceAfterPagination = false;
+      });
+      _animateToFeedPage(0);
+    }
   }
 
   /// Handles the controller changes.
@@ -411,6 +520,13 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 previous.videos.length != current.videos.length,
             listener: (_, state) => handleVideosChanged(state),
           ),
+          BlocListener<VideoFeedBloc, VideoFeedState>(
+            listenWhen: (previous, current) =>
+                previous.videos.length != current.videos.length ||
+                previous.hasMore != current.hasMore ||
+                previous.isLoadingMore != current.isLoadingMore,
+            listener: (_, state) => _continuePendingAutoAdvance(state),
+          ),
         ],
         child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
           builder: (context, state) {
@@ -502,9 +618,17 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                           pagePosition: _pagePosition,
                           contextTitle: state.mode.name,
                           listSources: listSources,
+                          showAutoButton: true,
+                          isAutoEnabled: _autoAdvanceSession.autoEnabled,
+                          isAutoAdvanceActive:
+                              _autoAdvanceSession.isEffectivelyActive,
+                          onAutoPressed: _toggleAutoAdvance,
+                          onInteracted: _suppressAutoAdvance,
+                          onAutoAdvanceCompleted: _handleAutoAdvanceCompleted,
                         );
                       },
                       onActiveVideoChanged: (video, index) {
+                        _resumeAutoAdvanceAfterSwipe();
                         FeedPerformanceTracker().startVideoSwipeTracking(
                           video.id,
                         );
@@ -650,16 +774,28 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     required this.index,
     required this.isActive,
     required this.pagePosition,
+    required this.showAutoButton,
+    required this.isAutoEnabled,
+    required this.isAutoAdvanceActive,
     this.contextTitle,
     this.listSources,
+    this.onAutoPressed,
+    this.onInteracted,
+    this.onAutoAdvanceCompleted,
   });
 
   final VideoEvent video;
   final int index;
   final bool isActive;
   final ValueNotifier<double> pagePosition;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final bool isAutoAdvanceActive;
   final String? contextTitle;
   final Set<String>? listSources;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
+  final VoidCallback? onAutoAdvanceCompleted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -692,6 +828,12 @@ class _PooledVideoFeedItem extends ConsumerWidget {
         pagePosition: pagePosition,
         contextTitle: contextTitle,
         listSources: listSources,
+        showAutoButton: showAutoButton,
+        isAutoEnabled: isAutoEnabled,
+        isAutoAdvanceActive: isAutoAdvanceActive,
+        onAutoPressed: onAutoPressed,
+        onInteracted: onInteracted,
+        onAutoAdvanceCompleted: onAutoAdvanceCompleted,
       ),
     );
   }
@@ -703,16 +845,28 @@ class _PooledVideoFeedItemContent extends StatefulWidget {
     required this.index,
     required this.isActive,
     required this.pagePosition,
+    required this.showAutoButton,
+    required this.isAutoEnabled,
+    required this.isAutoAdvanceActive,
     this.contextTitle,
     this.listSources,
+    this.onAutoPressed,
+    this.onInteracted,
+    this.onAutoAdvanceCompleted,
   });
 
   final VideoEvent video;
   final int index;
   final bool isActive;
   final ValueNotifier<double> pagePosition;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final bool isAutoAdvanceActive;
   final String? contextTitle;
   final Set<String>? listSources;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
+  final VoidCallback? onAutoAdvanceCompleted;
 
   @override
   State<_PooledVideoFeedItemContent> createState() =>
@@ -745,6 +899,11 @@ class _PooledVideoFeedItemContentState
     );
   }
 
+  void _handlePlayerTap() {
+    widget.onInteracted?.call();
+    VideoPoolProvider.feedOf(context).togglePlayPause();
+  }
+
   @override
   void dispose() {
     _heartTrigger.dispose();
@@ -765,6 +924,7 @@ class _PooledVideoFeedItemContentState
         isActive: widget.isActive,
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: widget.isActive,
+        onTap: _handlePlayerTap,
         onDoubleTap: _handleDoubleTapLike,
         videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
           videoController: videoController,
@@ -790,27 +950,38 @@ class _PooledVideoFeedItemContentState
             errorType: errorType,
           );
         },
-        overlayBuilder: (context, videoController, player) => Stack(
-          children: [
-            FeedVideoOverlay(
-              video: video,
-              isActive: widget.isActive,
-              pagePosition: widget.pagePosition,
-              index: widget.index,
+        overlayBuilder: (context, videoController, player) =>
+            FeedAutoAdvanceCompletionListener(
               player: player,
-              firstFrameFuture: videoController?.waitUntilFirstFrameRendered,
-              listSources: widget.listSources,
-              onContentWarningRevealed: () {
-                _contentWarningRevealed = true;
-              },
+              isEnabled: widget.isActive && widget.isAutoAdvanceActive,
+              onCompleted: widget.onAutoAdvanceCompleted ?? () {},
+              child: Stack(
+                children: [
+                  FeedVideoOverlay(
+                    video: video,
+                    isActive: widget.isActive,
+                    pagePosition: widget.pagePosition,
+                    index: widget.index,
+                    player: player,
+                    firstFrameFuture:
+                        videoController?.waitUntilFirstFrameRendered,
+                    listSources: widget.listSources,
+                    showAutoButton: widget.showAutoButton,
+                    isAutoEnabled: widget.isAutoEnabled,
+                    onAutoPressed: widget.onAutoPressed,
+                    onInteracted: widget.onInteracted,
+                    onContentWarningRevealed: () {
+                      _contentWarningRevealed = true;
+                    },
+                  ),
+                  Positioned.fill(
+                    child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                  ),
+                  if (!video.isFromDivineServer)
+                    _SlowExternalVideoOverlay(index: widget.index),
+                ],
+              ),
             ),
-            Positioned.fill(
-              child: DoubleTapHeartOverlay(trigger: _heartTrigger),
-            ),
-            if (!video.isFromDivineServer)
-              _SlowExternalVideoOverlay(index: widget.index),
-          ],
-        ),
       ),
     );
   }

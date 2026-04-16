@@ -19,7 +19,15 @@ class FeedAutoAdvanceSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggle() => setEnabled(!_autoEnabled);
+  void toggle() {
+    if (_autoEnabled && _autoSuppressed) {
+      _autoSuppressed = false;
+      notifyListeners();
+      return;
+    }
+
+    setEnabled(!_autoEnabled);
+  }
 
   void suppressForInteraction() {
     if (!_autoEnabled || _autoSuppressed) return;

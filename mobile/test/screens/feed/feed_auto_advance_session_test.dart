@@ -38,6 +38,18 @@ void main() {
       },
     );
 
+    test('tapping Auto while suppressed resumes without disabling it', () {
+      final session = FeedAutoAdvanceSession()
+        ..setEnabled(true)
+        ..suppressForInteraction();
+
+      session.toggle();
+
+      expect(session.autoEnabled, isTrue);
+      expect(session.autoSuppressed, isFalse);
+      expect(session.isEffectivelyActive, isTrue);
+    });
+
     test('disabling auto clears suppression', () {
       final session = FeedAutoAdvanceSession()
         ..setEnabled(true)
