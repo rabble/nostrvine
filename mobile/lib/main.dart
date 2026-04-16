@@ -813,7 +813,7 @@ Future<void> _configurePlaybackAudioSession() async {
 }
 
 Future<void> _initializeMediaPlayback() async {
-  // MediaKit.ensureInitialized();
+  MediaKit.ensureInitialized();
   await PlayerPool.init();
 }
 

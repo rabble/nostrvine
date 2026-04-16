@@ -243,8 +243,10 @@ class _MasonryLayout extends StatelessWidget {
       itemBuilder: (context, index) {
         final clip = clips[index];
         final selectionIndex = selectionIndexById[clip.id] ?? -1;
-        final isLastInFirstRow =
-            index == _columnCount - 1 || index == clips.length - 1;
+        final firstRowLastIndex = clips.length < _columnCount
+            ? clips.length - 1
+            : _columnCount - 1;
+        final isLastInFirstRow = index == firstRowLastIndex;
         final borderRadius = BorderRadius.only(
           topLeft: index == 0 ? _radius : Radius.zero,
           topRight: isLastInFirstRow ? _radius : Radius.zero,
