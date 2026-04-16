@@ -69,7 +69,7 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(DraftsLibraryError(message: e.toString()));
+      emit(const DraftsLibraryError());
     }
   }
 

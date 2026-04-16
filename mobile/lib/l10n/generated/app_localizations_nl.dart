@@ -3890,6 +3890,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get saveOriginalNotNow => 'Niet nu';
 
   @override
+  String get cameraPermissionNotNow => 'Niet nu';
+
+  @override
   String get saveOriginalDownloadFailed => 'Download mislukt';
 
   @override
@@ -4408,6 +4411,152 @@ class AppLocalizationsNl extends AppLocalizations {
   String get libraryDeleteConfirm => 'Verwijderen';
 
   @override
+  String get libraryWebUnavailableHeadline =>
+      'Bibliotheek is beschikbaar in de mobiele app';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Concepten en clips worden op je apparaat opgeslagen. Open Divine op je telefoon om ze te beheren.';
+
+  @override
+  String get libraryTabDrafts => 'Concepten';
+
+  @override
+  String get libraryTabClips => 'Clips';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Opslaan in filmrol';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip =>
+      'Geselecteerde clips verwijderen';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Clips verwijderen';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# geselecteerde clips',
+      one: '# geselecteerde clip',
+    );
+    return 'Weet je zeker dat je $_temp0 wilt verwijderen?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Dit kan niet ongedaan worden gemaakt. De videobestanden worden permanent van je apparaat verwijderd.';
+
+  @override
+  String get libraryPreparingVideo => 'Video voorbereiden...';
+
+  @override
+  String get libraryCreateVideo => 'Video maken';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips',
+      one: '1 clip',
+    );
+    return '$_temp0 opgeslagen in $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount opgeslagen, $failureCount mislukt';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'Toestemming geweigerd voor $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips verwijderd',
+      one: '1 clip verwijderd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts =>
+      'Concepten konden niet worden geladen';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Clips konden niet worden geladen';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Er ging iets mis bij het openen van je bibliotheek. Probeer het opnieuw.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Nog geen concepten';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Video\'\'s die je als concept opslaat, verschijnen hier';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Nog geen clips';
+
+  @override
+  String get libraryNoClipsYetSubtitle =>
+      'Je opgenomen videoclips verschijnen hier';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Concept verwijderd';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar => 'Concept verwijderen mislukt';
+
+  @override
+  String get libraryDraftActionPost => 'Plaatsen';
+
+  @override
+  String get libraryDraftActionEdit => 'Bewerken';
+
+  @override
+  String get libraryDraftActionDelete => 'Concept verwijderen';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Concept verwijderen';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'Weet je zeker dat je \"$title\" wilt verwijderen?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Clip verwijderen';
+
+  @override
+  String get libraryDeleteClipMessage =>
+      'Weet je zeker dat je deze clip wilt verwijderen?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Clips';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'Nog ${seconds}s';
+  }
+
+  @override
+  String get libraryAddClips => 'Toevoegen';
+
+  @override
+  String get libraryRecordVideo => 'Video opnemen';
+
+  @override
   String get routerInvalidCreator => 'Ongeldige maker';
 
   @override
@@ -4651,4 +4800,39 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Gecentreerd';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'Camera wordt nog niet ondersteund op het web';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'Camerabeelden opnemen en video opnemen zijn nog niet beschikbaar in de webversie.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Terug naar feed';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Machtigingsfout';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'Er is iets misgegaan bij het controleren van machtigingen.';
+
+  @override
+  String get cameraPermissionRetry => 'Opnieuw proberen';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Toegang tot camera en microfoon toestaan';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Hiermee kun je video\'s rechtstreeks in de app opnemen en bewerken, verder niets.';
+
+  @override
+  String get cameraPermissionContinue => 'Doorgaan';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Naar instellingen';
 }

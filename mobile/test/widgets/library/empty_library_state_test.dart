@@ -5,9 +5,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 
 void main() {
+  final en = AppLocalizationsEn();
+
   group(EmptyLibraryState, () {
     Widget buildWidget({
       DivineIconName icon = DivineIconName.filmSlate,
@@ -60,7 +63,7 @@ void main() {
       testWidgets('displays record button by default', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(find.text('Record a Video'), findsOneWidget);
+        expect(find.text(en.libraryRecordVideo), findsOneWidget);
         expect(find.byType(DivineButton), findsOneWidget);
       });
 
@@ -69,7 +72,7 @@ void main() {
       ) async {
         await tester.pumpWidget(buildWidget(showRecordButton: false));
 
-        expect(find.text('Record a Video'), findsNothing);
+        expect(find.text(en.libraryRecordVideo), findsNothing);
         expect(find.byType(ElevatedButton), findsNothing);
       });
 

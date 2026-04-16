@@ -556,12 +556,13 @@ void main() {
           when(
             () => mockFunnelcakeClient.getUserProfile(testPubkey),
           ).thenAnswer(
-            (_) async => {
-              'pubkey': testPubkey,
-              'display_name': 'REST User',
-              'name': 'restuser',
-              'picture': 'https://example.com/pic.png',
-            },
+            (_) async => UserProfileFound(
+              profile: UserProfileData.fromJson(testPubkey, const {
+                'display_name': 'REST User',
+                'name': 'restuser',
+                'picture': 'https://example.com/pic.png',
+              }),
+            ),
           );
 
           final result = await repoWithFunnelcake.fetchFreshProfile(
@@ -612,18 +613,23 @@ void main() {
         );
 
         test('marks missing immediately when Funnelcake returns '
-            '_noProfile sentinel', () async {
+            'UserProfileNotPublished', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
             () => mockFunnelcakeClient.getUserProfile(testPubkey),
           ).thenAnswer(
-            (_) async => {
-              '_noProfile': true,
-              'pubkey': testPubkey,
-              'social': {'follower_count': 12, 'following_count': 7},
-              'stats': {'video_count': 3},
-              'engagement': {'total_reactions': 42, 'total_loops': 12.6},
-            },
+            (_) async => UserProfileNotPublished(
+              pubkey: testPubkey,
+              social: ProfileSocialData.fromJson(const {
+                'follower_count': 12,
+                'following_count': 7,
+              }),
+              stats: ProfileStatsData.fromJson(const {'video_count': 3}),
+              engagement: ProfileEngagementData.fromJson(const {
+                'total_reactions': 42,
+                'total_loops': 12.6,
+              }),
+            ),
           );
 
           final result = await repoWithFunnelcake.fetchFreshProfile(
@@ -3209,14 +3215,15 @@ void main() {
         mockFunnelcakeClient = MockFunnelcakeApiClient();
       });
 
-      test('returns profile data on success', () async {
+      test('returns UserProfileFound on success', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(() => mockFunnelcakeClient.getUserProfile(testPubkey)).thenAnswer(
-          (_) async => {
-            'pubkey': testPubkey,
-            'display_name': 'Test User',
-            'picture': 'https://example.com/avatar.png',
-          },
+          (_) async => UserProfileFound(
+            profile: UserProfileData.fromJson(testPubkey, const {
+              'display_name': 'Test User',
+              'picture': 'https://example.com/avatar.png',
+            }),
+          ),
         );
 
         final repoWithFunnelcake = ProfileRepository(
@@ -3230,8 +3237,11 @@ void main() {
           pubkey: testPubkey,
         );
 
-        expect(result, isNotNull);
-        expect(result!['display_name'], equals('Test User'));
+        expect(result, isA<UserProfileFound>());
+        expect(
+          (result! as UserProfileFound).profile.displayName,
+          equals('Test User'),
+        );
         verify(() => mockFunnelcakeClient.getUserProfile(testPubkey)).called(1);
       });
 
@@ -3312,12 +3322,14 @@ void main() {
       });
 
       test('returns BulkProfilesResponse on success', () async {
-        const testResponse = BulkProfilesResponse(
+        final testResponse = BulkProfilesResponse(
           profiles: {
-            testPubkey: {
-              'display_name': 'Test User',
-              'picture': 'https://example.com/avatar.png',
-            },
+            testPubkey: UserProfileFound(
+              profile: UserProfileData.fromJson(testPubkey, const {
+                'display_name': 'Test User',
+                'picture': 'https://example.com/avatar.png',
+              }),
+            ),
           },
         );
 
@@ -3571,12 +3583,14 @@ void main() {
         ).thenAnswer((_) async => []);
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
-          (_) async => const BulkProfilesResponse(
+          (_) async => BulkProfilesResponse(
             profiles: {
-              testPubkey: {
-                'display_name': 'API User',
-                'picture': 'https://example.com/pic.jpg',
-              },
+              testPubkey: UserProfileFound(
+                profile: UserProfileData.fromJson(testPubkey, const {
+                  'display_name': 'API User',
+                  'picture': 'https://example.com/pic.jpg',
+                }),
+              ),
             },
           ),
         );
@@ -3649,9 +3663,14 @@ void main() {
         ).thenAnswer((_) async => [cachedProfile]);
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
-          (_) async => const BulkProfilesResponse(
+          (_) async => BulkProfilesResponse(
             profiles: {
-              testPubkey2: {'display_name': 'API User'},
+              testPubkey2: UserProfileFound(
+                profile: UserProfileData.fromJson(
+                  testPubkey2,
+                  const {'display_name': 'API User'},
+                ),
+              ),
             },
           ),
         );
@@ -3873,75 +3892,86 @@ void main() {
         expect(result, isEmpty);
       });
 
-      test('skips relay fallback for _noProfile sentinel entries', () async {
-        when(
-          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
-        ).thenAnswer((_) async => []);
-        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-        when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
-          (_) async => const BulkProfilesResponse(
-            profiles: {
-              testPubkey: {'_noProfile': true},
-            },
-          ),
-        );
+      test(
+        'skips relay fallback for UserProfileNotPublished entries',
+        () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+          ).thenAnswer((_) async => []);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+            (_) async => const BulkProfilesResponse(
+              profiles: {
+                testPubkey: UserProfileNotPublished(pubkey: testPubkey),
+              },
+            ),
+          );
 
-        final repoWithFunnelcake = ProfileRepository(
-          nostrClient: mockNostrClient,
-          userProfilesDao: mockUserProfilesDao,
-          httpClient: mockHttpClient,
-          funnelcakeApiClient: mockFunnelcakeClient,
-        );
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
 
-        final result = await repoWithFunnelcake.fetchBatchProfiles(
-          pubkeys: [testPubkey],
-        );
+          final result = await repoWithFunnelcake.fetchBatchProfiles(
+            pubkeys: [testPubkey],
+          );
 
-        expect(result, isEmpty);
-        verifyNever(() => mockNostrClient.fetchProfile(any()));
-        verifyNever(
-          () => mockNostrClient.queryEvents(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            useCache: any(named: 'useCache'),
-          ),
-        );
-        verifyNever(() => mockUserProfilesDao.upsertProfiles(any()));
-      });
+          expect(result, isEmpty);
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+          verifyNever(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          );
+          verifyNever(() => mockUserProfilesDao.upsertProfiles(any()));
+        },
+      );
 
-      test('processes real profiles alongside _noProfile sentinels', () async {
-        when(
-          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
-        ).thenAnswer((_) async => []);
-        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-        when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
-          (_) async => const BulkProfilesResponse(
-            profiles: {
-              testPubkey: {'display_name': 'Real User'},
-              testPubkey2: {'_noProfile': true},
-            },
-          ),
-        );
-        when(
-          () => mockUserProfilesDao.upsertProfiles(any()),
-        ).thenAnswer((_) async {});
+      test(
+        'processes real profiles alongside UserProfileNotPublished entries',
+        () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+          ).thenAnswer((_) async => []);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+            (_) async => BulkProfilesResponse(
+              profiles: {
+                testPubkey: UserProfileFound(
+                  profile: UserProfileData.fromJson(
+                    testPubkey,
+                    const {'display_name': 'Real User'},
+                  ),
+                ),
+                testPubkey2: const UserProfileNotPublished(pubkey: testPubkey2),
+              },
+            ),
+          );
+          when(
+            () => mockUserProfilesDao.upsertProfiles(any()),
+          ).thenAnswer((_) async {});
 
-        final repoWithFunnelcake = ProfileRepository(
-          nostrClient: mockNostrClient,
-          userProfilesDao: mockUserProfilesDao,
-          httpClient: mockHttpClient,
-          funnelcakeApiClient: mockFunnelcakeClient,
-        );
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
 
-        final result = await repoWithFunnelcake.fetchBatchProfiles(
-          pubkeys: [testPubkey, testPubkey2],
-        );
+          final result = await repoWithFunnelcake.fetchBatchProfiles(
+            pubkeys: [testPubkey, testPubkey2],
+          );
 
-        expect(result, hasLength(1));
-        expect(result[testPubkey]?.displayName, equals('Real User'));
-        expect(result.containsKey(testPubkey2), isFalse);
-        verifyNever(() => mockNostrClient.fetchProfile(any()));
-      });
+          expect(result, hasLength(1));
+          expect(result[testPubkey]?.displayName, equals('Real User'));
+          expect(result.containsKey(testPubkey2), isFalse);
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+        },
+      );
 
       test('does not batch-write when nothing was fetched', () async {
         final cached = UserProfile(

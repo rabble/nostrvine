@@ -3710,6 +3710,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get saveOriginalNotNow => '나중에';
 
   @override
+  String get cameraPermissionNotNow => '나중에';
+
+  @override
   String get saveOriginalDownloadFailed => '다운로드 실패';
 
   @override
@@ -4224,6 +4227,144 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryDeleteConfirm => '삭제';
 
   @override
+  String get libraryWebUnavailableHeadline => '라이브러리는 모바일 앱에서 이용할 수 있어요';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      '임시 저장과 클립은 기기에 저장됩니다. 관리하려면 휴대폰에서 Divine을 열어 주세요.';
+
+  @override
+  String get libraryTabDrafts => '임시 저장';
+
+  @override
+  String get libraryTabClips => '클립';
+
+  @override
+  String get librarySaveToCameraRollTooltip => '카메라 롤에 저장';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => '선택한 클립 삭제';
+
+  @override
+  String get libraryDeleteClipsTitle => '클립 삭제';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count개',
+      one: '1개',
+    );
+    return '선택한 클립 $_temp0를 삭제할까요?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning => '되돌릴 수 없어요. 동영상 파일이 기기에서 삭제됩니다.';
+
+  @override
+  String get libraryPreparingVideo => '동영상 준비 중...';
+
+  @override
+  String get libraryCreateVideo => '동영상 만들기';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$destination에 클립 $count개 저장됨',
+      one: '$destination에 클립 1개 저장됨',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount개 저장, $failureCount개 실패';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return '$destination 권한이 거부되었어요';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '클립 $count개 삭제됨',
+      one: '클립 1개 삭제됨',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts => '임시 저장 영상을 불러올 수 없어요';
+
+  @override
+  String get libraryCouldNotLoadClips => '클립을 불러올 수 없어요';
+
+  @override
+  String get libraryOpenErrorDescription => '라이브러리를 열 때 문제가 생겼어요. 다시 시도해 주세요.';
+
+  @override
+  String get libraryNoDraftsYetTitle => '아직 임시 저장이 없어요';
+
+  @override
+  String get libraryNoDraftsYetSubtitle => '임시 저장으로 저장한 동영상이 여기에 표시됩니다';
+
+  @override
+  String get libraryNoClipsYetTitle => '아직 클립이 없어요';
+
+  @override
+  String get libraryNoClipsYetSubtitle => '녹화한 클립이 여기에 표시됩니다';
+
+  @override
+  String get libraryDraftDeletedSnackbar => '임시 저장을 삭제했어요';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar => '임시 저장을 삭제하지 못했어요';
+
+  @override
+  String get libraryDraftActionPost => '게시';
+
+  @override
+  String get libraryDraftActionEdit => '편집';
+
+  @override
+  String get libraryDraftActionDelete => '임시 저장 삭제';
+
+  @override
+  String get libraryDeleteDraftTitle => '임시 저장 삭제';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return '“$title”을(를) 삭제할까요?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => '클립 삭제';
+
+  @override
+  String get libraryDeleteClipMessage => '이 클립을 삭제할까요?';
+
+  @override
+  String get libraryClipSelectionTitle => '클립';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return '$seconds초 남음';
+  }
+
+  @override
+  String get libraryAddClips => '추가';
+
+  @override
+  String get libraryRecordVideo => '동영상 녹화';
+
+  @override
   String get routerInvalidCreator => '유효하지 않은 크리에이터';
 
   @override
@@ -4463,4 +4604,36 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get textAlignCenter => '가운데';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle => '카메라는 아직 웹에서 지원되지 않습니다';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      '카메라 촬영 및 녹화는 웹 버전에서 아직 사용할 수 없습니다.';
+
+  @override
+  String get cameraPermissionBackToFeed => '피드로 돌아가기';
+
+  @override
+  String get cameraPermissionErrorTitle => '권한 오류';
+
+  @override
+  String get cameraPermissionErrorDescription => '권한을 확인하는 중 문제가 발생했습니다.';
+
+  @override
+  String get cameraPermissionRetry => '다시 시도';
+
+  @override
+  String get cameraPermissionAllowAccessTitle => '카메라 및 마이크 접근 허용';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      '이렇게 하면 앱에서 바로 동영상을 촬영하고 편집할 수 있으며, 그 외 용도는 없습니다.';
+
+  @override
+  String get cameraPermissionContinue => '계속';
+
+  @override
+  String get cameraPermissionGoToSettings => '설정으로 이동';
 }

@@ -1786,7 +1786,6 @@ class VideoOverlayActionColumn extends ConsumerWidget {
       spacing: 4,
       children: [
         if (!isFullscreen && !isPreviewMode) _VideoEditButton(video: video),
-        CcActionButton(video: video),
         LikeActionButton(video: video, isPreviewMode: isPreviewMode),
         CommentActionButton(video: video, isPreviewMode: isPreviewMode),
         RepostActionButton(video: video, isPreviewMode: isPreviewMode),

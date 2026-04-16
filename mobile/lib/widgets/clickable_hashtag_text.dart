@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
+import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -39,9 +40,9 @@ class ClickableHashtagText extends ConsumerWidget {
   final TextOverflow? overflow;
   final Function()? onVideoStateChange;
 
-  /// Regex to detect nostr: URIs (npub and nprofile)
-  static final _nostrUriRegex = RegExp(
-    'nostr:(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)',
+  /// Regex to detect bare or `nostr:`-prefixed npub/nprofile mentions.
+  static final _nostrMentionRegex = RegExp(
+    r'(?<![A-Za-z0-9])(?:nostr:)?(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)\b',
     caseSensitive: false,
   );
 
@@ -63,12 +64,12 @@ class ClickableHashtagText extends ConsumerWidget {
 
     // Check if text contains any clickable/stylable elements
     final hasHashtags = HashtagExtractor.extractHashtags(text).isNotEmpty;
-    final hasNostrUris = _nostrUriRegex.hasMatch(text);
+    final hasNostrMentions = _nostrMentionRegex.hasMatch(text);
     final hasPlainMentions = _plainMentionRegex.hasMatch(text);
     final hasUrls = _urlRegex.hasMatch(text);
 
     // If no clickable elements, return simple text
-    if (!hasHashtags && !hasNostrUris && !hasPlainMentions && !hasUrls) {
+    if (!hasHashtags && !hasNostrMentions && !hasPlainMentions && !hasUrls) {
       return Text(text, style: style, maxLines: maxLines, overflow: overflow);
     }
 
@@ -97,11 +98,12 @@ class ClickableHashtagText extends ConsumerWidget {
     final profileStyle =
         mentionStyle ?? tagStyle.copyWith(fontWeight: FontWeight.w600);
 
-    // Combined regex to find URLs, hashtags, nostr: URIs, and plain @mentions
+    // Combined regex to find URLs, hashtags, npub/nprofile mentions,
+    // and plain @mentions.
     // Group 1: URL, Group 2: hashtag, Group 3: nostr ID,
     // Group 4: plain mention username
     final combinedRegex = RegExp(
-      r'(https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)|#(\w+)|nostr:(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)|@([a-zA-Z][a-zA-Z0-9_]{0,30})',
+      r'(https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)|#(\w+)|(?<![A-Za-z0-9])(?:nostr:)?(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)\b|@([a-zA-Z][a-zA-Z0-9_]{0,30})',
       caseSensitive: false,
     );
 
@@ -117,29 +119,31 @@ class ClickableHashtagText extends ConsumerWidget {
         );
       }
 
-      final fullMatch = match.group(0)!;
+      final matchedUrl = match.group(1);
+      final hashtag = match.group(2);
+      final nostrId = match.group(3);
+      final plainMention = match.group(4);
 
-      if (_urlRegex.hasMatch(fullMatch)) {
-        spans.add(_buildUrlSpan(fullMatch, tagStyle));
-      } else if (fullMatch.startsWith('#')) {
+      if (matchedUrl != null) {
+        spans.add(_buildUrlSpan(matchedUrl, tagStyle));
+      } else if (hashtag != null) {
         // Handle hashtag
-        final hashtag = match.group(2)!;
         spans.add(
           TextSpan(
-            text: fullMatch,
+            text: '#$hashtag',
             style: tagStyle,
             recognizer: TapGestureRecognizer()
               ..onTap = () => _navigateToHashtagFeed(context, hashtag),
           ),
         );
-      } else if (fullMatch.startsWith('nostr:')) {
-        // Handle nostr: URI
-        final nostrId = match.group(3)!;
+      } else if (nostrId != null) {
+        // Handle bare or `nostr:`-prefixed npub/nprofile mention.
         spans.add(_buildNostrMentionSpan(context, ref, nostrId, profileStyle));
-      } else if (fullMatch.startsWith('@')) {
+      } else if (plainMention != null) {
         // Handle plain @mention (legacy Vine format)
-        final username = match.group(4)!;
-        spans.add(_buildPlainMentionSpan(context, ref, username, profileStyle));
+        spans.add(
+          _buildPlainMentionSpan(context, ref, plainMention, profileStyle),
+        );
       }
 
       lastEnd = match.end;
@@ -182,13 +186,16 @@ class ClickableHashtagText extends ConsumerWidget {
     }
 
     // Try to get cached profile (reactive provider handles background fetch)
-    final profile = ref.read(userProfileReactiveProvider(hexPubkey)).value;
+    final profile = ref.watch(userProfileReactiveProvider(hexPubkey)).value;
 
-    // Display name: @username if available, otherwise @truncated_npub
-    final displayName = profile?.bestDisplayName;
-    final displayText = displayName != null
-        ? '@$displayName'
-        : '@${NostrKeyUtils.truncateNpub(hexPubkey)}';
+    final displayText = switch (profile) {
+      UserProfile(:final displayName?) when displayName.isNotEmpty =>
+        '@$displayName',
+      UserProfile(:final name?) when name.isNotEmpty => '@$name',
+      UserProfile(:final displayNip05?) when displayNip05.isNotEmpty =>
+        displayNip05,
+      _ => '@${NostrKeyUtils.truncateNpub(hexPubkey)}',
+    };
 
     return TextSpan(
       text: displayText,

@@ -11,6 +11,11 @@ typedef WebVideoPlayerControllerFactory =
       required Map<String, String> headers,
     });
 
+VideoPlayerController defaultWebVideoPlayerControllerFactory({
+  required Uri url,
+  required Map<String, String> headers,
+}) => VideoPlayerController.networkUrl(url, httpHeaders: headers);
+
 /// A simple video player widget for web that uses Flutter's video_player
 /// package (backed by HTML5 video element via video_player_web_hls).
 class WebVideoPlayer extends StatefulWidget {
@@ -24,7 +29,7 @@ class WebVideoPlayer extends StatefulWidget {
     this.onInitialized,
     this.onError,
     this.initializeTimeout = const Duration(seconds: 8),
-    this.controllerFactory = _defaultControllerFactory,
+    this.controllerFactory = defaultWebVideoPlayerControllerFactory,
     super.key,
   });
 
@@ -54,11 +59,6 @@ class WebVideoPlayer extends StatefulWidget {
 
   /// Factory used to create the underlying controller.
   final WebVideoPlayerControllerFactory controllerFactory;
-
-  static VideoPlayerController _defaultControllerFactory({
-    required Uri url,
-    required Map<String, String> headers,
-  }) => VideoPlayerController.networkUrl(url, httpHeaders: headers);
 
   @override
   State<WebVideoPlayer> createState() => WebVideoPlayerState();

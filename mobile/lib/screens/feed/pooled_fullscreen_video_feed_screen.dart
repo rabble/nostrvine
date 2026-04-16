@@ -37,8 +37,10 @@ import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart'
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/video_feed_item/video_player_subtitle_layer.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:video_player/video_player.dart';
 
 // Scroll-fraction constants for overlay opacity during page transitions.
 //
@@ -510,6 +512,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                             video: video,
                             isActive: isActive,
                             isOwnVideo: currentUserPubkey == video.pubkey,
+                            controller: controller,
                             contextTitle: widget.contextTitle,
                           );
                         },
@@ -643,12 +646,14 @@ class _WebFullscreenItem extends ConsumerWidget {
     required this.video,
     required this.isActive,
     required this.isOwnVideo,
+    this.controller,
     this.contextTitle,
   });
 
   final VideoEvent video;
   final bool isActive;
   final bool isOwnVideo;
+  final VideoPlayerController? controller;
   final String? contextTitle;
 
   @override
@@ -672,14 +677,25 @@ class _WebFullscreenItem extends ConsumerWidget {
             )
             ..add(const VideoInteractionsSubscriptionRequested())
             ..add(const VideoInteractionsFetchRequested()),
-      child: VideoOverlayActions(
-        video: video,
-        isVisible: true,
-        isActive: isActive,
-        hasBottomNavigation: false,
-        contextTitle: contextTitle,
-        isFullscreen: true,
-        topOffset: isOwnVideo ? 64 : 8,
+      child: Stack(
+        children: [
+          if (isActive && video.hasSubtitles && controller != null)
+            Positioned.fill(
+              child: VideoPlayerSubtitleLayer(
+                video: video,
+                controller: controller!,
+              ),
+            ),
+          VideoOverlayActions(
+            video: video,
+            isVisible: true,
+            isActive: isActive,
+            hasBottomNavigation: false,
+            contextTitle: contextTitle,
+            isFullscreen: true,
+            topOffset: isOwnVideo ? 64 : 8,
+          ),
+        ],
       ),
     );
   }

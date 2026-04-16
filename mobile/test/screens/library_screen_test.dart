@@ -2,11 +2,13 @@
 // ABOUTME: Covers tabs, navigation, and empty states
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -25,6 +27,8 @@ class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 void main() {
+  final en = AppLocalizationsEn();
+
   group(LibraryScreen, () {
     late _MockGallerySaveService mockGallerySaveService;
     late _MockClipLibraryService mockClipLibraryService;
@@ -75,8 +79,8 @@ void main() {
         await tester.pump();
 
         // Should find tab bar with Drafts and Clips
-        expect(find.text('Drafts'), findsOneWidget);
-        expect(find.text('Clips'), findsOneWidget);
+        expect(find.text(en.libraryTabDrafts), findsOneWidget);
+        expect(find.text(en.libraryTabClips), findsOneWidget);
       });
 
       testWidgets('$DraftsTab initially (first tab)', (tester) async {
@@ -110,7 +114,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Switch to clips tab
-        await tester.tap(find.text('Clips'));
+        await tester.tap(find.text(en.libraryTabClips));
         await tester.pumpAndSettle();
 
         expect(find.byType(ClipsTab), findsOneWidget);
@@ -121,11 +125,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // Switch to clips tab
-        await tester.tap(find.text('Clips'));
+        await tester.tap(find.text(en.libraryTabClips));
         await tester.pumpAndSettle();
 
         // Switch back to drafts tab
-        await tester.tap(find.text('Drafts'));
+        await tester.tap(find.text(en.libraryTabDrafts));
         await tester.pumpAndSettle();
 
         expect(find.byType(DraftsTab), findsOneWidget);
@@ -133,13 +137,27 @@ void main() {
     });
 
     group('empty state', () {
+      testWidgets(
+        'drafts tab does not show path_provider plugin errors after load',
+        (tester) async {
+          await tester.pumpWidget(buildWidget());
+          await tester.pumpAndSettle();
+
+          expect(find.textContaining('MissingPluginException'), findsNothing);
+          expect(
+            find.textContaining('getApplicationDocumentsDirectory'),
+            findsNothing,
+          );
+        },
+      );
+
       testWidgets('shows $EmptyLibraryState when no drafts', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
         // Drafts tab is default; with no drafts should show empty state
         expect(find.byType(EmptyLibraryState), findsOneWidget);
-        expect(find.text('No Drafts Yet'), findsOneWidget);
+        expect(find.text(en.libraryNoDraftsYetTitle), findsOneWidget);
       });
 
       testWidgets('shows $EmptyLibraryState when no clips', (tester) async {
@@ -147,13 +165,35 @@ void main() {
         await tester.pumpAndSettle();
 
         // Switch to clips tab
-        await tester.tap(find.text('Clips'));
+        await tester.tap(find.text(en.libraryTabClips));
         await tester.pumpAndSettle();
 
         // With no clips saved, should show empty state
         expect(find.byType(EmptyLibraryState), findsOneWidget);
-        expect(find.text('No Clips Yet'), findsOneWidget);
+        expect(find.text(en.libraryNoClipsYetTitle), findsOneWidget);
       });
+    });
+
+    group('web', () {
+      testWidgets(
+        'shows mobile-app intercept instead of tabs',
+        (tester) async {
+          await tester.pumpWidget(buildWidget());
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(en.libraryWebUnavailableHeadline),
+            findsOneWidget,
+          );
+          expect(
+            find.text(en.libraryWebUnavailableDescription),
+            findsOneWidget,
+          );
+          expect(find.text(en.libraryTabDrafts), findsNothing);
+          expect(find.text(en.libraryTabClips), findsNothing);
+        },
+        skip: !kIsWeb,
+      );
     });
   });
 }

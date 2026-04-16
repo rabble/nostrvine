@@ -3919,6 +3919,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get saveOriginalNotNow => 'Ahora no';
 
   @override
+  String get cameraPermissionNotNow => 'Ahora no';
+
+  @override
   String get saveOriginalDownloadFailed => 'Falló la descarga';
 
   @override
@@ -4438,6 +4441,153 @@ class AppLocalizationsEs extends AppLocalizations {
   String get libraryDeleteConfirm => 'Eliminar';
 
   @override
+  String get libraryWebUnavailableHeadline =>
+      'La biblioteca está en la app móvil';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Los borradores y clips se guardan en tu dispositivo; abre Divine en el teléfono para gestionarlos.';
+
+  @override
+  String get libraryTabDrafts => 'Borradores';
+
+  @override
+  String get libraryTabClips => 'Clips';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Guardar en el carrete';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip =>
+      'Eliminar clips seleccionados';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Eliminar clips';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# clips seleccionados',
+      one: '# clip seleccionado',
+    );
+    return '¿Seguro que quieres eliminar $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'No se puede deshacer. Los archivos de video se eliminarán permanentemente de tu dispositivo.';
+
+  @override
+  String get libraryPreparingVideo => 'Preparando video...';
+
+  @override
+  String get libraryCreateVideo => 'Crear video';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips',
+      one: '1 clip',
+    );
+    return '$_temp0 guardados en $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount guardados, $failureCount fallidos';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'Permiso denegado para $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se eliminaron $count clips',
+      one: 'Se eliminó 1 clip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts =>
+      'No se pudieron cargar los borradores';
+
+  @override
+  String get libraryCouldNotLoadClips => 'No se pudieron cargar los clips';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Algo salió mal al abrir tu biblioteca. Puedes intentarlo de nuevo.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Aún no hay borradores';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Los videos que guardes como borrador aparecerán aquí';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Aún no hay clips';
+
+  @override
+  String get libraryNoClipsYetSubtitle =>
+      'Tus clips de video grabados aparecerán aquí';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Borrador eliminado';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar =>
+      'No se pudo eliminar el borrador';
+
+  @override
+  String get libraryDraftActionPost => 'Publicar';
+
+  @override
+  String get libraryDraftActionEdit => 'Editar';
+
+  @override
+  String get libraryDraftActionDelete => 'Eliminar borrador';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Eliminar borrador';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return '¿Seguro que quieres eliminar \"$title\"?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Eliminar clip';
+
+  @override
+  String get libraryDeleteClipMessage =>
+      '¿Seguro que quieres eliminar este clip?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Clips';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'Quedan ${seconds}s';
+  }
+
+  @override
+  String get libraryAddClips => 'Añadir';
+
+  @override
+  String get libraryRecordVideo => 'Grabar un video';
+
+  @override
   String get routerInvalidCreator => 'Creador no válido';
 
   @override
@@ -4683,4 +4833,39 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Centro';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'La cámara todavía no es compatible en la web';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'La captura y grabación con cámara todavía no están disponibles en la versión web.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Volver al feed';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Error de permisos';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'Algo salió mal al verificar los permisos.';
+
+  @override
+  String get cameraPermissionRetry => 'Reintentar';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Permitir acceso a cámara y micrófono';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Esto te permite capturar y editar videos aquí mismo en la app, nada más.';
+
+  @override
+  String get cameraPermissionContinue => 'Continuar';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Ir a ajustes';
 }

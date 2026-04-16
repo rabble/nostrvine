@@ -4,6 +4,7 @@
 import 'package:categories_repository/categories_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show VideoCategory;
 import 'package:test/test.dart';
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
@@ -20,10 +21,10 @@ void main() {
       );
     });
 
-    final sampleCategories = <Map<String, dynamic>>[
-      {'name': 'comedy', 'video_count': 500},
-      {'name': 'animals', 'video_count': 300},
-      {'name': 'music', 'video_count': 200},
+    const sampleCategories = <VideoCategory>[
+      VideoCategory(name: 'comedy', videoCount: 500),
+      VideoCategory(name: 'animals', videoCount: 300),
+      VideoCategory(name: 'music', videoCount: 200),
     ];
 
     group('getCategories', () {
@@ -66,9 +67,9 @@ void main() {
         when(
           () => apiClient.getCategories(limit: 100),
         ).thenAnswer(
-          (_) async => [
-            {'name': 'comedy', 'video_count': 500},
-            {'name': '', 'video_count': 100},
+          (_) async => const [
+            VideoCategory(name: 'comedy', videoCount: 500),
+            VideoCategory(name: '', videoCount: 100),
           ],
         );
 
@@ -82,9 +83,9 @@ void main() {
         when(
           () => apiClient.getCategories(limit: 100),
         ).thenAnswer(
-          (_) async => [
-            {'name': 'comedy', 'video_count': 500},
-            {'name': 'empty', 'video_count': 0},
+          (_) async => const [
+            VideoCategory(name: 'comedy', videoCount: 500),
+            VideoCategory(name: 'empty', videoCount: 0),
           ],
         );
 
@@ -97,10 +98,10 @@ void main() {
         when(
           () => apiClient.getCategories(limit: 100),
         ).thenAnswer(
-          (_) async => [
-            {'name': 'comedy', 'video_count': 500},
-            {'name': 'animals', 'video_count': 300},
-            {'name': 'unknown_category', 'video_count': 100},
+          (_) async => const [
+            VideoCategory(name: 'comedy', videoCount: 500),
+            VideoCategory(name: 'animals', videoCount: 300),
+            VideoCategory(name: 'unknown_category', videoCount: 100),
           ],
         );
 

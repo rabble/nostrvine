@@ -3834,6 +3834,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get saveOriginalNotNow => 'ليس الآن';
 
   @override
+  String get cameraPermissionNotNow => 'ليس الآن';
+
+  @override
   String get saveOriginalDownloadFailed => 'فشل التنزيل';
 
   @override
@@ -4350,6 +4353,148 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryDeleteConfirm => 'حذف';
 
   @override
+  String get libraryWebUnavailableHeadline =>
+      'المكتبة متوفّرة في التطبيق على الجوال';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'تُحفظ المسودات والمقاطع على جهازك. افتح Divine على هاتفك لإدارتها.';
+
+  @override
+  String get libraryTabDrafts => 'مسودات';
+
+  @override
+  String get libraryTabClips => 'مقاطع';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'حفظ في ألبوم الكاميرا';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'حذف المقاطع المحددة';
+
+  @override
+  String get libraryDeleteClipsTitle => 'حذف المقاطع';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# مقاطع محددة',
+      one: 'مقطع واحد محدد',
+    );
+    return 'هل تريد حذف $_temp0؟';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'لا يمكن التراجع. ستُزال ملفات الفيديو نهائيًا من جهازك.';
+
+  @override
+  String get libraryPreparingVideo => 'جاري تجهيز الفيديو...';
+
+  @override
+  String get libraryCreateVideo => 'إنشاء فيديو';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مقاطع',
+      one: 'مقطع واحد',
+    );
+    return '$_temp0 تم حفظه في $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return 'تم حفظ $successCount، فشل $failureCount';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'تم رفض إذن $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تم حذف $count مقاطع',
+      one: 'تم حذف مقطع واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts => 'تعذّر تحميل المسودات';
+
+  @override
+  String get libraryCouldNotLoadClips => 'تعذّر تحميل المقاطع';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'حدث خطأ أثناء فتح المكتبة. يمكنك المحاولة مرة أخرى.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'لا توجد مسودات بعد';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'ستُظهر الفيديو الذي تحفظه كمسودة هنا';
+
+  @override
+  String get libraryNoClipsYetTitle => 'لا توجد مقاطع بعد';
+
+  @override
+  String get libraryNoClipsYetSubtitle => 'ستُظهر مقاطع الفيديو المسجّلة هنا';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'تم حذف المسودة';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar => 'تعذّر حذف المسودة';
+
+  @override
+  String get libraryDraftActionPost => 'نشر';
+
+  @override
+  String get libraryDraftActionEdit => 'تعديل';
+
+  @override
+  String get libraryDraftActionDelete => 'حذف المسودة';
+
+  @override
+  String get libraryDeleteDraftTitle => 'حذف المسودة';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'هل تريد حذُ “$title”؟';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'حذف المقطع';
+
+  @override
+  String get libraryDeleteClipMessage => 'هل تريد حذف هذا المقطع؟';
+
+  @override
+  String get libraryClipSelectionTitle => 'مقاطع';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'متبقى $seconds ث';
+  }
+
+  @override
+  String get libraryAddClips => 'إضافة';
+
+  @override
+  String get libraryRecordVideo => 'تسجيل فيديو';
+
+  @override
   String get routerInvalidCreator => 'منشئ غير صالح';
 
   @override
@@ -4590,4 +4735,39 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'وسط';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'الكاميرا غير مدعومة على الويب بعد';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'التقاط الكاميرا وتسجيلها غير متاحين في إصدار الويب بعد.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'العودة إلى الخلاصة';
+
+  @override
+  String get cameraPermissionErrorTitle => 'خطأ في الأذونات';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'حدث خطأ أثناء التحقق من الأذونات.';
+
+  @override
+  String get cameraPermissionRetry => 'إعادة المحاولة';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'السماح بالوصول إلى الكاميرا والميكروفون';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'يتيح لك هذا التقاط الفيديوهات وتعديلها مباشرة داخل التطبيق، ولا شيء أكثر.';
+
+  @override
+  String get cameraPermissionContinue => 'متابعة';
+
+  @override
+  String get cameraPermissionGoToSettings => 'الذهاب إلى الإعدادات';
 }

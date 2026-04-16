@@ -56,11 +56,5 @@ final class DraftsLibraryDeleteFailed extends DraftsLibraryState {
 
 /// Error state when draft operations fail.
 final class DraftsLibraryError extends DraftsLibraryState {
-  const DraftsLibraryError({required this.message});
-
-  /// Error message describing what went wrong.
-  final String message;
-
-  @override
-  List<Object?> get props => [message];
+  const DraftsLibraryError();
 }

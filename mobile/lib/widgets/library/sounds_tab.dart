@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
@@ -221,24 +222,24 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   }
 
   Widget _buildEmptyState() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.music_off, size: 64, color: VineTheme.lightText),
-          SizedBox(height: 16),
+          const Icon(Icons.music_off, size: 64, color: VineTheme.lightText),
+          const SizedBox(height: 16),
           Text(
-            'No sounds available',
-            style: TextStyle(
+            context.l10n.soundsNoSoundsAvailable,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Sounds will appear here when creators share audio',
-            style: TextStyle(
+            context.l10n.soundsNoSoundsDescription,
+            style: const TextStyle(
               color: VineTheme.onSurfaceMuted,
               fontSize: 14,
             ),
@@ -250,19 +251,19 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   }
 
   Widget _buildNoResultsState() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.search_off,
             size: 64,
             color: VineTheme.lightText,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            'No sounds found',
-            style: TextStyle(
+            context.l10n.soundsNoSoundsFound,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
@@ -293,7 +294,7 @@ class _SearchInput extends StatelessWidget {
         onChanged: onChanged,
         style: const TextStyle(color: VineTheme.whiteText),
         decoration: InputDecoration(
-          hintText: 'Search sounds...',
+          hintText: context.l10n.soundsSearchHint,
           hintStyle: const TextStyle(
             color: VineTheme.onSurfaceMuted,
           ),
@@ -338,15 +339,15 @@ class _FeaturedSoundsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
+              const SizedBox(width: 8),
               Text(
-                'Featured Sounds',
-                style: TextStyle(
+                context.l10n.soundsFeaturedSounds,
+                style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -404,19 +405,19 @@ class _TrendingSoundsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.local_fire_department,
                 color: VineTheme.vineGreen,
                 size: 20,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'Trending Sounds',
-                style: TextStyle(
+                context.l10n.soundsTrendingSounds,
+                style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -488,7 +489,9 @@ class _AllSoundsSection extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                searchQuery.isEmpty ? 'All Sounds' : 'Search Results',
+                searchQuery.isEmpty
+                    ? context.l10n.soundsAllSounds
+                    : context.l10n.soundsSearchResults,
                 style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 16,

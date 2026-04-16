@@ -46,13 +46,45 @@ class ClipsTab extends StatelessWidget {
           );
         }
 
+        if (state.status == ClipsLibraryStatus.error) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    context.l10n.libraryCouldNotLoadClips,
+                    textAlign: TextAlign.center,
+                    style: VineTheme.titleMediumFont(),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    context.l10n.libraryOpenErrorDescription,
+                    textAlign: TextAlign.center,
+                    style: VineTheme.bodyLargeFont(
+                      color: VineTheme.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  DivineButton(
+                    label: context.l10n.searchTryAgain,
+                    type: DivineButtonType.secondary,
+                    onPressed: () => context.read<ClipsLibraryBloc>().add(
+                      const ClipsLibraryLoadRequested(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         if (state.clips.isEmpty) {
           return EmptyLibraryState(
             icon: DivineIconName.filmSlate,
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            title: 'No Clips Yet',
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            subtitle: 'Your recorded video clips will appear here',
+            title: context.l10n.libraryNoClipsYetTitle,
+            subtitle: context.l10n.libraryNoClipsYetSubtitle,
             showRecordButton: !isSelectionMode,
           );
         }
@@ -100,24 +132,20 @@ class ClipsTab extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        title: const Text(
-          'Delete Clip',
-          style: TextStyle(color: VineTheme.whiteText),
+        title: Text(
+          context.l10n.libraryDeleteClipTitle,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        content: const Text(
-          'Are you sure you want to delete this clip?',
-          style: TextStyle(color: VineTheme.whiteText),
+        content: Text(
+          context.l10n.libraryDeleteClipMessage,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(
-              // TODO(l10n): Replace with context.l10n when localization is
-              // added.
-              'Cancel',
-              style: TextStyle(color: VineTheme.secondaryText),
+            child: Text(
+              context.l10n.commonCancel,
+              style: const TextStyle(color: VineTheme.secondaryText),
             ),
           ),
           ElevatedButton(
@@ -173,15 +201,15 @@ class ClipSelectionHeader extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        // TODO(l10n): Replace with context.l10n when
-                        // localization is added.
-                        'Clips',
+                        context.l10n.libraryClipSelectionTitle,
                         style: VineTheme.titleMediumFont(
                           color: VineTheme.onSurface,
                         ),
                       ),
                       Text(
-                        '${remainingDuration.toFormattedSeconds()}s remaining',
+                        context.l10n.librarySecondsRemaining(
+                          remainingDuration.toFormattedSeconds(),
+                        ),
                         style: VineTheme.bodySmallFont(
                           color: VineTheme.onSurfaceVariant,
                           fontFeatures: [
@@ -273,8 +301,7 @@ class _AddClipButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Add',
+      label: context.l10n.libraryAddClips,
       child: GestureDetector(
         onTap: enable ? onTap : null,
         child: Opacity(
@@ -288,12 +315,10 @@ class _AddClipButton extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text(
-              // TODO(l10n): Replace with context.l10n when localization
-              // is added.
-              'Add',
+            child: Text(
+              context.l10n.libraryAddClips,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: VineTheme.onPrimary,
                 fontSize: 18,
                 fontFamily: VineTheme.fontFamilyBricolage,
