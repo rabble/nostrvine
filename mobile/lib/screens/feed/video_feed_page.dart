@@ -32,6 +32,7 @@ import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
+import 'package:openvine/widgets/web_video_player.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -93,7 +94,11 @@ class VideoFeedPage extends ConsumerWidget {
 
 @visibleForTesting
 class VideoFeedView extends ConsumerStatefulWidget {
-  const VideoFeedView({super.key, @visibleForTesting this.controller});
+  const VideoFeedView({
+    super.key,
+    @visibleForTesting this.controller,
+    @visibleForTesting this.webControllerFactory,
+  });
 
   /// Optional external [VideoFeedController] for testing.
   ///
@@ -102,6 +107,10 @@ class VideoFeedView extends ConsumerStatefulWidget {
   /// and verify that overlay visibility changes call [setActive].
   @visibleForTesting
   final VideoFeedController? controller;
+
+  /// Optional factory for creating web video controllers in tests.
+  @visibleForTesting
+  final WebVideoPlayerControllerFactory? webControllerFactory;
 
   @override
   ConsumerState<VideoFeedView> createState() => _VideoFeedViewState();
@@ -127,12 +136,14 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
   /// Key for accessing the rendered pooled feed state for programmatic skips.
   final _feedKey = GlobalKey<PooledVideoFeedState>();
+  final _webFeedKey = GlobalKey<WebVideoFeedState>();
 
   /// Tracks the current fractional page position for scroll-driven overlay opacity.
   late final ValueNotifier<double> _pagePosition;
 
   /// Tracks the last set of pooled videos to detect new additions.
   List<VideoItem>? lastPooledVideos;
+  int _currentWebIndex = 0;
 
   /// Tracks which feed mode the current controller was built for.
   FeedMode? controllerMode;
@@ -227,12 +238,27 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   }
 
   int _currentFeedIndex() {
+    if (kIsWeb) {
+      return _webFeedKey.currentState?.currentIndex ?? _currentWebIndex;
+    }
+
     final feedState = _feedKey.currentState;
     if (feedState != null) return feedState.controller.currentIndex;
     return controller?.currentIndex ?? 0;
   }
 
   void _animateToFeedPage(int index) {
+    if (kIsWeb) {
+      final webFeedState = _webFeedKey.currentState;
+      if (webFeedState == null || webFeedState.videoCount == 0) return;
+
+      final targetIndex = index.clamp(0, webFeedState.videoCount - 1);
+      if (targetIndex == webFeedState.currentIndex) return;
+
+      unawaited(webFeedState.animateToPage(targetIndex));
+      return;
+    }
+
     final feedState = _feedKey.currentState;
     if (feedState == null || feedState.controller.videoCount == 0) return;
 
@@ -563,9 +589,19 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
               children: [
                 if (kIsWeb)
                   WebVideoFeed(
+                    key: _webFeedKey,
                     videos: state.videos
                         .where((v) => v.videoUrl != null)
                         .toList(),
+                    controllerFactory:
+                        widget.webControllerFactory ??
+                        defaultWebVideoPlayerControllerFactory,
+                    onActiveVideoChanged: (video, index) {
+                      _currentWebIndex = index;
+                      _pagePosition.value = index.toDouble();
+                      _resumeAutoAdvanceAfterSwipe();
+                    },
+                    onCompleted: (_) => _handleAutoAdvanceCompleted(),
                     onNearEnd: (index) {
                       if (state.hasMore) {
                         context.read<VideoFeedBloc>().add(
@@ -573,6 +609,31 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                         );
                       }
                     },
+                    itemBuilder:
+                        (
+                          context,
+                          video,
+                          index, {
+                          required isActive,
+                          controller,
+                        }) {
+                          final listSources =
+                              state.listOnlyVideoIds.contains(video.id)
+                              ? state.videoListSources[video.id]
+                              : null;
+                          return _WebVideoFeedItem(
+                            video: video,
+                            index: index,
+                            isActive: isActive,
+                            pagePosition: _pagePosition,
+                            contextTitle: state.mode.name,
+                            listSources: listSources,
+                            showAutoButton: true,
+                            isAutoEnabled: _autoAdvanceSession.autoEnabled,
+                            onAutoPressed: _toggleAutoAdvance,
+                            onInteracted: _suppressAutoAdvance,
+                          );
+                        },
                   )
                 else
                   KeyedSubtree(
@@ -834,6 +895,67 @@ class _PooledVideoFeedItem extends ConsumerWidget {
         onAutoPressed: onAutoPressed,
         onInteracted: onInteracted,
         onAutoAdvanceCompleted: onAutoAdvanceCompleted,
+      ),
+    );
+  }
+}
+
+class _WebVideoFeedItem extends ConsumerWidget {
+  const _WebVideoFeedItem({
+    required this.video,
+    required this.index,
+    required this.isActive,
+    required this.pagePosition,
+    required this.showAutoButton,
+    required this.isAutoEnabled,
+    this.contextTitle,
+    this.listSources,
+    this.onAutoPressed,
+    this.onInteracted,
+  });
+
+  final VideoEvent video;
+  final int index;
+  final bool isActive;
+  final ValueNotifier<double> pagePosition;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final String? contextTitle;
+  final Set<String>? listSources;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final likesRepository = ref.read(likesRepositoryProvider);
+    final commentsRepository = ref.read(commentsRepositoryProvider);
+    final repostsRepository = ref.read(repostsRepositoryProvider);
+
+    return BlocProvider<VideoInteractionsBloc>(
+      create: (_) =>
+          VideoInteractionsBloc(
+              eventId: video.id,
+              authorPubkey: video.pubkey,
+              likesRepository: likesRepository,
+              commentsRepository: commentsRepository,
+              repostsRepository: repostsRepository,
+              addressableId: video.addressableId,
+              initialLikeCount: video.nostrLikeCount != null
+                  ? video.totalLikes
+                  : null,
+            )
+            ..add(const VideoInteractionsSubscriptionRequested())
+            ..add(const VideoInteractionsFetchRequested()),
+      child: FeedVideoOverlay(
+        video: video,
+        isActive: isActive,
+        pagePosition: pagePosition,
+        index: index,
+        listSources: listSources,
+        showAutoButton: showAutoButton,
+        isAutoEnabled: isAutoEnabled,
+        onAutoPressed: onAutoPressed,
+        onInteracted: onInteracted,
       ),
     );
   }

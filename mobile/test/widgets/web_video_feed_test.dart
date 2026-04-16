@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -10,6 +12,11 @@ class _FakeVideoPlayerController extends ValueNotifier<VideoPlayerValue>
     implements VideoPlayerController {
   _FakeVideoPlayerController()
     : super(const VideoPlayerValue(duration: Duration.zero));
+
+  void emitValue(VideoPlayerValue newValue) {
+    value = newValue;
+    notifyListeners();
+  }
 
   @override
   Future<void> initialize() async {
@@ -183,5 +190,76 @@ void main() {
     await tester.pump();
 
     expect(find.text('ready'), findsOneWidget);
+  });
+
+  testWidgets('fires onCompleted when the active video loops', (tester) async {
+    final controller = _FakeVideoPlayerController();
+    var completionCount = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebVideoFeed(
+          videos: [_makeVideo()],
+          controllerFactory: ({required url, required headers}) => controller,
+          onCompleted: (_) => completionCount++,
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    controller.emitValue(
+      controller.value.copyWith(
+        isInitialized: true,
+        duration: const Duration(seconds: 6),
+        position: const Duration(seconds: 5, milliseconds: 500),
+      ),
+    );
+    await tester.pump();
+
+    controller.emitValue(
+      controller.value.copyWith(position: const Duration(milliseconds: 200)),
+    );
+    await tester.pump();
+
+    expect(completionCount, 1);
+  });
+
+  testWidgets('animateToPage moves to the requested page', (tester) async {
+    final key = GlobalKey<WebVideoFeedState>();
+    final videos = [
+      _makeVideo(),
+      _makeVideo().copyWith(
+        id: 'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+        videoUrl: 'https://example.com/video-2.mp4',
+      ),
+    ];
+    final controller1 = _FakeVideoPlayerController();
+    final controller2 = _FakeVideoPlayerController();
+    var activeIndex = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebVideoFeed(
+          key: key,
+          videos: videos,
+          controllerFactory: ({required url, required headers}) {
+            return url.toString().contains('video-2')
+                ? controller2
+                : controller1;
+          },
+          onActiveVideoChanged: (_, index) => activeIndex = index,
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    unawaited(key.currentState!.animateToPage(1));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(key.currentState!.currentIndex, 1);
+    expect(activeIndex, 1);
   });
 }

@@ -42,6 +42,7 @@ import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_player_subtitle_layer.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
+import 'package:openvine/widgets/web_video_player.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:video_player/video_player.dart';
 
@@ -233,6 +234,7 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
     this.autoOpenComments = false,
     this.onPageChanged,
     @visibleForTesting this.controllerFactory,
+    @visibleForTesting this.webControllerFactory,
     super.key,
   });
 
@@ -263,6 +265,10 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
   @visibleForTesting
   final VideoFeedControllerFactory? controllerFactory;
 
+  /// Optional factory for creating web video controllers in tests.
+  @visibleForTesting
+  final WebVideoPlayerControllerFactory? webControllerFactory;
+
   @override
   ConsumerState<FullscreenFeedContent> createState() =>
       _FullscreenFeedContentState();
@@ -275,6 +281,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   late final ValueNotifier<double> _pagePosition;
   late final FeedAutoAdvanceSession _autoAdvanceSession;
   final _feedKey = GlobalKey<PooledVideoFeedState>();
+  final _webFeedKey = GlobalKey<WebVideoFeedState>();
   bool _pendingAutoAdvanceAfterPagination = false;
 
   @override
@@ -394,6 +401,17 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   }
 
   void _animateToPage(int index) {
+    if (kIsWeb) {
+      final webFeedState = _webFeedKey.currentState;
+      if (webFeedState == null || webFeedState.videoCount == 0) return;
+
+      final targetIndex = index.clamp(0, webFeedState.videoCount - 1);
+      if (targetIndex == webFeedState.currentIndex) return;
+
+      unawaited(webFeedState.animateToPage(targetIndex));
+      return;
+    }
+
     final feedState = _feedKey.currentState;
     if (feedState == null || feedState.controller.videoCount == 0) return;
 
@@ -601,10 +619,14 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             ),
             body: kIsWeb
                 ? WebVideoFeed(
+                    key: _webFeedKey,
                     videos: state.videos
                         .where((v) => v.videoUrl != null)
                         .toList(),
                     initialIndex: state.currentIndex,
+                    controllerFactory:
+                        widget.webControllerFactory ??
+                        defaultWebVideoPlayerControllerFactory,
                     onActiveVideoChanged: (video, index) {
                       _pagePosition.value = index.toDouble();
                       _resumeAutoAdvanceAfterSwipe();
@@ -616,6 +638,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       );
                       widget.onPageChanged?.call(index);
                     },
+                    onCompleted: (_) => _handleAutoAdvanceCompleted(),
                     onNearEnd: (index) => _onNearEnd(state, index),
                     itemBuilder:
                         (
@@ -631,6 +654,10 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                             isOwnVideo: currentUserPubkey == video.pubkey,
                             controller: controller,
                             contextTitle: widget.contextTitle,
+                            showAutoButton: true,
+                            isAutoEnabled: _autoAdvanceSession.autoEnabled,
+                            onAutoPressed: _toggleAutoAdvance,
+                            onInteracted: _suppressAutoAdvance,
                           );
                         },
                   )
@@ -790,15 +817,23 @@ class _WebFullscreenItem extends ConsumerWidget {
     required this.video,
     required this.isActive,
     required this.isOwnVideo,
+    required this.showAutoButton,
+    required this.isAutoEnabled,
     this.controller,
     this.contextTitle,
+    this.onAutoPressed,
+    this.onInteracted,
   });
 
   final VideoEvent video;
   final bool isActive;
   final bool isOwnVideo;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
   final VideoPlayerController? controller;
   final String? contextTitle;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -838,6 +873,10 @@ class _WebFullscreenItem extends ConsumerWidget {
             contextTitle: contextTitle,
             isFullscreen: true,
             topOffset: isOwnVideo ? 64 : 8,
+            showAutoButton: showAutoButton,
+            isAutoEnabled: isAutoEnabled,
+            onAutoPressed: onAutoPressed,
+            onInteracted: onInteracted,
           ),
         ],
       ),

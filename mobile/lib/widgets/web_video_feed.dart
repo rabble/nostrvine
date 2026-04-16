@@ -23,6 +23,9 @@ typedef WebVideoFeedItemBuilder =
 /// Callback when active video changes in the web feed.
 typedef WebOnActiveVideoChanged = void Function(VideoEvent video, int index);
 
+/// Callback fired when the active web player crosses the loop boundary.
+typedef WebOnCompleted = void Function(int index);
+
 /// A vertical-scrolling video feed for web platforms.
 ///
 /// Uses Flutter's [video_player] package (HTML5 video via video_player_web_hls)
@@ -34,9 +37,12 @@ class WebVideoFeed extends StatefulWidget {
     this.itemBuilder,
     this.initialIndex = 0,
     this.onActiveVideoChanged,
+    this.onCompleted,
     this.onNearEnd,
     this.nearEndThreshold = 3,
     this.headers = const {},
+    this.startThreshold = const Duration(seconds: 1),
+    this.endThreshold = const Duration(seconds: 1),
     this.controllerFactory = defaultWebVideoPlayerControllerFactory,
     super.key,
   });
@@ -53,6 +59,9 @@ class WebVideoFeed extends StatefulWidget {
   /// Called when active video changes.
   final WebOnActiveVideoChanged? onActiveVideoChanged;
 
+  /// Called when the active video crosses the loop boundary.
+  final WebOnCompleted? onCompleted;
+
   /// Called when near the end of the list for pagination.
   final void Function(int index)? onNearEnd;
 
@@ -62,20 +71,32 @@ class WebVideoFeed extends StatefulWidget {
   /// HTTP headers for video requests.
   final Map<String, String> headers;
 
+  /// Position threshold considered "near the start" for loop detection.
+  final Duration startThreshold;
+
+  /// Position threshold considered "near the end" for loop detection.
+  final Duration endThreshold;
+
   /// Factory used to create underlying web video controllers.
   final WebVideoPlayerControllerFactory controllerFactory;
 
   @override
-  State<WebVideoFeed> createState() => _WebVideoFeedState();
+  State<WebVideoFeed> createState() => WebVideoFeedState();
 }
 
-class _WebVideoFeedState extends State<WebVideoFeed> {
+class WebVideoFeedState extends State<WebVideoFeed> {
   late PageController _pageController;
   int _currentIndex = 0;
 
   // Track web player keys to control playback
   final Map<int, GlobalKey<WebVideoPlayerState>> _playerKeys = {};
   final Map<int, VideoPlayerController> _controllers = {};
+  final Map<int, VoidCallback> _controllerListeners = {};
+  final Map<int, Duration> _lastPositions = {};
+  final Map<int, bool> _armedForCompletion = {};
+
+  int get currentIndex => _currentIndex;
+  int get videoCount => widget.videos.length;
 
   @override
   void initState() {
@@ -86,8 +107,24 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
 
   @override
   void dispose() {
+    for (final entry in _controllers.entries) {
+      _detachCompletionListener(entry.key, entry.value);
+    }
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> animateToPage(int index) async {
+    if (!mounted || widget.videos.isEmpty) return;
+
+    final targetIndex = index.clamp(0, widget.videos.length - 1);
+    if (targetIndex == _currentIndex) return;
+
+    await _pageController.animateToPage(
+      targetIndex,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   void _onPageChanged(int index) {
@@ -114,6 +151,79 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
       index,
       GlobalKey<WebVideoPlayerState>.new,
     );
+  }
+
+  void _attachCompletionListener(
+    int index,
+    VideoPlayerController controller,
+  ) {
+    final previousController = _controllers[index];
+    if (identical(previousController, controller) &&
+        _controllerListeners.containsKey(index)) {
+      return;
+    }
+
+    if (previousController != null) {
+      _detachCompletionListener(index, previousController);
+    }
+
+    _controllers[index] = controller;
+    _lastPositions[index] = controller.value.position;
+    _armedForCompletion[index] = false;
+
+    void listener() => _handleControllerTick(index, controller);
+
+    _controllerListeners[index] = listener;
+    controller.addListener(listener);
+  }
+
+  void _detachCompletionListener(
+    int index,
+    VideoPlayerController controller,
+  ) {
+    final listener = _controllerListeners.remove(index);
+    if (listener != null) {
+      try {
+        controller.removeListener(listener);
+      } catch (_) {
+        // Ignore disposed controller cleanup on teardown.
+      }
+    }
+    _lastPositions.remove(index);
+    _armedForCompletion.remove(index);
+  }
+
+  void _handleControllerTick(int index, VideoPlayerController controller) {
+    final value = controller.value;
+    final position = value.position;
+
+    if (!value.isInitialized) {
+      _lastPositions[index] = position;
+      return;
+    }
+
+    final duration = value.duration;
+    if (duration <= Duration.zero) {
+      _lastPositions[index] = position;
+      return;
+    }
+
+    if (position >= duration - widget.endThreshold) {
+      _armedForCompletion[index] = true;
+    }
+
+    final lastPosition = _lastPositions[index] ?? Duration.zero;
+    final crossedLoopBoundary =
+        (_armedForCompletion[index] ?? false) &&
+        position <= widget.startThreshold &&
+        lastPosition > position;
+
+    if (crossedLoopBoundary && index == _currentIndex) {
+      _armedForCompletion[index] = false;
+      widget.onCompleted?.call(index);
+    }
+
+    _lastPositions[index] = position;
   }
 
   @override
@@ -147,7 +257,7 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
               onInitialized: (controller) {
                 if (!mounted) return;
                 setState(() {
-                  _controllers[index] = controller;
+                  _attachCompletionListener(index, controller);
                 });
               },
             ),
