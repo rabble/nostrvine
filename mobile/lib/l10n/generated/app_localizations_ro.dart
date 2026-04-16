@@ -1241,6 +1241,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionLike => 'Apreciază videoclipul';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+
+  @override
   String get videoActionRemoveRepost => 'Elimină redistribuirea';
 
   @override

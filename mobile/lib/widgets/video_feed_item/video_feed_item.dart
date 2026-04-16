@@ -1340,6 +1340,10 @@ class VideoOverlayActions extends ConsumerWidget {
     this.hideFollowButtonIfFollowing = false,
     this.topOffset = 8.0,
     this.overlayOpacity = 1.0,
+    this.showAutoButton = false,
+    this.isAutoEnabled = false,
+    this.onAutoPressed,
+    this.onInteracted,
   });
 
   final VideoEvent video;
@@ -1370,6 +1374,10 @@ class VideoOverlayActions extends ConsumerWidget {
   /// during page transitions. Transitions are animated by [AnimatedOpacity]
   /// inside [build]. Defaults to 1.0 (fully visible).
   final double overlayOpacity;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1494,6 +1502,7 @@ class VideoOverlayActions extends ConsumerWidget {
                             UserProfile.generatedNameFor(video.pubkey);
 
                         void navigateToProfile() {
+                          onInteracted?.call();
                           Log.info(
                             '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
                             name: 'VideoFeedItem',
@@ -1632,7 +1641,10 @@ class VideoOverlayActions extends ConsumerWidget {
                       ), // 2px + 10px from avatar container = 12px total
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => MetadataExpandedSheet.show(context, video),
+                        onTap: () {
+                          onInteracted?.call();
+                          MetadataExpandedSheet.show(context, video);
+                        },
                         child: Semantics(
                           identifier: 'video_description',
                           container: true,
@@ -1699,6 +1711,10 @@ class VideoOverlayActions extends ConsumerWidget {
                     video: video,
                     isFullscreen: isFullscreen,
                     isPreviewMode: isPreviewMode,
+                    showAutoButton: showAutoButton,
+                    isAutoEnabled: isAutoEnabled,
+                    onAutoPressed: onAutoPressed,
+                    onInteracted: onInteracted,
                   ),
                 ),
               ),
@@ -1774,11 +1790,19 @@ class VideoOverlayActionColumn extends ConsumerWidget {
     super.key,
     this.isPreviewMode = false,
     this.isFullscreen = false,
+    this.showAutoButton = false,
+    this.isAutoEnabled = false,
+    this.onAutoPressed,
+    this.onInteracted,
   });
 
   final VideoEvent video;
   final bool isPreviewMode;
   final bool isFullscreen;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1787,13 +1811,33 @@ class VideoOverlayActionColumn extends ConsumerWidget {
       children: [
         if (!isFullscreen && !isPreviewMode) _VideoEditButton(video: video),
         CcActionButton(video: video),
-        LikeActionButton(video: video, isPreviewMode: isPreviewMode),
-        CommentActionButton(video: video, isPreviewMode: isPreviewMode),
-        RepostActionButton(video: video, isPreviewMode: isPreviewMode),
-        ShareActionButton(video: video),
+        if (showAutoButton && onAutoPressed != null)
+          AutoActionButton(
+            isEnabled: isAutoEnabled,
+            onPressed: onAutoPressed!,
+          ),
+        LikeActionButton(
+          video: video,
+          isPreviewMode: isPreviewMode,
+          onInteracted: onInteracted,
+        ),
+        CommentActionButton(
+          video: video,
+          isPreviewMode: isPreviewMode,
+          onInteracted: onInteracted,
+        ),
+        RepostActionButton(
+          video: video,
+          isPreviewMode: isPreviewMode,
+          onInteracted: onInteracted,
+        ),
+        ShareActionButton(video: video, onInteracted: onInteracted),
         Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: MoreActionButton(video: video),
+          child: MoreActionButton(
+            video: video,
+            onInteracted: onInteracted,
+          ),
         ),
       ],
     );

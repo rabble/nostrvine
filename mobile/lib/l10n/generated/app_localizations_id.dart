@@ -1183,6 +1183,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoActionLike => 'Suka video';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+
+  @override
   String get videoActionRemoveRepost => 'Hapus repost';
 
   @override

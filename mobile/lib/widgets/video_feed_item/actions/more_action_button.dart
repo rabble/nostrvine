@@ -13,9 +13,14 @@ import 'package:unified_logger/unified_logger.dart';
 /// Opens the expanded metadata sheet showing title, stats, creator, tags,
 /// collaborators, inspired-by, reposted-by, and sounds.
 class MoreActionButton extends StatelessWidget {
-  const MoreActionButton({required this.video, super.key});
+  const MoreActionButton({
+    required this.video,
+    this.onInteracted,
+    super.key,
+  });
 
   final VideoEvent video;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +32,7 @@ class MoreActionButton extends StatelessWidget {
       label: context.l10n.videoActionMoreOptions,
       child: GestureDetector(
         onTap: () {
+          onInteracted?.call();
           Log.info(
             'More button tapped for ${video.id}',
             name: 'MoreActionButton',

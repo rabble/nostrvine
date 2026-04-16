@@ -1227,6 +1227,15 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoActionLike => 'Polub film';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+
+  @override
   String get videoActionRemoveRepost => 'Usuń repost';
 
   @override
