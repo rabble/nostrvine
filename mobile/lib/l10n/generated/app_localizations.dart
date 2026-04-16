@@ -5876,11 +5876,23 @@ abstract class AppLocalizations {
   /// **'No followed users.\nFollow someone to see their videos here.'**
   String get feedNoFollowedUsers;
 
-  /// No description provided for @feedNoVideosForMode.
+  /// No description provided for @feedForYouEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No videos found for {mode} feed.'**
-  String feedNoVideosForMode(String mode);
+  /// **'Your For You feed is empty.\nExplore videos and follow creators to shape it.'**
+  String get feedForYouEmpty;
+
+  /// No description provided for @feedFollowingEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos from people you follow yet.\nFind creators you like and follow them.'**
+  String get feedFollowingEmpty;
+
+  /// No description provided for @feedLatestEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No new videos yet.\nCheck back soon.'**
+  String get feedLatestEmpty;
 
   /// No description provided for @feedExploreVideos.
   ///
@@ -6853,6 +6865,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not Now'**
   String get saveOriginalNotNow;
+
+  /// No description provided for @cameraPermissionNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get cameraPermissionNotNow;
 
   /// No description provided for @saveOriginalDownloadFailed.
   ///
@@ -7838,6 +7856,216 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get libraryDeleteConfirm;
 
+  /// No description provided for @libraryWebUnavailableHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Library is available in the mobile app'**
+  String get libraryWebUnavailableHeadline;
+
+  /// No description provided for @libraryWebUnavailableDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts and clips are saved on your device, so open Divine on your phone to manage them.'**
+  String get libraryWebUnavailableDescription;
+
+  /// No description provided for @libraryTabDrafts.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get libraryTabDrafts;
+
+  /// No description provided for @libraryTabClips.
+  ///
+  /// In en, this message translates to:
+  /// **'Clips'**
+  String get libraryTabClips;
+
+  /// No description provided for @librarySaveToCameraRollTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to camera roll'**
+  String get librarySaveToCameraRollTooltip;
+
+  /// No description provided for @libraryDeleteSelectedClipsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected clips'**
+  String get libraryDeleteSelectedClipsTooltip;
+
+  /// No description provided for @libraryDeleteClipsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Clips'**
+  String get libraryDeleteClipsTitle;
+
+  /// No description provided for @libraryDeleteClipsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete {count, plural, one{# selected clip} other{# selected clips}}?'**
+  String libraryDeleteClipsMessage(int count);
+
+  /// No description provided for @libraryDeleteClipsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone. The video files will be permanently removed from your device.'**
+  String get libraryDeleteClipsWarning;
+
+  /// No description provided for @libraryPreparingVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing video...'**
+  String get libraryPreparingVideo;
+
+  /// No description provided for @libraryCreateVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Video'**
+  String get libraryCreateVideo;
+
+  /// No description provided for @libraryClipsSavedToDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 clip} other{{count} clips}} saved to {destination}'**
+  String libraryClipsSavedToDestination(int count, String destination);
+
+  /// No description provided for @libraryClipsSavePartialResult.
+  ///
+  /// In en, this message translates to:
+  /// **'{successCount} saved, {failureCount} failed'**
+  String libraryClipsSavePartialResult(int successCount, int failureCount);
+
+  /// No description provided for @libraryGalleryPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'{destination} permission denied'**
+  String libraryGalleryPermissionDenied(String destination);
+
+  /// No description provided for @libraryClipsDeletedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 clip deleted} other{{count} clips deleted}}'**
+  String libraryClipsDeletedCount(int count);
+
+  /// No description provided for @libraryCouldNotLoadDrafts.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load drafts'**
+  String get libraryCouldNotLoadDrafts;
+
+  /// No description provided for @libraryCouldNotLoadClips.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load clips'**
+  String get libraryCouldNotLoadClips;
+
+  /// No description provided for @libraryOpenErrorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong while opening your library. You can try again.'**
+  String get libraryOpenErrorDescription;
+
+  /// No description provided for @libraryNoDraftsYetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Drafts Yet'**
+  String get libraryNoDraftsYetTitle;
+
+  /// No description provided for @libraryNoDraftsYetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos you save as draft will appear here'**
+  String get libraryNoDraftsYetSubtitle;
+
+  /// No description provided for @libraryNoClipsYetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Clips Yet'**
+  String get libraryNoClipsYetTitle;
+
+  /// No description provided for @libraryNoClipsYetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recorded video clips will appear here'**
+  String get libraryNoClipsYetSubtitle;
+
+  /// No description provided for @libraryDraftDeletedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft deleted'**
+  String get libraryDraftDeletedSnackbar;
+
+  /// No description provided for @libraryDraftDeleteFailedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete draft'**
+  String get libraryDraftDeleteFailedSnackbar;
+
+  /// No description provided for @libraryDraftActionPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get libraryDraftActionPost;
+
+  /// No description provided for @libraryDraftActionEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get libraryDraftActionEdit;
+
+  /// No description provided for @libraryDraftActionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete draft'**
+  String get libraryDraftActionDelete;
+
+  /// No description provided for @libraryDeleteDraftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Draft'**
+  String get libraryDeleteDraftTitle;
+
+  /// No description provided for @libraryDeleteDraftMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \"{title}\"?'**
+  String libraryDeleteDraftMessage(String title);
+
+  /// No description provided for @libraryDeleteClipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Clip'**
+  String get libraryDeleteClipTitle;
+
+  /// No description provided for @libraryDeleteClipMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this clip?'**
+  String get libraryDeleteClipMessage;
+
+  /// No description provided for @libraryClipSelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clips'**
+  String get libraryClipSelectionTitle;
+
+  /// No description provided for @librarySecondsRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s remaining'**
+  String librarySecondsRemaining(String seconds);
+
+  /// No description provided for @libraryAddClips.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get libraryAddClips;
+
+  /// No description provided for @libraryRecordVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Record a Video'**
+  String get libraryRecordVideo;
+
   /// No description provided for @routerInvalidCreator.
   ///
   /// In en, this message translates to:
@@ -8251,6 +8479,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Center'**
   String get textAlignCenter;
+
+  /// No description provided for @cameraPermissionWebUnsupportedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera not supported on web yet'**
+  String get cameraPermissionWebUnsupportedTitle;
+
+  /// No description provided for @cameraPermissionWebUnsupportedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera capture and recording are not available in the web version yet.'**
+  String get cameraPermissionWebUnsupportedDescription;
+
+  /// No description provided for @cameraPermissionBackToFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to feed'**
+  String get cameraPermissionBackToFeed;
+
+  /// No description provided for @cameraPermissionErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission Error'**
+  String get cameraPermissionErrorTitle;
+
+  /// No description provided for @cameraPermissionErrorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong while checking permissions.'**
+  String get cameraPermissionErrorDescription;
+
+  /// No description provided for @cameraPermissionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get cameraPermissionRetry;
+
+  /// No description provided for @cameraPermissionAllowAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow camera & microphone access'**
+  String get cameraPermissionAllowAccessTitle;
+
+  /// No description provided for @cameraPermissionAllowAccessDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This allows you to capture and edit videos right here in the app, nothing more.'**
+  String get cameraPermissionAllowAccessDescription;
+
+  /// No description provided for @cameraPermissionContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get cameraPermissionContinue;
+
+  /// No description provided for @cameraPermissionGoToSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to settings'**
+  String get cameraPermissionGoToSettings;
 }
 
 class _AppLocalizationsDelegate

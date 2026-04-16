@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:test/test.dart';
+import 'package:unique_names_generator/unique_names_generator.dart';
 
 void main() {
   group('UserProfile', () {
@@ -173,85 +174,6 @@ void main() {
 
         expect(profile.rawData['custom_field'], equals('custom_value'));
         expect(profile.rawData['nested'], equals({'key': 'value'}));
-      });
-    });
-
-    group('fromFunnelcake', () {
-      test('parses complete Funnelcake response', () {
-        final data = <String, dynamic>{
-          'name': 'testname',
-          'display_name': 'Test User',
-          'about': 'Test bio',
-          'picture': 'https://example.com/avatar.png',
-          'banner': 'https://example.com/banner.png',
-          'website': 'https://example.com',
-          'nip05': 'test@example.com',
-          'lud16': 'test@wallet.com',
-        };
-
-        final profile = UserProfile.fromFunnelcake(testPubkey, data);
-
-        expect(profile.pubkey, equals(testPubkey));
-        expect(profile.name, equals('testname'));
-        expect(profile.displayName, equals('Test User'));
-        expect(profile.about, equals('Test bio'));
-        expect(profile.picture, equals('https://example.com/avatar.png'));
-        expect(profile.banner, equals('https://example.com/banner.png'));
-        expect(profile.website, equals('https://example.com'));
-        expect(profile.nip05, equals('test@example.com'));
-        expect(profile.lud16, equals('test@wallet.com'));
-        expect(profile.rawData, equals(data));
-        expect(profile.eventId, equals('rest-$testPubkey'));
-        expect(profile.createdAt, isA<DateTime>());
-      });
-
-      test('handles partial data with null fields', () {
-        final data = <String, dynamic>{
-          'name': 'testname',
-        };
-
-        final profile = UserProfile.fromFunnelcake(testPubkey, data);
-
-        expect(profile.pubkey, equals(testPubkey));
-        expect(profile.name, equals('testname'));
-        expect(profile.displayName, isNull);
-        expect(profile.about, isNull);
-        expect(profile.picture, isNull);
-        expect(profile.banner, isNull);
-        expect(profile.website, isNull);
-        expect(profile.nip05, isNull);
-        expect(profile.lud16, isNull);
-      });
-
-      test('uses default eventIdPrefix when not provided', () {
-        final profile = UserProfile.fromFunnelcake(
-          testPubkey,
-          const <String, dynamic>{},
-        );
-
-        expect(profile.eventId, equals('rest-$testPubkey'));
-      });
-
-      test('uses custom eventIdPrefix', () {
-        final profile = UserProfile.fromFunnelcake(
-          testPubkey,
-          const <String, dynamic>{},
-          eventIdPrefix: 'rest-bulk',
-        );
-
-        expect(profile.eventId, equals('rest-bulk-$testPubkey'));
-      });
-
-      test('preserves rawData from response', () {
-        final data = <String, dynamic>{
-          'name': 'test',
-          'follower_count': 42,
-          'video_count': 10,
-        };
-
-        final profile = UserProfile.fromFunnelcake(testPubkey, data);
-
-        expect(profile.rawData, equals(data));
       });
     });
 
@@ -441,6 +363,70 @@ void main() {
         );
 
         expect(profile1.bestDisplayName, equals(profile2.bestDisplayName));
+      });
+    });
+
+    group('generatedNameFor', () {
+      test('returns pinned output for testPubkey', () {
+        expect(
+          UserProfile.generatedNameFor(testPubkey),
+          equals('Integral Cicada 66'),
+        );
+      });
+
+      test('returns pinned output for issue #2979 example pubkey', () {
+        // Hex pubkey from the issue report (npub1488afm…).
+        // Full npub: npub1488afme74urmveua85xkkyxc83c
+        // 608qtgg2ncmth4f2npvjgw8lqehxguh
+        const issuePubkey =
+            '89ef92b9ebe6dc1e4ea398f6477f227e95429627b0a33dc89b640e137b256be5';
+        expect(
+          UserProfile.generatedNameFor(issuePubkey),
+          equals('Possible Mandrill 76'),
+        );
+      });
+
+      test('output matches expected format', () {
+        final name = UserProfile.generatedNameFor(testPubkey);
+        // Format: "Adjective Animal N" where N is 1–99.
+        expect(name, matches(RegExp(r'^[A-Z][a-z]+ [A-Z][a-z]+ \d{1,2}$')));
+      });
+
+      test('is deterministic across calls', () {
+        const pubkey =
+            'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
+        final first = UserProfile.generatedNameFor(pubkey);
+        final second = UserProfile.generatedNameFor(pubkey);
+        expect(first, equals(second));
+      });
+
+      test('different pubkeys produce different names', () {
+        const pubkeyA =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        const pubkeyB =
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+        expect(
+          UserProfile.generatedNameFor(pubkeyA),
+          isNot(equals(UserProfile.generatedNameFor(pubkeyB))),
+        );
+      });
+
+      test('word list sizes are stable', () {
+        // Guard against silent changes from unique_names_generator updates.
+        // If these fail, the package changed its dictionaries and every
+        // anonymous user's generated name may have shifted.
+        expect(adjectives.length, equals(1202));
+        expect(animals.length, equals(354));
+      });
+
+      test('handles single-character pubkey', () {
+        final name = UserProfile.generatedNameFor('a');
+        expect(name, matches(RegExp(r'^[A-Z][a-z]+ [A-Z][a-z]+ \d{1,2}$')));
+      });
+
+      test('handles numeric-only pubkey', () {
+        final name = UserProfile.generatedNameFor('1234567890');
+        expect(name, matches(RegExp(r'^[A-Z][a-z]+ [A-Z][a-z]+ \d{1,2}$')));
       });
     });
 

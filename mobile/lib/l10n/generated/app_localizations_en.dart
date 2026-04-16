@@ -3328,9 +3328,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'No followed users.\nFollow someone to see their videos here.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return 'No videos found for $mode feed.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Explore Videos';
@@ -3862,6 +3868,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveOriginalNotNow => 'Not Now';
 
   @override
+  String get cameraPermissionNotNow => 'Not now';
+
+  @override
   String get saveOriginalDownloadFailed => 'Download Failed';
 
   @override
@@ -4381,6 +4390,150 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryDeleteConfirm => 'Delete';
 
   @override
+  String get libraryWebUnavailableHeadline =>
+      'Library is available in the mobile app';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Drafts and clips are saved on your device, so open Divine on your phone to manage them.';
+
+  @override
+  String get libraryTabDrafts => 'Drafts';
+
+  @override
+  String get libraryTabClips => 'Clips';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Save to camera roll';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'Delete selected clips';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Delete Clips';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# selected clips',
+      one: '# selected clip',
+    );
+    return 'Are you sure you want to delete $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'This action cannot be undone. The video files will be permanently removed from your device.';
+
+  @override
+  String get libraryPreparingVideo => 'Preparing video...';
+
+  @override
+  String get libraryCreateVideo => 'Create Video';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips',
+      one: '1 clip',
+    );
+    return '$_temp0 saved to $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount saved, $failureCount failed';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return '$destination permission denied';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips deleted',
+      one: '1 clip deleted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts => 'Couldn\'t load drafts';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Couldn\'t load clips';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Something went wrong while opening your library. You can try again.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'No Drafts Yet';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'Videos you save as draft will appear here';
+
+  @override
+  String get libraryNoClipsYetTitle => 'No Clips Yet';
+
+  @override
+  String get libraryNoClipsYetSubtitle =>
+      'Your recorded video clips will appear here';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Draft deleted';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar => 'Failed to delete draft';
+
+  @override
+  String get libraryDraftActionPost => 'Post';
+
+  @override
+  String get libraryDraftActionEdit => 'Edit';
+
+  @override
+  String get libraryDraftActionDelete => 'Delete draft';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Delete Draft';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'Are you sure you want to delete \"$title\"?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Delete Clip';
+
+  @override
+  String get libraryDeleteClipMessage =>
+      'Are you sure you want to delete this clip?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Clips';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return '${seconds}s remaining';
+  }
+
+  @override
+  String get libraryAddClips => 'Add';
+
+  @override
+  String get libraryRecordVideo => 'Record a Video';
+
+  @override
   String get routerInvalidCreator => 'Invalid creator';
 
   @override
@@ -4622,4 +4775,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Center';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'Camera not supported on web yet';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'Camera capture and recording are not available in the web version yet.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Back to feed';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Permission Error';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'Something went wrong while checking permissions.';
+
+  @override
+  String get cameraPermissionRetry => 'Retry';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Allow camera & microphone access';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'This allows you to capture and edit videos right here in the app, nothing more.';
+
+  @override
+  String get cameraPermissionContinue => 'Continue';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Go to settings';
 }

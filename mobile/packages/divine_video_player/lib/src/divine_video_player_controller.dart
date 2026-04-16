@@ -39,7 +39,14 @@ class DivineVideoPlayerController {
   final bool useTexture;
 
   static const _globalChannel = MethodChannel('divine_video_player');
-  static int _nextId = 0;
+
+  /// Seeded from the current time so that IDs are unique across hot
+  /// restarts. Without this, Dart's static reset would reuse id 0
+  /// while the native side still holds a zombie player with that ID.
+  ///
+  /// The modulo keeps the value within int32 range because platform
+  /// channels transmit integers as 32-bit on the native side.
+  static int _nextId = DateTime.now().microsecondsSinceEpoch % 1000000;
 
   /// The next player ID that will be assigned by [initialize].
   ///
@@ -54,6 +61,17 @@ class DivineVideoPlayerController {
   /// test ordering.
   @visibleForTesting
   static void resetIdCounterForTesting() => _nextId = 0;
+
+  /// Disposes all native player instances that may still be alive.
+  ///
+  /// Call at app startup to clean up zombie players from a previous
+  /// Dart VM (e.g. after hot restart). The native plugin keeps its
+  /// process-level state across hot restarts, so old ExoPlayer /
+  /// AVPlayer instances and their timers survive unless explicitly
+  /// released.
+  static Future<void> disposeAll() {
+    return _globalChannel.invokeMethod<void>('disposeAll');
+  }
 
   /// Configures the native video cache.
   ///

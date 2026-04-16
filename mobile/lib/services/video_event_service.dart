@@ -48,6 +48,7 @@ import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/utils/log_batcher.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:video_event_cache/video_event_cache.dart';
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -121,7 +122,7 @@ enum SubscriptionType {
 
 /// Service for handling video events (NIP-71 kinds 22, 34236) with separate lists per subscription type
 /// REFACTORED: Multiple event lists per subscription type with proper REQ filtering
-class VideoEventService extends ChangeNotifier {
+class VideoEventService extends ChangeNotifier implements VideoEventCache {
   VideoEventService(
     this._nostrService, {
     required SubscriptionManager subscriptionManager,
@@ -671,6 +672,7 @@ class VideoEventService extends ChangeNotifier {
   List<VideoEvent> get homeFeedVideos => getVideos(SubscriptionType.homeFeed);
 
   /// Get discovery videos (all videos for exploration)
+  @override
   List<VideoEvent> get discoveryVideos => getVideos(SubscriptionType.discovery);
 
   /// Get profile videos (from specific user)
@@ -5045,6 +5047,7 @@ class VideoEventService extends ChangeNotifier {
   }
 
   /// Add a video event to the cache (for external services like CurationService)
+  @override
   void addVideoEvent(VideoEvent videoEvent) {
     _addVideoToSubscription(videoEvent, SubscriptionType.discovery);
   }

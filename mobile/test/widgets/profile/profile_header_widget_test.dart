@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -18,7 +19,6 @@ import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -162,7 +162,7 @@ void main() {
     Widget buildTestWidget({
       required String userIdHex,
       required bool isOwnProfile,
-      int videoCount = 10,
+      int? videoCount = 10,
       UserProfile? profile,
       UserProfile? suppliedProfile,
       ProfileStats? profileStats,
@@ -347,7 +347,7 @@ void main() {
     );
 
     testWidgets(
-      'falls back to videos.length when stats provider has no data',
+      'falls back to totalVideoCount when stats provider has no data',
       (tester) async {
         final testProfile = createTestProfile(displayName: 'Fallback User');
 
@@ -362,6 +362,27 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('5'), findsWidgets);
+        expect(find.text('Videos'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'shows loading state when both stats and totalVideoCount are null',
+      (tester) async {
+        final testProfile = createTestProfile(displayName: 'Loading User');
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            videoCount: null,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Should show loading dash instead of a number
+        expect(find.text('—'), findsWidgets);
         expect(find.text('Videos'), findsOneWidget);
       },
     );

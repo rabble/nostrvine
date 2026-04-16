@@ -1,13 +1,18 @@
 // ABOUTME: Utility for resolving file paths for iOS compatibility
 // ABOUTME: iOS changes container paths on app updates, so we store only filenames
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as path_provider;
 
 /// Returns the application documents directory path.
 ///
-/// This is abstracted to allow easy changes if the storage location changes.
+/// On web, path_provider has no documents directory; returns `''` so callers
+/// can join basenames without calling the plugin (avoids MissingPluginException).
 Future<String> getDocumentsPath() async {
+  if (kIsWeb) {
+    return '';
+  }
   final dir = await path_provider.getApplicationDocumentsDirectory();
   return dir.path;
 }

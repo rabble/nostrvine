@@ -425,6 +425,13 @@ Future<void> _startOpenVineApp() async {
     configureCache: DivineVideoPlayerController.configureCache,
   );
 
+  // Dispose any zombie native players from a previous Dart VM
+  // (e.g. hot restart). Must happen after configureCache so the
+  // global method channel is already registered.
+  if (!kIsWeb) {
+    await DivineVideoPlayerController.disposeAll();
+  }
+
   StartupPerformanceService.instance.completePhase('bindings');
 
   // Initialize crash reporting ASAP so we can use it for logging
@@ -1457,14 +1464,17 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // in the widget tree by MultiBlocProvider.
     Widget buildApp(Locale? locale) {
       if (!kIsWeb && io.Platform.isAndroid) {
-        return MaterialApp.router(
-          title: 'Divine',
-          debugShowCheckedModeBanner: false,
-          theme: VineTheme.theme,
-          routerConfig: router,
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: VineTheme.statusBarStyle,
+          child: MaterialApp.router(
+            title: 'Divine',
+            debugShowCheckedModeBanner: false,
+            theme: VineTheme.theme,
+            routerConfig: router,
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
         );
       }
       return PopScope(
@@ -1473,14 +1483,17 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           if (didPop) return;
           await handleBackNavigation(router, ref);
         },
-        child: MaterialApp.router(
-          title: 'Divine',
-          debugShowCheckedModeBanner: false,
-          theme: VineTheme.theme,
-          routerConfig: router,
-          locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: VineTheme.statusBarStyle,
+          child: MaterialApp.router(
+            title: 'Divine',
+            debugShowCheckedModeBanner: false,
+            theme: VineTheme.theme,
+            routerConfig: router,
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
         ),
       );
     }

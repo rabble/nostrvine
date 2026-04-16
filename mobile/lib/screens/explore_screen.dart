@@ -126,23 +126,25 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     return 'popular'; // Default
   }
 
-  void _initTabController() {
-    // Check for forced tab NAME first (survives tab availability changes)
-    // Don't clear it here - let it persist until user manually changes tabs
+  /// Build a new [TabController]. [previousTabName] is the name of the
+  /// tab the user was on before a rebuild (resolved while the old
+  /// availability flags were still in effect). When set, the forced-tab
+  /// provider still takes priority. Falls back to the 'new' tab by name —
+  /// never by raw index, because indices shift when optional tabs appear
+  /// or disappear.
+  void _initTabController({String? previousTabName}) {
     final forcedTabName = ref.read(forceExploreTabNameProvider);
-    int initialIndex;
 
-    if (forcedTabName != null) {
-      initialIndex = _tabNameToIndex(forcedTabName);
+    // Resolve the target tab name: forced provider > previous tab > default.
+    final targetTabName = forcedTabName ?? previousTabName;
+    final initialIndex = _tabNameToIndex(targetTabName ?? 'new');
+
+    if (targetTabName != null) {
       Log.info(
-        '🎯 ExploreScreen: Using forced tab "$forcedTabName" -> index $initialIndex',
+        '🎯 ExploreScreen: Using tab "$targetTabName" -> index $initialIndex',
         name: 'ExploreScreen',
         category: LogCategory.ui,
       );
-    } else {
-      // Fall back to saved index
-      final savedTabIndex = ref.read(exploreTabIndexProvider);
-      initialIndex = savedTabIndex.clamp(0, _tabCount - 1);
     }
 
     _tabController = TabController(
@@ -407,15 +409,20 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         name: 'ExploreScreen',
         category: LogCategory.ui,
       );
+
+      // Resolve the current tab name BEFORE updating flags, because
+      // _tabNames depends on the availability booleans.
+      final previousTabName = _tabIndexToName(_tabController?.index ?? 0);
+
+      _tabController?.removeListener(_onTabChanged);
+      final oldController = _tabController;
+
       _classicsAvailable = newClassicsAvailable;
       _forYouAvailable = newForYouAvailable;
       _appsAvailable = newAppsAvailable;
 
-      // Rebuild tab controller to match the new tab count
-      // _initTabController handles forced tab name -> correct index conversion
-      _tabController?.removeListener(_onTabChanged);
-      _tabController?.dispose();
-      _initTabController();
+      _initTabController(previousTabName: previousTabName);
+      oldController?.dispose();
     }
 
     // Derive feed mode from URL

@@ -3375,9 +3375,15 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessun utente seguito.\nSegui qualcuno per vedere i suoi video qui.';
 
   @override
-  String feedNoVideosForMode(String mode) {
-    return 'Nessun video trovato per il feed $mode.';
-  }
+  String get feedForYouEmpty =>
+      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+
+  @override
+  String get feedFollowingEmpty =>
+      'No videos from people you follow yet.\nFind creators you like and follow them.';
+
+  @override
+  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
 
   @override
   String get feedExploreVideos => 'Esplora video';
@@ -3912,6 +3918,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get saveOriginalNotNow => 'Non ora';
 
   @override
+  String get cameraPermissionNotNow => 'Non ora';
+
+  @override
   String get saveOriginalDownloadFailed => 'Download fallito';
 
   @override
@@ -4431,6 +4440,148 @@ class AppLocalizationsIt extends AppLocalizations {
   String get libraryDeleteConfirm => 'Elimina';
 
   @override
+  String get libraryWebUnavailableHeadline => 'La libreria è nell’app mobile';
+
+  @override
+  String get libraryWebUnavailableDescription =>
+      'Bozze e clip sono salvate sul dispositivo: apri Divine sul telefono per gestirle.';
+
+  @override
+  String get libraryTabDrafts => 'Bozze';
+
+  @override
+  String get libraryTabClips => 'Clip';
+
+  @override
+  String get librarySaveToCameraRollTooltip => 'Salva nel rullino';
+
+  @override
+  String get libraryDeleteSelectedClipsTooltip => 'Elimina clip selezionate';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Elimina clip';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# clip selezionate',
+      one: '# clip selezionata',
+    );
+    return 'Vuoi eliminare $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Azione irreversibile. I file video verranno rimossi definitivamente dal dispositivo.';
+
+  @override
+  String get libraryPreparingVideo => 'Preparazione video...';
+
+  @override
+  String get libraryCreateVideo => 'Crea video';
+
+  @override
+  String libraryClipsSavedToDestination(int count, String destination) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip',
+      one: '1 clip',
+    );
+    return '$_temp0 salvati in $destination';
+  }
+
+  @override
+  String libraryClipsSavePartialResult(int successCount, int failureCount) {
+    return '$successCount salvati, $failureCount non riusciti';
+  }
+
+  @override
+  String libraryGalleryPermissionDenied(String destination) {
+    return 'Permesso negato per $destination';
+  }
+
+  @override
+  String libraryClipsDeletedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip eliminati',
+      one: '1 clip eliminato',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryCouldNotLoadDrafts => 'Impossibile caricare le bozze';
+
+  @override
+  String get libraryCouldNotLoadClips => 'Impossibile caricare le clip';
+
+  @override
+  String get libraryOpenErrorDescription =>
+      'Qualcosa è andato storto aprendo la libreria. Riprova.';
+
+  @override
+  String get libraryNoDraftsYetTitle => 'Ancora nessuna bozza';
+
+  @override
+  String get libraryNoDraftsYetSubtitle =>
+      'I video salvati come bozza appariranno qui';
+
+  @override
+  String get libraryNoClipsYetTitle => 'Ancora nessuna clip';
+
+  @override
+  String get libraryNoClipsYetSubtitle => 'Le clip registrate appariranno qui';
+
+  @override
+  String get libraryDraftDeletedSnackbar => 'Bozza eliminata';
+
+  @override
+  String get libraryDraftDeleteFailedSnackbar =>
+      'Eliminazione bozza non riuscita';
+
+  @override
+  String get libraryDraftActionPost => 'Pubblica';
+
+  @override
+  String get libraryDraftActionEdit => 'Modifica';
+
+  @override
+  String get libraryDraftActionDelete => 'Elimina bozza';
+
+  @override
+  String get libraryDeleteDraftTitle => 'Elimina bozza';
+
+  @override
+  String libraryDeleteDraftMessage(String title) {
+    return 'Vuoi eliminare \"$title\"?';
+  }
+
+  @override
+  String get libraryDeleteClipTitle => 'Elimina clip';
+
+  @override
+  String get libraryDeleteClipMessage => 'Eliminare questa clip?';
+
+  @override
+  String get libraryClipSelectionTitle => 'Clip';
+
+  @override
+  String librarySecondsRemaining(String seconds) {
+    return 'Ancora ${seconds}s';
+  }
+
+  @override
+  String get libraryAddClips => 'Aggiungi';
+
+  @override
+  String get libraryRecordVideo => 'Registra un video';
+
+  @override
   String get routerInvalidCreator => 'Creatore non valido';
 
   @override
@@ -4676,4 +4827,39 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get textAlignCenter => 'Centro';
+
+  @override
+  String get cameraPermissionWebUnsupportedTitle =>
+      'La fotocamera non è ancora supportata sul web';
+
+  @override
+  String get cameraPermissionWebUnsupportedDescription =>
+      'L\'acquisizione e la registrazione con fotocamera non sono ancora disponibili nella versione web.';
+
+  @override
+  String get cameraPermissionBackToFeed => 'Torna al feed';
+
+  @override
+  String get cameraPermissionErrorTitle => 'Errore di autorizzazione';
+
+  @override
+  String get cameraPermissionErrorDescription =>
+      'Si è verificato un errore durante il controllo delle autorizzazioni.';
+
+  @override
+  String get cameraPermissionRetry => 'Riprova';
+
+  @override
+  String get cameraPermissionAllowAccessTitle =>
+      'Consenti accesso a fotocamera e microfono';
+
+  @override
+  String get cameraPermissionAllowAccessDescription =>
+      'Questo ti consente di registrare e modificare video direttamente nell\'app, niente di più.';
+
+  @override
+  String get cameraPermissionContinue => 'Continua';
+
+  @override
+  String get cameraPermissionGoToSettings => 'Vai alle impostazioni';
 }

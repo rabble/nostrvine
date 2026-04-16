@@ -2617,7 +2617,7 @@ final class PushNotificationSyncProvider
 }
 
 String _$pushNotificationSyncHash() =>
-    r'fed5d3b0d5d729c415c77b8d0a88c090abf4095d';
+    r'42aa13bfec4492b045273818e6a4a88b28949b06';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -2673,7 +2673,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'3c3497cc89997f9995bdee112182fb36a35cc198';
+    r'56d99094bba86b89b54ababd0ab82604bc95cc4e';
 
 /// Subscription manager for centralized subscription management
 
@@ -3010,7 +3010,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'5eb08600816786c7447419fa0202c5532dd24678';
+String _$followRepositoryHash() => r'a94622f52c4a1e843f707fa192b08ba65c75d6c2';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -3839,7 +3839,7 @@ final class CurationServiceProvider
   }
 }
 
-String _$curationServiceHash() => r'8eeffdbdad64deb0b10c3983346c3d3c83a1aa02';
+String _$curationServiceHash() => r'c2e09557d5382b0286cedd6f09854b9537af477e';
 
 /// Content reporting service for NIP-56 compliance
 

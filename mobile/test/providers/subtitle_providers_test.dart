@@ -139,6 +139,42 @@ void main() {
       ).called(1);
     });
 
+    test('fetches VTT directly when textTrackRef is an HTTP URL', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      when(
+        () =>
+            mockHttpClient.get(Uri.parse('https://example.com/subtitles.vtt')),
+      ).thenAnswer(
+        (_) async => http.Response(
+          'WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.500\nFrom URL\n',
+          200,
+        ),
+      );
+
+      final cues = await container.read(
+        subtitleCuesProvider(
+          videoId: 'test-id',
+          textTrackRef: 'https://example.com/subtitles.vtt',
+        ).future,
+      );
+
+      expect(cues, hasLength(1));
+      expect(cues.first.text, equals('From URL'));
+
+      verify(
+        () =>
+            mockHttpClient.get(Uri.parse('https://example.com/subtitles.vtt')),
+      ).called(1);
+      verifyNever(
+        () => mockNostrClient.queryEvents(
+          any(),
+          tempRelays: any(named: 'tempRelays'),
+        ),
+      );
+    });
+
     test(
       'prefers embedded content over relay fetch when both present',
       () async {

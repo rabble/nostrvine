@@ -53,6 +53,7 @@ import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
@@ -1486,16 +1487,6 @@ class VideoOverlayActions extends ConsumerWidget {
                             profile?.bestDisplayName ??
                             video.authorName ??
                             UserProfile.generatedNameFor(video.pubkey);
-                        final archivedLoops = video.originalLoops ?? 0;
-                        final liveViews =
-                            int.tryParse(video.rawTags['views'] ?? '') ?? 0;
-                        // Always sum archived (original Vine) and live (new diVine)
-                        // loops so migrated videos show their full combined count.
-                        final loopCount = archivedLoops + liveViews;
-                        final hasLoopMetadata =
-                            video.originalLoops != null ||
-                            video.rawTags.containsKey('loops') ||
-                            video.rawTags.containsKey('views');
 
                         void navigateToProfile() {
                           Log.info(
@@ -1573,9 +1564,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                       ],
                                     ),
                                     Text(
-                                      hasLoopMetadata
-                                          ? '${StringUtils.formatCompactNumber(loopCount)} loops'
-                                          : video.relativeTime,
+                                      '${StringUtils.formatCompactNumber(video.totalLoops)} ${video.totalLoops == 1 ? 'loop' : 'loops'}',
                                       style: const TextStyle(
                                         fontFamily: 'Inter',
                                         fontSize: 14,
@@ -1636,34 +1625,38 @@ class VideoOverlayActions extends ConsumerWidget {
                       const SizedBox(
                         height: 2,
                       ), // 2px + 10px from avatar container = 12px total
-                      Semantics(
-                        identifier: 'video_description',
-                        container: true,
-                        explicitChildNodes: true,
-                        label:
-                            'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-                        child: ClickableHashtagText(
-                          text:
-                              (video.content.isNotEmpty
-                                      ? video.content
-                                      : video.title ?? '')
-                                  .trim(),
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            color: VineTheme.whiteText,
-                            fontSize: 14,
-                            height: 20 / 14,
-                            letterSpacing: 0.25,
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => MetadataExpandedSheet.show(context, video),
+                        child: Semantics(
+                          identifier: 'video_description',
+                          container: true,
+                          explicitChildNodes: true,
+                          label:
+                              'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
+                          child: ClickableHashtagText(
+                            text:
+                                (video.content.isNotEmpty
+                                        ? video.content
+                                        : video.title ?? '')
+                                    .trim(),
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              color: VineTheme.whiteText,
+                              fontSize: 14,
+                              height: 20 / 14,
+                              letterSpacing: 0.25,
+                            ),
+                            hashtagStyle: const TextStyle(
+                              fontFamily: 'Inter',
+                              color: VineTheme.vineGreen,
+                              fontSize: 14,
+                              height: 20 / 14,
+                              letterSpacing: 0.25,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          hashtagStyle: const TextStyle(
-                            fontFamily: 'Inter',
-                            color: VineTheme.vineGreen,
-                            fontSize: 14,
-                            height: 20 / 14,
-                            letterSpacing: 0.25,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       // Collaborator avatar row (if video has collaborators)
@@ -1788,7 +1781,6 @@ class VideoOverlayActionColumn extends ConsumerWidget {
       spacing: 4,
       children: [
         if (!isFullscreen && !isPreviewMode) _VideoEditButton(video: video),
-        CcActionButton(video: video),
         LikeActionButton(video: video, isPreviewMode: isPreviewMode),
         CommentActionButton(video: video, isPreviewMode: isPreviewMode),
         RepostActionButton(video: video, isPreviewMode: isPreviewMode),

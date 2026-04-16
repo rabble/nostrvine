@@ -337,6 +337,24 @@ class CreateAccountState extends Equatable {
 }
 ```
 
+### Getters vs Stored State: When Computation Is Expensive
+
+Simple derivations (null checks, string formatting, boolean flags) are fine as getters. However, if the computation is expensive — sorting, filtering, or transforming a list — store the result as a field in state rather than recomputing it on every access.
+
+```dart
+// Good — cheap derivation, getter is fine
+bool get isValid => name?.isNotEmpty == true;
+
+// Bad — expensive list operation as a getter, recomputed on every access
+List<Video> get sortedVideos =>
+    videos.toList()..sort((a, b) => b.date.compareTo(a.date));
+
+// Good — computed once at emit time and stored in state
+emit(state.copyWith(
+  sortedVideos: videos.toList()..sort((a, b) => b.date.compareTo(a.date)),
+));
+```
+
 ---
 
 ## State Handling: Enum vs Sealed Classes

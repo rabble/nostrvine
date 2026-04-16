@@ -6,13 +6,16 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:curation_service/curation_service.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:http/http.dart';
@@ -24,6 +27,7 @@ import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/config/app_config.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
@@ -33,8 +37,6 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/repositories/categories_repository.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -58,7 +60,6 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/crosspost_api_client.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/email_verification_listener.dart';
@@ -67,6 +68,7 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/moderation_label_service.dart';
@@ -172,9 +174,7 @@ final notificationPreferencesServiceProvider =
         publishPreferences: (prefs) {
           return ref
               .read(pushNotificationServiceProvider)
-              .updatePreferences(
-                prefs,
-              );
+              .updatePreferences(prefs);
         },
       );
     });
@@ -195,20 +195,14 @@ final nostrAppAuditServiceProvider = Provider<NostrAppAuditService>((ref) {
   return NostrAppAuditService(
     workerBaseUri: Uri.parse(AppConfig.appsDirectoryBaseUrl),
     authTokenProvider:
-        ({
-          required url,
-          required method,
-          required payload,
-        }) async {
+        ({required url, required method, required payload}) async {
           final token = await nip98AuthService.createAuthToken(
             url: url,
             method: HttpMethod.post,
             payload: payload,
           );
           if (token == null) return null;
-          return AuditAuthToken(
-            authorizationHeader: token.authorizationHeader,
-          );
+          return AuditAuthToken(authorizationHeader: token.authorizationHeader);
         },
     httpClient: client,
   );
@@ -848,10 +842,7 @@ void blocklistSyncBridge(Ref ref) {
 
     try {
       await Future.wait([
-        blocklistService.syncMuteListsInBackground(
-          nostrService,
-          pubkey,
-        ),
+        blocklistService.syncMuteListsInBackground(nostrService, pubkey),
         blocklistService.syncBlockListsInBackground(
           nostrService,
           authService,
@@ -1140,19 +1131,43 @@ void pushNotificationSync(Ref ref) {
   final authService = ref.watch(authServiceProvider);
 
   Future<void> requestPermissionAndRegister(String pubkey) async {
-    final firebaseMessaging = ref.read(firebaseMessagingProvider);
-    final pushService = ref.read(pushNotificationServiceProvider);
-    final settings = await firebaseMessaging.requestPermission();
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      Log.info(
-        'Push notification permission denied by user',
+    try {
+      final firebaseMessaging = ref.read(firebaseMessagingProvider);
+      final pushService = ref.read(pushNotificationServiceProvider);
+
+      // Only prompt the user if permission has never been decided. Rapid
+      // auth state changes (account switching, E2E tests) otherwise cause
+      // concurrent `requestPermission` calls, and Firebase throws
+      // `PlatformException([firebase_messaging/unknown] A request for
+      // permissions is already running)` — silently losing FCM registration
+      // in production and failing E2E tests via unhandled async errors.
+      final current = await firebaseMessaging.getNotificationSettings();
+      final settings =
+          current.authorizationStatus == AuthorizationStatus.notDetermined
+          ? await firebaseMessaging.requestPermission()
+          : current;
+
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        Log.info(
+          'Push notification permission denied by user',
+          name: 'PushNotificationSync',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      await pushService.register(pubkey);
+    } catch (e) {
+      // Push registration is non-critical — a failure must not propagate
+      // out of this async stream listener. If it did, the uncaught error
+      // would reach the test binding's `handleUncaughtError` and fail the
+      // surrounding integration test.
+      Log.warning(
+        'Push notification registration failed: $e',
         name: 'PushNotificationSync',
         category: LogCategory.system,
       );
-      return;
     }
-
-    await pushService.register(pubkey);
   }
 
   String? lastAuthenticatedPubkey = authService.currentPublicKeyHex;
@@ -1163,15 +1178,25 @@ void pushNotificationSync(Ref ref) {
 
   // React to auth state changes
   final subscription = authService.authStateStream.listen((authState) async {
-    final currentPubkey = authService.currentPublicKeyHex;
-    if (authState == AuthState.authenticated && currentPubkey != null) {
-      lastAuthenticatedPubkey = currentPubkey;
-      await requestPermissionAndRegister(currentPubkey);
-    } else if (authState == AuthState.unauthenticated &&
-        lastAuthenticatedPubkey != null) {
-      await ref
-          .read(pushNotificationServiceProvider)
-          .deregister(lastAuthenticatedPubkey!);
+    try {
+      final currentPubkey = authService.currentPublicKeyHex;
+      if (authState == AuthState.authenticated && currentPubkey != null) {
+        lastAuthenticatedPubkey = currentPubkey;
+        await requestPermissionAndRegister(currentPubkey);
+      } else if (authState == AuthState.unauthenticated &&
+          lastAuthenticatedPubkey != null) {
+        await ref
+            .read(pushNotificationServiceProvider)
+            .deregister(lastAuthenticatedPubkey!);
+      }
+    } catch (e) {
+      // Never let push/deregister errors escape the listener — see
+      // `requestPermissionAndRegister` for context.
+      Log.warning(
+        'Push notification sync listener failed: $e',
+        name: 'PushNotificationSync',
+        category: LogCategory.system,
+      );
     }
   });
 
@@ -1289,6 +1314,9 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
     await db.conversationsDao.clearAll();
     await db.notificationsDao.clearAll();
     await NotificationServiceEnhanced.instance.clearAllData();
+    // Clear DM sync cursors so the next login triggers a full re-fetch
+    // from relays instead of using stale `since:` boundaries.
+    await DmSyncState(prefs).clearAll();
   };
 
   return service;
@@ -1409,10 +1437,13 @@ FollowRepository followRepository(Ref ref) {
 
   final repository = FollowRepository(
     nostrClient: nostrClient,
-    personalEventCache: personalEventCache,
+    isCacheInitialized: () => personalEventCache.isInitialized,
+    getCachedEventsByKind: personalEventCache.getEventsByKind,
+    cacheUserEvent: personalEventCache.cacheUserEvent,
     funnelcakeApiClient: funnelcakeApiClient,
     profileStatsDao: profileStatsDao,
     indexerRelayUrls: env.indexerRelays,
+    queryContactList: ContactListCompletionHelper.queryContactList,
     isOnline: () =>
         connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
@@ -1789,9 +1820,10 @@ CurationService curationService(Ref ref) {
 
   return CurationService(
     nostrService: nostrService,
-    videoEventService: videoEventService,
+    videoEventCache: videoEventService,
     likesRepository: likesRepository,
-    authService: authService,
+    signer: authService.requireIdentity,
+    divineTeamPubkeys: AppConstants.divineTeamPubkeys,
   );
 }
 
@@ -2400,9 +2432,7 @@ class _AuthServiceBridgeAdapter implements BridgeAuthProvider {
 
   @override
   List<BridgeRelay> get userRelays => _authService.userRelays
-      .map(
-        (r) => BridgeRelay(url: r.url, read: r.read, write: r.write),
-      )
+      .map((r) => BridgeRelay(url: r.url, read: r.read, write: r.write))
       .toList();
 
   @override

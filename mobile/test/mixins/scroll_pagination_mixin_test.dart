@@ -98,6 +98,38 @@ void main() {
         expect(loadMoreCalls, 1);
       },
     );
+
+    testWidgets(
+      'does not throw when the scroll controller has multiple positions',
+      (tester) async {
+        var loadMoreCalls = 0;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: _MultiPositionTestWidget(
+              onLoadMore: () async {
+                loadMoreCalls++;
+              },
+            ),
+          ),
+        );
+
+        final state = tester.state<_MultiPositionTestWidgetState>(
+          find.byType(_MultiPositionTestWidget),
+        );
+        final scrollController = state.paginationScrollController;
+
+        expect(scrollController.positions.length, 2);
+
+        scrollController.jumpTo(
+          scrollController.positions.first.maxScrollExtent,
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(loadMoreCalls, 1);
+      },
+    );
   });
 }
 
@@ -147,6 +179,64 @@ class _TestWidgetState extends State<_TestWidget> with ScrollPaginationMixin {
       itemCount: 100,
       itemBuilder: (context, index) => SizedBox(
         height: 80,
+        child: Text('Item $index'),
+      ),
+    );
+  }
+}
+
+class _MultiPositionTestWidget extends StatefulWidget {
+  const _MultiPositionTestWidget({required this.onLoadMore});
+
+  final FutureOr<void> Function() onLoadMore;
+
+  @override
+  State<_MultiPositionTestWidget> createState() =>
+      _MultiPositionTestWidgetState();
+}
+
+class _MultiPositionTestWidgetState extends State<_MultiPositionTestWidget>
+    with ScrollPaginationMixin {
+  final _scrollController = ScrollController();
+
+  @override
+  ScrollController get paginationScrollController => _scrollController;
+
+  @override
+  bool canLoadMore() => true;
+
+  @override
+  FutureOr<void> onLoadMore() => widget.onLoadMore();
+
+  @override
+  void initState() {
+    super.initState();
+    initPagination();
+  }
+
+  @override
+  void dispose() {
+    disposePagination();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(child: _buildList()),
+        Expanded(child: _buildList()),
+      ],
+    );
+  }
+
+  Widget _buildList() {
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: 100,
+      itemBuilder: (context, index) => SizedBox(
+        height: 40,
         child: Text('Item $index'),
       ),
     );

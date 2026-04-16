@@ -1,6 +1,7 @@
 // ABOUTME: Tests curation provider lifecycle behavior during navigation
 // ABOUTME: Verifies editor's picks persist when navigating away and back to tab
 
+import 'package:curation_service/curation_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -8,11 +9,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:riverpod/riverpod.dart';
@@ -28,6 +29,10 @@ class _MockLikesRepository extends Mock implements LikesRepository {}
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
+
+class _MockNostrSigner extends Mock implements NostrSigner {}
+
+class _MockVideoEventCache extends Mock implements VideoEventCache {}
 
 void main() {
   setUpAll(() {
@@ -166,11 +171,15 @@ void main() {
 
     test('curation service initializes with sample data', () {
       // ARRANGE: Create curation service directly
+      final mockSigner = _MockNostrSigner();
+      final mockVideoEventCache = _MockVideoEventCache();
+      when(() => mockVideoEventCache.discoveryVideos).thenReturn([]);
       final service = CurationService(
         nostrService: mockNostrService,
-        videoEventService: mockVideoEventService,
+        videoEventCache: mockVideoEventCache,
         likesRepository: mockLikesRepository,
-        authService: mockAuthService,
+        signer: mockSigner,
+        divineTeamPubkeys: const [],
       );
 
       // ACT & ASSERT: Service should initialize with sample data

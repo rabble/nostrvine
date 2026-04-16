@@ -49,6 +49,11 @@ const _kBunkerInfoKey = 'bunker_info';
 const _kAmberPubkeyKey = 'amber_pubkey';
 const _kAmberPackageKey = 'amber_package';
 
+// Keys for Keycast OAuth persistence
+const _kKeycastRefreshTokenKey = 'keycast_refresh_token';
+const _kKeycastAuthHandleKey = 'keycast_auth_handle';
+String _keycastSessionKey(String pubkeyHex) => 'keycast_session_$pubkeyHex';
+
 /// Authentication state for the user
 enum AuthState {
   /// User is not authenticated (no keys stored)
@@ -298,15 +303,13 @@ class AuthService implements BackgroundAwareService {
   /// OR when RPC is fully ready. False for pubkey-only identities that
   /// are still waiting for RPC warmup.
   bool get canPublishNostrWritesNow {
-    final identity = _currentIdentity;
-    if (identity == null) return false;
-    // Local signing is always available if we have a private key.
-    if (identity is LocalNostrIdentity) return true;
-    if (identity is KeycastNostrIdentity) return true;
-    // Amber and Bunker identities can always sign via their remote signer.
-    if (identity is AmberNostrIdentity) return true;
-    if (identity is BunkerNostrIdentity) return true;
-    return false;
+    return switch (_currentIdentity) {
+      null => false,
+      LocalNostrIdentity() => true,
+      KeycastNostrIdentity() => true,
+      AmberNostrIdentity() => true,
+      BunkerNostrIdentity() => true,
+    };
   }
 
   /// True when a divineOAuth user's session expired and refresh failed.
@@ -331,7 +334,7 @@ class AuthService implements BackgroundAwareService {
       category: LogCategory.auth,
     );
 
-    final session = await KeycastSession.load(_flutterSecureStorage);
+    var session = await KeycastSession.load(_flutterSecureStorage);
     SecureKeyContainer? localKey;
     try {
       if (await _keyStorage.hasKeys()) {
@@ -339,6 +342,91 @@ class AuthService implements BackgroundAwareService {
       }
     } catch (e, stack) {
       _reportStorageError(e, stack, 'divineOAuth local key load');
+    }
+
+    // Detect and resolve diverged state: the global OAuth session and
+    // local PRIMARY key belong to different accounts. This can happen
+    // from pre-fix cross-contamination (Bug 2 corruption) OR from a
+    // user adding a Keycast account originally registered on another
+    // device (their local PRIMARY has a different device-only key).
+    //
+    // Use _kLastUsedNpubKey as the tiebreaker to decide which side is
+    // authoritative. Whichever matches last-used wins. If neither
+    // matches, safe default: clear the session.
+    //
+    // In all branches, the local nsec in secure key storage is never
+    // deleted (Daniel rule: no silent key loss).
+    if (session != null && localKey != null) {
+      final sessionPubkey = session.userPubkey;
+      final diverged =
+          sessionPubkey == null || sessionPubkey != localKey.publicKeyHex;
+      if (diverged) {
+        final prefs = await SharedPreferences.getInstance();
+        final lastUsedNpub = prefs.getString(_kLastUsedNpubKey);
+        final localNpub = NostrKeyUtils.encodePubKey(localKey.publicKeyHex);
+        final sessionNpub = sessionPubkey != null
+            ? NostrKeyUtils.encodePubKey(sessionPubkey)
+            : null;
+
+        final sessionAuthoritative =
+            sessionNpub != null && sessionNpub == lastUsedNpub;
+        final localAuthoritative = localNpub == lastUsedNpub;
+
+        if (sessionAuthoritative && !localAuthoritative) {
+          // Session wins. The local PRIMARY key is stale (e.g., from
+          // an older device-only account). Preserve the session,
+          // force the slow path with null localKey, and archive the
+          // stale local key into its per-identity slot so the user
+          // can switch back to it via the welcome screen.
+          Log.warning(
+            'initialize: local key ${localKey.publicKeyHex} is stale — '
+            'last-used=$lastUsedNpub matches session '
+            'userPubkey=$sessionPubkey. Forcing slow path with '
+            'session; archiving stale local key to $localNpub.',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          try {
+            await _keyStorage.storeIdentityKeyContainer(
+              localNpub,
+              localKey,
+            );
+          } catch (e) {
+            Log.warning(
+              'initialize: failed to archive stale local key: $e',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+          }
+          localKey = null;
+        } else if (localAuthoritative && !sessionAuthoritative) {
+          // Local key wins. Clear the stale OAuth session.
+          Log.warning(
+            'initialize: global OAuth session pubkey='
+            '${sessionPubkey ?? "null (legacy)"} is stale — '
+            'last-used=$lastUsedNpub matches local key '
+            '${localKey.publicKeyHex}. Clearing stale session.',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          await _clearKeycastSessionAndTokens();
+          session = null;
+        } else {
+          // Ambiguous: neither (or both, impossible since diverged)
+          // matches last-used. Safe default — clear the session. The
+          // local key stays put and the fast path uses it.
+          Log.warning(
+            'initialize: divergence with ambiguous last-used npub — '
+            'session=${sessionPubkey ?? "null"}, '
+            'local=${localKey.publicKeyHex}, last-used=$lastUsedNpub. '
+            'Clearing global session (safe default).',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          await _clearKeycastSessionAndTokens();
+          session = null;
+        }
+      }
     }
 
     final targetPubkey = session?.userPubkey ?? localKey?.publicKeyHex;
@@ -1286,12 +1374,30 @@ class AuthService implements BackgroundAwareService {
         );
       }
 
-      // Archive OAuth session
+      // Archive OAuth session — only if it has a bound userPubkey
+      // matching this account. Null userPubkey means the session was
+      // created before pubkey binding (legacy) and cannot be verified
+      // as belonging to any specific account; archiving an unverifiable
+      // session risks cross-contamination (Bug 2). A fresh OAuth
+      // sign-in via signInWithDivineOAuth always binds userPubkey.
       final oauthSession = await KeycastSession.load(_flutterSecureStorage);
-      if (oauthSession != null) {
+      final oauthOwnerMatches =
+          oauthSession?.userPubkey != null &&
+          oauthSession?.userPubkey == pubkeyHex;
+      final archiveOauth = oauthSession != null && oauthOwnerMatches;
+      if (archiveOauth) {
         await _flutterSecureStorage.write(
-          key: 'keycast_session_$pubkeyHex',
+          key: _keycastSessionKey(pubkeyHex),
           value: jsonEncode(oauthSession.toJson()),
+        );
+      } else if (oauthSession != null) {
+        Log.warning(
+          '_archiveSignerInfo: skipping OAuth archive for $pubkeyHex — '
+          'global session pubkey='
+          '${oauthSession.userPubkey ?? "null (legacy)"} '
+          '(cannot verify ownership, not archiving to avoid corruption)',
+          name: 'AuthService',
+          category: LogCategory.auth,
         );
       }
 
@@ -1299,7 +1405,7 @@ class AuthService implements BackgroundAwareService {
         '_archiveSignerInfo: archived for $pubkeyHex — '
         'amber=${amberInfo != null}, '
         'bunker=${bunkerUrl != null && bunkerUrl.isNotEmpty}, '
-        'oauth=${oauthSession != null}',
+        'oauth=$archiveOauth',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -1367,7 +1473,7 @@ class AuthService implements BackgroundAwareService {
 
         case AuthenticationSource.divineOAuth:
           final sessionJson = await _flutterSecureStorage.read(
-            key: 'keycast_session_$pubkeyHex',
+            key: _keycastSessionKey(pubkeyHex),
           );
           Log.debug(
             '_restoreSignerInfo: OAuth session archive lookup — '
@@ -1378,23 +1484,47 @@ class AuthService implements BackgroundAwareService {
           if (sessionJson != null) {
             final sessionMap = jsonDecode(sessionJson) as Map<String, dynamic>;
             final session = KeycastSession.fromJson(sessionMap);
-            await session.save(_flutterSecureStorage);
-            // Also restore the refresh token and auth handle to their
-            // standalone keys — KeycastOAuth.refreshSession() reads these
-            // separately from the session JSON, and _oauthClient.logout()
-            // clears them. Without this, expired restored sessions can
-            // never be refreshed.
-            if (session.refreshToken != null) {
-              await _flutterSecureStorage.write(
-                key: 'keycast_refresh_token',
-                value: session.refreshToken,
+
+            // Validate archive ownership. If the archive's userPubkey
+            // is set and does NOT match the requested account, the
+            // archive is corrupt (e.g., from pre-fix cross-contamination).
+            // Delete it so Bug 1's recovery cascade can handle the
+            // fallback via SessionExpiredException → login options.
+            // Corrupt if userPubkey is null (legacy, unverifiable) or
+            // mismatches the requested account (cross-contamination).
+            final archivePubkey = session.userPubkey;
+            final corrupt = archivePubkey == null || archivePubkey != pubkeyHex;
+            if (corrupt) {
+              Log.warning(
+                '_restoreSignerInfo: corrupt OAuth archive for '
+                '$pubkeyHex — archive pubkey='
+                '${archivePubkey ?? "null (legacy)"}. '
+                'Deleting corrupt archive.',
+                name: 'AuthService',
+                category: LogCategory.auth,
               );
-            }
-            if (session.authorizationHandle != null) {
-              await _flutterSecureStorage.write(
-                key: 'keycast_auth_handle',
-                value: session.authorizationHandle,
+              await _flutterSecureStorage.delete(
+                key: _keycastSessionKey(pubkeyHex),
               );
+            } else {
+              await session.save(_flutterSecureStorage);
+              // Also restore the refresh token and auth handle to
+              // their standalone keys — KeycastOAuth.refreshSession()
+              // reads these separately from the session JSON, and
+              // _oauthClient.logout() clears them. Without this,
+              // expired restored sessions can never be refreshed.
+              if (session.refreshToken != null) {
+                await _flutterSecureStorage.write(
+                  key: _kKeycastRefreshTokenKey,
+                  value: session.refreshToken,
+                );
+              }
+              if (session.authorizationHandle != null) {
+                await _flutterSecureStorage.write(
+                  key: _kKeycastAuthHandleKey,
+                  value: session.authorizationHandle,
+                );
+              }
             }
           }
 
@@ -1446,7 +1576,7 @@ class AuthService implements BackgroundAwareService {
         key: '${_kAmberPackageKey}_$pubkeyHex',
       );
       await _flutterSecureStorage.delete(key: '${_kBunkerInfoKey}_$pubkeyHex');
-      await _flutterSecureStorage.delete(key: 'keycast_session_$pubkeyHex');
+      await _flutterSecureStorage.delete(key: _keycastSessionKey(pubkeyHex));
     } catch (e) {
       Log.warning(
         '_clearArchivedSignerInfo: failed for $pubkeyHex: $e',
@@ -1525,24 +1655,84 @@ class AuthService implements BackgroundAwareService {
           category: LogCategory.auth,
         );
         final session = await KeycastSession.load(_flutterSecureStorage);
-        if (session != null && session.hasRpcAccess) {
+        // Verify the loaded session belongs to the requested account.
+        // After sign-out, the global slot may still hold a different
+        // account's session if _restoreSignerInfo found no archive.
+        final sessionMatchesAccount =
+            session != null &&
+            session.hasRpcAccess &&
+            session.userPubkey == pubkeyHex;
+        if (sessionMatchesAccount) {
           await signInWithDivineOAuth(session);
-        } else if (session != null && session.isExpired) {
-          Log.warning(
-            'signInForAccount: OAuth session expired for $pubkeyHex',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
-          throw SessionExpiredException();
         } else {
-          Log.error(
-            'signInForAccount: no archived OAuth session for $pubkeyHex '
+          // Session is expired, missing, wrong account, or has no
+          // RPC access. Try to refresh, then fall back to local
+          // keys — same recovery strategy as _initializeDivineOAuth.
+          Log.info(
+            'signInForAccount: OAuth session not usable for $pubkeyHex '
             '(session=${session != null}, '
-            'hasRpcAccess=${session?.hasRpcAccess})',
+            'hasRpcAccess=${session?.hasRpcAccess}, '
+            'isExpired=${session?.isExpired}, '
+            'sessionPubkey=${session?.userPubkey}, '
+            'requestedPubkey=$pubkeyHex), attempting refresh...',
             name: 'AuthService',
             category: LogCategory.auth,
           );
-          throw Exception('No archived OAuth session found for $pubkeyHex');
+          // Only attempt refresh if the global slot belongs to the
+          // requested account — refreshing a different account's token
+          // would sign in as the wrong identity.
+          final canRefresh =
+              _oauthClient != null && session?.userPubkey == pubkeyHex;
+          if (canRefresh) {
+            final refreshed = await _tryRefreshOAuthSession(
+              caller: 'signInForAccount',
+            );
+            if (refreshed) break;
+          }
+
+          // Refresh failed — try local keys so the user can at least
+          // read their feed while RPC catches up in the background.
+          final npub = NostrKeyUtils.encodePubKey(pubkeyHex);
+          SecureKeyContainer? localKey;
+          try {
+            localKey = await _keyStorage.getIdentityKeyContainer(npub);
+            if (localKey == null && await _keyStorage.hasKeys()) {
+              final primary = await _keyStorage.getKeyContainer();
+              if (primary?.publicKeyHex == pubkeyHex) {
+                localKey = primary;
+              }
+            }
+          } catch (e) {
+            Log.warning(
+              'signInForAccount: local key lookup failed: $e',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+          }
+
+          if (localKey != null) {
+            Log.info(
+              'signInForAccount: using local keys for $pubkeyHex '
+              'with expired OAuth session flag',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+            _hasExpiredOAuthSession = true;
+            _setRpcCapability(AuthRpcCapability.upgrading);
+            await _setupUserSession(
+              localKey,
+              AuthenticationSource.divineOAuth,
+            );
+            unawaited(_upgradeDivineRpcInBackground(session));
+          } else {
+            Log.warning(
+              'signInForAccount: no refresh, no local keys for '
+              '$pubkeyHex — session expired',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+            throw SessionExpiredException();
+          }
         }
 
       case AuthenticationSource.importedKeys:
@@ -1647,6 +1837,16 @@ class AuthService implements BackgroundAwareService {
         category: LogCategory.auth,
       );
     }
+  }
+
+  /// Clears the global Keycast session, refresh token, and auth handle.
+  ///
+  /// Used when a stale or ambiguous OAuth session must be discarded
+  /// (e.g., during initialization tiebreaker branches).
+  Future<void> _clearKeycastSessionAndTokens() async {
+    await KeycastSession.clear(_flutterSecureStorage);
+    await _flutterSecureStorage?.delete(key: _kKeycastRefreshTokenKey);
+    await _flutterSecureStorage?.delete(key: _kKeycastAuthHandleKey);
   }
 
   /// Sets up the auth URL callback for bunker operations that require user
@@ -2500,9 +2700,32 @@ class AuthService implements BackgroundAwareService {
     try {
       _keycastSigner = KeycastRpc.fromSession(_oauthConfig, session);
 
-      final publicKeyHex = await _keycastSigner?.getPublicKey();
+      // Prefer the pubkey stored in the session over an RPC call.
+      // session.userPubkey is ground truth once populated — it is
+      // bound to the session at the first sign-in, so subsequent
+      // reads get a pubkey that cannot mismatch the token.
+      String? publicKeyHex = session.userPubkey;
+      if (publicKeyHex == null || publicKeyHex.isEmpty) {
+        publicKeyHex = await _keycastSigner?.getPublicKey();
+      }
       if (publicKeyHex == null) {
         throw Exception('Could not retrieve public key from server');
+      }
+
+      // If the session was created before userPubkey was populated
+      // (legacy or fresh from fromTokenResponse), bind the pubkey now
+      // and re-save. This is the fix for Bug 2: every saved session
+      // must carry its owning pubkey so subsequent archive/restore
+      // operations can validate ownership.
+      if (session.userPubkey == null || session.userPubkey!.isEmpty) {
+        final boundSession = session.copyWith(userPubkey: publicKeyHex);
+        await boundSession.save(_flutterSecureStorage);
+        Log.debug(
+          'signInWithDivineOAuth: bound userPubkey=$publicKeyHex to '
+          'session and re-saved',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
       }
 
       _currentProfile = UserProfile(
@@ -2511,8 +2734,11 @@ class AuthService implements BackgroundAwareService {
         displayName: 'Divine User',
       );
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('current_user_pubkey_hex', publicKeyHex);
+      // Do not pre-write current_user_pubkey_hex here: _setupUserSession
+      // calls shouldClearDataForUser which compares the stored pubkey
+      // against the incoming one. Writing the new value first would
+      // mask identity changes. _setupUserSession writes it after the
+      // check.
       await _clearDismissedDivineLoginBannerForCurrentUser(publicKeyHex);
 
       Log.info(

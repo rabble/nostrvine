@@ -210,38 +210,32 @@ class ProfileRepository {
     });
   }
 
-  /// Extracts social/stats/engagement fields from a REST API response
-  /// and caches them in [ProfileStatsDao].
-  ///
-  /// The `/api/users/{pubkey}` response includes `social`, `stats`, and
-  /// `engagement` objects. This method maps them into [ProfileStatsDao]
-  /// fields: follower/following counts, video count, total reactions
-  /// (likes), and total loops (views).
-  Future<void> _cacheProfileStats(
+  /// Caches profile stats (social counts, video stats, engagement data) from a
+  /// [UserProfileResult] into the local [ProfileStatsDao].
+  Future<void> _cacheProfileStatsFromResult(
     String pubkey,
-    Map<String, dynamic> data,
+    UserProfileResult result,
   ) async {
     final dao = _profileStatsDao;
     if (dao == null) return;
 
-    final social = data['social'] as Map<String, dynamic>?;
-    final stats = data['stats'] as Map<String, dynamic>?;
-    final engagement = data['engagement'] as Map<String, dynamic>?;
+    // Both variants expose social/stats/engagement on the sealed base class,
+    // so no switch is needed here.
+    final social = result.social;
+    final stats = result.stats;
+    final engagement = result.engagement;
 
-    // Only cache if at least one section is present.
     if (social == null && stats == null && engagement == null) return;
 
-    final likes = (engagement?['total_reactions'] as num?)?.toInt();
-    final loops = (engagement?['total_loops'] as num?)?.round();
     await dao.upsertStats(
       pubkey: pubkey,
-      followerCount: (social?['follower_count'] as num?)?.toInt(),
-      followingCount: (social?['following_count'] as num?)?.toInt(),
-      videoCount: (stats?['video_count'] as num?)?.toInt(),
-      totalLikes: likes,
+      followerCount: social?.followerCount,
+      followingCount: social?.followingCount,
+      videoCount: stats?.videoCount,
+      totalLikes: engagement?.totalReactions,
       // total_loops can be fractional due to a backend aggregation issue;
       // round to the nearest integer.
-      totalViews: loops,
+      totalViews: engagement?.totalLoops.round(),
     );
   }
 
@@ -250,8 +244,8 @@ class ProfileRepository {
   /// Strategy:
   /// 1. Funnelcake REST API (fast, broad coverage)
   /// 2. Connected relays and indexer relays —
-  ///    both fired **in parallel**, first result wins
-  ///    to minimise latency
+  ///    both fired **in parallel**, first valid result returns immediately
+  ///    and slower sources may upgrade the cache if they are newer
   ///
   /// Skips all fetches if the pubkey is confirmed missing.
   /// Deduplicates concurrent calls for the same pubkey —
@@ -280,21 +274,23 @@ class ProfileRepository {
     // Step 1: Try Funnelcake REST API (fast, broad coverage).
     if (_funnelcakeApiClient?.isAvailable ?? false) {
       try {
-        final data = await _funnelcakeApiClient!.getUserProfile(pubkey);
-        if (data != null && data['_noProfile'] != true) {
-          final profile = UserProfile.fromFunnelcake(pubkey, data);
-          _knownCached.add(pubkey);
-          await _userProfilesDao.upsertProfile(profile);
-          await _cacheProfileStats(pubkey, data);
-          return profile;
-        }
-        // _noProfile sentinel — user exists but has no Kind 0.
-        // Still cache stats (social/engagement) since the API returns
-        // them even for users without a profile event.
-        if (data != null && data['_noProfile'] == true) {
-          await _cacheProfileStats(pubkey, data);
-          _confirmedMissing.add(pubkey);
-          return null;
+        final result = await _funnelcakeApiClient!.getUserProfile(pubkey);
+        switch (result) {
+          case UserProfileFound():
+            final profile = UserProfile.fromUserProfileFound(result);
+            _knownCached.add(pubkey);
+            await _userProfilesDao.upsertProfile(profile);
+            await _cacheProfileStatsFromResult(pubkey, result);
+            return profile;
+          case UserProfileNotPublished():
+            // User exists but has no Kind 0. Cache stats and skip relay
+            // fallback — the profile genuinely does not exist yet.
+            await _cacheProfileStatsFromResult(pubkey, result);
+            _confirmedMissing.add(pubkey);
+            return null;
+          case null:
+            // 404 — user not found at all; fall through to relay.
+            break;
         }
       } on Exception catch (e) {
         developer.log(
@@ -305,11 +301,11 @@ class ProfileRepository {
     }
 
     // Step 2: Fire connected relays and indexer relays concurrently.
-    // The first source to return a profile wins.
+    // Return the first valid profile immediately, then let slower
+    // sources upgrade the cache if they have a newer kind 0 event.
     final profile = await _fetchFromRelaysParallel(pubkey);
     if (profile != null) {
-      _knownCached.add(pubkey);
-      await _userProfilesDao.upsertProfile(profile);
+      await _cacheProfileIfNewer(profile);
       return profile;
     }
 
@@ -322,42 +318,55 @@ class ProfileRepository {
     return null;
   }
 
+  Future<void> _cacheProfileIfNewer(UserProfile profile) async {
+    final cachedProfile = await _userProfilesDao.getProfile(profile.pubkey);
+    if (cachedProfile != null &&
+        !profile.createdAt.isAfter(cachedProfile.createdAt)) {
+      return;
+    }
+
+    _confirmedMissing.remove(profile.pubkey);
+    _knownCached.add(profile.pubkey);
+    await _userProfilesDao.upsertProfile(profile);
+  }
+
   /// Queries connected relays and indexer relays in parallel for a
-  /// kind 0 profile event. Returns as soon as the first source
-  /// finds a profile (first-result-wins) to minimise latency.
-  /// Falls back to null only when every source completes without
-  /// a result.
+  /// kind 0 profile event. Returns the first valid profile immediately,
+  /// then upgrades the cache if a slower source yields a newer event.
+  /// Falls back to null only when every source completes without a result.
   Future<UserProfile?> _fetchFromRelaysParallel(String pubkey) async {
     final completer = Completer<UserProfile?>();
-    final futures = <Future<UserProfile?>>[
-      _fetchFromConnectedRelays(pubkey),
-      _fetchFromIndexerRelays(pubkey),
-    ];
+    UserProfile? newestProfile;
+    var remaining = 2;
 
-    var remaining = futures.length;
-
-    void onDone() {
-      remaining--;
-      if (remaining == 0 && !completer.isCompleted) {
-        completer.complete(null);
+    Future<void> handleSource(Future<UserProfile?> source) async {
+      try {
+        final profile = await source;
+        if (profile != null) {
+          final isNewer =
+              newestProfile == null ||
+              profile.createdAt.isAfter(newestProfile!.createdAt);
+          if (isNewer) {
+            newestProfile = profile;
+            if (!completer.isCompleted) {
+              completer.complete(profile);
+            } else {
+              await _cacheProfileIfNewer(profile);
+            }
+          }
+        }
+      } on Object {
+        // Individual source failures should not abort the overall fetch.
+      } finally {
+        remaining--;
+        if (remaining == 0 && !completer.isCompleted) {
+          completer.complete(newestProfile);
+        }
       }
     }
 
-    for (final future in futures) {
-      unawaited(
-        future
-            .then((result) {
-              if (result != null && !completer.isCompleted) {
-                completer.complete(result);
-              } else {
-                onDone();
-              }
-            })
-            .catchError((_) {
-              onDone();
-            }),
-      );
-    }
+    unawaited(handleSource(_fetchFromConnectedRelays(pubkey)));
+    unawaited(handleSource(_fetchFromIndexerRelays(pubkey)));
 
     return completer.future;
   }
@@ -873,11 +882,11 @@ class ProfileRepository {
 
   /// Fetches a user profile from the Funnelcake REST API.
   ///
-  /// Returns profile data as a map, or null if not found.
-  /// Returns null if Funnelcake API is not available.
+  /// Returns a [UserProfileResult] if the user is known to Funnelcake, or
+  /// `null` if the user was not found or the API is unavailable.
   ///
   /// Throws [FunnelcakeException] subtypes on API errors.
-  Future<Map<String, dynamic>?> getUserProfileFromApi({
+  Future<UserProfileResult?> getUserProfileFromApi({
     required String pubkey,
   }) async {
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
@@ -958,25 +967,22 @@ class ProfileRepository {
         );
         for (final entry in bulkResponse.profiles.entries) {
           final pubkey = entry.key;
-          final data = entry.value;
+          final result = entry.value;
 
-          // Sentinel: user exists in FunnelCake but has never
-          // published a Kind 0 profile. Remove from remaining so
-          // we skip the relay/indexer fallback — the profile truly
-          // doesn't exist.
-          if (data['_noProfile'] == true) {
-            remaining.remove(pubkey);
-            continue;
+          switch (result) {
+            case UserProfileNotPublished():
+              // User exists in Funnelcake but has no Kind 0. Skip relay
+              // fallback — the profile genuinely does not exist yet.
+              remaining.remove(pubkey);
+            case UserProfileFound():
+              final profile = UserProfile.fromUserProfileFound(
+                result,
+                eventIdPrefix: 'rest-bulk',
+              );
+              results[pubkey] = profile;
+              toCache.add(profile);
+              remaining.remove(pubkey);
           }
-
-          final profile = UserProfile.fromFunnelcake(
-            pubkey,
-            data,
-            eventIdPrefix: 'rest-bulk',
-          );
-          results[pubkey] = profile;
-          toCache.add(profile);
-          remaining.remove(pubkey);
         }
       } on Exception catch (e) {
         developer.log(

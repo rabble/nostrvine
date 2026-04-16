@@ -27,6 +27,7 @@ void main() {
         // ── Setup ──
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
+        final semanticsHandle = tester.ensureSemantics();
 
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -166,6 +167,7 @@ void main() {
         expect(signedEvent?.pubkey, equals(pubkeyA));
 
         // ── Cleanup ──
+        semanticsHandle.dispose();
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);

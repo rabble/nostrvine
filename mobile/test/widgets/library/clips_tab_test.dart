@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/library/clips_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
@@ -20,6 +21,8 @@ class _MockClipsLibraryBloc
     implements ClipsLibraryBloc {}
 
 void main() {
+  final en = AppLocalizationsEn();
+
   group(ClipsTab, () {
     late _MockClipsLibraryBloc mockBloc;
 
@@ -78,6 +81,17 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
+      testWidgets('friendly error and retry when error state', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          const ClipsLibraryState(status: ClipsLibraryStatus.error),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        expect(find.text(en.libraryCouldNotLoadClips), findsOneWidget);
+        expect(find.text(en.searchTryAgain), findsOneWidget);
+      });
+
       testWidgets('$EmptyLibraryState when no clips', (tester) async {
         when(() => mockBloc.state).thenReturn(
           const ClipsLibraryState(
@@ -88,7 +102,7 @@ void main() {
         await tester.pumpWidget(buildWidget());
 
         expect(find.byType(EmptyLibraryState), findsOneWidget);
-        expect(find.text('No Clips Yet'), findsOneWidget);
+        expect(find.text(en.libraryNoClipsYetTitle), findsOneWidget);
       });
 
       testWidgets(
@@ -179,7 +193,10 @@ void main() {
       await tester.pumpWidget(buildWidget());
 
       // Format is "30.00s remaining" (2 decimal places)
-      expect(find.text('30.00s remaining'), findsOneWidget);
+      expect(
+        find.text(en.librarySecondsRemaining('30.00')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('calls onCreate when Add button is tapped', (tester) async {
@@ -194,7 +211,7 @@ void main() {
       await tester.pumpWidget(buildWidget(onCreate: () => created = true));
 
       // Find and tap the Add button (text button, not icon)
-      final addButton = find.text('Add');
+      final addButton = find.text(en.libraryAddClips);
       expect(addButton, findsOneWidget);
       await tester.tap(addButton);
       expect(created, isTrue);

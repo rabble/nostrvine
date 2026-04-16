@@ -28,6 +28,11 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         binding = flutterPluginBinding
 
+        // Hot restart re-calls onAttachedToEngine without a preceding
+        // onDetachedFromEngine. Dispose any leftover players so zombie
+        // timers and event channels are cleaned up.
+        PlayerRegistry.disposeAll()
+
         globalChannel = MethodChannel(
             flutterPluginBinding.binaryMessenger,
             "divine_video_player",
@@ -78,6 +83,12 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
         when (call.method) {
             "create" -> {
                 val id = call.argument<Int>("id")!!
+                // Dispose any existing player with the same ID BEFORE
+                // creating the new one. The new instance registers
+                // MethodChannel/EventChannel handlers under the same
+                // channel name, so the old instance must release them
+                // first to avoid nullifying the new handlers.
+                PlayerRegistry.remove(id)?.dispose()
                 val instance = DivineVideoPlayerInstance(
                     binding.binaryMessenger,
                     binding.applicationContext,
@@ -107,6 +118,10 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
                 val maxSizeBytes = (call.argument<Number>("maxSizeBytes"))?.toLong()
                     ?: (500L * 1024 * 1024)
                 VideoCache.configure(binding.applicationContext, maxSizeBytes)
+                result.success(null)
+            }
+            "disposeAll" -> {
+                PlayerRegistry.disposeAll()
                 result.success(null)
             }
             else -> result.notImplemented()

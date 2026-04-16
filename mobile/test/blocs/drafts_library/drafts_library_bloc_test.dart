@@ -220,11 +220,7 @@ void main() {
         errors: () => [isA<Exception>()],
         expect: () => [
           const DraftsLibraryLoading(),
-          isA<DraftsLibraryError>().having(
-            (s) => s.message,
-            'message',
-            contains('Load failed'),
-          ),
+          const DraftsLibraryError(),
         ],
       );
     });

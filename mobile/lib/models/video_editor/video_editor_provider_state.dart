@@ -2,8 +2,7 @@
 // ABOUTME: Tracks editing state with export stages and computed properties for UI state
 
 import 'package:flutter/widgets.dart';
-import 'package:models/models.dart' show InspiredByInfo;
-import 'package:openvine/models/audio_event.dart';
+import 'package:models/models.dart' show AudioEvent, InspiredByInfo;
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';

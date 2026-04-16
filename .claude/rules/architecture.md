@@ -161,6 +161,15 @@ my_app/
 
 Each layer abstracts the underlying layers' implementation details. Avoid indirect dependencies between layers. The implementation details should not leak between the layers.
 
+### When to Extract into a Package
+
+Extract code into a dedicated package when:
+- A repository or client is reused across multiple features
+- A service has grown large enough to slow down CI (each package gets its own targeted CI workflow)
+- The code has no dependency on the app's `lib/` layer
+
+Extracting into packages improves CI speed because only the affected package's workflow runs on changes, rather than the full mobile test suite.
+
 ## Dependency Graph
 
 Data should only flow from the bottom up, and a layer can only access the layer directly beneath it.

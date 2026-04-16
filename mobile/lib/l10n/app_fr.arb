@@ -1725,14 +1725,6 @@
     "feedFailedToLoadVideos": "Échec du chargement des vidéos",
     "feedRetry": "Réessayer",
     "feedNoFollowedUsers": "Personne suivie.\nSuis quelqu'un pour voir ses vidéos ici.",
-    "feedNoVideosForMode": "Aucune vidéo trouvée pour le fil {mode}.",
-    "@feedNoVideosForMode": {
-        "placeholders": {
-            "mode": {
-                "type": "String"
-            }
-        }
-    },
     "feedExploreVideos": "Explorer les vidéos",
     "feedExternalVideoSlow": "Vidéo externe lente à charger",
     "feedSkip": "Passer",
@@ -1968,6 +1960,7 @@
     "saveOriginalPhotosAccessMessage": "Pour enregistrer les vidéos, autorise l'accès aux Photos dans les Réglages.",
     "saveOriginalOpenSettings": "Ouvrir les Réglages",
     "saveOriginalNotNow": "Pas maintenant",
+    "cameraPermissionNotNow": "Pas maintenant",
     "saveOriginalDownloadFailed": "Téléchargement échoué",
     "saveOriginalDismiss": "Ignorer",
     "saveOriginalDownloadingVideo": "Téléchargement de la vidéo",
@@ -2229,7 +2222,97 @@
             }
         }
     },
+    "libraryAddClips": "Ajouter",
+    "libraryClipSelectionTitle": "Clips",
+    "libraryClipsDeletedCount": "{count, plural, =1{1 clip supprimé} other{{count} clips supprimés}}",
+    "@libraryClipsDeletedCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavePartialResult": "{successCount} enregistrés, {failureCount} échecs",
+    "@libraryClipsSavePartialResult": {
+        "placeholders": {
+            "successCount": {
+                "type": "int"
+            },
+            "failureCount": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryClipsSavedToDestination": "{count, plural, =1{1 clip} other{{count} clips}} enregistré(s) dans {destination}",
+    "@libraryClipsSavedToDestination": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryCouldNotLoadClips": "Impossible de charger les clips",
+    "libraryCouldNotLoadDrafts": "Impossible de charger les brouillons",
+    "libraryCreateVideo": "Créer une vidéo",
+    "libraryDeleteClipMessage": "Supprimer ce clip ?",
+    "libraryDeleteClipTitle": "Supprimer le clip",
+    "libraryDeleteClipsMessage": "Supprimer {count, plural, one{# clip sélectionné} other{# clips sélectionnés}} ?",
+    "@libraryDeleteClipsMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "libraryDeleteClipsTitle": "Supprimer les clips",
+    "libraryDeleteClipsWarning": "Action irréversible. Les fichiers vidéo seront définitivement supprimés de ton appareil.",
     "libraryDeleteConfirm": "Supprimer",
+    "libraryDeleteDraftMessage": "Supprimer « {title} » ?",
+    "@libraryDeleteDraftMessage": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryDeleteDraftTitle": "Supprimer le brouillon",
+    "libraryDeleteSelectedClipsTooltip": "Supprimer les clips sélectionnés",
+    "libraryDraftActionDelete": "Supprimer le brouillon",
+    "libraryDraftActionEdit": "Modifier",
+    "libraryDraftActionPost": "Publier",
+    "libraryDraftDeleteFailedSnackbar": "Échec de la suppression du brouillon",
+    "libraryDraftDeletedSnackbar": "Brouillon supprimé",
+    "libraryGalleryPermissionDenied": "Permission refusée pour {destination}",
+    "@libraryGalleryPermissionDenied": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryNoClipsYetSubtitle": "Tes clips enregistrés apparaîtront ici",
+    "libraryNoClipsYetTitle": "Pas encore de clips",
+    "libraryNoDraftsYetSubtitle": "Les vidéos enregistrées en brouillon apparaîtront ici",
+    "libraryNoDraftsYetTitle": "Pas encore de brouillons",
+    "libraryOpenErrorDescription": "Un problème est survenu en ouvrant ta bibliothèque. Réessaie.",
+    "libraryPreparingVideo": "Préparation de la vidéo...",
+    "libraryRecordVideo": "Enregistrer une vidéo",
+    "librarySaveToCameraRollTooltip": "Enregistrer dans Pellicule",
+    "librarySecondsRemaining": "Il reste {seconds}s",
+    "@librarySecondsRemaining": {
+        "placeholders": {
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "libraryTabClips": "Clips",
+    "libraryTabDrafts": "Brouillons",
+    "libraryWebUnavailableDescription": "Les brouillons et clips sont enregistrés sur ton appareil : ouvre Divine sur ton téléphone pour les gérer.",
+    "libraryWebUnavailableHeadline": "La bibliothèque est dans l’appli mobile",
     "notificationFollowBack": "Suivre en retour",
     "profileSetupUploadSuccess": "Photo de profil importée avec succès !",
     "proofmodeCheckAiGenerated": "Vérifier si généré par IA",
@@ -2430,5 +2513,15 @@
     "timeYesterday": "Hier",
     "@timeYesterday": {
         "description": "Date label for yesterday"
-    }
+    },
+    "cameraPermissionWebUnsupportedTitle": "La caméra n'est pas encore prise en charge sur le web",
+    "cameraPermissionWebUnsupportedDescription": "La capture et l'enregistrement vidéo avec la caméra ne sont pas encore disponibles dans la version web.",
+    "cameraPermissionBackToFeed": "Retour au fil",
+    "cameraPermissionErrorTitle": "Erreur d'autorisation",
+    "cameraPermissionErrorDescription": "Une erreur s'est produite lors de la vérification des autorisations.",
+    "cameraPermissionRetry": "Réessayer",
+    "cameraPermissionAllowAccessTitle": "Autoriser l'accès à la caméra et au micro",
+    "cameraPermissionAllowAccessDescription": "Cela vous permet de capturer et de modifier des vidéos directement dans l'application, rien de plus.",
+    "cameraPermissionContinue": "Continuer",
+    "cameraPermissionGoToSettings": "Aller aux paramètres"
 }

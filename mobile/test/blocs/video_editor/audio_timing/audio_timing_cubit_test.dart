@@ -7,8 +7,8 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/video_editor/audio_timing/audio_timing_cubit.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:sound_service/sound_service.dart';
 
 class _MockAudioClipPlayer extends Mock implements AudioClipPlayer {}

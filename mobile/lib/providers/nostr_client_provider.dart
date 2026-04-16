@@ -1,15 +1,37 @@
 import 'dart:async';
 
+import 'package:db_client/db_client.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
+import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'nostr_client_provider.g.dart';
+
+/// Signature for constructing a [NostrClient]. The default implementation
+/// delegates to [NostrServiceFactory.create]. Tests override
+/// [nostrClientFactoryProvider] to inject fake clients and observe the
+/// arguments NostrService passes.
+typedef NostrClientFactory =
+    NostrClient Function({
+      NostrSigner? signer,
+      RelayStatisticsService? statisticsService,
+      EnvironmentConfig? environmentConfig,
+      AppDbClient? dbClient,
+    });
+
+/// Indirection layer over [NostrServiceFactory.create] so tests can
+/// substitute a fake factory without touching the real relay/network
+/// code path. Production builds use this provider transparently.
+@Riverpod(keepAlive: true)
+NostrClientFactory nostrClientFactory(Ref ref) => NostrServiceFactory.create;
 
 /// Core Nostr service via NostrClient for relay communication
 /// Uses a Notifier to react to auth state changes and recreate the client
@@ -25,8 +47,9 @@ class NostrService extends _$NostrService {
     final statisticsService = ref.watch(relayStatisticsServiceProvider);
     final environmentConfig = ref.watch(currentEnvironmentProvider);
     final dbClient = ref.watch(appDbClientProvider);
+    final factory = ref.watch(nostrClientFactoryProvider);
 
-    _lastPubkey = authService.currentPublicKeyHex;
+    _lastPubkey = authService.currentIdentity?.pubkey;
 
     _authSubscription?.cancel();
     _authSubscription = authService.authStateStream.listen(_onAuthStateChanged);
@@ -42,7 +65,7 @@ class NostrService extends _$NostrService {
     // currentIdentity is nullable — before auth completes, the factory falls
     // back to a no-op LocalKeySigner. _onAuthStateChanged recreates the client
     // once the user authenticates.
-    final client = NostrServiceFactory.create(
+    final client = factory(
       signer: authService.currentIdentity,
       statisticsService: statisticsService,
       environmentConfig: environmentConfig,
@@ -109,11 +132,24 @@ class NostrService extends _$NostrService {
 
   Future<void> _onAuthStateChanged(AuthState newState) async {
     final authService = ref.read(authServiceProvider);
-    final currentPubkey = authService.currentPublicKeyHex;
+    // Read the atomic NostrIdentity as the sole source of truth for both
+    // the recreation trigger and the signer we pass into the new client.
+    // The currentPublicKeyHex / currentNpub getters on AuthService use a
+    // fallback chain (identity → keyContainer → profile) intended for UI
+    // consumers that just need a display pubkey during the auth-screen
+    // lifecycle. Reading from those getters here can report a non-null
+    // pubkey during a window where _currentIdentity is still null, which
+    // would install a LocalKeySigner(null) placeholder whose
+    // getPublicKey() returns '' and whose hasKeys is therefore permanently
+    // false — trapping every downstream consumer. PR #2833 established
+    // NostrIdentity as the atomic pubkey+signer contract; honour it here
+    // so the signer and the trigger cannot disagree.
+    final newIdentity = authService.currentIdentity;
+    final newPubkey = newIdentity?.pubkey;
 
-    if (currentPubkey != _lastPubkey) {
+    if (newPubkey != _lastPubkey) {
       Log.info(
-        '[NostrService] Public key changed from $_lastPubkey to $currentPubkey, '
+        '[NostrService] Public key changed from $_lastPubkey to $newPubkey, '
         'recreating NostrClient',
         name: 'NostrService',
         category: LogCategory.system,
@@ -127,6 +163,7 @@ class NostrService extends _$NostrService {
       final statisticsService = ref.read(relayStatisticsServiceProvider);
       final environmentConfig = ref.read(currentEnvironmentProvider);
       final dbClient = ref.read(appDbClientProvider);
+      final factory = ref.read(nostrClientFactoryProvider);
 
       // Get user relay URLs from discovered relays (NIP-65)
       // Include all relays - NostrClient needs both read and write capable relays
@@ -135,8 +172,8 @@ class NostrService extends _$NostrService {
           .map((relay) => relay.url)
           .toList();
 
-      final newClient = NostrServiceFactory.create(
-        signer: authService.currentIdentity,
+      final newClient = factory(
+        signer: newIdentity,
         statisticsService: statisticsService,
         environmentConfig: environmentConfig,
         dbClient: dbClient,
@@ -165,7 +202,7 @@ class NostrService extends _$NostrService {
         });
       });
 
-      _lastPubkey = currentPubkey;
+      _lastPubkey = newPubkey;
 
       // Add user relays first (must complete before initialize)
       if (userRelayUrls.isNotEmpty) {

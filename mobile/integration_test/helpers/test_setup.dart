@@ -7,13 +7,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Whether an error message is a non-critical external relay error.
-bool _isExternalRelayError(String message) {
+/// Whether an error message is a non-critical async error.
+///
+/// These errors come from subsystems that don't affect E2E test flow:
+/// - External relay WebSocket/certificate failures (expected in local env)
+/// - setState-after-dispose from text field teardown during navigation
+/// - Firebase Messaging permission races during multi-account flows
+bool _isNonCriticalAsyncError(String message) {
   return message.contains('setState() called after dispose()') ||
       message.contains('CERTIFICATE_VERIFY_FAILED') ||
       message.contains('WebSocketException') ||
       message.contains('WebSocketChannelException') ||
-      message.contains('Relay rejected event');
+      message.contains('Relay rejected event') ||
+      message.contains('A request for permissions is already running');
 }
 
 /// Suppress non-critical errors that don't affect E2E test flow.
@@ -28,7 +34,7 @@ FlutterExceptionHandler? suppressSetStateErrors() {
   final originalOnError = FlutterError.onError;
   FlutterError.onError = (details) {
     final message = details.exceptionAsString();
-    if (_isExternalRelayError(message)) {
+    if (_isNonCriticalAsyncError(message)) {
       return;
     }
     originalOnError?.call(details);
@@ -58,7 +64,7 @@ void launchAppGuarded(void Function() appMain) {
   runZonedGuarded(
     appMain,
     (error, stack) {
-      if (_isExternalRelayError(error.toString())) {
+      if (_isNonCriticalAsyncError(error.toString())) {
         return; // swallow relay errors
       }
       // Re-throw non-relay errors into the parent zone so tests still fail

@@ -62,9 +62,9 @@ void main() {
         expect(config.apiBaseUrl, 'https://relay.test.dvines.org');
       });
 
-      test('local returns local API URL', () {
+      test('local returns local API URL (unified funnelcake-proxy port)', () {
         const config = EnvironmentConfig(environment: AppEnvironment.local);
-        expect(config.apiBaseUrl, 'http://10.0.2.2:43001');
+        expect(config.apiBaseUrl, 'http://10.0.2.2:47777');
       });
 
       test('production uses api.divine.video for Funnelcake REST', () {

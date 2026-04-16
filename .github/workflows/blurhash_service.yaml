@@ -1,0 +1,26 @@
+# ABOUTME: CI workflow for the blurhash_service package.
+# ABOUTME: Runs tests, formatting, and analysis only when blurhash_service files change.
+
+name: Blurhash Service CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/blurhash_service/**"
+      - ".github/workflows/blurhash_service.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/blurhash_service/**"
+      - ".github/workflows/blurhash_service.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/blurhash_service"
