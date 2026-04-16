@@ -345,7 +345,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Auto'), findsOneWidget);
+        expect(find.text('Auto'), findsNothing);
         expect(find.bySemanticsLabel('Disable auto advance'), findsOneWidget);
       });
     });

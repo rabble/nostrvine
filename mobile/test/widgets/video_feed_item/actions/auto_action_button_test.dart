@@ -1,10 +1,10 @@
 // ABOUTME: Tests for the AutoActionButton widget.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/actions/auto_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
 void main() {
   Widget buildSubject({
@@ -26,13 +26,21 @@ void main() {
   }
 
   group(AutoActionButton, () {
-    testWidgets('renders a VideoActionButton with Auto caption', (
+    testWidgets('renders a double-caret icon without a visible label', (
       tester,
     ) async {
       await tester.pumpWidget(buildSubject(isEnabled: false));
 
-      expect(find.byType(VideoActionButton), findsOneWidget);
-      expect(find.text('Auto'), findsOneWidget);
+      final icons = tester
+          .widgetList<DivineIcon>(find.byType(DivineIcon))
+          .toList();
+
+      expect(icons, hasLength(2));
+      expect(
+        icons.every((icon) => icon.icon == DivineIconName.caretRight),
+        isTrue,
+      );
+      expect(find.text('Auto'), findsNothing);
     });
 
     testWidgets('uses enable semantics when disabled', (tester) async {
@@ -57,6 +65,22 @@ void main() {
       expect(
         find.bySemanticsLabel('Activar avance automático'),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('tints the double-caret icon green when enabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(isEnabled: true));
+
+      final icons = tester
+          .widgetList<DivineIcon>(find.byType(DivineIcon))
+          .toList();
+
+      expect(icons, hasLength(2));
+      expect(
+        icons.every((icon) => icon.color == VineTheme.vineGreen),
+        isTrue,
       );
     });
   });
