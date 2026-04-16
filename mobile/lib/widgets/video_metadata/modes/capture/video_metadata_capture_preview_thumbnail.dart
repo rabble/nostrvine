@@ -65,12 +65,27 @@ class _VideoMetadataCapturePreviewThumbnailState
                         bodySize.width > 0 &&
                         bodySize.height > 0;
                     final sourceSize = hasValidBodySize ? bodySize : targetSize;
-                    final scaleX = targetSize.width / sourceSize.width;
-                    final scaleY = targetSize.height / sourceSize.height;
                     final sourceCenter = Offset(
                       sourceSize.width / 2,
                       sourceSize.height / 2,
                     );
+                    final fittedSizes = applyBoxFit(
+                      BoxFit.cover,
+                      sourceSize,
+                      targetSize,
+                    );
+                    final sourceRect = Alignment.center.inscribe(
+                      fittedSizes.source,
+                      Offset.zero & sourceSize,
+                    );
+                    final destinationRect = Alignment.center.inscribe(
+                      fittedSizes.destination,
+                      Offset.zero & targetSize,
+                    );
+                    final coverScaleX =
+                        destinationRect.width / sourceRect.width;
+                    final coverScaleY =
+                        destinationRect.height / sourceRect.height;
 
                     return Stack(
                       alignment: .center,
@@ -87,22 +102,34 @@ class _VideoMetadataCapturePreviewThumbnailState
                         for (final item in editingParameters.capturedLayers)
                           if (item.layer.startTime == null ||
                               item.layer.startTime! < _firstFrameSpan)
-                            Positioned(
-                              left:
-                                  (item.layer.offset.dx + sourceCenter.dx) *
-                                  scaleX,
-                              top:
-                                  (item.layer.offset.dy + sourceCenter.dy) *
-                                  scaleY,
-                              child: FractionalTranslation(
-                                translation: const Offset(-0.5, -0.5),
-                                child: Image.memory(
-                                  item.bytes,
-                                  width: item.logicalSize.width * scaleX,
-                                  height: item.logicalSize.height * scaleY,
+                            () {
+                              final sourcePosition = Offset(
+                                item.layer.offset.dx + sourceCenter.dx,
+                                item.layer.offset.dy + sourceCenter.dy,
+                              );
+                              final destinationPosition = Offset(
+                                destinationRect.left +
+                                    (sourcePosition.dx - sourceRect.left) *
+                                        coverScaleX,
+                                destinationRect.top +
+                                    (sourcePosition.dy - sourceRect.top) *
+                                        coverScaleY,
+                              );
+
+                              return Positioned(
+                                left: destinationPosition.dx,
+                                top: destinationPosition.dy,
+                                child: FractionalTranslation(
+                                  translation: const Offset(-0.5, -0.5),
+                                  child: Image.memory(
+                                    item.bytes,
+                                    width: item.logicalSize.width * coverScaleX,
+                                    height:
+                                        item.logicalSize.height * coverScaleY,
+                                  ),
                                 ),
-                              ),
-                            ),
+                              );
+                            }(),
                       ],
                     );
                   },
