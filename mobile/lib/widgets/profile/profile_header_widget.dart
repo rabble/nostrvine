@@ -41,6 +41,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
     this.onMore,
     this.displayNameHint,
     this.avatarUrlHint,
+    this.statsRowKey,
     super.key,
   });
 
@@ -59,6 +60,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
   /// Optional cached stats owned by the parent widget.
   final ProfileStats? profileStats;
+
+  /// Key to attach to the stats row for scroll-position tracking.
+  final GlobalKey? statsRowKey;
 
   /// Callback when edit profile is tapped (own profile only).
   final VoidCallback? onEditProfile;
@@ -231,6 +235,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
                 // Stats row: Followers | Following | Likes | Loops
                 Padding(
+                  key: statsRowKey,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: _ProfileStatsRow(
                     userIdHex: userIdHex,

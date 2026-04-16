@@ -118,7 +118,7 @@ class _ActionButtonsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
       child: Row(spacing: 6, children: children),
     );
   }

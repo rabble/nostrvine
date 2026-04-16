@@ -125,6 +125,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   /// Track the userIdHex the BLoCs were created for.
   String? _blocsUserIdHex;
 
+  /// Drives the status bar overlay opacity (0.0 = transparent, 1.0 = opaque).
+  final _statusBarOpacity = ValueNotifier<double>(0);
+
+  /// Key attached to the stats row to track its screen position.
+  final GlobalKey _statsRowKey = GlobalKey();
+
   /// Track which tabs have been synced (lazy loading).
   bool _likedTabSynced = false;
   bool _repostsTabSynced = false;
@@ -137,6 +143,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(_onTabChanged);
     widget.refreshNotifier?.addListener(_onRefreshRequested);
+    widget.scrollController?.addListener(_onScroll);
   }
 
   @override
@@ -145,6 +152,10 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     if (oldWidget.refreshNotifier != widget.refreshNotifier) {
       oldWidget.refreshNotifier?.removeListener(_onRefreshRequested);
       widget.refreshNotifier?.addListener(_onRefreshRequested);
+    }
+    if (oldWidget.scrollController != widget.scrollController) {
+      oldWidget.scrollController?.removeListener(_onScroll);
+      widget.scrollController?.addListener(_onScroll);
     }
   }
 
@@ -193,9 +204,30 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     }
   }
 
+  void _onScroll() {
+    final renderObject = _statsRowKey.currentContext?.findRenderObject();
+    if (renderObject == null || renderObject is! RenderBox) return;
+
+    final safeAreaTop = MediaQuery.paddingOf(context).top;
+
+    // Get the stats row's top edge position in screen coordinates.
+    final statsTop = renderObject.localToGlobal(Offset.zero).dy;
+
+    // When statsTop is at or below the safe area, overlay is transparent.
+    // As it scrolls above the safe area, fade to opaque.
+    if (statsTop >= safeAreaTop) {
+      _statusBarOpacity.value = 0;
+    } else {
+      _statusBarOpacity.value =
+          (1 - statsTop / safeAreaTop).clamp(0.0, 1.0);
+    }
+  }
+
   @override
   void dispose() {
+    widget.scrollController?.removeListener(_onScroll);
     widget.refreshNotifier?.removeListener(_onRefreshRequested);
+    _statusBarOpacity.dispose();
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     // Close the BLoCs we created
@@ -313,28 +345,25 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               onMore: widget.onMore,
               displayNameHint: widget.displayNameHint,
               avatarUrlHint: widget.avatarUrlHint,
+              statsRowKey: _statsRowKey,
             ),
           ),
 
-          // Action Buttons
-          SliverToBoxAdapter(
-            child: ProfileActionButtons(
-              userIdHex: widget.userIdHex,
-              isOwnProfile: widget.isOwnProfile,
-              displayName: widget.displayName,
-              onEditProfile: widget.onEditProfile,
-              onOpenClips: widget.onOpenClips,
-              onMessageUser: widget.onMessageUser,
-              onShareProfile: widget.onShareProfile,
-              onBlockedTap: widget.onBlockedTap,
-            ),
-          ),
-
-          // Sticky Tab Bar
+          // Sticky action buttons + tab bar (pins together)
           SliverPersistentHeader(
             pinned: true,
-            delegate: _SliverAppBarDelegate(
-              TabBar(
+            delegate: _StickyBarDelegate(
+              actionButtons: ProfileActionButtons(
+                userIdHex: widget.userIdHex,
+                isOwnProfile: widget.isOwnProfile,
+                displayName: widget.displayName,
+                onEditProfile: widget.onEditProfile,
+                onOpenClips: widget.onOpenClips,
+                onMessageUser: widget.onMessageUser,
+                onShareProfile: widget.onShareProfile,
+                onBlockedTap: widget.onBlockedTap,
+              ),
+              tabBar: TabBar(
                 controller: _tabController,
                 indicatorColor: VineTheme.tabIndicatorGreen,
                 indicatorWeight: 4,
@@ -430,8 +459,29 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       ),
     );
 
-    // Wrap content with surfaceBackground to match app bar
-    content = ColoredBox(color: VineTheme.surfaceBackground, child: content);
+    // Wrap with surfaceBackground + status bar overlay that fades in
+    // when the pinned action buttons scroll behind the status bar.
+    final safeAreaTop = MediaQuery.paddingOf(context).top;
+    content = Stack(
+      children: [
+        ColoredBox(color: VineTheme.surfaceBackground, child: content),
+        // Status bar overlay
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: safeAreaTop,
+          child: ValueListenableBuilder<double>(
+            valueListenable: _statusBarOpacity,
+            builder: (_, opacity, _) => IgnorePointer(
+              child: ColoredBox(
+                color: VineTheme.surfaceBackground.withValues(alpha: opacity),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
 
     // Pre-fetch follower lists so the followers/following screens load
     // instantly when tapped. The BLoCs warm the relay connections and
@@ -457,18 +507,27 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   }
 }
 
-/// Custom delegate for sticky tab bar.
-/// Sticky tab bar delegate.
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate(this._tabBar);
+/// Sticky delegate pinning action buttons + tab bar together.
+///
+/// Fixed height — the action buttons remain at full size when pinned.
+/// The status bar overlay (in the parent [Stack]) handles the visual
+/// cover as the buttons scroll behind the safe area.
+class _StickyBarDelegate extends SliverPersistentHeaderDelegate {
+  _StickyBarDelegate({
+    required this.actionButtons,
+    required this.tabBar,
+  });
 
-  final TabBar _tabBar;
+  final Widget actionButtons;
+  final TabBar tabBar;
+
+  static const double _actionButtonsHeight = 80;
 
   @override
-  double get minExtent => _tabBar.preferredSize.height;
+  double get maxExtent => _actionButtonsHeight + tabBar.preferredSize.height;
 
   @override
-  double get maxExtent => _tabBar.preferredSize.height;
+  double get minExtent => _actionButtonsHeight + tabBar.preferredSize.height;
 
   @override
   Widget build(
@@ -485,9 +544,15 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         ),
       ),
     ),
-    child: _tabBar,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(height: _actionButtonsHeight, child: actionButtons),
+        tabBar,
+      ],
+    ),
   );
 
   @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
+  bool shouldRebuild(_StickyBarDelegate oldDelegate) => true;
 }
