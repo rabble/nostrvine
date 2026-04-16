@@ -222,6 +222,7 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
     this.sourceDetail,
     this.autoOpenComments = false,
     this.onPageChanged,
+    @visibleForTesting this.onNotFoundAutoSkipRequested,
     @visibleForTesting this.controllerFactory,
     super.key,
   });
@@ -244,6 +245,10 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
   ///
   /// Used by embedded surfaces to keep the URL in sync.
   final void Function(int index)? onPageChanged;
+
+  /// Test hook fired when a notFound video requests an auto-skip.
+  @visibleForTesting
+  final void Function(int nextIndex)? onNotFoundAutoSkipRequested;
 
   /// Optional factory for creating the [VideoFeedController].
   ///
@@ -573,6 +578,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                         trafficSource: widget.trafficSource,
                         sourceDetail: widget.sourceDetail,
                         isOwnVideo: isOwnVideo,
+                        onNotFoundAutoSkipRequested:
+                            widget.onNotFoundAutoSkipRequested,
                       );
                     },
                   ),
@@ -590,6 +597,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
     required this.isActive,
     required this.isOwnVideo,
     required this.pagePosition,
+    this.onNotFoundAutoSkipRequested,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -600,6 +608,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
   final bool isActive;
   final bool isOwnVideo;
   final ValueNotifier<double> pagePosition;
+  final void Function(int nextIndex)? onNotFoundAutoSkipRequested;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -636,6 +645,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
         isOwnVideo: isOwnVideo,
+        onNotFoundAutoSkipRequested: onNotFoundAutoSkipRequested,
       ),
     );
   }
@@ -708,6 +718,7 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
     required this.isActive,
     required this.isOwnVideo,
     required this.pagePosition,
+    this.onNotFoundAutoSkipRequested,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -718,6 +729,7 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
   final bool isActive;
   final bool isOwnVideo;
   final ValueNotifier<double> pagePosition;
+  final void Function(int nextIndex)? onNotFoundAutoSkipRequested;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -732,6 +744,7 @@ class _PooledFullscreenItemContentState
   final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
   int _heartTriggerId = 0;
   bool _contentWarningRevealed = false;
+  bool _handledNotFound = false;
 
   void _handleDoubleTapLike(TapDownDetails details) {
     final showWarning = shouldShowContentWarningOverlay(
@@ -772,6 +785,24 @@ class _PooledFullscreenItemContentState
     unawaited(feedState.animateToPage(widget.index + 1));
   }
 
+  Future<void> _handleNotFoundVideo(BuildContext context) async {
+    if (_handledNotFound) return;
+    _handledNotFound = true;
+
+    ref.read(videoEventServiceProvider).removeVideoCompletely(widget.video.id);
+    if (!mounted) return;
+
+    final feedState = context.findAncestorStateOfType<PooledVideoFeedState>();
+    final nextIndex = widget.index + 1;
+    final canAdvance =
+        feedState != null && nextIndex < feedState.controller.videoCount;
+
+    if (canAdvance) {
+      widget.onNotFoundAutoSkipRequested?.call(nextIndex);
+      await feedState.animateToPage(nextIndex);
+    }
+  }
+
   /// Triggers the existing age verification flow. Matches the pattern used
   /// by the legacy [VideoErrorOverlay].
   Future<void> _verifyAgeForVideo(
@@ -794,6 +825,19 @@ class _PooledFullscreenItemContentState
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
+    final playbackStatus = context.select(
+      (VideoPlaybackStatusCubit cubit) => cubit.state.statusFor(video.id),
+    );
+
+    if (widget.isActive &&
+        playbackStatus == PlaybackStatus.notFound &&
+        !_handledNotFound) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_handleNotFoundVideo(context));
+      });
+    }
+
     final isPortrait = video.dimensions != null && video.isPortrait;
     final overlayLabels = contentWarningOverlayLabels(
       contentWarningLabels: video.contentWarningLabels,
@@ -845,9 +889,6 @@ class _PooledFullscreenItemContentState
           );
         },
         overlayBuilder: (context, videoController, player) {
-          final playbackStatus = context.select(
-            (VideoPlaybackStatusCubit cubit) => cubit.state.statusFor(video.id),
-          );
           if (playbackStatus == PlaybackStatus.forbidden ||
               playbackStatus == PlaybackStatus.ageRestricted) {
             return ModeratedContentOverlay(
