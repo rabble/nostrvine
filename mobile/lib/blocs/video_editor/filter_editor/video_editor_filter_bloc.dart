@@ -20,8 +20,6 @@ class VideoEditorFilterBloc
     on<VideoEditorFilterOpacityChanged>(_onOpacityChanged);
     on<VideoEditorFilterCancelled>(_onCancelled);
     on<VideoEditorFilterConfirmed>(_onFilterConfirmed);
-    on<VideoEditorFilterRemovedAt>(_onFilterRemovedAt);
-    on<VideoEditorFiltersCleared>(_onFiltersCleared);
   }
 
   void _onEditorInitialized(
@@ -86,30 +84,5 @@ class VideoEditorFilterBloc
         clearSelectedFilter: true,
       ),
     );
-  }
-
-  void _onFilterRemovedAt(
-    VideoEditorFilterRemovedAt event,
-    Emitter<VideoEditorFilterState> emit,
-  ) {
-    final filters = List<FilterModel>.of(state.appliedFilters);
-    if (event.index < 0 || event.index >= filters.length) return;
-
-    Log.debug(
-      '🗑️ Removed filter at index ${event.index}: '
-      '${filters[event.index].name}',
-      name: 'VideoEditorFilterBloc',
-      category: LogCategory.video,
-    );
-
-    filters.removeAt(event.index);
-    emit(state.copyWith(appliedFilters: filters));
-  }
-
-  void _onFiltersCleared(
-    VideoEditorFiltersCleared event,
-    Emitter<VideoEditorFilterState> emit,
-  ) {
-    emit(state.copyWith(appliedFilters: []));
   }
 }
