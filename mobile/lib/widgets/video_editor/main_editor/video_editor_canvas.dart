@@ -782,6 +782,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 background: VineTheme.backgroundCamera,
               ),
               captureLayersOnDone: true,
+              captureImageOnDone: false,
               widgets: MainEditorWidgets(
                 appBar: (_, _) => null,
                 bottomBar: (_, _, key) => null,

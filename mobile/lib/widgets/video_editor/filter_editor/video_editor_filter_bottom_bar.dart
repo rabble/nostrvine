@@ -136,7 +136,7 @@ class _FilterItem extends StatelessWidget {
                     // In that scenario we don't need any special
                     // configurations, so we just use the default one.
                     configs: const ProImageEditorConfigs(),
-                    filters: [...activeFilters, ...filter.filters],
+                    filters: filter.filters,
                     tuneAdjustments: activeTuneAdjustments,
                     blurFactor: activeBlur,
                     fit: .cover,

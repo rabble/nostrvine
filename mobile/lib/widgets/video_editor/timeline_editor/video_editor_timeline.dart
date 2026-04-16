@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
-import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
@@ -18,8 +17,6 @@ import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_edito
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_playhead.dart';
-import 'package:pro_image_editor/features/filter_editor/types/filter_state.dart';
-import 'package:pro_image_editor/pro_image_editor.dart' show FilterModel;
 
 /// Interactive timeline editor for composing video clips.
 ///
@@ -64,13 +61,6 @@ class _VideoEditorTimelineState
 
   bool get _isPinching => _pointerPositions.length >= 2;
 
-  /// Accumulated [FilterState]s for all committed filters.
-  ///
-  /// The library only stores the most-recently applied filter in
-  /// [ProImageEditorState.activeFilters]; we maintain this list and
-  /// re-write it via [addHistory] so all filters stay composited.
-  List<FilterState> _committedFilterStates = [];
-
   /// Throttle timestamp — limits BLoC event frequency during scrubbing.
   /// The native seek backpressure is handled by the canvas.
   int _lastSeekMs = 0;
@@ -83,19 +73,6 @@ class _VideoEditorTimelineState
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_updatePlayheadTime);
-
-    // Sync filter state that may have changed while the timeline was unmounted
-    // (e.g. a filter was applied in the sub-editor).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final filterState = context.read<VideoEditorFilterBloc>().state;
-      final totalDuration = context.read<ClipEditorBloc>().state.totalDuration;
-      _syncFilterToOverlay(
-        context,
-        filterState.appliedFilters,
-        totalDuration,
-      );
-    });
   }
 
   @override
@@ -176,91 +153,77 @@ class _VideoEditorTimelineState
             bloc.add(const TimelineOverlayItemSelected(null));
           },
         ),
-        BlocListener<VideoEditorFilterBloc, VideoEditorFilterState>(
-          listenWhen: (prev, curr) =>
-              prev.appliedFilters != curr.appliedFilters,
-          listener: (context, state) {
-            _syncFilterToOverlay(
-              context,
-              state.appliedFilters,
-              totalDuration,
-            );
-          },
-        ),
       ],
       child: GestureDetector(
         onTap: isEditing || hasSelectedOverlay ? _onBackgroundTapped : null,
         behavior: HitTestBehavior.translucent,
-        child: Column(
-          crossAxisAlignment: .stretch,
+        child: Stack(
+          alignment: .bottomCenter,
           children: [
-            VideoEditorTimelineHeader(
-              playheadPosition: _playheadPosition,
-            ),
-            const Padding(
-              padding: .only(top: 12),
-              child: Divider(
-                height: 1,
-                thickness: 1,
-                color: VineTheme.outlinedDisabled,
-              ),
-            ),
-
-            AnimatedContainer(
-              duration: _timelineToggleDuration,
-              height: isTimelineHiddenByUser
-                  ? MediaQuery.viewPaddingOf(context).bottom
-                  : TimelineConstants.height,
-              child: OverflowBox(
-                alignment: .topCenter,
-                minHeight: TimelineConstants.height,
-                maxHeight: TimelineConstants.height,
-                child: Column(
-                  children: [
-                    /// Interactive body and playhead
-                    Expanded(
-                      child: _TimelineInteractiveBody(
-                        playheadPosition: _playheadPosition,
-                        totalDuration: totalDuration,
-                        formatPosition: _formatPosition,
-                        onStepPosition: _stepPosition,
-                        onPointerDown: _onPointerDown,
-                        onPointerMove: _onPointerMove,
-                        onPointerUp: _onPointerUp,
-                        onPointerCancel: _onPointerCancel,
-                        onScrollNotification: _handleScrollNotification,
-                        scrollController: _scrollController,
-                        isPinching: _isPinching,
-                        isTrimming: _isTrimming,
-                        halfScreen: halfScreen,
-                        pixelsPerSecond: _pixelsPerSecond,
-                        clips: clips,
-                        totalWidth: totalWidth,
-                        isInteracting: _isUserScrolling || _isPinching,
-                        onReorder: _onClipsReordered,
-                        onReorderChanged: _onReorderChanged,
-                        trimmingClipId: trimmingClipId,
-                        onTrimChanged: _onTrimChanged,
-                        onTrimDragChanged: _onTrimDragChanged,
-                        onClipTapped: _onClipTapped,
-                        onOverlayItemMoved: _onOverlayItemMoved,
-                        onOverlayItemMoving: _onOverlayItemMoving,
-                        onOverlayItemTrimmed: _onOverlayItemTrimmed,
-                        onOverlayTrimDragChanged: _onOverlayTrimDragChanged,
-                        onOverlayItemTapped: _onOverlayItemTapped,
-                        onOverlayDragStarted: _onOverlayDragStarted,
-                        onOverlayDragEnded: _onOverlayDragEnded,
-                      ),
-                    ),
-
-                    /// Bottom controls like edit and delete
-                    TimelineControlsBar(
-                      isEditing: isEditing,
-                      playheadPosition: _playheadPosition,
-                    ),
-                  ],
+            Column(
+              crossAxisAlignment: .stretch,
+              children: [
+                VideoEditorTimelineHeader(
+                  playheadPosition: _playheadPosition,
                 ),
-              ),
+                const Padding(
+                  padding: .only(top: 12),
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: VineTheme.outlinedDisabled,
+                  ),
+                ),
+
+                AnimatedContainer(
+                  duration: _timelineToggleDuration,
+                  height: isTimelineHiddenByUser
+                      ? MediaQuery.viewPaddingOf(context).bottom
+                      : TimelineConstants.height,
+                  child: OverflowBox(
+                    alignment: .topCenter,
+                    minHeight: TimelineConstants.height,
+                    maxHeight: TimelineConstants.height,
+                    child: _TimelineInteractiveBody(
+                      playheadPosition: _playheadPosition,
+                      totalDuration: totalDuration,
+                      formatPosition: _formatPosition,
+                      onStepPosition: _stepPosition,
+                      onPointerDown: _onPointerDown,
+                      onPointerMove: _onPointerMove,
+                      onPointerUp: _onPointerUp,
+                      onPointerCancel: _onPointerCancel,
+                      onScrollNotification: _handleScrollNotification,
+                      scrollController: _scrollController,
+                      isPinching: _isPinching,
+                      isTrimming: _isTrimming,
+                      halfScreen: halfScreen,
+                      pixelsPerSecond: _pixelsPerSecond,
+                      clips: clips,
+                      totalWidth: totalWidth,
+                      isInteracting: _isUserScrolling || _isPinching,
+                      onReorder: _onClipsReordered,
+                      onReorderChanged: _onReorderChanged,
+                      trimmingClipId: trimmingClipId,
+                      onTrimChanged: _onTrimChanged,
+                      onTrimDragChanged: _onTrimDragChanged,
+                      onClipTapped: _onClipTapped,
+                      onOverlayItemMoved: _onOverlayItemMoved,
+                      onOverlayItemMoving: _onOverlayItemMoving,
+                      onOverlayItemTrimmed: _onOverlayItemTrimmed,
+                      onOverlayTrimDragChanged: _onOverlayTrimDragChanged,
+                      onOverlayItemTapped: _onOverlayItemTapped,
+                      onOverlayDragStarted: _onOverlayDragStarted,
+                      onOverlayDragEnded: _onOverlayDragEnded,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            TimelineControlsBar(
+              isEditing: isEditing,
+              playheadPosition: _playheadPosition,
             ),
           ],
         ),
@@ -749,54 +712,6 @@ class _VideoEditorTimelineState
       _totalDuration.inMilliseconds,
     );
     _playheadPosition.value = Duration(milliseconds: ms);
-  }
-
-  /// Synchronises applied filters with the [TimelineOverlayBloc].
-  ///
-  /// Maintains [_committedFilterStates] so that every confirmed filter is
-  /// accumulated and rendered together (multiple independent filter strips,
-  /// just like layer strips). On addition, the new [FilterState] is appended;
-  /// on removal the list is re-derived from the editor's active state.
-  void _syncFilterToOverlay(
-    BuildContext context,
-    List<FilterModel> appliedFilters,
-    Duration totalDuration,
-  ) {
-    final editor = VideoEditorScope.of(context).editor;
-    if (editor == null) return;
-    // Defer one frame so that editor.stateManager.activeFilters is already
-    // updated (addHistory fires asynchronously after the filter editor closes).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final editorFilters = editor.stateManager.activeFilters;
-
-      if (appliedFilters.length > _committedFilterStates.length) {
-        // A new filter was applied. The editor's activeFilters contains only
-        // the latest; append it to our accumulated list so all filters are
-        // composited together.
-        final newFilter = editorFilters.lastOrNull;
-        if (newFilter != null && newFilter.isNotEmpty) {
-          _committedFilterStates = [..._committedFilterStates, newFilter];
-        }
-        editor.addHistory(filters: _committedFilterStates);
-      } else {
-        // A filter was removed (one or all). _removeFilter already called
-        // addHistory with the correct remaining list; re-derive our cache from
-        // the editor state (no-op placeholders are excluded).
-        _committedFilterStates = editorFilters
-            .where((f) => f.isNotEmpty)
-            .toList();
-      }
-
-      context.read<TimelineOverlayBloc>().add(
-        TimelineOverlayItemsUpdate(
-          layers: editor.activeLayers,
-          filters: _committedFilterStates,
-          totalVideoDuration: totalDuration,
-          audioTracks: editor.stateManager.audioTracks,
-        ),
-      );
-    });
   }
 
   void _syncScrollToPosition(

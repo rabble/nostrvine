@@ -48,6 +48,8 @@ class VideoEditorTimelineBody extends StatelessWidget {
   final double totalWidth;
   final bool isInteracting;
 
+  static const _scrollBottomPadding = 100;
+
   /// Computes cumulative clip-boundary positions in milliseconds.
   /// Each clip edge (start of first clip + end of each clip) creates a
   /// potential snap target for overlay items.
@@ -148,7 +150,9 @@ class VideoEditorTimelineBody extends StatelessWidget {
                       clipBehavior: .none,
                       padding: .only(
                         top: 4,
-                        bottom: 80 + MediaQuery.paddingOf(context).bottom,
+                        bottom:
+                            _scrollBottomPadding +
+                            MediaQuery.paddingOf(context).bottom,
                       ),
                       child: IgnorePointer(
                         ignoring: isReordering,

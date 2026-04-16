@@ -6,14 +6,14 @@ class VideoEditorTimelineControls extends StatelessWidget {
     required this.onDone,
     this.onDelete,
     this.onEdit,
-    this.onCopy,
+    this.onDuplicated,
     this.onSplit,
     super.key,
   });
 
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
-  final VoidCallback? onCopy;
+  final VoidCallback? onDuplicated;
   final VoidCallback? onSplit;
   final VoidCallback onDone;
 
@@ -40,6 +40,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
             runSpacing: 24,
             alignment: .center,
             runAlignment: .center,
+            crossAxisAlignment: .center,
             children: [
               if (onDelete != null)
                 _ControlButton(
@@ -54,11 +55,11 @@ class VideoEditorTimelineControls extends StatelessWidget {
                   label: 'Edit',
                   onPressed: onEdit,
                 ),
-              if (onCopy != null)
+              if (onDuplicated != null)
                 _ControlButton(
                   icon: .copy,
-                  label: 'Copy',
-                  onPressed: onCopy,
+                  label: 'Duplicate',
+                  onPressed: onDuplicated,
                 ),
               if (onSplit != null)
                 _ControlButton(

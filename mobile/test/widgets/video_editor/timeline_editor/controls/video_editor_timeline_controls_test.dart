@@ -16,7 +16,7 @@ void main() {
           home: Scaffold(
             body: VideoEditorTimelineControls(
               onDelete: () {},
-              onCopy: () {},
+              onDuplicated: () {},
               onDone: () {},
             ),
           ),

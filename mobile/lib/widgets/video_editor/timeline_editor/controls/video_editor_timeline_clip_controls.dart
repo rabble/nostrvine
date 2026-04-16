@@ -22,7 +22,7 @@ class TimelineClipControls extends ConsumerWidget {
 
     return VideoEditorTimelineControls(
       onDelete: isLastClip ? null : () => _deleteClip(context, ref),
-      onCopy: () => _duplicateClip(context, ref),
+      onDuplicated: () => _duplicateClip(context, ref),
       onSplit: () => _splitClip(context),
       onDone: () {
         context.read<ClipEditorBloc>().add(
