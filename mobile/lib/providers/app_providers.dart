@@ -71,6 +71,7 @@ import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
+import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
@@ -1720,6 +1721,18 @@ BlossomAuthService blossomAuthService(Ref ref) {
     authProvider: _BlossomAuthAdapter(authService),
   );
 }
+
+/// Shared viewer auth service for media GET requests.
+final mediaViewerAuthServiceProvider = Provider<MediaViewerAuthService>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  final blossomAuthService = ref.watch(blossomAuthServiceProvider);
+  final nip98AuthService = ref.watch(nip98AuthServiceProvider);
+  return MediaViewerAuthService(
+    authService: authService,
+    blossomAuthService: blossomAuthService,
+    nip98AuthService: nip98AuthService,
+  );
+});
 
 /// Media authentication interceptor for handling 401 unauthorized responses
 @riverpod
