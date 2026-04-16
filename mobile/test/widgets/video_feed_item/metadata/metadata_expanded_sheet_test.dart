@@ -216,17 +216,10 @@ void main() {
     testWidgets('renders captions row even when video has no subtitles', (
       tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
       final video = _makeVideo();
 
       await tester.pumpWidget(
-        buildSubject(
-          providerOverrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MetadataExpandedSheet(video: video),
-        ),
+        buildSubject(child: MetadataExpandedSheet(video: video)),
       );
       await tester.pumpAndSettle();
 
@@ -237,16 +230,8 @@ void main() {
     testWidgets('defaults captions switch to on from global preference', (
       tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-
       await tester.pumpWidget(
-        buildSubject(
-          providerOverrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MetadataExpandedSheet(video: _makeVideo()),
-        ),
+        buildSubject(child: MetadataExpandedSheet(video: _makeVideo())),
       );
       await tester.pumpAndSettle();
 
