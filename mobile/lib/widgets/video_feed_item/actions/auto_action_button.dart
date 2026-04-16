@@ -43,23 +43,32 @@ class AutoActionButton extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DivineIcon(
-                icon: DivineIconName.caretRight,
-                size: 16,
-                color: iconColor,
-              ),
-              Transform.translate(
-                offset: const Offset(-3, 0),
-                child: DivineIcon(
-                  icon: DivineIconName.caretRight,
-                  size: 16,
-                  color: iconColor,
+          child: SizedBox(
+            width: 30,
+            height: 20,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  child: DivineIcon(
+                    icon: DivineIconName.play,
+                    size: 20,
+                    color: iconColor,
+                  ),
                 ),
-              ),
-            ],
+                Positioned(
+                  left: 10,
+                  top: 0,
+                  child: DivineIcon(
+                    icon: DivineIconName.play,
+                    size: 20,
+                    color: iconColor,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

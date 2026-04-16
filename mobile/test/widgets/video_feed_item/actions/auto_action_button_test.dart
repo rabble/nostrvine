@@ -26,7 +26,7 @@ void main() {
   }
 
   group(AutoActionButton, () {
-    testWidgets('renders a double-caret icon without a visible label', (
+    testWidgets('renders a double-play icon without a visible label', (
       tester,
     ) async {
       await tester.pumpWidget(buildSubject(isEnabled: false));
@@ -37,7 +37,7 @@ void main() {
 
       expect(icons, hasLength(2));
       expect(
-        icons.every((icon) => icon.icon == DivineIconName.caretRight),
+        icons.every((icon) => icon.icon == DivineIconName.play),
         isTrue,
       );
       expect(find.text('Auto'), findsNothing);
@@ -68,7 +68,7 @@ void main() {
       );
     });
 
-    testWidgets('tints the double-caret icon green when enabled', (
+    testWidgets('tints the double-play icon green when enabled', (
       tester,
     ) async {
       await tester.pumpWidget(buildSubject(isEnabled: true));
