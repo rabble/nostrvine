@@ -501,6 +501,53 @@ void main() {
         });
       }
     });
+
+    group('icon-only mode (empty label)', () {
+      testWidgets('small size uses DivineIconButton padding', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: '',
+            leadingIcon: DivineIconName.heart,
+            size: DivineButtonSize.small,
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(DivineButton), findsOneWidget);
+        expect(find.byType(DivineIcon), findsOneWidget);
+        expect(find.text(''), findsNothing);
+      });
+
+      testWidgets('base size uses DivineIconButton padding', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: '',
+            leadingIcon: DivineIconName.heart,
+            size: DivineButtonSize.base,
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(DivineButton), findsOneWidget);
+        expect(find.byType(DivineIcon), findsOneWidget);
+      });
+
+      testWidgets('hides icon-to-label spacer', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: '',
+            leadingIcon: DivineIconName.heart,
+            onPressed: () {},
+          ),
+        );
+
+        // Should have no SizedBox(width: 8) spacers between icon and label
+        final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
+        final spacers =
+            sizedBoxes.where((sb) => sb.width == 8 && sb.height == null);
+        expect(spacers, isEmpty);
+      });
+    });
   });
 
   group('DivineTextLink', () {
