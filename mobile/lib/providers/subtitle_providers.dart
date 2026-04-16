@@ -42,6 +42,15 @@ Duration _parseRetryAfter(Map<String, String> headers) {
   return Duration(seconds: seconds);
 }
 
+Uri? _parseHttpSubtitleUrl(String? textTrackRef) {
+  if (textTrackRef == null || textTrackRef.isEmpty) return null;
+
+  final uri = Uri.tryParse(textTrackRef);
+  if (uri == null) return null;
+  if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+  return uri;
+}
+
 Future<List<SubtitleCue>?> _fetchBlossomSubtitles({
   required http.Client client,
   required SubtitlePollDelay delay,
@@ -101,6 +110,22 @@ Future<List<SubtitleCue>> subtitleCues(
   // Fast path: REST API already embedded the VTT content
   if (textTrackContent != null && textTrackContent.isNotEmpty) {
     return SubtitleService.parseVtt(textTrackContent);
+  }
+
+  final directSubtitleUrl = _parseHttpSubtitleUrl(textTrackRef);
+  if (directSubtitleUrl != null) {
+    final client = ref.read(subtitleHttpClientProvider);
+    try {
+      final response = await client.get(directSubtitleUrl);
+      if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
+        return SubtitleService.parseVtt(response.body);
+      }
+    } catch (e) {
+      developer.log(
+        'Direct VTT fetch failed for $directSubtitleUrl: $e',
+        name: 'subtitleCues',
+      );
+    }
   }
 
   // Blossom path: fetch VTT from media server by sha256
