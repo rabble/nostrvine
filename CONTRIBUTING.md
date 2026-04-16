@@ -87,7 +87,7 @@ Additional expectations:
 - Run `mobile/scripts/golden.sh verify` for visual changes.
 - If you touch `mobile/packages/videos_repository`, run `flutter test --coverage` from that package.
 - Add or update tests next to the changed feature or package.
-- Web-only branches: a few tests are skipped on the default VM and need Chrome, for example `flutter test test/utils/path_resolver_test.dart --platform chrome` to exercise `getDocumentsPath` when `kIsWeb` is true.
+- Web-only branches: VM shards skip tests guarded with `kIsWeb`. Mobile CI runs `test/utils/path_resolver_test.dart` on Chrome in a dedicated job; locally use `flutter test test/utils/path_resolver_test.dart --platform chrome` for the same runtime check.
 
 ## Engineering Guardrails
 

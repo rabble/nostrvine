@@ -108,6 +108,35 @@ jobs:
           done
           echo "Shard ${{ matrix.shard_index }}/8: ${#selected[@]} of ${#all[@]} test files"
           flutter test --exclude-tags integration "${selected[@]}"
+  tests-chrome-path-resolver:
+    name: Tests (Chrome, path_resolver)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Install Chromium
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y chromium xvfb
+      - name: Run path_resolver tests on Chrome
+        run: |
+          chrome="$(command -v chromium || command -v chromium-browser || command -v google-chrome)"
+          if [ -z "${chrome}" ]; then
+            echo "No Chrome/Chromium binary found after apt install."
+            exit 1
+          fi
+          export CHROME_EXECUTABLE="${chrome}"
+          xvfb-run -a flutter test test/utils/path_resolver_test.dart --platform chrome
   mobile-ci:
     name: Mobile CI
     if: ${{ always() }}
@@ -116,6 +145,7 @@ jobs:
       - format
       - analyze
       - tests
+      - tests-chrome-path-resolver
     runs-on: ubuntu-latest
     steps:
       - name: Verify upstream jobs
@@ -124,16 +154,19 @@ jobs:
           FORMAT_RESULT: ${{ needs.format.result }}
           ANALYZE_RESULT: ${{ needs.analyze.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
+          TESTS_CHROME_PATH_RESOLVER_RESULT: ${{ needs.tests-chrome-path-resolver.result }}
         run: |
           echo "generated-files: ${GENERATED_FILES_RESULT}"
           echo "format: ${FORMAT_RESULT}"
           echo "analyze: ${ANALYZE_RESULT}"
           echo "tests: ${TESTS_RESULT}"
+          echo "tests-chrome-path-resolver: ${TESTS_CHROME_PATH_RESOLVER_RESULT}"
 
           if [[ "${GENERATED_FILES_RESULT}" != "success" || \
                 "${FORMAT_RESULT}" != "success" || \
                 "${ANALYZE_RESULT}" != "success" || \
-                "${TESTS_RESULT}" != "success" ]]; then
+                "${TESTS_RESULT}" != "success" || \
+                "${TESTS_CHROME_PATH_RESOLVER_RESULT}" != "success" ]]; then
             echo "One or more Mobile CI jobs failed."
             exit 1
           fi
