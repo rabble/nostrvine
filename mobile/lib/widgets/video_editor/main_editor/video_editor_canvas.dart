@@ -85,8 +85,6 @@ class _VideoEditor extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorState extends ConsumerState<_VideoEditor> {
-  static const _isolatesInitialisationDelay = Duration(milliseconds: 500);
-
   late final ProVideoController _proVideoController;
   final _isPlayerReadyNotifier = ValueNotifier<bool>(false);
   DivineVideoPlayerController? _videoPlayer;
@@ -420,25 +418,35 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       final sound = audioById[item.id];
       if (sound == null || sound.url == null) continue;
 
-      final AudioTrack track;
-      if (sound.isBundled && sound.assetPath != null) {
-        track = await AudioTrack.asset(
-          sound.assetPath!,
-          volume: customVolume,
-          videoStartTime: item.startTime,
-          videoEndTime: item.endTime,
-          trackStart: sound.startOffset,
-        );
-      } else {
-        track = AudioTrack.network(
-          sound.url!,
-          volume: customVolume,
-          videoStartTime: item.startTime,
-          videoEndTime: item.endTime,
-          trackStart: sound.startOffset,
+      try {
+        final AudioTrack track;
+        if (sound.isBundled && sound.assetPath != null) {
+          track = await AudioTrack.asset(
+            sound.assetPath!,
+            volume: customVolume,
+            videoStartTime: item.startTime,
+            videoEndTime: item.endTime,
+            trackStart: sound.startOffset,
+          );
+        } else {
+          track = AudioTrack.network(
+            sound.url!,
+            volume: customVolume,
+            videoStartTime: item.startTime,
+            videoEndTime: item.endTime,
+            trackStart: sound.startOffset,
+          );
+        }
+        tracks.add(track);
+      } catch (e, stackTrace) {
+        Log.error(
+          '🎵 Failed to build audio track ${item.id}: $e',
+          name: 'VideoEditorCanvas',
+          category: LogCategory.video,
+          error: e,
+          stackTrace: stackTrace,
         );
       }
-      tracks.add(track);
     }
 
     if (tracks.isEmpty) {
@@ -550,7 +558,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     if (_isImportingHistory || !_isInitialized) return;
 
     _syncMainCapabilities(scope, bloc);
-    final result = await scope.editor!.exportStateHistory(
+    final result = await scope.requireEditor.exportStateHistory(
       configs: const ExportEditorConfigs(
         historySpan: .currentAndBackward,
         // We don't minify the state history so it remains readable for
@@ -833,7 +841,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               processorConfigs: const ProcessorConfigs(
                 numberOfBackgroundProcessors: 4,
                 processorMode: .limit,
-                initializationDelay: _isolatesInitialisationDelay,
+                initializationDelay:
+                    VideoEditorConstants.isolatesInitialisationDelay,
               ),
               customPixelRatio: max(
                 1,
@@ -972,10 +981,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 if (editorStateHistory.isEmpty) {
                   final clips = ref.read(clipManagerProvider).clips;
 
-                  scope.editor!.stateManager.replaceHistory(
-                    scope.editor!.stateHistory.first.copyWith(
+                  scope.requireEditor.stateManager.replaceHistory(
+                    scope.requireEditor.stateHistory.first.copyWith(
                       meta: {
-                        ...scope.editor!.stateManager.activeMeta,
+                        ...scope.requireEditor.stateManager.activeMeta,
                         VideoEditorConstants.clipsStateHistoryKey: clips
                             .map((e) => e.toJson())
                             .toList(),

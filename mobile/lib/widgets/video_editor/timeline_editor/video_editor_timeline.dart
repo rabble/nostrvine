@@ -1,7 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
@@ -24,16 +23,15 @@ import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timel
 /// strips, and a fixed-center playhead. Reads playback position and
 /// duration from [VideoEditorMainBloc] and clip data from
 /// [ClipEditorBloc].
-class VideoEditorTimelineScaffold extends ConsumerStatefulWidget {
+class VideoEditorTimelineScaffold extends StatefulWidget {
   const VideoEditorTimelineScaffold({super.key});
 
   @override
-  ConsumerState<VideoEditorTimelineScaffold> createState() =>
+  State<VideoEditorTimelineScaffold> createState() =>
       _VideoEditorTimelineState();
 }
 
-class _VideoEditorTimelineState
-    extends ConsumerState<VideoEditorTimelineScaffold> {
+class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   /// Duration for the user-triggered timeline hide/show animation.
   static const _timelineToggleDuration = Duration(milliseconds: 220);
 
@@ -301,7 +299,7 @@ class _VideoEditorTimelineState
 
   void _onTrimDragChanged(bool isTrimming) {
     setState(() => _isTrimming = isTrimming);
-    final editor = VideoEditorScope.of(context).editor!;
+    final editor = VideoEditorScope.of(context).requireEditor;
     final clipEditorBloc = context.read<ClipEditorBloc>();
 
     if (isTrimming) {
@@ -370,7 +368,7 @@ class _VideoEditorTimelineState
   }) {
     // Sync the new time position to the editor before updating BLoC state so
     // the canvas reflects the move immediately.
-    final editor = VideoEditorScope.of(context).editor!;
+    final editor = VideoEditorScope.of(context).requireEditor;
     final duration = item.duration;
 
     // Compute the correct list insertion index from current BLoC row
@@ -495,7 +493,7 @@ class _VideoEditorTimelineState
     required Duration endTime,
     required bool isStart,
   }) {
-    final editor = VideoEditorScope.of(context).editor!;
+    final editor = VideoEditorScope.of(context).requireEditor;
 
     switch (item.type) {
       case .layer:
@@ -546,7 +544,7 @@ class _VideoEditorTimelineState
     if (isTrimming) {
       // Snapshot history before the trim so undo restores the original
       // position — matches the pattern used by clip trim and overlay drag.
-      VideoEditorScope.of(context).editor!.addHistory();
+      VideoEditorScope.of(context).requireEditor.addHistory();
       context.read<VideoEditorMainBloc>().add(
         const VideoEditorExternalPauseRequested(isPaused: true),
       );
@@ -576,7 +574,7 @@ class _VideoEditorTimelineState
 
   void _onOverlayDragStarted(TimelineOverlayItem item) {
     // Snapshot history before the move so undo restores the original position.
-    VideoEditorScope.of(context).editor!.addHistory();
+    VideoEditorScope.of(context).requireEditor.addHistory();
     context.read<TimelineOverlayBloc>().add(
       TimelineOverlayDragStarted(item.id),
     );
@@ -591,7 +589,7 @@ class _VideoEditorTimelineState
   }) {
     // Mirror the position live during drag so the canvas updates every frame,
     // just like trim does via setLayerTimeline/setFilterTimeline.
-    final editor = VideoEditorScope.of(context).editor!;
+    final editor = VideoEditorScope.of(context).requireEditor;
 
     switch (item.type) {
       case .layer:

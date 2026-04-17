@@ -292,7 +292,7 @@ class VideoEditorRenderService {
     }
 
     final clip = DivineVideoClip(
-      id: 'clip-${DateTime.now()}',
+      id: 'clip-${DateTime.now().millisecondsSinceEpoch}',
       video: EditorVideo.file(outputPath),
       duration: metaData.duration,
       recordedAt: DateTime.now(),

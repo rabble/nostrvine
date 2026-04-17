@@ -123,6 +123,10 @@ class VideoEditorConstants {
   /// Height of the bottom action bar in the video editor.
   static const double bottomBarHeight = 90;
 
+  /// Delay before background isolates start processing to avoid
+  /// contention with the main isolate during editor initialisation.
+  static const isolatesInitialisationDelay = Duration(milliseconds: 500);
+
   /// Video quality for recording and editing
   static const DivineVideoQuality quality = DivineVideoQuality.fhd;
 

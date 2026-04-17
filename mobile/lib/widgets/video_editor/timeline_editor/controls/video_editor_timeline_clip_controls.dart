@@ -37,7 +37,7 @@ class TimelineClipControls extends ConsumerWidget {
     final bloc = context.read<ClipEditorBloc>();
     final state = bloc.state;
     final clipId = state.clips[state.currentClipIndex].id;
-    final editor = VideoEditorScope.of(context).editor!;
+    final editor = VideoEditorScope.of(context).requireEditor;
 
     bloc.add(ClipEditorClipRemoved(clipId));
 
@@ -61,7 +61,7 @@ class TimelineClipControls extends ConsumerWidget {
     final bloc = context.read<ClipEditorBloc>();
     final state = bloc.state;
     final clip = state.clips[state.currentClipIndex];
-    final editor = VideoEditorScope.of(context).editor!;
+    final editor = VideoEditorScope.of(context).requireEditor;
 
     final copy = clip.copyWith(
       id:
