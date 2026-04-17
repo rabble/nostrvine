@@ -283,6 +283,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
   late final ValueNotifier<double> _pagePosition;
+  late final WebVideoAccessService _webVideoAccessService;
   final _feedKey = GlobalKey<PooledVideoFeedState>();
   final _webFeedKey = GlobalKey<WebVideoFeedState>();
   final Map<String, ResolvedWebVideoSource> _webResolvedSources = {};
@@ -308,15 +309,15 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     super.initState();
     final initialIndex = context.read<FullscreenFeedBloc>().state.currentIndex;
     _pagePosition = ValueNotifier<double>(initialIndex.toDouble());
+    _webVideoAccessService = ref.read(webVideoAccessServiceProvider);
   }
 
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
     _controller?.dispose();
-    final accessService = ref.read(webVideoAccessServiceProvider);
     for (final source in _webResolvedSources.values) {
-      accessService.revokeResolvedSource(source);
+      _webVideoAccessService.revokeResolvedSource(source);
     }
     _webResolvedSources.clear();
     _pagePosition.dispose();
@@ -381,11 +382,10 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         .toList(growable: false);
     if (staleIds.isEmpty) return;
 
-    final accessService = ref.read(webVideoAccessServiceProvider);
     for (final videoId in staleIds) {
       final source = _webResolvedSources.remove(videoId);
       if (source != null) {
-        accessService.revokeResolvedSource(source);
+        _webVideoAccessService.revokeResolvedSource(source);
       }
     }
   }
@@ -397,7 +397,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   void _storeWebResolvedSource(String videoId, ResolvedWebVideoSource source) {
     final previous = _webResolvedSources[videoId];
     if (previous != null && previous.url != source.url) {
-      ref.read(webVideoAccessServiceProvider).revokeResolvedSource(previous);
+      _webVideoAccessService.revokeResolvedSource(previous);
     }
     setState(() {
       _webResolvedSources[videoId] = source;

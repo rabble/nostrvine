@@ -138,6 +138,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Created lazily when videos first become available from the BLoC,
   /// or injected via [VideoFeedView.controller] for testing.
   VideoFeedController? controller;
+  late final WebVideoAccessService _webVideoAccessService;
 
   /// Key for accessing the rendered pooled feed state for programmatic skips.
   final _feedKey = GlobalKey<PooledVideoFeedState>();
@@ -167,6 +168,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void initState() {
     super.initState();
     _pagePosition = ValueNotifier<double>(0);
+    _webVideoAccessService = ref.read(webVideoAccessServiceProvider);
     WidgetsBinding.instance.addObserver(this);
     // Use injected controller if provided (for testing)
     if (!ownsController) controller = widget.controller;
@@ -183,9 +185,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   @override
   void dispose() {
     if (ownsController) controller?.dispose();
-    final accessService = ref.read(webVideoAccessServiceProvider);
     for (final source in _webResolvedSources.values) {
-      accessService.revokeResolvedSource(source);
+      _webVideoAccessService.revokeResolvedSource(source);
     }
     _webResolvedSources.clear();
     _pagePosition.dispose();
@@ -425,11 +426,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
         .toList(growable: false);
     if (staleIds.isEmpty) return;
 
-    final accessService = ref.read(webVideoAccessServiceProvider);
     for (final videoId in staleIds) {
       final source = _webResolvedSources.remove(videoId);
       if (source != null) {
-        accessService.revokeResolvedSource(source);
+        _webVideoAccessService.revokeResolvedSource(source);
       }
     }
   }
@@ -441,7 +441,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void _storeWebResolvedSource(String videoId, ResolvedWebVideoSource source) {
     final previous = _webResolvedSources[videoId];
     if (previous != null && previous.url != source.url) {
-      ref.read(webVideoAccessServiceProvider).revokeResolvedSource(previous);
+      _webVideoAccessService.revokeResolvedSource(previous);
     }
     setState(() {
       _webResolvedSources[videoId] = source;
