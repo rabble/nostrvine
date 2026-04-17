@@ -13,9 +13,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
@@ -31,8 +29,6 @@ class MockFullscreenFeedBloc
 class MockVideoFeedController extends Mock implements VideoFeedController {}
 
 class MockPlayer extends Mock implements Player {}
-
-class MockVideoEventService extends Mock implements VideoEventService {}
 
 // Full 64-character test IDs
 const testVideoId1 =
@@ -87,7 +83,6 @@ void main() {
     late MockVideoFeedController defaultController;
     late MockProfileRepository mockProfileRepository;
     late MockNip05VerificationService mockNip05VerificationService;
-    late MockVideoEventService mockVideoEventService;
     late Map<int, ValueNotifier<VideoIndexState>> defaultIndexNotifiers;
     late StreamController<FullscreenFeedState> stateController;
 
@@ -96,6 +91,8 @@ void main() {
       registerFallbackValue(const FullscreenFeedIndexChanged(0));
       registerFallbackValue(const FullscreenFeedLoadMoreRequested());
       registerFallbackValue(const FullscreenFeedVideoCacheStarted(index: 0));
+      registerFallbackValue(const FullscreenFeedVideoUnavailable('fallback'));
+      registerFallbackValue(const FullscreenFeedSkipAcknowledged());
       registerFallbackValue(Duration.zero);
       registerFallbackValue(LoadState.none);
     });
@@ -106,13 +103,9 @@ void main() {
       defaultController = MockVideoFeedController();
       mockProfileRepository = createMockProfileRepository();
       mockNip05VerificationService = createMockNip05VerificationService();
-      mockVideoEventService = MockVideoEventService();
       defaultIndexNotifiers = <int, ValueNotifier<VideoIndexState>>{};
       stateController = StreamController<FullscreenFeedState>.broadcast();
       stubVideoFeedController(defaultController, defaultIndexNotifiers);
-      when(
-        () => mockVideoEventService.removeVideoCompletely(any()),
-      ).thenReturn(null);
 
       // Default stream setup
       when(() => mockBloc.stream).thenAnswer((_) => stateController.stream);
@@ -491,7 +484,136 @@ void main() {
       );
 
       testWidgets(
-        'removes active video and advances when playback status becomes notFound',
+        'dispatches FullscreenFeedVideoUnavailable when playback status becomes notFound',
+        (tester) async {
+          final videos = createTestVideos();
+          final pooledVideos = videos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
+
+          when(() => mockBloc.state).thenReturn(
+            FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          );
+          when(() => mockController.videos).thenReturn(pooledVideos);
+          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
+          when(() => mockController.currentIndex).thenReturn(0);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              controllerFactory: (videos, initialIndex) => mockController,
+            ),
+          );
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+
+          cubit.report(videos.first.id, PlaybackStatus.notFound);
+          await tester.pump();
+
+          verify(
+            () => mockBloc.add(
+              FullscreenFeedVideoUnavailable(videos.first.id),
+            ),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'does not dispatch unavailable event when video is already in removedVideoIds',
+        (tester) async {
+          final videos = createTestVideos();
+          final pooledVideos = videos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
+
+          when(() => mockBloc.state).thenReturn(
+            FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+              removedVideoIds: {videos.first.id},
+            ),
+          );
+          when(() => mockController.videos).thenReturn(pooledVideos);
+          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
+          when(() => mockController.currentIndex).thenReturn(0);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+                removedVideoIds: {videos.first.id},
+              ),
+              controllerFactory: (videos, initialIndex) => mockController,
+            ),
+          );
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+
+          cubit.report(videos.first.id, PlaybackStatus.notFound);
+          await tester.pump();
+
+          verifyNever(
+            () =>
+                mockBloc.add(any(that: isA<FullscreenFeedVideoUnavailable>())),
+          );
+        },
+      );
+
+      testWidgets(
+        'does not dispatch unavailable event for non-notFound playback statuses',
+        (tester) async {
+          final videos = createTestVideos();
+          final pooledVideos = videos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
+
+          when(() => mockBloc.state).thenReturn(
+            FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          );
+          when(() => mockController.videos).thenReturn(pooledVideos);
+          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
+          when(() => mockController.currentIndex).thenReturn(0);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              controllerFactory: (videos, initialIndex) => mockController,
+            ),
+          );
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+
+          cubit.report(videos.first.id, PlaybackStatus.forbidden);
+          await tester.pump();
+
+          verifyNever(
+            () =>
+                mockBloc.add(any(that: isA<FullscreenFeedVideoUnavailable>())),
+          );
+        },
+      );
+
+      testWidgets(
+        'fires onNotFoundAutoSkipRequested and acknowledges when BLoC emits pendingSkipTarget',
         (tester) async {
           final videos = createTestVideos();
           final pooledVideos = videos
@@ -509,17 +631,32 @@ void main() {
           when(() => mockController.videoCount).thenReturn(pooledVideos.length);
           when(() => mockController.currentIndex).thenReturn(0);
 
+          whenListen(
+            mockBloc,
+            Stream.fromIterable([
+              FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+                removedVideoIds: {videos.first.id},
+                pendingSkipTarget: 1,
+              ),
+            ]),
+            initialState: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          );
+
           await tester.pumpWidget(
             buildSubject(
               state: FullscreenFeedState(
                 status: FullscreenFeedStatus.ready,
                 videos: videos,
               ),
-              additionalOverrides: [
-                videoEventServiceProvider.overrideWithValue(
-                  mockVideoEventService,
-                ),
-              ],
               onNotFoundAutoSkipRequested: (nextIndex) {
                 skippedIndex = nextIndex;
               },
@@ -527,122 +664,13 @@ void main() {
             ),
           );
 
-          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
-            tester.element(find.byType(FullscreenFeedContent)),
-          );
-
-          cubit.report(videos.first.id, PlaybackStatus.notFound);
           await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+          await tester.pump(const Duration(milliseconds: 400));
 
+          expect(skippedIndex, equals(1));
           verify(
-            () => mockVideoEventService.removeVideoCompletely(videos.first.id),
+            () => mockBloc.add(const FullscreenFeedSkipAcknowledged()),
           ).called(1);
-          expect(skippedIndex, 1);
-        },
-      );
-
-      testWidgets(
-        'handles repeated notFound reports for the same active video only once',
-        (tester) async {
-          final videos = createTestVideos();
-          final pooledVideos = videos
-              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
-              .toList();
-          final skippedIndices = <int>[];
-
-          when(() => mockBloc.state).thenReturn(
-            FullscreenFeedState(
-              status: FullscreenFeedStatus.ready,
-              videos: videos,
-            ),
-          );
-          when(() => mockController.videos).thenReturn(pooledVideos);
-          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
-          when(() => mockController.currentIndex).thenReturn(0);
-
-          await tester.pumpWidget(
-            buildSubject(
-              state: FullscreenFeedState(
-                status: FullscreenFeedStatus.ready,
-                videos: videos,
-              ),
-              additionalOverrides: [
-                videoEventServiceProvider.overrideWithValue(
-                  mockVideoEventService,
-                ),
-              ],
-              onNotFoundAutoSkipRequested: skippedIndices.add,
-              controllerFactory: (videos, initialIndex) => mockController,
-            ),
-          );
-
-          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
-            tester.element(find.byType(FullscreenFeedContent)),
-          );
-
-          cubit.report(videos.first.id, PlaybackStatus.notFound);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-
-          cubit.report(videos.first.id, PlaybackStatus.notFound);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-
-          verify(
-            () => mockVideoEventService.removeVideoCompletely(videos.first.id),
-          ).called(1);
-          expect(skippedIndices, [1]);
-        },
-      );
-
-      testWidgets(
-        'does not remove videos for non-notFound playback statuses',
-        (tester) async {
-          final videos = createTestVideos();
-          final pooledVideos = videos
-              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
-              .toList();
-          final skippedIndices = <int>[];
-
-          when(() => mockBloc.state).thenReturn(
-            FullscreenFeedState(
-              status: FullscreenFeedStatus.ready,
-              videos: videos,
-            ),
-          );
-          when(() => mockController.videos).thenReturn(pooledVideos);
-          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
-          when(() => mockController.currentIndex).thenReturn(0);
-
-          await tester.pumpWidget(
-            buildSubject(
-              state: FullscreenFeedState(
-                status: FullscreenFeedStatus.ready,
-                videos: videos,
-              ),
-              additionalOverrides: [
-                videoEventServiceProvider.overrideWithValue(
-                  mockVideoEventService,
-                ),
-              ],
-              onNotFoundAutoSkipRequested: skippedIndices.add,
-              controllerFactory: (videos, initialIndex) => mockController,
-            ),
-          );
-
-          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
-            tester.element(find.byType(FullscreenFeedContent)),
-          );
-
-          cubit.report(videos.first.id, PlaybackStatus.forbidden);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-
-          verifyNever(
-            () => mockVideoEventService.removeVideoCompletely(videos.first.id),
-          );
-          expect(skippedIndices, isEmpty);
         },
       );
     });

@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -41,6 +40,7 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_player_subtitle_layer.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 
 // Scroll-fraction constants for overlay opacity during page transitions.
@@ -80,23 +80,6 @@ double _scrollDrivenOpacity(double distance) {
     )!;
   }
   return 0.0;
-}
-
-Future<bool> confirmWebVideoNotFound(
-  String videoUrl, {
-  http.Client? client,
-}) async {
-  final effectiveClient = client ?? http.Client();
-  try {
-    final response = await effectiveClient.head(Uri.parse(videoUrl));
-    return response.statusCode == 404;
-  } catch (_) {
-    return false;
-  } finally {
-    if (client == null) {
-      effectiveClient.close();
-    }
-  }
 }
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
@@ -195,6 +178,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mediaCache = kIsWeb ? null : ref.read(mediaCacheProvider);
     final blossomAuthService = ref.read(blossomAuthServiceProvider);
+    final videoEventService = ref.read(videoEventServiceProvider);
 
     return MultiBlocProvider(
       providers: [
@@ -205,6 +189,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             onLoadMore: onLoadMore,
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
+            onRemoveVideo: videoEventService.removeVideoCompletely,
           )..add(const FullscreenFeedStarted()),
         ),
         BlocProvider(create: (_) => VideoPlaybackStatusCubit()),
@@ -286,7 +271,17 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
   late final ValueNotifier<double> _pagePosition;
-  final Set<String> _handledWebNotFoundVideoIds = <String>{};
+
+  /// Key used to reach the [PooledVideoFeedState] for programmatic scrolling
+  /// when the BLoC signals a pending skip. Keeps the navigation logic at
+  /// the screen level instead of individual video items.
+  final GlobalKey<PooledVideoFeedState> _pooledFeedKey =
+      GlobalKey<PooledVideoFeedState>();
+
+  /// Key used to reach the web feed state for programmatic scrolling when
+  /// the BLoC confirms a missing video on web.
+  final GlobalKey<WebVideoFeedState> _webFeedKey =
+      GlobalKey<WebVideoFeedState>();
 
   @override
   void didChangeDependencies() {
@@ -380,19 +375,69 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     }
   }
 
+  /// Handle the active web video failing to load.
+  ///
+  /// The BLoC owns the 404 confirmation and removal logic — this handler
+  /// just forwards the id. Returning `false` keeps [WebVideoFeed] from
+  /// auto-advancing; the screen-level [BlocListener] that reacts to
+  /// [FullscreenFeedState.pendingSkipTarget] performs the actual skip
+  /// once the BLoC confirms the asset is missing.
   Future<bool> _handleWebVideoLoadError(VideoEvent video, int index) async {
-    final videoUrl = video.videoUrl;
-    if (videoUrl == null || videoUrl.isEmpty) return false;
-    if (!_handledWebNotFoundVideoIds.add(video.id)) return false;
+    if (!mounted) return false;
+    context.read<FullscreenFeedBloc>().add(
+      FullscreenFeedVideoUnavailable(video.id),
+    );
+    return false;
+  }
 
-    final isNotFound = await confirmWebVideoNotFound(videoUrl);
-    if (!mounted || !isNotFound) {
-      _handledWebNotFoundVideoIds.remove(video.id);
-      return false;
+  /// Dispatch a [FullscreenFeedVideoUnavailable] event for the active
+  /// video when the cubit reports [PlaybackStatus.notFound].
+  ///
+  /// Replaces the previous per-item post-frame callback in
+  /// [_PooledFullscreenItemContent.build], which violated the
+  /// "no business logic in widgets" rule.
+  void _dispatchVideoUnavailableIfActive(VideoPlaybackStatusState state) {
+    final feedState = context.read<FullscreenFeedBloc>().state;
+    final activeVideo = feedState.currentVideo;
+    if (activeVideo == null) return;
+    if (state.statusFor(activeVideo.id) != PlaybackStatus.notFound) return;
+    if (feedState.removedVideoIds.contains(activeVideo.id)) return;
+
+    context.read<FullscreenFeedBloc>().add(
+      FullscreenFeedVideoUnavailable(activeVideo.id),
+    );
+  }
+
+  /// React to a pending skip target emitted by the BLoC.
+  ///
+  /// Animates the page view (pooled on native, page controller on web)
+  /// and then acknowledges the signal so the BLoC clears it.
+  Future<void> _handlePendingSkip(int nextIndex) async {
+    widget.onNotFoundAutoSkipRequested?.call(nextIndex);
+    try {
+      if (kIsWeb) {
+        await _webFeedKey.currentState?.animateToPage(nextIndex);
+      } else {
+        await _pooledFeedKey.currentState?.animateToPage(nextIndex);
+      }
+    } on Exception catch (error, stackTrace) {
+      // Animation may fail if the feed is unmounted during the skip. We
+      // don't rethrow — the dedupe set in the BLoC already records the
+      // removal so the next navigation attempt is idempotent.
+      Log.error(
+        'FullscreenFeedContent: animateToPage failed during skip',
+        name: 'FullscreenFeedContent',
+        category: LogCategory.video,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } finally {
+      if (mounted) {
+        context.read<FullscreenFeedBloc>().add(
+          const FullscreenFeedSkipAcknowledged(),
+        );
+      }
     }
-
-    ref.read(videoEventServiceProvider).removeVideoCompletely(video.id);
-    return true;
   }
 
   /// Creates a VideoFeedController with hooks wired to dispatch BLoC events.
@@ -451,6 +496,24 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               if (video != null) CommentsScreen.show(context, video);
             },
           ),
+        // Dispatch FullscreenFeedVideoUnavailable when the active video's
+        // playback status becomes notFound. The BLoC owns the HEAD-confirm,
+        // removal, and dedupe logic — this listener is a single screen-level
+        // bridge that replaces the per-item post-frame callback.
+        BlocListener<VideoPlaybackStatusCubit, VideoPlaybackStatusState>(
+          listener: (context, state) =>
+              _dispatchVideoUnavailableIfActive(state),
+        ),
+        // Animate the feed when the BLoC signals a pending skip.
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) =>
+              prev.pendingSkipTarget != curr.pendingSkipTarget &&
+              curr.pendingSkipTarget != null,
+          listener: (context, state) {
+            final target = state.pendingSkipTarget;
+            if (target != null) unawaited(_handlePendingSkip(target));
+          },
+        ),
       ],
       child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
         builder: (context, state) {
@@ -524,6 +587,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             ),
             body: kIsWeb
                 ? WebVideoFeed(
+                    key: _webFeedKey,
                     videos: state.videos
                         .where((v) => v.videoUrl != null)
                         .toList(),
@@ -558,6 +622,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                         },
                   )
                 : PooledVideoFeed(
+                    key: _pooledFeedKey,
                     videos: state.pooledVideos,
                     controller: _controller,
                     initialIndex: state.currentIndex,
@@ -613,8 +678,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                         trafficSource: widget.trafficSource,
                         sourceDetail: widget.sourceDetail,
                         isOwnVideo: isOwnVideo,
-                        onNotFoundAutoSkipRequested:
-                            widget.onNotFoundAutoSkipRequested,
                       );
                     },
                   ),
@@ -632,7 +695,6 @@ class _PooledFullscreenItem extends ConsumerWidget {
     required this.isActive,
     required this.isOwnVideo,
     required this.pagePosition,
-    this.onNotFoundAutoSkipRequested,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -643,7 +705,6 @@ class _PooledFullscreenItem extends ConsumerWidget {
   final bool isActive;
   final bool isOwnVideo;
   final ValueNotifier<double> pagePosition;
-  final void Function(int nextIndex)? onNotFoundAutoSkipRequested;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -680,7 +741,6 @@ class _PooledFullscreenItem extends ConsumerWidget {
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
         isOwnVideo: isOwnVideo,
-        onNotFoundAutoSkipRequested: onNotFoundAutoSkipRequested,
       ),
     );
   }
@@ -753,7 +813,6 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
     required this.isActive,
     required this.isOwnVideo,
     required this.pagePosition,
-    this.onNotFoundAutoSkipRequested,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -764,7 +823,6 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
   final bool isActive;
   final bool isOwnVideo;
   final ValueNotifier<double> pagePosition;
-  final void Function(int nextIndex)? onNotFoundAutoSkipRequested;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -779,7 +837,6 @@ class _PooledFullscreenItemContentState
   final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
   int _heartTriggerId = 0;
   bool _contentWarningRevealed = false;
-  bool _handledNotFound = false;
 
   void _handleDoubleTapLike(TapDownDetails details) {
     final showWarning = shouldShowContentWarningOverlay(
@@ -820,24 +877,6 @@ class _PooledFullscreenItemContentState
     unawaited(feedState.animateToPage(widget.index + 1));
   }
 
-  Future<void> _handleNotFoundVideo(BuildContext context) async {
-    if (_handledNotFound) return;
-    _handledNotFound = true;
-
-    ref.read(videoEventServiceProvider).removeVideoCompletely(widget.video.id);
-    if (!mounted) return;
-
-    final feedState = context.findAncestorStateOfType<PooledVideoFeedState>();
-    final nextIndex = widget.index + 1;
-    final canAdvance =
-        feedState != null && nextIndex < feedState.controller.videoCount;
-
-    if (canAdvance) {
-      widget.onNotFoundAutoSkipRequested?.call(nextIndex);
-      await feedState.animateToPage(nextIndex);
-    }
-  }
-
   /// Triggers the existing age verification flow. Matches the pattern used
   /// by the legacy [VideoErrorOverlay].
   Future<void> _verifyAgeForVideo(
@@ -864,14 +903,10 @@ class _PooledFullscreenItemContentState
       (VideoPlaybackStatusCubit cubit) => cubit.state.statusFor(video.id),
     );
 
-    if (widget.isActive &&
-        playbackStatus == PlaybackStatus.notFound &&
-        !_handledNotFound) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        unawaited(_handleNotFoundVideo(context));
-      });
-    }
+    // notFound -> remove + skip is handled at the screen level via a
+    // BlocListener<VideoPlaybackStatusCubit> that dispatches a
+    // FullscreenFeedVideoUnavailable event. The BLoC confirms with a HEAD
+    // check and emits a pendingSkipTarget that the screen consumes.
 
     final isPortrait = video.dimensions != null && video.isPortrait;
     final overlayLabels = contentWarningOverlayLabels(

@@ -78,10 +78,14 @@ class WebVideoFeed extends StatefulWidget {
   final WebVideoPlayerControllerFactory controllerFactory;
 
   @override
-  State<WebVideoFeed> createState() => _WebVideoFeedState();
+  State<WebVideoFeed> createState() => WebVideoFeedState();
 }
 
-class _WebVideoFeedState extends State<WebVideoFeed> {
+/// Public state for [WebVideoFeed] so screens can reach it via a
+/// [GlobalKey] and call [animateToPage] when the BLoC signals a
+/// skip. Only methods on this class are considered public API; direct
+/// access to fields is discouraged.
+class WebVideoFeedState extends State<WebVideoFeed> {
   late PageController _pageController;
   int _currentIndex = 0;
 
@@ -89,6 +93,15 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
   final Map<int, GlobalKey<WebVideoPlayerState>> _playerKeys = {};
   final Map<int, VideoPlayerController> _controllers = {};
   final Set<String> _handlingErrorVideoIds = {};
+
+  /// Animate the feed to [index]. Called from the fullscreen screen when
+  /// the BLoC confirms a missing active video and wants to skip to the
+  /// next one.
+  Future<void> animateToPage(int index) => _pageController.animateToPage(
+    index,
+    duration: const Duration(milliseconds: 250),
+    curve: Curves.easeOut,
+  );
 
   @override
   void initState() {
