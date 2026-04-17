@@ -975,6 +975,75 @@ void main() {
           addTearDown(controller.dispose);
         });
       });
+
+      group('replaceVideos', () {
+        test('replaces videos when source list shrinks', () {
+          final originalVideos = createTestVideos(count: 3);
+          final controller = VideoFeedController(
+            videos: originalVideos,
+            pool: pool,
+          );
+
+          final replacementVideos = [originalVideos[1], originalVideos[2]];
+          controller.replaceVideos(replacementVideos);
+
+          expect(controller.videoCount, equals(2));
+          expect(controller.videos.map((v) => v.id), [
+            originalVideos[1].id,
+            originalVideos[2].id,
+          ]);
+          expect(
+            controller.videos.any((v) => v.id == originalVideos.first.id),
+            isFalse,
+          );
+
+          addTearDown(controller.dispose);
+        });
+
+        test('clamps current index to replacement list length', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            initialIndex: 2,
+          )..replaceVideos([createTestVideo(id: 'remaining')]);
+          final currentIndex = controller.currentIndex;
+
+          expect(currentIndex, equals(0));
+
+          addTearDown(controller.dispose);
+        });
+
+        test('notifies listeners when replacing videos', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+          );
+
+          var notified = false;
+          controller
+            ..addListener(() => notified = true)
+            ..replaceVideos([createTestVideo(id: 'remaining')]);
+
+          expect(notified, isTrue);
+
+          addTearDown(controller.dispose);
+        });
+
+        test('does nothing when playback list and index are unchanged', () {
+          final videos = createTestVideos(count: 2);
+          final controller = VideoFeedController(videos: videos, pool: pool);
+
+          var notifyCount = 0;
+          controller
+            ..addListener(() => notifyCount++)
+            ..replaceVideos(videos);
+
+          expect(notifyCount, equals(0));
+          expect(controller.videoCount, equals(2));
+
+          addTearDown(controller.dispose);
+        });
+      });
     });
 
     group('dispose', () {

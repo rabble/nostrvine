@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:ui' show lerpDouble;
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -355,14 +355,23 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     final controller = _controller;
     if (controller == null || _lastPooledVideos == null) return;
 
-    final newVideos = state.pooledVideos
-        .where((v) => !_lastPooledVideos!.any((old) => old.id == v.id))
-        .toList();
+    final previousVideos = _lastPooledVideos!;
+    final nextVideos = state.pooledVideos;
+    final previousIds = previousVideos.map((v) => v.id).toList();
+    final nextIds = nextVideos.map((v) => v.id).toList();
+    final isAppendOnly =
+        nextIds.length >= previousIds.length &&
+        listEquals(nextIds.take(previousIds.length).toList(), previousIds);
 
-    if (newVideos.isNotEmpty) {
-      controller.addVideos(newVideos);
+    if (isAppendOnly) {
+      final newVideos = nextVideos.skip(previousVideos.length).toList();
+      if (newVideos.isNotEmpty) {
+        controller.addVideos(newVideos);
+      }
+    } else {
+      controller.replaceVideos(nextVideos, currentIndex: state.currentIndex);
     }
-    _lastPooledVideos = state.pooledVideos;
+    _lastPooledVideos = nextVideos;
   }
 
   /// Whether auto-advance is available on this build, determined from the
