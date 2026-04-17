@@ -585,7 +585,16 @@ class VideoEditorRenderService {
         category: .video,
       );
       return _NormalizationResult(
-        segments: clips.map((c) => VideoSegment(video: c.video)).toList(),
+        segments: clips
+            .map(
+              (c) => VideoSegment(
+                video: c.video,
+                startTime: c.trimStart == .zero ? null : c.trimStart,
+                endTime: c.trimStart + c.trimmedDuration,
+                volume: c.volume,
+              ),
+            )
+            .toList(),
         tempFilePaths: [],
         globalTransform:
             clipAnalysis.entries.first.cropParams.needsCropping(

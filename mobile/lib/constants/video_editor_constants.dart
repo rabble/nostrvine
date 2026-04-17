@@ -16,6 +16,9 @@ class VideoEditorConstants {
   /// Prefix key used to identify drafts being published in storage.
   static const String publishPrefixId = 'draft_publish';
 
+  /// Unique history key for clip items.
+  static const String clipsStateHistoryKey = 'clips';
+
   /// Unique history key for audio items.
   static const String audioStateHistoryKey = 'audio';
 

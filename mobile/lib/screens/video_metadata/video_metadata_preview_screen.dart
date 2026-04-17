@@ -172,8 +172,7 @@ class _VideoPreviewContent extends ConsumerWidget {
                 // Video playback layer
                 DivineVideoPlayer(
                   controller: controller,
-                  placeholder:
-                      VideoMetadataCapturePreviewThumbnail(clip: clip),
+                  placeholder: VideoMetadataCapturePreviewThumbnail(clip: clip),
                 ),
                 // Metadata overlay layer
                 if (!previewOnly)
@@ -215,33 +214,36 @@ class _PreviewOverlay extends ConsumerWidget {
       child: IgnorePointer(
         child: Opacity(
           opacity: 0.5,
-          child: ValueListenableBuilder(
-            valueListenable: isPreviewReady,
-            builder: (_, isActive, _) {
-              // Show overlay actions in preview mode
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  const FeedModeSwitch(isPreviewMode: true),
-                  VideoOverlayActions(
-                    video: VideoEvent(
-                      id: 'id',
-                      pubkey: publicKey,
-                      timestamp: DateTime.now(),
-                      createdAt: DateTime.now().millisecondsSinceEpoch,
-                      content: metadata.title,
-                      hashtags: metadata.tags.toList(),
-                      originalLikes: 1,
-                      originalComments: 1,
-                      originalReposts: 1,
+          child: Material(
+            type: .transparency,
+            child: ValueListenableBuilder(
+              valueListenable: isPreviewReady,
+              builder: (_, isActive, _) {
+                // Show overlay actions in preview mode
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const FeedModeSwitch(isPreviewMode: true),
+                    VideoOverlayActions(
+                      video: VideoEvent(
+                        id: 'id',
+                        pubkey: publicKey,
+                        timestamp: DateTime.now(),
+                        createdAt: DateTime.now().millisecondsSinceEpoch,
+                        content: metadata.title,
+                        hashtags: metadata.tags.toList(),
+                        originalLikes: 1,
+                        originalComments: 1,
+                        originalReposts: 1,
+                      ),
+                      isVisible: true,
+                      isActive: isActive,
+                      isPreviewMode: true,
                     ),
-                    isVisible: true,
-                    isActive: isActive,
-                    isPreviewMode: true,
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

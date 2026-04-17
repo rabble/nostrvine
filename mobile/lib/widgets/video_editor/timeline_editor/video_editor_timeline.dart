@@ -5,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_control_bar.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
@@ -205,7 +205,7 @@ class _VideoEditorTimelineState
                       onReorder: _onClipsReordered,
                       onReorderChanged: _onReorderChanged,
                       trimmingClipId: trimmingClipId,
-                      onTrimChanged: _onTrimChanged,
+                      onTrimChanged: _onClipTrimChange,
                       onTrimDragChanged: _onTrimDragChanged,
                       onClipTapped: _onClipTapped,
                       onOverlayItemMoved: _onOverlayItemMoved,
@@ -253,13 +253,15 @@ class _VideoEditorTimelineState
   // -- Reorder callbacks ----------------------------------------------------
 
   void _onClipsReordered(List<DivineVideoClip> reorderedClips) {
-    ref.read(clipManagerProvider.notifier).replaceClips(reorderedClips);
     context.read<ClipEditorBloc>().add(
       ClipEditorInitialized(reorderedClips),
     );
     context.read<VideoEditorMainBloc>().add(
       const VideoEditorExternalPauseRequested(isPaused: true),
     );
+    // Persist reorder as a new history entry so it can be undone.
+    final editor = VideoEditorScope.of(context).editor;
+    editor?.setClipState(reorderedClips);
   }
 
   void _onReorderChanged(bool isReordering) {
@@ -281,7 +283,7 @@ class _VideoEditorTimelineState
 
   // -- Trim callbacks -------------------------------------------------------
 
-  void _onTrimChanged({
+  void _onClipTrimChange({
     required String clipId,
     required Duration trimStart,
     required Duration trimEnd,
@@ -301,14 +303,27 @@ class _VideoEditorTimelineState
     setState(() => _isTrimming = isTrimming);
     final editor = VideoEditorScope.of(context).editor!;
     final clipEditorBloc = context.read<ClipEditorBloc>();
+
     if (isTrimming) {
       clipEditorBloc.add(const ClipEditorTrimDragStarted());
-      editor.addHistory();
+
       context.read<VideoEditorMainBloc>().add(
         const VideoEditorExternalPauseRequested(isPaused: true),
       );
     } else {
-      clipEditorBloc.add(const ClipEditorTrimDragEnded());
+      final clips = context
+          .read<ClipEditorBloc>()
+          .state
+          .clips
+          .map((e) => e.toJson())
+          .toList();
+
+      editor.addHistory(
+        meta: {
+          ...editor.stateManager.activeMeta,
+          VideoEditorConstants.clipsStateHistoryKey: clips,
+        },
+      );
     }
   }
 

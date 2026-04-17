@@ -34,7 +34,7 @@ class VideoClipEditorSplitBar extends StatelessWidget {
         );
         return Duration.zero;
       }
-      return clips[currentClipIndex].duration;
+      return clips[currentClipIndex].trimmedDuration;
     }();
     const handleColor = VineTheme.whiteText;
     final disabledColor = VineTheme.whiteText.withAlpha(65);

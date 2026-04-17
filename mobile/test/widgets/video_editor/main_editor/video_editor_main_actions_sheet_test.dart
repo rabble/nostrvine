@@ -26,7 +26,7 @@ void main() {
         _buildWidget(onOpenClipsEditor: () => openedClips = true),
       );
 
-      await tester.tap(find.bySemanticsLabel('Clips'));
+      await tester.tap(find.bySemanticsLabel('Open clips editor'));
       await tester.pumpAndSettle();
 
       expect(openedClips, isTrue);
@@ -39,7 +39,7 @@ void main() {
         _buildWidget(onOpenMusicLibrary: () => openedMusic = true),
       );
 
-      await tester.tap(find.bySemanticsLabel('Audio'));
+      await tester.tap(find.bySemanticsLabel('Open audio editor'));
       await tester.pumpAndSettle();
 
       expect(openedMusic, isTrue);

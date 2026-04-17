@@ -110,8 +110,22 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     _stickerBloc = VideoEditorStickerBloc(onPrecacheStickers: _precacheStickers)
       ..add(const VideoEditorStickerLoad());
     _clipEditorBloc = ClipEditorBloc(
-      onFinalClipInvalidated: () =>
-          ref.read(videoEditorProvider.notifier).invalidateFinalRenderedClip(),
+      onFinalClipInvalidated: () {
+        ref.read(videoEditorProvider.notifier).invalidateFinalRenderedClip();
+
+        if (_editor != null) {
+          _editor!.addHistory(
+            meta: {
+              ..._editor!.stateManager.activeMeta,
+              VideoEditorConstants.clipsStateHistoryKey: _clipEditorBloc
+                  .state
+                  .clips
+                  .map((e) => e.toJson())
+                  .toList(),
+            },
+          );
+        }
+      },
     );
     _timelineOverlayBloc = TimelineOverlayBloc();
 
@@ -229,6 +243,17 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       // Sync the updated clip list into the editor BLoC.
       final updatedClips = ref.read(clipManagerProvider).clips;
       clipEditorBloc.add(ClipEditorInitialized(updatedClips));
+
+      if (_editor != null) {
+        _editor!.addHistory(
+          meta: {
+            ..._editor!.stateManager.activeMeta,
+            VideoEditorConstants.clipsStateHistoryKey: updatedClips
+                .map((e) => e.toJson())
+                .toList(),
+          },
+        );
+      }
     }
   }
 

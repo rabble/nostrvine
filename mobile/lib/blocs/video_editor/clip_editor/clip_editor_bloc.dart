@@ -68,10 +68,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     // Split
     on<ClipEditorOriginalClipReplaced>(_onOriginalClipReplaced);
-    on<ClipEditorSplitRequested>(
-      _onSplitRequested,
-      transformer: droppable(),
-    );
+    on<ClipEditorSplitRequested>(_onSplitRequested, transformer: droppable());
 
     // Trim
     on<ClipEditorTrimUpdated>(_onTrimUpdated, transformer: restartable());

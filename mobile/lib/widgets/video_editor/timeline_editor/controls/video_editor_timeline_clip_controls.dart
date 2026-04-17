@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 
 /// Controls shown when a clip is in editing mode: Delete, Copy, Split, Done.
@@ -36,6 +37,7 @@ class TimelineClipControls extends ConsumerWidget {
     final bloc = context.read<ClipEditorBloc>();
     final state = bloc.state;
     final clipId = state.clips[state.currentClipIndex].id;
+    final editor = VideoEditorScope.of(context).editor!;
 
     bloc.add(ClipEditorClipRemoved(clipId));
 
@@ -44,13 +46,22 @@ class TimelineClipControls extends ConsumerWidget {
     }
     bloc.add(const ClipEditorEditingStopped());
 
-    ref.read(clipManagerProvider.notifier).removeClipById(clipId);
+    editor.addHistory(
+      meta: {
+        ...editor.stateManager.activeMeta,
+        VideoEditorConstants.clipsStateHistoryKey: state.clips
+            .where((clip) => clip.id != clipId)
+            .map((e) => e.toJson())
+            .toList(),
+      },
+    );
   }
 
   void _duplicateClip(BuildContext context, WidgetRef ref) {
     final bloc = context.read<ClipEditorBloc>();
     final state = bloc.state;
     final clip = state.clips[state.currentClipIndex];
+    final editor = VideoEditorScope.of(context).editor!;
 
     final copy = clip.copyWith(
       id:
@@ -67,10 +78,15 @@ class TimelineClipControls extends ConsumerWidget {
       )
       ..add(const ClipEditorEditingStopped());
 
-    ref.read(clipManagerProvider.notifier).replaceClips([
-      ...state.clips,
-      copy,
-    ]);
+    editor.addHistory(
+      meta: {
+        ...editor.stateManager.activeMeta,
+        VideoEditorConstants.clipsStateHistoryKey: [
+          ...state.clips,
+          copy,
+        ].map((e) => e.toJson()).toList(),
+      },
+    );
   }
 
   void _splitClip(BuildContext context) {

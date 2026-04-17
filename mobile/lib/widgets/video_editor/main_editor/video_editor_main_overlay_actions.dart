@@ -69,7 +69,7 @@ class _TopActions extends ConsumerWidget {
       },
       child: VideoEditorToolbar(
         closeIcon: .caretLeft,
-        doneIcon: .caretRight,
+        doneIcon: .arrowRight,
         onClose: () {
           if (isAutosavedDraft) {
             _onClosePressed(

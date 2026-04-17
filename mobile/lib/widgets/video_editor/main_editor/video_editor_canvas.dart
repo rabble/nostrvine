@@ -19,11 +19,13 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_feed_preview_overlay.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -117,6 +119,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Processed as a trailing seek once the current seek completes.
   Duration? _pendingSeekPosition;
 
+  /// Cached documents directory path — resolved once in [initState].
+  late final Future<String> _documentsPath;
+
   @override
   void initState() {
     super.initState();
@@ -126,6 +131,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       category: LogCategory.video,
     );
     _initializeController();
+    _documentsPath = getDocumentsPath();
 
     // Initialize the player with the current clips.
     if (_clipPaths.isNotEmpty) {
@@ -465,7 +471,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     final editor = scope.editor;
     if (editor == null) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       bloc.add(
         VideoEditorMainCapabilitiesChanged(
           canUndo: editor.canUndo,
@@ -483,6 +489,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           totalVideoDuration: videoDuration,
           audioTracks: editor.stateManager.audioTracks,
         ),
+      );
+
+      final clips = List<DivineVideoClip>.from(
+        editor.stateManager.clipSnapshots(await _documentsPath),
+      );
+      if (!mounted || clips.isEmpty || _isImportingHistory) return;
+      ref.read(clipManagerProvider.notifier).replaceClips(clips);
+      context.read<ClipEditorBloc>().add(
+        ClipEditorInitialized(clips),
       );
     });
   }
@@ -625,6 +640,35 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       },
     );
 
+    // Update native player clip boundaries when trim times change.
+    ref.listen<List<(Duration, Duration)>>(
+      clipManagerProvider.select(
+        (s) => s.clips.map((c) => (c.trimStart, c.trimEnd)).toList(),
+      ),
+      (previous, current) {
+        if (listEquals(previous, current)) return;
+
+        final clips = ref.read(clipManagerProvider).clips;
+        final currentPosition = context
+            .read<VideoEditorMainBloc>()
+            .state
+            .currentPosition;
+
+        _videoPlayer?.setClips(
+          [
+            for (final clip in clips)
+              if (clip.video.file?.path case final path?)
+                VideoClip(
+                  uri: path,
+                  start: clip.trimStart,
+                  end: clip.duration - clip.trimEnd,
+                ),
+          ],
+          startPosition: currentPosition,
+        );
+      },
+    );
+
     // Listen for playback control requests from BLoC
     return _OverlayCutArea(
       child: MultiBlocListener(
@@ -750,11 +794,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           _proVideoController,
           key: scope.editorKey,
           configs: ProImageEditorConfigs(
-            stateHistory: !_isImportingHistory && editorStateHistory.isNotEmpty
-                ? StateHistoryConfigs(
-                    initStateHistory: .fromMap(editorStateHistory),
-                  )
-                : const StateHistoryConfigs(),
+            stateHistory: StateHistoryConfigs(
+              initStateHistory: editorStateHistory.isNotEmpty
+                  ? .fromMap(editorStateHistory)
+                  : null,
+            ),
             imageGeneration: ImageGenerationConfigs(
               captureImageByteFormat: .rawStraightRgba,
               enableBackgroundGeneration: false,
@@ -897,6 +941,23 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             mainEditorCallbacks: MainEditorCallbacks(
               onAfterViewInit: () {
                 _isInitialized = true;
+
+                if (editorStateHistory.isEmpty) {
+                  final clips = ref.read(clipManagerProvider).clips;
+
+                  scope.editor!.stateManager.replaceHistory(
+                    scope.editor!.stateHistory.first.copyWith(
+                      meta: {
+                        ...scope.editor!.stateManager.activeMeta,
+                        VideoEditorConstants.clipsStateHistoryKey: clips
+                            .map((e) => e.toJson())
+                            .toList(),
+                      },
+                    ),
+                    index: 0,
+                  );
+                }
+
                 _syncMainCapabilities(scope, bloc);
               },
               onDone: _handleDone,

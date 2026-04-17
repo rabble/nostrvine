@@ -25,6 +25,7 @@ class DivineVideoClip {
     this.ghostFramePath,
     this.trimStart = Duration.zero,
     this.trimEnd = Duration.zero,
+    this.volume = 1,
     this.proofManifestJson,
   }) : _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
@@ -57,6 +58,9 @@ class DivineVideoClip {
 
   /// How much has been trimmed from the end of the clip.
   final Duration trimEnd;
+
+  /// Playback volume for this clip, between 0 (muted) and 1 (full volume).
+  final double volume;
 
   /// JSON-encoded ProofMode / C2PA attestation data for this individual clip.
   final String? proofManifestJson;
@@ -105,6 +109,7 @@ class DivineVideoClip {
     String? ghostFramePath,
     Duration? trimStart,
     Duration? trimEnd,
+    double? volume,
     String? proofManifestJson,
     bool clearProofManifestJson = false,
   }) {
@@ -122,6 +127,7 @@ class DivineVideoClip {
       ghostFramePath: ghostFramePath ?? this.ghostFramePath,
       trimStart: trimStart ?? this.trimStart,
       trimEnd: trimEnd ?? this.trimEnd,
+      volume: volume ?? this.volume,
       proofManifestJson: clearProofManifestJson
           ? null
           : (proofManifestJson ?? this.proofManifestJson),
@@ -149,6 +155,7 @@ class DivineVideoClip {
           : null,
       'trimStartMs': trimStart.inMilliseconds,
       'trimEndMs': trimEnd.inMilliseconds,
+      'volume': volume,
       if (proofManifestJson != null) 'proofManifestJson': proofManifestJson,
     };
   }
@@ -204,6 +211,7 @@ class DivineVideoClip {
       trimEnd: Duration(
         milliseconds: (json['trimEndMs'] as int?) ?? 0,
       ),
+      volume: (json['volume'] as num?)?.toDouble() ?? 1,
       proofManifestJson: json['proofManifestJson'] as String?,
     );
   }

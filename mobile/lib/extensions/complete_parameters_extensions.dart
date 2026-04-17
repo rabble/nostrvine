@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -18,6 +19,31 @@ extension CompleteParametersEquality on CompleteParameters {
     } catch (e, stackTrace) {
       Log.error(
         'Failed to parse audioTracks from meta',
+        name: 'CompleteParametersEquality',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
+  /// Restores [DivineVideoClip] objects from the completion metadata.
+  ///
+  /// [documentsPath] is required to resolve relative file paths stored in
+  /// the serialized JSON back to absolute paths.
+  /// The list order represents the clip playback order.
+  List<DivineVideoClip> clipSnapshotsFromMeta(String documentsPath) {
+    try {
+      final raw = meta[VideoEditorConstants.clipsStateHistoryKey];
+      if (raw is! List) return [];
+      return raw
+          .cast<Map<String, dynamic>>()
+          .map((json) => DivineVideoClip.fromJson(json, documentsPath))
+          .toList();
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to parse clipSnapshots from meta',
         name: 'CompleteParametersEquality',
         category: LogCategory.video,
         error: e,
