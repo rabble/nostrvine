@@ -900,7 +900,7 @@ void main() {
           // Verify stop was called when navigating away
           verify(() => mockAudioService.stop()).called(greaterThanOrEqualTo(1));
         },
-        // TODO(#2899): Order-dependent within its own file — passes only when
+        // TODO(#3137): Order-dependent within its own file — passes only when
         // earlier-group tests run first. Under VGV's merged suite with
         // --test-randomize-ordering-seed random, tests from other files
         // interleave and break the implicit ordering, so stop() is never
