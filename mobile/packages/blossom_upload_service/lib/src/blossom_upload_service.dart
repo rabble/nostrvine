@@ -783,9 +783,11 @@ class BlossomUploadService {
 
         chunkStopwatch.stop();
         final chunkMs = chunkStopwatch.elapsedMilliseconds;
+        // coverage:ignore-start
         final chunkSpeed = chunkMs > 0
             ? (chunkLength / 1024 / (chunkMs / 1000)).toStringAsFixed(0)
-            : '?'; // coverage:ignore-line
+            : '?';
+        // coverage:ignore-end
         Log.debug(
           '📤 Chunk $chunkIndex/$totalChunks: '
           '${(chunkLength / 1024).toStringAsFixed(0)}KB '
