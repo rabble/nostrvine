@@ -176,6 +176,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final showBluesky = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.blueskyPublishing),
     );
+    final accountSwitchingEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.accountSwitching),
+    );
     return BlocProvider.value(
       value: _accountCubit,
       child: Scaffold(
@@ -193,7 +196,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 // Account header
                 if (isAuthenticated) ...[
-                  _AccountHeader(onSwitchAccount: _handleSwitchAccount),
+                  _AccountHeader(
+                    onSwitchAccount: _handleSwitchAccount,
+                    accountSwitchingEnabled: accountSwitchingEnabled,
+                  ),
                   if (authService.isAnonymous)
                     _SettingsTile(
                       icon: Icons.security,
@@ -296,9 +302,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 }
 
 class _AccountHeader extends StatelessWidget {
-  const _AccountHeader({required this.onSwitchAccount});
+  const _AccountHeader({
+    required this.onSwitchAccount,
+    required this.accountSwitchingEnabled,
+  });
 
   final VoidCallback onSwitchAccount;
+  final bool accountSwitchingEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -379,50 +389,51 @@ class _AccountHeader extends StatelessWidget {
                   );
                 },
               ),
-              Semantics(
-                button: true,
-                label: buttonLabel,
-                child: InkWell(
-                  onTap: onSwitchAccount,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: VineTheme.surfaceContainer,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: VineTheme.outlineMuted,
-                        width: 2,
+              if (accountSwitchingEnabled)
+                Semantics(
+                  button: true,
+                  label: buttonLabel,
+                  child: InkWell(
+                    onTap: onSwitchAccount,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      spacing: 8,
-                      children: [
-                        if (!hasMultipleAccounts)
-                          const DivineIcon(
-                            icon: DivineIconName.userPlus,
-                            color: VineTheme.vineGreen,
-                          ),
-                        Text(
-                          buttonLabel,
-                          style: VineTheme.titleMediumFont(
-                            color: VineTheme.vineGreen,
-                          ),
+                      decoration: BoxDecoration(
+                        color: VineTheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: VineTheme.outlineMuted,
+                          width: 2,
                         ),
-                        if (hasMultipleAccounts)
-                          const DivineIcon(
-                            icon: DivineIconName.caretDown,
-                            color: VineTheme.vineGreen,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 8,
+                        children: [
+                          if (!hasMultipleAccounts)
+                            const DivineIcon(
+                              icon: DivineIconName.userPlus,
+                              color: VineTheme.vineGreen,
+                            ),
+                          Text(
+                            buttonLabel,
+                            style: VineTheme.titleMediumFont(
+                              color: VineTheme.vineGreen,
+                            ),
                           ),
-                      ],
+                          if (hasMultipleAccounts)
+                            const DivineIcon(
+                              icon: DivineIconName.caretDown,
+                              color: VineTheme.vineGreen,
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         );

@@ -8,7 +8,6 @@ import 'dart:math';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 
 /// A shared scaffold layout for authentication form screens.
@@ -76,7 +75,8 @@ class AuthFormScaffold extends StatelessWidget {
   /// Optional secondary action button (e.g. "Skip for now").
   final Widget? secondaryButton;
 
-  /// Custom back button callback. Defaults to `context.pop()`.
+  /// Custom back button callback. Defaults to [AuthBackButton]'s safe back
+  /// behavior.
   final VoidCallback? onBack;
 
   @override
@@ -97,7 +97,7 @@ class AuthFormScaffold extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     // Back button
-                    AuthBackButton(onPressed: onBack ?? () => context.pop()),
+                    AuthBackButton(onPressed: onBack),
 
                     const SizedBox(height: 32),
 
