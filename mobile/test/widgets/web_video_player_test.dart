@@ -242,4 +242,37 @@ void main() {
       expect(find.text('Failed to load video'), findsNothing);
     },
   );
+
+  testWidgets(
+    'uses the legacy controller factory when no auth provider is supplied',
+    (tester) async {
+      final controller = _MockVideoPlayerController();
+      final initializeCompleter = Completer<void>();
+      var factoryCalls = 0;
+
+      when(controller.initialize).thenAnswer((_) => initializeCompleter.future);
+      when(controller.dispose).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: WebVideoPlayer(
+            url: 'https://example.com/video.mp4',
+            initializeTimeout: const Duration(milliseconds: 50),
+            controllerFactory: ({required url, required headers}) {
+              factoryCalls++;
+              return controller;
+            },
+          ),
+        ),
+      );
+
+      expect(factoryCalls, equals(1));
+
+      // Flush the timeout timer before the test ends so the framework's
+      // "Timer is still pending" invariant stays satisfied.
+      await tester.pump(const Duration(milliseconds: 60));
+    },
+  );
 }
