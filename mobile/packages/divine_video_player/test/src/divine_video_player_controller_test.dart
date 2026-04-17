@@ -349,6 +349,20 @@ void main() {
         expect(sent, hasLength(2));
       });
 
+      test(
+        'setClips includes startPositionMs when startPosition > zero',
+        () async {
+          const clips = [VideoClip(uri: '/a.mp4')];
+          await controller.setClips(
+            clips,
+            startPosition: const Duration(seconds: 3),
+          );
+
+          final args = playerCalls.last.arguments as Map;
+          expect(args['startPositionMs'], equals(3000));
+        },
+      );
+
       test('setClips resets firstFrameCompleter when completed', () async {
         // Complete the firstFrameCompleter by sending a state event.
         eventController.add({

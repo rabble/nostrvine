@@ -1191,6 +1191,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionLike => 'الإعجاب بالفيديو';
 
   @override
+  String get videoActionAutoLabel => 'تلقائي';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'تفعيل التشغيل التلقائي';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'تعطيل التشغيل التلقائي';
+
+  @override
   String get videoActionRemoveRepost => 'إزالة إعادة النشر';
 
   @override
@@ -3522,13 +3531,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navMyProfile => 'ملفي الشخصي';
 
   @override
-  String get navSearch => 'بحث';
-
-  @override
   String get navNotifications => 'الإشعارات';
-
-  @override
-  String get navSearchTooltip => 'بحث';
 
   @override
   String get navOpenCamera => 'فتح الكاميرا';
@@ -5446,4 +5449,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'إزالة';
+
+  @override
+  String get metadataCaptionsLabel => 'التسميات التوضيحية';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'التسميات التوضيحية مفعّلة لجميع مقاطع الفيديو';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'التسميات التوضيحية معطّلة لجميع مقاطع الفيديو';
 }

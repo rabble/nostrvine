@@ -594,6 +594,9 @@
   "shareMessageHint": "Add optional message...",
   "videoActionUnlike": "Unlike video",
   "videoActionLike": "Like video",
+  "videoActionAutoLabel": "Auto",
+  "videoActionEnableAutoAdvance": "Enable auto advance",
+  "videoActionDisableAutoAdvance": "Disable auto advance",
   "videoActionRemoveRepost": "Remove repost",
   "videoActionRepost": "Repost video",
   "videoActionViewComments": "View comments",
@@ -1821,9 +1824,7 @@
   "navInbox": "Inbox",
   "navProfile": "Profile",
   "navMyProfile": "My Profile",
-  "navSearch": "Search",
   "navNotifications": "Notifications",
-  "navSearchTooltip": "Search",
   "navOpenCamera": "Open camera",
   "navUnknown": "Unknown",
   "navExploreClassics": "Classics",
@@ -2854,5 +2855,17 @@
   "videoMetadataPlayPreviewSemanticLabel": "Play preview",
   "videoMetadataPausePreviewSemanticLabel": "Pause preview",
   "videoMetadataClosePreviewSemanticLabel": "Close video preview",
-  "videoMetadataRemoveSemanticLabel": "Remove"
+  "videoMetadataRemoveSemanticLabel": "Remove",
+  "metadataCaptionsLabel": "Captions",
+  "@metadataCaptionsLabel": {
+    "description": "Label for the global captions toggle in the video metadata sheet"
+  },
+  "metadataCaptionsEnabledSemantics": "Captions enabled for all videos",
+  "@metadataCaptionsEnabledSemantics": {
+    "description": "Screen reader label when the global captions toggle is on"
+  },
+  "metadataCaptionsDisabledSemantics": "Captions disabled for all videos",
+  "@metadataCaptionsDisabledSemantics": {
+    "description": "Screen reader label when the global captions toggle is off"
+  }
 }

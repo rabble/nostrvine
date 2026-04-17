@@ -1642,7 +1642,6 @@
   "searchSomethingWentWrong": "문제가 발생했어요",
   "searchTryAgain": "다시 시도",
   "trendingTitle": "트렌딩",
-  "videoEditorLayers": "레이어",
   "videoEditorStickers": "스티커",
   "videoMetadataContentWarnings": "콘텐츠 경고",
   "videoMetadataExpiration": "만료",
@@ -2140,5 +2139,11 @@
   "videoRecorderToggleGridLabel": "그리드 전환",
   "videoRecorderWhySixSecondsButton": "알겠어요!",
   "videoRecorderWhySixSecondsSubtitle": "짧은 클립은 자발성을 위한 공간을 만듭니다. 6초 형식은 순간이 일어나는 그대로 진정성 있는 순간을 포착하는 데 도움이 됩니다.",
-  "videoRecorderWhySixSecondsTitle": "왜 6초인가요?"
+  "videoRecorderWhySixSecondsTitle": "왜 6초인가요?",
+  "videoActionAutoLabel": "자동",
+  "videoActionEnableAutoAdvance": "자동 넘기기 활성화",
+  "videoActionDisableAutoAdvance": "자동 넘기기 비활성화",
+  "metadataCaptionsLabel": "자막",
+  "metadataCaptionsEnabledSemantics": "모든 동영상에서 자막이 활성화되었습니다",
+  "metadataCaptionsDisabledSemantics": "모든 동영상에서 자막이 비활성화되었습니다"
 }

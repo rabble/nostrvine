@@ -25,11 +25,13 @@ class MockFile extends Mock implements File {}
 void main() {
   group('FullscreenFeedBloc', () {
     late StreamController<List<VideoEvent>> videosController;
+    late StreamController<bool> hasMoreController;
     late MockMediaCacheManager mockMediaCache;
     late MockBlossomAuthService mockBlossomAuth;
 
     setUp(() {
       videosController = StreamController<List<VideoEvent>>.broadcast();
+      hasMoreController = StreamController<bool>.broadcast();
       mockMediaCache = MockMediaCacheManager();
       mockBlossomAuth = MockBlossomAuthService();
 
@@ -39,6 +41,7 @@ void main() {
 
     tearDown(() {
       videosController.close();
+      hasMoreController.close();
     });
 
     VideoEvent createTestVideo(String id, {String? sha256}) {
@@ -59,12 +62,14 @@ void main() {
     FullscreenFeedBloc createBloc({
       int initialIndex = 0,
       void Function()? onLoadMore,
+      Stream<bool>? hasMoreStream,
       MediaCacheManager? mediaCache,
       BlossomAuthService? blossomAuthService,
     }) => FullscreenFeedBloc(
       videosStream: videosController.stream,
       initialIndex: initialIndex,
       onLoadMore: onLoadMore,
+      hasMoreStream: hasMoreStream,
       mediaCache: mediaCache ?? mockMediaCache,
       blossomAuthService: blossomAuthService,
     );
@@ -75,6 +80,17 @@ void main() {
       expect(bloc.state.videos, isEmpty);
       expect(bloc.state.currentIndex, 2);
       expect(bloc.state.isLoadingMore, isFalse);
+      expect(bloc.state.canLoadMore, isFalse);
+      bloc.close();
+    });
+
+    test('load more stays unavailable until hasMoreStream emits true', () {
+      final bloc = createBloc(
+        onLoadMore: () {},
+        hasMoreStream: hasMoreController.stream,
+      );
+
+      expect(bloc.state.canLoadMore, isFalse);
       bloc.close();
     });
 
@@ -201,6 +217,34 @@ void main() {
     });
 
     group('FullscreenFeedStarted', () {
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'updates canLoadMore from hasMoreStream',
+        build: () => createBloc(
+          onLoadMore: () {},
+          hasMoreStream: hasMoreController.stream,
+        ),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          hasMoreController.add(true);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          hasMoreController.add(false);
+        },
+        wait: const Duration(milliseconds: 200),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.canLoadMore,
+            'canLoadMore',
+            true,
+          ),
+          isA<FullscreenFeedState>().having(
+            (s) => s.canLoadMore,
+            'canLoadMore',
+            false,
+          ),
+        ],
+      );
+
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'subscribes to videos stream and emits ready when videos arrive',
         build: createBloc,

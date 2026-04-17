@@ -50,29 +50,29 @@ class FullscreenFeedBloc
   FullscreenFeedBloc({
     required Stream<List<VideoEvent>> videosStream,
     required int initialIndex,
+    Stream<bool>? hasMoreStream,
     MediaCacheManager? mediaCache,
     VoidCallback? onLoadMore,
     BlossomAuthService? blossomAuthService,
   }) : _videosStream = videosStream,
+       _hasMoreStream = hasMoreStream,
        _onLoadMore = onLoadMore,
        _mediaCache = mediaCache,
        _blossomAuthService = blossomAuthService,
-       super(
-         FullscreenFeedState(
-           currentIndex: initialIndex,
-           canLoadMore: onLoadMore != null,
-         ),
-       ) {
+       super(FullscreenFeedState(currentIndex: initialIndex)) {
     on<FullscreenFeedStarted>(_onStarted);
+    on<FullscreenFeedHasMoreChanged>(_onHasMoreChanged);
     on<FullscreenFeedLoadMoreRequested>(_onLoadMoreRequested);
     on<FullscreenFeedIndexChanged>(_onIndexChanged);
     on<FullscreenFeedVideoCacheStarted>(_onVideoCacheStarted);
   }
 
   final Stream<List<VideoEvent>> _videosStream;
+  final Stream<bool>? _hasMoreStream;
   final VoidCallback? _onLoadMore;
   final MediaCacheManager? _mediaCache;
   final BlossomAuthService? _blossomAuthService;
+  StreamSubscription<bool>? _hasMoreSubscription;
 
   /// Queue of video IDs waiting to be cached in the background.
   final Queue<_CacheRequest> _cacheQueue = Queue<_CacheRequest>();
@@ -93,6 +93,21 @@ class FullscreenFeedBloc
     FullscreenFeedStarted event,
     Emitter<FullscreenFeedState> emit,
   ) async {
+    _hasMoreSubscription ??= _hasMoreStream?.listen(
+      (hasMore) {
+        if (!isClosed) add(FullscreenFeedHasMoreChanged(hasMore));
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        Log.error(
+          'FullscreenFeedBloc: hasMore stream error - $error',
+          name: 'FullscreenFeedBloc',
+          category: LogCategory.video,
+          error: error,
+          stackTrace: stackTrace,
+        );
+      },
+    );
+
     await emit.forEach<List<VideoEvent>>(
       _videosStream,
       onData: (videos) {
@@ -123,6 +138,18 @@ class FullscreenFeedBloc
         // Return current state to keep showing existing videos
         return state;
       },
+    );
+  }
+
+  void _onHasMoreChanged(
+    FullscreenFeedHasMoreChanged event,
+    Emitter<FullscreenFeedState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        canLoadMore: event.hasMore,
+        isLoadingMore: state.isLoadingMore && event.hasMore,
+      ),
     );
   }
 
@@ -299,7 +326,8 @@ class FullscreenFeedBloc
   }
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
+    await _hasMoreSubscription?.cancel();
     _cacheQueue.clear();
     return super.close();
   }

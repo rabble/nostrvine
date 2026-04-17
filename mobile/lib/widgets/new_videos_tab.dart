@@ -194,16 +194,19 @@ class _NewVideosContent extends ConsumerStatefulWidget {
 
 class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
   late final StreamController<List<VideoEvent>> _videosStreamController;
+  late final StreamController<bool> _hasMoreStreamController;
 
   @override
   void initState() {
     super.initState();
     _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+    _hasMoreStreamController = StreamController<bool>.broadcast();
   }
 
   @override
   void dispose() {
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -216,6 +219,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
             .where((v) => v.isSupportedOnCurrentPlatform)
             .toList();
         _videosStreamController.add(videos);
+        _hasMoreStreamController.add(next.value!.hasMoreContent);
       }
     });
     final popularNowFeedNotifier = ref.read(popularNowFeedProvider.notifier);
@@ -235,6 +239,9 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
             videosStream: _videosStreamController.stream.startWith(videoList),
             initialIndex: index,
             onLoadMore: popularNowFeedNotifier.loadMore,
+            hasMoreStream: _hasMoreStreamController.stream.startWith(
+              widget.hasMoreContent,
+            ),
             contextTitle: 'New Videos',
             trafficSource: ViewTrafficSource.discoveryNew,
           ),

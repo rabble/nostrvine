@@ -52,7 +52,7 @@ import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
@@ -71,6 +71,7 @@ import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
+import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
@@ -702,6 +703,24 @@ Future<void> _startOpenVineApp() async {
       return;
     }
 
+    final recoverableReason = classifyRecoverableFlutterError(details);
+    if (recoverableReason != null) {
+      Log.warning(
+        'Recoverable Flutter resource load error (non-fatal): '
+        '${details.exception}',
+        name: 'Main',
+      );
+      try {
+        FirebaseCrashlytics.instance.recordError(
+          details.exception,
+          details.stack,
+          reason: recoverableReason,
+        );
+      } catch (_) {}
+      FlutterError.presentError(details);
+      return;
+    }
+
     // For other errors, forward to any existing handler (e.g., Crashlytics),
     // then use default presentation which will now use our ErrorWidget.builder
     try {
@@ -1215,12 +1234,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
+            // TODO(#3032): Currently unreachable — GoRouter intercepts
+            // deep links before DeepLinkService can parse them.
             case DeepLinkType.search:
               if (deepLink.searchTerm != null) {
-                // Include index if present, otherwise use grid view
-                final targetPath = SearchScreenPure.pathForTerm(
-                  term: deepLink.searchTerm,
-                  index: deepLink.index,
+                final targetPath = SearchResultsPage.pathForQuery(
+                  deepLink.searchTerm!,
                 );
                 Log.info(
                   '📱 Navigating to search: $targetPath',
@@ -1370,10 +1389,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             router.go(ExploreScreen.path);
           }
           return true; // Handled
-        case RouteType.search:
-          // Go back to explore
-          router.go(ExploreScreen.path);
-          return true; // Handled
         case RouteType.videoRecorder:
         case RouteType.videoEditor:
         case RouteType.videoMetadata:
@@ -1400,7 +1415,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           RouteType.hashtag => HashtagScreenRouter.pathForTag(
             ctx.hashtag ?? '',
           ),
-          RouteType.search => SearchScreenPure.path,
           RouteType.home => VideoFeedPage.pathForIndex(0),
           _ => ExploreScreen.path,
         };

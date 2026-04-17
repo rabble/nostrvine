@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
@@ -17,6 +18,7 @@ import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/state/video_feed_state.dart';
@@ -555,5 +557,80 @@ void main() {
         expect(profileFeed.loadMoreCallCount, 0);
       },
     );
+  });
+
+  group('Profile grid fullscreen args', () {
+    late _MockBackgroundPublishBloc backgroundPublishBloc;
+
+    setUp(() {
+      backgroundPublishBloc = _MockBackgroundPublishBloc();
+      when(() => backgroundPublishBloc.state).thenReturn(
+        const BackgroundPublishState(),
+      );
+      whenListen(
+        backgroundPublishBloc,
+        const Stream<BackgroundPublishState>.empty(),
+        initialState: const BackgroundPublishState(),
+      );
+    });
+
+    testWidgets('passes a live hasMoreStream to fullscreen navigation', (
+      tester,
+    ) async {
+      PooledFullscreenVideoFeedArgs? capturedArgs;
+
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: ProfileVideosGrid(
+                videos: mockVideos,
+                userIdHex: testUserHex,
+              ),
+            ),
+          ),
+          GoRoute(
+            path: PooledFullscreenVideoFeedScreen.path,
+            builder: (context, state) {
+              capturedArgs = state.extra! as PooledFullscreenVideoFeedArgs;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authServiceProvider.overrideWithValue(
+              createTestAuthService('someone-else'),
+            ),
+            profileFeedProvider(testUserHex).overrideWith(
+              () => _TestProfileFeed(
+                VideoFeedState(videos: mockVideos, hasMoreContent: true),
+              ),
+            ),
+          ],
+          child: BlocProvider<BackgroundPublishBloc>.value(
+            value: backgroundPublishBloc,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Video thumbnail 1'));
+      await tester.pumpAndSettle();
+
+      expect(capturedArgs, isNotNull);
+      expect(capturedArgs!.hasMoreStream, isNotNull);
+    });
   });
 }

@@ -280,11 +280,26 @@ class ProfileRepository {
         final result = await _funnelcakeApiClient!.getUserProfile(pubkey);
         switch (result) {
           case UserProfileFound():
-            final profile = UserProfile.fromUserProfileFound(result);
-            _knownCached.add(pubkey);
-            await _userProfilesDao.upsertProfile(profile);
+            final funnelcakeProfile = UserProfile.fromUserProfileFound(result);
+            // Funnelcake profiles use DateTime.now() as a synthetic
+            // createdAt (the REST API does not expose the Nostr event
+            // timestamp), so _cacheProfileIfNewer cannot reliably guard
+            // against overwriting a freshly-saved bio. Only write to
+            // cache when no local profile exists yet; otherwise fall
+            // through to the relay/indexer path so a newer Kind 0 on
+            // relays can still upgrade the cache.
+            final existing = await _userProfilesDao.getProfile(pubkey);
+            if (existing == null) {
+              _knownCached.add(pubkey);
+              await _userProfilesDao.upsertProfile(funnelcakeProfile);
+            }
             await _cacheProfileStatsFromResult(pubkey, result);
-            return profile;
+            if (existing != null) {
+              // Local profile exists — skip the early return and let
+              // the relay/indexer path run so a newer Kind 0 can win.
+              break;
+            }
+            return funnelcakeProfile;
           case UserProfileNotPublished():
             // User exists but has no Kind 0. Cache stats and skip relay
             // fallback — the profile genuinely does not exist yet.
@@ -306,11 +321,17 @@ class ProfileRepository {
     // Step 2: Fire connected relays and indexer relays concurrently.
     // Return the first valid profile immediately, then let slower
     // sources upgrade the cache if they have a newer kind 0 event.
-    final profile = await _fetchFromRelaysParallel(pubkey);
-    if (profile != null) {
-      await _cacheProfileIfNewer(profile);
-      return profile;
+    final relayProfile = await _fetchFromRelaysParallel(pubkey);
+    if (relayProfile != null) {
+      await _cacheProfileIfNewer(relayProfile);
+      return relayProfile;
     }
+
+    // Relay/indexer found nothing. If a local profile already exists
+    // (e.g. Funnelcake had a hit but we skipped its upsert to protect
+    // a freshly-saved bio), return it as a fallback rather than null.
+    final fallback = await _userProfilesDao.getProfile(pubkey);
+    if (fallback != null) return fallback;
 
     // All sources exhausted — mark as confirmed missing.
     _confirmedMissing.add(pubkey);
@@ -399,15 +420,22 @@ class ProfileRepository {
       final events = await _nostrClient
           .queryEvents(
             [
-              Filter(kinds: [0], authors: [pubkey], limit: 1),
+              Filter(kinds: [0], authors: [pubkey], limit: 5),
             ],
             tempRelays: _indexerRelays,
             useCache: false,
           )
           .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
 
-      if (events.isNotEmpty && events.first.kind == 0) {
-        final profile = UserProfile.fromNostrEvent(events.first);
+      // Relays do not guarantee newest-first ordering, so pick the event
+      // with the highest createdAt to avoid overwriting a freshly saved
+      // profile with stale metadata.
+      final kind0Events = events.where((e) => e.kind == 0).toList();
+      if (kind0Events.isNotEmpty) {
+        final newest = kind0Events.reduce(
+          (a, b) => b.createdAt > a.createdAt ? b : a,
+        );
+        final profile = UserProfile.fromNostrEvent(newest);
         developer.log(
           'Fetched from indexer relay: ${profile.bestDisplayName}',
           name: 'ProfileRepository.fetchFreshProfile',

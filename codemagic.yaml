@@ -87,8 +87,19 @@ definitions:
     - &build_aab
       name: Build Android AAB
       script: |
-        # Offset to continue from existing Google Play builds (GP has up to 108, CM at 100)
-        BUILD_NUMBER=$((PROJECT_BUILD_NUMBER + 8))
+        # Use the latest Play versionCode as the primary source of truth.
+        LATEST_GOOGLE_PLAY_BUILD_NUMBER=$(google-play get-latest-build-number --package-name "co.openvine.app" 2>/dev/null || true)
+        BUILD_NUMBER=$PROJECT_BUILD_NUMBER
+        case "$LATEST_GOOGLE_PLAY_BUILD_NUMBER" in
+          ''|*[!0-9]*)
+            ;;
+          *)
+            NEXT_PLAY_BUILD_NUMBER=$((LATEST_GOOGLE_PLAY_BUILD_NUMBER + 1))
+            if [ "$NEXT_PLAY_BUILD_NUMBER" -gt "$BUILD_NUMBER" ]; then
+              BUILD_NUMBER=$NEXT_PLAY_BUILD_NUMBER
+            fi
+            ;;
+        esac
         flutter build appbundle --release --build-number=$BUILD_NUMBER \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \

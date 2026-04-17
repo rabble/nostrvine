@@ -2353,7 +2353,6 @@
   "searchSomethingWentWrong": "Bir şeyler ters gitti",
   "searchTryAgain": "Tekrar dene",
   "trendingTitle": "Gündemde",
-  "videoEditorLayers": "Katmanlar",
   "videoEditorStickers": "Çıkartmalar",
   "videoMetadataContentWarnings": "İçerik Uyarıları",
   "videoMetadataExpiration": "Son Kullanma",
@@ -2851,5 +2850,11 @@
   "videoRecorderToggleGridLabel": "Izgarayı değiştir",
   "videoRecorderWhySixSecondsButton": "Anladım!",
   "videoRecorderWhySixSecondsSubtitle": "Kısa klipler kendiliğindenlik için alan yaratır. 6 saniyelik format, anların gerçekleştiği anda otantik anları yakalamanıza yardımcı olur.",
-  "videoRecorderWhySixSecondsTitle": "Neden altı saniye?"
+  "videoRecorderWhySixSecondsTitle": "Neden altı saniye?",
+  "videoActionAutoLabel": "Otomatik",
+  "videoActionEnableAutoAdvance": "Otomatik ilerlemeyi etkinleştir",
+  "videoActionDisableAutoAdvance": "Otomatik ilerlemeyi devre dışı bırak",
+  "metadataCaptionsLabel": "Altyazılar",
+  "metadataCaptionsEnabledSemantics": "Tüm videolar için altyazılar etkin",
+  "metadataCaptionsDisabledSemantics": "Tüm videolar için altyazılar devre dışı"
 }

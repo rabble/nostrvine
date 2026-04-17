@@ -224,9 +224,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 // Top bar: back + info
                 Row(
                   children: [
-                    AuthBackButton(
-                      onPressed: isDisabled ? null : () => context.pop(),
-                    ),
+                    AuthBackButton(enabled: !isDisabled),
                     const Spacer(),
                     RoundedIconButton(
                       onPressed: isDisabled

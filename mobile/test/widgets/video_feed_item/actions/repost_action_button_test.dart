@@ -20,6 +20,10 @@ void main() {
 
   late VideoEvent testVideo;
 
+  setUpAll(() {
+    registerFallbackValue(const VideoInteractionsRepostToggled());
+  });
+
   setUp(() {
     testVideo = VideoEvent(
       id: 'test-video-0123456789abcdef0123456789abcdef0123456789abcdef0123',
@@ -35,12 +39,17 @@ void main() {
     required VideoEvent video,
     bool isPreviewMode = false,
     VideoInteractionsBloc? bloc,
+    VoidCallback? onInteracted,
   }) {
     final widget = MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: RepostActionButton(video: video, isPreviewMode: isPreviewMode),
+        body: RepostActionButton(
+          video: video,
+          isPreviewMode: isPreviewMode,
+          onInteracted: onInteracted,
+        ),
       ),
     );
 
@@ -130,6 +139,27 @@ void main() {
         await tester.pumpWidget(buildSubject(video: testVideo, bloc: mockBloc));
 
         expect(find.text('5'), findsOneWidget);
+      });
+
+      testWidgets('calls onInteracted before dispatching repost toggle', (
+        tester,
+      ) async {
+        var interacted = false;
+
+        await tester.pumpWidget(
+          buildSubject(
+            video: testVideo,
+            bloc: mockBloc,
+            onInteracted: () => interacted = true,
+          ),
+        );
+
+        await tester.tap(find.byType(IconButton));
+
+        expect(interacted, isTrue);
+        verify(
+          () => mockBloc.add(const VideoInteractionsRepostToggled()),
+        ).called(1);
       });
     });
   });

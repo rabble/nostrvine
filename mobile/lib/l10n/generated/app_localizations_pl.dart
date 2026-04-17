@@ -1227,6 +1227,17 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoActionLike => 'Polub film';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance =>
+      'Włącz automatyczne przechodzenie dalej';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Wyłącz automatyczne przechodzenie dalej';
+
+  @override
   String get videoActionRemoveRepost => 'Usuń repost';
 
   @override
@@ -3437,15 +3448,14 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Twój feed Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go kształtować.';
+      'Twój kanał Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go ukształtować.';
 
   @override
   String get feedFollowingEmpty =>
-      'Jeszcze nie ma filmów od osób, które obserwujesz.\nZnajdź twórców, których lubisz, i obserwuj ich.';
+      'Brak filmów od osób, które obserwujesz.\nZnajdź twórców, których lubisz i zacznij ich obserwować.';
 
   @override
-  String get feedLatestEmpty =>
-      'Nie ma jeszcze nowych filmów.\nSprawdź ponownie wkrótce.';
+  String get feedLatestEmpty => 'Brak nowych filmów.\nWróć tu wkrótce.';
 
   @override
   String get feedExploreVideos => 'Odkrywaj filmy';
@@ -3662,13 +3672,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get navMyProfile => 'Mój profil';
 
   @override
-  String get navSearch => 'Szukaj';
-
-  @override
   String get navNotifications => 'Powiadomienia';
-
-  @override
-  String get navSearchTooltip => 'Szukaj';
 
   @override
   String get navOpenCamera => 'Otwórz aparat';
@@ -5645,4 +5649,15 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Usuń';
+
+  @override
+  String get metadataCaptionsLabel => 'Napisy';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Napisy włączone dla wszystkich filmów';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Napisy wyłączone dla wszystkich filmów';
 }

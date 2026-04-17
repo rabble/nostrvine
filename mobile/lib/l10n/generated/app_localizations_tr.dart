@@ -1189,6 +1189,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionLike => 'Videoyu beğen';
 
   @override
+  String get videoActionAutoLabel => 'Otomatik';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Otomatik ilerlemeyi etkinleştir';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Otomatik ilerlemeyi devre dışı bırak';
+
+  @override
   String get videoActionRemoveRepost => 'Yeniden paylaşımı kaldır';
 
   @override
@@ -3545,13 +3555,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get navMyProfile => 'Profilim';
 
   @override
-  String get navSearch => 'Ara';
-
-  @override
   String get navNotifications => 'Bildirimler';
-
-  @override
-  String get navSearchTooltip => 'Ara';
 
   @override
   String get navOpenCamera => 'Kamerayı aç';
@@ -5487,4 +5491,15 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Kaldır';
+
+  @override
+  String get metadataCaptionsLabel => 'Altyazılar';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Tüm videolar için altyazılar etkin';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Tüm videolar için altyazılar devre dışı';
 }

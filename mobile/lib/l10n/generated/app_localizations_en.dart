@@ -1203,6 +1203,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoActionLike => 'Like video';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+
+  @override
   String get videoActionRemoveRepost => 'Remove repost';
 
   @override
@@ -3552,13 +3561,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navMyProfile => 'My Profile';
 
   @override
-  String get navSearch => 'Search';
-
-  @override
   String get navNotifications => 'Notifications';
-
-  @override
-  String get navSearchTooltip => 'Search';
 
   @override
   String get navOpenCamera => 'Open camera';
@@ -5491,4 +5494,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Remove';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

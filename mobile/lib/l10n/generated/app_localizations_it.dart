@@ -1227,6 +1227,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoActionLike => 'Metti mi piace al video';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Attiva avanzamento automatico';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Disattiva avanzamento automatico';
+
+  @override
   String get videoActionRemoveRepost => 'Rimuovi repost';
 
   @override
@@ -3376,14 +3386,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Il tuo feed Per te è vuoto.\nEsplora video e segui creator per personalizzarlo.';
+      'Il tuo feed Per te è vuoto.\nEsplora i video e segui i creator per personalizzarlo.';
 
   @override
   String get feedFollowingEmpty =>
       'Ancora nessun video dalle persone che segui.\nTrova creator che ti piacciono e seguili.';
 
   @override
-  String get feedLatestEmpty => 'Ancora nessun nuovo video.\nTorna presto.';
+  String get feedLatestEmpty =>
+      'Ancora nessun nuovo video.\nTorna a controllare a breve.';
 
   @override
   String get feedExploreVideos => 'Esplora video';
@@ -3598,13 +3609,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get navMyProfile => 'Il mio profilo';
 
   @override
-  String get navSearch => 'Cerca';
-
-  @override
   String get navNotifications => 'Notifiche';
-
-  @override
-  String get navSearchTooltip => 'Cerca';
 
   @override
   String get navOpenCamera => 'Apri fotocamera';
@@ -5565,4 +5570,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Rimuovi';
+
+  @override
+  String get metadataCaptionsLabel => 'Sottotitoli';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Sottotitoli abilitati per tutti i video';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Sottotitoli disabilitati per tutti i video';
 }

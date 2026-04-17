@@ -2164,6 +2164,24 @@ abstract class AppLocalizations {
   /// **'Like video'**
   String get videoActionLike;
 
+  /// No description provided for @videoActionAutoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get videoActionAutoLabel;
+
+  /// No description provided for @videoActionEnableAutoAdvance.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable auto advance'**
+  String get videoActionEnableAutoAdvance;
+
+  /// No description provided for @videoActionDisableAutoAdvance.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable auto advance'**
+  String get videoActionDisableAutoAdvance;
+
   /// No description provided for @videoActionRemoveRepost.
   ///
   /// In en, this message translates to:
@@ -6284,23 +6302,11 @@ abstract class AppLocalizations {
   /// **'My Profile'**
   String get navMyProfile;
 
-  /// No description provided for @navSearch.
-  ///
-  /// In en, this message translates to:
-  /// **'Search'**
-  String get navSearch;
-
   /// No description provided for @navNotifications.
   ///
   /// In en, this message translates to:
   /// **'Notifications'**
   String get navNotifications;
-
-  /// No description provided for @navSearchTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Search'**
-  String get navSearchTooltip;
 
   /// No description provided for @navOpenCamera.
   ///
@@ -9767,6 +9773,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove'**
   String get videoMetadataRemoveSemanticLabel;
+
+  /// Label for the global captions toggle in the video metadata sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Captions'**
+  String get metadataCaptionsLabel;
+
+  /// Screen reader label when the global captions toggle is on
+  ///
+  /// In en, this message translates to:
+  /// **'Captions enabled for all videos'**
+  String get metadataCaptionsEnabledSemantics;
+
+  /// Screen reader label when the global captions toggle is off
+  ///
+  /// In en, this message translates to:
+  /// **'Captions disabled for all videos'**
+  String get metadataCaptionsDisabledSemantics;
 }
 
 class _AppLocalizationsDelegate

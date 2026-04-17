@@ -671,6 +671,101 @@ void main() {
           verifyNever(() => mockFunnelcakeClient.getUserProfile(any()));
           verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
         });
+
+        test(
+          'does not overwrite a newer locally-cached bio with stale '
+          'Funnelcake data (regression: bio appears not to save)',
+          () async {
+            // Simulate: user just saved their bio. The local cache holds
+            // the freshly-published profile (createdAt = 1704153600, newer).
+            // Funnelcake returns a stale cached profile
+            // (createdAt = 1704067200, older). The bio must NOT be
+            // overwritten, the relay path must still run (so a newer Kind 0
+            // on relays can win), and the return value must be the locally
+            // cached profile when relays find nothing newer.
+            const newerTimestamp = 1704153600; // newer — just saved
+            const olderTimestamp = 1704067200; // older — stale Funnelcake cache
+
+            final freshlySavedProfile = UserProfile(
+              pubkey: testPubkey,
+              displayName: 'Test User',
+              about: 'My new bio',
+              rawData: const {
+                'display_name': 'Test User',
+                'about': 'My new bio',
+              },
+              createdAt: DateTime.fromMillisecondsSinceEpoch(
+                newerTimestamp * 1000,
+                isUtc: true,
+              ),
+              eventId: testEventId,
+            );
+
+            // Use a fresh DAO mock so we can control getProfile return values
+            // without stub-ordering issues from the outer setUp.
+            final freshDao = MockUserProfilesDao();
+            when(
+              () => freshDao.getProfile(any()),
+            ).thenAnswer((_) async => freshlySavedProfile);
+            when(
+              () => freshDao.upsertProfile(any()),
+            ).thenAnswer((_) async {});
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: freshDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+              profileStatsDao: mockProfileStatsDao,
+            );
+
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => UserProfileFound(
+                profile: UserProfileData.fromJson(testPubkey, const {
+                  'display_name': 'Test User',
+                  'about': '', // stale — bio not yet indexed by Funnelcake
+                  'created_at': olderTimestamp,
+                }),
+              ),
+            );
+
+            // Relays find nothing newer — the local cache is the fallback.
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey),
+            ).thenAnswer((_) async => null);
+
+            final result = await repo.fetchFreshProfile(pubkey: testPubkey);
+
+            // The stale Funnelcake profile must NOT overwrite the newer cache.
+            verifyNever(
+              () => freshDao.upsertProfile(
+                any(
+                  that: isA<UserProfile>().having(
+                    (p) => p.about,
+                    'about',
+                    equals(''),
+                  ),
+                ),
+              ),
+            );
+
+            // The relay path must have been invoked so a newer Kind 0 can
+            // still win — a future refactor cannot safely turn the Funnelcake
+            // break into an early return while keeping this assertion green.
+            verify(
+              () => mockNostrClient.fetchProfile(testPubkey),
+            ).called(1);
+
+            // The return value must be the freshly-saved local profile,
+            // not null (the break path falls back to the cache when relays
+            // find nothing).
+            expect(result, isNotNull);
+            expect(result!.about, equals('My new bio'));
+          },
+        );
       });
 
       group('indexer relay fallback', () {
@@ -757,6 +852,68 @@ void main() {
           expect(result, isNull);
           expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
         });
+
+        test(
+          'picks newest kind-0 event when indexer returns multiple events '
+          'with older event first (regression: bio appears not to save)',
+          () async {
+            // Simulate: relay returns nothing, but indexer returns two kind-0
+            // events for the same pubkey. The older event (stale, no bio) comes
+            // first in the list. The fix must select the newest by createdAt.
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey),
+            ).thenAnswer((_) async => null);
+
+            final olderEvent = MockEvent();
+            when(() => olderEvent.kind).thenReturn(0);
+            when(() => olderEvent.pubkey).thenReturn(testPubkey);
+            when(() => olderEvent.createdAt).thenReturn(1704067200); // older
+            when(() => olderEvent.id).thenReturn('old_$testEventId');
+            when(() => olderEvent.content).thenReturn(
+              jsonEncode({'display_name': 'Test User', 'about': ''}),
+            );
+
+            final newerEvent = MockEvent();
+            when(() => newerEvent.kind).thenReturn(0);
+            when(() => newerEvent.pubkey).thenReturn(testPubkey);
+            when(() => newerEvent.createdAt).thenReturn(1704153600); // newer
+            when(() => newerEvent.id).thenReturn('new_$testEventId');
+            when(() => newerEvent.content).thenReturn(
+              jsonEncode({
+                'display_name': 'Test User',
+                'about': 'My saved bio',
+              }),
+            );
+
+            // Indexer returns older event first, then newer — relay ordering
+            // is not guaranteed, so the repository must not trust list order.
+            when(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+                useCache: any(named: 'useCache'),
+              ),
+            ).thenAnswer((_) async => [olderEvent, newerEvent]);
+
+            final result = await profileRepository.fetchFreshProfile(
+              pubkey: testPubkey,
+            );
+
+            expect(result, isNotNull);
+            expect(result!.about, equals('My saved bio'));
+            verify(
+              () => mockUserProfilesDao.upsertProfile(
+                any(
+                  that: isA<UserProfile>().having(
+                    (p) => p.about,
+                    'about',
+                    equals('My saved bio'),
+                  ),
+                ),
+              ),
+            ).called(1);
+          },
+        );
       });
 
       group('parallel relay + indexer fetch', () {

@@ -1202,6 +1202,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoActionLike => 'Gilla videon';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Aktivera automatisk fortsättning';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Inaktivera automatisk fortsättning';
+
+  @override
   String get videoActionRemoveRepost => 'Ta bort återpublicering';
 
   @override
@@ -3336,10 +3346,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get feedFollowingEmpty =>
-      'Inga videor ännu från personer du följer.\nHitta kreatörer du gillar och följ dem.';
+      'Inga videor från personer du följer än.\nHitta kreatörer du gillar och följ dem.';
 
   @override
-  String get feedLatestEmpty => 'Inga nya videor ännu.\nKom tillbaka snart.';
+  String get feedLatestEmpty => 'Inga nya videor än.\nTitta in igen snart.';
 
   @override
   String get feedExploreVideos => 'Upptäck videor';
@@ -3554,13 +3564,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navMyProfile => 'Min profil';
 
   @override
-  String get navSearch => 'Sök';
-
-  @override
   String get navNotifications => 'Aviseringar';
-
-  @override
-  String get navSearchTooltip => 'Sök';
 
   @override
   String get navOpenCamera => 'Öppna kamera';
@@ -5499,4 +5503,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Ta bort';
+
+  @override
+  String get metadataCaptionsLabel => 'Undertexter';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Undertexter aktiverade för alla videor';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Undertexter inaktiverade för alla videor';
 }

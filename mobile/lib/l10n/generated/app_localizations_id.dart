@@ -1183,6 +1183,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoActionLike => 'Suka video';
 
   @override
+  String get videoActionAutoLabel => 'Otomatis';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Aktifkan lanjut otomatis';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Nonaktifkan lanjut otomatis';
+
+  @override
   String get videoActionRemoveRepost => 'Hapus repost';
 
   @override
@@ -3534,13 +3543,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get navMyProfile => 'Profilku';
 
   @override
-  String get navSearch => 'Cari';
-
-  @override
   String get navNotifications => 'Notifikasi';
-
-  @override
-  String get navSearchTooltip => 'Cari';
 
   @override
   String get navOpenCamera => 'Buka kamera';
@@ -5482,4 +5485,15 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Hapus';
+
+  @override
+  String get metadataCaptionsLabel => 'Teks';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Teks diaktifkan untuk semua video';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Teks dinonaktifkan untuk semua video';
 }

@@ -1131,6 +1131,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionLike => '좋아요';
 
   @override
+  String get videoActionAutoLabel => '자동';
+
+  @override
+  String get videoActionEnableAutoAdvance => '자동 넘기기 활성화';
+
+  @override
+  String get videoActionDisableAutoAdvance => '자동 넘기기 비활성화';
+
+  @override
   String get videoActionRemoveRepost => '리포스트 취소';
 
   @override
@@ -3400,13 +3409,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get navMyProfile => '내 프로필';
 
   @override
-  String get navSearch => '검색';
-
-  @override
   String get navNotifications => '알림';
-
-  @override
-  String get navSearchTooltip => '검색';
 
   @override
   String get navOpenCamera => '카메라 열기';
@@ -5297,4 +5300,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => '삭제';
+
+  @override
+  String get metadataCaptionsLabel => '자막';
+
+  @override
+  String get metadataCaptionsEnabledSemantics => '모든 동영상에서 자막이 활성화되었습니다';
+
+  @override
+  String get metadataCaptionsDisabledSemantics => '모든 동영상에서 자막이 비활성화되었습니다';
 }

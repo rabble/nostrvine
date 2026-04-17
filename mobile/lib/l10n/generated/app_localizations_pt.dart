@@ -1225,6 +1225,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoActionLike => 'Curtir vídeo';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Ativar avanço automático';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Desativar avanço automático';
+
+  @override
   String get videoActionRemoveRepost => 'Remover repost';
 
   @override
@@ -3362,11 +3371,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Seu feed Para você está vazio.\nExplore vídeos e siga criadores para moldá-lo.';
+      'Seu feed Para você está vazio.\nExplore vídeos e siga criadores para personalizá-lo.';
 
   @override
   String get feedFollowingEmpty =>
-      'Ainda não há vídeos das pessoas que você segue.\nEncontre criadores que você gosta e siga-os.';
+      'Ainda não há vídeos das pessoas que você segue.\nEncontre criadores de que goste e siga-os.';
 
   @override
   String get feedLatestEmpty => 'Ainda não há vídeos novos.\nVolte em breve.';
@@ -3584,13 +3593,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get navMyProfile => 'Meu perfil';
 
   @override
-  String get navSearch => 'Buscar';
-
-  @override
   String get navNotifications => 'Notificações';
-
-  @override
-  String get navSearchTooltip => 'Buscar';
 
   @override
   String get navOpenCamera => 'Abrir câmera';
@@ -5545,4 +5548,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Remover';
+
+  @override
+  String get metadataCaptionsLabel => 'Legendas';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Legendas ativadas para todos os vídeos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Legendas desativadas para todos os vídeos';
 }

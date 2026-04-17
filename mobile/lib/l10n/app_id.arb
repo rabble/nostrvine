@@ -2353,7 +2353,6 @@
   "searchSomethingWentWrong": "Terjadi kesalahan",
   "searchTryAgain": "Coba lagi",
   "trendingTitle": "Trending",
-  "videoEditorLayers": "Lapisan",
   "videoEditorStickers": "Stiker",
   "videoMetadataContentWarnings": "Peringatan Konten",
   "videoMetadataExpiration": "Kedaluwarsa",
@@ -2851,5 +2850,11 @@
   "videoRecorderToggleGridLabel": "Ganti grid",
   "videoRecorderWhySixSecondsButton": "Mengerti!",
   "videoRecorderWhySixSecondsSubtitle": "Klip pendek memberi ruang untuk spontanitas. Format 6 detik membantu kamu menangkap momen autentik saat terjadi.",
-  "videoRecorderWhySixSecondsTitle": "Mengapa enam detik?"
+  "videoRecorderWhySixSecondsTitle": "Mengapa enam detik?",
+  "videoActionAutoLabel": "Otomatis",
+  "videoActionEnableAutoAdvance": "Aktifkan lanjut otomatis",
+  "videoActionDisableAutoAdvance": "Nonaktifkan lanjut otomatis",
+  "metadataCaptionsLabel": "Teks",
+  "metadataCaptionsEnabledSemantics": "Teks diaktifkan untuk semua video",
+  "metadataCaptionsDisabledSemantics": "Teks dinonaktifkan untuk semua video"
 }

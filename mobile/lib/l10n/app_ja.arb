@@ -2353,7 +2353,6 @@
   "searchSomethingWentWrong": "なんかうまくいかなかった",
   "searchTryAgain": "もう一回",
   "trendingTitle": "トレンド",
-  "videoEditorLayers": "レイヤー",
   "videoEditorStickers": "ステッカー",
   "videoMetadataContentWarnings": "コンテンツ警告",
   "videoMetadataExpiration": "有効期限",
@@ -2851,5 +2850,11 @@
   "videoRecorderToggleGridLabel": "グリッドを切り替え",
   "videoRecorderWhySixSecondsButton": "わかりました！",
   "videoRecorderWhySixSecondsSubtitle": "短いクリップは自発性のための空間を作ります。6秒フォーマットは起きた瞬間の本物の瞬間を捉えるのに役立ちます。",
-  "videoRecorderWhySixSecondsTitle": "なぜ6秒なの？"
+  "videoRecorderWhySixSecondsTitle": "なぜ6秒なの？",
+  "videoActionAutoLabel": "自動",
+  "videoActionEnableAutoAdvance": "自動送りを有効にする",
+  "videoActionDisableAutoAdvance": "自動送りを無効にする",
+  "metadataCaptionsLabel": "字幕",
+  "metadataCaptionsEnabledSemantics": "すべての動画で字幕が有効になっています",
+  "metadataCaptionsDisabledSemantics": "すべての動画で字幕が無効になっています"
 }

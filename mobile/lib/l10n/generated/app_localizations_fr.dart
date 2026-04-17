@@ -1233,6 +1233,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoActionLike => 'Aimer la vidéo';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Activer le passage automatique';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Désactiver le passage automatique';
+
+  @override
   String get videoActionRemoveRepost => 'Supprimer le repost';
 
   @override
@@ -3387,15 +3397,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Ton fil Pour toi est vide.\nExplore des vidéos et suis des créateurs pour le personnaliser.';
+      'Ton fil Pour toi est vide.\nExplore des vidéos et abonne-toi à des créateurs pour le personnaliser.';
 
   @override
   String get feedFollowingEmpty =>
-      'Aucune vidéo des personnes que tu suis pour le moment.\nTrouve des créateurs que tu aimes et suis-les.';
+      'Aucune vidéo des personnes que tu suis pour le moment.\nTrouve des créateurs que tu aimes et abonne-toi à eux.';
 
   @override
   String get feedLatestEmpty =>
-      'Pas encore de nouvelles vidéos.\nReviens bientôt.';
+      'Aucune nouvelle vidéo pour le moment.\nReviens bientôt.';
 
   @override
   String get feedExploreVideos => 'Explorer les vidéos';
@@ -3611,13 +3621,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navMyProfile => 'Mon profil';
 
   @override
-  String get navSearch => 'Recherche';
-
-  @override
   String get navNotifications => 'Notifications';
-
-  @override
-  String get navSearchTooltip => 'Recherche';
 
   @override
   String get navOpenCamera => 'Ouvrir la caméra';
@@ -5589,4 +5593,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Supprimer';
+
+  @override
+  String get metadataCaptionsLabel => 'Sous-titres';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Sous-titres activés pour toutes les vidéos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Sous-titres désactivés pour toutes les vidéos';
 }

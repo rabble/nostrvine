@@ -1214,6 +1214,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoActionLike => 'Video liken';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Automatisch doorgaan inschakelen';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Automatisch doorgaan uitschakelen';
+
+  @override
   String get videoActionRemoveRepost => 'Repost verwijderen';
 
   @override
@@ -3350,14 +3360,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Je Voor jou-feed is leeg.\nOntdek video\'s en volg makers om hem vorm te geven.';
+      'Je Voor jou-feed is leeg.\nVerken video\'s en volg makers om hem vorm te geven.';
 
   @override
   String get feedFollowingEmpty =>
       'Nog geen video\'s van mensen die je volgt.\nVind makers die je leuk vindt en volg ze.';
 
   @override
-  String get feedLatestEmpty => 'Nog geen nieuwe video\'s.\nKom snel terug.';
+  String get feedLatestEmpty =>
+      'Nog geen nieuwe video\'s.\nKom binnenkort terug.';
 
   @override
   String get feedExploreVideos => 'Video\'s verkennen';
@@ -3572,13 +3583,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get navMyProfile => 'Mijn profiel';
 
   @override
-  String get navSearch => 'Zoeken';
-
-  @override
   String get navNotifications => 'Meldingen';
-
-  @override
-  String get navSearchTooltip => 'Zoeken';
 
   @override
   String get navOpenCamera => 'Camera openen';
@@ -5532,4 +5537,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Verwijderen';
+
+  @override
+  String get metadataCaptionsLabel => 'Ondertitels';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Ondertitels ingeschakeld voor alle video\'s';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Ondertitels uitgeschakeld voor alle video\'s';
 }

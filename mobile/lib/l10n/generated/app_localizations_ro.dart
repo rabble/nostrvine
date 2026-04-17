@@ -1241,6 +1241,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionLike => 'Apreciază videoclipul';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Activează avansarea automată';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Dezactivează avansarea automată';
+
+  @override
   String get videoActionRemoveRepost => 'Elimină redistribuirea';
 
   @override
@@ -3445,15 +3454,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Feedul tău Pentru tine este gol.\nExplorează clipuri și urmărește creatori ca să-l personalizezi.';
+      'Feedul tău Pentru tine este gol.\nExplorează videoclipuri și urmărește creatori pentru a-l modela.';
 
   @override
   String get feedFollowingEmpty =>
-      'Încă nu există clipuri de la persoanele pe care le urmărești.\nGăsește creatori care îți plac și urmărește-i.';
+      'Încă nu există videoclipuri de la persoanele pe care le urmărești.\nGăsește creatori care îți plac și urmărește-i.';
 
   @override
   String get feedLatestEmpty =>
-      'Încă nu există clipuri noi.\nRevino în curând.';
+      'Încă nu există videoclipuri noi.\nRevino curând.';
 
   @override
   String get feedExploreVideos => 'Explorează videoclipuri';
@@ -3670,13 +3679,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navMyProfile => 'Profilul meu';
 
   @override
-  String get navSearch => 'Caută';
-
-  @override
   String get navNotifications => 'Notificări';
-
-  @override
-  String get navSearchTooltip => 'Caută';
 
   @override
   String get navOpenCamera => 'Deschide camera';
@@ -5657,4 +5660,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Elimină';
+
+  @override
+  String get metadataCaptionsLabel => 'Subtitrări';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Subtitrări activate pentru toate videoclipurile';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Subtitrări dezactivate pentru toate videoclipurile';
 }

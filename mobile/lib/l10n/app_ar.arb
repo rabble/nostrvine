@@ -2353,7 +2353,6 @@
   "searchSomethingWentWrong": "حدث خطأ ما",
   "searchTryAgain": "حاول مجددًا",
   "trendingTitle": "الرائج",
-  "videoEditorLayers": "الطبقات",
   "videoEditorStickers": "الملصقات",
   "videoMetadataContentWarnings": "تحذيرات المحتوى",
   "videoMetadataExpiration": "انتهاء الصلاحية",
@@ -2851,5 +2850,11 @@
   "videoRecorderToggleGridLabel": "تبديل الشبكة",
   "videoRecorderWhySixSecondsButton": "فهمت!",
   "videoRecorderWhySixSecondsSubtitle": "المقاطع القصيرة تفسح المجال للتلقائية. يساعدك التنسيق المدته 6 ثوانٍ على التقاط اللحظات الأصيلة فور حدوثها.",
-  "videoRecorderWhySixSecondsTitle": "لماذا ست ثوانٍ؟"
+  "videoRecorderWhySixSecondsTitle": "لماذا ست ثوانٍ؟",
+  "videoActionAutoLabel": "تلقائي",
+  "videoActionEnableAutoAdvance": "تفعيل التشغيل التلقائي",
+  "videoActionDisableAutoAdvance": "تعطيل التشغيل التلقائي",
+  "metadataCaptionsLabel": "التسميات التوضيحية",
+  "metadataCaptionsEnabledSemantics": "التسميات التوضيحية مفعّلة لجميع مقاطع الفيديو",
+  "metadataCaptionsDisabledSemantics": "التسميات التوضيحية معطّلة لجميع مقاطع الفيديو"
 }
