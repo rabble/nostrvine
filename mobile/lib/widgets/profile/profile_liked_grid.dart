@@ -99,6 +99,7 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
         }
 
         return CustomScrollView(
+          physics: const ClampingScrollPhysics(),
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.all(4),

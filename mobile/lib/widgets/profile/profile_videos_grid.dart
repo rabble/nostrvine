@@ -283,6 +283,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         false;
 
     return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
       slivers: [
         SliverPadding(
           padding: .fromLTRB(

@@ -130,6 +130,7 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
         _prefetchIfNeeded(collabVideos);
 
         return CustomScrollView(
+          physics: const ClampingScrollPhysics(),
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.all(2),

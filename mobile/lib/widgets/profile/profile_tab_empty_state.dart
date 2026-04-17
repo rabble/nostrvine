@@ -25,6 +25,7 @@ class ProfileTabEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => CustomScrollView(
+    physics: const ClampingScrollPhysics(),
     slivers: [
       SliverFillRemaining(
         hasScrollBody: false,

@@ -97,6 +97,7 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
         }
 
         return CustomScrollView(
+          physics: const ClampingScrollPhysics(),
           slivers: [
             if (state.videoReplies.isNotEmpty) ...[
               SliverToBoxAdapter(

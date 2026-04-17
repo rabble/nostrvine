@@ -41,7 +41,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
     this.onMore,
     this.displayNameHint,
     this.avatarUrlHint,
-    this.statsRowKey,
     super.key,
   });
 
@@ -60,9 +59,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
   /// Optional cached stats owned by the parent widget.
   final ProfileStats? profileStats;
-
-  /// Key to attach to the stats row for scroll-position tracking.
-  final GlobalKey? statsRowKey;
 
   /// Callback when edit profile is tapped (own profile only).
   final VoidCallback? onEditProfile;
@@ -144,105 +140,83 @@ class ProfileHeaderWidget extends ConsumerWidget {
       hasAnyProfileInfo: hasAnyProfileInfo,
     );
 
-    final hasBannerImage = effectiveProfile?.hasBannerImage ?? false;
-    final bannerUrl = hasBannerImage ? effectiveProfile!.banner : null;
-
-    const bannerHeight = 334.0;
-
+    // Banner is rendered separately by ProfileBannerLayer in profile_grid.dart
+    // so it can be placed behind the safe area. This widget only renders the
+    // foreground content (nav buttons, avatar, name, bio, stats) on a
+    // transparent background — the banner shows through underneath.
+    //
+    // The NestedScrollView extends edge-to-edge (no SafeArea wrapper), so we
+    // add safeAreaTop as top padding here to push nav buttons below the
+    // status bar at rest.
     final safeAreaTop = MediaQuery.paddingOf(context).top;
 
-    return ColoredBox(
-      color: VineTheme.surfaceBackground,
-      child: Stack(
+    return Padding(
+      padding: EdgeInsets.only(top: safeAreaTop),
+      child: Column(
         children: [
-          // Background banner — positioned behind the foreground content.
-          // ExcludeSemantics prevents semantics conflicts during route
-          // transitions.
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: ExcludeSemantics(
-              child: _ProfileBanner(
-                bannerUrl: bannerUrl,
-                profileColor: profileColor,
-                height: bannerHeight,
-              ),
+          // Navigation buttons
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (isOwnProfile)
+                  DivineIconButton(
+                    icon: DivineIconName.gear,
+                    type: DivineIconButtonType.ghostSecondary,
+                    size: DivineIconButtonSize.small,
+                    onPressed: () => context.push(SettingsScreen.path),
+                  )
+                else if (onBack != null)
+                  DivineIconButton(
+                    icon: DivineIconName.caretLeft,
+                    type: DivineIconButtonType.ghostSecondary,
+                    size: DivineIconButtonSize.small,
+                    onPressed: onBack,
+                  ),
+                if (onMore != null)
+                  DivineIconButton(
+                    icon: DivineIconName.dotsThree,
+                    type: DivineIconButtonType.ghostSecondary,
+                    size: DivineIconButtonSize.small,
+                    onPressed: onMore,
+                  ),
+              ],
             ),
           ),
 
-          // Foreground content — this Column sizes the Stack.
+          // Centered avatar with action label pill
+          Center(
+            child: _ProfileAvatarWithColor(
+              imageUrl: profilePictureUrl,
+              profileColor: profileColor,
+              pendingActions: pendingActions,
+              onActionTap: pendingActions.isNotEmpty
+                  ? () => _showActionsSheet(context, pendingActions)
+                  : null,
+            ),
+          ),
+
+          // Name, NIP-05, and bio
           Padding(
-            padding: EdgeInsets.only(top: safeAreaTop),
-            child: Column(
-              children: [
-                // Navigation buttons
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (isOwnProfile)
-                        DivineIconButton(
-                          icon: DivineIconName.gear,
-                          type: DivineIconButtonType.ghostSecondary,
-                          size: DivineIconButtonSize.small,
-                          onPressed: () => context.push(SettingsScreen.path),
-                        )
-                      else if (onBack != null)
-                        DivineIconButton(
-                          icon: DivineIconName.caretLeft,
-                          type: DivineIconButtonType.ghostSecondary,
-                          size: DivineIconButtonSize.small,
-                          onPressed: onBack,
-                        ),
-                      if (onMore != null)
-                        DivineIconButton(
-                          icon: DivineIconName.dotsThree,
-                          type: DivineIconButtonType.ghostSecondary,
-                          size: DivineIconButtonSize.small,
-                          onPressed: onMore,
-                        ),
-                    ],
-                  ),
-                ),
+            padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+            child: _ProfileNameAndBio(
+              profile: effectiveProfile,
+              userIdHex: userIdHex,
+              nip05: nip05,
+              about: about,
+              displayNameHint: displayNameHint,
+              accentColor: profileColor,
+              isOwnProfile: isOwnProfile,
+            ),
+          ),
 
-                // Centered avatar with action label pill
-                Center(
-                  child: _ProfileAvatarWithColor(
-                    imageUrl: profilePictureUrl,
-                    profileColor: profileColor,
-                    pendingActions: pendingActions,
-                    onActionTap: pendingActions.isNotEmpty
-                        ? () => _showActionsSheet(context, pendingActions)
-                        : null,
-                  ),
-                ),
-
-                // Name, NIP-05, and bio
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-                  child: _ProfileNameAndBio(
-                    profile: effectiveProfile,
-                    userIdHex: userIdHex,
-                    nip05: nip05,
-                    about: about,
-                    displayNameHint: displayNameHint,
-                    accentColor: profileColor,
-                    isOwnProfile: isOwnProfile,
-                  ),
-                ),
-
-                // Stats row: Followers | Following | Likes | Loops
-                Padding(
-                  key: statsRowKey,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: _ProfileStatsRow(
-                    userIdHex: userIdHex,
-                    profileStats: profileStats,
-                  ),
-                ),
-              ],
+          // Stats row: Followers | Following | Likes | Loops
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: _ProfileStatsRow(
+              userIdHex: userIdHex,
+              profileStats: profileStats,
             ),
           ),
         ],
@@ -507,11 +481,12 @@ class _AboutTextState extends State<_AboutText> {
 ///
 /// Uses a foreground [BoxDecoration] gradient scrim instead of a [Stack] to
 /// avoid parentData assertions during route transitions.
-class _ProfileBanner extends StatelessWidget {
-  const _ProfileBanner({
+class ProfileBanner extends StatelessWidget {
+  const ProfileBanner({
     required this.height,
     this.bannerUrl,
     this.profileColor,
+    super.key,
   });
 
   final double height;
