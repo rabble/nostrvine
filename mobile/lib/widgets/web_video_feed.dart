@@ -34,6 +34,8 @@ typedef WebOnCompleted = void Function(int index);
 /// on them — a failed player never emits a loop-boundary crossing.
 typedef WebOnErrored = void Function(int index);
 
+typedef WebPlaybackUrlResolver = String? Function(VideoEvent video, int index);
+
 /// A vertical-scrolling video feed for web platforms.
 ///
 /// Uses Flutter's [video_player] package (HTML5 video via video_player_web_hls)
@@ -50,6 +52,7 @@ class WebVideoFeed extends StatefulWidget {
     this.onNearEnd,
     this.nearEndThreshold = 3,
     this.headers = const {},
+    this.playbackUrlResolver,
     this.startThreshold = FeedAutoAdvanceDefaults.startThreshold,
     this.endThreshold = FeedAutoAdvanceDefaults.endThreshold,
     this.controllerFactory = defaultWebVideoPlayerControllerFactory,
@@ -85,6 +88,9 @@ class WebVideoFeed extends StatefulWidget {
 
   /// HTTP headers for video requests.
   final Map<String, String> headers;
+
+  /// Optional playback URL override for a given video.
+  final WebPlaybackUrlResolver? playbackUrlResolver;
 
   /// Position threshold considered "near the start" for loop detection.
   final Duration startThreshold;
@@ -314,7 +320,8 @@ class WebVideoFeedState extends State<WebVideoFeed> {
       itemCount: widget.videos.length,
       itemBuilder: (context, index) {
         final video = widget.videos[index];
-        final videoUrl = video.videoUrl;
+        final videoUrl =
+            widget.playbackUrlResolver?.call(video, index) ?? video.videoUrl;
         final isActive = index == _currentIndex;
 
         if (videoUrl == null || videoUrl.isEmpty) {

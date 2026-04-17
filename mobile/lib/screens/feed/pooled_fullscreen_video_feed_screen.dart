@@ -28,9 +28,11 @@ import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
+import 'package:openvine/screens/feed/web_age_restricted_retry.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/services/web_video_access_service.dart';
 import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
@@ -283,6 +285,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   late final ValueNotifier<double> _pagePosition;
   final _feedKey = GlobalKey<PooledVideoFeedState>();
   final _webFeedKey = GlobalKey<WebVideoFeedState>();
+  final Map<String, ResolvedWebVideoSource> _webResolvedSources = {};
 
   /// Feed-scoped Auto playback state; exposed to descendants via
   /// `BlocProvider.value` in [build].
@@ -311,6 +314,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   void dispose() {
     routeObserver.unsubscribe(this);
     _controller?.dispose();
+    final accessService = ref.read(webVideoAccessServiceProvider);
+    for (final source in _webResolvedSources.values) {
+      accessService.revokeResolvedSource(source);
+    }
+    _webResolvedSources.clear();
     _pagePosition.dispose();
     unawaited(_autoAdvanceCubit.close());
     super.dispose();
@@ -351,6 +359,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
 
   /// Handles new videos from pagination.
   void _handleVideosChanged(FullscreenFeedState state) {
+    _pruneWebResolvedSources(state.videos);
+
     final controller = _controller;
     if (controller == null || _lastPooledVideos == null) return;
 
@@ -362,6 +372,53 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
       controller.addVideos(newVideos);
     }
     _lastPooledVideos = state.pooledVideos;
+  }
+
+  void _pruneWebResolvedSources(List<VideoEvent> videos) {
+    final validIds = videos.map((video) => video.id).toSet();
+    final staleIds = _webResolvedSources.keys
+        .where((videoId) => !validIds.contains(videoId))
+        .toList(growable: false);
+    if (staleIds.isEmpty) return;
+
+    final accessService = ref.read(webVideoAccessServiceProvider);
+    for (final videoId in staleIds) {
+      final source = _webResolvedSources.remove(videoId);
+      if (source != null) {
+        accessService.revokeResolvedSource(source);
+      }
+    }
+  }
+
+  String? _resolvedWebPlaybackUrl(VideoEvent video) {
+    return _webResolvedSources[video.id]?.url ?? video.videoUrl;
+  }
+
+  void _storeWebResolvedSource(String videoId, ResolvedWebVideoSource source) {
+    final previous = _webResolvedSources[videoId];
+    if (previous != null && previous.url != source.url) {
+      ref.read(webVideoAccessServiceProvider).revokeResolvedSource(previous);
+    }
+    setState(() {
+      _webResolvedSources[videoId] = source;
+    });
+  }
+
+  Future<void> _verifyAgeForWebVideo(
+    BuildContext context,
+    VideoEvent video,
+    int _,
+  ) async {
+    final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+    final source = await resolveWebAgeRestrictedPlaybackSource(
+      context: context,
+      ref: ref,
+      video: video,
+    );
+    if (!mounted || source == null) return;
+
+    _storeWebResolvedSource(video.id, source);
+    playbackStatusCubit.report(video.id, PlaybackStatus.ready);
   }
 
   /// Whether auto-advance is available on this build, determined from the
@@ -433,7 +490,42 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   /// videos. Only fires for the currently-active page to avoid advancing
   /// when a background/preloaded player fails.
   void _handleWebPlayerErrored(int index) {
+    final state = context.read<FullscreenFeedBloc>().state;
+    final webVideos = state.videos
+        .where((video) => video.videoUrl != null)
+        .toList();
+    if (index >= webVideos.length) return;
+    final video = webVideos[index];
+    unawaited(_handleWebPlayerErroredAsync(index, video));
+  }
+
+  Future<void> _handleWebPlayerErroredAsync(int index, VideoEvent video) async {
     if (index != context.read<FullscreenFeedBloc>().state.currentIndex) return;
+
+    final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+    final videoUrl = video.videoUrl;
+    if (videoUrl == null || videoUrl.isEmpty) {
+      _handleAutoAdvanceCompleted();
+      return;
+    }
+
+    final status = await ref
+        .read(webVideoAccessServiceProvider)
+        .confirmFailureStatus(videoUrl);
+    if (!mounted ||
+        index != context.read<FullscreenFeedBloc>().state.currentIndex) {
+      return;
+    }
+
+    if (status == PlaybackStatus.ageRestricted ||
+        status == PlaybackStatus.forbidden) {
+      playbackStatusCubit.report(video.id, status!);
+      return;
+    }
+
+    if (status != null) {
+      playbackStatusCubit.report(video.id, status);
+    }
     _handleAutoAdvanceCompleted();
   }
 
@@ -619,6 +711,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       videos: state.videos
                           .where((v) => v.videoUrl != null)
                           .toList(),
+                      playbackUrlResolver: (video, _) =>
+                          _resolvedWebPlaybackUrl(video),
                       initialIndex: state.currentIndex,
                       controllerFactory:
                           widget.webControllerFactory ??
@@ -647,12 +741,14 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                           }) {
                             return _WebFullscreenItem(
                               video: video,
+                              index: index,
                               isActive: isActive,
                               isOwnVideo: currentUserPubkey == video.pubkey,
                               controller: controller,
                               contextTitle: widget.contextTitle,
                               showAutoButton: autoAdvanceAvailable,
                               isAutoEnabled: effectiveAutoEnabled,
+                              onVerifyAge: _verifyAgeForWebVideo,
                               onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                             );
@@ -815,10 +911,12 @@ class _PooledFullscreenItem extends ConsumerWidget {
 class _WebFullscreenItem extends ConsumerWidget {
   const _WebFullscreenItem({
     required this.video,
+    required this.index,
     required this.isActive,
     required this.isOwnVideo,
     required this.showAutoButton,
     required this.isAutoEnabled,
+    required this.onVerifyAge,
     this.controller,
     this.contextTitle,
     this.onAutoPressed,
@@ -826,10 +924,17 @@ class _WebFullscreenItem extends ConsumerWidget {
   });
 
   final VideoEvent video;
+  final int index;
   final bool isActive;
   final bool isOwnVideo;
   final bool showAutoButton;
   final bool isAutoEnabled;
+  final Future<void> Function(
+    BuildContext context,
+    VideoEvent video,
+    int index,
+  )
+  onVerifyAge;
   final VideoPlayerController? controller;
   final String? contextTitle;
   final VoidCallback? onAutoPressed;
@@ -840,6 +945,9 @@ class _WebFullscreenItem extends ConsumerWidget {
     final likesRepository = ref.read(likesRepositoryProvider);
     final commentsRepository = ref.read(commentsRepositoryProvider);
     final repostsRepository = ref.read(repostsRepositoryProvider);
+    final playbackStatus = context.select(
+      (VideoPlaybackStatusCubit cubit) => cubit.state.statusFor(video.id),
+    );
 
     return BlocProvider<VideoInteractionsBloc>(
       create: (_) =>
@@ -856,29 +964,49 @@ class _WebFullscreenItem extends ConsumerWidget {
             )
             ..add(const VideoInteractionsSubscriptionRequested())
             ..add(const VideoInteractionsFetchRequested()),
-      child: Stack(
-        children: [
-          if (isActive && video.hasSubtitles && controller != null)
-            Positioned.fill(
-              child: VideoPlayerSubtitleLayer(
+      child: Builder(
+        builder: (context) {
+          if (playbackStatus == PlaybackStatus.forbidden ||
+              playbackStatus == PlaybackStatus.ageRestricted) {
+            return ModeratedContentOverlay(
+              status: playbackStatus,
+              onSkip: () {
+                final feedState = context
+                    .findAncestorStateOfType<WebVideoFeedState>();
+                if (feedState == null) return;
+                unawaited(feedState.animateToPage(index + 1));
+              },
+              onVerifyAge: playbackStatus == PlaybackStatus.ageRestricted
+                  ? () => onVerifyAge(context, video, index)
+                  : null,
+            );
+          }
+
+          return Stack(
+            children: [
+              if (isActive && video.hasSubtitles && controller != null)
+                Positioned.fill(
+                  child: VideoPlayerSubtitleLayer(
+                    video: video,
+                    controller: controller!,
+                  ),
+                ),
+              VideoOverlayActions(
                 video: video,
-                controller: controller!,
+                isVisible: true,
+                isActive: isActive,
+                hasBottomNavigation: false,
+                contextTitle: contextTitle,
+                isFullscreen: true,
+                topOffset: isOwnVideo ? 64 : 8,
+                showAutoButton: showAutoButton,
+                isAutoEnabled: isAutoEnabled,
+                onAutoPressed: onAutoPressed,
+                onInteracted: onInteracted,
               ),
-            ),
-          VideoOverlayActions(
-            video: video,
-            isVisible: true,
-            isActive: isActive,
-            hasBottomNavigation: false,
-            contextTitle: contextTitle,
-            isFullscreen: true,
-            topOffset: isOwnVideo ? 64 : 8,
-            showAutoButton: showAutoButton,
-            isAutoEnabled: isAutoEnabled,
-            onAutoPressed: onAutoPressed,
-            onInteracted: onInteracted,
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }

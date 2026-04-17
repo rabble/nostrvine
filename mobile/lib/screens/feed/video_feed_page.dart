@@ -27,8 +27,10 @@ import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
+import 'package:openvine/screens/feed/web_age_restricted_retry.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/services/web_video_access_service.dart';
 import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
@@ -140,6 +142,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Key for accessing the rendered pooled feed state for programmatic skips.
   final _feedKey = GlobalKey<PooledVideoFeedState>();
   final _webFeedKey = GlobalKey<WebVideoFeedState>();
+  final Map<String, ResolvedWebVideoSource> _webResolvedSources = {};
 
   /// Tracks the current fractional page position for scroll-driven overlay opacity.
   late final ValueNotifier<double> _pagePosition;
@@ -180,6 +183,11 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   @override
   void dispose() {
     if (ownsController) controller?.dispose();
+    final accessService = ref.read(webVideoAccessServiceProvider);
+    for (final source in _webResolvedSources.values) {
+      accessService.revokeResolvedSource(source);
+    }
+    _webResolvedSources.clear();
     _pagePosition.dispose();
     unawaited(_autoAdvanceCubit.close());
     WidgetsBinding.instance.removeObserver(this);
@@ -284,7 +292,39 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// videos. Only fires for the currently-active page to avoid advancing
   /// when a background/preloaded player fails.
   void _handleWebPlayerErrored(int index) {
+    final state = context.read<VideoFeedBloc>().state;
+    final webVideos = state.videos
+        .where((video) => video.videoUrl != null)
+        .toList();
+    if (index >= webVideos.length) return;
+    final video = webVideos[index];
+    unawaited(_handleWebPlayerErroredAsync(index, video));
+  }
+
+  Future<void> _handleWebPlayerErroredAsync(int index, VideoEvent video) async {
     if (index != _currentFeedIndex()) return;
+
+    final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+    final videoUrl = video.videoUrl;
+    if (videoUrl == null || videoUrl.isEmpty) {
+      _handleAutoAdvanceCompleted();
+      return;
+    }
+
+    final status = await ref
+        .read(webVideoAccessServiceProvider)
+        .confirmFailureStatus(videoUrl);
+    if (!mounted || index != _currentFeedIndex()) return;
+
+    if (status == PlaybackStatus.ageRestricted ||
+        status == PlaybackStatus.forbidden) {
+      playbackStatusCubit.report(video.id, status!);
+      return;
+    }
+
+    if (status != null) {
+      playbackStatusCubit.report(video.id, status);
+    }
     _handleAutoAdvanceCompleted();
   }
 
@@ -354,6 +394,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
   /// Handles new videos from pagination by adding them to the controller.
   void handleVideosChanged(VideoFeedState state) {
+    _pruneWebResolvedSources(state.videos);
+
     if (!ownsController) return;
 
     final pooledVideos = state.videos.toPooledVideoItems();
@@ -374,6 +416,53 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     if (newVideos.isNotEmpty) controller?.addVideos(newVideos);
 
     lastPooledVideos = pooledVideos;
+  }
+
+  void _pruneWebResolvedSources(List<VideoEvent> videos) {
+    final validIds = videos.map((video) => video.id).toSet();
+    final staleIds = _webResolvedSources.keys
+        .where((videoId) => !validIds.contains(videoId))
+        .toList(growable: false);
+    if (staleIds.isEmpty) return;
+
+    final accessService = ref.read(webVideoAccessServiceProvider);
+    for (final videoId in staleIds) {
+      final source = _webResolvedSources.remove(videoId);
+      if (source != null) {
+        accessService.revokeResolvedSource(source);
+      }
+    }
+  }
+
+  String? _resolvedWebPlaybackUrl(VideoEvent video) {
+    return _webResolvedSources[video.id]?.url ?? video.videoUrl;
+  }
+
+  void _storeWebResolvedSource(String videoId, ResolvedWebVideoSource source) {
+    final previous = _webResolvedSources[videoId];
+    if (previous != null && previous.url != source.url) {
+      ref.read(webVideoAccessServiceProvider).revokeResolvedSource(previous);
+    }
+    setState(() {
+      _webResolvedSources[videoId] = source;
+    });
+  }
+
+  Future<void> _verifyAgeForWebVideo(
+    BuildContext context,
+    VideoEvent video,
+    int _,
+  ) async {
+    final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+    final source = await resolveWebAgeRestrictedPlaybackSource(
+      context: context,
+      ref: ref,
+      video: video,
+    );
+    if (!mounted || source == null) return;
+
+    _storeWebResolvedSource(video.id, source);
+    playbackStatusCubit.report(video.id, PlaybackStatus.ready);
   }
 
   void _resetVideoController() {
@@ -594,6 +683,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       videos: state.videos
                           .where((v) => v.videoUrl != null)
                           .toList(),
+                      playbackUrlResolver: (video, _) =>
+                          _resolvedWebPlaybackUrl(video),
                       controllerFactory:
                           widget.webControllerFactory ??
                           defaultWebVideoPlayerControllerFactory,
@@ -632,6 +723,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                               listSources: listSources,
                               showAutoButton: autoAdvanceAvailable,
                               isAutoEnabled: effectiveAutoEnabled,
+                              onVerifyAge: _verifyAgeForWebVideo,
                               onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                             );
@@ -910,6 +1002,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
     required this.pagePosition,
     required this.showAutoButton,
     required this.isAutoEnabled,
+    this.onVerifyAge,
     this.contextTitle,
     this.listSources,
     this.onAutoPressed,
@@ -922,6 +1015,12 @@ class _WebVideoFeedItem extends ConsumerWidget {
   final ValueNotifier<double> pagePosition;
   final bool showAutoButton;
   final bool isAutoEnabled;
+  final Future<void> Function(
+    BuildContext context,
+    VideoEvent video,
+    int index,
+  )?
+  onVerifyAge;
   final String? contextTitle;
   final Set<String>? listSources;
   final VoidCallback? onAutoPressed;
@@ -954,6 +1053,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
         pagePosition: pagePosition,
         index: index,
         listSources: listSources,
+        onVerifyAge: onVerifyAge,
         showAutoButton: showAutoButton,
         isAutoEnabled: isAutoEnabled,
         onAutoPressed: onAutoPressed,

@@ -103,6 +103,7 @@ import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/web_auth_service.dart';
+import 'package:openvine/services/web_video_access_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/search_utils.dart';
@@ -1732,6 +1733,10 @@ final mediaViewerAuthServiceProvider = Provider<MediaViewerAuthService>((ref) {
     blossomAuthService: blossomAuthService,
     nip98AuthService: nip98AuthService,
   );
+});
+
+final webVideoAccessServiceProvider = Provider<WebVideoAccessService>((ref) {
+  return WebVideoAccessService();
 });
 
 /// Media authentication interceptor for handling 401 unauthorized responses

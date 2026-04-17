@@ -59,6 +59,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
     this.firstFrameFuture,
     this.listSources,
     this.onContentWarningRevealed,
+    this.onVerifyAge,
     this.showAutoButton = false,
     this.isAutoEnabled = false,
     this.onAutoPressed,
@@ -82,6 +83,12 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
 
   /// Called when the user reveals a content-warning overlay.
   final VoidCallback? onContentWarningRevealed;
+  final Future<void> Function(
+    BuildContext context,
+    VideoEvent video,
+    int index,
+  )?
+  onVerifyAge;
   final bool showAutoButton;
   final bool isAutoEnabled;
   final VoidCallback? onAutoPressed;
@@ -110,6 +117,11 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
 
   /// Triggers age verification and retries pooled playback with viewer auth.
   Future<void> _verifyAge(BuildContext context, VideoEvent video) async {
+    final onVerifyAge = widget.onVerifyAge;
+    if (onVerifyAge != null) {
+      await onVerifyAge(context, video, widget.index);
+      return;
+    }
     await retryAgeRestrictedPooledVideo(
       context: context,
       ref: ref,
