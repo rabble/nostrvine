@@ -1202,6 +1202,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoActionLike => 'Gilla videon';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Aktivera automatisk fortsättning';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Inaktivera automatisk fortsättning';
+
+  @override
   String get videoActionRemoveRepost => 'Ta bort återpublicering';
 
   @override
@@ -3332,14 +3342,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Ditt För dig-flöde är tomt.\nUtforska videor och följ kreatörer för att forma det.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Inga videor från personer du följer än.\nHitta kreatörer du gillar och följ dem.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => 'Inga nya videor än.\nTitta in igen snart.';
 
   @override
   String get feedExploreVideos => 'Upptäck videor';
@@ -4802,4 +4812,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Gå till inställningar';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

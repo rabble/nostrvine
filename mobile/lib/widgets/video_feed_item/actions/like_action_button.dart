@@ -20,10 +20,12 @@ class LikeActionButton extends StatelessWidget {
     required this.video,
     super.key,
     this.isPreviewMode = false,
+    this.onInteracted,
   });
 
   final VideoEvent video;
   final bool isPreviewMode;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +46,7 @@ class LikeActionButton extends StatelessWidget {
           isLiked: data.isLiked,
           isLikeInProgress: data.isInProgress,
           totalLikes: data.count,
+          onInteracted: onInteracted,
         );
       },
     );
@@ -55,11 +58,13 @@ class _ActionButton extends StatelessWidget {
     this.isLiked = false,
     this.isLikeInProgress = false,
     this.totalLikes = 1,
+    this.onInteracted,
   });
 
   final bool isLiked;
   final bool isLikeInProgress;
   final int totalLikes;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +78,7 @@ class _ActionButton extends StatelessWidget {
       isLoading: isLikeInProgress,
       count: totalLikes,
       onPressed: () {
+        onInteracted?.call();
         context.read<VideoInteractionsBloc>().add(
           const VideoInteractionsLikeToggled(),
         );

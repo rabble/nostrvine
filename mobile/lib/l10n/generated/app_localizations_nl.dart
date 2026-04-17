@@ -1214,6 +1214,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoActionLike => 'Video liken';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Automatisch doorgaan inschakelen';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Automatisch doorgaan uitschakelen';
+
+  @override
   String get videoActionRemoveRepost => 'Repost verwijderen';
 
   @override
@@ -3350,14 +3360,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Je Voor jou-feed is leeg.\nVerken video\'s en volg makers om hem vorm te geven.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Nog geen video\'s van mensen die je volgt.\nVind makers die je leuk vindt en volg ze.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty =>
+      'Nog geen nieuwe video\'s.\nKom binnenkort terug.';
 
   @override
   String get feedExploreVideos => 'Video\'s verkennen';
@@ -4829,4 +4840,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Naar instellingen';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

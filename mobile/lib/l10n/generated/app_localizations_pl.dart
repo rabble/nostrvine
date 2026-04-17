@@ -1227,6 +1227,17 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoActionLike => 'Polub film';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance =>
+      'Włącz automatyczne przechodzenie dalej';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Wyłącz automatyczne przechodzenie dalej';
+
+  @override
   String get videoActionRemoveRepost => 'Usuń repost';
 
   @override
@@ -3437,14 +3448,14 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Twój kanał Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go ukształtować.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Brak filmów od osób, które obserwujesz.\nZnajdź twórców, których lubisz i zacznij ich obserwować.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => 'Brak nowych filmów.\nWróć tu wkrótce.';
 
   @override
   String get feedExploreVideos => 'Odkrywaj filmy';
@@ -4943,4 +4954,15 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Przejdź do ustawień';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

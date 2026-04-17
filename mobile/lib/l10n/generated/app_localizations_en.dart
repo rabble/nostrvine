@@ -1203,6 +1203,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoActionLike => 'Like video';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+
+  @override
   String get videoActionRemoveRepost => 'Remove repost';
 
   @override
@@ -4804,4 +4813,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Go to settings';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

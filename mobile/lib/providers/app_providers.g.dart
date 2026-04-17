@@ -3479,7 +3479,7 @@ final class MediaAuthInterceptorProvider
 }
 
 String _$mediaAuthInterceptorHash() =>
-    r'adae18db875674843f6ced55608bb65a5ef7f445';
+    r'214d6a37de9072814c52d22cf97a2c8c643664a8';
 
 /// Blossom upload service (uses user-configured Blossom server)
 

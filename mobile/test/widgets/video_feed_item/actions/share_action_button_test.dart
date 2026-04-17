@@ -101,6 +101,36 @@ void main() {
       expect(semanticsFinder, findsOneWidget);
     });
 
+    testWidgets('calls onInteracted before opening the share sheet', (
+      tester,
+    ) async {
+      var interacted = false;
+      final mockAuth = createMockAuthService();
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: Scaffold(
+            body: ShareActionButton(
+              video: testVideo,
+              onInteracted: () => interacted = true,
+            ),
+          ),
+          additionalOverrides: [
+            videoSharingServiceProvider.overrideWith(
+              (ref) => mockVideoSharingService,
+            ),
+          ],
+          mockAuthService: mockAuth,
+          mockProfileRepository: mockProfileRepository,
+        ),
+      );
+
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+
+      expect(interacted, isTrue);
+    });
+
     group('share menu', () {
       testWidgets('shows Share with section', (tester) async {
         final mockAuth = createMockAuthService();

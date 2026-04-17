@@ -37,6 +37,15 @@ enum FeatureFlag {
   integratedApps(
     'Integrated Apps',
     'Enable the integrated Nostr apps directory and sandbox',
+  ),
+  accountSwitching(
+    'Account Switching',
+    'Enable switching between remembered accounts in Settings',
+  ),
+  feedAutoAdvance(
+    'Feed Auto Advance',
+    'Show the Auto rail control and let the feed advance automatically '
+        'after each completed play',
   )
   ;
 
