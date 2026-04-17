@@ -5,6 +5,25 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 
+extension _VideoMetadataExpirationL10nX on VideoMetadataExpiration {
+  String localizedLabel(BuildContext context) {
+    return switch (this) {
+      VideoMetadataExpiration.notExpire =>
+        context.l10n.videoMetadataExpirationNotExpire,
+      VideoMetadataExpiration.oneDay =>
+        context.l10n.videoMetadataExpirationOneDay,
+      VideoMetadataExpiration.oneWeek =>
+        context.l10n.videoMetadataExpirationOneWeek,
+      VideoMetadataExpiration.oneMonth =>
+        context.l10n.videoMetadataExpirationOneMonth,
+      VideoMetadataExpiration.oneYear =>
+        context.l10n.videoMetadataExpirationOneYear,
+      VideoMetadataExpiration.oneDecade =>
+        context.l10n.videoMetadataExpirationOneDecade,
+    };
+  }
+}
+
 /// Widget for selecting video expiration time.
 ///
 /// Displays the currently selected expiration option and opens
@@ -28,7 +47,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
       title: Text(context.l10n.videoMetadataExpiration),
       options: VideoMetadataExpiration.values.map((option) {
         return VineBottomSheetSelectionOptionData(
-          label: option.description,
+          label: option.localizedLabel(context),
           value: option.name,
         );
       }).toList(),
@@ -52,8 +71,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Select expiration time',
+      label: context.l10n.videoMetadataSelectExpirationSemanticLabel,
       child: InkWell(
         onTap: () => _selectExpiration(context, ref),
         child: Padding(
@@ -63,8 +81,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
             crossAxisAlignment: .stretch,
             children: [
               Text(
-                // TODO(l10n): Replace with context.l10n when localization is added.
-                'Expiration',
+                context.l10n.videoMetadataExpirationLabel,
                 style: VineTheme.labelSmallFont(
                   color: VineTheme.onSurfaceVariant,
                 ),
@@ -75,7 +92,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
                 children: [
                   Flexible(
                     child: Text(
-                      currentOption.description,
+                      currentOption.localizedLabel(context),
                       style: VineTheme.titleMediumFont(
                         color: VineTheme.onSurface,
                       ),

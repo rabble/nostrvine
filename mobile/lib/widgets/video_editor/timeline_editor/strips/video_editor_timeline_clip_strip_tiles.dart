@@ -125,8 +125,8 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
         onDragStart: _onDragStart,
         onDragEnd: _onDragEnd,
         child: Semantics(
-          label: 'Trim clip',
-          hint: 'Drag handles to adjust clip duration',
+          label: context.l10n.videoEditorTimelineTrimClipSemanticLabel,
+          hint: context.l10n.videoEditorTimelineTrimClipHint,
           child: GestureDetector(
             onTap: widget.onTap,
             behavior: HitTestBehavior.opaque,
@@ -168,7 +168,9 @@ class _DraggedClipTile extends StatelessWidget {
         border: .all(color: VineTheme.primary, width: 2),
       ),
       child: Semantics(
-        label: 'Dragging clip ${index + 1}',
+        label: context.l10n.videoEditorTimelineDraggingClipSemanticLabel(
+          index + 1,
+        ),
         child: _ClipTile(
           clip: clip,
           fullWidth: fullWidth,
@@ -205,16 +207,24 @@ class _AccessibleClipTile extends StatelessWidget {
       onTap: onTap != null ? () => onTap!(index) : null,
       behavior: HitTestBehavior.opaque,
       child: Semantics(
-        label:
-            'Clip ${index + 1} of $total, '
-            '${durationSec.toStringAsFixed(1)} seconds',
-        hint: total > 1 ? 'Long press to reorder' : null,
+        label: context.l10n.videoEditorTimelineClipSemanticLabel(
+          index + 1,
+          total,
+          durationSec.toStringAsFixed(1),
+        ),
+        hint: total > 1
+            ? context.l10n.videoEditorTimelineClipReorderHint
+            : null,
         customSemanticsActions: {
           if (index > 0)
-            const CustomSemanticsAction(label: 'Move left'): () =>
+            CustomSemanticsAction(
+              label: context.l10n.videoEditorTimelineClipMoveLeft,
+            ): () =>
                 onReorder(index, index - 1),
           if (index < total - 1)
-            const CustomSemanticsAction(label: 'Move right'): () =>
+            CustomSemanticsAction(
+              label: context.l10n.videoEditorTimelineClipMoveRight,
+            ): () =>
                 onReorder(index, index + 1),
         },
         child: _ClipTile(

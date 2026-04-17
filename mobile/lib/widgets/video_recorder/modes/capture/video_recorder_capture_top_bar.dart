@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
@@ -42,7 +43,8 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                   children: [
                     DivineIconButton(
                       icon: .x,
-                      semanticLabel: 'Close',
+                      semanticLabel:
+                          context.l10n.videoRecorderCaptureCloseLabel,
                       size: .small,
                       type: .ghostSecondary,
                       onPressed: () => notifier.closeVideoRecorder(context),
@@ -52,7 +54,8 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                       opacity: hasClips ? 1 : 0,
                       child: DivineIconButton(
                         icon: .caretRight,
-                        semanticLabel: 'Next',
+                        semanticLabel:
+                            context.l10n.videoRecorderCaptureNextLabel,
                         size: .small,
                         type: .ghostSecondary,
                         onPressed: () => notifier.openVideoEditor(context),

@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -76,11 +77,9 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     await VineBottomSheetPrompt.show(
       context: context,
       sticker: .grandfather,
-      title: 'Why six seconds?',
-      subtitle:
-          'Quick clips make space for spontaneity. The 6-second format helps '
-          'you capture authentic moments as they happen.',
-      secondaryButtonText: 'Got it!',
+      title: context.l10n.videoRecorderWhySixSecondsTitle,
+      subtitle: context.l10n.videoRecorderWhySixSecondsSubtitle,
+      secondaryButtonText: context.l10n.videoRecorderWhySixSecondsButton,
       onSecondaryPressed: context.pop,
     );
   }
@@ -149,9 +148,9 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       await VineBottomSheetPrompt.show(
         context: context,
         sticker: .videoClapBoard,
-        title: 'We found work in progress',
-        subtitle: 'Would you like to continue where you left off?',
-        primaryButtonText: 'Yes, continue',
+        title: context.l10n.videoRecorderAutosaveFoundTitle,
+        subtitle: context.l10n.videoRecorderAutosaveFoundSubtitle,
+        primaryButtonText: context.l10n.videoRecorderAutosaveContinueButton,
         onPrimaryPressed: () async {
           final restoreSuccessful = await ref
               .read(videoEditorProvider.notifier)
@@ -163,7 +162,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
           if (!restoreSuccessful) {
             ScaffoldMessenger.of(context).showSnackBar(
               DivineSnackbarContainer.snackBar(
-                'Could not restore your draft',
+                context.l10n.videoRecorderAutosaveRestoreFailure,
                 error: true,
               ),
             );
@@ -172,7 +171,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
           ref.read(videoRecorderProvider.notifier).openVideoEditor(context);
         },
-        secondaryButtonText: 'No, start a new video',
+        secondaryButtonText: context.l10n.videoRecorderAutosaveDiscardButton,
         onSecondaryPressed: () {
           ref.read(videoEditorProvider.notifier).removeAutosavedDraft();
           context.pop();

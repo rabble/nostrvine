@@ -4,6 +4,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -79,9 +80,11 @@ class VideoMetadataCaptureBottomBar extends ConsumerWidget {
 
     _showStatusSnackBar(
       context,
-      label: draftSaved ? 'Saved to library' : 'Failed to save',
+      label: draftSaved
+          ? context.l10n.videoMetadataSavedToLibrarySnackbar
+          : context.l10n.videoMetadataFailedToSaveSnackbar,
       error: !draftSaved,
-      actionLabel: 'Go to Library',
+      actionLabel: context.l10n.videoMetadataGoToLibraryButton,
       onActionPressed: () => router.push(LibraryScreen.draftsPath),
     );
 
@@ -151,20 +154,20 @@ class _SaveForLaterButton extends ConsumerWidget {
       opacity: !isProcessing ? 1 : 0.32,
       child: Semantics(
         identifier: 'save_for_later_button',
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        label: 'Save for later button',
+        label: context.l10n.videoMetadataSaveForLaterSemanticLabel,
         hint: isProcessing
-            ? 'Rendering video...'
+            ? context.l10n.videoMetadataRenderingVideoHint
             : isSaving
-            ? 'Saving video...'
-            : 'Save video to drafts and '
-                  '${GallerySaveService.destinationName}',
+            ? context.l10n.videoMetadataSavingVideoHint
+            : context.l10n.videoMetadataSaveToDraftsHint(
+                GallerySaveService.destinationName,
+              ),
         button: true,
         enabled: !isSaving && !isProcessing,
         child: DivineButton(
           onPressed: isSaving || isProcessing ? null : onTap,
           type: .secondary,
-          label: 'Save for Later',
+          label: context.l10n.videoMetadataSaveForLaterButton,
         ),
       ),
     );
@@ -191,17 +194,16 @@ class _PostButton extends ConsumerWidget {
       opacity: isValidToPost ? 1 : 0.32,
       child: Semantics(
         identifier: 'post_button',
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        label: 'Post button',
+        label: context.l10n.videoMetadataPostSemanticLabel,
         hint: isValidToPost
-            ? 'Publish video to feed'
-            : 'Fill out the form to enable',
+            ? context.l10n.videoMetadataPublishVideoHint
+            : context.l10n.videoMetadataFormNotReadyHint,
         button: true,
         enabled: isValidToPost,
         child: DivineButton(
           onPressed: isValidToPost ? onTap : null,
           expanded: true,
-          label: 'Post',
+          label: context.l10n.videoMetadataPostButton,
         ),
       ),
     );

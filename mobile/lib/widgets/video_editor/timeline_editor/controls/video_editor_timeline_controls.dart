@@ -1,5 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 class VideoEditorTimelineControls extends StatelessWidget {
   const VideoEditorTimelineControls({
@@ -45,36 +46,42 @@ class VideoEditorTimelineControls extends StatelessWidget {
               if (onDelete != null)
                 _ControlButton(
                   icon: .trash,
-                  label: 'Delete',
-                  semanticLabel: 'Delete selected item',
+                  label: context.l10n.videoEditorDeleteLabel,
+                  semanticLabel:
+                      context.l10n.videoEditorDeleteSelectedItemSemanticLabel,
                   onPressed: onDelete,
                   type: .error,
                 ),
               if (onEdit != null)
                 _ControlButton(
                   icon: .pencilSimple,
-                  label: 'Edit',
-                  semanticLabel: 'Edit selected item',
+                  label: context.l10n.videoEditorEditLabel,
+                  semanticLabel:
+                      context.l10n.videoEditorEditSelectedItemSemanticLabel,
                   onPressed: onEdit,
                 ),
               if (onDuplicated != null)
                 _ControlButton(
                   icon: .copy,
-                  label: 'Duplicate',
-                  semanticLabel: 'Duplicate selected item',
+                  label: context.l10n.videoEditorDuplicateLabel,
+                  semanticLabel: context
+                      .l10n
+                      .videoEditorDuplicateSelectedItemSemanticLabel,
                   onPressed: onDuplicated,
                 ),
               if (onSplit != null)
                 _ControlButton(
                   icon: .scissors,
-                  label: 'Split',
-                  semanticLabel: 'Split selected clip',
+                  label: context.l10n.videoEditorSplitLabel,
+                  semanticLabel:
+                      context.l10n.videoEditorSplitSelectedClipSemanticLabel,
                   onPressed: onSplit,
                 ),
               _ControlButton(
                 icon: .check,
-                label: 'Done',
-                semanticLabel: 'Finish timeline editing',
+                label: context.l10n.videoEditorDoneLabel,
+                semanticLabel:
+                    context.l10n.videoEditorFinishTimelineEditingSemanticLabel,
                 onPressed: onDone,
               ),
             ],

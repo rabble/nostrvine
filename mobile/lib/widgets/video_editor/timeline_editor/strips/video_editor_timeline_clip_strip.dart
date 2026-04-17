@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/clip_thumbnail_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -451,7 +452,7 @@ class _VideoEditorTimelineClipStripState
         : 0.0;
 
     return Semantics(
-      label: 'Long press to reorder clips',
+      label: context.l10n.videoEditorTimelineLongPressToDragHint,
       button: true,
       child: GestureDetector(
         onLongPressStart: _onLongPressStart,

@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 
@@ -22,7 +23,7 @@ class VideoRecorderClassicActionsTop extends ConsumerWidget {
         children: [
           DivineIconButton(
             icon: .arrowCounterClockwise,
-            semanticLabel: 'Delete last clip',
+            semanticLabel: context.l10n.videoRecorderDeleteLastClipLabel,
             size: .small,
             type: .ghostSecondary,
             onPressed: ref

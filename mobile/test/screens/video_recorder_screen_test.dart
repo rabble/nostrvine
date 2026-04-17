@@ -511,7 +511,12 @@ void main() {
               ],
               child: BlocProvider<CameraPermissionBloc>(
                 create: (_) => MockCameraPermissionBloc(),
-                child: const MaterialApp(home: VideoRecorderScreen()),
+                child: const MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: VideoRecorderScreen(),
+                ),
               ),
             ),
           );
@@ -579,7 +584,12 @@ void main() {
               ],
               child: BlocProvider<CameraPermissionBloc>(
                 create: (_) => MockCameraPermissionBloc(),
-                child: const MaterialApp(home: VideoRecorderScreen()),
+                child: const MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: VideoRecorderScreen(),
+                ),
               ),
             ),
           );
@@ -618,7 +628,12 @@ void main() {
               ],
               child: BlocProvider<CameraPermissionBloc>(
                 create: (_) => MockCameraPermissionBloc(),
-                child: const MaterialApp(home: VideoRecorderScreen()),
+                child: const MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: VideoRecorderScreen(),
+                ),
               ),
             ),
           );

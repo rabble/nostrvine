@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_bottom.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_top.dart';
@@ -36,8 +37,8 @@ class VideoRecorderClassicStack extends ConsumerWidget {
                           ref.watch(
                             videoRecorderProvider.select((s) => s.isRecording),
                           )
-                          ? 'Recording. Tap anywhere to stop'
-                          : 'Tap anywhere to start recording',
+                          ? context.l10n.videoRecorderRecordingTapToStopLabel
+                          : context.l10n.videoRecorderTapToStartLabel,
                       child: GestureDetector(
                         behavior: .opaque,
                         onTap: ref

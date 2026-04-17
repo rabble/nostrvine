@@ -3319,14 +3319,15 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Feed Untukmu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.';
+      'Feed Untuk Anda kamu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.';
 
   @override
   String get feedFollowingEmpty =>
       'Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.';
 
   @override
-  String get feedLatestEmpty => 'Belum ada video baru.\nCek lagi nanti.';
+  String get feedLatestEmpty =>
+      'Belum ada video baru.\nCek lagi sebentar lagi.';
 
   @override
   String get feedExploreVideos => 'Jelajahi Video';
@@ -3408,6 +3409,45 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get userSearchFailed => 'Pencarian gagal';
+
+  @override
+  String get userPickerSearchByName => 'Cari berdasarkan nama';
+
+  @override
+  String get userPickerFilterByNameHint => 'Filter berdasarkan nama...';
+
+  @override
+  String get userPickerSearchByNameHint => 'Cari berdasarkan nama...';
+
+  @override
+  String userPickerAlreadyAddedSemantics(String name) {
+    return '$name sudah ditambahkan';
+  }
+
+  @override
+  String userPickerSelectSemantics(String name) {
+    return 'Pilih $name';
+  }
+
+  @override
+  String get userPickerEmptyFollowListTitle => 'Kru kamu ada di luar sana';
+
+  @override
+  String get userPickerEmptyFollowListBody =>
+      'Ikuti orang yang cocok dengan vibe kamu. Saat mereka follow balik, kalian bisa kolaborasi.';
+
+  @override
+  String get userPickerGoBack => 'Kembali';
+
+  @override
+  String get userPickerTypeNameToSearch => 'Ketik nama untuk mencari';
+
+  @override
+  String get userPickerUnavailable =>
+      'Pencarian pengguna tidak tersedia. Coba lagi nanti.';
+
+  @override
+  String get userPickerSearchFailedTryAgain => 'Pencarian gagal. Coba lagi.';
 
   @override
   String get forgotPasswordTitle => 'Reset Kata Sandi';
@@ -4356,10 +4396,25 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoMetadataExpiration => 'Kedaluwarsa';
 
   @override
-  String get videoMetadataContentWarnings => 'Peringatan Konten';
+  String get videoMetadataExpirationNotExpire => 'Tidak kedaluwarsa';
 
   @override
-  String get videoEditorLayers => 'Lapisan';
+  String get videoMetadataExpirationOneDay => '1 hari';
+
+  @override
+  String get videoMetadataExpirationOneWeek => '1 minggu';
+
+  @override
+  String get videoMetadataExpirationOneMonth => '1 bulan';
+
+  @override
+  String get videoMetadataExpirationOneYear => '1 tahun';
+
+  @override
+  String get videoMetadataExpirationOneDecade => '1 dekade';
+
+  @override
+  String get videoMetadataContentWarnings => 'Peringatan Konten';
 
   @override
   String get videoEditorStickers => 'Stiker';
@@ -4795,13 +4850,650 @@ class AppLocalizationsId extends AppLocalizations {
   String get cameraPermissionGoToSettings => 'Buka pengaturan';
 
   @override
-  String get metadataCaptionsLabel => 'Captions';
+  String get videoRecorderWhySixSecondsTitle => 'Mengapa enam detik?';
+
+  @override
+  String get videoRecorderWhySixSecondsSubtitle =>
+      'Klip pendek memberi ruang untuk spontanitas. Format 6 detik membantu kamu menangkap momen autentik saat terjadi.';
+
+  @override
+  String get videoRecorderWhySixSecondsButton => 'Mengerti!';
+
+  @override
+  String get videoRecorderAutosaveFoundTitle =>
+      'Kami menemukan pekerjaan yang belum selesai';
+
+  @override
+  String get videoRecorderAutosaveFoundSubtitle =>
+      'Apakah kamu ingin melanjutkan dari tempat kamu berhenti?';
+
+  @override
+  String get videoRecorderAutosaveContinueButton => 'Ya, lanjutkan';
+
+  @override
+  String get videoRecorderAutosaveDiscardButton => 'Tidak, mulai video baru';
+
+  @override
+  String get videoRecorderAutosaveRestoreFailure =>
+      'Tidak dapat memulihkan draf kamu';
+
+  @override
+  String get videoRecorderStopRecordingTooltip => 'Hentikan perekaman';
+
+  @override
+  String get videoRecorderStartRecordingTooltip => 'Mulai merekam';
+
+  @override
+  String get videoRecorderRecordingTapToStopLabel =>
+      'Merekam. Ketuk di mana saja untuk berhenti';
+
+  @override
+  String get videoRecorderTapToStartLabel =>
+      'Ketuk di mana saja untuk mulai merekam';
+
+  @override
+  String get videoRecorderDeleteLastClipLabel => 'Hapus klip terakhir';
+
+  @override
+  String get videoRecorderSwitchCameraLabel => 'Ganti kamera';
+
+  @override
+  String get videoRecorderToggleGridLabel => 'Ganti grid';
+
+  @override
+  String get videoRecorderToggleGhostFrameLabel => 'Ganti frame hantu';
+
+  @override
+  String get videoRecorderGhostFrameEnabled => 'Frame hantu diaktifkan';
+
+  @override
+  String get videoRecorderGhostFrameDisabled => 'Frame hantu dinonaktifkan';
+
+  @override
+  String get videoRecorderClipDeletedMessage => 'Klip dihapus';
+
+  @override
+  String get videoRecorderCloseLabel => 'Tutup perekam video';
+
+  @override
+  String get videoRecorderContinueToEditorLabel => 'Lanjutkan ke editor video';
+
+  @override
+  String get videoRecorderCaptureCloseLabel => 'Tutup';
+
+  @override
+  String get videoRecorderCaptureNextLabel => 'Berikutnya';
+
+  @override
+  String get videoRecorderToggleFlashLabel => 'Ganti flash';
+
+  @override
+  String get videoRecorderCycleTimerLabel => 'Timer siklus';
+
+  @override
+  String get videoRecorderToggleAspectRatioLabel => 'Ganti rasio aspek';
+
+  @override
+  String get videoRecorderLibraryEmptyLabel =>
+      'Perpustakaan klip, tidak ada klip';
+
+  @override
+  String videoRecorderLibraryOpenLabel(int clipCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clipCount,
+      locale: localeName,
+      other: 'Buka perpustakaan klip, $clipCount klip',
+      one: 'Buka perpustakaan klip, 1 klip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorClipsLabel => 'Klip';
+
+  @override
+  String get videoEditorTextLabel => 'Teks';
+
+  @override
+  String get videoEditorDrawLabel => 'Gambar';
+
+  @override
+  String get videoEditorEffectsLabel => 'Efek';
+
+  @override
+  String get videoEditorAudioLabel => 'Audio';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volume';
+
+  @override
+  String get videoEditorAddTitle => 'Tambah';
+
+  @override
+  String get videoEditorOpenClipsSemanticLabel => 'Buka editor klip';
+
+  @override
+  String get videoEditorOpenAudioSemanticLabel => 'Buka editor audio';
+
+  @override
+  String get videoEditorOpenTextSemanticLabel => 'Buka editor teks';
+
+  @override
+  String get videoEditorOpenDrawSemanticLabel => 'Buka editor gambar';
+
+  @override
+  String get videoEditorOpenEffectsSemanticLabel => 'Buka editor efek';
+
+  @override
+  String get videoEditorSaveDraftTitle => 'Simpan draf?';
+
+  @override
+  String get videoEditorSaveDraftSubtitle =>
+      'Simpan editan untuk nanti, atau buang dan keluar dari editor.';
+
+  @override
+  String get videoEditorSaveDraftButton => 'Simpan draf';
+
+  @override
+  String get videoEditorDiscardChangesButton => 'Buang perubahan';
+
+  @override
+  String get videoEditorKeepEditingButton => 'Lanjutkan mengedit';
+
+  @override
+  String get videoEditorDeleteLayerDropZone =>
+      'Area lepas untuk menghapus lapisan';
+
+  @override
+  String get videoEditorReleaseToDeleteLayer => 'Lepas untuk menghapus lapisan';
+
+  @override
+  String get videoEditorDoneLabel => 'Selesai';
+
+  @override
+  String get videoEditorPlayPauseSemanticLabel => 'Putar atau jeda video';
+
+  @override
+  String get videoEditorCropSemanticLabel => 'Pangkas';
+
+  @override
+  String get videoEditorCannotSplitProcessing =>
+      'Tidak dapat membagi klip saat sedang diproses. Harap tunggu.';
+
+  @override
+  String videoEditorSplitPositionInvalid(int minDurationMs) {
+    return 'Posisi pembagian tidak valid. Setiap klip harus minimal ${minDurationMs}ms.';
+  }
+
+  @override
+  String get videoEditorAddClipFromLibrary => 'Tambah klip dari Perpustakaan';
+
+  @override
+  String get videoEditorSaveSelectedClip => 'Simpan klip yang dipilih';
+
+  @override
+  String get videoEditorSplitClip => 'Bagi klip';
+
+  @override
+  String get videoEditorSaveClip => 'Simpan klip';
+
+  @override
+  String get videoEditorDeleteClip => 'Hapus klip';
+
+  @override
+  String get videoEditorClipSavedSuccess => 'Klip disimpan ke perpustakaan';
+
+  @override
+  String get videoEditorClipSaveFailed => 'Gagal menyimpan klip';
+
+  @override
+  String get videoEditorClipDeleted => 'Klip dihapus';
+
+  @override
+  String get videoEditorColorPickerSemanticLabel => 'Pemilih warna';
+
+  @override
+  String get videoEditorUndoSemanticLabel => 'Batalkan';
+
+  @override
+  String get videoEditorRedoSemanticLabel => 'Ulangi';
+
+  @override
+  String get videoEditorTextColorSemanticLabel => 'Warna teks';
+
+  @override
+  String get videoEditorTextAlignmentSemanticLabel => 'Perataan teks';
+
+  @override
+  String get videoEditorTextBackgroundSemanticLabel => 'Latar belakang teks';
+
+  @override
+  String get videoEditorFontSemanticLabel => 'Font';
+
+  @override
+  String get videoEditorNoStickersFound => 'Stiker tidak ditemukan';
+
+  @override
+  String get videoEditorNoStickersAvailable => 'Tidak ada stiker tersedia';
+
+  @override
+  String get videoEditorFailedLoadStickers => 'Gagal memuat stiker';
+
+  @override
+  String get videoEditorAdjustVolumeTitle => 'Atur volume';
+
+  @override
+  String get videoEditorRecordedAudioLabel => 'Audio yang direkam';
+
+  @override
+  String get videoEditorCustomAudioLabel => 'Audio kustom';
+
+  @override
+  String get videoEditorPlaySemanticLabel => 'Putar';
+
+  @override
+  String get videoEditorPauseSemanticLabel => 'Jeda';
+
+  @override
+  String get videoEditorMuteAudioSemanticLabel => 'Matikan suara';
+
+  @override
+  String get videoEditorUnmuteAudioSemanticLabel => 'Aktifkan suara';
+
+  @override
+  String get videoEditorDeleteLabel => 'Hapus';
+
+  @override
+  String get videoEditorDeleteSelectedItemSemanticLabel =>
+      'Hapus item yang dipilih';
+
+  @override
+  String get videoEditorEditLabel => 'Edit';
+
+  @override
+  String get videoEditorEditSelectedItemSemanticLabel =>
+      'Edit item yang dipilih';
+
+  @override
+  String get videoEditorDuplicateLabel => 'Duplikat';
+
+  @override
+  String get videoEditorDuplicateSelectedItemSemanticLabel =>
+      'Duplikat item yang dipilih';
+
+  @override
+  String get videoEditorSplitLabel => 'Bagi';
+
+  @override
+  String get videoEditorSplitSelectedClipSemanticLabel =>
+      'Bagi klip yang dipilih';
+
+  @override
+  String get videoEditorFinishTimelineEditingSemanticLabel =>
+      'Selesai mengedit timeline';
+
+  @override
+  String get videoEditorSortNewest => 'Terbaru';
+
+  @override
+  String get videoEditorSortLongest => 'Terpanjang';
+
+  @override
+  String get videoEditorSortShortest => 'Terpendek';
+
+  @override
+  String videoEditorSortBySemanticLabel(String option) {
+    return 'Urutkan berdasarkan $option. Ketuk untuk mengubah urutan';
+  }
+
+  @override
+  String get videoEditorAudioPlayPreviewSemanticLabel => 'Putar pratinjau';
+
+  @override
+  String get videoEditorAudioPausePreviewSemanticLabel => 'Jeda pratinjau';
+
+  @override
+  String get videoEditorAudioUntitledSound => 'Suara tanpa judul';
+
+  @override
+  String get videoEditorAudioSelectSoundSemanticLabel => 'Pilih suara';
+
+  @override
+  String get videoEditorAudioUntitled => 'Tanpa judul';
+
+  @override
+  String get videoEditorAudioAddAudio => 'Tambah audio';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableTitle =>
+      'Tidak ada suara tersedia';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableSubtitle =>
+      'Suara akan muncul di sini saat kreator berbagi audio';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundTitle => 'Suara tidak ditemukan';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundSubtitle =>
+      'Coba kata kunci pencarian lain';
+
+  @override
+  String get videoEditorAudioFailedToLoadTitle => 'Gagal memuat suara';
+
+  @override
+  String get videoEditorDrawToolArrowSemanticLabel => 'Alat panah';
+
+  @override
+  String get videoEditorDrawToolEraserSemanticLabel => 'Alat penghapus';
+
+  @override
+  String get videoEditorDrawToolMarkerSemanticLabel => 'Alat marker';
+
+  @override
+  String get videoEditorDrawToolPencilSemanticLabel => 'Alat pensil';
+
+  @override
+  String videoEditorLayerReorderLabel(int index) {
+    return 'Urutkan ulang lapisan $index';
+  }
+
+  @override
+  String get videoEditorLayerReorderHint => 'Tahan untuk mengurutkan ulang';
+
+  @override
+  String get videoEditorShowTimelineSemanticLabel => 'Tampilkan timeline';
+
+  @override
+  String get videoEditorHideTimelineSemanticLabel => 'Sembunyikan timeline';
+
+  @override
+  String get videoEditorFeedPreviewContent =>
+      'Hindari menempatkan konten di belakang area ini.';
+
+  @override
+  String get videoEditorStickerSearchHint => 'Cari stiker...';
+
+  @override
+  String get videoEditorSelectFontSemanticLabel => 'Pilih font';
+
+  @override
+  String get videoEditorFontUnknown => 'Tidak dikenal';
+
+  @override
+  String get videoEditorSplitPlayheadOutsideClip =>
+      'Playhead harus berada di dalam klip yang dipilih untuk membagi.';
+
+  @override
+  String get videoEditorTimelineTrimStartSemanticLabel => 'Pangkas awal';
+
+  @override
+  String get videoEditorTimelineTrimEndSemanticLabel => 'Pangkas akhir';
+
+  @override
+  String get videoEditorTimelineTrimClipSemanticLabel => 'Pangkas klip';
+
+  @override
+  String get videoEditorTimelineTrimClipHint =>
+      'Seret pegangan untuk mengatur durasi klip';
+
+  @override
+  String videoEditorTimelineDraggingClipSemanticLabel(int index) {
+    return 'Menyeret klip $index';
+  }
+
+  @override
+  String videoEditorTimelineClipSemanticLabel(
+    int index,
+    int total,
+    String duration,
+  ) {
+    return 'Klip $index dari $total, $duration detik';
+  }
+
+  @override
+  String get videoEditorTimelineClipReorderHint =>
+      'Tekan lama untuk mengurutkan ulang';
+
+  @override
+  String get videoEditorTimelineClipMoveLeft => 'Geser ke kiri';
+
+  @override
+  String get videoEditorTimelineClipMoveRight => 'Geser ke kanan';
+
+  @override
+  String get videoEditorTimelineLongPressToDragHint =>
+      'Tekan lama untuk menyeret';
+
+  @override
+  String get videoEditorVideoTimelineSemanticLabel => 'Timeline video';
+
+  @override
+  String videoEditorTimelinePositionFormat(int minutes, String seconds) {
+    return '${minutes}m ${seconds}d';
+  }
+
+  @override
+  String videoEditorColorSelectedSemanticLabel(String colorName) {
+    return '$colorName, dipilih';
+  }
+
+  @override
+  String get videoEditorCloseColorPickerSemanticLabel => 'Tutup pemilih warna';
+
+  @override
+  String get videoEditorPickColorTitle => 'Pilih warna';
+
+  @override
+  String get videoEditorConfirmColorSemanticLabel => 'Konfirmasi warna';
+
+  @override
+  String get videoEditorSaturationBrightnessSemanticLabel =>
+      'Saturasi dan kecerahan';
+
+  @override
+  String videoEditorSaturationBrightnessValue(int saturation, int brightness) {
+    return 'Saturasi $saturation%, Kecerahan $brightness%';
+  }
+
+  @override
+  String get videoEditorHueSemanticLabel => 'Rona';
+
+  @override
+  String get videoEditorAddElementSemanticLabel => 'Tambah elemen';
+
+  @override
+  String get videoEditorCloseSemanticLabel => 'Tutup';
+
+  @override
+  String get videoEditorDoneSemanticLabel => 'Selesai';
+
+  @override
+  String get videoEditorLevelSemanticLabel => 'Level';
+
+  @override
+  String get videoMetadataBackSemanticLabel => 'Kembali';
+
+  @override
+  String get videoMetadataDismissHelpDialogSemanticLabel =>
+      'Tutup dialog bantuan';
+
+  @override
+  String get videoMetadataGotItButton => 'Mengerti!';
+
+  @override
+  String get videoMetadataLimitReachedWarning =>
+      'Batas 64KB tercapai. Hapus beberapa konten untuk melanjutkan.';
+
+  @override
+  String get videoMetadataExpirationLabel => 'Kedaluwarsa';
+
+  @override
+  String get videoMetadataSelectExpirationSemanticLabel =>
+      'Pilih waktu kedaluwarsa';
+
+  @override
+  String get videoMetadataTitleLabel => 'Judul';
+
+  @override
+  String get videoMetadataDescriptionLabel => 'Deskripsi';
+
+  @override
+  String get videoMetadataTagsLabel => 'Tag';
+
+  @override
+  String get videoMetadataDeleteTagSemanticLabel => 'Hapus';
+
+  @override
+  String videoMetadataDeleteTagHint(String tag) {
+    return 'Hapus tag $tag';
+  }
+
+  @override
+  String get videoMetadataContentWarningLabel => 'Peringatan Konten';
+
+  @override
+  String get videoMetadataSelectContentWarningsSemanticLabel =>
+      'Pilih peringatan konten';
+
+  @override
+  String get videoMetadataContentWarningSelectAllThatApply =>
+      'Pilih semua yang berlaku untuk kontenmu';
+
+  @override
+  String get videoMetadataContentWarningDoneButton => 'Selesai';
+
+  @override
+  String get videoMetadataCollaboratorsLabel => 'Kolaborator';
+
+  @override
+  String get videoMetadataAddCollaboratorSemanticLabel => 'Tambah kolaborator';
+
+  @override
+  String get videoMetadataCollaboratorsHelpTooltip => 'Cara kerja kolaborator';
+
+  @override
+  String videoMetadataCollaboratorsCount(int count, int max) {
+    return '$count/$max Kolaborator';
+  }
+
+  @override
+  String get videoMetadataRemoveCollaboratorSemanticLabel =>
+      'Hapus kolaborator';
+
+  @override
+  String get videoMetadataCollaboratorsHelpMessage =>
+      'Kolaborator ditandai sebagai co-creator pada postingan ini. Kamu hanya dapat menambahkan orang yang saling kamu ikuti, dan mereka muncul dalam metadata postingan saat dipublikasikan.';
+
+  @override
+  String get videoMetadataMutualFollowersSearchText =>
+      'Pengikut saling mengikuti';
+
+  @override
+  String videoMetadataMustMutuallyFollowSnackbar(String name) {
+    return 'Kamu perlu saling mengikuti $name untuk menambahkannya sebagai kolaborator.';
+  }
+
+  @override
+  String get videoMetadataInspiredByLabel => 'Terinspirasi oleh';
+
+  @override
+  String get videoMetadataSetInspiredBySemanticLabel => 'Atur inspirasi';
+
+  @override
+  String get videoMetadataInspiredByHelpTooltip =>
+      'Cara kerja kredit inspirasi';
+
+  @override
+  String get videoMetadataInspiredByNone => 'Tidak ada';
+
+  @override
+  String get videoMetadataInspiredByHelpMessage =>
+      'Gunakan ini untuk memberikan atribusi. Kredit terinspirasi berbeda dari kolaborator: ini mengakui pengaruh, tetapi tidak menandai seseorang sebagai co-creator.';
+
+  @override
+  String get videoMetadataCreatorCannotBeReferencedSnackbar =>
+      'Kreator ini tidak dapat direferensikan.';
+
+  @override
+  String get videoMetadataRemoveInspiredBySemanticLabel => 'Hapus inspirasi';
+
+  @override
+  String get videoMetadataPostDetailsTitle => 'Detail postingan';
+
+  @override
+  String get videoMetadataSavedToLibrarySnackbar => 'Disimpan ke perpustakaan';
+
+  @override
+  String get videoMetadataFailedToSaveSnackbar => 'Gagal menyimpan';
+
+  @override
+  String get videoMetadataGoToLibraryButton => 'Pergi ke Perpustakaan';
+
+  @override
+  String get videoMetadataSaveForLaterSemanticLabel =>
+      'Tombol simpan untuk nanti';
+
+  @override
+  String get videoMetadataRenderingVideoHint => 'Merender video...';
+
+  @override
+  String get videoMetadataSavingVideoHint => 'Menyimpan video...';
+
+  @override
+  String videoMetadataSaveToDraftsHint(String destination) {
+    return 'Simpan video ke draf dan $destination';
+  }
+
+  @override
+  String get videoMetadataSaveForLaterButton => 'Simpan untuk Nanti';
+
+  @override
+  String get videoMetadataPostSemanticLabel => 'Tombol posting';
+
+  @override
+  String get videoMetadataPublishVideoHint => 'Publikasikan video ke feed';
+
+  @override
+  String get videoMetadataFormNotReadyHint => 'Isi formulir untuk mengaktifkan';
+
+  @override
+  String get videoMetadataPostButton => 'Posting';
+
+  @override
+  String get videoMetadataOpenPreviewSemanticLabel =>
+      'Buka layar pratinjau postingan';
+
+  @override
+  String get videoMetadataShareTitle => 'Bagikan';
+
+  @override
+  String get videoMetadataVideoDetailsSubtitle => 'Detail video';
+
+  @override
+  String get videoMetadataClassicDoneButton => 'Selesai';
+
+  @override
+  String get videoMetadataPlayPreviewSemanticLabel => 'Putar pratinjau';
+
+  @override
+  String get videoMetadataPausePreviewSemanticLabel => 'Jeda pratinjau';
+
+  @override
+  String get videoMetadataClosePreviewSemanticLabel => 'Tutup pratinjau video';
+
+  @override
+  String get videoMetadataRemoveSemanticLabel => 'Hapus';
+
+  @override
+  String get metadataCaptionsLabel => 'Teks';
 
   @override
   String get metadataCaptionsEnabledSemantics =>
-      'Captions enabled for all videos';
+      'Teks diaktifkan untuk semua video';
 
   @override
   String get metadataCaptionsDisabledSemantics =>
-      'Captions disabled for all videos';
+      'Teks dinonaktifkan untuk semua video';
 }

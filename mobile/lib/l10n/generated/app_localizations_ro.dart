@@ -3547,6 +3547,46 @@ class AppLocalizationsRo extends AppLocalizations {
   String get userSearchFailed => 'Căutarea a eșuat';
 
   @override
+  String get userPickerSearchByName => 'Caută după nume';
+
+  @override
+  String get userPickerFilterByNameHint => 'Filtrează după nume...';
+
+  @override
+  String get userPickerSearchByNameHint => 'Caută după nume...';
+
+  @override
+  String userPickerAlreadyAddedSemantics(String name) {
+    return '$name este deja adăugat';
+  }
+
+  @override
+  String userPickerSelectSemantics(String name) {
+    return 'Selectează $name';
+  }
+
+  @override
+  String get userPickerEmptyFollowListTitle => 'Gașca ta e acolo';
+
+  @override
+  String get userPickerEmptyFollowListBody =>
+      'Urmărește oameni cu care rezonezi. Când vă urmăriți reciproc, puteți colabora.';
+
+  @override
+  String get userPickerGoBack => 'Înapoi';
+
+  @override
+  String get userPickerTypeNameToSearch => 'Scrie un nume pentru a căuta';
+
+  @override
+  String get userPickerUnavailable =>
+      'Căutarea utilizatorilor nu este disponibilă. Te rugăm să încerci din nou mai târziu.';
+
+  @override
+  String get userPickerSearchFailedTryAgain =>
+      'Căutarea a eșuat. Încearcă din nou.';
+
+  @override
   String get forgotPasswordTitle => 'Resetează parola';
 
   @override
@@ -4512,10 +4552,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoMetadataExpiration => 'Expirare';
 
   @override
-  String get videoMetadataContentWarnings => 'Avertismente de conținut';
+  String get videoMetadataExpirationNotExpire => 'Nu expiră';
 
   @override
-  String get videoEditorLayers => 'Straturi';
+  String get videoMetadataExpirationOneDay => '1 zi';
+
+  @override
+  String get videoMetadataExpirationOneWeek => '1 săptămână';
+
+  @override
+  String get videoMetadataExpirationOneMonth => '1 lună';
+
+  @override
+  String get videoMetadataExpirationOneYear => '1 an';
+
+  @override
+  String get videoMetadataExpirationOneDecade => '1 deceniu';
+
+  @override
+  String get videoMetadataContentWarnings => 'Avertismente de conținut';
 
   @override
   String get videoEditorStickers => 'Stickere';
@@ -4955,13 +5010,665 @@ class AppLocalizationsRo extends AppLocalizations {
   String get cameraPermissionGoToSettings => 'Mergi la setări';
 
   @override
-  String get metadataCaptionsLabel => 'Captions';
+  String get videoRecorderWhySixSecondsTitle => 'De ce șase secunde?';
+
+  @override
+  String get videoRecorderWhySixSecondsSubtitle =>
+      'Clipurile scurte lasă loc pentru spontaneitate. Formatul de 6 secunde te ajută să surprinzi momente autentice exact când se întâmplă.';
+
+  @override
+  String get videoRecorderWhySixSecondsButton => 'Am înțeles!';
+
+  @override
+  String get videoRecorderAutosaveFoundTitle => 'Am găsit lucru în desfășurare';
+
+  @override
+  String get videoRecorderAutosaveFoundSubtitle =>
+      'Vrei să continui de unde ai rămas?';
+
+  @override
+  String get videoRecorderAutosaveContinueButton => 'Da, continuă';
+
+  @override
+  String get videoRecorderAutosaveDiscardButton =>
+      'Nu, începe un videoclip nou';
+
+  @override
+  String get videoRecorderAutosaveRestoreFailure =>
+      'Nu am putut restaura schița ta';
+
+  @override
+  String get videoRecorderStopRecordingTooltip => 'Oprește înregistrarea';
+
+  @override
+  String get videoRecorderStartRecordingTooltip => 'Începe înregistrarea';
+
+  @override
+  String get videoRecorderRecordingTapToStopLabel =>
+      'Înregistrare în curs. Atinge oriunde pentru a opri';
+
+  @override
+  String get videoRecorderTapToStartLabel =>
+      'Atinge oriunde pentru a începe înregistrarea';
+
+  @override
+  String get videoRecorderDeleteLastClipLabel => 'Șterge ultimul clip';
+
+  @override
+  String get videoRecorderSwitchCameraLabel => 'Schimbă camera';
+
+  @override
+  String get videoRecorderToggleGridLabel => 'Activează/dezactivează grila';
+
+  @override
+  String get videoRecorderToggleGhostFrameLabel =>
+      'Activează/dezactivează cadrul fantomă';
+
+  @override
+  String get videoRecorderGhostFrameEnabled => 'Cadru fantomă activat';
+
+  @override
+  String get videoRecorderGhostFrameDisabled => 'Cadru fantomă dezactivat';
+
+  @override
+  String get videoRecorderClipDeletedMessage => 'Clip șters';
+
+  @override
+  String get videoRecorderCloseLabel => 'Închide înregistratorul video';
+
+  @override
+  String get videoRecorderContinueToEditorLabel =>
+      'Continuă către editorul video';
+
+  @override
+  String get videoRecorderCaptureCloseLabel => 'Închide';
+
+  @override
+  String get videoRecorderCaptureNextLabel => 'Următorul';
+
+  @override
+  String get videoRecorderToggleFlashLabel => 'Activează/dezactivează blițul';
+
+  @override
+  String get videoRecorderCycleTimerLabel => 'Schimbă temporizatorul';
+
+  @override
+  String get videoRecorderToggleAspectRatioLabel =>
+      'Schimbă raportul de aspect';
+
+  @override
+  String get videoRecorderLibraryEmptyLabel =>
+      'Bibliotecă de clipuri, fără clipuri';
+
+  @override
+  String videoRecorderLibraryOpenLabel(int clipCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clipCount,
+      locale: localeName,
+      other: 'Deschide biblioteca de clipuri, $clipCount clipuri',
+      one: 'Deschide biblioteca de clipuri, 1 clip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorClipsLabel => 'Clipuri';
+
+  @override
+  String get videoEditorTextLabel => 'Text';
+
+  @override
+  String get videoEditorDrawLabel => 'Desen';
+
+  @override
+  String get videoEditorEffectsLabel => 'Efecte';
+
+  @override
+  String get videoEditorAudioLabel => 'Audio';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volum';
+
+  @override
+  String get videoEditorAddTitle => 'Adaugă';
+
+  @override
+  String get videoEditorOpenClipsSemanticLabel =>
+      'Deschide editorul de clipuri';
+
+  @override
+  String get videoEditorOpenAudioSemanticLabel => 'Deschide editorul audio';
+
+  @override
+  String get videoEditorOpenTextSemanticLabel => 'Deschide editorul de text';
+
+  @override
+  String get videoEditorOpenDrawSemanticLabel => 'Deschide editorul de desen';
+
+  @override
+  String get videoEditorOpenEffectsSemanticLabel =>
+      'Deschide editorul de efecte';
+
+  @override
+  String get videoEditorSaveDraftTitle => 'Salvezi schița?';
+
+  @override
+  String get videoEditorSaveDraftSubtitle =>
+      'Păstrează editările pentru mai târziu sau renunță la ele și părăsește editorul.';
+
+  @override
+  String get videoEditorSaveDraftButton => 'Salvează schița';
+
+  @override
+  String get videoEditorDiscardChangesButton => 'Renunță la modificări';
+
+  @override
+  String get videoEditorKeepEditingButton => 'Continuă editarea';
+
+  @override
+  String get videoEditorDeleteLayerDropZone =>
+      'Zonă de plasare pentru ștergerea stratului';
+
+  @override
+  String get videoEditorReleaseToDeleteLayer =>
+      'Eliberează pentru a șterge stratul';
+
+  @override
+  String get videoEditorDoneLabel => 'Gata';
+
+  @override
+  String get videoEditorPlayPauseSemanticLabel =>
+      'Redă sau pune pe pauză videoclipul';
+
+  @override
+  String get videoEditorCropSemanticLabel => 'Decupează';
+
+  @override
+  String get videoEditorCannotSplitProcessing =>
+      'Clipul nu poate fi împărțit în timp ce este procesat. Te rugăm să aștepți.';
+
+  @override
+  String videoEditorSplitPositionInvalid(int minDurationMs) {
+    return 'Poziție de împărțire invalidă. Ambele clipuri trebuie să aibă cel puțin $minDurationMs ms.';
+  }
+
+  @override
+  String get videoEditorAddClipFromLibrary => 'Adaugă clip din bibliotecă';
+
+  @override
+  String get videoEditorSaveSelectedClip => 'Salvează clipul selectat';
+
+  @override
+  String get videoEditorSplitClip => 'Împarte clipul';
+
+  @override
+  String get videoEditorSaveClip => 'Salvează clipul';
+
+  @override
+  String get videoEditorDeleteClip => 'Șterge clipul';
+
+  @override
+  String get videoEditorClipSavedSuccess => 'Clip salvat în bibliotecă';
+
+  @override
+  String get videoEditorClipSaveFailed => 'Nu s-a putut salva clipul';
+
+  @override
+  String get videoEditorClipDeleted => 'Clip șters';
+
+  @override
+  String get videoEditorColorPickerSemanticLabel => 'Selector de culoare';
+
+  @override
+  String get videoEditorUndoSemanticLabel => 'Anulează';
+
+  @override
+  String get videoEditorRedoSemanticLabel => 'Refă';
+
+  @override
+  String get videoEditorTextColorSemanticLabel => 'Culoare text';
+
+  @override
+  String get videoEditorTextAlignmentSemanticLabel => 'Aliniere text';
+
+  @override
+  String get videoEditorTextBackgroundSemanticLabel => 'Fundal text';
+
+  @override
+  String get videoEditorFontSemanticLabel => 'Font';
+
+  @override
+  String get videoEditorNoStickersFound => 'Nu au fost găsite stickere';
+
+  @override
+  String get videoEditorNoStickersAvailable => 'Nu sunt disponibile stickere';
+
+  @override
+  String get videoEditorFailedLoadStickers =>
+      'Nu s-au putut încărca stickerele';
+
+  @override
+  String get videoEditorAdjustVolumeTitle => 'Ajustează volumul';
+
+  @override
+  String get videoEditorRecordedAudioLabel => 'Audio înregistrat';
+
+  @override
+  String get videoEditorCustomAudioLabel => 'Audio personalizat';
+
+  @override
+  String get videoEditorPlaySemanticLabel => 'Redă';
+
+  @override
+  String get videoEditorPauseSemanticLabel => 'Pauză';
+
+  @override
+  String get videoEditorMuteAudioSemanticLabel => 'Dezactivează sunetul';
+
+  @override
+  String get videoEditorUnmuteAudioSemanticLabel => 'Activează sunetul';
+
+  @override
+  String get videoEditorDeleteLabel => 'Șterge';
+
+  @override
+  String get videoEditorDeleteSelectedItemSemanticLabel =>
+      'Șterge elementul selectat';
+
+  @override
+  String get videoEditorEditLabel => 'Editează';
+
+  @override
+  String get videoEditorEditSelectedItemSemanticLabel =>
+      'Editează elementul selectat';
+
+  @override
+  String get videoEditorDuplicateLabel => 'Duplichează';
+
+  @override
+  String get videoEditorDuplicateSelectedItemSemanticLabel =>
+      'Duplichează elementul selectat';
+
+  @override
+  String get videoEditorSplitLabel => 'Împarte';
+
+  @override
+  String get videoEditorSplitSelectedClipSemanticLabel =>
+      'Împarte clipul selectat';
+
+  @override
+  String get videoEditorFinishTimelineEditingSemanticLabel =>
+      'Finalizează editarea cronologiei';
+
+  @override
+  String get videoEditorSortNewest => 'Cele mai noi';
+
+  @override
+  String get videoEditorSortLongest => 'Cele mai lungi';
+
+  @override
+  String get videoEditorSortShortest => 'Cele mai scurte';
+
+  @override
+  String videoEditorSortBySemanticLabel(String option) {
+    return 'Sortează după $option. Atinge pentru a schimba ordinea de sortare';
+  }
+
+  @override
+  String get videoEditorAudioPlayPreviewSemanticLabel => 'Redă previzualizarea';
+
+  @override
+  String get videoEditorAudioPausePreviewSemanticLabel =>
+      'Pune previzualizarea pe pauză';
+
+  @override
+  String get videoEditorAudioUntitledSound => 'Sunet fără titlu';
+
+  @override
+  String get videoEditorAudioSelectSoundSemanticLabel => 'Selectează sunetul';
+
+  @override
+  String get videoEditorAudioUntitled => 'Fără titlu';
+
+  @override
+  String get videoEditorAudioAddAudio => 'Adaugă audio';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableTitle =>
+      'Nu sunt sunete disponibile';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableSubtitle =>
+      'Sunetele vor apărea aici când creatorii vor partaja audio';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundTitle => 'Nu au fost găsite sunete';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundSubtitle =>
+      'Încearcă un alt termen de căutare';
+
+  @override
+  String get videoEditorAudioFailedToLoadTitle =>
+      'Nu s-au putut încărca sunetele';
+
+  @override
+  String get videoEditorDrawToolArrowSemanticLabel => 'Instrument săgeată';
+
+  @override
+  String get videoEditorDrawToolEraserSemanticLabel => 'Instrument radieră';
+
+  @override
+  String get videoEditorDrawToolMarkerSemanticLabel => 'Instrument marker';
+
+  @override
+  String get videoEditorDrawToolPencilSemanticLabel => 'Instrument creion';
+
+  @override
+  String videoEditorLayerReorderLabel(int index) {
+    return 'Reordonează stratul $index';
+  }
+
+  @override
+  String get videoEditorLayerReorderHint => 'Ține apăsat pentru a reordona';
+
+  @override
+  String get videoEditorShowTimelineSemanticLabel => 'Afișează cronologia';
+
+  @override
+  String get videoEditorHideTimelineSemanticLabel => 'Ascunde cronologia';
+
+  @override
+  String get videoEditorFeedPreviewContent =>
+      'Evită să plasezi conținut în spatele acestor zone.';
+
+  @override
+  String get videoEditorStickerSearchHint => 'Caută stickere...';
+
+  @override
+  String get videoEditorSelectFontSemanticLabel => 'Selectează fontul';
+
+  @override
+  String get videoEditorFontUnknown => 'Necunoscut';
+
+  @override
+  String get videoEditorSplitPlayheadOutsideClip =>
+      'Capul de redare trebuie să fie în clipul selectat pentru a împărți.';
+
+  @override
+  String get videoEditorTimelineTrimStartSemanticLabel => 'Taie începutul';
+
+  @override
+  String get videoEditorTimelineTrimEndSemanticLabel => 'Taie finalul';
+
+  @override
+  String get videoEditorTimelineTrimClipSemanticLabel => 'Taie clipul';
+
+  @override
+  String get videoEditorTimelineTrimClipHint =>
+      'Trage mânerele pentru a ajusta durata clipului';
+
+  @override
+  String videoEditorTimelineDraggingClipSemanticLabel(int index) {
+    return 'Se trage clipul $index';
+  }
+
+  @override
+  String videoEditorTimelineClipSemanticLabel(
+    int index,
+    int total,
+    String duration,
+  ) {
+    return 'Clipul $index din $total, $duration secunde';
+  }
+
+  @override
+  String get videoEditorTimelineClipReorderHint =>
+      'Apăsare lungă pentru reordonare';
+
+  @override
+  String get videoEditorTimelineClipMoveLeft => 'Mută la stânga';
+
+  @override
+  String get videoEditorTimelineClipMoveRight => 'Mută la dreapta';
+
+  @override
+  String get videoEditorTimelineLongPressToDragHint =>
+      'Apasă lung pentru a trage';
+
+  @override
+  String get videoEditorVideoTimelineSemanticLabel => 'Cronologie video';
+
+  @override
+  String videoEditorTimelinePositionFormat(int minutes, String seconds) {
+    return '${minutes}m ${seconds}s';
+  }
+
+  @override
+  String videoEditorColorSelectedSemanticLabel(String colorName) {
+    return '$colorName, selectat';
+  }
+
+  @override
+  String get videoEditorCloseColorPickerSemanticLabel =>
+      'Închide selectorul de culoare';
+
+  @override
+  String get videoEditorPickColorTitle => 'Alege culoarea';
+
+  @override
+  String get videoEditorConfirmColorSemanticLabel => 'Confirmă culoarea';
+
+  @override
+  String get videoEditorSaturationBrightnessSemanticLabel =>
+      'Saturație și luminozitate';
+
+  @override
+  String videoEditorSaturationBrightnessValue(int saturation, int brightness) {
+    return 'Saturație $saturation%, Luminozitate $brightness%';
+  }
+
+  @override
+  String get videoEditorHueSemanticLabel => 'Nuanță';
+
+  @override
+  String get videoEditorAddElementSemanticLabel => 'Adaugă element';
+
+  @override
+  String get videoEditorCloseSemanticLabel => 'Închide';
+
+  @override
+  String get videoEditorDoneSemanticLabel => 'Gata';
+
+  @override
+  String get videoEditorLevelSemanticLabel => 'Nivel';
+
+  @override
+  String get videoMetadataBackSemanticLabel => 'Înapoi';
+
+  @override
+  String get videoMetadataDismissHelpDialogSemanticLabel =>
+      'Închide dialogul de ajutor';
+
+  @override
+  String get videoMetadataGotItButton => 'Am înțeles!';
+
+  @override
+  String get videoMetadataLimitReachedWarning =>
+      'Limita de 64KB a fost atinsă. Elimină conținut pentru a continua.';
+
+  @override
+  String get videoMetadataExpirationLabel => 'Expirare';
+
+  @override
+  String get videoMetadataSelectExpirationSemanticLabel =>
+      'Selectează timpul de expirare';
+
+  @override
+  String get videoMetadataTitleLabel => 'Titlu';
+
+  @override
+  String get videoMetadataDescriptionLabel => 'Descriere';
+
+  @override
+  String get videoMetadataTagsLabel => 'Etichete';
+
+  @override
+  String get videoMetadataDeleteTagSemanticLabel => 'Șterge';
+
+  @override
+  String videoMetadataDeleteTagHint(String tag) {
+    return 'Șterge eticheta $tag';
+  }
+
+  @override
+  String get videoMetadataContentWarningLabel => 'Avertisment de conținut';
+
+  @override
+  String get videoMetadataSelectContentWarningsSemanticLabel =>
+      'Selectează avertismente de conținut';
+
+  @override
+  String get videoMetadataContentWarningSelectAllThatApply =>
+      'Selectează tot ce se aplică conținutului tău';
+
+  @override
+  String get videoMetadataContentWarningDoneButton => 'Gata';
+
+  @override
+  String get videoMetadataCollaboratorsLabel => 'Colaboratori';
+
+  @override
+  String get videoMetadataAddCollaboratorSemanticLabel => 'Adaugă colaborator';
+
+  @override
+  String get videoMetadataCollaboratorsHelpTooltip =>
+      'Cum funcționează colaboratorii';
+
+  @override
+  String videoMetadataCollaboratorsCount(int count, int max) {
+    return '$count/$max colaboratori';
+  }
+
+  @override
+  String get videoMetadataRemoveCollaboratorSemanticLabel =>
+      'Elimină colaborator';
+
+  @override
+  String get videoMetadataCollaboratorsHelpMessage =>
+      'Colaboratorii sunt etichetați ca și co-creatori ai acestei postări. Poți adăuga doar persoane pe care le urmăriți reciproc, iar ele apar în metadatele postării când este publicată.';
+
+  @override
+  String get videoMetadataMutualFollowersSearchText => 'Urmăritori reciproci';
+
+  @override
+  String videoMetadataMustMutuallyFollowSnackbar(String name) {
+    return 'Trebuie să vă urmăriți reciproc cu $name pentru a-l adăuga ca și colaborator.';
+  }
+
+  @override
+  String get videoMetadataInspiredByLabel => 'Inspirat de';
+
+  @override
+  String get videoMetadataSetInspiredBySemanticLabel => 'Setează inspirat de';
+
+  @override
+  String get videoMetadataInspiredByHelpTooltip =>
+      'Cum funcționează creditele de inspirație';
+
+  @override
+  String get videoMetadataInspiredByNone => 'Niciunul';
+
+  @override
+  String get videoMetadataInspiredByHelpMessage =>
+      'Folosește asta pentru a oferi atribuire. Creditul inspirat de este diferit de colaboratori: recunoaște influența, dar nu etichetează pe cineva ca și co-creator.';
+
+  @override
+  String get videoMetadataCreatorCannotBeReferencedSnackbar =>
+      'Nu se poate face referire la acest creator.';
+
+  @override
+  String get videoMetadataRemoveInspiredBySemanticLabel =>
+      'Elimină inspirat de';
+
+  @override
+  String get videoMetadataPostDetailsTitle => 'Detalii postare';
+
+  @override
+  String get videoMetadataSavedToLibrarySnackbar => 'Salvat în bibliotecă';
+
+  @override
+  String get videoMetadataFailedToSaveSnackbar => 'Salvare eșuată';
+
+  @override
+  String get videoMetadataGoToLibraryButton => 'Mergi la bibliotecă';
+
+  @override
+  String get videoMetadataSaveForLaterSemanticLabel =>
+      'Buton salvează pentru mai târziu';
+
+  @override
+  String get videoMetadataRenderingVideoHint => 'Se redă videoclipul...';
+
+  @override
+  String get videoMetadataSavingVideoHint => 'Se salvează videoclipul...';
+
+  @override
+  String videoMetadataSaveToDraftsHint(String destination) {
+    return 'Salvează videoclipul în schițe și $destination';
+  }
+
+  @override
+  String get videoMetadataSaveForLaterButton => 'Salvează pentru mai târziu';
+
+  @override
+  String get videoMetadataPostSemanticLabel => 'Buton publică';
+
+  @override
+  String get videoMetadataPublishVideoHint => 'Publică videoclipul în feed';
+
+  @override
+  String get videoMetadataFormNotReadyHint =>
+      'Completează formularul pentru a activa';
+
+  @override
+  String get videoMetadataPostButton => 'Publică';
+
+  @override
+  String get videoMetadataOpenPreviewSemanticLabel =>
+      'Deschide ecranul de previzualizare a postării';
+
+  @override
+  String get videoMetadataShareTitle => 'Distribuie';
+
+  @override
+  String get videoMetadataVideoDetailsSubtitle => 'Detalii videoclip';
+
+  @override
+  String get videoMetadataClassicDoneButton => 'Gata';
+
+  @override
+  String get videoMetadataPlayPreviewSemanticLabel => 'Redă previzualizarea';
+
+  @override
+  String get videoMetadataPausePreviewSemanticLabel =>
+      'Pune previzualizarea pe pauză';
+
+  @override
+  String get videoMetadataClosePreviewSemanticLabel =>
+      'Închide previzualizarea videoclipului';
+
+  @override
+  String get videoMetadataRemoveSemanticLabel => 'Elimină';
+
+  @override
+  String get metadataCaptionsLabel => 'Subtitrări';
 
   @override
   String get metadataCaptionsEnabledSemantics =>
-      'Captions enabled for all videos';
+      'Subtitrări activate pentru toate videoclipurile';
 
   @override
   String get metadataCaptionsDisabledSemantics =>
-      'Captions disabled for all videos';
+      'Subtitrări dezactivate pentru toate videoclipurile';
 }

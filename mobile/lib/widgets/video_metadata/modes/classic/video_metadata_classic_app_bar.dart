@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// A custom header widget for video metadata screens.
 /// Unlike AppBar, this provides full control over layout and positioning.
@@ -32,7 +33,7 @@ class VideoMetadataClassicAppBar extends StatelessWidget
                 icon: .caretLeft,
                 type: .ghostSecondary,
                 size: .small,
-                semanticLabel: 'Back',
+                semanticLabel: context.l10n.videoMetadataBackSemanticLabel,
                 onPressed: () => context.pop(),
               ),
             ),
@@ -43,13 +44,13 @@ class VideoMetadataClassicAppBar extends StatelessWidget
                 mainAxisSize: .min,
                 children: [
                   Text(
-                    'Share',
+                    context.l10n.videoMetadataShareTitle,
                     style: VineTheme.titleMediumFont(
                       color: VineTheme.onSurface,
                     ),
                   ),
                   Text(
-                    'Video details',
+                    context.l10n.videoMetadataVideoDetailsSubtitle,
                     style: VineTheme.bodySmallFont(
                       color: VineTheme.onSurfaceVariant,
                     ),

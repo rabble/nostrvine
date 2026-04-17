@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 /// Bottom sheet that shows video editor sub-editor actions.
@@ -26,8 +27,7 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      title: const Text('Add'),
+      title: Text(context.l10n.videoEditorAddTitle),
       children: [VideoEditorMainActionsSheet(scope: scope)],
     );
   }
@@ -43,60 +43,56 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
             spacing: 16,
             mainAxisAlignment: .spaceAround,
             children: [
-              // TODO(l10n): Replace with context.l10n when localization is added.
               Expanded(
                 child: _ItemButton(
                   icon: .images,
-                  label: 'Clips',
-                  semanticLabel: 'Open clips editor',
+                  label: context.l10n.videoEditorClipsLabel,
+                  semanticLabel: context.l10n.videoEditorOpenClipsSemanticLabel,
                   onTap: () {
                     Navigator.pop(context);
                     scope.onOpenClipsEditor();
                   },
                 ),
               ),
-              // TODO(l10n): Replace with context.l10n when localization is added.
               Expanded(
                 child: _ItemButton(
                   icon: .waveform,
-                  label: 'Audio',
-                  semanticLabel: 'Open audio editor',
+                  label: context.l10n.videoEditorAudioLabel,
+                  semanticLabel: context.l10n.videoEditorOpenAudioSemanticLabel,
                   onTap: () {
                     Navigator.pop(context);
                     scope.onOpenMusicLibrary();
                   },
                 ),
               ),
-              // TODO(l10n): Replace with context.l10n when localization is added.
               Expanded(
                 child: _ItemButton(
                   icon: .textAa,
-                  label: 'Text',
-                  semanticLabel: 'Open text editor',
+                  label: context.l10n.videoEditorTextLabel,
+                  semanticLabel: context.l10n.videoEditorOpenTextSemanticLabel,
                   onTap: () {
                     Navigator.pop(context);
                     scope.editor?.openTextEditor();
                   },
                 ),
               ),
-              // TODO(l10n): Replace with context.l10n when localization is added.
               Expanded(
                 child: _ItemButton(
                   icon: .scribble,
-                  label: 'Draw',
-                  semanticLabel: 'Open draw editor',
+                  label: context.l10n.videoEditorDrawLabel,
+                  semanticLabel: context.l10n.videoEditorOpenDrawSemanticLabel,
                   onTap: () {
                     Navigator.pop(context);
                     scope.editor?.openPaintEditor();
                   },
                 ),
               ),
-              // TODO(l10n): Replace with context.l10n when localization is added.
               Expanded(
                 child: _ItemButton(
                   icon: .fadersHorizontal,
-                  label: 'Effects',
-                  semanticLabel: 'Open effects editor',
+                  label: context.l10n.videoEditorEffectsLabel,
+                  semanticLabel:
+                      context.l10n.videoEditorOpenEffectsSemanticLabel,
                   onTap: () {
                     Navigator.pop(context);
                     scope.editor?.openFilterEditor();

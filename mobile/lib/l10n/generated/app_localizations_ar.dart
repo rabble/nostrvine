@@ -1194,10 +1194,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionAutoLabel => 'تلقائي';
 
   @override
-  String get videoActionEnableAutoAdvance => 'تفعيل التقدّم التلقائي';
+  String get videoActionEnableAutoAdvance => 'تفعيل التشغيل التلقائي';
 
   @override
-  String get videoActionDisableAutoAdvance => 'إيقاف التقدّم التلقائي';
+  String get videoActionDisableAutoAdvance => 'تعطيل التشغيل التلقائي';
 
   @override
   String get videoActionRemoveRepost => 'إزالة إعادة النشر';
@@ -3310,15 +3310,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'خلاصة \"لك\" فارغة.\nاستكشف مقاطع الفيديو وتابع المبدعين لتشكيلها.';
+      'خلاصة لك فارغة.\nاستكشف المقاطع واتبع صناع المحتوى لتخصيصها.';
 
   @override
   String get feedFollowingEmpty =>
-      'لا توجد مقاطع فيديو من الأشخاص الذين تتابعهم بعد.\nاعثر على مبدعين تحبهم وتابعهم.';
+      'لا توجد مقاطع بعد من الأشخاص الذين تتابعهم.\nاعثر على صناع محتوى يعجبونك وتابعهم.';
 
   @override
-  String get feedLatestEmpty =>
-      'لا توجد مقاطع فيديو جديدة بعد.\nعد قريبًا للاطلاع.';
+  String get feedLatestEmpty => 'لا توجد مقاطع جديدة بعد.\nعد لاحقًا.';
 
   @override
   String get feedExploreVideos => 'استكشاف مقاطع الفيديو';
@@ -3400,6 +3399,46 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get userSearchFailed => 'فشل البحث';
+
+  @override
+  String get userPickerSearchByName => 'İsme göre ara';
+
+  @override
+  String get userPickerFilterByNameHint => 'İsme göre filtrele...';
+
+  @override
+  String get userPickerSearchByNameHint => 'İsme göre ara...';
+
+  @override
+  String userPickerAlreadyAddedSemantics(String name) {
+    return '$name zaten eklendi';
+  }
+
+  @override
+  String userPickerSelectSemantics(String name) {
+    return '$name seç';
+  }
+
+  @override
+  String get userPickerEmptyFollowListTitle => 'Ekibin orada';
+
+  @override
+  String get userPickerEmptyFollowListBody =>
+      'Uyum sağladığın kişileri takip et. Onlar da seni takip ettiğinde birlikte içerik üretebilirsin.';
+
+  @override
+  String get userPickerGoBack => 'Geri dön';
+
+  @override
+  String get userPickerTypeNameToSearch => 'Aramak için bir ad yaz';
+
+  @override
+  String get userPickerUnavailable =>
+      'Kullanıcı araması şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.';
+
+  @override
+  String get userPickerSearchFailedTryAgain =>
+      'Arama başarısız oldu. Lütfen tekrar dene.';
 
   @override
   String get forgotPasswordTitle => 'إعادة تعيين كلمة المرور';
@@ -4338,10 +4377,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoMetadataExpiration => 'انتهاء الصلاحية';
 
   @override
-  String get videoMetadataContentWarnings => 'تحذيرات المحتوى';
+  String get videoMetadataExpirationNotExpire => 'لا تنتهي الصلاحية';
 
   @override
-  String get videoEditorLayers => 'الطبقات';
+  String get videoMetadataExpirationOneDay => 'يوم واحد';
+
+  @override
+  String get videoMetadataExpirationOneWeek => 'أسبوع واحد';
+
+  @override
+  String get videoMetadataExpirationOneMonth => 'شهر واحد';
+
+  @override
+  String get videoMetadataExpirationOneYear => 'سنة واحدة';
+
+  @override
+  String get videoMetadataExpirationOneDecade => 'عشر سنوات';
+
+  @override
+  String get videoMetadataContentWarnings => 'تحذيرات المحتوى';
 
   @override
   String get videoEditorStickers => 'الملصقات';
@@ -4776,13 +4830,634 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cameraPermissionGoToSettings => 'الذهاب إلى الإعدادات';
 
   @override
-  String get metadataCaptionsLabel => 'Captions';
+  String get videoRecorderWhySixSecondsTitle => 'لماذا ست ثوانٍ؟';
+
+  @override
+  String get videoRecorderWhySixSecondsSubtitle =>
+      'المقاطع القصيرة تفسح المجال للتلقائية. يساعدك التنسيق المدته 6 ثوانٍ على التقاط اللحظات الأصيلة فور حدوثها.';
+
+  @override
+  String get videoRecorderWhySixSecondsButton => 'فهمت!';
+
+  @override
+  String get videoRecorderAutosaveFoundTitle => 'وجدنا عملاً قيد التنفيذ';
+
+  @override
+  String get videoRecorderAutosaveFoundSubtitle =>
+      'هل تريد المتابعة من حيث توقفت؟';
+
+  @override
+  String get videoRecorderAutosaveContinueButton => 'نعم، متابعة';
+
+  @override
+  String get videoRecorderAutosaveDiscardButton => 'لا، ابدأ فيديو جديد';
+
+  @override
+  String get videoRecorderAutosaveRestoreFailure => 'تعذر استعادة مسودتك';
+
+  @override
+  String get videoRecorderStopRecordingTooltip => 'إيقاف التسجيل';
+
+  @override
+  String get videoRecorderStartRecordingTooltip => 'بدء التسجيل';
+
+  @override
+  String get videoRecorderRecordingTapToStopLabel =>
+      'جاري التسجيل. اضغط في أي مكان للإيقاف';
+
+  @override
+  String get videoRecorderTapToStartLabel => 'اضغط في أي مكان لبدء التسجيل';
+
+  @override
+  String get videoRecorderDeleteLastClipLabel => 'حذف آخر مقطع';
+
+  @override
+  String get videoRecorderSwitchCameraLabel => 'تبديل الكاميرا';
+
+  @override
+  String get videoRecorderToggleGridLabel => 'تبديل الشبكة';
+
+  @override
+  String get videoRecorderToggleGhostFrameLabel => 'تبديل الإطار الشبحي';
+
+  @override
+  String get videoRecorderGhostFrameEnabled => 'الإطار الشبحي مفعّل';
+
+  @override
+  String get videoRecorderGhostFrameDisabled => 'الإطار الشبحي معطل';
+
+  @override
+  String get videoRecorderClipDeletedMessage => 'تم حذف المقطع';
+
+  @override
+  String get videoRecorderCloseLabel => 'إغلاق مسجل الفيديو';
+
+  @override
+  String get videoRecorderContinueToEditorLabel => 'المتابعة إلى محرر الفيديو';
+
+  @override
+  String get videoRecorderCaptureCloseLabel => 'إغلاق';
+
+  @override
+  String get videoRecorderCaptureNextLabel => 'التالي';
+
+  @override
+  String get videoRecorderToggleFlashLabel => 'تبديل الفلاش';
+
+  @override
+  String get videoRecorderCycleTimerLabel => 'تدوير المؤقت';
+
+  @override
+  String get videoRecorderToggleAspectRatioLabel =>
+      'تبديل نسبة العرض إلى الارتفاع';
+
+  @override
+  String get videoRecorderLibraryEmptyLabel => 'مكتبة المقاطع، لا توجد مقاطع';
+
+  @override
+  String videoRecorderLibraryOpenLabel(int clipCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clipCount,
+      locale: localeName,
+      other: 'فتح مكتبة المقاطع، $clipCount مقاطع',
+      one: 'فتح مكتبة المقاطع، مقطع واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorClipsLabel => 'المقاطع';
+
+  @override
+  String get videoEditorTextLabel => 'النص';
+
+  @override
+  String get videoEditorDrawLabel => 'رسم';
+
+  @override
+  String get videoEditorEffectsLabel => 'التأثيرات';
+
+  @override
+  String get videoEditorAudioLabel => 'الصوت';
+
+  @override
+  String get videoEditorVolumeLabel => 'الصوت';
+
+  @override
+  String get videoEditorAddTitle => 'إضافة';
+
+  @override
+  String get videoEditorOpenClipsSemanticLabel => 'فتح محرر المقاطع';
+
+  @override
+  String get videoEditorOpenAudioSemanticLabel => 'فتح محرر الصوت';
+
+  @override
+  String get videoEditorOpenTextSemanticLabel => 'فتح محرر النص';
+
+  @override
+  String get videoEditorOpenDrawSemanticLabel => 'فتح محرر الرسم';
+
+  @override
+  String get videoEditorOpenEffectsSemanticLabel => 'فتح محرر التأثيرات';
+
+  @override
+  String get videoEditorSaveDraftTitle => 'حفظ المسودة؟';
+
+  @override
+  String get videoEditorSaveDraftSubtitle =>
+      'احفظ تعديلاتك لاحقًا، أو تجاهلها واخرج من المحرر.';
+
+  @override
+  String get videoEditorSaveDraftButton => 'حفظ المسودة';
+
+  @override
+  String get videoEditorDiscardChangesButton => 'تجاهل التغييرات';
+
+  @override
+  String get videoEditorKeepEditingButton => 'مواصلة التحرير';
+
+  @override
+  String get videoEditorDeleteLayerDropZone => 'منطقة إسقاط لحذف الطبقة';
+
+  @override
+  String get videoEditorReleaseToDeleteLayer => 'أفلت لحذف الطبقة';
+
+  @override
+  String get videoEditorDoneLabel => 'تم';
+
+  @override
+  String get videoEditorPlayPauseSemanticLabel =>
+      'تشغيل الفيديو أو إيقافه مؤقتًا';
+
+  @override
+  String get videoEditorCropSemanticLabel => 'قص';
+
+  @override
+  String get videoEditorCannotSplitProcessing =>
+      'لا يمكن تقسيم المقطع أثناء معالجته. يرجى الانتظار.';
+
+  @override
+  String videoEditorSplitPositionInvalid(int minDurationMs) {
+    return 'موضع التقسيم غير صالح. يجب أن يكون كل مقطع $minDurationMs مللي ثانية على الأقل.';
+  }
+
+  @override
+  String get videoEditorAddClipFromLibrary => 'إضافة مقطع من المكتبة';
+
+  @override
+  String get videoEditorSaveSelectedClip => 'حفظ المقطع المحدد';
+
+  @override
+  String get videoEditorSplitClip => 'تقسيم المقطع';
+
+  @override
+  String get videoEditorSaveClip => 'حفظ المقطع';
+
+  @override
+  String get videoEditorDeleteClip => 'حذف المقطع';
+
+  @override
+  String get videoEditorClipSavedSuccess => 'تم حفظ المقطع في المكتبة';
+
+  @override
+  String get videoEditorClipSaveFailed => 'فشل حفظ المقطع';
+
+  @override
+  String get videoEditorClipDeleted => 'تم حذف المقطع';
+
+  @override
+  String get videoEditorColorPickerSemanticLabel => 'منتقي الألوان';
+
+  @override
+  String get videoEditorUndoSemanticLabel => 'تراجع';
+
+  @override
+  String get videoEditorRedoSemanticLabel => 'إعادة';
+
+  @override
+  String get videoEditorTextColorSemanticLabel => 'لون النص';
+
+  @override
+  String get videoEditorTextAlignmentSemanticLabel => 'محاذاة النص';
+
+  @override
+  String get videoEditorTextBackgroundSemanticLabel => 'خلفية النص';
+
+  @override
+  String get videoEditorFontSemanticLabel => 'الخط';
+
+  @override
+  String get videoEditorNoStickersFound => 'لم يتم العثور على ملصقات';
+
+  @override
+  String get videoEditorNoStickersAvailable => 'لا توجد ملصقات متاحة';
+
+  @override
+  String get videoEditorFailedLoadStickers => 'فشل تحميل الملصقات';
+
+  @override
+  String get videoEditorAdjustVolumeTitle => 'ضبط الصوت';
+
+  @override
+  String get videoEditorRecordedAudioLabel => 'الصوت المسجل';
+
+  @override
+  String get videoEditorCustomAudioLabel => 'صوت مخصص';
+
+  @override
+  String get videoEditorPlaySemanticLabel => 'تشغيل';
+
+  @override
+  String get videoEditorPauseSemanticLabel => 'إيقاف مؤقت';
+
+  @override
+  String get videoEditorMuteAudioSemanticLabel => 'كتم الصوت';
+
+  @override
+  String get videoEditorUnmuteAudioSemanticLabel => 'إلغاء كتم الصوت';
+
+  @override
+  String get videoEditorDeleteLabel => 'حذف';
+
+  @override
+  String get videoEditorDeleteSelectedItemSemanticLabel => 'حذف العنصر المحدد';
+
+  @override
+  String get videoEditorEditLabel => 'تحرير';
+
+  @override
+  String get videoEditorEditSelectedItemSemanticLabel => 'تحرير العنصر المحدد';
+
+  @override
+  String get videoEditorDuplicateLabel => 'تكرار';
+
+  @override
+  String get videoEditorDuplicateSelectedItemSemanticLabel =>
+      'تكرار العنصر المحدد';
+
+  @override
+  String get videoEditorSplitLabel => 'تقسيم';
+
+  @override
+  String get videoEditorSplitSelectedClipSemanticLabel => 'تقسيم المقطع المحدد';
+
+  @override
+  String get videoEditorFinishTimelineEditingSemanticLabel =>
+      'إنهاء تحرير الجدول الزمني';
+
+  @override
+  String get videoEditorSortNewest => 'الأحدث';
+
+  @override
+  String get videoEditorSortLongest => 'الأطول';
+
+  @override
+  String get videoEditorSortShortest => 'الأقصر';
+
+  @override
+  String videoEditorSortBySemanticLabel(String option) {
+    return 'ترتيب حسب $option. اضغط لتغيير ترتيب الفرز';
+  }
+
+  @override
+  String get videoEditorAudioPlayPreviewSemanticLabel => 'تشغيل المعاينة';
+
+  @override
+  String get videoEditorAudioPausePreviewSemanticLabel =>
+      'إيقاف المعاينة مؤقتًا';
+
+  @override
+  String get videoEditorAudioUntitledSound => 'صوت بدون عنوان';
+
+  @override
+  String get videoEditorAudioSelectSoundSemanticLabel => 'اختيار صوت';
+
+  @override
+  String get videoEditorAudioUntitled => 'بدون عنوان';
+
+  @override
+  String get videoEditorAudioAddAudio => 'إضافة صوت';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableTitle => 'لا توجد أصوات متاحة';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableSubtitle =>
+      'ستظهر الأصوات هنا عندما يشاركها المبدعون';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundTitle => 'لم يتم العثور على أصوات';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundSubtitle => 'جرّب مصطلح بحث مختلف';
+
+  @override
+  String get videoEditorAudioFailedToLoadTitle => 'فشل تحميل الأصوات';
+
+  @override
+  String get videoEditorDrawToolArrowSemanticLabel => 'أداة السهم';
+
+  @override
+  String get videoEditorDrawToolEraserSemanticLabel => 'أداة الممحاة';
+
+  @override
+  String get videoEditorDrawToolMarkerSemanticLabel => 'أداة الماركر';
+
+  @override
+  String get videoEditorDrawToolPencilSemanticLabel => 'أداة القلم';
+
+  @override
+  String videoEditorLayerReorderLabel(int index) {
+    return 'إعادة ترتيب الطبقة $index';
+  }
+
+  @override
+  String get videoEditorLayerReorderHint => 'اضغط مطولاً لإعادة الترتيب';
+
+  @override
+  String get videoEditorShowTimelineSemanticLabel => 'إظهار الجدول الزمني';
+
+  @override
+  String get videoEditorHideTimelineSemanticLabel => 'إخفاء الجدول الزمني';
+
+  @override
+  String get videoEditorFeedPreviewContent =>
+      'تجنب وضع المحتوى خلف هذه المناطق.';
+
+  @override
+  String get videoEditorStickerSearchHint => 'البحث في الملصقات...';
+
+  @override
+  String get videoEditorSelectFontSemanticLabel => 'اختيار خط';
+
+  @override
+  String get videoEditorFontUnknown => 'غير معروف';
+
+  @override
+  String get videoEditorSplitPlayheadOutsideClip =>
+      'يجب أن يكون رأس التشغيل داخل المقطع المحدد للتقسيم.';
+
+  @override
+  String get videoEditorTimelineTrimStartSemanticLabel => 'قص البداية';
+
+  @override
+  String get videoEditorTimelineTrimEndSemanticLabel => 'قص النهاية';
+
+  @override
+  String get videoEditorTimelineTrimClipSemanticLabel => 'قص المقطع';
+
+  @override
+  String get videoEditorTimelineTrimClipHint => 'اسحب المقابض لضبط مدة المقطع';
+
+  @override
+  String videoEditorTimelineDraggingClipSemanticLabel(int index) {
+    return 'سحب المقطع $index';
+  }
+
+  @override
+  String videoEditorTimelineClipSemanticLabel(
+    int index,
+    int total,
+    String duration,
+  ) {
+    return 'المقطع $index من $total، مدة $duration ثانية';
+  }
+
+  @override
+  String get videoEditorTimelineClipReorderHint => 'اضغط مطولاً لإعادة الترتيب';
+
+  @override
+  String get videoEditorTimelineClipMoveLeft => 'تحريك لليسار';
+
+  @override
+  String get videoEditorTimelineClipMoveRight => 'تحريك لليمين';
+
+  @override
+  String get videoEditorTimelineLongPressToDragHint => 'اضغط مطولاً للسحب';
+
+  @override
+  String get videoEditorVideoTimelineSemanticLabel => 'الجدول الزمني للفيديو';
+
+  @override
+  String videoEditorTimelinePositionFormat(int minutes, String seconds) {
+    return '$minutesد $secondsث';
+  }
+
+  @override
+  String videoEditorColorSelectedSemanticLabel(String colorName) {
+    return '$colorName، محدد';
+  }
+
+  @override
+  String get videoEditorCloseColorPickerSemanticLabel => 'إغلاق منتقي الألوان';
+
+  @override
+  String get videoEditorPickColorTitle => 'اختيار لون';
+
+  @override
+  String get videoEditorConfirmColorSemanticLabel => 'تأكيد اللون';
+
+  @override
+  String get videoEditorSaturationBrightnessSemanticLabel => 'التشبع والسطوع';
+
+  @override
+  String videoEditorSaturationBrightnessValue(int saturation, int brightness) {
+    return 'التشبع $saturation%، السطوع $brightness%';
+  }
+
+  @override
+  String get videoEditorHueSemanticLabel => 'الصبغة';
+
+  @override
+  String get videoEditorAddElementSemanticLabel => 'إضافة عنصر';
+
+  @override
+  String get videoEditorCloseSemanticLabel => 'إغلاق';
+
+  @override
+  String get videoEditorDoneSemanticLabel => 'تم';
+
+  @override
+  String get videoEditorLevelSemanticLabel => 'المستوى';
+
+  @override
+  String get videoMetadataBackSemanticLabel => 'رجوع';
+
+  @override
+  String get videoMetadataDismissHelpDialogSemanticLabel =>
+      'إغلاق مربع حوار المساعدة';
+
+  @override
+  String get videoMetadataGotItButton => 'فهمت!';
+
+  @override
+  String get videoMetadataLimitReachedWarning =>
+      'تم الوصول إلى حد 64 كيلوبايت. أزل بعض المحتوى للمتابعة.';
+
+  @override
+  String get videoMetadataExpirationLabel => 'انتهاء الصلاحية';
+
+  @override
+  String get videoMetadataSelectExpirationSemanticLabel =>
+      'اختيار وقت انتهاء الصلاحية';
+
+  @override
+  String get videoMetadataTitleLabel => 'العنوان';
+
+  @override
+  String get videoMetadataDescriptionLabel => 'الوصف';
+
+  @override
+  String get videoMetadataTagsLabel => 'الوسوم';
+
+  @override
+  String get videoMetadataDeleteTagSemanticLabel => 'حذف';
+
+  @override
+  String videoMetadataDeleteTagHint(String tag) {
+    return 'حذف الوسم $tag';
+  }
+
+  @override
+  String get videoMetadataContentWarningLabel => 'تحذير المحتوى';
+
+  @override
+  String get videoMetadataSelectContentWarningsSemanticLabel =>
+      'اختيار تحذيرات المحتوى';
+
+  @override
+  String get videoMetadataContentWarningSelectAllThatApply =>
+      'اختر كل ما ينطبق على محتواك';
+
+  @override
+  String get videoMetadataContentWarningDoneButton => 'تم';
+
+  @override
+  String get videoMetadataCollaboratorsLabel => 'المتعاونون';
+
+  @override
+  String get videoMetadataAddCollaboratorSemanticLabel => 'إضافة متعاون';
+
+  @override
+  String get videoMetadataCollaboratorsHelpTooltip => 'كيفية عمل المتعاونين';
+
+  @override
+  String videoMetadataCollaboratorsCount(int count, int max) {
+    return '$count/$max متعاونين';
+  }
+
+  @override
+  String get videoMetadataRemoveCollaboratorSemanticLabel => 'إزالة المتعاون';
+
+  @override
+  String get videoMetadataCollaboratorsHelpMessage =>
+      'يُضاف المتعاونون كمبدعين مشاركين في هذا المنشور. يمكنك إضافة الأشخاص الذين تتابعهم بشكل متبادل فقط، ويظهرون في بيانات المنشور عند نشره.';
+
+  @override
+  String get videoMetadataMutualFollowersSearchText => 'المتابعون المتبادلون';
+
+  @override
+  String videoMetadataMustMutuallyFollowSnackbar(String name) {
+    return 'يجب أن تتابع $name بشكل متبادل لإضافته كمتعاون.';
+  }
+
+  @override
+  String get videoMetadataInspiredByLabel => 'مستلهم من';
+
+  @override
+  String get videoMetadataSetInspiredBySemanticLabel => 'تحديد مصدر الإلهام';
+
+  @override
+  String get videoMetadataInspiredByHelpTooltip => 'كيفية عمل أرصدة الإلهام';
+
+  @override
+  String get videoMetadataInspiredByNone => 'لا شيء';
+
+  @override
+  String get videoMetadataInspiredByHelpMessage =>
+      'استخدم هذا لإعطاء الفضل. يختلف رصيد الإلهام عن المتعاونين: يُقرّ بالتأثير، لكنه لا يُضيف شخصًا كمبدع مشارك.';
+
+  @override
+  String get videoMetadataCreatorCannotBeReferencedSnackbar =>
+      'لا يمكن الإشارة إلى هذا المبدع.';
+
+  @override
+  String get videoMetadataRemoveInspiredBySemanticLabel => 'إزالة مصدر الإلهام';
+
+  @override
+  String get videoMetadataPostDetailsTitle => 'تفاصيل المنشور';
+
+  @override
+  String get videoMetadataSavedToLibrarySnackbar => 'تم الحفظ في المكتبة';
+
+  @override
+  String get videoMetadataFailedToSaveSnackbar => 'فشل الحفظ';
+
+  @override
+  String get videoMetadataGoToLibraryButton => 'الذهاب إلى المكتبة';
+
+  @override
+  String get videoMetadataSaveForLaterSemanticLabel => 'زر الحفظ لاحقًا';
+
+  @override
+  String get videoMetadataRenderingVideoHint => 'جاري تصيير الفيديو...';
+
+  @override
+  String get videoMetadataSavingVideoHint => 'جاري حفظ الفيديو...';
+
+  @override
+  String videoMetadataSaveToDraftsHint(String destination) {
+    return 'حفظ الفيديو في المسودات و$destination';
+  }
+
+  @override
+  String get videoMetadataSaveForLaterButton => 'حفظ لاحقًا';
+
+  @override
+  String get videoMetadataPostSemanticLabel => 'زر النشر';
+
+  @override
+  String get videoMetadataPublishVideoHint => 'نشر الفيديو في الخلاصة';
+
+  @override
+  String get videoMetadataFormNotReadyHint => 'أكمل النموذج للتفعيل';
+
+  @override
+  String get videoMetadataPostButton => 'نشر';
+
+  @override
+  String get videoMetadataOpenPreviewSemanticLabel => 'فتح شاشة معاينة المنشور';
+
+  @override
+  String get videoMetadataShareTitle => 'مشاركة';
+
+  @override
+  String get videoMetadataVideoDetailsSubtitle => 'تفاصيل الفيديو';
+
+  @override
+  String get videoMetadataClassicDoneButton => 'تم';
+
+  @override
+  String get videoMetadataPlayPreviewSemanticLabel => 'تشغيل المعاينة';
+
+  @override
+  String get videoMetadataPausePreviewSemanticLabel => 'إيقاف المعاينة مؤقتًا';
+
+  @override
+  String get videoMetadataClosePreviewSemanticLabel => 'إغلاق معاينة الفيديو';
+
+  @override
+  String get videoMetadataRemoveSemanticLabel => 'إزالة';
+
+  @override
+  String get metadataCaptionsLabel => 'التسميات التوضيحية';
 
   @override
   String get metadataCaptionsEnabledSemantics =>
-      'Captions enabled for all videos';
+      'التسميات التوضيحية مفعّلة لجميع مقاطع الفيديو';
 
   @override
   String get metadataCaptionsDisabledSemantics =>
-      'Captions disabled for all videos';
+      'التسميات التوضيحية معطّلة لجميع مقاطع الفيديو';
 }

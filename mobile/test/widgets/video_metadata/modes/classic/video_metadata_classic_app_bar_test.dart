@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_app_bar.dart';
 
 import '../../../../helpers/go_router.dart';
@@ -35,7 +36,11 @@ void main() {
     });
 
     Widget buildTestWidget() {
-      return MaterialApp.router(routerConfig: router);
+      return MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      );
     }
 
     testWidgets('renders $VideoMetadataClassicAppBar', (tester) async {
@@ -98,6 +103,8 @@ void main() {
         MockGoRouterProvider(
           goRouter: mockGoRouter,
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               appBar: VideoMetadataClassicAppBar(),
               body: Text('Test'),

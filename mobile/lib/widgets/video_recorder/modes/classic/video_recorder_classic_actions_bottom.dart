@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 
 class VideoRecorderClassicActionsBottom extends ConsumerWidget {
@@ -30,21 +31,21 @@ class VideoRecorderClassicActionsBottom extends ConsumerWidget {
         children: [
           DivineIconButton(
             icon: .arrowsCounterClockwise,
-            semanticLabel: 'Switch camera',
+            semanticLabel: context.l10n.videoRecorderSwitchCameraLabel,
             size: .small,
             type: .ghostSecondary,
             onPressed: notifier.switchCamera,
           ),
           DivineIconButton(
             icon: .gridNine,
-            semanticLabel: 'Toggle grid',
+            semanticLabel: context.l10n.videoRecorderToggleGridLabel,
             size: .small,
             type: .ghostSecondary,
             onPressed: notifier.toggleGridLines,
           ),
           DivineIconButton(
             icon: .ghost,
-            semanticLabel: 'Toggle ghost frame',
+            semanticLabel: context.l10n.videoRecorderToggleGhostFrameLabel,
             size: .small,
             type: .ghostSecondary,
             onPressed: () {
@@ -54,7 +55,9 @@ class VideoRecorderClassicActionsBottom extends ConsumerWidget {
                   .showLastClipOverlay;
               _showSnackBar(
                 context,
-                enabled ? 'Ghost frame enabled' : 'Ghost frame disabled',
+                enabled
+                    ? context.l10n.videoRecorderGhostFrameEnabled
+                    : context.l10n.videoRecorderGhostFrameDisabled,
               );
             },
           ),

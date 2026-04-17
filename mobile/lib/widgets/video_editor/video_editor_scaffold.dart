@@ -7,6 +7,7 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_overlay_controls.dart';
@@ -229,7 +230,7 @@ class _AddElementFab extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Add element',
+      label: context.l10n.videoEditorAddElementSemanticLabel,
       child: GestureDetector(
         onTap: () => VideoEditorMainActionsSheet.show(context),
         child: Container(

@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/utils/hit_expanded_box.dart';
 
 void main() {
@@ -10,6 +11,8 @@ void main() {
     testWidgets('applies expansion values to render object', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: SizedBox(
             width: 60,
             height: 30,
@@ -33,6 +36,8 @@ void main() {
     testWidgets('updates render object on rebuild', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: SizedBox(
             width: 60,
             height: 30,
@@ -47,6 +52,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: SizedBox(
             width: 60,
             height: 30,

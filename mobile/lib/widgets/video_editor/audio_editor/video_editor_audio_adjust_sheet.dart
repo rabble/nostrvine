@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Result returned when the user confirms the audio adjust sheet.
 typedef AudioAdjustResult = ({double recordedVolume, double customVolume});
@@ -80,7 +81,7 @@ class _VideoEditorAudioAdjustSheetState
               ),
               Flexible(
                 child: Text(
-                  'Adjust volume',
+                  context.l10n.videoEditorAdjustVolumeTitle,
                   style: VineTheme.titleMediumFont(),
                 ),
               ),
@@ -104,12 +105,12 @@ class _VideoEditorAudioAdjustSheetState
         ),
         const SizedBox(height: 16),
         _ControlBar(
-          label: 'Recorded audio',
+          label: context.l10n.videoEditorRecordedAudioLabel,
           volume: _recordedVolume,
         ),
         const SizedBox(height: 24),
         _ControlBar(
-          label: 'Custom audio',
+          label: context.l10n.videoEditorCustomAudioLabel,
           volume: _customVolume,
         ),
         const SizedBox(height: 16),

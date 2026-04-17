@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// A vertical slider with a custom design matching the Figma specs.
 ///
@@ -80,7 +81,7 @@ class _VideoEditorVerticalSliderState extends State<VideoEditorVerticalSlider> {
 
           return Semantics(
             slider: true,
-            label: 'Level',
+            label: context.l10n.videoEditorLevelSemanticLabel,
             value: '${(_currentValue * 100).round()}%',
             increasedValue:
                 '${((_currentValue + 0.1).clamp(0.0, 1.0) * 100).round()}%',

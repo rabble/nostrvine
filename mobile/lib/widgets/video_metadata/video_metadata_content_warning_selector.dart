@@ -62,8 +62,7 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Select content warnings',
+      label: context.l10n.videoMetadataSelectContentWarningsSemanticLabel,
       child: InkWell(
         onTap: () => _selectContentWarnings(context, ref),
         child: Padding(
@@ -73,8 +72,7 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
             crossAxisAlignment: .stretch,
             children: [
               Text(
-                // TODO(l10n): Replace with context.l10n when localization is added.
-                'Content Warning',
+                context.l10n.videoMetadataContentWarningLabel,
                 style: VineTheme.labelSmallFont(
                   color: VineTheme.onSurfaceVariant,
                 ),
@@ -150,11 +148,14 @@ class _ContentWarningMultiSelectState
     return SafeArea(
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              'Select all that apply to your content',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+              context.l10n.videoMetadataContentWarningSelectAllThatApply,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 13,
+              ),
             ),
           ),
           Expanded(
@@ -187,7 +188,7 @@ class _ContentWarningMultiSelectState
           Padding(
             padding: const .fromLTRB(16, 8, 16, 16),
             child: DivineButton(
-              label: 'Done',
+              label: context.l10n.videoMetadataContentWarningDoneButton,
               expanded: true,
               type: .secondary,
               onPressed: () => Navigator.of(context).pop(_selected),

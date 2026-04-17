@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 
@@ -44,28 +45,24 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
             children: [
               _IconButton(
                 icon: state.flashMode.icon,
-                // TODO(l10n): Replace with context.l10n when localization is added.
-                label: 'Toggle flash',
+                label: context.l10n.videoRecorderToggleFlashLabel,
                 onTap: state.hasFlash ? notifier.toggleFlash : null,
               ),
               _IconButton(
                 icon: state.timer.icon,
-                // TODO(l10n): Replace with context.l10n when localization is added.
-                label: 'Cycle timer',
+                label: context.l10n.videoRecorderCycleTimerLabel,
                 onTap: notifier.cycleTimer,
               ),
               _IconButton(
                 icon: state.aspectRatio == .square
                     ? .cropSquare
                     : .cropPortrait,
-                // TODO(l10n): Replace with context.l10n when localization is added.
-                label: 'Toggle aspect ratio',
+                label: context.l10n.videoRecorderToggleAspectRatioLabel,
                 onTap: !hasClips ? notifier.toggleAspectRatio : null,
               ),
               _IconButton(
                 icon: .arrowsClockwise,
-                // TODO(l10n): Replace with context.l10n when localization is added.
-                label: 'Switch camera',
+                label: context.l10n.videoRecorderSwitchCameraLabel,
                 onTap: state.canSwitchCamera ? notifier.switchCamera : null,
               ),
             ],
