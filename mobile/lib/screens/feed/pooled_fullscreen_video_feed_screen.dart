@@ -362,11 +362,26 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     _lastPooledVideos = state.pooledVideos;
   }
 
+  /// Whether auto-advance is available on this build, determined from the
+  /// feature flag and reduced-motion preference. Read at invocation time so
+  /// an accessibility opt-out overrides the in-app toggle.
+  bool _isAutoAdvanceAvailable() {
+    if (!mounted) return false;
+    if (MediaQuery.disableAnimationsOf(context)) return false;
+    return ref.read(isFeatureEnabledProvider(FeatureFlag.feedAutoAdvance));
+  }
+
   void _toggleAutoAdvance() {
+    if (!_isAutoAdvanceAvailable()) return;
+
     _autoAdvanceCubit.toggle();
     if (!_autoAdvanceCubit.state.isEffectivelyActive) {
       _autoAdvanceCubit.clearPendingPaginationAdvance();
     }
+    announceAutoAdvanceToggle(
+      context,
+      enabled: _autoAdvanceCubit.state.enabled,
+    );
   }
 
   void _suppressAutoAdvance() => _autoAdvanceCubit.suppressForInteraction();
@@ -553,6 +568,17 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             // Subscribe to Auto state so items rebuild on toggle/suppress/resume.
             final autoState = context.watch<FeedAutoAdvanceCubit>().state;
 
+            // Gate the rail + runtime on both the feature flag and the
+            // user's reduced-motion preference. When Auto is unavailable,
+            // force it "off" at the view layer regardless of cubit state.
+            final autoAdvanceAvailable =
+                featureFlagService.isEnabled(FeatureFlag.feedAutoAdvance) &&
+                !MediaQuery.disableAnimationsOf(context);
+            final effectiveAutoEnabled =
+                autoAdvanceAvailable && autoState.enabled;
+            final effectiveAutoActive =
+                autoAdvanceAvailable && autoState.isEffectivelyActive;
+
             final currentVideo = state.currentVideo;
             final editAction =
                 isEditorEnabled && isOwnVideo && currentVideo != null
@@ -614,8 +640,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                               isOwnVideo: currentUserPubkey == video.pubkey,
                               controller: controller,
                               contextTitle: widget.contextTitle,
-                              showAutoButton: true,
-                              isAutoEnabled: autoState.enabled,
+                              showAutoButton: autoAdvanceAvailable,
+                              isAutoEnabled: effectiveAutoEnabled,
                               onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                             );
@@ -681,10 +707,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                               trafficSource: widget.trafficSource,
                               sourceDetail: widget.sourceDetail,
                               isOwnVideo: isOwnVideo,
-                              showAutoButton: true,
-                              isAutoEnabled: autoState.enabled,
-                              isAutoAdvanceActive:
-                                  autoState.isEffectivelyActive,
+                              showAutoButton: autoAdvanceAvailable,
+                              isAutoEnabled: effectiveAutoEnabled,
+                              isAutoAdvanceActive: effectiveAutoActive,
                               onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                               onAutoAdvanceCompleted:

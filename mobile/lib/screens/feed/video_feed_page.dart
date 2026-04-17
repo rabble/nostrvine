@@ -13,6 +13,8 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -200,11 +202,27 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     unawaited(feedState.animateToPage(nextIndex));
   }
 
+  /// Whether auto-advance is available on this build, determined from the
+  /// feature flag and reduced-motion preference. Read at build time and
+  /// captured by the rail-control callback so an accessibility opt-out
+  /// overrides the in-app toggle.
+  bool _isAutoAdvanceAvailable() {
+    if (!mounted) return false;
+    if (MediaQuery.disableAnimationsOf(context)) return false;
+    return ref.read(isFeatureEnabledProvider(FeatureFlag.feedAutoAdvance));
+  }
+
   void _toggleAutoAdvance() {
+    if (!_isAutoAdvanceAvailable()) return;
+
     _autoAdvanceCubit.toggle();
     if (!_autoAdvanceCubit.state.isEffectivelyActive) {
       _autoAdvanceCubit.clearPendingPaginationAdvance();
     }
+    announceAutoAdvanceToggle(
+      context,
+      enabled: _autoAdvanceCubit.state.enabled,
+    );
   }
 
   void _suppressAutoAdvance() => _autoAdvanceCubit.suppressForInteraction();
@@ -543,6 +561,19 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
               // toggled / suppressed / resumed.
               final autoState = context.watch<FeedAutoAdvanceCubit>().state;
 
+              // Gate the rail + runtime on both the feature flag and the
+              // user's reduced-motion preference. When Auto is unavailable,
+              // force it "off" at the view layer regardless of cubit state.
+              final autoAdvanceAvailable =
+                  ref.watch(
+                    isFeatureEnabledProvider(FeatureFlag.feedAutoAdvance),
+                  ) &&
+                  !MediaQuery.disableAnimationsOf(context);
+              final effectiveAutoEnabled =
+                  autoAdvanceAvailable && autoState.enabled;
+              final effectiveAutoActive =
+                  autoAdvanceAvailable && autoState.isEffectivelyActive;
+
               // Note: RefreshIndicator removed - it conflicts with PageView
               // scrolling and adds memory overhead. Use the refresh button
               // instead.
@@ -589,8 +620,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                               pagePosition: _pagePosition,
                               contextTitle: state.mode.name,
                               listSources: listSources,
-                              showAutoButton: true,
-                              isAutoEnabled: autoState.enabled,
+                              showAutoButton: autoAdvanceAvailable,
+                              isAutoEnabled: effectiveAutoEnabled,
                               onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                             );
@@ -640,9 +671,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                             pagePosition: _pagePosition,
                             contextTitle: state.mode.name,
                             listSources: listSources,
-                            showAutoButton: true,
-                            isAutoEnabled: autoState.enabled,
-                            isAutoAdvanceActive: autoState.isEffectivelyActive,
+                            showAutoButton: autoAdvanceAvailable,
+                            isAutoEnabled: effectiveAutoEnabled,
+                            isAutoAdvanceActive: effectiveAutoActive,
                             onAutoPressed: _toggleAutoAdvance,
                             onInteracted: _suppressAutoAdvance,
                             onAutoAdvanceCompleted: _handleAutoAdvanceCompleted,
