@@ -8545,6 +8545,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Go to settings'**
   String get cameraPermissionGoToSettings;
+
+  /// Label for the global captions toggle in the video metadata sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Captions'**
+  String get metadataCaptionsLabel;
+
+  /// Screen reader label when the global captions toggle is on
+  ///
+  /// In en, this message translates to:
+  /// **'Captions enabled for all videos'**
+  String get metadataCaptionsEnabledSemantics;
+
+  /// Screen reader label when the global captions toggle is off
+  ///
+  /// In en, this message translates to:
+  /// **'Captions disabled for all videos'**
+  String get metadataCaptionsDisabledSemantics;
 }
 
 class _AppLocalizationsDelegate

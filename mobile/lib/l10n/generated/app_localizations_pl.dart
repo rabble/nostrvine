@@ -4954,4 +4954,15 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Przejdź do ustawień';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

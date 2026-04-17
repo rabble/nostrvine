@@ -2531,5 +2531,17 @@
   "cameraPermissionAllowAccessTitle": "Allow camera & microphone access",
   "cameraPermissionAllowAccessDescription": "This allows you to capture and edit videos right here in the app, nothing more.",
   "cameraPermissionContinue": "Continue",
-  "cameraPermissionGoToSettings": "Go to settings"
+  "cameraPermissionGoToSettings": "Go to settings",
+  "metadataCaptionsLabel": "Captions",
+  "@metadataCaptionsLabel": {
+    "description": "Label for the global captions toggle in the video metadata sheet"
+  },
+  "metadataCaptionsEnabledSemantics": "Captions enabled for all videos",
+  "@metadataCaptionsEnabledSemantics": {
+    "description": "Screen reader label when the global captions toggle is on"
+  },
+  "metadataCaptionsDisabledSemantics": "Captions disabled for all videos",
+  "@metadataCaptionsDisabledSemantics": {
+    "description": "Screen reader label when the global captions toggle is off"
+  }
 }

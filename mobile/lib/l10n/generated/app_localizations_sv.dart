@@ -4812,4 +4812,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Gå till inställningar';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

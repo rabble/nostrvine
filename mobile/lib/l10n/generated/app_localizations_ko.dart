@@ -4639,4 +4639,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => '설정으로 이동';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }
