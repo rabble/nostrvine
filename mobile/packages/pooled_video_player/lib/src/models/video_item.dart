@@ -1,5 +1,9 @@
 import 'package:equatable/equatable.dart';
 
+/// Sentinel used by [VideoItem.copyWith] to distinguish "argument omitted"
+/// from "argument explicitly set to `null`".
+const Object _sentinel = Object();
+
 /// Represents a video item with metadata for playback.
 ///
 /// Each video item has a unique [id] and a [url] pointing to the video source.
@@ -31,17 +35,26 @@ class VideoItem extends Equatable {
   final Map<String, String>? requestHeaders;
 
   /// Creates a copy with updated properties.
+  ///
+  /// Passing `requestHeaders: null` explicitly clears the headers on the
+  /// returned item. Omitting [requestHeaders] preserves the current value.
+  /// This distinction matters when auth state changes (logout, expired
+  /// session) and the caller needs to drop previously attached headers.
   VideoItem copyWith({
     String? id,
     String? url,
-    String? originalUrl,
-    Map<String, String>? requestHeaders,
+    Object? originalUrl = _sentinel,
+    Object? requestHeaders = _sentinel,
   }) {
     return VideoItem(
       id: id ?? this.id,
       url: url ?? this.url,
-      originalUrl: originalUrl ?? this.originalUrl,
-      requestHeaders: requestHeaders ?? this.requestHeaders,
+      originalUrl: identical(originalUrl, _sentinel)
+          ? this.originalUrl
+          : originalUrl as String?,
+      requestHeaders: identical(requestHeaders, _sentinel)
+          ? this.requestHeaders
+          : requestHeaders as Map<String, String>?,
     );
   }
 
