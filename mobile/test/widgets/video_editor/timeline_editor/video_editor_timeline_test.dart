@@ -18,8 +18,39 @@ import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timel
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_playhead.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_rules_indicator.dart';
+import 'dart:typed_data';
+
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+class _MockProVideoEditor extends ProVideoEditor {
+  @override
+  Stream<dynamic> initializeStream() => const Stream.empty();
+
+  @override
+  Future<List<Uint8List>> getThumbnails(
+    ThumbnailConfigs configs, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    return List.filled(configs.timestamps.length, Uint8List(0));
+  }
+
+  @override
+  Future<VideoMetadata> getMetadata(
+    EditorVideo value, {
+    bool checkStreamingOptimization = false,
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    return VideoMetadata(
+      duration: const Duration(seconds: 5),
+      extension: 'mp4',
+      fileSize: 1024000,
+      resolution: const Size(1920, 1080),
+      rotation: 0,
+      bitrate: 3000000,
+    );
+  }
+}
 
 class _MockVideoEditorMainBloc
     extends MockBloc<VideoEditorMainEvent, VideoEditorMainState>
@@ -46,6 +77,8 @@ void main() {
     late _MockVideoEditorFilterBloc mockFilterBloc;
 
     setUp(() {
+      ProVideoEditor.instance = _MockProVideoEditor();
+
       mockMainBloc = _MockVideoEditorMainBloc();
       mockClipBloc = _MockClipEditorBloc();
       mockOverlayBloc = _MockTimelineOverlayBloc();
