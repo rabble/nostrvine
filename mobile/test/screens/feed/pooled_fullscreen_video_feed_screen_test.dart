@@ -427,9 +427,9 @@ void main() {
               ),
               additionalOverrides: [
                 featureFlagServiceProvider.overrideWith(
-                  (ref) => _FlagOverrideFeatureFlagService(
-                    const {FeatureFlag.hlsAuthWebPlayer},
-                  ),
+                  (ref) => _FlagOverrideFeatureFlagService(const {
+                    FeatureFlag.hlsAuthWebPlayer,
+                  }),
                 ),
                 mediaViewerAuthServiceProvider.overrideWithValue(
                   mockAuthService,
@@ -475,6 +475,39 @@ void main() {
 
           final feed = tester.widget<WebVideoFeed>(find.byType(WebVideoFeed));
           expect(feed.authHeaderProvider, isNull);
+        },
+        skip: !kIsWeb,
+      );
+
+      testWidgets(
+        'maps web auth-required status to age-restricted without removal',
+        (tester) async {
+          final videos = createTestVideos(count: 1);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final feed = tester.widget<WebVideoFeed>(find.byType(WebVideoFeed));
+          feed.onRequiresAuth?.call(videos.first, 0);
+          await tester.pump();
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+          expect(
+            cubit.state.statusFor(videos.first.id),
+            PlaybackStatus.ageRestricted,
+          );
+          verifyNever(
+            () => mockBloc.add(FullscreenFeedVideoUnavailable(videos.first.id)),
+          );
         },
         skip: !kIsWeb,
       );

@@ -27,6 +27,8 @@ jobs:
           cache: true
       - name: 📦 Install dependencies
         run: flutter pub get
+      - name: 🌐 Verify HLS auth web shim is synced
+        run: bash scripts/check_hls_auth_web_shim_sync.sh
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs

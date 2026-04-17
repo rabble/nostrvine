@@ -457,6 +457,18 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     _handleAutoAdvanceCompleted();
   }
 
+  /// Treat auth-gated web playback as the existing age-restricted state,
+  /// not as a broken video. This keeps 401/403 out of the #3107 404-removal
+  /// path, which is only for confirmed missing assets.
+  void _handleWebPlayerRequiresAuth(VideoEvent video, int index) {
+    final bloc = context.read<FullscreenFeedBloc>();
+    if (index != bloc.state.currentIndex) return;
+    context.read<VideoPlaybackStatusCubit>().report(
+      video.id,
+      PlaybackStatus.ageRestricted,
+    );
+  }
+
   /// Dispatch a [FullscreenFeedVideoUnavailable] event for the active video
   /// when the cubit reports [PlaybackStatus.notFound]. Replaces the prior
   /// per-item post-frame callback that violated the "no business logic in
@@ -723,6 +735,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       },
                       onCompleted: (_) => _handleAutoAdvanceCompleted(),
                       onErrored: _handleWebPlayerErrored,
+                      onRequiresAuth: _handleWebPlayerRequiresAuth,
                       onNearEnd: (index) => _onNearEnd(state, index),
                       itemBuilder:
                           (

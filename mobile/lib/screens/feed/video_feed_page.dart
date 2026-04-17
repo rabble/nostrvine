@@ -289,6 +289,16 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     _handleAutoAdvanceCompleted();
   }
 
+  /// Treat auth-gated web playback as the existing age-restricted state,
+  /// not as a broken video that should be auto-skipped.
+  void _handleWebPlayerRequiresAuth(VideoEvent video, int index) {
+    if (index != _currentFeedIndex()) return;
+    context.read<VideoPlaybackStatusCubit>().report(
+      video.id,
+      PlaybackStatus.ageRestricted,
+    );
+  }
+
   void _continuePendingAutoAdvance(VideoFeedState state) {
     continueFeedAutoAdvanceAfterPagination(
       cubit: _autoAdvanceCubit,
@@ -619,6 +629,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       },
                       onCompleted: (_) => _handleAutoAdvanceCompleted(),
                       onErrored: _handleWebPlayerErrored,
+                      onRequiresAuth: _handleWebPlayerRequiresAuth,
                       onNearEnd: (index) {
                         if (state.hasMore) {
                           context.read<VideoFeedBloc>().add(

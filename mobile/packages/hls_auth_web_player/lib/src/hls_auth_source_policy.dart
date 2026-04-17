@@ -10,6 +10,10 @@ enum HlsAuthWebSourceKind {
 /// Chooses between the MP4 and HLS paths. The rule mirrors divine-web:
 /// anything ending in `.m3u8` uses HLS; everything else (including direct
 /// `.mp4`, no extension, signed URLs with query strings) starts on MP4.
+///
+/// The MP4 path fetches the full response into a browser blob before assigning
+/// an object URL to the video element. That is acceptable for Divine's
+/// short-form videos, but longer media should prefer an HLS source.
 /// Callers can still fall back to HLS on 404 by explicitly requesting an
 /// HLS URL through [sourceKindFor].
 HlsAuthWebSourceKind sourceKindFor(String url) {

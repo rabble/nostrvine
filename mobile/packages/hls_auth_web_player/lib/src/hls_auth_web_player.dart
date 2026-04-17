@@ -112,6 +112,8 @@ class _HlsAuthWebPlayerState extends State<HlsAuthWebPlayer> {
 
   String _buildViewType(String url) {
     final hash = url.hashCode.toUnsigned(32).toRadixString(16);
+    // Each widget instance owns a distinct <video> element, even when the
+    // same URL appears more than once in a feed.
     final salt = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
     return 'hls-auth-web-player-$hash-$salt';
   }
