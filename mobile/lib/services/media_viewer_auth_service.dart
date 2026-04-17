@@ -24,7 +24,6 @@ class MediaViewerAuthService {
     String? sha256Hash,
     String? url,
     String? serverUrl,
-    HttpMethod method = HttpMethod.get,
   }) async {
     if (!_authService.isAuthenticated) {
       return null;
@@ -41,7 +40,7 @@ class MediaViewerAuthService {
     if (url != null && url.isNotEmpty) {
       final token = await _nip98AuthService.createAuthToken(
         url: url,
-        method: method,
+        method: HttpMethod.get,
       );
       return _authorizationHeaders(token?.authorizationHeader);
     }
