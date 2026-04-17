@@ -24,8 +24,8 @@ import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_completion_listener.dart';
-import 'package:openvine/screens/feed/feed_auto_advance_policy.dart';
-import 'package:openvine/screens/feed/feed_auto_advance_session.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -279,10 +279,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
   late final ValueNotifier<double> _pagePosition;
-  late final FeedAutoAdvanceSession _autoAdvanceSession;
   final _feedKey = GlobalKey<PooledVideoFeedState>();
   final _webFeedKey = GlobalKey<WebVideoFeedState>();
-  bool _pendingAutoAdvanceAfterPagination = false;
+
+  /// Feed-scoped Auto playback state; exposed to descendants via
+  /// `BlocProvider.value` in [build].
+  final FeedAutoAdvanceCubit _autoAdvanceCubit = FeedAutoAdvanceCubit();
 
   @override
   void didChangeDependencies() {
@@ -301,15 +303,14 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     super.initState();
     final initialIndex = context.read<FullscreenFeedBloc>().state.currentIndex;
     _pagePosition = ValueNotifier<double>(initialIndex.toDouble());
-    _autoAdvanceSession = FeedAutoAdvanceSession();
   }
 
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
     _controller?.dispose();
-    _autoAdvanceSession.dispose();
     _pagePosition.dispose();
+    unawaited(_autoAdvanceCubit.close());
     super.dispose();
   }
 
@@ -361,44 +362,16 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     _lastPooledVideos = state.pooledVideos;
   }
 
-  void _updateAutoAdvanceSession(void Function() update) {
-    final wasEnabled = _autoAdvanceSession.autoEnabled;
-    final wasSuppressed = _autoAdvanceSession.autoSuppressed;
-    final hadPendingPagination = _pendingAutoAdvanceAfterPagination;
-
-    update();
-
-    if (!mounted) return;
-
-    if (wasEnabled != _autoAdvanceSession.autoEnabled ||
-        wasSuppressed != _autoAdvanceSession.autoSuppressed ||
-        hadPendingPagination != _pendingAutoAdvanceAfterPagination) {
-      setState(() {});
+  void _toggleAutoAdvance() {
+    _autoAdvanceCubit.toggle();
+    if (!_autoAdvanceCubit.state.isEffectivelyActive) {
+      _autoAdvanceCubit.clearPendingPaginationAdvance();
     }
   }
 
-  void _toggleAutoAdvance() {
-    _updateAutoAdvanceSession(() {
-      _autoAdvanceSession.toggle();
-      if (!_autoAdvanceSession.isEffectivelyActive) {
-        _pendingAutoAdvanceAfterPagination = false;
-      }
-    });
-  }
+  void _suppressAutoAdvance() => _autoAdvanceCubit.suppressForInteraction();
 
-  void _suppressAutoAdvance() {
-    _updateAutoAdvanceSession(() {
-      _autoAdvanceSession.suppressForInteraction();
-      _pendingAutoAdvanceAfterPagination = false;
-    });
-  }
-
-  void _resumeAutoAdvanceAfterSwipe() {
-    _updateAutoAdvanceSession(() {
-      _autoAdvanceSession.resumeAfterSwipe();
-      _pendingAutoAdvanceAfterPagination = false;
-    });
-  }
+  void _resumeAutoAdvanceAfterSwipe() => _autoAdvanceCubit.resumeAfterSwipe();
 
   void _animateToPage(int index) {
     if (kIsWeb) {
@@ -421,49 +394,30 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     unawaited(feedState.animateToPage(targetIndex));
   }
 
-  void _handleAutoAdvanceCompleted() {
-    if (!_autoAdvanceSession.isEffectivelyActive) return;
-
-    final state = context.read<FullscreenFeedBloc>().state;
-    final instruction = decideFeedAutoAdvance(
+  FeedAutoAdvanceSnapshot _autoAdvanceSnapshot(FullscreenFeedState state) {
+    return FeedAutoAdvanceSnapshot(
       currentIndex: state.currentIndex,
       itemCount: state.videos.length,
       hasMore: state.canLoadMore,
       isLoadingMore: state.isLoadingMore,
     );
+  }
 
-    switch (instruction) {
-      case FeedAutoAdvanceInstruction.next:
-        _pendingAutoAdvanceAfterPagination = false;
-        _animateToPage(state.currentIndex + 1);
-      case FeedAutoAdvanceInstruction.paginate:
-        _pendingAutoAdvanceAfterPagination = true;
-        _triggerLoadMore();
-      case FeedAutoAdvanceInstruction.wrap:
-        _pendingAutoAdvanceAfterPagination = false;
-        _animateToPage(0);
-      case FeedAutoAdvanceInstruction.noop:
-        break;
-    }
+  void _handleAutoAdvanceCompleted() {
+    handleFeedAutoAdvanceCompleted(
+      cubit: _autoAdvanceCubit,
+      snapshot: _autoAdvanceSnapshot(context.read<FullscreenFeedBloc>().state),
+      animateToPage: _animateToPage,
+      requestLoadMore: _triggerLoadMore,
+    );
   }
 
   void _continuePendingAutoAdvance(FullscreenFeedState state) {
-    if (!_pendingAutoAdvanceAfterPagination || state.isLoadingMore) return;
-
-    if (state.currentIndex < state.videos.length - 1) {
-      _updateAutoAdvanceSession(() {
-        _pendingAutoAdvanceAfterPagination = false;
-      });
-      _animateToPage(state.currentIndex + 1);
-      return;
-    }
-
-    if (!state.canLoadMore) {
-      _updateAutoAdvanceSession(() {
-        _pendingAutoAdvanceAfterPagination = false;
-      });
-      _animateToPage(0);
-    }
+    continueFeedAutoAdvanceAfterPagination(
+      cubit: _autoAdvanceCubit,
+      snapshot: _autoAdvanceSnapshot(state),
+      animateToPage: _animateToPage,
+    );
   }
 
   void _triggerLoadMore() {
@@ -515,222 +469,232 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
-      listeners: [
-        // Initialize controller when videos first become available
-        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-          listenWhen: (prev, curr) =>
-              !prev.hasPooledVideos && curr.hasPooledVideos,
-          listener: (context, state) =>
-              _initializeControllerIfNeeded(triggerRebuild: true),
-        ),
-        // Handle new videos from pagination
-        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-          listenWhen: (prev, curr) => prev.videos.length != curr.videos.length,
-          listener: (context, state) => _handleVideosChanged(state),
-        ),
-        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-          listenWhen: (prev, curr) =>
-              prev.videos.length != curr.videos.length ||
-              prev.isLoadingMore != curr.isLoadingMore ||
-              prev.canLoadMore != curr.canLoadMore,
-          listener: (context, state) => _continuePendingAutoAdvance(state),
-        ),
-        // Open comments sheet once the first video is ready (notification deep-link)
-        if (widget.autoOpenComments)
+    return BlocProvider.value(
+      value: _autoAdvanceCubit,
+      child: MultiBlocListener(
+        listeners: [
+          // Initialize controller when videos first become available
           BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
             listenWhen: (prev, curr) =>
-                prev.currentVideo == null && curr.currentVideo != null,
-            listener: (context, state) {
-              final video = state.currentVideo;
-              if (video != null) CommentsScreen.show(context, video);
-            },
+                !prev.hasPooledVideos && curr.hasPooledVideos,
+            listener: (context, state) =>
+                _initializeControllerIfNeeded(triggerRebuild: true),
           ),
-      ],
-      child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
-        builder: (context, state) {
-          if (state.status == FullscreenFeedStatus.initial ||
-              !state.hasVideos) {
-            return Scaffold(
-              backgroundColor: VineTheme.backgroundColor,
-              appBar: DiVineAppBar(
-                title: widget.contextTitle ?? '',
-                showBackButton: true,
-                onBackPressed: context.pop,
-                backgroundMode: DiVineAppBarBackgroundMode.transparent,
-                forceMaterialTransparency: true,
-              ),
-              body: const Center(child: BrandedLoadingIndicator(size: 60)),
-            );
-          }
-
-          if (!state.hasPooledVideos) {
-            return Scaffold(
-              backgroundColor: VineTheme.backgroundColor,
-              appBar: DiVineAppBar(
-                title: widget.contextTitle ?? '',
-                showBackButton: true,
-                onBackPressed: context.pop,
-                backgroundMode: DiVineAppBarBackgroundMode.transparent,
-                forceMaterialTransparency: true,
-              ),
-              body: const Center(
-                child: Text(
-                  'No videos available',
-                  style: TextStyle(color: VineTheme.whiteText),
-                ),
-              ),
-            );
-          }
-
-          final authService = ref.watch(authServiceProvider);
-          final currentUserPubkey = authService.currentPublicKeyHex;
-          final isOwnVideo =
-              currentUserPubkey != null &&
-              currentUserPubkey == state.currentVideo?.pubkey;
-
-          final featureFlagService = ref.watch(featureFlagServiceProvider);
-          final isEditorEnabled = featureFlagService.isEnabled(
-            FeatureFlag.enableVideoEditorV1,
-          );
-          final currentVideo = state.currentVideo;
-          final editAction =
-              isEditorEnabled && isOwnVideo && currentVideo != null
-              ? DiVineAppBarAction(
-                  icon: SvgIconSource(
-                    DivineIconName.pencilSimpleLine.assetPath,
-                  ),
-                  onPressed: () =>
-                      showEditDialogForVideo(context, currentVideo),
-                  semanticLabel: 'Edit video',
-                )
-              : null;
-
-          return Scaffold(
-            backgroundColor: VineTheme.backgroundColor,
-            extendBodyBehindAppBar: true,
-            appBar: DiVineAppBar(
-              title: widget.contextTitle ?? '',
-              showBackButton: true,
-              onBackPressed: context.pop,
-              backgroundMode: DiVineAppBarBackgroundMode.transparent,
-              forceMaterialTransparency: true,
-              actions: [?editAction],
+          // Handle new videos from pagination
+          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+            listenWhen: (prev, curr) =>
+                prev.videos.length != curr.videos.length,
+            listener: (context, state) => _handleVideosChanged(state),
+          ),
+          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+            listenWhen: (prev, curr) =>
+                prev.videos.length != curr.videos.length ||
+                prev.isLoadingMore != curr.isLoadingMore ||
+                prev.canLoadMore != curr.canLoadMore,
+            listener: (context, state) => _continuePendingAutoAdvance(state),
+          ),
+          // Open comments sheet once the first video is ready (notification deep-link)
+          if (widget.autoOpenComments)
+            BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+              listenWhen: (prev, curr) =>
+                  prev.currentVideo == null && curr.currentVideo != null,
+              listener: (context, state) {
+                final video = state.currentVideo;
+                if (video != null) CommentsScreen.show(context, video);
+              },
             ),
-            body: kIsWeb
-                ? WebVideoFeed(
-                    key: _webFeedKey,
-                    videos: state.videos
-                        .where((v) => v.videoUrl != null)
-                        .toList(),
-                    initialIndex: state.currentIndex,
-                    controllerFactory:
-                        widget.webControllerFactory ??
-                        defaultWebVideoPlayerControllerFactory,
-                    onActiveVideoChanged: (video, index) {
-                      _pagePosition.value = index.toDouble();
-                      _resumeAutoAdvanceAfterSwipe();
-                      FeedPerformanceTracker().startVideoSwipeTracking(
-                        video.id,
-                      );
-                      context.read<FullscreenFeedBloc>().add(
-                        FullscreenFeedIndexChanged(index),
-                      );
-                      widget.onPageChanged?.call(index);
-                    },
-                    onCompleted: (_) => _handleAutoAdvanceCompleted(),
-                    onNearEnd: (index) => _onNearEnd(state, index),
-                    itemBuilder:
-                        (
-                          context,
-                          video,
-                          index, {
-                          required isActive,
-                          controller,
-                        }) {
-                          return _WebFullscreenItem(
-                            video: video,
-                            isActive: isActive,
-                            isOwnVideo: currentUserPubkey == video.pubkey,
-                            controller: controller,
-                            contextTitle: widget.contextTitle,
-                            showAutoButton: true,
-                            isAutoEnabled: _autoAdvanceSession.autoEnabled,
-                            onAutoPressed: _toggleAutoAdvance,
-                            onInteracted: _suppressAutoAdvance,
-                          );
-                        },
-                  )
-                : PooledVideoFeed(
-                    key: _feedKey,
-                    videos: state.pooledVideos,
-                    controller: _controller,
-                    initialIndex: state.currentIndex,
-                    onActiveVideoChanged: (video, index) {
-                      _resumeAutoAdvanceAfterSwipe();
-                      FeedPerformanceTracker().startVideoSwipeTracking(
-                        video.id,
-                      );
-                      context.read<FullscreenFeedBloc>().add(
-                        FullscreenFeedIndexChanged(index),
-                      );
-                      widget.onPageChanged?.call(index);
-                    },
-                    onNearEnd: (index) => _onNearEnd(state, index),
-                    nearEndThreshold: 0,
-                    onScrollOffsetChanged: (page) => _pagePosition.value = page,
-                    maxLoopDuration: VideoEditorConstants.maxDuration,
-                    itemBuilder: (context, video, index, {required isActive}) {
-                      if (state.videos.isEmpty) {
-                        debugPrint(
-                          'FullscreenFeed: itemBuilder called with empty '
-                          'state.videos! index=$index, '
-                          'video.id=${video.id}',
-                        );
-                        return const ColoredBox(
-                          color: VineTheme.backgroundColor,
-                        );
-                      }
-                      final originalEvent = state.videos.firstWhere(
-                        (v) => v.id == video.id,
-                        orElse: () {
-                          final clamped = index.clamp(
-                            0,
-                            state.videos.length - 1,
-                          );
-                          debugPrint(
-                            'FullscreenFeed: video ID lookup miss! '
-                            'video.id=${video.id}, index=$index, '
-                            'clamped=$clamped, '
-                            'state.videos.length='
-                            '${state.videos.length}, '
-                            'pooledVideos.length='
-                            '${state.pooledVideos.length}',
-                          );
-                          return state.videos[clamped];
-                        },
-                      );
-                      return _PooledFullscreenItem(
-                        video: originalEvent,
-                        index: index,
-                        isActive: isActive,
-                        pagePosition: _pagePosition,
-                        contextTitle: widget.contextTitle,
-                        trafficSource: widget.trafficSource,
-                        sourceDetail: widget.sourceDetail,
-                        isOwnVideo: isOwnVideo,
-                        showAutoButton: true,
-                        isAutoEnabled: _autoAdvanceSession.autoEnabled,
-                        isAutoAdvanceActive:
-                            _autoAdvanceSession.isEffectivelyActive,
-                        onAutoPressed: _toggleAutoAdvance,
-                        onInteracted: _suppressAutoAdvance,
-                        onAutoAdvanceCompleted: _handleAutoAdvanceCompleted,
-                      );
-                    },
+        ],
+        child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
+          builder: (context, state) {
+            if (state.status == FullscreenFeedStatus.initial ||
+                !state.hasVideos) {
+              return Scaffold(
+                backgroundColor: VineTheme.backgroundColor,
+                appBar: DiVineAppBar(
+                  title: widget.contextTitle ?? '',
+                  showBackButton: true,
+                  onBackPressed: context.pop,
+                  backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                  forceMaterialTransparency: true,
+                ),
+                body: const Center(child: BrandedLoadingIndicator(size: 60)),
+              );
+            }
+
+            if (!state.hasPooledVideos) {
+              return Scaffold(
+                backgroundColor: VineTheme.backgroundColor,
+                appBar: DiVineAppBar(
+                  title: widget.contextTitle ?? '',
+                  showBackButton: true,
+                  onBackPressed: context.pop,
+                  backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                  forceMaterialTransparency: true,
+                ),
+                body: const Center(
+                  child: Text(
+                    'No videos available',
+                    style: TextStyle(color: VineTheme.whiteText),
                   ),
-          );
-        },
+                ),
+              );
+            }
+
+            final authService = ref.watch(authServiceProvider);
+            final currentUserPubkey = authService.currentPublicKeyHex;
+            final isOwnVideo =
+                currentUserPubkey != null &&
+                currentUserPubkey == state.currentVideo?.pubkey;
+
+            final featureFlagService = ref.watch(featureFlagServiceProvider);
+            final isEditorEnabled = featureFlagService.isEnabled(
+              FeatureFlag.enableVideoEditorV1,
+            );
+            // Subscribe to Auto state so items rebuild on toggle/suppress/resume.
+            final autoState = context.watch<FeedAutoAdvanceCubit>().state;
+
+            final currentVideo = state.currentVideo;
+            final editAction =
+                isEditorEnabled && isOwnVideo && currentVideo != null
+                ? DiVineAppBarAction(
+                    icon: SvgIconSource(
+                      DivineIconName.pencilSimpleLine.assetPath,
+                    ),
+                    onPressed: () =>
+                        showEditDialogForVideo(context, currentVideo),
+                    semanticLabel: 'Edit video',
+                  )
+                : null;
+
+            return Scaffold(
+              backgroundColor: VineTheme.backgroundColor,
+              extendBodyBehindAppBar: true,
+              appBar: DiVineAppBar(
+                title: widget.contextTitle ?? '',
+                showBackButton: true,
+                onBackPressed: context.pop,
+                backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                forceMaterialTransparency: true,
+                actions: [?editAction],
+              ),
+              body: kIsWeb
+                  ? WebVideoFeed(
+                      key: _webFeedKey,
+                      videos: state.videos
+                          .where((v) => v.videoUrl != null)
+                          .toList(),
+                      initialIndex: state.currentIndex,
+                      controllerFactory:
+                          widget.webControllerFactory ??
+                          defaultWebVideoPlayerControllerFactory,
+                      onActiveVideoChanged: (video, index) {
+                        _pagePosition.value = index.toDouble();
+                        _resumeAutoAdvanceAfterSwipe();
+                        FeedPerformanceTracker().startVideoSwipeTracking(
+                          video.id,
+                        );
+                        context.read<FullscreenFeedBloc>().add(
+                          FullscreenFeedIndexChanged(index),
+                        );
+                        widget.onPageChanged?.call(index);
+                      },
+                      onCompleted: (_) => _handleAutoAdvanceCompleted(),
+                      onNearEnd: (index) => _onNearEnd(state, index),
+                      itemBuilder:
+                          (
+                            context,
+                            video,
+                            index, {
+                            required isActive,
+                            controller,
+                          }) {
+                            return _WebFullscreenItem(
+                              video: video,
+                              isActive: isActive,
+                              isOwnVideo: currentUserPubkey == video.pubkey,
+                              controller: controller,
+                              contextTitle: widget.contextTitle,
+                              showAutoButton: true,
+                              isAutoEnabled: autoState.enabled,
+                              onAutoPressed: _toggleAutoAdvance,
+                              onInteracted: _suppressAutoAdvance,
+                            );
+                          },
+                    )
+                  : PooledVideoFeed(
+                      key: _feedKey,
+                      videos: state.pooledVideos,
+                      controller: _controller,
+                      initialIndex: state.currentIndex,
+                      onActiveVideoChanged: (video, index) {
+                        _resumeAutoAdvanceAfterSwipe();
+                        FeedPerformanceTracker().startVideoSwipeTracking(
+                          video.id,
+                        );
+                        context.read<FullscreenFeedBloc>().add(
+                          FullscreenFeedIndexChanged(index),
+                        );
+                        widget.onPageChanged?.call(index);
+                      },
+                      onNearEnd: (index) => _onNearEnd(state, index),
+                      nearEndThreshold: 0,
+                      onScrollOffsetChanged: (page) =>
+                          _pagePosition.value = page,
+                      maxLoopDuration: VideoEditorConstants.maxDuration,
+                      itemBuilder:
+                          (context, video, index, {required isActive}) {
+                            if (state.videos.isEmpty) {
+                              debugPrint(
+                                'FullscreenFeed: itemBuilder called with empty '
+                                'state.videos! index=$index, '
+                                'video.id=${video.id}',
+                              );
+                              return const ColoredBox(
+                                color: VineTheme.backgroundColor,
+                              );
+                            }
+                            final originalEvent = state.videos.firstWhere(
+                              (v) => v.id == video.id,
+                              orElse: () {
+                                final clamped = index.clamp(
+                                  0,
+                                  state.videos.length - 1,
+                                );
+                                debugPrint(
+                                  'FullscreenFeed: video ID lookup miss! '
+                                  'video.id=${video.id}, index=$index, '
+                                  'clamped=$clamped, '
+                                  'state.videos.length='
+                                  '${state.videos.length}, '
+                                  'pooledVideos.length='
+                                  '${state.pooledVideos.length}',
+                                );
+                                return state.videos[clamped];
+                              },
+                            );
+                            return _PooledFullscreenItem(
+                              video: originalEvent,
+                              index: index,
+                              isActive: isActive,
+                              pagePosition: _pagePosition,
+                              contextTitle: widget.contextTitle,
+                              trafficSource: widget.trafficSource,
+                              sourceDetail: widget.sourceDetail,
+                              isOwnVideo: isOwnVideo,
+                              showAutoButton: true,
+                              isAutoEnabled: autoState.enabled,
+                              isAutoAdvanceActive:
+                                  autoState.isEffectivelyActive,
+                              onAutoPressed: _toggleAutoAdvance,
+                              onInteracted: _suppressAutoAdvance,
+                              onAutoAdvanceCompleted:
+                                  _handleAutoAdvanceCompleted,
+                            );
+                          },
+                    ),
+            );
+          },
+        ),
       ),
     );
   }
