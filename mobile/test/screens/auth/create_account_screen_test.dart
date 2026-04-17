@@ -302,6 +302,8 @@ void main() {
           await tester.pumpWidget(
             MaterialApp.router(
               theme: VineTheme.theme,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               routerConfig: router,
             ),
           );

@@ -361,6 +361,9 @@ void main() {
                 ),
                 child: MaterialApp.router(
                   theme: VineTheme.theme,
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
                   routerConfig: router,
                 ),
               ),
