@@ -1,6 +1,6 @@
+@Tags(['skip_very_good_optimization', 'integration'])
 // ABOUTME: Integration test verifying thumbnail URL is preserved through upload success flow
 // ABOUTME: Tests the fix for race condition where thumbnail URL was lost during _handleUploadSuccess()
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';

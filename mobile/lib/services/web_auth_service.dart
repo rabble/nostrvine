@@ -414,7 +414,7 @@ class WebAuthService {
   }
 
   // Test support methods
-  void setBunkerClient(NsecBunkerClient client) {
+  void setBunkerClient(NsecBunkerClient? client) {
     _bunkerClient = client;
   }
 

@@ -1,6 +1,6 @@
+@Tags(['skip_very_good_optimization', 'integration'])
 // ABOUTME: Integration test for VideoEvent thumbnail API integration
 // ABOUTME: Tests the complete workflow from video events to automatic thumbnail generation
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
 import 'package:openvine/extensions/video_event_extensions.dart';

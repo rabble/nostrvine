@@ -80,12 +80,8 @@ jobs:
       - name: 🕵️ Analyze code
         run: flutter analyze lib test integration_test
   tests:
-    name: Tests (shard ${{ matrix.shard_index }}/8)
+    name: Tests
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard_index: [0, 1, 2, 3, 4, 5, 6, 7]
     defaults:
       run:
         working-directory: mobile/
@@ -99,15 +95,16 @@ jobs:
           cache: true
       - name: 📦 Install dependencies
         run: flutter pub get
+      - name: 🛠️ Install Very Good CLI
+        run: dart pub global activate very_good_cli
       - name: 🚀 Run Flutter tests
-        run: |
-          mapfile -t all < <(find test -type f -name '*_test.dart' | LC_ALL=C sort)
-          selected=()
-          for i in "${!all[@]}"; do
-            (( i % 8 == ${{ matrix.shard_index }} )) && selected+=("${all[$i]}")
-          done
-          echo "Shard ${{ matrix.shard_index }}/8: ${#selected[@]} of ${#all[@]} test files"
-          flutter test --exclude-tags integration "${selected[@]}"
+        # concurrency=2 is a compromise: the merged runner runs alongside
+        # one tagged file at a time, keeping most of the parallel speedup
+        # while halving the chance of singleton/DB races between tagged
+        # files (e.g. AppDatabase "database is locked", path_provider
+        # pollution). concurrency=1 worked but pushed the job past 1 hour
+        # because each tagged file pays a full Dart VM startup cost.
+        run: very_good test --optimization --concurrency=2 --exclude-tags integration --test-randomize-ordering-seed random
   mobile-ci:
     name: Mobile CI
     if: ${{ always() }}

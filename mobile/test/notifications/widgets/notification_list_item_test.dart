@@ -19,6 +19,7 @@ Finder _findRichTextContaining(String substring) {
   );
 }
 
+@Tags(['skip_very_good_optimization'])
 void main() {
   const actor = ActorInfo(
     pubkey: 'abc123',

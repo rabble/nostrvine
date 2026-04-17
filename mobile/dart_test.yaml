@@ -24,6 +24,7 @@ reporter: expanded
 tags:
   integration:
     timeout: 10m
+  skip_very_good_optimization:
   service:
     timeout: 10m
 
