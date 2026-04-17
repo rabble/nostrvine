@@ -72,7 +72,7 @@ void main() {
       await tester.pumpWidget(buildWidget(isLoading: true));
 
       expect(find.byType(BrandedLoadingScaffold), findsOneWidget);
-      expect(find.byType(FloatingActionButton), findsOneWidget);
+      expect(find.bySemanticsLabel('Add element'), findsOneWidget);
     });
 
     testWidgets('hides FAB while a sub-editor is open', (tester) async {
@@ -81,7 +81,7 @@ void main() {
       await tester.pumpWidget(buildWidget(isLoading: true));
       await tester.pump();
 
-      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.bySemanticsLabel('Add element'), findsNothing);
     });
 
     testWidgets('hides FAB when an overlay item is selected', (tester) async {
@@ -90,7 +90,7 @@ void main() {
       await tester.pumpWidget(buildWidget(isLoading: true));
       await tester.pump();
 
-      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.bySemanticsLabel('Add element'), findsNothing);
     });
   });
 }

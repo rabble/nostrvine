@@ -188,7 +188,7 @@ void main() {
         expect(find.bySemanticsLabel('Done'), findsOneWidget);
         expect(
           find.byWidgetPredicate(
-            (w) => w is DivineIcon && w.icon == DivineIconName.caretRight,
+            (w) => w is DivineIcon && w.icon == DivineIconName.arrowRight,
           ),
           findsOneWidget,
         );
