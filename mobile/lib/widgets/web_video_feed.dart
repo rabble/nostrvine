@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_policy.dart';
 import 'package:openvine/widgets/web_video_player.dart';
 import 'package:video_player/video_player.dart';
 
@@ -41,8 +42,8 @@ class WebVideoFeed extends StatefulWidget {
     this.onNearEnd,
     this.nearEndThreshold = 3,
     this.headers = const {},
-    this.startThreshold = const Duration(seconds: 1),
-    this.endThreshold = const Duration(seconds: 1),
+    this.startThreshold = FeedAutoAdvanceDefaults.startThreshold,
+    this.endThreshold = FeedAutoAdvanceDefaults.endThreshold,
     this.controllerFactory = defaultWebVideoPlayerControllerFactory,
     super.key,
   });

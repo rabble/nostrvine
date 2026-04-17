@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_policy.dart';
 
 /// Fires [onCompleted] when a looping player crosses the end -> start boundary.
 class FeedAutoAdvanceCompletionListener extends StatefulWidget {
@@ -10,8 +11,8 @@ class FeedAutoAdvanceCompletionListener extends StatefulWidget {
     required this.onCompleted,
     this.player,
     this.isEnabled = true,
-    this.startThreshold = const Duration(seconds: 1),
-    this.endThreshold = const Duration(seconds: 1),
+    this.startThreshold = FeedAutoAdvanceDefaults.startThreshold,
+    this.endThreshold = FeedAutoAdvanceDefaults.endThreshold,
     super.key,
   });
 
