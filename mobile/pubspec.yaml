@@ -287,7 +287,9 @@ dev_dependencies:
   bloc_test: ^10.0.0
 
   # Code generation
-  build_runner: ^2.7.1
+  # TODO(#3142): Unpin after build_runner >2.11.0 fixes InvalidTypeException
+  # with riverpod_generator. See https://github.com/dart-lang/build/issues
+  build_runner: ">=2.7.1 <2.11.0"
   hive_ce_generator: ^1.6.0
 
   # Integration test utilities
