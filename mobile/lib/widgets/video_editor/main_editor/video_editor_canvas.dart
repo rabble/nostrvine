@@ -495,11 +495,38 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         editor.stateManager.clipSnapshots(await _documentsPath),
       );
       if (!mounted || clips.isEmpty || _isImportingHistory) return;
-      ref.read(clipManagerProvider.notifier).replaceClips(clips);
-      context.read<ClipEditorBloc>().add(
-        ClipEditorInitialized(clips),
-      );
+
+      // Only update if clips actually changed to avoid unnecessary rebuilds
+      // and autosave triggers. DivineVideoClip uses reference equality, so
+      // we compare the editable properties explicitly.
+      final currentClips = ref.read(clipManagerProvider).clips;
+      if (_clipsChanged(currentClips, clips)) {
+        ref.read(clipManagerProvider.notifier).replaceClips(clips);
+      }
+      if (_clipsChanged(context.read<ClipEditorBloc>().state.clips, clips)) {
+        context.read<ClipEditorBloc>().add(ClipEditorInitialized(clips));
+      }
     });
+  }
+
+  /// Compares two clip lists by their editable properties.
+  bool _clipsChanged(
+    List<DivineVideoClip> current,
+    List<DivineVideoClip> next,
+  ) {
+    if (current.length != next.length) return true;
+    for (var i = 0; i < current.length; i++) {
+      final a = current[i];
+      final b = next[i];
+      if (a.id != b.id ||
+          a.video != b.video ||
+          a.trimStart != b.trimStart ||
+          a.trimEnd != b.trimEnd ||
+          a.volume != b.volume) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Syncs the draw capabilities from the paint editor to the bloc.
