@@ -1,6 +1,8 @@
 // ABOUTME: Web-native video feed using Flutter's video_player package
 // ABOUTME: Replaces PooledVideoFeed on web where media_kit is not available
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -28,11 +30,12 @@ typedef WebOnActiveVideoChanged = void Function(VideoEvent video, int index);
 /// Callback fired when the active web player crosses the loop boundary.
 typedef WebOnCompleted = void Function(int index);
 
-/// Callback fired when a web player for [index] fails to load or initialise.
+/// Callback fired when a web player for the active video fails to load.
 ///
-/// Used by auto-advance to skip past broken videos instead of getting stuck
-/// on them — a failed player never emits a loop-boundary crossing.
-typedef WebOnErrored = void Function(int index);
+/// Return `true` to auto-advance to the next page after the error has been
+/// handled. This lets the caller confirm a removable 404 before the feed
+/// skips away from the broken item.
+typedef WebOnErrored = Future<bool> Function(VideoEvent video, int index);
 
 /// A vertical-scrolling video feed for web platforms.
 ///
@@ -117,6 +120,7 @@ class WebVideoFeedState extends State<WebVideoFeed> {
   final Map<int, VoidCallback> _controllerListeners = {};
   final Map<int, Duration> _lastPositions = {};
   final Map<int, bool> _armedForCompletion = {};
+  final Set<String> _handlingErrorVideoIds = <String>{};
 
   int get currentIndex => _currentIndex;
   int get videoCount => widget.videos.length;
@@ -305,6 +309,30 @@ class WebVideoFeedState extends State<WebVideoFeed> {
     _lastPositions[index] = position;
   }
 
+  Future<void> _handleActiveVideoError(VideoEvent video, int index) async {
+    if (!mounted || index != _currentIndex) return;
+
+    final handler = widget.onErrored;
+    if (handler == null) return;
+    if (!_handlingErrorVideoIds.add(video.id)) return;
+
+    try {
+      final shouldAdvance = await handler(video, index);
+      if (!mounted || index != _currentIndex || !shouldAdvance) return;
+
+      final nextIndex = index + 1;
+      if (nextIndex >= widget.videos.length) return;
+
+      await _pageController.animateToPage(
+        nextIndex,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    } finally {
+      _handlingErrorVideoIds.remove(video.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PageView.builder(
@@ -343,10 +371,7 @@ class WebVideoFeedState extends State<WebVideoFeed> {
             if (!mounted) return;
             _onPlayerDisposed(index);
           },
-          onError: () {
-            if (!mounted) return;
-            widget.onErrored?.call(index);
-          },
+          onError: () => unawaited(_handleActiveVideoError(video, index)),
         );
       },
     );

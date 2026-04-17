@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -84,6 +85,23 @@ double _scrollDrivenOpacity(double distance) {
     )!;
   }
   return 0.0;
+}
+
+Future<bool> confirmWebVideoNotFound(
+  String videoUrl, {
+  http.Client? client,
+}) async {
+  final effectiveClient = client ?? http.Client();
+  try {
+    final response = await effectiveClient.head(Uri.parse(videoUrl));
+    return response.statusCode == 404;
+  } catch (_) {
+    return false;
+  } finally {
+    if (client == null) {
+      effectiveClient.close();
+    }
+  }
 }
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
@@ -234,6 +252,7 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
     this.sourceDetail,
     this.autoOpenComments = false,
     this.onPageChanged,
+    @visibleForTesting this.confirmWebNotFound = confirmWebVideoNotFound,
     @visibleForTesting this.controllerFactory,
     @visibleForTesting this.webControllerFactory,
     super.key,
@@ -257,6 +276,10 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
   ///
   /// Used by embedded surfaces to keep the URL in sync.
   final void Function(int index)? onPageChanged;
+
+  /// Confirms whether a failed web video URL is a removable 404.
+  @visibleForTesting
+  final Future<bool> Function(String videoUrl) confirmWebNotFound;
 
   /// Optional factory for creating the [VideoFeedController].
   ///
@@ -282,6 +305,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   late final ValueNotifier<double> _pagePosition;
   final _feedKey = GlobalKey<PooledVideoFeedState>();
   final _webFeedKey = GlobalKey<WebVideoFeedState>();
+  final Set<String> _handledWebNotFoundVideoIds = <String>{};
 
   /// Feed-scoped Auto playback state; exposed to descendants via
   /// `BlocProvider.value` in [build].
@@ -428,12 +452,36 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     );
   }
 
-  /// Treat a failed web player as "completed" so Auto skips past broken
-  /// videos. Only fires for the currently-active page to avoid advancing
-  /// when a background/preloaded player fails.
-  void _handleWebPlayerErrored(int index) {
-    if (index != context.read<FullscreenFeedBloc>().state.currentIndex) return;
-    _handleAutoAdvanceCompleted();
+  /// Confirms removable 404s on web and skips past them.
+  ///
+  /// Non-404 failures still feed into the existing auto-advance completion
+  /// flow so generic broken videos do not regress.
+  Future<bool> _handleWebPlayerErrored(VideoEvent video, int index) async {
+    final currentIndex = context.read<FullscreenFeedBloc>().state.currentIndex;
+    if (index != currentIndex) return false;
+
+    final videoUrl = video.videoUrl;
+    if (videoUrl == null || videoUrl.isEmpty) {
+      _handleAutoAdvanceCompleted();
+      return false;
+    }
+    if (!_handledWebNotFoundVideoIds.add(video.id)) return false;
+
+    final isNotFound = await widget.confirmWebNotFound(videoUrl);
+    final isStillCurrent =
+        mounted &&
+        index == context.read<FullscreenFeedBloc>().state.currentIndex;
+
+    if (!isNotFound) {
+      _handledWebNotFoundVideoIds.remove(video.id);
+      if (isStillCurrent) {
+        _handleAutoAdvanceCompleted();
+      }
+      return false;
+    }
+
+    ref.read(videoEventServiceProvider).removeVideoCompletely(video.id);
+    return isStillCurrent;
   }
 
   void _continuePendingAutoAdvance(FullscreenFeedState state) {

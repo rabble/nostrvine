@@ -6,7 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
@@ -21,6 +23,17 @@ class MockFullscreenFeedBloc
     extends MockBloc<FullscreenFeedEvent, FullscreenFeedState>
     implements FullscreenFeedBloc {}
 
+class MockVideoEventService extends Mock implements VideoEventService {}
+
+class _ErroringVideoPlayerController extends FakeVideoPlayerController {
+  _ErroringVideoPlayerController({required super.source});
+
+  @override
+  Future<void> initialize() async {
+    throw Exception('load failed');
+  }
+}
+
 const _testVideoId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
 const _testPubkey =
@@ -31,6 +44,7 @@ void main() {
     late MockFullscreenFeedBloc mockBloc;
     late MockAuthService mockAuthService;
     late MockProfileRepository mockProfileRepository;
+    late MockVideoEventService mockVideoEventService;
     late StreamController<FullscreenFeedState> stateController;
     late video_platform.VideoPlayerPlatform originalPlatform;
     late FakeVideoPlayerController webController;
@@ -43,6 +57,7 @@ void main() {
       mockBloc = MockFullscreenFeedBloc();
       mockAuthService = createMockAuthService();
       mockProfileRepository = createMockProfileRepository();
+      mockVideoEventService = MockVideoEventService();
       stateController = StreamController<FullscreenFeedState>.broadcast();
       originalPlatform = video_platform.VideoPlayerPlatform.instance;
       video_platform.VideoPlayerPlatform.instance = FakeVideoPlayerPlatform();
@@ -50,6 +65,9 @@ void main() {
 
       when(() => mockBloc.stream).thenAnswer((_) => stateController.stream);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
+      when(
+        () => mockVideoEventService.removeVideoCompletely(any()),
+      ).thenReturn(null);
     });
 
     tearDown(() async {
@@ -126,6 +144,65 @@ void main() {
         await tester.pump();
 
         expect(find.byType(AutoActionButton), findsOneWidget);
+      },
+      skip: !kIsWeb,
+    );
+
+    testWidgets(
+      'removes and skips confirmed missing web videos',
+      (tester) async {
+        final firstVideo = createTestVideoEvent(
+          id: _testVideoId,
+          pubkey: _testPubkey,
+          videoUrl: 'https://example.com/missing.mp4',
+        );
+        final secondVideo = createTestVideoEvent(
+          id: 'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+          pubkey: _testPubkey,
+          videoUrl: 'https://example.com/ok.mp4',
+        );
+        final state = FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [firstVideo, secondVideo],
+        );
+        when(() => mockBloc.state).thenReturn(state);
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+            ],
+            mockAuthService: mockAuthService,
+            mockProfileRepository: mockProfileRepository,
+            home: BlocProvider<FullscreenFeedBloc>.value(
+              value: mockBloc,
+              child: FullscreenFeedContent(
+                confirmWebNotFound: (_) async => true,
+                webControllerFactory:
+                    ({
+                      required url,
+                      required headers,
+                    }) => url.toString().contains('missing')
+                    ? _ErroringVideoPlayerController(
+                        source: url.toString(),
+                      )
+                    : FakeVideoPlayerController(source: url.toString()),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
+
+        verify(
+          () => mockVideoEventService.removeVideoCompletely(firstVideo.id),
+        ).called(1);
+        verify(
+          () => mockBloc.add(const FullscreenFeedIndexChanged(1)),
+        ).called(1);
       },
       skip: !kIsWeb,
     );

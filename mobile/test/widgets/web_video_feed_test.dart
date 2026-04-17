@@ -10,8 +10,11 @@ import 'package:video_player_platform_interface/video_player_platform_interface.
 
 class _FakeVideoPlayerController extends ValueNotifier<VideoPlayerValue>
     implements VideoPlayerController {
-  _FakeVideoPlayerController()
-    : super(const VideoPlayerValue(duration: Duration.zero));
+  _FakeVideoPlayerController({
+    this.initializeError,
+  }) : super(const VideoPlayerValue(duration: Duration.zero));
+
+  final Exception? initializeError;
 
   void emitValue(VideoPlayerValue newValue) {
     value = newValue;
@@ -20,6 +23,8 @@ class _FakeVideoPlayerController extends ValueNotifier<VideoPlayerValue>
 
   @override
   Future<void> initialize() async {
+    final error = initializeError;
+    if (error != null) throw error;
     value = const VideoPlayerValue(
       duration: Duration(seconds: 6),
       isInitialized: true,
@@ -266,6 +271,42 @@ void main() {
     expect(key.currentState!.currentIndex, 1);
     expect(activeIndex, 1);
   });
+
+  testWidgets(
+    'auto-skips when the active web video error handler confirms removal',
+    (tester) async {
+      final firstController = _FakeVideoPlayerController(
+        initializeError: Exception('load failed'),
+      );
+      final secondController = _FakeVideoPlayerController();
+      final handledIndexes = <int>[];
+      final activeIndexes = <int>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: WebVideoFeed(
+            videos: [_makeVideo(), _makeVideo(seed: 1)],
+            controllerFactory: ({required url, required headers}) {
+              return url.toString().contains('video0')
+                  ? firstController
+                  : secondController;
+            },
+            onActiveVideoChanged: (_, index) => activeIndexes.add(index),
+            onErrored: (video, index) async {
+              handledIndexes.add(index);
+              expect(video.id, _makeVideo().id);
+              return true;
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(handledIndexes, [0]);
+      expect(activeIndexes, contains(1));
+    },
+  );
 
   testWidgets(
     'drops controller entries when WebVideoPlayer items are disposed',

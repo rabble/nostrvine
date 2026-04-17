@@ -283,9 +283,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Treat a failed web player as "completed" so Auto skips past broken
   /// videos. Only fires for the currently-active page to avoid advancing
   /// when a background/preloaded player fails.
-  void _handleWebPlayerErrored(int index) {
-    if (index != _currentFeedIndex()) return;
+  Future<bool> _handleWebPlayerErrored(VideoEvent video, int index) async {
+    if (index != _currentFeedIndex()) return false;
     _handleAutoAdvanceCompleted();
+    return false;
   }
 
   void _continuePendingAutoAdvance(VideoFeedState state) {
