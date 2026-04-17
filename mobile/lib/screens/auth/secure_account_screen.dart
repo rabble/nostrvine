@@ -148,19 +148,23 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   void _showVerificationDialog(String email) {
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => _VerificationDialog(
-        email: email,
-        onContinue: () {
-          Navigator.of(dialogContext).pop();
-          _continueToApp();
-        },
-        onSuccess: () {
-          // Signal password managers to save credentials BEFORE we unmount
-          // the form via navigation.
-          if (!mounted) return;
-          TextInput.finishAutofillContext();
-          context.go(ExploreScreen.path);
-        },
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: _VerificationDialog(
+          email: email,
+          onContinue: () {
+            Navigator.of(dialogContext).pop();
+            _continueToApp();
+          },
+          onSuccess: () {
+            // Signal password managers to save credentials BEFORE we unmount
+            // the form via navigation.
+            if (!mounted) return;
+            TextInput.finishAutofillContext();
+            context.go(ExploreScreen.path);
+          },
+        ),
       ),
     );
   }

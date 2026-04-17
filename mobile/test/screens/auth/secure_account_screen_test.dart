@@ -35,6 +35,7 @@ void main() {
       // Default stubs
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.isAnonymous).thenReturn(true);
+      when(() => mockAuthService.isRegistered).thenReturn(false);
       when(() => mockAuthService.currentNpub).thenReturn('npub1test...');
       when(
         () => mockAuthService.exportNsec(),
@@ -403,6 +404,188 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
 
           expect(recorder.didFinishAutofillContext, isTrue);
+        },
+      );
+
+      testWidgets(
+        'verification dialog is not dismissed by tapping outside',
+        (tester) async {
+          when(
+            () => mockOAuth.headlessRegister(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+              nsec: any(named: 'nsec'),
+              scope: any(named: 'scope'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              HeadlessRegisterResult(
+                success: true,
+                pubkey: 'test-pubkey',
+                verificationRequired: true,
+                deviceCode: 'test-device-code',
+                email: 'test@example.com',
+              ),
+              'test-verifier',
+            ),
+          );
+
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const SecureAccountScreen(),
+              ),
+              GoRoute(
+                path: '/explore',
+                builder: (_, _) => const Scaffold(),
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                ...getStandardTestOverrides(),
+                oauthClientProvider.overrideWithValue(mockOAuth),
+                authServiceProvider.overrideWithValue(mockAuthService),
+              ],
+              child: BlocProvider<EmailVerificationCubit>(
+                create: (_) => EmailVerificationCubit(
+                  oauthClient: mockOAuth,
+                  authService: mockAuthService,
+                ),
+                child: MaterialApp.router(
+                  theme: VineTheme.theme,
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  routerConfig: router,
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Email'),
+              matching: find.byType(TextField),
+            ),
+            'test@example.com',
+          );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Password'),
+              matching: find.byType(TextField),
+            ),
+            'SecurePass123!',
+          );
+
+          await tester.tap(
+            find.widgetWithText(DivineButton, 'Secure account'),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+
+          expect(find.text('Continue to App'), findsOneWidget);
+
+          await tester.tapAt(const Offset(10, 10));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(find.text('Continue to App'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'verification dialog is not dismissed by system back',
+        (tester) async {
+          when(
+            () => mockOAuth.headlessRegister(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+              nsec: any(named: 'nsec'),
+              scope: any(named: 'scope'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              HeadlessRegisterResult(
+                success: true,
+                pubkey: 'test-pubkey',
+                verificationRequired: true,
+                deviceCode: 'test-device-code',
+                email: 'test@example.com',
+              ),
+              'test-verifier',
+            ),
+          );
+
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => const SecureAccountScreen(),
+              ),
+              GoRoute(
+                path: '/explore',
+                builder: (_, _) => const Scaffold(),
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                ...getStandardTestOverrides(),
+                oauthClientProvider.overrideWithValue(mockOAuth),
+                authServiceProvider.overrideWithValue(mockAuthService),
+              ],
+              child: BlocProvider<EmailVerificationCubit>(
+                create: (_) => EmailVerificationCubit(
+                  oauthClient: mockOAuth,
+                  authService: mockAuthService,
+                ),
+                child: MaterialApp.router(
+                  theme: VineTheme.theme,
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  routerConfig: router,
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Email'),
+              matching: find.byType(TextField),
+            ),
+            'test@example.com',
+          );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Password'),
+              matching: find.byType(TextField),
+            ),
+            'SecurePass123!',
+          );
+
+          await tester.tap(
+            find.widgetWithText(DivineButton, 'Secure account'),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+
+          expect(find.text('Continue to App'), findsOneWidget);
+
+          await tester.binding.handlePopRoute();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(find.text('Continue to App'), findsOneWidget);
         },
       );
     });
