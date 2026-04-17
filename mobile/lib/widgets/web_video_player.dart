@@ -4,7 +4,9 @@
 import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hls_auth_web_player/hls_auth_web_player.dart' as hls_auth;
 import 'package:video_player/video_player.dart';
 
 typedef WebVideoPlayerControllerFactory =
@@ -20,6 +22,12 @@ VideoPlayerController defaultWebVideoPlayerControllerFactory({
 
 /// A simple video player widget for web that uses Flutter's video_player
 /// package (backed by HTML5 video element via video_player_web_hls).
+///
+/// When [authHeaderProvider] is non-null AND running on web, the widget
+/// swaps in the `HlsAuthWebPlayer` which attaches NIP-98 auth headers per
+/// segment. Callers are expected to gate [authHeaderProvider] on
+/// `kIsWeb && FeatureFlag.hlsAuthWebPlayer` — when either condition is
+/// false, pass `null` to preserve the legacy behavior.
 class WebVideoPlayer extends StatefulWidget {
   /// Creates a web video player.
   const WebVideoPlayer({
@@ -31,8 +39,11 @@ class WebVideoPlayer extends StatefulWidget {
     this.onInitialized,
     this.onDisposed,
     this.onError,
+    this.onRequiresAuth,
     this.initializeTimeout = const Duration(seconds: 8),
     this.controllerFactory = defaultWebVideoPlayerControllerFactory,
+    this.authHeaderProvider,
+    this.hlsFallbackUrl,
     super.key,
   });
 
@@ -48,10 +59,10 @@ class WebVideoPlayer extends StatefulWidget {
   /// How the video should fit within its container.
   final BoxFit fit;
 
-  /// HTTP headers for the video request.
+  /// HTTP headers for the video request (legacy path only).
   final Map<String, String> headers;
 
-  /// Called when the video controller is initialized.
+  /// Called when the video controller is initialized (legacy path only).
   final ValueChanged<VideoPlayerController>? onInitialized;
 
   /// Called when the underlying [VideoPlayerController] has been disposed.
@@ -63,11 +74,26 @@ class WebVideoPlayer extends StatefulWidget {
   /// Called when an error occurs.
   final VoidCallback? onError;
 
+  /// Called when the NIP-98 path reports the origin needs viewer auth
+  /// (`401`/`403`). The feed layer translates this into the
+  /// `ageRestricted` playback status.
+  final VoidCallback? onRequiresAuth;
+
   /// Maximum time to wait for the underlying HTML5 player to initialize.
   final Duration initializeTimeout;
 
-  /// Factory used to create the underlying controller.
+  /// Factory used to create the underlying controller (legacy path).
   final WebVideoPlayerControllerFactory controllerFactory;
+
+  /// Provides NIP-98 `Authorization` header values for per-segment signing.
+  /// When non-null and running on web, the widget routes playback through
+  /// `HlsAuthWebPlayer`. When null, the legacy `VideoPlayerController` path
+  /// is used (preserves all existing behavior).
+  final hls_auth.AuthHeaderProvider? authHeaderProvider;
+
+  /// Optional HLS manifest to try if the primary MP4 source fails with a
+  /// non-auth error. Only used on the NIP-98 path.
+  final String? hlsFallbackUrl;
 
   @override
   State<WebVideoPlayer> createState() => WebVideoPlayerState();
@@ -82,10 +108,14 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
   /// The video player controller for external access.
   VideoPlayerController? get controller => _controller;
 
+  bool get _useAuthPlayer => kIsWeb && widget.authHeaderProvider != null;
+
   @override
   void initState() {
     super.initState();
-    _initializeController();
+    if (!_useAuthPlayer) {
+      _initializeController();
+    }
   }
 
   @override
@@ -93,7 +123,9 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.url != widget.url) {
       _disposeController();
-      _initializeController();
+      if (!_useAuthPlayer) {
+        _initializeController();
+      }
     }
   }
 
@@ -175,6 +207,16 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    if (_useAuthPlayer) {
+      return _HlsAuthPlayerShim(
+        url: widget.url,
+        hlsFallbackUrl: widget.hlsFallbackUrl,
+        authHeader: widget.authHeaderProvider!,
+        onError: widget.onError,
+        onRequiresAuth: widget.onRequiresAuth,
+      );
+    }
+
     if (_hasError) {
       return const ColoredBox(
         color: VineTheme.backgroundColor,
@@ -276,4 +318,98 @@ Size _fittedVideoSize({
   }
 
   return Size(videoSize.width * scale, videoSize.height * scale);
+}
+
+class _HlsAuthPlayerShim extends StatelessWidget {
+  const _HlsAuthPlayerShim({
+    required this.url,
+    required this.hlsFallbackUrl,
+    required this.authHeader,
+    required this.onError,
+    required this.onRequiresAuth,
+  });
+
+  final String url;
+  final String? hlsFallbackUrl;
+  final hls_auth.AuthHeaderProvider authHeader;
+  final VoidCallback? onError;
+  final VoidCallback? onRequiresAuth;
+
+  @override
+  Widget build(BuildContext context) {
+    return hls_auth.HlsAuthWebPlayer(
+      url: url,
+      hlsFallbackUrl: hlsFallbackUrl,
+      authHeader: authHeader,
+      onStatusChanged: (status) {
+        switch (status) {
+          case hls_auth.HlsAuthWebPlaybackStatus.requiresAuth:
+            onRequiresAuth?.call();
+          case hls_auth.HlsAuthWebPlaybackStatus.failure:
+            onError?.call();
+          case hls_auth.HlsAuthWebPlaybackStatus.idle:
+          case hls_auth.HlsAuthWebPlaybackStatus.loading:
+          case hls_auth.HlsAuthWebPlaybackStatus.ready:
+            break;
+        }
+      },
+      overlayBuilder: (context, status) {
+        switch (status) {
+          case hls_auth.HlsAuthWebPlaybackStatus.failure:
+            return const _AuthPlayerFailureSurface();
+          case hls_auth.HlsAuthWebPlaybackStatus.idle:
+          case hls_auth.HlsAuthWebPlaybackStatus.loading:
+            return const _AuthPlayerLoadingSurface();
+          case hls_auth.HlsAuthWebPlaybackStatus.requiresAuth:
+          case hls_auth.HlsAuthWebPlaybackStatus.ready:
+            return const SizedBox.shrink();
+        }
+      },
+    );
+  }
+}
+
+class _AuthPlayerLoadingSurface extends StatelessWidget {
+  const _AuthPlayerLoadingSurface();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: VineTheme.backgroundColor,
+      child: Center(
+        child: CircularProgressIndicator(color: VineTheme.whiteText),
+      ),
+    );
+  }
+}
+
+class _AuthPlayerFailureSurface extends StatelessWidget {
+  const _AuthPlayerFailureSurface();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: VineTheme.backgroundColor,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: VineTheme.secondaryText,
+              size: 48,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Failed to load video',
+              style: TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

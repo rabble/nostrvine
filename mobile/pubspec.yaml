@@ -190,6 +190,11 @@ dependencies:
   # Hashtag Repository - Hashtag search data layer
   hashtag_repository:
 
+  # HLS + NIP-98 Auth Web Player - Web-only video player with per-segment
+  # NIP-98 signing for age-restricted media. Gated behind
+  # FeatureFlag.hlsAuthWebPlayer.
+  hls_auth_web_player:
+
   # Videos Repository - Video feed data layer
   videos_repository:
 
