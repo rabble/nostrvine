@@ -271,7 +271,7 @@ void main() {
             routes: [
               GoRoute(
                 path: '/',
-                builder: (_, __) => ProviderScope(
+                builder: (_, _) => ProviderScope(
                   overrides: [
                     ...getStandardTestOverrides(
                       mockAuthService: mockAuthService,
@@ -294,7 +294,7 @@ void main() {
               ),
               GoRoute(
                 path: '/verify-email',
-                builder: (_, __) => const Scaffold(),
+                builder: (_, _) => const Scaffold(),
               ),
             ],
           );

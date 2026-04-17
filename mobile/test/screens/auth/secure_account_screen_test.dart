@@ -338,11 +338,11 @@ void main() {
             routes: [
               GoRoute(
                 path: '/',
-                builder: (_, __) => const SecureAccountScreen(),
+                builder: (_, _) => const SecureAccountScreen(),
               ),
               GoRoute(
                 path: '/explore',
-                builder: (_, __) => const Scaffold(),
+                builder: (_, _) => const Scaffold(),
               ),
             ],
           );
