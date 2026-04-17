@@ -3320,14 +3320,15 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Sana Özel akışın boş.\nVideolar keşfet ve içerik üreticileri takip ederek akışını şekillendir.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bulup takip et.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty =>
+      'Henüz yeni video yok.\nYakında tekrar kontrol et.';
 
   @override
   String get feedExploreVideos => 'Videoları Keşfet';
@@ -3409,6 +3410,46 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get userSearchFailed => 'Arama başarısız';
+
+  @override
+  String get userPickerSearchByName => 'Ada göre ara';
+
+  @override
+  String get userPickerFilterByNameHint => 'Ada göre filtrele...';
+
+  @override
+  String get userPickerSearchByNameHint => 'Ada göre ara...';
+
+  @override
+  String userPickerAlreadyAddedSemantics(String name) {
+    return '$name zaten eklendi';
+  }
+
+  @override
+  String userPickerSelectSemantics(String name) {
+    return '$name seç';
+  }
+
+  @override
+  String get userPickerEmptyFollowListTitle => 'Ekibin dışarıda';
+
+  @override
+  String get userPickerEmptyFollowListBody =>
+      'Aynı frekansta olduğun kişileri takip et. Onlar da seni takip ettiğinde birlikte üretim yapabilirsiniz.';
+
+  @override
+  String get userPickerGoBack => 'Geri dön';
+
+  @override
+  String get userPickerTypeNameToSearch => 'Aramak için bir isim yaz';
+
+  @override
+  String get userPickerUnavailable =>
+      'Kullanıcı araması kullanılamıyor. Lütfen daha sonra tekrar dene.';
+
+  @override
+  String get userPickerSearchFailedTryAgain =>
+      'Arama başarısız oldu. Lütfen tekrar dene.';
 
   @override
   String get forgotPasswordTitle => 'Parolayı Sıfırla';
@@ -4361,10 +4402,25 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataExpiration => 'Son Kullanma';
 
   @override
-  String get videoMetadataContentWarnings => 'İçerik Uyarıları';
+  String get videoMetadataExpirationNotExpire => 'Süresi dolmaz';
 
   @override
-  String get videoEditorLayers => 'Katmanlar';
+  String get videoMetadataExpirationOneDay => '1 gün';
+
+  @override
+  String get videoMetadataExpirationOneWeek => '1 hafta';
+
+  @override
+  String get videoMetadataExpirationOneMonth => '1 ay';
+
+  @override
+  String get videoMetadataExpirationOneYear => '1 yıl';
+
+  @override
+  String get videoMetadataExpirationOneDecade => '1 on yıl';
+
+  @override
+  String get videoMetadataContentWarnings => 'İçerik Uyarıları';
 
   @override
   String get videoEditorStickers => 'Çıkartmalar';
@@ -4797,4 +4853,638 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Ayarlara git';
+
+  @override
+  String get videoRecorderWhySixSecondsTitle => 'Neden altı saniye?';
+
+  @override
+  String get videoRecorderWhySixSecondsSubtitle =>
+      'Kısa klipler kendiliğindenlik için alan yaratır. 6 saniyelik format, anların gerçekleştiği anda otantik anları yakalamanıza yardımcı olur.';
+
+  @override
+  String get videoRecorderWhySixSecondsButton => 'Anladım!';
+
+  @override
+  String get videoRecorderAutosaveFoundTitle => 'Devam eden bir çalışma bulduk';
+
+  @override
+  String get videoRecorderAutosaveFoundSubtitle =>
+      'Kaldığınız yerden devam etmek ister misiniz?';
+
+  @override
+  String get videoRecorderAutosaveContinueButton => 'Evet, devam et';
+
+  @override
+  String get videoRecorderAutosaveDiscardButton => 'Hayır, yeni video başlat';
+
+  @override
+  String get videoRecorderAutosaveRestoreFailure =>
+      'Taslağınız geri yüklenemedi';
+
+  @override
+  String get videoRecorderStopRecordingTooltip => 'Kaydı durdur';
+
+  @override
+  String get videoRecorderStartRecordingTooltip => 'Kaydı başlat';
+
+  @override
+  String get videoRecorderRecordingTapToStopLabel =>
+      'Kaydediliyor. Durdurmak için herhangi bir yere dokunun';
+
+  @override
+  String get videoRecorderTapToStartLabel =>
+      'Kaydı başlatmak için herhangi bir yere dokunun';
+
+  @override
+  String get videoRecorderDeleteLastClipLabel => 'Son klibi sil';
+
+  @override
+  String get videoRecorderSwitchCameraLabel => 'Kamerayı değiştir';
+
+  @override
+  String get videoRecorderToggleGridLabel => 'Izgarayı değiştir';
+
+  @override
+  String get videoRecorderToggleGhostFrameLabel => 'Hayalet kareyi değiştir';
+
+  @override
+  String get videoRecorderGhostFrameEnabled => 'Hayalet kare etkin';
+
+  @override
+  String get videoRecorderGhostFrameDisabled => 'Hayalet kare devre dışı';
+
+  @override
+  String get videoRecorderClipDeletedMessage => 'Klip silindi';
+
+  @override
+  String get videoRecorderCloseLabel => 'Video kaydediciyi kapat';
+
+  @override
+  String get videoRecorderContinueToEditorLabel =>
+      'Video düzenleyiciye devam et';
+
+  @override
+  String get videoRecorderCaptureCloseLabel => 'Kapat';
+
+  @override
+  String get videoRecorderCaptureNextLabel => 'İleri';
+
+  @override
+  String get videoRecorderToggleFlashLabel => 'Flaşı değiştir';
+
+  @override
+  String get videoRecorderCycleTimerLabel => 'Zamanlayıcıyı değiştir';
+
+  @override
+  String get videoRecorderToggleAspectRatioLabel => 'En-boy oranını değiştir';
+
+  @override
+  String get videoRecorderLibraryEmptyLabel => 'Klip kütüphanesi, klip yok';
+
+  @override
+  String videoRecorderLibraryOpenLabel(int clipCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clipCount,
+      locale: localeName,
+      other: 'Klip kütüphanesini aç, $clipCount klip',
+      one: 'Klip kütüphanesini aç, 1 klip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorClipsLabel => 'Klipler';
+
+  @override
+  String get videoEditorTextLabel => 'Metin';
+
+  @override
+  String get videoEditorDrawLabel => 'Çiz';
+
+  @override
+  String get videoEditorEffectsLabel => 'Efektler';
+
+  @override
+  String get videoEditorAudioLabel => 'Ses';
+
+  @override
+  String get videoEditorVolumeLabel => 'Ses seviyesi';
+
+  @override
+  String get videoEditorAddTitle => 'Ekle';
+
+  @override
+  String get videoEditorOpenClipsSemanticLabel => 'Klip düzenleyiciyi aç';
+
+  @override
+  String get videoEditorOpenAudioSemanticLabel => 'Ses düzenleyiciyi aç';
+
+  @override
+  String get videoEditorOpenTextSemanticLabel => 'Metin düzenleyiciyi aç';
+
+  @override
+  String get videoEditorOpenDrawSemanticLabel => 'Çizim düzenleyiciyi aç';
+
+  @override
+  String get videoEditorOpenEffectsSemanticLabel => 'Efekt düzenleyiciyi aç';
+
+  @override
+  String get videoEditorSaveDraftTitle => 'Taslağınızı kaydedin?';
+
+  @override
+  String get videoEditorSaveDraftSubtitle =>
+      'Düzenlemelerinizi sonraya kaydedin veya atıp düzenleyiciden çıkın.';
+
+  @override
+  String get videoEditorSaveDraftButton => 'Taslağı kaydet';
+
+  @override
+  String get videoEditorDiscardChangesButton => 'Değişiklikleri sil';
+
+  @override
+  String get videoEditorKeepEditingButton => 'Düzenlemeye devam et';
+
+  @override
+  String get videoEditorDeleteLayerDropZone => 'Katman silme bırakma alanı';
+
+  @override
+  String get videoEditorReleaseToDeleteLayer => 'Katmanı silmek için bırak';
+
+  @override
+  String get videoEditorDoneLabel => 'Bitti';
+
+  @override
+  String get videoEditorPlayPauseSemanticLabel => 'Videoyu oynat veya duraklat';
+
+  @override
+  String get videoEditorCropSemanticLabel => 'Kırp';
+
+  @override
+  String get videoEditorCannotSplitProcessing =>
+      'Klip işlenirken bölünemez. Lütfen bekleyin.';
+
+  @override
+  String videoEditorSplitPositionInvalid(int minDurationMs) {
+    return 'Bölme konumu geçersiz. Her iki klip de en az ${minDurationMs}ms uzunluğunda olmalıdır.';
+  }
+
+  @override
+  String get videoEditorAddClipFromLibrary => 'Kütüphaneden klip ekle';
+
+  @override
+  String get videoEditorSaveSelectedClip => 'Seçili klibi kaydet';
+
+  @override
+  String get videoEditorSplitClip => 'Klibi böl';
+
+  @override
+  String get videoEditorSaveClip => 'Klibi kaydet';
+
+  @override
+  String get videoEditorDeleteClip => 'Klibi sil';
+
+  @override
+  String get videoEditorClipSavedSuccess => 'Klip kütüphaneye kaydedildi';
+
+  @override
+  String get videoEditorClipSaveFailed => 'Klip kaydedilemedi';
+
+  @override
+  String get videoEditorClipDeleted => 'Klip silindi';
+
+  @override
+  String get videoEditorColorPickerSemanticLabel => 'Renk seçici';
+
+  @override
+  String get videoEditorUndoSemanticLabel => 'Geri al';
+
+  @override
+  String get videoEditorRedoSemanticLabel => 'Yinele';
+
+  @override
+  String get videoEditorTextColorSemanticLabel => 'Metin rengi';
+
+  @override
+  String get videoEditorTextAlignmentSemanticLabel => 'Metin hizalama';
+
+  @override
+  String get videoEditorTextBackgroundSemanticLabel => 'Metin arka planı';
+
+  @override
+  String get videoEditorFontSemanticLabel => 'Yazı tipi';
+
+  @override
+  String get videoEditorNoStickersFound => 'Çıkartma bulunamadı';
+
+  @override
+  String get videoEditorNoStickersAvailable => 'Kullanılabilir çıkartma yok';
+
+  @override
+  String get videoEditorFailedLoadStickers => 'Çıkartmalar yüklenemedi';
+
+  @override
+  String get videoEditorAdjustVolumeTitle => 'Ses seviyesini ayarla';
+
+  @override
+  String get videoEditorRecordedAudioLabel => 'Kaydedilmiş ses';
+
+  @override
+  String get videoEditorCustomAudioLabel => 'Özel ses';
+
+  @override
+  String get videoEditorPlaySemanticLabel => 'Oynat';
+
+  @override
+  String get videoEditorPauseSemanticLabel => 'Duraklat';
+
+  @override
+  String get videoEditorMuteAudioSemanticLabel => 'Sesi kapat';
+
+  @override
+  String get videoEditorUnmuteAudioSemanticLabel => 'Sesi aç';
+
+  @override
+  String get videoEditorDeleteLabel => 'Sil';
+
+  @override
+  String get videoEditorDeleteSelectedItemSemanticLabel => 'Seçili öğeyi sil';
+
+  @override
+  String get videoEditorEditLabel => 'Düzenle';
+
+  @override
+  String get videoEditorEditSelectedItemSemanticLabel => 'Seçili öğeyi düzenle';
+
+  @override
+  String get videoEditorDuplicateLabel => 'Çoğalt';
+
+  @override
+  String get videoEditorDuplicateSelectedItemSemanticLabel =>
+      'Seçili öğeyi çoğalt';
+
+  @override
+  String get videoEditorSplitLabel => 'Böl';
+
+  @override
+  String get videoEditorSplitSelectedClipSemanticLabel => 'Seçili klibi böl';
+
+  @override
+  String get videoEditorFinishTimelineEditingSemanticLabel =>
+      'Zaman çizelgesi düzenlemeyi bitir';
+
+  @override
+  String get videoEditorSortNewest => 'En yeni';
+
+  @override
+  String get videoEditorSortLongest => 'En uzun';
+
+  @override
+  String get videoEditorSortShortest => 'En kısa';
+
+  @override
+  String videoEditorSortBySemanticLabel(String option) {
+    return '$option ile sırala. Sıralama düzenini değiştirmek için dokun';
+  }
+
+  @override
+  String get videoEditorAudioPlayPreviewSemanticLabel => 'Önizlemeyi oynat';
+
+  @override
+  String get videoEditorAudioPausePreviewSemanticLabel => 'Önizlemeyi duraklat';
+
+  @override
+  String get videoEditorAudioUntitledSound => 'Başlıksız ses';
+
+  @override
+  String get videoEditorAudioSelectSoundSemanticLabel => 'Ses seç';
+
+  @override
+  String get videoEditorAudioUntitled => 'Başlıksız';
+
+  @override
+  String get videoEditorAudioAddAudio => 'Ses ekle';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableTitle => 'Kullanılabilir ses yok';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableSubtitle =>
+      'İçerik üreticileri ses paylaştığında burada görünür';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundTitle => 'Ses bulunamadı';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundSubtitle =>
+      'Farklı bir arama terimi deneyin';
+
+  @override
+  String get videoEditorAudioFailedToLoadTitle => 'Sesler yüklenemedi';
+
+  @override
+  String get videoEditorDrawToolArrowSemanticLabel => 'Ok aracı';
+
+  @override
+  String get videoEditorDrawToolEraserSemanticLabel => 'Silgi aracı';
+
+  @override
+  String get videoEditorDrawToolMarkerSemanticLabel => 'İşaretleyici aracı';
+
+  @override
+  String get videoEditorDrawToolPencilSemanticLabel => 'Kalem aracı';
+
+  @override
+  String videoEditorLayerReorderLabel(int index) {
+    return 'Katman $index\'i yeniden sırala';
+  }
+
+  @override
+  String get videoEditorLayerReorderHint => 'Yeniden sıralamak için basılı tut';
+
+  @override
+  String get videoEditorShowTimelineSemanticLabel => 'Zaman çizelgesini göster';
+
+  @override
+  String get videoEditorHideTimelineSemanticLabel => 'Zaman çizelgesini gizle';
+
+  @override
+  String get videoEditorFeedPreviewContent =>
+      'Bu alanların arkasına içerik yerleştirmekten kaçının.';
+
+  @override
+  String get videoEditorStickerSearchHint => 'Çıkartma ara...';
+
+  @override
+  String get videoEditorSelectFontSemanticLabel => 'Yazı tipi seç';
+
+  @override
+  String get videoEditorFontUnknown => 'Bilinmiyor';
+
+  @override
+  String get videoEditorSplitPlayheadOutsideClip =>
+      'Bölmek için oynatma kafası seçili klip içinde olmalıdır.';
+
+  @override
+  String get videoEditorTimelineTrimStartSemanticLabel => 'Başlangıcı kırp';
+
+  @override
+  String get videoEditorTimelineTrimEndSemanticLabel => 'Sonu kırp';
+
+  @override
+  String get videoEditorTimelineTrimClipSemanticLabel => 'Klibi kırp';
+
+  @override
+  String get videoEditorTimelineTrimClipHint =>
+      'Klip süresini ayarlamak için tutamaçları sürükleyin';
+
+  @override
+  String videoEditorTimelineDraggingClipSemanticLabel(int index) {
+    return '$index. klip sürükleniyor';
+  }
+
+  @override
+  String videoEditorTimelineClipSemanticLabel(
+    int index,
+    int total,
+    String duration,
+  ) {
+    return '$total klipten $index. klip, $duration saniye';
+  }
+
+  @override
+  String get videoEditorTimelineClipReorderHint =>
+      'Yeniden sıralamak için uzun basın';
+
+  @override
+  String get videoEditorTimelineClipMoveLeft => 'Sola taşı';
+
+  @override
+  String get videoEditorTimelineClipMoveRight => 'Sağa taşı';
+
+  @override
+  String get videoEditorTimelineLongPressToDragHint =>
+      'Sürüklemek için uzun basın';
+
+  @override
+  String get videoEditorVideoTimelineSemanticLabel => 'Video zaman çizelgesi';
+
+  @override
+  String videoEditorTimelinePositionFormat(int minutes, String seconds) {
+    return '${minutes}d ${seconds}s';
+  }
+
+  @override
+  String videoEditorColorSelectedSemanticLabel(String colorName) {
+    return '$colorName, seçildi';
+  }
+
+  @override
+  String get videoEditorCloseColorPickerSemanticLabel => 'Renk seçiciyi kapat';
+
+  @override
+  String get videoEditorPickColorTitle => 'Renk seç';
+
+  @override
+  String get videoEditorConfirmColorSemanticLabel => 'Rengi onayla';
+
+  @override
+  String get videoEditorSaturationBrightnessSemanticLabel =>
+      'Doygunluk ve parlaklık';
+
+  @override
+  String videoEditorSaturationBrightnessValue(int saturation, int brightness) {
+    return 'Doygunluk $saturation%, Parlaklık $brightness%';
+  }
+
+  @override
+  String get videoEditorHueSemanticLabel => 'Ton';
+
+  @override
+  String get videoEditorAddElementSemanticLabel => 'Öğe ekle';
+
+  @override
+  String get videoEditorCloseSemanticLabel => 'Kapat';
+
+  @override
+  String get videoEditorDoneSemanticLabel => 'Bitti';
+
+  @override
+  String get videoEditorLevelSemanticLabel => 'Seviye';
+
+  @override
+  String get videoMetadataBackSemanticLabel => 'Geri';
+
+  @override
+  String get videoMetadataDismissHelpDialogSemanticLabel =>
+      'Yardım iletişim kutusunu kapat';
+
+  @override
+  String get videoMetadataGotItButton => 'Anladım!';
+
+  @override
+  String get videoMetadataLimitReachedWarning =>
+      '64KB sınırına ulaşıldı. Devam etmek için bazı içerikleri kaldırın.';
+
+  @override
+  String get videoMetadataExpirationLabel => 'Son kullanma tarihi';
+
+  @override
+  String get videoMetadataSelectExpirationSemanticLabel =>
+      'Son kullanma zamanını seç';
+
+  @override
+  String get videoMetadataTitleLabel => 'Başlık';
+
+  @override
+  String get videoMetadataDescriptionLabel => 'Açıklama';
+
+  @override
+  String get videoMetadataTagsLabel => 'Etiketler';
+
+  @override
+  String get videoMetadataDeleteTagSemanticLabel => 'Sil';
+
+  @override
+  String videoMetadataDeleteTagHint(String tag) {
+    return '$tag etiketini sil';
+  }
+
+  @override
+  String get videoMetadataContentWarningLabel => 'İçerik Uyarısı';
+
+  @override
+  String get videoMetadataSelectContentWarningsSemanticLabel =>
+      'İçerik uyarılarını seç';
+
+  @override
+  String get videoMetadataContentWarningSelectAllThatApply =>
+      'İçeriğinize uyanların hepsini seçin';
+
+  @override
+  String get videoMetadataContentWarningDoneButton => 'Bitti';
+
+  @override
+  String get videoMetadataCollaboratorsLabel => 'Ortak çalışanlar';
+
+  @override
+  String get videoMetadataAddCollaboratorSemanticLabel => 'Ortak çalışan ekle';
+
+  @override
+  String get videoMetadataCollaboratorsHelpTooltip =>
+      'Ortak çalışanlar nasıl çalışır?';
+
+  @override
+  String videoMetadataCollaboratorsCount(int count, int max) {
+    return '$count/$max Ortak çalışan';
+  }
+
+  @override
+  String get videoMetadataRemoveCollaboratorSemanticLabel =>
+      'Ortak çalışanı kaldır';
+
+  @override
+  String get videoMetadataCollaboratorsHelpMessage =>
+      'Ortak çalışanlar bu gönderide ortak içerik üretici olarak etiketlenir. Yalnızca karşılıklı takip ettiğiniz kişileri ekleyebilirsiniz; yayınlandığında gönderi meta verilerinde görünürler.';
+
+  @override
+  String get videoMetadataMutualFollowersSearchText => 'Karşılıklı takipçiler';
+
+  @override
+  String videoMetadataMustMutuallyFollowSnackbar(String name) {
+    return '$name\'i ortak çalışan olarak eklemek için karşılıklı takipleşmeniz gerekiyor.';
+  }
+
+  @override
+  String get videoMetadataInspiredByLabel => 'İlham kaynağı';
+
+  @override
+  String get videoMetadataSetInspiredBySemanticLabel =>
+      'İlham kaynağını ayarla';
+
+  @override
+  String get videoMetadataInspiredByHelpTooltip =>
+      'İlham kredileri nasıl çalışır?';
+
+  @override
+  String get videoMetadataInspiredByNone => 'Yok';
+
+  @override
+  String get videoMetadataInspiredByHelpMessage =>
+      'Atıf vermek için kullanın. İlham kredisi ortak çalışanlardan farklıdır: etkiyi kabul eder, ancak birini ortak içerik üretici olarak etiketlemez.';
+
+  @override
+  String get videoMetadataCreatorCannotBeReferencedSnackbar =>
+      'Bu içerik üreticisi referans alınamaz.';
+
+  @override
+  String get videoMetadataRemoveInspiredBySemanticLabel =>
+      'İlham kaynağını kaldır';
+
+  @override
+  String get videoMetadataPostDetailsTitle => 'Gönderi ayrıntıları';
+
+  @override
+  String get videoMetadataSavedToLibrarySnackbar => 'Kütüphaneye kaydedildi';
+
+  @override
+  String get videoMetadataFailedToSaveSnackbar => 'Kaydedilemedi';
+
+  @override
+  String get videoMetadataGoToLibraryButton => 'Kütüphaneye git';
+
+  @override
+  String get videoMetadataSaveForLaterSemanticLabel => 'Sonra kaydet düğmesi';
+
+  @override
+  String get videoMetadataRenderingVideoHint => 'Video işleniyor...';
+
+  @override
+  String get videoMetadataSavingVideoHint => 'Video kaydediliyor...';
+
+  @override
+  String videoMetadataSaveToDraftsHint(String destination) {
+    return 'Videoyu taslağa ve $destination\'a kaydet';
+  }
+
+  @override
+  String get videoMetadataSaveForLaterButton => 'Sonra Kaydet';
+
+  @override
+  String get videoMetadataPostSemanticLabel => 'Paylaş düğmesi';
+
+  @override
+  String get videoMetadataPublishVideoHint => 'Videoyu akışa yayınla';
+
+  @override
+  String get videoMetadataFormNotReadyHint =>
+      'Etkinleştirmek için formu doldurun';
+
+  @override
+  String get videoMetadataPostButton => 'Paylaş';
+
+  @override
+  String get videoMetadataOpenPreviewSemanticLabel =>
+      'Gönderi önizleme ekranını aç';
+
+  @override
+  String get videoMetadataShareTitle => 'Paylaş';
+
+  @override
+  String get videoMetadataVideoDetailsSubtitle => 'Video ayrıntıları';
+
+  @override
+  String get videoMetadataClassicDoneButton => 'Bitti';
+
+  @override
+  String get videoMetadataPlayPreviewSemanticLabel => 'Önizlemeyi oynat';
+
+  @override
+  String get videoMetadataPausePreviewSemanticLabel => 'Önizlemeyi duraklat';
+
+  @override
+  String get videoMetadataClosePreviewSemanticLabel =>
+      'Video önizlemesini kapat';
+
+  @override
+  String get videoMetadataRemoveSemanticLabel => 'Kaldır';
 }

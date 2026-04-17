@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -268,8 +269,7 @@ class _CloseButton extends StatelessWidget {
             icon: .x,
             type: .ghostSecondary,
             size: .small,
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            semanticLabel: 'Close video preview',
+            semanticLabel: context.l10n.videoMetadataClosePreviewSemanticLabel,
             onPressed: () => context.pop(),
           ),
         ),

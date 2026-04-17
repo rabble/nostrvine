@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
@@ -48,9 +49,7 @@ class VideoClipEditorBottomBar extends StatelessWidget {
     if (selectedClip.isProcessing) {
       _showSnackBar(
         context: context,
-        message:
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Cannot split clip while it is being processed. Please wait.',
+        message: context.l10n.videoEditorCannotSplitProcessing,
       );
       return;
     }
@@ -63,10 +62,9 @@ class VideoClipEditorBottomBar extends StatelessWidget {
       const minDuration = VideoEditorSplitService.minClipDuration;
       _showSnackBar(
         context: context,
-        message:
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Split position invalid. Both clips must be at least '
-            '${minDuration.inMilliseconds}ms long.',
+        message: context.l10n.videoEditorSplitPositionInvalid(
+          minDuration.inMilliseconds,
+        ),
       );
       return;
     }
@@ -120,16 +118,16 @@ class VideoClipEditorBottomBar extends StatelessWidget {
                         onTap: () => context.read<ClipEditorBloc>().add(
                           const ClipEditorPlayPauseToggled(),
                         ),
-                        // TODO(l10n): Replace with context.l10n when localization is added.
-                        semanticLabel: 'Play or pause video',
+                        semanticLabel:
+                            context.l10n.videoEditorPlayPauseSemanticLabel,
                       ),
                       if (isEditing)
                         VideoEditorIconButton(
                           backgroundColor: VineTheme.transparent,
                           icon: .scissors,
                           onTap: () => _handleSplitClip(context),
-                          // TODO(l10n): Replace with context.l10n when localization is added.
-                          semanticLabel: 'Crop',
+                          semanticLabel:
+                              context.l10n.videoEditorCropSemanticLabel,
                         ),
                       const VideoClipEditorMoreButton(),
                     ],

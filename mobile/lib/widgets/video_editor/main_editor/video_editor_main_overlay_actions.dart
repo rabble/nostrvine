@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -110,12 +111,11 @@ class _TopActions extends ConsumerWidget {
     VineBottomSheetPrompt.show(
       context: context,
       sticker: .videoClapBoard,
-      title: 'Save your draft?',
-      subtitle:
-          'Keep your edits for later, or discard them and leave the editor.',
-      primaryButtonText: 'Save draft',
-      secondaryButtonText: 'Discard changes',
-      tertiaryButtonText: 'Keep editing',
+      title: context.l10n.videoEditorSaveDraftTitle,
+      subtitle: context.l10n.videoEditorSaveDraftSubtitle,
+      primaryButtonText: context.l10n.videoEditorSaveDraftButton,
+      secondaryButtonText: context.l10n.videoEditorDiscardChangesButton,
+      tertiaryButtonText: context.l10n.videoEditorKeepEditingButton,
       onPrimaryPressed: () => _onSaveDraftPressed(context: context, ref: ref),
       onSecondaryPressed: () => _onDiscardPressed(context: context, ref: ref),
       onTertiaryPressed: context.pop,
@@ -159,7 +159,7 @@ class _TopActions extends ConsumerWidget {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     scaffoldMessenger.showSnackBar(
       DivineSnackbarContainer.snackBar(
-        draftSaved ? 'Saved to library' : 'Failed to save',
+        draftSaved ? context.l10n.videoMetadataSavedToLibrarySnackbar : context.l10n.videoMetadataFailedToSaveSnackbar,
       ),
     );
   }
@@ -184,7 +184,7 @@ class _BottomActions extends StatelessWidget {
     );
 
     return Semantics(
-      label: isTimelineHiddenByUser ? 'Show timeline' : 'Hide timeline',
+      label: isTimelineHiddenByUser ? context.l10n.videoEditorShowTimelineSemanticLabel : context.l10n.videoEditorHideTimelineSemanticLabel,
       button: true,
       child: Padding(
         padding: const .only(bottom: 8),

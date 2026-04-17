@@ -1,16 +1,22 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Sort options for the audio/sound list.
 enum AudioSortOption {
-  newest('Newest'),
-  longest('Longest'),
-  shortest('Shortest')
+  newest,
+  longest,
+  shortest
   ;
 
-  const AudioSortOption(this.label);
-  final String label;
+  String localizedLabel(BuildContext context) {
+    return switch (this) {
+      AudioSortOption.newest => context.l10n.videoEditorSortNewest,
+      AudioSortOption.longest => context.l10n.videoEditorSortLongest,
+      AudioSortOption.shortest => context.l10n.videoEditorSortShortest,
+    };
+  }
 }
 
 /// A dropdown button for selecting audio sort order with animations.
@@ -109,7 +115,10 @@ class _AudioSortDropdownState extends State<AudioSortDropdown>
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
       link: _layerLink,
-      child: _DropdownButton(label: widget.value.label, onTap: _toggleDropdown),
+      child: _DropdownButton(
+        label: widget.value.localizedLabel(context),
+        onTap: _toggleDropdown,
+      ),
     );
   }
 }
@@ -187,8 +196,7 @@ class _DropdownButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Sort by $label. Tap to change sort order',
+      label: context.l10n.videoEditorSortBySemanticLabel(label),
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -239,7 +247,7 @@ class _DropdownMenu extends StatelessWidget {
           children: [
             for (final option in AudioSortOption.values)
               _DropdownMenuItem(
-                label: option.label,
+                label: option.localizedLabel(context),
                 isSelected: option == selectedOption,
                 onTap: () => onOptionSelected(option),
               ),

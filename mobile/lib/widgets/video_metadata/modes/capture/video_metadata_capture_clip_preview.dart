@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -64,9 +65,7 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
               child: Semantics(
                 button: true,
                 enabled: isReady,
-                // TODO(l10n): Replace with context.l10n when localization
-                // is added.
-                label: 'Open post preview screen',
+                label: context.l10n.videoMetadataOpenPreviewSemanticLabel,
                 child: GestureDetector(
                   onTap: isReady
                       ? () => _openPreview(context, state.finalRenderedClip!)

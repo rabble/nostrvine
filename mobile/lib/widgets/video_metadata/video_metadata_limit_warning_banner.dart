@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 
 /// Warning banner displayed when metadata size exceeds the 64KB limit.
@@ -35,9 +36,7 @@ class VideoMetadataLimitWarningBanner extends ConsumerWidget {
           ),
           Expanded(
             child: Text(
-              // TODO(l10n): Replace with context.l10n when localization is
-              // added.
-              '64KB limit reached. Remove some content to continue.',
+              context.l10n.videoMetadataLimitReachedWarning,
               style: VineTheme.labelLargeFont(
                 color: VineTheme.contentWarningAmber,
               ),

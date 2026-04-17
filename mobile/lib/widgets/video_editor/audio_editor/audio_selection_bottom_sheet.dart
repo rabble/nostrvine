@@ -324,26 +324,27 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
-          SizedBox(height: 16),
+          const Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
+          const SizedBox(height: 16),
           Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'No sounds available',
-            style: TextStyle(
+            context.l10n.videoEditorAudioNoSoundsAvailableTitle,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Sounds will appear here when creators share audio',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+            context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 14,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -357,26 +358,31 @@ class _NoResultsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 64, color: VineTheme.secondaryText),
-          SizedBox(height: 16),
+          const Icon(
+            Icons.search_off,
+            size: 64,
+            color: VineTheme.secondaryText,
+          ),
+          const SizedBox(height: 16),
           Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'No sounds found',
-            style: TextStyle(
+            context.l10n.videoEditorAudioNoSoundsFoundTitle,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Try a different search term',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+            context.l10n.videoEditorAudioNoSoundsFoundSubtitle,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -399,10 +405,9 @@ class _ErrorState extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
             const SizedBox(height: 16),
-            const Text(
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              'Failed to load sounds',
-              style: TextStyle(
+            Text(
+              context.l10n.videoEditorAudioFailedToLoadTitle,
+              style: const TextStyle(
                 color: VineTheme.whiteText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,

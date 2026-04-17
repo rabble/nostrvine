@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 
@@ -41,8 +42,9 @@ class RecordButton extends ConsumerWidget {
       identifier: 'divine-camera-record-button',
       button: true,
       enabled: isEnabled,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      tooltip: state.isRecording ? 'Stop recording' : 'Start recording',
+      tooltip: state.isRecording
+          ? context.l10n.videoRecorderStopRecordingTooltip
+          : context.l10n.videoRecorderStartRecordingTooltip,
       child: GestureDetector(
         onTap: isEnabled ? notifier.toggleRecording : null,
         onLongPressStart: isEnabled && isLongPressSupported

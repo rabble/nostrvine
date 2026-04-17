@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Top bar with close button, clip counter, and done button.
 class VideoClipEditorTopBar extends StatelessWidget {
@@ -71,7 +72,8 @@ class VideoClipEditorTopBar extends StatelessWidget {
                       alignment: .centerRight,
                       child: DivineIconButton(
                         icon: .check,
-                        semanticLabel: 'Done',
+                        semanticLabel:
+                            context.l10n.videoEditorDoneSemanticLabel,
                         size: .small,
                         type: .tertiary,
                         onPressed: () {

@@ -6044,6 +6044,72 @@ abstract class AppLocalizations {
   /// **'Search failed'**
   String get userSearchFailed;
 
+  /// No description provided for @userPickerSearchByName.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name'**
+  String get userPickerSearchByName;
+
+  /// No description provided for @userPickerFilterByNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by name...'**
+  String get userPickerFilterByNameHint;
+
+  /// No description provided for @userPickerSearchByNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name...'**
+  String get userPickerSearchByNameHint;
+
+  /// No description provided for @userPickerAlreadyAddedSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} already added'**
+  String userPickerAlreadyAddedSemantics(String name);
+
+  /// No description provided for @userPickerSelectSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {name}'**
+  String userPickerSelectSemantics(String name);
+
+  /// No description provided for @userPickerEmptyFollowListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your crew is out there'**
+  String get userPickerEmptyFollowListTitle;
+
+  /// No description provided for @userPickerEmptyFollowListBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow people you vibe with. When they follow back, you can collab.'**
+  String get userPickerEmptyFollowListBody;
+
+  /// No description provided for @userPickerGoBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get userPickerGoBack;
+
+  /// No description provided for @userPickerTypeNameToSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a name to search'**
+  String get userPickerTypeNameToSearch;
+
+  /// No description provided for @userPickerUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'User search is unavailable. Please try again later.'**
+  String get userPickerUnavailable;
+
+  /// No description provided for @userPickerSearchFailedTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed. Please try again.'**
+  String get userPickerSearchFailedTryAgain;
+
   /// No description provided for @forgotPasswordTitle.
   ///
   /// In en, this message translates to:
@@ -7820,17 +7886,47 @@ abstract class AppLocalizations {
   /// **'Expiration'**
   String get videoMetadataExpiration;
 
+  /// No description provided for @videoMetadataExpirationNotExpire.
+  ///
+  /// In en, this message translates to:
+  /// **'Does not expire'**
+  String get videoMetadataExpirationNotExpire;
+
+  /// No description provided for @videoMetadataExpirationOneDay.
+  ///
+  /// In en, this message translates to:
+  /// **'1 day'**
+  String get videoMetadataExpirationOneDay;
+
+  /// No description provided for @videoMetadataExpirationOneWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'1 week'**
+  String get videoMetadataExpirationOneWeek;
+
+  /// No description provided for @videoMetadataExpirationOneMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'1 month'**
+  String get videoMetadataExpirationOneMonth;
+
+  /// No description provided for @videoMetadataExpirationOneYear.
+  ///
+  /// In en, this message translates to:
+  /// **'1 year'**
+  String get videoMetadataExpirationOneYear;
+
+  /// No description provided for @videoMetadataExpirationOneDecade.
+  ///
+  /// In en, this message translates to:
+  /// **'1 decade'**
+  String get videoMetadataExpirationOneDecade;
+
   /// No description provided for @videoMetadataContentWarnings.
   ///
   /// In en, this message translates to:
   /// **'Content Warnings'**
   String get videoMetadataContentWarnings;
-
-  /// No description provided for @videoEditorLayers.
-  ///
-  /// In en, this message translates to:
-  /// **'Layers'**
-  String get videoEditorLayers;
 
   /// No description provided for @videoEditorStickers.
   ///
@@ -8539,6 +8635,1138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Go to settings'**
   String get cameraPermissionGoToSettings;
+
+  /// No description provided for @videoRecorderWhySixSecondsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why six seconds?'**
+  String get videoRecorderWhySixSecondsTitle;
+
+  /// No description provided for @videoRecorderWhySixSecondsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick clips make space for spontaneity. The 6-second format helps you capture authentic moments as they happen.'**
+  String get videoRecorderWhySixSecondsSubtitle;
+
+  /// No description provided for @videoRecorderWhySixSecondsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it!'**
+  String get videoRecorderWhySixSecondsButton;
+
+  /// No description provided for @videoRecorderAutosaveFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We found work in progress'**
+  String get videoRecorderAutosaveFoundTitle;
+
+  /// No description provided for @videoRecorderAutosaveFoundSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Would you like to continue where you left off?'**
+  String get videoRecorderAutosaveFoundSubtitle;
+
+  /// No description provided for @videoRecorderAutosaveContinueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, continue'**
+  String get videoRecorderAutosaveContinueButton;
+
+  /// No description provided for @videoRecorderAutosaveDiscardButton.
+  ///
+  /// In en, this message translates to:
+  /// **'No, start a new video'**
+  String get videoRecorderAutosaveDiscardButton;
+
+  /// No description provided for @videoRecorderAutosaveRestoreFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not restore your draft'**
+  String get videoRecorderAutosaveRestoreFailure;
+
+  /// No description provided for @videoRecorderStopRecordingTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recording'**
+  String get videoRecorderStopRecordingTooltip;
+
+  /// No description provided for @videoRecorderStartRecordingTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Start recording'**
+  String get videoRecorderStartRecordingTooltip;
+
+  /// No description provided for @videoRecorderRecordingTapToStopLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording. Tap anywhere to stop'**
+  String get videoRecorderRecordingTapToStopLabel;
+
+  /// No description provided for @videoRecorderTapToStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap anywhere to start recording'**
+  String get videoRecorderTapToStartLabel;
+
+  /// No description provided for @videoRecorderDeleteLastClipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete last clip'**
+  String get videoRecorderDeleteLastClipLabel;
+
+  /// No description provided for @videoRecorderSwitchCameraLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch camera'**
+  String get videoRecorderSwitchCameraLabel;
+
+  /// No description provided for @videoRecorderToggleGridLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle grid'**
+  String get videoRecorderToggleGridLabel;
+
+  /// No description provided for @videoRecorderToggleGhostFrameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle ghost frame'**
+  String get videoRecorderToggleGhostFrameLabel;
+
+  /// No description provided for @videoRecorderGhostFrameEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Ghost frame enabled'**
+  String get videoRecorderGhostFrameEnabled;
+
+  /// No description provided for @videoRecorderGhostFrameDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Ghost frame disabled'**
+  String get videoRecorderGhostFrameDisabled;
+
+  /// No description provided for @videoRecorderClipDeletedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip deleted'**
+  String get videoRecorderClipDeletedMessage;
+
+  /// No description provided for @videoRecorderCloseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close video recorder'**
+  String get videoRecorderCloseLabel;
+
+  /// No description provided for @videoRecorderContinueToEditorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to video editor'**
+  String get videoRecorderContinueToEditorLabel;
+
+  /// No description provided for @videoRecorderCaptureCloseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get videoRecorderCaptureCloseLabel;
+
+  /// No description provided for @videoRecorderCaptureNextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get videoRecorderCaptureNextLabel;
+
+  /// No description provided for @videoRecorderToggleFlashLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle flash'**
+  String get videoRecorderToggleFlashLabel;
+
+  /// No description provided for @videoRecorderCycleTimerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle timer'**
+  String get videoRecorderCycleTimerLabel;
+
+  /// No description provided for @videoRecorderToggleAspectRatioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle aspect ratio'**
+  String get videoRecorderToggleAspectRatioLabel;
+
+  /// No description provided for @videoRecorderLibraryEmptyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip library, no clips'**
+  String get videoRecorderLibraryEmptyLabel;
+
+  /// No description provided for @videoRecorderLibraryOpenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{clipCount, plural, one{Open clip library, 1 clip} other{Open clip library, {clipCount} clips}}'**
+  String videoRecorderLibraryOpenLabel(int clipCount);
+
+  /// No description provided for @videoEditorClipsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clips'**
+  String get videoEditorClipsLabel;
+
+  /// No description provided for @videoEditorTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get videoEditorTextLabel;
+
+  /// No description provided for @videoEditorDrawLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw'**
+  String get videoEditorDrawLabel;
+
+  /// No description provided for @videoEditorEffectsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Effects'**
+  String get videoEditorEffectsLabel;
+
+  /// No description provided for @videoEditorAudioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get videoEditorAudioLabel;
+
+  /// No description provided for @videoEditorVolumeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get videoEditorVolumeLabel;
+
+  /// No description provided for @videoEditorAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get videoEditorAddTitle;
+
+  /// No description provided for @videoEditorOpenClipsSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open clips editor'**
+  String get videoEditorOpenClipsSemanticLabel;
+
+  /// No description provided for @videoEditorOpenAudioSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open audio editor'**
+  String get videoEditorOpenAudioSemanticLabel;
+
+  /// No description provided for @videoEditorOpenTextSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open text editor'**
+  String get videoEditorOpenTextSemanticLabel;
+
+  /// No description provided for @videoEditorOpenDrawSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open draw editor'**
+  String get videoEditorOpenDrawSemanticLabel;
+
+  /// No description provided for @videoEditorOpenEffectsSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open effects editor'**
+  String get videoEditorOpenEffectsSemanticLabel;
+
+  /// No description provided for @videoEditorSaveDraftTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save your draft?'**
+  String get videoEditorSaveDraftTitle;
+
+  /// No description provided for @videoEditorSaveDraftSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your edits for later, or discard them and leave the editor.'**
+  String get videoEditorSaveDraftSubtitle;
+
+  /// No description provided for @videoEditorSaveDraftButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save draft'**
+  String get videoEditorSaveDraftButton;
+
+  /// No description provided for @videoEditorDiscardChangesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get videoEditorDiscardChangesButton;
+
+  /// No description provided for @videoEditorKeepEditingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get videoEditorKeepEditingButton;
+
+  /// No description provided for @videoEditorDeleteLayerDropZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete layer drop zone'**
+  String get videoEditorDeleteLayerDropZone;
+
+  /// No description provided for @videoEditorReleaseToDeleteLayer.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to delete layer'**
+  String get videoEditorReleaseToDeleteLayer;
+
+  /// No description provided for @videoEditorDoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get videoEditorDoneLabel;
+
+  /// No description provided for @videoEditorPlayPauseSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Play or pause video'**
+  String get videoEditorPlayPauseSemanticLabel;
+
+  /// No description provided for @videoEditorCropSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop'**
+  String get videoEditorCropSemanticLabel;
+
+  /// No description provided for @videoEditorCannotSplitProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot split clip while it is being processed. Please wait.'**
+  String get videoEditorCannotSplitProcessing;
+
+  /// No description provided for @videoEditorSplitPositionInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Split position invalid. Both clips must be at least {minDurationMs}ms long.'**
+  String videoEditorSplitPositionInvalid(int minDurationMs);
+
+  /// No description provided for @videoEditorAddClipFromLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Add clip from Library'**
+  String get videoEditorAddClipFromLibrary;
+
+  /// No description provided for @videoEditorSaveSelectedClip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save selected clip'**
+  String get videoEditorSaveSelectedClip;
+
+  /// No description provided for @videoEditorSplitClip.
+  ///
+  /// In en, this message translates to:
+  /// **'Split clip'**
+  String get videoEditorSplitClip;
+
+  /// No description provided for @videoEditorSaveClip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save clip'**
+  String get videoEditorSaveClip;
+
+  /// No description provided for @videoEditorDeleteClip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete clip'**
+  String get videoEditorDeleteClip;
+
+  /// No description provided for @videoEditorClipSavedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip saved to library'**
+  String get videoEditorClipSavedSuccess;
+
+  /// No description provided for @videoEditorClipSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save clip'**
+  String get videoEditorClipSaveFailed;
+
+  /// No description provided for @videoEditorClipDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip deleted'**
+  String get videoEditorClipDeleted;
+
+  /// No description provided for @videoEditorColorPickerSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Color picker'**
+  String get videoEditorColorPickerSemanticLabel;
+
+  /// No description provided for @videoEditorUndoSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get videoEditorUndoSemanticLabel;
+
+  /// No description provided for @videoEditorRedoSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get videoEditorRedoSemanticLabel;
+
+  /// No description provided for @videoEditorTextColorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text color'**
+  String get videoEditorTextColorSemanticLabel;
+
+  /// No description provided for @videoEditorTextAlignmentSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text alignment'**
+  String get videoEditorTextAlignmentSemanticLabel;
+
+  /// No description provided for @videoEditorTextBackgroundSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text background'**
+  String get videoEditorTextBackgroundSemanticLabel;
+
+  /// No description provided for @videoEditorFontSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Font'**
+  String get videoEditorFontSemanticLabel;
+
+  /// No description provided for @videoEditorNoStickersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No stickers found'**
+  String get videoEditorNoStickersFound;
+
+  /// No description provided for @videoEditorNoStickersAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No stickers available'**
+  String get videoEditorNoStickersAvailable;
+
+  /// No description provided for @videoEditorFailedLoadStickers.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load stickers'**
+  String get videoEditorFailedLoadStickers;
+
+  /// No description provided for @videoEditorAdjustVolumeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust volume'**
+  String get videoEditorAdjustVolumeTitle;
+
+  /// No description provided for @videoEditorRecordedAudioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded audio'**
+  String get videoEditorRecordedAudioLabel;
+
+  /// No description provided for @videoEditorCustomAudioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom audio'**
+  String get videoEditorCustomAudioLabel;
+
+  /// No description provided for @videoEditorPlaySemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get videoEditorPlaySemanticLabel;
+
+  /// No description provided for @videoEditorPauseSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get videoEditorPauseSemanticLabel;
+
+  /// No description provided for @videoEditorMuteAudioSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute audio'**
+  String get videoEditorMuteAudioSemanticLabel;
+
+  /// No description provided for @videoEditorUnmuteAudioSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute audio'**
+  String get videoEditorUnmuteAudioSemanticLabel;
+
+  /// No description provided for @videoEditorDeleteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get videoEditorDeleteLabel;
+
+  /// No description provided for @videoEditorDeleteSelectedItemSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected item'**
+  String get videoEditorDeleteSelectedItemSemanticLabel;
+
+  /// No description provided for @videoEditorEditLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get videoEditorEditLabel;
+
+  /// No description provided for @videoEditorEditSelectedItemSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit selected item'**
+  String get videoEditorEditSelectedItemSemanticLabel;
+
+  /// No description provided for @videoEditorDuplicateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get videoEditorDuplicateLabel;
+
+  /// No description provided for @videoEditorDuplicateSelectedItemSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate selected item'**
+  String get videoEditorDuplicateSelectedItemSemanticLabel;
+
+  /// No description provided for @videoEditorSplitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Split'**
+  String get videoEditorSplitLabel;
+
+  /// No description provided for @videoEditorSplitSelectedClipSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Split selected clip'**
+  String get videoEditorSplitSelectedClipSemanticLabel;
+
+  /// No description provided for @videoEditorFinishTimelineEditingSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish timeline editing'**
+  String get videoEditorFinishTimelineEditingSemanticLabel;
+
+  /// No description provided for @videoEditorSortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest'**
+  String get videoEditorSortNewest;
+
+  /// No description provided for @videoEditorSortLongest.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest'**
+  String get videoEditorSortLongest;
+
+  /// No description provided for @videoEditorSortShortest.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortest'**
+  String get videoEditorSortShortest;
+
+  /// No description provided for @videoEditorSortBySemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by {option}. Tap to change sort order'**
+  String videoEditorSortBySemanticLabel(String option);
+
+  /// No description provided for @videoEditorAudioPlayPreviewSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Play preview'**
+  String get videoEditorAudioPlayPreviewSemanticLabel;
+
+  /// No description provided for @videoEditorAudioPausePreviewSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause preview'**
+  String get videoEditorAudioPausePreviewSemanticLabel;
+
+  /// No description provided for @videoEditorAudioUntitledSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled sound'**
+  String get videoEditorAudioUntitledSound;
+
+  /// No description provided for @videoEditorAudioSelectSoundSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select sound'**
+  String get videoEditorAudioSelectSoundSemanticLabel;
+
+  /// No description provided for @videoEditorAudioUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled'**
+  String get videoEditorAudioUntitled;
+
+  /// No description provided for @videoEditorAudioAddAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Add audio'**
+  String get videoEditorAudioAddAudio;
+
+  /// No description provided for @videoEditorAudioNoSoundsAvailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No sounds available'**
+  String get videoEditorAudioNoSoundsAvailableTitle;
+
+  /// No description provided for @videoEditorAudioNoSoundsAvailableSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds will appear here when creators share audio'**
+  String get videoEditorAudioNoSoundsAvailableSubtitle;
+
+  /// No description provided for @videoEditorAudioNoSoundsFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No sounds found'**
+  String get videoEditorAudioNoSoundsFoundTitle;
+
+  /// No description provided for @videoEditorAudioNoSoundsFoundSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different search term'**
+  String get videoEditorAudioNoSoundsFoundSubtitle;
+
+  /// No description provided for @videoEditorAudioFailedToLoadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load sounds'**
+  String get videoEditorAudioFailedToLoadTitle;
+
+  /// No description provided for @videoEditorDrawToolArrowSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrow tool'**
+  String get videoEditorDrawToolArrowSemanticLabel;
+
+  /// No description provided for @videoEditorDrawToolEraserSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Eraser tool'**
+  String get videoEditorDrawToolEraserSemanticLabel;
+
+  /// No description provided for @videoEditorDrawToolMarkerSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Marker tool'**
+  String get videoEditorDrawToolMarkerSemanticLabel;
+
+  /// No description provided for @videoEditorDrawToolPencilSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pencil tool'**
+  String get videoEditorDrawToolPencilSemanticLabel;
+
+  /// No description provided for @videoEditorLayerReorderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder layer {index}'**
+  String videoEditorLayerReorderLabel(int index);
+
+  /// No description provided for @videoEditorLayerReorderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to reorder'**
+  String get videoEditorLayerReorderHint;
+
+  /// No description provided for @videoEditorShowTimelineSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show timeline'**
+  String get videoEditorShowTimelineSemanticLabel;
+
+  /// No description provided for @videoEditorHideTimelineSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide timeline'**
+  String get videoEditorHideTimelineSemanticLabel;
+
+  /// No description provided for @videoEditorFeedPreviewContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid placing content behind these areas.'**
+  String get videoEditorFeedPreviewContent;
+
+  /// No description provided for @videoEditorStickerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search stickers...'**
+  String get videoEditorStickerSearchHint;
+
+  /// No description provided for @videoEditorSelectFontSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select font'**
+  String get videoEditorSelectFontSemanticLabel;
+
+  /// No description provided for @videoEditorFontUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get videoEditorFontUnknown;
+
+  /// No description provided for @videoEditorSplitPlayheadOutsideClip.
+  ///
+  /// In en, this message translates to:
+  /// **'Playhead must be within the selected clip to split.'**
+  String get videoEditorSplitPlayheadOutsideClip;
+
+  /// No description provided for @videoEditorTimelineTrimStartSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim start'**
+  String get videoEditorTimelineTrimStartSemanticLabel;
+
+  /// No description provided for @videoEditorTimelineTrimEndSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim end'**
+  String get videoEditorTimelineTrimEndSemanticLabel;
+
+  /// No description provided for @videoEditorTimelineTrimClipSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim clip'**
+  String get videoEditorTimelineTrimClipSemanticLabel;
+
+  /// No description provided for @videoEditorTimelineTrimClipHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag handles to adjust clip duration'**
+  String get videoEditorTimelineTrimClipHint;
+
+  /// No description provided for @videoEditorTimelineDraggingClipSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dragging clip {index}'**
+  String videoEditorTimelineDraggingClipSemanticLabel(int index);
+
+  /// No description provided for @videoEditorTimelineClipSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip {index} of {total}, {duration} seconds'**
+  String videoEditorTimelineClipSemanticLabel(
+    int index,
+    int total,
+    String duration,
+  );
+
+  /// No description provided for @videoEditorTimelineClipReorderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long press to reorder'**
+  String get videoEditorTimelineClipReorderHint;
+
+  /// No description provided for @videoEditorTimelineClipMoveLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Move left'**
+  String get videoEditorTimelineClipMoveLeft;
+
+  /// No description provided for @videoEditorTimelineClipMoveRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Move right'**
+  String get videoEditorTimelineClipMoveRight;
+
+  /// No description provided for @videoEditorTimelineLongPressToDragHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long press to drag'**
+  String get videoEditorTimelineLongPressToDragHint;
+
+  /// No description provided for @videoEditorVideoTimelineSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Video timeline'**
+  String get videoEditorVideoTimelineSemanticLabel;
+
+  /// No description provided for @videoEditorTimelinePositionFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m {seconds}s'**
+  String videoEditorTimelinePositionFormat(int minutes, String seconds);
+
+  /// No description provided for @videoEditorColorSelectedSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{colorName}, selected'**
+  String videoEditorColorSelectedSemanticLabel(String colorName);
+
+  /// No description provided for @videoEditorCloseColorPickerSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close color picker'**
+  String get videoEditorCloseColorPickerSemanticLabel;
+
+  /// No description provided for @videoEditorPickColorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick color'**
+  String get videoEditorPickColorTitle;
+
+  /// No description provided for @videoEditorConfirmColorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm color'**
+  String get videoEditorConfirmColorSemanticLabel;
+
+  /// No description provided for @videoEditorSaturationBrightnessSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturation and brightness'**
+  String get videoEditorSaturationBrightnessSemanticLabel;
+
+  /// No description provided for @videoEditorSaturationBrightnessValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturation {saturation}%, Brightness {brightness}%'**
+  String videoEditorSaturationBrightnessValue(int saturation, int brightness);
+
+  /// No description provided for @videoEditorHueSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hue'**
+  String get videoEditorHueSemanticLabel;
+
+  /// No description provided for @videoEditorAddElementSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add element'**
+  String get videoEditorAddElementSemanticLabel;
+
+  /// No description provided for @videoEditorCloseSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get videoEditorCloseSemanticLabel;
+
+  /// No description provided for @videoEditorDoneSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get videoEditorDoneSemanticLabel;
+
+  /// No description provided for @videoEditorLevelSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level'**
+  String get videoEditorLevelSemanticLabel;
+
+  /// No description provided for @videoMetadataBackSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get videoMetadataBackSemanticLabel;
+
+  /// No description provided for @videoMetadataDismissHelpDialogSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss help dialog'**
+  String get videoMetadataDismissHelpDialogSemanticLabel;
+
+  /// No description provided for @videoMetadataGotItButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it!'**
+  String get videoMetadataGotItButton;
+
+  /// No description provided for @videoMetadataLimitReachedWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'64KB limit reached. Remove some content to continue.'**
+  String get videoMetadataLimitReachedWarning;
+
+  /// No description provided for @videoMetadataExpirationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiration'**
+  String get videoMetadataExpirationLabel;
+
+  /// No description provided for @videoMetadataSelectExpirationSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select expiration time'**
+  String get videoMetadataSelectExpirationSemanticLabel;
+
+  /// No description provided for @videoMetadataTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get videoMetadataTitleLabel;
+
+  /// No description provided for @videoMetadataDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get videoMetadataDescriptionLabel;
+
+  /// No description provided for @videoMetadataTagsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get videoMetadataTagsLabel;
+
+  /// No description provided for @videoMetadataDeleteTagSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get videoMetadataDeleteTagSemanticLabel;
+
+  /// No description provided for @videoMetadataDeleteTagHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Tag {tag}'**
+  String videoMetadataDeleteTagHint(String tag);
+
+  /// No description provided for @videoMetadataContentWarningLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Warning'**
+  String get videoMetadataContentWarningLabel;
+
+  /// No description provided for @videoMetadataSelectContentWarningsSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select content warnings'**
+  String get videoMetadataSelectContentWarningsSemanticLabel;
+
+  /// No description provided for @videoMetadataContentWarningSelectAllThatApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all that apply to your content'**
+  String get videoMetadataContentWarningSelectAllThatApply;
+
+  /// No description provided for @videoMetadataContentWarningDoneButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get videoMetadataContentWarningDoneButton;
+
+  /// No description provided for @videoMetadataCollaboratorsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Collaborators'**
+  String get videoMetadataCollaboratorsLabel;
+
+  /// No description provided for @videoMetadataAddCollaboratorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add collaborator'**
+  String get videoMetadataAddCollaboratorSemanticLabel;
+
+  /// No description provided for @videoMetadataCollaboratorsHelpTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'How collaborators work'**
+  String get videoMetadataCollaboratorsHelpTooltip;
+
+  /// No description provided for @videoMetadataCollaboratorsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/{max} Collaborators'**
+  String videoMetadataCollaboratorsCount(int count, int max);
+
+  /// No description provided for @videoMetadataRemoveCollaboratorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove collaborator'**
+  String get videoMetadataRemoveCollaboratorSemanticLabel;
+
+  /// No description provided for @videoMetadataCollaboratorsHelpMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Collaborators are tagged as co-creators on this post. You can only add people you mutually follow, and they appear in the post metadata when published.'**
+  String get videoMetadataCollaboratorsHelpMessage;
+
+  /// No description provided for @videoMetadataMutualFollowersSearchText.
+  ///
+  /// In en, this message translates to:
+  /// **'Mutual followers'**
+  String get videoMetadataMutualFollowersSearchText;
+
+  /// No description provided for @videoMetadataMustMutuallyFollowSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to mutually follow {name} to add them as a collaborator.'**
+  String videoMetadataMustMutuallyFollowSnackbar(String name);
+
+  /// No description provided for @videoMetadataInspiredByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspired by'**
+  String get videoMetadataInspiredByLabel;
+
+  /// No description provided for @videoMetadataSetInspiredBySemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set inspired by'**
+  String get videoMetadataSetInspiredBySemanticLabel;
+
+  /// No description provided for @videoMetadataInspiredByHelpTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'How inspiration credits work'**
+  String get videoMetadataInspiredByHelpTooltip;
+
+  /// No description provided for @videoMetadataInspiredByNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get videoMetadataInspiredByNone;
+
+  /// No description provided for @videoMetadataInspiredByHelpMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this to give attribution. Inspired-by credit is different from collaborators: it acknowledges influence, but does not tag someone as a co-creator.'**
+  String get videoMetadataInspiredByHelpMessage;
+
+  /// No description provided for @videoMetadataCreatorCannotBeReferencedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'This creator cannot be referenced.'**
+  String get videoMetadataCreatorCannotBeReferencedSnackbar;
+
+  /// No description provided for @videoMetadataRemoveInspiredBySemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove inspired by'**
+  String get videoMetadataRemoveInspiredBySemanticLabel;
+
+  /// No description provided for @videoMetadataPostDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Post details'**
+  String get videoMetadataPostDetailsTitle;
+
+  /// No description provided for @videoMetadataSavedToLibrarySnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to library'**
+  String get videoMetadataSavedToLibrarySnackbar;
+
+  /// No description provided for @videoMetadataFailedToSaveSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save'**
+  String get videoMetadataFailedToSaveSnackbar;
+
+  /// No description provided for @videoMetadataGoToLibraryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Library'**
+  String get videoMetadataGoToLibraryButton;
+
+  /// No description provided for @videoMetadataSaveForLaterSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Save for later button'**
+  String get videoMetadataSaveForLaterSemanticLabel;
+
+  /// No description provided for @videoMetadataRenderingVideoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Rendering video...'**
+  String get videoMetadataRenderingVideoHint;
+
+  /// No description provided for @videoMetadataSavingVideoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving video...'**
+  String get videoMetadataSavingVideoHint;
+
+  /// No description provided for @videoMetadataSaveToDraftsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Save video to drafts and {destination}'**
+  String videoMetadataSaveToDraftsHint(String destination);
+
+  /// No description provided for @videoMetadataSaveForLaterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save for Later'**
+  String get videoMetadataSaveForLaterButton;
+
+  /// No description provided for @videoMetadataPostSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Post button'**
+  String get videoMetadataPostSemanticLabel;
+
+  /// No description provided for @videoMetadataPublishVideoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish video to feed'**
+  String get videoMetadataPublishVideoHint;
+
+  /// No description provided for @videoMetadataFormNotReadyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill out the form to enable'**
+  String get videoMetadataFormNotReadyHint;
+
+  /// No description provided for @videoMetadataPostButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get videoMetadataPostButton;
+
+  /// No description provided for @videoMetadataOpenPreviewSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open post preview screen'**
+  String get videoMetadataOpenPreviewSemanticLabel;
+
+  /// No description provided for @videoMetadataShareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get videoMetadataShareTitle;
+
+  /// No description provided for @videoMetadataVideoDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Video details'**
+  String get videoMetadataVideoDetailsSubtitle;
+
+  /// No description provided for @videoMetadataClassicDoneButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get videoMetadataClassicDoneButton;
+
+  /// No description provided for @videoMetadataPlayPreviewSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Play preview'**
+  String get videoMetadataPlayPreviewSemanticLabel;
+
+  /// No description provided for @videoMetadataPausePreviewSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause preview'**
+  String get videoMetadataPausePreviewSemanticLabel;
+
+  /// No description provided for @videoMetadataClosePreviewSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close video preview'**
+  String get videoMetadataClosePreviewSemanticLabel;
+
+  /// No description provided for @videoMetadataRemoveSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get videoMetadataRemoveSemanticLabel;
 }
 
 class _AppLocalizationsDelegate

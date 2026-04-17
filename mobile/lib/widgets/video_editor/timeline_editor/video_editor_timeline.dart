@@ -8,6 +8,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -185,7 +186,15 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
                     child: _TimelineInteractiveBody(
                       playheadPosition: _playheadPosition,
                       totalDuration: totalDuration,
-                      formatPosition: _formatPosition,
+                      formatPosition: (pos) {
+                        final totalSeconds = pos.inMilliseconds / 1000.0;
+                        final minutes = totalSeconds ~/ 60;
+                        final seconds = (totalSeconds % 60).toStringAsFixed(1);
+                        return context.l10n.videoEditorTimelinePositionFormat(
+                          minutes,
+                          seconds,
+                        );
+                      },
                       onStepPosition: _stepPosition,
                       onPointerDown: _onPointerDown,
                       onPointerMove: _onPointerMove,
@@ -633,13 +642,6 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
 
   // -- Pointer tracking + manual pinch-to-zoom ------------------------------
 
-  static String _formatPosition(Duration position) {
-    final totalSeconds = position.inMilliseconds / 1000.0;
-    final minutes = totalSeconds ~/ 60;
-    final seconds = (totalSeconds % 60).toStringAsFixed(1);
-    return '${minutes}m ${seconds}s';
-  }
-
   void _stepPosition(
     Duration current,
     Duration total,
@@ -856,7 +858,7 @@ class _TimelineInteractiveBody extends StatelessWidget {
                   .clamp(0, totalDuration.inMilliseconds),
             );
             return Semantics(
-              label: 'Video timeline',
+              label: context.l10n.videoEditorVideoTimelineSemanticLabel,
               slider: true,
               value: formatPosition(position),
               increasedValue: formatPosition(increased),

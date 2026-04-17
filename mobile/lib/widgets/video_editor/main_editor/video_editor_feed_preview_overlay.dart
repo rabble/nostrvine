@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show VideoEvent;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -71,7 +72,7 @@ class VideoEditorFeedPreviewOverlay extends ConsumerWidget {
                       pubkey: publicKey,
                       timestamp: DateTime.now(),
                       createdAt: DateTime.now().millisecondsSinceEpoch,
-                      content: 'Avoid placing content behind these areas.',
+                      content: context.l10n.videoEditorFeedPreviewContent,
                     ),
                     isVisible: true,
                     isActive: true,

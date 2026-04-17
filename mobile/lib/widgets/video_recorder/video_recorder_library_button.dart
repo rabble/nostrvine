@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
@@ -71,9 +72,8 @@ class _VideoRecorderLibraryButtonState
       child: Semantics(
         button: true,
         label: hasClips
-            ? 'Open clip library, ${clips.length} '
-                  'clip${clips.length == 1 ? '' : 's'}'
-            : 'Clip library, no clips',
+            ? context.l10n.videoRecorderLibraryOpenLabel(clips.length)
+            : context.l10n.videoRecorderLibraryEmptyLabel,
         enabled: hasClips,
         child: InkWell(
           onTap: hasClips

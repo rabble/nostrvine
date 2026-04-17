@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// A custom header widget for video metadata screens.
 /// Unlike AppBar, this provides full control over layout and positioning.
@@ -32,13 +33,13 @@ class VideoMetadataCaptureAppBar extends StatelessWidget
                 icon: .caretLeft,
                 type: .secondary,
                 size: .small,
-                semanticLabel: 'Back',
+                semanticLabel: context.l10n.videoMetadataBackSemanticLabel,
                 onPressed: () => context.pop(),
               ),
             ),
             Expanded(
               child: Text(
-                'Post details',
+                context.l10n.videoMetadataPostDetailsTitle,
                 style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
               ),
             ),

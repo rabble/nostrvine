@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/utils/gallery_save_utils.dart';
 
@@ -56,15 +57,14 @@ class _PostButton extends ConsumerWidget {
       opacity: isValidToPost ? 1 : 0.32,
       child: Semantics(
         identifier: 'post_button',
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        label: 'Post button',
-        hint: 'Publish video to feed',
+        label: context.l10n.videoMetadataOpenPreviewSemanticLabel,
+        hint: context.l10n.videoMetadataPublishVideoHint,
         button: true,
         enabled: isValidToPost,
         child: DivineButton(
           onPressed: isValidToPost ? onTap : null,
           expanded: true,
-          label: 'Done',
+          label: context.l10n.videoMetadataClassicDoneButton,
         ),
       ),
     );

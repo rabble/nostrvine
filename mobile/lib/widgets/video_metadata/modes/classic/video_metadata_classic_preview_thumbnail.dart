@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
@@ -144,7 +145,9 @@ class _VideoMetadataClassicPreviewThumbnailState
                 if (_isPlayerReady && _controller != null)
                   Semantics(
                     identifier: 'preview_play_pause_button',
-                    label: _isPlaying ? 'Pause preview' : 'Play preview',
+                    label: _isPlaying
+                        ? context.l10n.videoMetadataPausePreviewSemanticLabel
+                        : context.l10n.videoMetadataPlayPreviewSemanticLabel,
                     button: true,
                     child: GestureDetector(
                       onTap: _togglePlayPause,

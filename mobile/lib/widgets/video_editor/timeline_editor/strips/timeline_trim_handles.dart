@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Callback reporting the horizontal drag delta in pixels.
 typedef TrimDragCallback = void Function(double dx);
@@ -192,7 +193,7 @@ class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
             width: handleW + widget.hitAreaExtra + widget.borderWidth,
             height: widget.height,
             child: Semantics(
-              label: 'Trim start',
+              label: context.l10n.videoEditorTimelineTrimStartSemanticLabel,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragStart: _onDragStart,
@@ -208,7 +209,7 @@ class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
             width: handleW + widget.hitAreaExtra + widget.borderWidth,
             height: widget.height,
             child: Semantics(
-              label: 'Trim end',
+              label: context.l10n.videoEditorTimelineTrimEndSemanticLabel,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragStart: _onDragStart,

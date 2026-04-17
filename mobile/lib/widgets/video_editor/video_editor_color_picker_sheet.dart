@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -214,10 +215,12 @@ class _ColorButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final String label;
     if (isColorPicker) {
-      label = 'Color picker';
+      label = context.l10n.videoEditorColorPickerSemanticLabel;
     } else {
       final colorName = _getColorName(color);
-      label = isSelected ? '$colorName, selected' : colorName;
+      label = isSelected
+          ? context.l10n.videoEditorColorSelectedSemanticLabel(colorName)
+          : colorName;
     }
 
     return Semantics(
@@ -333,19 +336,22 @@ class _FullColorPickerSheetState extends State<_FullColorPickerSheet> {
                   icon: .x,
                   type: .secondary,
                   size: .small,
-                  semanticLabel: 'Close color picker',
+                  semanticLabel:
+                      context.l10n.videoEditorCloseColorPickerSemanticLabel,
                   onPressed: context.pop,
                 ),
                 Flexible(
                   child: Text(
-                    'Pick color',
+                    context.l10n.videoEditorPickColorTitle,
                     style: VineTheme.titleMediumFont(),
                   ),
                 ),
                 DivineIconButton(
                   icon: .check,
                   size: .small,
-                  semanticLabel: 'Confirm color',
+                  semanticLabel:
+                      context.l10n.videoEditorConfirmColorSemanticLabel,
+
                   onPressed: () {
                     widget.onColorSelected(_hsvColor.toColor());
                     context.pop();
@@ -407,10 +413,11 @@ class _SaturationBrightnessPanel extends StatelessWidget {
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, _height);
         return Semantics(
-          label: 'Saturation and brightness',
-          value:
-              'Saturation ${(hsvColor.saturation * 100).round()}%, '
-              'Brightness ${(hsvColor.value * 100).round()}%',
+          label: context.l10n.videoEditorSaturationBrightnessSemanticLabel,
+          value: context.l10n.videoEditorSaturationBrightnessValue(
+            (hsvColor.saturation * 100).round(),
+            (hsvColor.value * 100).round(),
+          ),
           child: GestureDetector(
             onPanStart: (d) => _handleInteraction(d.localPosition, size),
             onPanUpdate: (d) => _handleInteraction(d.localPosition, size),
@@ -500,7 +507,7 @@ class _HueBar extends StatelessWidget {
         final width = constraints.maxWidth;
         return Semantics(
           slider: true,
-          label: 'Hue',
+          label: context.l10n.videoEditorHueSemanticLabel,
           value: '${hue.round()}°',
           increasedValue: '${(hue + 10).clamp(0.0, 360.0).round()}°',
           decreasedValue: '${(hue - 10).clamp(0.0, 360.0).round()}°',

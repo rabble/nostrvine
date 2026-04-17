@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_actions.dart';
@@ -22,13 +23,15 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
     unawaited(clipsNotifier.deleteLastRecordedClip());
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         padding: EdgeInsets.zero,
         backgroundColor: VineTheme.transparent,
         elevation: 0,
         behavior: .floating,
-        margin: .fromLTRB(16, 0, 16, 68),
-        content: DivineSnackbarContainer(label: 'Clip deleted'),
+        margin: const .fromLTRB(16, 0, 16, 68),
+        content: DivineSnackbarContainer(
+          label: context.l10n.videoRecorderClipDeletedMessage,
+        ),
       ),
     );
   }
@@ -71,7 +74,8 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                     opacity: hasClips && !isRecording ? 1 : 0,
                     child: DivineIconButton(
                       icon: .arrowCounterClockwise,
-                      semanticLabel: 'Delete last clip',
+                      semanticLabel:
+                          context.l10n.videoRecorderDeleteLastClipLabel,
                       type: .ghostSecondary,
                       size: .small,
                       onPressed: () => _deleteLastClip(context, ref),

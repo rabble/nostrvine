@@ -1725,6 +1725,9 @@
     "feedFailedToLoadVideos": "No se pudieron cargar los videos",
     "feedRetry": "Reintentar",
     "feedNoFollowedUsers": "Todavía no seguís a nadie.\nSeguí a alguien para ver sus videos acá.",
+    "feedForYouEmpty": "Tu feed Para ti está vacío.\nExplora videos y sigue a creadores para personalizarlo.",
+    "feedFollowingEmpty": "Aún no hay videos de personas que sigues.\nEncuentra creadores que te gusten y síguelos.",
+    "feedLatestEmpty": "Aún no hay videos nuevos.\nVuelve pronto.",
     "feedExploreVideos": "Explorar videos",
     "feedExternalVideoSlow": "Un video externo se carga lento",
     "feedSkip": "Saltar",
@@ -1764,6 +1767,31 @@
     "userSearchPrompt": "Buscar usuarios",
     "userSearchNoResults": "No se encontraron usuarios",
     "userSearchFailed": "Falló la búsqueda",
+    "userPickerSearchByName": "Buscar por nombre",
+    "userPickerFilterByNameHint": "Filtrar por nombre...",
+    "userPickerSearchByNameHint": "Buscar por nombre...",
+    "userPickerAlreadyAddedSemantics": "{name} ya fue agregado",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+        "name": {
+            "type": "String"
+        }
+        }
+    },
+    "userPickerSelectSemantics": "Seleccionar {name}",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+        "name": {
+            "type": "String"
+        }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "Tu gente está ahí fuera",
+    "userPickerEmptyFollowListBody": "Sigue a personas con las que conectas. Cuando te sigan de vuelta, pueden colaborar.",
+    "userPickerGoBack": "Volver",
+    "userPickerTypeNameToSearch": "Escribe un nombre para buscar",
+    "userPickerUnavailable": "La búsqueda de usuarios no está disponible. Inténtalo de nuevo más tarde.",
+    "userPickerSearchFailedTryAgain": "La búsqueda falló. Inténtalo de nuevo.",
     "forgotPasswordTitle": "Restablecer contraseña",
     "forgotPasswordDescription": "Ingresá tu email y te mandamos un link para restablecer la contraseña.",
     "forgotPasswordEmailLabel": "Dirección de email",
@@ -2329,6 +2357,12 @@
     "videoEditorStickers": "Stickers",
     "videoMetadataContentWarnings": "Advertencias de contenido",
     "videoMetadataExpiration": "Vencimiento",
+    "videoMetadataExpirationNotExpire": "No caduca",
+    "videoMetadataExpirationOneDay": "1 día",
+    "videoMetadataExpirationOneWeek": "1 semana",
+    "videoMetadataExpirationOneMonth": "1 mes",
+    "videoMetadataExpirationOneYear": "1 año",
+    "videoMetadataExpirationOneDecade": "1 década",
     "videoMetadataTags": "Etiquetas",
     "contentLabelAiGenerated": "Generado por IA",
     "contentLabelAlcohol": "Alcohol",
@@ -2523,5 +2557,300 @@
     "cameraPermissionAllowAccessTitle": "Permitir acceso a cámara y micrófono",
     "cameraPermissionAllowAccessDescription": "Esto te permite capturar y editar videos aquí mismo en la app, nada más.",
     "cameraPermissionContinue": "Continuar",
-    "cameraPermissionGoToSettings": "Ir a ajustes"
+    "cameraPermissionGoToSettings": "Ir a ajustes",
+    "videoRecorderWhySixSecondsTitle": "¿Por qué seis segundos?",
+    "videoRecorderWhySixSecondsSubtitle": "Los clips cortos dejan espacio para la espontaneidad. El formato de 6 segundos te ayuda a capturar momentos auténticos tal como ocurren.",
+    "videoRecorderWhySixSecondsButton": "¡Entendido!",
+    "videoRecorderAutosaveFoundTitle": "Encontramos trabajo en progreso",
+    "videoRecorderAutosaveFoundSubtitle": "¿Quieres continuar donde lo dejaste?",
+    "videoRecorderAutosaveContinueButton": "Sí, continuar",
+    "videoRecorderAutosaveDiscardButton": "No, comenzar un video nuevo",
+    "videoRecorderAutosaveRestoreFailure": "No se pudo restaurar tu borrador",
+    "videoRecorderStopRecordingTooltip": "Detener grabación",
+    "videoRecorderStartRecordingTooltip": "Iniciar grabación",
+    "videoRecorderRecordingTapToStopLabel": "Grabando. Toca en cualquier lugar para detener",
+    "videoRecorderTapToStartLabel": "Toca en cualquier lugar para iniciar la grabación",
+    "videoRecorderDeleteLastClipLabel": "Eliminar último clip",
+    "videoRecorderSwitchCameraLabel": "Cambiar cámara",
+    "videoRecorderToggleGridLabel": "Mostrar u ocultar cuadrícula",
+    "videoRecorderToggleGhostFrameLabel": "Mostrar u ocultar fotograma fantasma",
+    "videoRecorderGhostFrameEnabled": "Fotograma fantasma activado",
+    "videoRecorderGhostFrameDisabled": "Fotograma fantasma desactivado",
+    "videoRecorderClipDeletedMessage": "Clip eliminado",
+    "videoRecorderCloseLabel": "Cerrar grabador de video",
+    "videoRecorderContinueToEditorLabel": "Continuar al editor de video",
+    "videoRecorderCaptureCloseLabel": "Cerrar",
+    "videoRecorderCaptureNextLabel": "Siguiente",
+    "videoRecorderToggleFlashLabel": "Activar o desactivar flash",
+    "videoRecorderCycleTimerLabel": "Cambiar temporizador",
+    "videoRecorderToggleAspectRatioLabel": "Cambiar relación de aspecto",
+    "videoRecorderLibraryEmptyLabel": "Biblioteca de clips, sin clips",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Abrir biblioteca de clips, 1 clip} other{Abrir biblioteca de clips, {clipCount} clips}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorClipsLabel": "Clips",
+    "videoEditorTextLabel": "Texto",
+    "videoEditorDrawLabel": "Dibujar",
+    "videoEditorEffectsLabel": "Efectos",
+    "videoEditorAudioLabel": "Audio",
+    "videoEditorVolumeLabel": "Volumen",
+    "videoEditorAddTitle": "Agregar",
+    "videoEditorOpenClipsSemanticLabel": "Abrir editor de clips",
+    "videoEditorOpenAudioSemanticLabel": "Abrir editor de audio",
+    "videoEditorOpenTextSemanticLabel": "Abrir editor de texto",
+    "videoEditorOpenDrawSemanticLabel": "Abrir editor de dibujo",
+    "videoEditorOpenEffectsSemanticLabel": "Abrir editor de efectos",
+    "videoEditorSaveDraftTitle": "¿Guardar tu borrador?",
+    "videoEditorSaveDraftSubtitle": "Guarda tus ediciones para más tarde o descártalas y sal del editor.",
+    "videoEditorSaveDraftButton": "Guardar borrador",
+    "videoEditorDiscardChangesButton": "Descartar cambios",
+    "videoEditorKeepEditingButton": "Seguir editando",
+    "videoEditorDeleteLayerDropZone": "Zona para soltar y eliminar capa",
+    "videoEditorReleaseToDeleteLayer": "Suelta para eliminar la capa",
+    "videoEditorDoneLabel": "Listo",
+    "videoEditorPlayPauseSemanticLabel": "Reproducir o pausar video",
+    "videoEditorCropSemanticLabel": "Recortar",
+    "videoEditorCannotSplitProcessing": "No se puede dividir el clip mientras se está procesando. Espera, por favor.",
+    "videoEditorSplitPositionInvalid": "Posición de división no válida. Ambos clips deben durar al menos {minDurationMs} ms.",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorAddClipFromLibrary": "Agregar clip desde la biblioteca",
+    "videoEditorSaveSelectedClip": "Guardar clip seleccionado",
+    "videoEditorSplitClip": "Dividir clip",
+    "videoEditorSaveClip": "Guardar clip",
+    "videoEditorDeleteClip": "Eliminar clip",
+    "videoEditorClipSavedSuccess": "Clip guardado en la biblioteca",
+    "videoEditorClipSaveFailed": "No se pudo guardar el clip",
+    "videoEditorClipDeleted": "Clip eliminado",
+    "videoEditorColorPickerSemanticLabel": "Selector de color",
+    "videoEditorUndoSemanticLabel": "Deshacer",
+    "videoEditorRedoSemanticLabel": "Rehacer",
+    "videoEditorTextColorSemanticLabel": "Color de texto",
+    "videoEditorTextAlignmentSemanticLabel": "Alineación de texto",
+    "videoEditorTextBackgroundSemanticLabel": "Fondo de texto",
+    "videoEditorFontSemanticLabel": "Fuente",
+    "videoEditorNoStickersFound": "No se encontraron stickers",
+    "videoEditorNoStickersAvailable": "No hay stickers disponibles",
+    "videoEditorFailedLoadStickers": "No se pudieron cargar los stickers",
+    "videoEditorAdjustVolumeTitle": "Ajustar volumen",
+    "videoEditorRecordedAudioLabel": "Audio grabado",
+    "videoEditorCustomAudioLabel": "Audio personalizado",
+    "videoEditorPlaySemanticLabel": "Reproducir",
+    "videoEditorPauseSemanticLabel": "Pausar",
+    "videoEditorMuteAudioSemanticLabel": "Silenciar audio",
+    "videoEditorUnmuteAudioSemanticLabel": "Activar audio",
+    "videoEditorDeleteLabel": "Eliminar",
+    "videoEditorDeleteSelectedItemSemanticLabel": "Eliminar elemento seleccionado",
+    "videoEditorEditLabel": "Editar",
+    "videoEditorEditSelectedItemSemanticLabel": "Editar elemento seleccionado",
+    "videoEditorDuplicateLabel": "Duplicar",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "Duplicar elemento seleccionado",
+    "videoEditorSplitLabel": "Dividir",
+    "videoEditorSplitSelectedClipSemanticLabel": "Dividir clip seleccionado",
+    "videoEditorFinishTimelineEditingSemanticLabel": "Terminar edición de la línea de tiempo",
+    "videoEditorSortNewest": "Más nuevos",
+    "videoEditorSortLongest": "Más largos",
+    "videoEditorSortShortest": "Más cortos",
+    "videoEditorSortBySemanticLabel": "Ordenar por {option}. Toca para cambiar el orden",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorAudioPlayPreviewSemanticLabel": "Reproducir vista previa",
+    "videoEditorAudioPausePreviewSemanticLabel": "Pausar vista previa",
+    "videoEditorAudioUntitledSound": "Sonido sin título",
+    "videoEditorAudioSelectSoundSemanticLabel": "Seleccionar sonido",
+    "videoEditorAudioUntitled": "Sin título",
+    "videoEditorAudioAddAudio": "Agregar audio",
+    "videoEditorAudioNoSoundsAvailableTitle": "No hay sonidos disponibles",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "Los sonidos aparecerán aquí cuando los creadores compartan audio",
+    "videoEditorAudioNoSoundsFoundTitle": "No se encontraron sonidos",
+    "videoEditorAudioNoSoundsFoundSubtitle": "Prueba con otro término de búsqueda",
+    "videoEditorAudioFailedToLoadTitle": "No se pudieron cargar los sonidos",
+    "videoEditorDrawToolArrowSemanticLabel": "Herramienta flecha",
+    "videoEditorDrawToolEraserSemanticLabel": "Herramienta borrador",
+    "videoEditorDrawToolMarkerSemanticLabel": "Herramienta marcador",
+    "videoEditorDrawToolPencilSemanticLabel": "Herramienta lápiz",
+    "videoEditorLayerReorderLabel": "Reordenar capa {index}",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLayerReorderHint": "Mantén presionado para reordenar",
+    "videoEditorShowTimelineSemanticLabel": "Mostrar línea de tiempo",
+    "videoEditorHideTimelineSemanticLabel": "Ocultar línea de tiempo",
+    "videoEditorFeedPreviewContent": "Evita colocar contenido detrás de estas áreas.",
+    "videoEditorStickerSearchHint": "Buscar stickers...",
+    "videoEditorSelectFontSemanticLabel": "Seleccionar fuente",
+    "videoEditorFontUnknown": "Desconocida",
+    "videoEditorSplitPlayheadOutsideClip": "El cabezal de reproducción debe estar dentro del clip seleccionado para dividir.",
+    "videoEditorTimelineTrimStartSemanticLabel": "Recortar inicio",
+    "videoEditorTimelineTrimEndSemanticLabel": "Recortar fin",
+    "videoEditorTimelineTrimClipSemanticLabel": "Recortar clip",
+    "videoEditorTimelineTrimClipHint": "Arrastra los controles para ajustar la duración del clip",
+    "videoEditorTimelineDraggingClipSemanticLabel": "Arrastrando clip {index}",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineClipSemanticLabel": "Clip {index} de {total}, {duration} segundos",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineClipReorderHint": "Mantén presionado para reordenar",
+    "videoEditorTimelineClipMoveLeft": "Mover a la izquierda",
+    "videoEditorTimelineClipMoveRight": "Mover a la derecha",
+    "videoEditorTimelineLongPressToDragHint": "Mantén presionado para arrastrar",
+    "videoEditorVideoTimelineSemanticLabel": "Línea de tiempo de video",
+    "videoEditorTimelinePositionFormat": "{minutes} m {seconds} s",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorColorSelectedSemanticLabel": "{colorName}, seleccionado",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorCloseColorPickerSemanticLabel": "Cerrar selector de color",
+    "videoEditorPickColorTitle": "Elegir color",
+    "videoEditorConfirmColorSemanticLabel": "Confirmar color",
+    "videoEditorSaturationBrightnessSemanticLabel": "Saturación y brillo",
+    "videoEditorSaturationBrightnessValue": "Saturación {saturation} %, brillo {brightness} %",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorHueSemanticLabel": "Tono",
+    "videoEditorAddElementSemanticLabel": "Agregar elemento",
+    "videoEditorCloseSemanticLabel": "Cerrar",
+    "videoEditorDoneSemanticLabel": "Listo",
+    "videoEditorLevelSemanticLabel": "Nivel",
+    "videoMetadataBackSemanticLabel": "Atrás",
+    "videoMetadataDismissHelpDialogSemanticLabel": "Cerrar diálogo de ayuda",
+    "videoMetadataGotItButton": "¡Entendido!",
+    "videoMetadataLimitReachedWarning": "Se alcanzó el límite de 64 KB. Elimina parte del contenido para continuar.",
+    "videoMetadataExpirationLabel": "Expiración",
+    "videoMetadataSelectExpirationSemanticLabel": "Seleccionar tiempo de expiración",
+    "videoMetadataTitleLabel": "Título",
+    "videoMetadataDescriptionLabel": "Descripción",
+    "videoMetadataTagsLabel": "Etiquetas",
+    "videoMetadataDeleteTagSemanticLabel": "Eliminar",
+    "videoMetadataDeleteTagHint": "Eliminar etiqueta {tag}",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataContentWarningLabel": "Advertencia de contenido",
+    "videoMetadataSelectContentWarningsSemanticLabel": "Seleccionar advertencias de contenido",
+    "videoMetadataContentWarningSelectAllThatApply": "Selecciona todo lo que aplique a tu contenido",
+    "videoMetadataContentWarningDoneButton": "Listo",
+    "videoMetadataCollaboratorsLabel": "Colaboradores",
+    "videoMetadataAddCollaboratorSemanticLabel": "Agregar colaborador",
+    "videoMetadataCollaboratorsHelpTooltip": "Cómo funcionan los colaboradores",
+    "videoMetadataCollaboratorsCount": "{count}/{max} colaboradores",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataRemoveCollaboratorSemanticLabel": "Eliminar colaborador",
+    "videoMetadataCollaboratorsHelpMessage": "Los colaboradores se etiquetan como co-creadores en esta publicación. Solo puedes agregar personas a las que sigues mutuamente y aparecerán en los metadatos de la publicación al publicarla.",
+    "videoMetadataMutualFollowersSearchText": "Seguidores mutuos",
+    "videoMetadataMustMutuallyFollowSnackbar": "Necesitas seguir mutuamente a {name} para agregarlo como colaborador.",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataInspiredByLabel": "Inspirado en",
+    "videoMetadataSetInspiredBySemanticLabel": "Establecer inspirado en",
+    "videoMetadataInspiredByHelpTooltip": "Cómo funcionan los créditos de inspiración",
+    "videoMetadataInspiredByNone": "Ninguno",
+    "videoMetadataInspiredByHelpMessage": "Usa esto para dar atribución. El crédito de inspiración es diferente de los colaboradores: reconoce la influencia, pero no etiqueta a alguien como co-creador.",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "No se puede hacer referencia a este creador.",
+    "videoMetadataRemoveInspiredBySemanticLabel": "Eliminar inspirado en",
+    "videoMetadataPostDetailsTitle": "Detalles de la publicación",
+    "videoMetadataSavedToLibrarySnackbar": "Guardado en la biblioteca",
+    "videoMetadataFailedToSaveSnackbar": "No se pudo guardar",
+    "videoMetadataGoToLibraryButton": "Ir a la biblioteca",
+    "videoMetadataSaveForLaterSemanticLabel": "Botón guardar para más tarde",
+    "videoMetadataRenderingVideoHint": "Renderizando video...",
+    "videoMetadataSavingVideoHint": "Guardando video...",
+    "videoMetadataSaveToDraftsHint": "Guardar video en borradores y {destination}",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveForLaterButton": "Guardar para más tarde",
+    "videoMetadataPostSemanticLabel": "Botón publicar",
+    "videoMetadataPublishVideoHint": "Publicar video en el feed",
+    "videoMetadataFormNotReadyHint": "Completa el formulario para habilitar",
+    "videoMetadataPostButton": "Publicar",
+    "videoMetadataOpenPreviewSemanticLabel": "Abrir pantalla de vista previa de la publicación",
+    "videoMetadataShareTitle": "Compartir",
+    "videoMetadataVideoDetailsSubtitle": "Detalles del video",
+    "videoMetadataClassicDoneButton": "Listo",
+    "videoMetadataPlayPreviewSemanticLabel": "Reproducir vista previa",
+    "videoMetadataPausePreviewSemanticLabel": "Pausar vista previa",
+    "videoMetadataClosePreviewSemanticLabel": "Cerrar vista previa de video",
+    "videoMetadataNoneLabel": "Ninguno",
+    "videoMetadataRemoveSemanticLabel": "Eliminar"
 }

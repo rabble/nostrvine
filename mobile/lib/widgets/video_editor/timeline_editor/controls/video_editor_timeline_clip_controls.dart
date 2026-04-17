@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
@@ -111,8 +112,7 @@ class TimelineClipControls extends ConsumerWidget {
         localPosition > selectedClip.trimmedDuration) {
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          'Playhead must be within the selected clip to split.',
+          context.l10n.videoEditorSplitPlayheadOutsideClip,
         ),
       );
       return;
@@ -125,9 +125,9 @@ class TimelineClipControls extends ConsumerWidget {
       const minDuration = VideoEditorSplitService.minClipDuration;
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          'Split position invalid. Both clips must be at least '
-          '${minDuration.inMilliseconds}ms long.',
+          context.l10n.videoEditorSplitPositionInvalid(
+            minDuration.inMilliseconds,
+          ),
         ),
       );
       return;

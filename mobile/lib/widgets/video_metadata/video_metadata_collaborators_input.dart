@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
@@ -41,8 +42,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       children: [
         Semantics(
           button: true,
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: 'Add collaborator',
+          label: context.l10n.videoMetadataAddCollaboratorSemanticLabel,
           child: InkWell(
             onTap: canAddCollaborators
                 ? () => _addCollaborator(context, ref)
@@ -55,9 +55,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                   Row(
                     children: [
                       Text(
-                        // TODO(l10n): Replace with context.l10n
-                        //   when localization is added.
-                        'Collaborators',
+                        context.l10n.videoMetadataCollaboratorsLabel,
                         style: VineTheme.labelSmallFont(
                           color: VineTheme.onSurfaceVariant,
                         ),
@@ -67,7 +65,8 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                         // TODO(l10n): Replace with context.l10n
                         //   when localization is added.
                         onTap: () => _showHelpDialog(context),
-                        tooltip: 'How collaborators work',
+                        tooltip:
+                            context.l10n.videoMetadataCollaboratorsHelpTooltip,
                       ),
                     ],
                   ),
@@ -76,8 +75,11 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          '$totalCount/'
-                          '${VideoEditorNotifier.maxCollaborators} Collaborators',
+                          context.l10n.videoMetadataCollaboratorsCount(
+                            totalCount,
+                            VideoEditorNotifier.maxCollaborators,
+                          ),
+
                           style: VineTheme.titleMediumFont(
                             color: VineTheme.onSurface,
                           ),
@@ -118,8 +120,10 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                 ...collaborators.map(
                   (pubkey) => VideoMetadataUserChip.fromPubkey(
                     pubkey: pubkey,
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    removeLabel: 'Remove collaborator',
+
+                    removeLabel: context
+                        .l10n
+                        .videoMetadataRemoveCollaboratorSemanticLabel,
                     onRemove: () => ref
                         .read(videoEditorProvider.notifier)
                         .removeCollaborator(pubkey),
@@ -144,13 +148,9 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
-      body: const VideoMetadataHelpSheet(
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        title: 'Collaborators',
-        message:
-            'Collaborators are tagged as co-creators on this post. '
-            'You can only add people you mutually follow, and they appear '
-            'in the post metadata when published.',
+      body: VideoMetadataHelpSheet(
+        title: context.l10n.metadataCollaboratorsLabel,
+        message: context.l10n.videoMetadataCollaboratorsHelpMessage,
         assetPath: 'assets/stickers/sparkle.svg',
       ),
     );
@@ -167,9 +167,8 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
     final profile = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.mutualFollowsOnly,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      title: 'Add collaborator',
-      searchText: 'Mutual followers',
+      title: context.l10n.videoMetadataAddCollaboratorSemanticLabel,
+      searchText: context.l10n.videoMetadataMutualFollowersSearchText,
       excludePubkeys: excludePubkeys,
     );
 
@@ -192,11 +191,9 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
             elevation: 0,
             behavior: SnackBarBehavior.floating,
             content: DivineSnackbarContainer(
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              label:
-                  'You need to mutually follow '
-                  '${profile.bestDisplayName} to add '
-                  'them as a collaborator.',
+              label: context.l10n.videoMetadataMustMutuallyFollowSnackbar(
+                profile.bestDisplayName,
+              ),
             ),
           ),
         );

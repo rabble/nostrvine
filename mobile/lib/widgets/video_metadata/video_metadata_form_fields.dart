@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_content_warning_selector.dart';
@@ -68,9 +69,7 @@ class _VideoMetadataFormFieldsState
         // Title input field
         DivineTextField(
           controller: _titleController,
-          // TODO(l10n): Replace with context.l10n when localization is
-          // added.
-          labelText: 'Title',
+          labelText: context.l10n.videoMetadataTitleLabel,
           focusNode: _titleFocusNode,
           textInputAction: .next,
           minLines: 1,
@@ -85,9 +84,7 @@ class _VideoMetadataFormFieldsState
         // Description input field
         DivineTextField(
           controller: _descriptionController,
-          // TODO(l10n): Replace with context.l10n when localization is
-          // added.
-          labelText: 'Description',
+          labelText: context.l10n.videoMetadataDescriptionLabel,
           focusNode: _descriptionFocusNode,
           keyboardType: .multiline,
           textInputAction: .newline,

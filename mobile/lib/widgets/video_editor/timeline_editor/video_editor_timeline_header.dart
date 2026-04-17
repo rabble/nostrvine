@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:time_formatter/time_formatter.dart';
 
@@ -66,7 +67,9 @@ class _PlayPauseButton extends StatelessWidget {
       icon: isPlaying ? .pauseFill : .playFill,
       size: .small,
       type: .ghost,
-      semanticLabel: isPlaying ? 'Pause' : 'Play',
+      semanticLabel: isPlaying
+          ? context.l10n.videoEditorPauseSemanticLabel
+          : context.l10n.videoEditorPlaySemanticLabel,
       onPressed: () => context.read<VideoEditorMainBloc>().add(
         const VideoEditorPlaybackToggleRequested(),
       ),
@@ -87,7 +90,9 @@ class _MuteButton extends StatelessWidget {
       icon: isMuted ? .speakerSimpleX : .speakerHigh,
       size: .small,
       type: .ghost,
-      semanticLabel: isMuted ? 'Unmute audio' : 'Mute audio',
+      semanticLabel: isMuted
+          ? context.l10n.videoEditorUnmuteAudioSemanticLabel
+          : context.l10n.videoEditorMuteAudioSemanticLabel,
       onPressed: () => context.read<VideoEditorMainBloc>().add(
         const VideoEditorMuteToggled(),
       ),
@@ -153,7 +158,7 @@ class _UndoButton extends StatelessWidget {
       icon: .arrowUUpLeft,
       size: .small,
       type: .ghost,
-      semanticLabel: 'Undo',
+      semanticLabel: context.l10n.videoEditorUndoSemanticLabel,
       onPressed: canUndo ? () => _performUndo(context) : null,
     );
   }
@@ -176,7 +181,7 @@ class _RedoButton extends StatelessWidget {
       icon: .arrowUUpRight,
       size: .small,
       type: .ghost,
-      semanticLabel: 'Redo',
+      semanticLabel: context.l10n.videoEditorRedoSemanticLabel,
       onPressed: canRedo ? () => _performRedo(context) : null,
     );
   }

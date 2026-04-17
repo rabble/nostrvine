@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_extensions.dart';
 
 /// Inline font selector that replaces the keyboard.
@@ -74,9 +75,8 @@ class _FontListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Font',
-      value: font.displayName,
+      label: context.l10n.videoEditorFontSemanticLabel,
+      value: font.localizedDisplayName(context.l10n),
       selected: isSelected,
       button: true,
       child: GestureDetector(
@@ -88,7 +88,7 @@ class _FontListItem extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  font.displayName,
+                  font.localizedDisplayName(context.l10n),
                   overflow: .ellipsis,
                   style: font(
                     fontSize: 24,

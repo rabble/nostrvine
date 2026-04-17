@@ -19,6 +19,15 @@ extension TextEditorFont on TextFont {
         .replaceAll(RegExp(r'_regular$', caseSensitive: false), '')
         .replaceAll('_', ' ');
   }
+
+  /// Returns the localized display name, using [l10n] for the unknown fallback.
+  String localizedDisplayName(AppLocalizations l10n) {
+    final fontFamily = this().fontFamily;
+    if (fontFamily == null) return l10n.videoEditorFontUnknown;
+    return fontFamily
+        .replaceAll(RegExp(r'_regular$', caseSensitive: false), '')
+        .replaceAll('_', ' ');
+  }
 }
 
 /// Extension on [TextAlign] for text editor UI purposes.

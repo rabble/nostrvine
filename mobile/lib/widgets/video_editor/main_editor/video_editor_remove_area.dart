@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 class VideoEditorRemoveArea extends ConsumerWidget {
@@ -19,8 +20,8 @@ class VideoEditorRemoveArea extends ConsumerWidget {
       child: Semantics(
         liveRegion: true,
         label: isLayerOverRemoveArea
-            ? 'Release to delete layer'
-            : 'Delete layer drop zone',
+            ? context.l10n.videoEditorReleaseToDeleteLayer
+            : context.l10n.videoEditorDeleteLayerDropZone,
         child: AnimatedScale(
           key: scope.removeAreaKey,
           scale: isLayerOverRemoveArea ? 1.4 : 1.0,
