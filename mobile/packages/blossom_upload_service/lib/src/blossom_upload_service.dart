@@ -688,6 +688,7 @@ class BlossomUploadService {
     var currentSession = session;
     final fileReader = await file.open();
     final totalChunks = (fileSize / currentSession.chunkSize).ceil();
+    final startOffset = currentSession.nextOffset;
     var chunkIndex = 0;
     final uploadStopwatch = Stopwatch()..start();
 
@@ -695,7 +696,8 @@ class BlossomUploadService {
       '📤 Chunk upload starting: '
       '${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB '
       'in ~$totalChunks chunks '
-      '(${(currentSession.chunkSize / 1024).toStringAsFixed(0)}KB each)',
+      '(${(currentSession.chunkSize / 1024).toStringAsFixed(0)}KB each)'
+      '${startOffset > 0 ? ', resuming from offset $startOffset' : ''}',
       name: 'BlossomUploadService',
       category: LogCategory.video,
     );
@@ -717,8 +719,9 @@ class BlossomUploadService {
         // Chunk bytes are already in memory so retries are cheap.
         late Response<dynamic> response;
         var chunkAttempt = 0;
-        final chunkStopwatch = Stopwatch()..start();
+        late Stopwatch chunkStopwatch;
         while (true) {
+          chunkStopwatch = Stopwatch()..start();
           try {
             response = await dio.put<dynamic>(
               currentSession.uploadUrl,
@@ -803,12 +806,17 @@ class BlossomUploadService {
 
       uploadStopwatch.stop();
       final totalMs = uploadStopwatch.elapsedMilliseconds;
+      final bytesThisSession = fileSize - startOffset;
       final avgSpeed = totalMs > 0
-          ? (fileSize / 1024 / 1024 / (totalMs / 1000)).toStringAsFixed(2)
+          ? (bytesThisSession / 1024 / 1024 / (totalMs / 1000)).toStringAsFixed(
+              2,
+            )
           : '?';
       Log.info(
-        '📤 Chunk upload complete: $chunkIndex chunks, '
-        '${(totalMs / 1000).toStringAsFixed(1)}s total, '
+        '📤 Chunk upload complete: '
+        '$chunkIndex chunks this session '
+        '($totalChunks total), '
+        '${(totalMs / 1000).toStringAsFixed(1)}s, '
         '${avgSpeed}MB/s avg',
         name: 'BlossomUploadService',
         category: LogCategory.video,
