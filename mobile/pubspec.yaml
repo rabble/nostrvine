@@ -40,6 +40,7 @@ workspace:
   - packages/follow_repository
   - packages/funnelcake_api_client
   - packages/hashtag_repository
+  - packages/hls_auth_web_player
   - packages/image_metadata_stripper
   - packages/invite_api_client
   - packages/keycast_flutter
