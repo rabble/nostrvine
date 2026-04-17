@@ -146,6 +146,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
   late final StreamController<List<VideoEvent>> _videosStreamController;
+  late final StreamController<bool> _hasMoreStreamController;
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -167,6 +168,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
   void initState() {
     super.initState();
     _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+    _hasMoreStreamController = StreamController<bool>.broadcast();
     initPagination();
   }
 
@@ -175,6 +177,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
     disposePagination();
     _scrollController.dispose();
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -184,6 +187,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
     ref.listen(classicVinesFeedProvider, (previous, next) {
       if (next.hasValue && next.value != null) {
         _videosStreamController.add(next.value!.videos);
+        _hasMoreStreamController.add(next.value!.hasMoreContent);
       }
     });
     final classicVinesFeedNotifier = ref.read(
@@ -224,6 +228,9 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
                   ),
                   initialIndex: index,
                   onLoadMore: classicVinesFeedNotifier.loadMore,
+                  hasMoreStream: _hasMoreStreamController.stream.startWith(
+                    widget.hasMoreContent,
+                  ),
                   contextTitle: 'Classics',
                   trafficSource: ViewTrafficSource.discoveryClassic,
                 ),

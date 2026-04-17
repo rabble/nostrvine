@@ -24,6 +24,8 @@ reporter: expanded
 tags:
   integration:
     timeout: 10m
+  service:
+    timeout: 10m
 
 # Test randomization
 shuffle: false

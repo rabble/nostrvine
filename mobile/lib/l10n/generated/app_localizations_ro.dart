@@ -1241,6 +1241,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionLike => 'Apreciază videoclipul';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Activează avansarea automată';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Dezactivează avansarea automată';
+
+  @override
   String get videoActionRemoveRepost => 'Elimină redistribuirea';
 
   @override
@@ -3445,14 +3454,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Feedul tău Pentru tine este gol.\nExplorează videoclipuri și urmărește creatori pentru a-l modela.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Încă nu există videoclipuri de la persoanele pe care le urmărești.\nGăsește creatori care îți plac și urmărește-i.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty =>
+      'Încă nu există videoclipuri noi.\nRevino curând.';
 
   @override
   String get feedExploreVideos => 'Explorează videoclipuri';
@@ -3629,13 +3639,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navMyProfile => 'Profilul meu';
 
   @override
-  String get navSearch => 'Caută';
-
-  @override
   String get navNotifications => 'Notificări';
-
-  @override
-  String get navSearchTooltip => 'Caută';
 
   @override
   String get navOpenCamera => 'Deschide camera';
@@ -4949,4 +4953,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Mergi la setări';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

@@ -13,6 +13,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;
+import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -1060,12 +1061,12 @@ String? _extractSha256FromUrl(String url) {
     final uri = Uri.parse(url);
     final pathSegments = uri.pathSegments;
 
-    // The last path segment is often the sha256 hash
-    if (pathSegments.isNotEmpty) {
-      final lastSegment = pathSegments.last;
+    // Check from the end because Divine derivative URLs can be
+    // /<sha256>/720p.mp4 or a bare /<sha256>.
+    for (final segment in pathSegments.reversed) {
       // SHA256 hashes are 64 hex characters
       // Also handle filenames like "hash.mp4" by stripping extension
-      final cleanSegment = lastSegment.split('.').first;
+      final cleanSegment = segment.split('.').first;
       if (cleanSegment.length == 64 &&
           RegExp(r'^[a-fA-F0-9]+$').hasMatch(cleanSegment)) {
         return cleanSegment.toLowerCase();
@@ -1089,10 +1090,10 @@ Map<String, String>? _computeAuthHeadersSync(
     category: LogCategory.video,
   );
 
-  final blossomAuthService = ref.read(blossomAuthServiceProvider);
+  final mediaViewerAuthService = ref.read(mediaViewerAuthServiceProvider);
 
   // If we can't create headers (not authenticated), return null
-  if (!blossomAuthService.canCreateHeaders) {
+  if (!mediaViewerAuthService.canCreateHeaders) {
     Log.debug(
       '🔐 [AUTH-SYNC] Cannot create headers (not authenticated) - returning null',
       name: 'IndividualVideoController',
@@ -1133,67 +1134,36 @@ Map<String, String>? _computeAuthHeadersSync(
   return null;
 }
 
+/// Builds viewer auth headers for a legacy video playback request.
+Future<Map<String, String>?> createViewerAuthHeadersForVideo({
+  required MediaViewerAuthService mediaViewerAuthService,
+  required VideoControllerParams params,
+}) {
+  final sha256 = _resolveSha256ForParams(params);
+  final serverUrl = _extractServerUrl(params.videoUrl);
+  return mediaViewerAuthService.createAuthHeaders(
+    sha256Hash: sha256,
+    url: params.videoUrl,
+    serverUrl: serverUrl,
+  );
+}
+
 /// Generate auth headers asynchronously and cache them for future use
 Future<void> _generateAuthHeadersAsync(
   Ref ref,
   VideoControllerParams params,
 ) async {
   try {
-    final blossomAuthService = ref.read(blossomAuthServiceProvider);
-
-    // Try to get sha256 from video event first
-    String? sha256;
-    if (params.videoEvent != null) {
-      final videoEvent = params.videoEvent as dynamic;
-      sha256 = videoEvent.sha256 as String?;
-    }
-
-    // If no sha256 in event, try to extract from URL
-    // CDN URLs often have format: https://cdn.domain.com/{sha256hash}
-    if (sha256 == null || sha256.isEmpty) {
-      sha256 = _extractSha256FromUrl(params.videoUrl);
-      if (sha256 != null) {
-        Log.debug(
-          '🔐 Extracted sha256 from URL: ${sha256.substring(0, 8)}...',
-          name: 'IndividualVideoController',
-          category: LogCategory.video,
-        );
-      }
-    }
-
-    if (sha256 == null || sha256.isEmpty) {
-      Log.debug(
-        '🔐 No sha256 available for video ${params.videoId} - cannot generate auth header',
-        name: 'IndividualVideoController',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    // Extract server URL from video URL
-    String? serverUrl;
-    try {
-      final uri = Uri.parse(params.videoUrl);
-      serverUrl = '${uri.scheme}://${uri.host}';
-    } catch (e) {
-      Log.warning(
-        'Failed to parse video URL for server: $e',
-        name: 'IndividualVideoController',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    // Generate auth header
-    final authHeader = await blossomAuthService.createGetAuthHeader(
-      sha256Hash: sha256,
-      serverUrl: serverUrl,
+    final mediaViewerAuthService = ref.read(mediaViewerAuthServiceProvider);
+    final authHeaders = await createViewerAuthHeadersForVideo(
+      mediaViewerAuthService: mediaViewerAuthService,
+      params: params,
     );
 
-    if (authHeader != null) {
+    if (authHeaders != null) {
       // Cache the header for future use
       final cache = {...ref.read(authHeadersCacheProvider)};
-      cache[params.videoId] = {'Authorization': authHeader};
+      cache[params.videoId] = authHeaders;
       ref.read(authHeadersCacheProvider.notifier).state = cache;
 
       Log.info(
@@ -1232,67 +1202,27 @@ Future<dynamic> _cacheVideoWithAuth(
   // Check if we should add auth headers
   Map<String, String>? authHeaders;
 
-  final blossomAuthService = ref.read(blossomAuthServiceProvider);
+  final mediaViewerAuthService = ref.read(mediaViewerAuthServiceProvider);
 
   Log.debug(
-    '🔐 Auth check: canCreate=${blossomAuthService.canCreateHeaders}',
+    '🔐 Auth check: canCreate=${mediaViewerAuthService.canCreateHeaders}',
     name: 'IndividualVideoController',
     category: LogCategory.video,
   );
 
   // If user is authenticated, create auth header for all CDN requests
-  if (blossomAuthService.canCreateHeaders) {
-    // Try to get sha256 from video event first
-    String? sha256;
-    if (params.videoEvent != null) {
-      final videoEvent = params.videoEvent as dynamic;
-      sha256 = videoEvent.sha256 as String?;
-    }
-
-    // If no sha256 in event, try to extract from URL
-    if (sha256 == null || sha256.isEmpty) {
-      sha256 = _extractSha256FromUrl(params.videoUrl);
-    }
-
-    Log.debug(
-      '🔐 Video sha256: ${sha256 != null ? '${sha256.substring(0, 8)}...' : 'null'}',
-      name: 'IndividualVideoController',
-      category: LogCategory.video,
+  if (mediaViewerAuthService.canCreateHeaders) {
+    authHeaders = await createViewerAuthHeadersForVideo(
+      mediaViewerAuthService: mediaViewerAuthService,
+      params: params,
     );
 
-    if (sha256 != null && sha256.isNotEmpty) {
-      Log.debug(
-        '🔐 Creating Blossom auth header for video cache request',
+    if (authHeaders != null) {
+      Log.info(
+        '✅ Added viewer auth header for video cache',
         name: 'IndividualVideoController',
         category: LogCategory.video,
       );
-
-      // Extract server URL from video URL for auth
-      String? serverUrl;
-      try {
-        final uri = Uri.parse(params.videoUrl);
-        serverUrl = '${uri.scheme}://${uri.host}';
-      } catch (e) {
-        Log.warning(
-          'Failed to parse video URL for server: $e',
-          name: 'IndividualVideoController',
-          category: LogCategory.video,
-        );
-      }
-
-      final authHeader = await blossomAuthService.createGetAuthHeader(
-        sha256Hash: sha256,
-        serverUrl: serverUrl,
-      );
-
-      if (authHeader != null) {
-        authHeaders = {'Authorization': authHeader};
-        Log.info(
-          '✅ Added Blossom auth header for video cache',
-          name: 'IndividualVideoController',
-          category: LogCategory.video,
-        );
-      }
     }
   }
 
@@ -1310,6 +1240,50 @@ Future<dynamic> _cacheVideoWithAuth(
       tracker.markVideoBroken(params.videoId, 'Cache download failed: $e');
     }
     rethrow;
+  }
+}
+
+String? _resolveSha256ForParams(VideoControllerParams params) {
+  String? sha256;
+  if (params.videoEvent != null) {
+    final videoEvent = params.videoEvent as dynamic;
+    sha256 = videoEvent.sha256 as String?;
+  }
+
+  if (sha256 == null || sha256.isEmpty) {
+    sha256 = _extractSha256FromUrl(params.videoUrl);
+    if (sha256 != null) {
+      Log.debug(
+        '🔐 Extracted sha256 from URL: ${sha256.substring(0, 8)}...',
+        name: 'IndividualVideoController',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  if (sha256 == null || sha256.isEmpty) {
+    Log.debug(
+      '🔐 No sha256 available for video ${params.videoId} - falling back to URL-only viewer auth',
+      name: 'IndividualVideoController',
+      category: LogCategory.video,
+    );
+    return null;
+  }
+
+  return sha256;
+}
+
+String? _extractServerUrl(String videoUrl) {
+  try {
+    final uri = Uri.parse(videoUrl);
+    return '${uri.scheme}://${uri.host}';
+  } catch (e) {
+    Log.warning(
+      'Failed to parse video URL for server: $e',
+      name: 'IndividualVideoController',
+      category: LogCategory.video,
+    );
+    return null;
   }
 }
 

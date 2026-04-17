@@ -59,6 +59,7 @@ class _VideoSearchGridState extends State<_VideoSearchGrid>
     with ScrollPaginationMixin {
   final _scrollController = ScrollController();
   late final StreamController<List<VideoEvent>> _videosStreamController;
+  late final StreamController<bool> _hasMoreStreamController;
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -76,6 +77,7 @@ class _VideoSearchGridState extends State<_VideoSearchGrid>
     super.initState();
     initPagination();
     _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+    _hasMoreStreamController = StreamController<bool>.broadcast();
   }
 
   @override
@@ -84,12 +86,16 @@ class _VideoSearchGridState extends State<_VideoSearchGrid>
     if (oldWidget.videos != widget.videos) {
       _videosStreamController.add(widget.videos);
     }
+    if (oldWidget.hasMore != widget.hasMore) {
+      _hasMoreStreamController.add(widget.hasMore);
+    }
   }
 
   @override
   void dispose() {
     disposePagination();
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     _scrollController.dispose();
     super.dispose();
   }
@@ -102,6 +108,9 @@ class _VideoSearchGridState extends State<_VideoSearchGrid>
         initialIndex: index,
         onLoadMore: () => context.read<VideoSearchBloc>().add(
           const VideoSearchLoadMore(),
+        ),
+        hasMoreStream: _hasMoreStreamController.stream.startWith(
+          widget.hasMore,
         ),
         contextTitle: 'Search Results',
         trafficSource: ViewTrafficSource.search,

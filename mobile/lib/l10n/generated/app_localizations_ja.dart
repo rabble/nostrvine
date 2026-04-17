@@ -1124,6 +1124,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoActionLike => 'いいね';
 
   @override
+  String get videoActionAutoLabel => '自動';
+
+  @override
+  String get videoActionEnableAutoAdvance => '自動送りをオンにする';
+
+  @override
+  String get videoActionDisableAutoAdvance => '自動送りをオフにする';
+
+  @override
   String get videoActionRemoveRepost => 'リポストを取り消す';
 
   @override
@@ -3171,14 +3180,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'おすすめフィードはまだ空っぽ。\n動画を見たりクリエイターをフォローしてカスタマイズしよう。';
 
   @override
-  String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+  String get feedFollowingEmpty => 'フォロー中の人の動画はまだないよ。\n好きなクリエイターを見つけてフォローしよう。';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => '新しい動画はまだないよ。\nまた後でチェックしてね。';
 
   @override
   String get feedExploreVideos => '動画を探しに行こう';
@@ -3349,13 +3357,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get navMyProfile => 'マイプロフィール';
 
   @override
-  String get navSearch => '検索';
-
-  @override
   String get navNotifications => '通知';
-
-  @override
-  String get navSearchTooltip => '検索';
 
   @override
   String get navOpenCamera => 'カメラを開く';
@@ -4614,4 +4616,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => '設定に移動';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

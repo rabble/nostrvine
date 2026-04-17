@@ -27,6 +27,7 @@ class WebVideoPlayer extends StatefulWidget {
     this.fit = BoxFit.cover,
     this.headers = const {},
     this.onInitialized,
+    this.onDisposed,
     this.onError,
     this.initializeTimeout = const Duration(seconds: 8),
     this.controllerFactory = defaultWebVideoPlayerControllerFactory,
@@ -50,6 +51,12 @@ class WebVideoPlayer extends StatefulWidget {
 
   /// Called when the video controller is initialized.
   final ValueChanged<VideoPlayerController>? onInitialized;
+
+  /// Called when the underlying [VideoPlayerController] has been disposed.
+  ///
+  /// Use this to release any external references that mirror the controller
+  /// (for example, feed-level caches) so they don't leak.
+  final VoidCallback? onDisposed;
 
   /// Called when an error occurs.
   final VoidCallback? onError;
@@ -122,10 +129,14 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
   }
 
   void _disposeController() {
-    _controller?.dispose();
+    final controller = _controller;
     _controller = null;
     _isInitialized = false;
     _hasError = false;
+    if (controller != null) {
+      controller.dispose();
+      widget.onDisposed?.call();
+    }
   }
 
   /// Plays the video.

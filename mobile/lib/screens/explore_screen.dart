@@ -449,15 +449,13 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
           // Search bar shown when newSearch feature flag is enabled
           SafeArea(
             bottom: false,
-            child: ref.watch(isFeatureEnabledProvider(FeatureFlag.newSearch))
-                ? Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: DivineSearchBar(
-                      controller: _searchController,
-                      hintText: 'Search...',
-                    ),
-                  )
-                : const SizedBox.shrink(),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: DivineSearchBar(
+                controller: _searchController,
+                hintText: 'Search...',
+              ),
+            ),
           ),
           // Tab bar + content with rounded top corners
           Expanded(

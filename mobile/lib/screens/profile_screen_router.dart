@@ -36,6 +36,7 @@ import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/vine_bottom_nav.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -836,12 +837,15 @@ class _ProfilePooledFeedView extends ConsumerStatefulWidget {
 class _ProfilePooledFeedViewState
     extends ConsumerState<_ProfilePooledFeedView> {
   late final StreamController<List<VideoEvent>> _streamController;
+  late final StreamController<bool> _hasMoreController;
   List<VideoEvent>? _lastVideos;
+  bool? _lastHasMore;
 
   @override
   void initState() {
     super.initState();
     _streamController = StreamController<List<VideoEvent>>.broadcast();
+    _hasMoreController = StreamController<bool>.broadcast();
     // Seed with initial videos so the BLoC receives them on first subscription.
     _pushVideos(widget.videos);
   }
@@ -857,6 +861,7 @@ class _ProfilePooledFeedViewState
   @override
   void dispose() {
     _streamController.close();
+    _hasMoreController.close();
     super.dispose();
   }
 
@@ -867,6 +872,12 @@ class _ProfilePooledFeedViewState
     if (!_streamController.isClosed) _streamController.add(videos);
   }
 
+  void _pushHasMore(bool hasMore) {
+    if (_lastHasMore == hasMore) return;
+    _lastHasMore = hasMore;
+    if (!_hasMoreController.isClosed) _hasMoreController.add(hasMore);
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch feed state only for the hasMoreContent flag; do not push to
@@ -875,6 +886,8 @@ class _ProfilePooledFeedViewState
         .watch(profileFeedProvider(widget.userIdHex))
         .asData
         ?.value;
+    final hasMoreContent = feedState?.hasMoreContent ?? false;
+    _pushHasMore(hasMoreContent);
     final safeIndex = widget.videoIndex.clamp(0, widget.videos.length - 1);
 
     return PooledFullscreenVideoFeedScreen(
@@ -882,11 +895,12 @@ class _ProfilePooledFeedViewState
       videosStream: _streamController.stream,
       initialIndex: safeIndex,
       trafficSource: ViewTrafficSource.profile,
-      onLoadMore: (feedState?.hasMoreContent ?? false)
+      onLoadMore: hasMoreContent
           ? () => ref
                 .read(profileFeedProvider(widget.userIdHex).notifier)
                 .loadMore()
           : null,
+      hasMoreStream: _hasMoreController.stream.startWith(hasMoreContent),
       onPageChanged: widget.onPageChanged,
     );
   }
