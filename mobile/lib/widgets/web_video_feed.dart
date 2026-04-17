@@ -2,6 +2,7 @@
 // ABOUTME: Replaces PooledVideoFeed on web where media_kit is not available
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_policy.dart';
@@ -102,15 +103,31 @@ class WebVideoFeedState extends State<WebVideoFeed> {
   late PageController _pageController;
   int _currentIndex = 0;
 
-  // Track web player keys to control playback
+  // Track web player keys to control playback.
   final Map<int, GlobalKey<WebVideoPlayerState>> _playerKeys = {};
-  final Map<int, VideoPlayerController> _controllers = {};
+
+  // Exposed as a [ValueNotifier] so only overlay widgets that care about the
+  // initialized controller rebuild when a controller becomes available,
+  // instead of the entire feed's itemBuilder.
+  final ValueNotifier<Map<int, VideoPlayerController>> _controllers =
+      ValueNotifier<Map<int, VideoPlayerController>>(
+        const <int, VideoPlayerController>{},
+      );
+
   final Map<int, VoidCallback> _controllerListeners = {};
   final Map<int, Duration> _lastPositions = {};
   final Map<int, bool> _armedForCompletion = {};
 
   int get currentIndex => _currentIndex;
   int get videoCount => widget.videos.length;
+
+  /// Number of tracked controllers. Exposed for test instrumentation.
+  @visibleForTesting
+  int get debugControllerCount => _controllers.value.length;
+
+  /// Number of tracked player keys. Exposed for test instrumentation.
+  @visibleForTesting
+  int get debugPlayerKeyCount => _playerKeys.length;
 
   @override
   void initState() {
@@ -120,12 +137,57 @@ class WebVideoFeedState extends State<WebVideoFeed> {
   }
 
   @override
+  void didUpdateWidget(WebVideoFeed oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!listEquals(oldWidget.videos, widget.videos)) {
+      _pruneStaleEntries();
+    }
+  }
+
+  @override
   void dispose() {
-    for (final entry in _controllers.entries) {
+    for (final entry in _controllers.value.entries) {
       _detachCompletionListener(entry.key, entry.value);
     }
+    _controllers.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  /// Removes tracked entries for indices outside the current video list.
+  void _pruneStaleEntries() {
+    final validCount = widget.videos.length;
+    _playerKeys.removeWhere((index, _) => index >= validCount);
+    final current = _controllers.value;
+    final pruned = <int, VideoPlayerController>{
+      for (final entry in current.entries)
+        if (entry.key < validCount) entry.key: entry.value,
+    };
+    if (pruned.length != current.length) {
+      // Detach listeners for evicted controllers before dropping the
+      // reference so we don't leak the position callback.
+      for (final entry in current.entries) {
+        if (entry.key >= validCount) {
+          _detachCompletionListener(entry.key, entry.value);
+        }
+      }
+      _controllers.value = pruned;
+    }
+  }
+
+  /// Removes tracked entries when a [WebVideoPlayer] at [index] disposes.
+  ///
+  /// Drops both the controller reference and the GlobalKey so we don't
+  /// retain disposed controllers across scroll. If the user scrolls back
+  /// to this index, the next [_getPlayerKey] call mints a fresh key.
+  void _onPlayerDisposed(int index) {
+    _playerKeys.remove(index);
+    final current = _controllers.value;
+    final controller = current[index];
+    if (controller == null) return;
+    _detachCompletionListener(index, controller);
+    final next = Map<int, VideoPlayerController>.of(current)..remove(index);
+    _controllers.value = next;
   }
 
   Future<void> animateToPage(int index) async {
@@ -171,7 +233,7 @@ class WebVideoFeedState extends State<WebVideoFeed> {
     int index,
     VideoPlayerController controller,
   ) {
-    final previousController = _controllers[index];
+    final previousController = _controllers.value[index];
     if (identical(previousController, controller) &&
         _controllerListeners.containsKey(index)) {
       return;
@@ -181,7 +243,10 @@ class WebVideoFeedState extends State<WebVideoFeed> {
       _detachCompletionListener(index, previousController);
     }
 
-    _controllers[index] = controller;
+    final next = Map<int, VideoPlayerController>.of(_controllers.value)
+      ..[index] = controller;
+    _controllers.value = next;
+
     _lastPositions[index] = controller.value.position;
     _armedForCompletion[index] = false;
 
@@ -258,40 +323,106 @@ class WebVideoFeedState extends State<WebVideoFeed> {
 
         final playerKey = _getPlayerKey(index);
 
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            // Video layer
-            WebVideoPlayer(
-              key: playerKey,
-              url: videoUrl,
-              autoPlay: isActive,
-              headers: widget.headers,
-              controllerFactory: widget.controllerFactory,
-              onInitialized: (controller) {
-                if (!mounted) return;
-                setState(() {
-                  _attachCompletionListener(index, controller);
-                });
-              },
-              onError: () {
-                if (!mounted) return;
-                widget.onErrored?.call(index);
-              },
-            ),
-            // Custom overlay layer
-            if (widget.itemBuilder != null)
-              widget.itemBuilder!(
+        return _WebVideoFeedItem(
+          video: video,
+          index: index,
+          isActive: isActive,
+          videoUrl: videoUrl,
+          playerKey: playerKey,
+          headers: widget.headers,
+          controllerFactory: widget.controllerFactory,
+          controllersListenable: _controllers,
+          itemBuilder: widget.itemBuilder,
+          onInitialized: (controller) {
+            if (!mounted) return;
+            setState(() {
+              _attachCompletionListener(index, controller);
+            });
+          },
+          onDisposed: () {
+            if (!mounted) return;
+            _onPlayerDisposed(index);
+          },
+          onError: () {
+            if (!mounted) return;
+            widget.onErrored?.call(index);
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Per-item content of the web video feed.
+///
+/// Splits the stack so that the overlay subtree rebuilds via
+/// [ValueListenableBuilder] when its controller becomes available, instead
+/// of rebuilding the entire [PageView.builder] via `setState` on the parent.
+class _WebVideoFeedItem extends StatelessWidget {
+  const _WebVideoFeedItem({
+    required this.video,
+    required this.index,
+    required this.isActive,
+    required this.videoUrl,
+    required this.playerKey,
+    required this.headers,
+    required this.controllerFactory,
+    required this.controllersListenable,
+    required this.itemBuilder,
+    required this.onInitialized,
+    required this.onDisposed,
+    required this.onError,
+  });
+
+  final VideoEvent video;
+  final int index;
+  final bool isActive;
+  final String videoUrl;
+  final GlobalKey<WebVideoPlayerState> playerKey;
+  final Map<String, String> headers;
+  final WebVideoPlayerControllerFactory controllerFactory;
+  final ValueListenable<Map<int, VideoPlayerController>> controllersListenable;
+  final WebVideoFeedItemBuilder? itemBuilder;
+  final ValueChanged<VideoPlayerController> onInitialized;
+  final VoidCallback onDisposed;
+  final VoidCallback onError;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        WebVideoPlayer(
+          key: playerKey,
+          url: videoUrl,
+          autoPlay: isActive,
+          headers: headers,
+          controllerFactory: controllerFactory,
+          onInitialized: onInitialized,
+          onDisposed: onDisposed,
+          onError: onError,
+        ),
+        if (itemBuilder != null)
+          ValueListenableBuilder<Map<int, VideoPlayerController>>(
+            valueListenable: controllersListenable,
+            builder: (context, controllers, _) {
+              // Only expose the controller once it has initialized so
+              // overlays never receive an uninitialized controller.
+              final tracked = controllers[index];
+              final controller =
+                  (tracked != null && tracked.value.isInitialized)
+                  ? tracked
+                  : null;
+              return itemBuilder!(
                 context,
                 video,
                 index,
                 isActive: isActive,
-                controller:
-                    _controllers[index] ?? playerKey.currentState?.controller,
-              ),
-          ],
-        );
-      },
+                controller: controller,
+              );
+            },
+          ),
+      ],
     );
   }
 }
