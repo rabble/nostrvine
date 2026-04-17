@@ -6,6 +6,9 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+const _logName = 'PooledAgeRestrictedRetry';
 
 /// Verifies access to an age-restricted pooled video, then retries playback
 /// with viewer auth headers on the active pooled controller item.
@@ -17,6 +20,12 @@ Future<void> retryAgeRestrictedPooledVideo({
 }) async {
   final videoUrl = video.videoUrl;
   if (videoUrl == null || videoUrl.isEmpty) {
+    Log.warning(
+      'Skipping age-restricted retry: missing videoUrl for event '
+      '${video.id}',
+      name: _logName,
+      category: LogCategory.video,
+    );
     return;
   }
 
@@ -35,6 +44,12 @@ Future<void> retryAgeRestrictedPooledVideo({
 
   final feedController = VideoPoolProvider.maybeFeedOf(context);
   if (feedController == null) {
+    Log.warning(
+      'Skipping age-restricted retry: no VideoPoolProvider feed controller '
+      'in context for event ${video.id}',
+      name: _logName,
+      category: LogCategory.video,
+    );
     return;
   }
 
