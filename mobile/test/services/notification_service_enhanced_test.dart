@@ -2,59 +2,25 @@
 // ABOUTME: Verifies race condition fixes and concurrent notification deduplication
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
-import 'package:openvine/services/video_event_service.dart';
-import 'package:profile_repository/profile_repository.dart';
-
-class _MockNostrClient extends Mock implements NostrClient {}
-
-class _MockProfileRepository extends Mock implements ProfileRepository {}
-
-class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(<Filter>[]);
-  });
-
   group('NotificationServiceEnhanced Race Condition Tests', () {
     late NotificationServiceEnhanced service;
-    late _MockNostrClient mockNostrService;
-    late _MockProfileRepository mockProfileRepository;
-    late _MockVideoEventService mockVideoService;
 
     setUp(() {
+      // Reset to discard any stale singleton left by a previous test or test
+      // file when running in a shared isolate (VGV optimized runner).
+      NotificationServiceEnhanced.resetInstance();
       service = NotificationServiceEnhanced();
-      mockNostrService = _MockNostrClient();
-      mockProfileRepository = _MockProfileRepository();
-      mockVideoService = _MockVideoEventService();
-
-      // Setup mock responses
-      when(() => mockNostrService.hasKeys).thenReturn(true);
-      when(() => mockNostrService.publicKey).thenReturn('test-pubkey-123');
-      when(
-        () => mockNostrService.subscribe(any()),
-      ).thenAnswer((_) => const Stream.empty());
     });
 
-    tearDown(() {
-      service.dispose();
-    });
+    tearDown(NotificationServiceEnhanced.resetInstance);
 
     test(
       'concurrent addNotificationForTesting calls with same ID should only add once',
       () async {
-        // Initialize the service
-        await service.initialize(
-          nostrService: mockNostrService,
-          profileRepository: mockProfileRepository,
-          videoService: mockVideoService,
-        );
-
         // Create identical notifications (same ID)
         final notification1 = NotificationModel(
           id: 'duplicate-test-id',
@@ -94,12 +60,6 @@ void main() {
     test(
       'concurrent addNotificationForTesting calls with different IDs should add both',
       () async {
-        await service.initialize(
-          nostrService: mockNostrService,
-          profileRepository: mockProfileRepository,
-          videoService: mockVideoService,
-        );
-
         final notification1 = NotificationModel(
           id: 'notification-1',
           type: NotificationType.like,
@@ -134,12 +94,6 @@ void main() {
     );
 
     test('rapid sequential adds with same ID should only add once', () async {
-      await service.initialize(
-        nostrService: mockNostrService,
-        profileRepository: mockProfileRepository,
-        videoService: mockVideoService,
-      );
-
       final notification = NotificationModel(
         id: 'rapid-test-id',
         type: NotificationType.like,
@@ -162,12 +116,6 @@ void main() {
     });
 
     test('stress test: 100 concurrent adds with mixed IDs', () async {
-      await service.initialize(
-        nostrService: mockNostrService,
-        profileRepository: mockProfileRepository,
-        videoService: mockVideoService,
-      );
-
       // Create 10 unique notification IDs, but add each one 10 times
       final futures = <Future<void>>[];
       for (var i = 0; i < 10; i++) {
@@ -204,36 +152,19 @@ void main() {
 
   group('NotificationServiceEnhanced Chronological Order Tests', () {
     late NotificationServiceEnhanced service;
-    late _MockNostrClient mockNostrService;
-    late _MockProfileRepository mockProfileRepository;
-    late _MockVideoEventService mockVideoService;
 
     setUp(() {
+      // Reset to discard any stale singleton left by a previous test or test
+      // file when running in a shared isolate (VGV optimized runner).
+      NotificationServiceEnhanced.resetInstance();
       service = NotificationServiceEnhanced();
-      mockNostrService = _MockNostrClient();
-      mockProfileRepository = _MockProfileRepository();
-      mockVideoService = _MockVideoEventService();
-
-      when(() => mockNostrService.hasKeys).thenReturn(true);
-      when(() => mockNostrService.publicKey).thenReturn('test-pubkey-123');
-      when(
-        () => mockNostrService.subscribe(any()),
-      ).thenAnswer((_) => const Stream.empty());
     });
 
-    tearDown(() {
-      service.dispose();
-    });
+    tearDown(NotificationServiceEnhanced.resetInstance);
 
     test(
       'notifications are sorted by timestamp (newest first) regardless of insertion order',
       () async {
-        await service.initialize(
-          nostrService: mockNostrService,
-          profileRepository: mockProfileRepository,
-          videoService: mockVideoService,
-        );
-
         // Add notifications OUT OF ORDER (older first, then newer)
         final olderNotification = NotificationModel(
           id: 'older-notification',
@@ -275,12 +206,6 @@ void main() {
     test(
       'getNotificationsByType returns filtered results in chronological order',
       () async {
-        await service.initialize(
-          nostrService: mockNostrService,
-          profileRepository: mockProfileRepository,
-          videoService: mockVideoService,
-        );
-
         // Add mixed notification types out of order
         final oldLike = NotificationModel(
           id: 'old-like',
@@ -330,12 +255,6 @@ void main() {
     test(
       'follow notifications with different IDs but same actor are deduplicated',
       () async {
-        await service.initialize(
-          nostrService: mockNostrService,
-          profileRepository: mockProfileRepository,
-          videoService: mockVideoService,
-        );
-
         // Simulate two Kind 3 events from the same actor (different event IDs)
         // This happens when the actor follows someone else, republishing their
         // entire contact list with a new event ID.
@@ -372,12 +291,6 @@ void main() {
     test(
       'follow notifications from different actors are not deduplicated',
       () async {
-        await service.initialize(
-          nostrService: mockNostrService,
-          profileRepository: mockProfileRepository,
-          videoService: mockVideoService,
-        );
-
         final follow1 = NotificationModel(
           id: 'kind3-event-aaa',
           type: NotificationType.follow,
@@ -410,12 +323,6 @@ void main() {
     test(
       'non-follow notifications with same actor are not deduplicated',
       () async {
-        await service.initialize(
-          nostrService: mockNostrService,
-          profileRepository: mockProfileRepository,
-          videoService: mockVideoService,
-        );
-
         final like1 = NotificationModel(
           id: 'like-event-aaa',
           type: NotificationType.like,
@@ -448,12 +355,6 @@ void main() {
     );
 
     test('notifications with same timestamp are stable-sorted by ID', () async {
-      await service.initialize(
-        nostrService: mockNostrService,
-        profileRepository: mockProfileRepository,
-        videoService: mockVideoService,
-      );
-
       final sameTime = DateTime(2024, 1, 1, 12);
 
       // Add notifications with identical timestamps but different IDs

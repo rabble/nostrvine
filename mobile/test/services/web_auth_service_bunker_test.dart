@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for WebAuthService nsec bunker authentication integration
 // ABOUTME: Tests bunker authentication flow and signer functionality in WebAuthService
 
+@Tags(['skip_very_good_optimization'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';

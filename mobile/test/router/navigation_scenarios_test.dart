@@ -11,7 +11,6 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 
@@ -161,88 +160,6 @@ void main() {
       expect(
         router.routeInformationProvider.value.uri.toString(),
         ProfileScreenRouter.pathForIndex('npub1xyz', 5),
-      );
-    });
-
-    testWidgets('Search empty', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      router.go(SearchScreenPure.path);
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.path,
-      );
-    });
-
-    testWidgets('Search with term - grid mode', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.pathForTerm(term: 'bitcoin'),
-      );
-    });
-
-    testWidgets('Search with term - feed mode', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 0));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.pathForTerm(term: 'bitcoin', index: 0),
-      );
-
-      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 3));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.pathForTerm(term: 'bitcoin', index: 3),
       );
     });
 
@@ -431,41 +348,6 @@ void main() {
       );
     });
 
-    testWidgets('Search back to grid from feed', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      // Navigate to search feed mode
-      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin', index: 3));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.pathForTerm(term: 'bitcoin', index: 3),
-      );
-
-      // Back button should go to search grid mode
-      router.go(SearchScreenPure.pathForTerm(term: 'bitcoin'));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.pathForTerm(term: 'bitcoin'),
-        reason: 'Back from search feed should return to grid mode',
-      );
-    });
-
     testWidgets('URL-encoded hashtags', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -490,75 +372,6 @@ void main() {
         router.routeInformationProvider.value.uri.toString(),
         HashtagScreenRouter.pathForTag('my%20tag'),
         reason: 'URL-encoded hashtags should work',
-      );
-    });
-
-    testWidgets('URL-encoded search terms', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      // Search terms with spaces should be URL-encoded
-      router.go(SearchScreenPure.pathForTerm(term: 'hello world'));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.pathForTerm(term: 'hello%20world'),
-        reason: 'URL-encoded search terms should work',
-      );
-    });
-
-    testWidgets('Back button navigates from search feed to grid', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      // Navigate to search feed mode
-      router.go(SearchScreenPure.pathForTerm(term: 'nostr', index: 3));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.pathForTerm(term: 'nostr', index: 3),
-      );
-
-      // Find and tap the back button
-      final backButton = find.byIcon(Icons.arrow_back);
-      expect(backButton, findsOneWidget);
-
-      await tester.tap(backButton);
-      await tester.pumpAndSettle();
-
-      // Should navigate to search grid mode
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        SearchScreenPure.pathForTerm(term: 'nostr'),
-        reason: 'Tapping back button should navigate from search feed to grid',
       );
     });
 

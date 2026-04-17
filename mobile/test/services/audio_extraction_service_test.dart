@@ -2,6 +2,7 @@
 // ABOUTME: Tests audio extraction result model, exceptions, cleanup, and
 // ABOUTME: core extraction path with ProVideoEditor mock.
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 import 'dart:ui';
 

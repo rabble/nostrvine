@@ -37,8 +37,6 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_BLUESKY_PUBLISHING');
       case FeatureFlag.integratedApps:
         return const bool.fromEnvironment('FF_INTEGRATED_APPS');
-      case FeatureFlag.newSearch:
-        return const bool.fromEnvironment('FF_NEW_SEARCH');
       case FeatureFlag.feedAutoAdvance:
         return const bool.fromEnvironment('FF_FEED_AUTO_ADVANCE');
     }
@@ -77,8 +75,6 @@ class BuildConfiguration {
         return 'FF_BLUESKY_PUBLISHING';
       case FeatureFlag.integratedApps:
         return 'FF_INTEGRATED_APPS';
-      case FeatureFlag.newSearch:
-        return 'FF_NEW_SEARCH';
       case FeatureFlag.feedAutoAdvance:
         return 'FF_FEED_AUTO_ADVANCE';
     }

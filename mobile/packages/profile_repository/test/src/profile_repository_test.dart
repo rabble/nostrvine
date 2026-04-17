@@ -4036,5 +4036,99 @@ void main() {
         expect(result[testPubkey]?.displayName, equals('New Name'));
       });
     });
+
+    group('block filter', () {
+      const blockedPubkey =
+          'dddddddddddddddddddddddddddddddd'
+          'dddddddddddddddddddddddddddddddd';
+
+      test(
+        'filters blocked users from searchUsersProgressive results',
+        () async {
+          final blockedProfile = UserProfile(
+            pubkey: blockedPubkey,
+            displayName: 'Blocked User',
+            rawData: const {'display_name': 'Blocked User'},
+            createdAt: DateTime(2026),
+            eventId: 'evt_blocked',
+          );
+          final allowedProfile = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Allowed User',
+            rawData: const {'display_name': 'Allowed User'},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          );
+
+          when(
+            () => mockUserProfilesDao.getAllProfiles(),
+          ).thenAnswer(
+            (_) async => [blockedProfile, allowedProfile],
+          );
+
+          when(
+            () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
+          ).thenAnswer((_) async => []);
+
+          final repoWithBlockFilter = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            blockFilter: (pubkey) => pubkey == blockedPubkey,
+          );
+
+          final emissions = await repoWithBlockFilter
+              .searchUsersProgressive(query: 'user')
+              .toList();
+
+          // Every emission should exclude the blocked profile.
+          for (final profiles in emissions) {
+            expect(
+              profiles.map((p) => p.pubkey),
+              isNot(contains(blockedPubkey)),
+            );
+          }
+
+          // The allowed profile should be present in the last emission.
+          expect(emissions.last, hasLength(1));
+          expect(emissions.last.first.pubkey, equals(testPubkey));
+        },
+      );
+
+      test(
+        'returns all profiles when blockFilter is null',
+        () async {
+          final profile1 = UserProfile(
+            pubkey: blockedPubkey,
+            displayName: 'User One',
+            rawData: const {'display_name': 'User One'},
+            createdAt: DateTime(2026),
+            eventId: 'evt_one',
+          );
+          final profile2 = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'User Two',
+            rawData: const {'display_name': 'User Two'},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          );
+
+          when(
+            () => mockUserProfilesDao.getAllProfiles(),
+          ).thenAnswer((_) async => [profile1, profile2]);
+
+          when(
+            () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
+          ).thenAnswer((_) async => []);
+
+          // Default profileRepository has no blockFilter.
+          final emissions = await profileRepository
+              .searchUsersProgressive(query: 'user')
+              .toList();
+
+          expect(emissions.last, hasLength(2));
+        },
+      );
+    });
   });
 }

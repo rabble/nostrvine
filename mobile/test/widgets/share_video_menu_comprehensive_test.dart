@@ -2,6 +2,7 @@
 // ABOUTME: Covers share sheet rendering, contact row, more actions, feature
 // ABOUTME: flags, save/bookmark, copy link, share via, and error handling
 
+@Tags(['skip_very_good_optimization'])
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,15 +31,18 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _FakeVideoEvent extends Fake implements VideoEvent {}
 
-/// Fake notifier that provides test data for curatedListsStateProvider
-List<CuratedList> _fakeLists = [];
-
+/// Fake notifier that provides test data for curatedListsStateProvider.
+///
+/// Uses a static field instead of a module-level variable so that state
+/// does not leak between test files when running in a shared isolate.
 class _FakeCuratedListsState extends CuratedListsState {
+  static List<CuratedList> fakeLists = [];
+
   @override
   CuratedListService? get service => null;
 
   @override
-  Future<List<CuratedList>> build() async => _fakeLists;
+  Future<List<CuratedList>> build() async => fakeLists;
 }
 
 void main() {
@@ -77,7 +81,7 @@ void main() {
 
     mockBookmarkService = _MockBookmarkService();
     mockVideoSharingService = _MockVideoSharingService();
-    _fakeLists = [];
+    _FakeCuratedListsState.fakeLists = [];
 
     when(
       () => mockBookmarkService.addVideoToGlobalBookmarks(any()),

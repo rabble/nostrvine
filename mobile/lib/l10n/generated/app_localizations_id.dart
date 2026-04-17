@@ -3503,13 +3503,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get navMyProfile => 'Profilku';
 
   @override
-  String get navSearch => 'Cari';
-
-  @override
   String get navNotifications => 'Notifikasi';
-
-  @override
-  String get navSearchTooltip => 'Cari';
 
   @override
   String get navOpenCamera => 'Buka kamera';

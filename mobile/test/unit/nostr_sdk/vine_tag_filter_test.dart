@@ -1,12 +1,12 @@
-// ABOUTME: Integration test for vine tag requirement across all services
-// ABOUTME: Tests complete vine tag workflow from event creation to relay querying
+// ABOUTME: Unit tests for vine tag requirement in Filter/Event serialization
+// ABOUTME: Constructs filters and events in memory; no network or relay involved
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 
 void main() {
-  group('Vine Tag Integration Tests', () {
+  group('Vine Tag Filter', () {
     test('VideoEventService filters should include vine tag', () {
       // Create a filter for Kind 22 events
       final filter = Filter(kinds: [22], h: ['vine'], limit: 50);

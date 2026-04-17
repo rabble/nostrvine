@@ -1,0 +1,38 @@
+name: Mobile Integration Tests (Services)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  service-tests:
+    name: Integration Tests (services)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.4"
+          channel: "stable"
+          cache: true
+      - name: 🐳 Start local stack
+        run: |
+          cd ../local_stack
+          docker compose up -d
+          docker compose ps
+      - name: 📦 Install dependencies
+        run: flutter pub get
+      - name: 🚀 Run service integration tests
+        run: flutter test integration_test/e2e/ --tags service
+      - name: 🐳 Stop local stack
+        if: always()
+        run: |
+          cd ../local_stack
+          docker compose down

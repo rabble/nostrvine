@@ -38,10 +38,6 @@ enum FeatureFlag {
     'Integrated Apps',
     'Enable the integrated Nostr apps directory and sandbox',
   ),
-  newSearch(
-    'New Search',
-    'Unified search bar on Explore',
-  ),
   feedAutoAdvance(
     'Feed Auto Advance',
     'Show the Auto rail control and let the feed advance automatically '
