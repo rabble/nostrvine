@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -19,9 +20,10 @@ void main() {
             ),
           ),
         ],
-        child: const Directionality(
-          textDirection: TextDirection.ltr,
-          child: VideoMetadataLimitWarningBanner(),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const VideoMetadataLimitWarningBanner(),
         ),
       );
     }

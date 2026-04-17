@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as models;
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -19,6 +20,8 @@ void main() {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataClassicBottomBar()),
           ),
         ),
@@ -32,6 +35,8 @@ void main() {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataClassicBottomBar()),
           ),
         ),
@@ -64,6 +69,8 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataClassicBottomBar()),
           ),
         ),
@@ -98,6 +105,8 @@ void main() {
             videoEditorProvider.overrideWith(() => mockNotifier),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataClassicBottomBar()),
           ),
         ),
@@ -115,6 +124,8 @@ void main() {
         await tester.pumpWidget(
           const ProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: VideoMetadataClassicBottomBar()),
             ),
           ),
@@ -125,7 +136,7 @@ void main() {
             (w) => w is Semantics && w.properties.identifier == 'post_button',
           ),
         );
-        expect(semantics.properties.label, equals('Post button'));
+        expect(semantics.properties.label, equals('Open post preview screen'));
       },
     );
   });
