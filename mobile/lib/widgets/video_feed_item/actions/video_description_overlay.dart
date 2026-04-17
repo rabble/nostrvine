@@ -68,8 +68,13 @@ class VideoDescriptionOverlay extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          // Show original loop count if available
-          if (video.originalLoops != null && video.originalLoops! > 0) ...[
+          // Show the loop count row whenever the video carries any loop
+          // metadata AND the combined count is non-zero. Using
+          // [hasLoopMetadata] instead of a raw originalLoops check keeps
+          // this in sync with the fullscreen author label and avoids
+          // hiding legitimate live-view counts (rawTags['views']) just
+          // because the classic Vine loop field is null.
+          if (video.hasLoopMetadata && video.totalLoops > 0) ...[
             Semantics(
               identifier: 'loop_count',
               container: true,
