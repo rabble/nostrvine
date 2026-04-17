@@ -34,6 +34,12 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// Path for clips route.
   static const clipsPath = '/clips';
 
+  /// Route name for clips path without Sounds tab.
+  static const clipsNoSoundRouteName = 'clipsNoSound';
+
+  /// Path for clips route without Sounds tab.
+  static const clipsNoSoundPath = '/clips-no-sound';
+
   /// Route name for sounds path.
   static const soundsRouteName = 'sounds';
 
@@ -44,7 +50,9 @@ class LibraryScreen extends ConsumerStatefulWidget {
     super.key,
     this.initialTabIndex = 0,
     this.selectionMode = false,
+    this.enableSoundTab = true,
     this.editorClips = const [],
+    this.scrollController,
   });
 
   /// Index of the tab to show when the screen opens.
@@ -61,9 +69,15 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// - Selected clips are added to the video editor on confirmation
   final bool selectionMode;
 
+  /// Whether the Sounds tab is visible.
+  final bool enableSoundTab;
+
   /// Current editor clips, used to calculate remaining duration and
   /// target aspect ratio in selection mode.
   final List<DivineVideoClip> editorClips;
+
+  /// Optional scroll controller, e.g. from a parent [DraggableScrollableSheet].
+  final ScrollController? scrollController;
 
   @override
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
@@ -77,7 +91,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: widget.enableSoundTab ? 3 : 2,
       initialIndex: widget.initialTabIndex,
       vsync: this,
     );
@@ -130,9 +144,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     }
 
     if (widget.selectionMode) {
+      final disabledIds = widget.editorClips.map((c) => c.id).toSet();
+      final newClips = selectedClips
+          .where((c) => !disabledIds.contains(c.id))
+          .toList();
       clipsBloc.add(const ClipsLibraryClearSelection());
       if (!context.mounted) return;
-      context.pop(selectedClips);
+      context.pop(newClips);
     } else {
       if (!context.mounted) return;
       await context.push(
@@ -177,7 +195,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               clipLibraryService: ref.read(clipLibraryServiceProvider),
               gallerySaveService: ref.read(gallerySaveServiceProvider),
             )..add(
-              ClipsLibraryLoadRequested(preSelectedIds: editorClipIds),
+              ClipsLibraryLoadRequested(
+                preSelectedIds: editorClipIds,
+                disabledClipIds: widget.selectionMode
+                    ? editorClipIds
+                    : const {},
+              ),
             );
           },
         ),
@@ -273,6 +296,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                           ? null
                           : _LibraryAppBar(
                               tabController: _tabController,
+                              enableSoundTab: widget.enableSoundTab,
                               onNext: () => _createVideoFromSelected(
                                 context,
                                 selectedClips: clipsState.selectedClips,
@@ -281,6 +305,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                             ),
                       body: widget.selectionMode
                           ? _SelectionBody(
+                              scrollController: widget.scrollController,
                               targetAspectRatio: targetAspectRatio,
                               onCreate: () => _createVideoFromSelected(
                                 context,
@@ -290,6 +315,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                             )
                           : _TabBody(
                               tabController: _tabController,
+                              enableSoundTab: widget.enableSoundTab,
                               targetAspectRatio: targetAspectRatio,
                             ),
                     ),
@@ -379,10 +405,12 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
   const _LibraryAppBar({
     required this.tabController,
     required this.onNext,
+    this.enableSoundTab = true,
   });
 
   final TabController tabController;
   final VoidCallback onNext;
+  final bool enableSoundTab;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 48);
@@ -438,7 +466,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
             tabs: [
               Tab(text: context.l10n.libraryTabDrafts),
               Tab(text: context.l10n.libraryTabClips),
-              Tab(text: context.l10n.soundsTitle),
+              if (enableSoundTab) Tab(text: context.l10n.soundsTitle),
             ],
           ),
         );
@@ -451,10 +479,12 @@ class _SelectionBody extends StatelessWidget {
   const _SelectionBody({
     required this.onCreate,
     this.targetAspectRatio,
+    this.scrollController,
   });
 
   final VoidCallback onCreate;
   final double? targetAspectRatio;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -465,6 +495,7 @@ class _SelectionBody extends StatelessWidget {
           child: ClipsTab(
             targetAspectRatio: targetAspectRatio,
             showRecordButton: true,
+            scrollController: scrollController,
           ),
         ),
       ],
@@ -475,10 +506,12 @@ class _SelectionBody extends StatelessWidget {
 class _TabBody extends StatelessWidget {
   const _TabBody({
     required this.tabController,
+    this.enableSoundTab = true,
     this.targetAspectRatio,
   });
 
   final TabController tabController;
+  final bool enableSoundTab;
   final double? targetAspectRatio;
 
   @override
@@ -494,7 +527,7 @@ class _TabBody extends StatelessWidget {
           targetAspectRatio: targetAspectRatio,
           showRecordButton: false,
         ),
-        const SoundsTab(),
+        if (enableSoundTab) const SoundsTab(),
       ],
     );
   }

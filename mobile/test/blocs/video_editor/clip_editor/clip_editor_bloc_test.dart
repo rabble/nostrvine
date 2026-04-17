@@ -40,7 +40,9 @@ void main() {
     });
 
     ClipEditorBloc buildBloc({SplitExecutor? splitExecutor}) {
-      return ClipEditorBloc(splitExecutor: splitExecutor);
+      // Keep parameter for backward-compatible test callsites.
+      final _ = splitExecutor;
+      return ClipEditorBloc(onFinalClipInvalidated: () {});
     }
 
     test('initial state has correct defaults', () {
@@ -1047,17 +1049,8 @@ void main() {
 
     group('ClipEditorSplitRequested', () {
       blocTest<ClipEditorBloc, ClipEditorState>(
-        'stops editing and calls split executor when position is valid',
-        build: () {
-          return buildBloc(
-            splitExecutor:
-                ({
-                  required sourceClip,
-                  required splitPosition,
-                  required currentClipIndex,
-                }) async {},
-          );
-        },
+        'stops editing and replaces clip when split position is valid',
+        build: buildBloc,
         seed: () {
           final clip = _createClip(
             id: 'split-me',
@@ -1075,31 +1068,29 @@ void main() {
           isA<ClipEditorState>()
               .having((s) => s.isEditing, 'isEditing', isFalse)
               .having((s) => s.isPlaying, 'isPlaying', isFalse),
+          isA<ClipEditorState>()
+              .having((s) => s.clips, 'clips', hasLength(2))
+              .having(
+                (s) => s.clips.first.duration,
+                'start duration',
+                const Duration(seconds: 1),
+              )
+              .having(
+                (s) => s.clips.last.duration,
+                'end duration',
+                const Duration(seconds: 1),
+              )
+              .having((s) => s.undoStack, 'undo stack', hasLength(1)),
         ],
       );
 
-      test('invokes split executor with correct arguments', () async {
-        DivineVideoClip? passedClip;
-        Duration? passedPosition;
-        int? passedIndex;
-
+      test('uses state splitPosition for resulting clip durations', () async {
         final clip = _createClip(
           id: 'x',
           duration: const Duration(seconds: 2),
         );
 
-        final bloc = buildBloc(
-          splitExecutor:
-              ({
-                required sourceClip,
-                required splitPosition,
-                required currentClipIndex,
-              }) async {
-                passedClip = sourceClip;
-                passedPosition = splitPosition;
-                passedIndex = currentClipIndex;
-              },
-        );
+        final bloc = buildBloc();
 
         bloc.emit(
           ClipEditorState(
@@ -1110,11 +1101,19 @@ void main() {
         );
 
         bloc.add(const ClipEditorSplitRequested());
-        await bloc.stream.first;
+        final states = await bloc.stream.take(2).toList();
 
-        expect(passedClip?.id, equals('x'));
-        expect(passedPosition, equals(const Duration(milliseconds: 500)));
-        expect(passedIndex, equals(0));
+        final replacedState = states.last;
+
+        expect(replacedState.clips, hasLength(2));
+        expect(
+          replacedState.clips.first.duration,
+          equals(const Duration(milliseconds: 500)),
+        );
+        expect(
+          replacedState.clips.last.duration,
+          equals(const Duration(milliseconds: 1500)),
+        );
 
         await bloc.close();
       });
@@ -1160,7 +1159,7 @@ void main() {
       );
 
       blocTest<ClipEditorBloc, ClipEditorState>(
-        'still stops editing when executor is null',
+        'stops editing and performs split with default service',
         build: buildBloc,
         seed: () {
           final clip = _createClip(duration: const Duration(seconds: 2));
@@ -1177,6 +1176,7 @@ void main() {
             'isEditing',
             isFalse,
           ),
+          isA<ClipEditorState>().having((s) => s.clips, 'clips', hasLength(2)),
         ],
       );
 

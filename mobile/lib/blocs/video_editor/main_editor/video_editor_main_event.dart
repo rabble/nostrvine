@@ -64,26 +64,6 @@ class VideoEditorMainSubEditorClosed extends VideoEditorMainEvent {
   const VideoEditorMainSubEditorClosed();
 }
 
-/// Triggered when a layer is added to the editor.
-class VideoEditorLayerAdded extends VideoEditorMainEvent {
-  const VideoEditorLayerAdded(this.layer);
-
-  final Layer layer;
-
-  @override
-  List<Object?> get props => [layer];
-}
-
-/// Triggered when a layer is removed from the editor.
-class VideoEditorLayerRemoved extends VideoEditorMainEvent {
-  const VideoEditorLayerRemoved(this.layer);
-
-  final Layer layer;
-
-  @override
-  List<Object?> get props => [layer];
-}
-
 /// Triggered when the video playback state changes.
 class VideoEditorPlaybackChanged extends VideoEditorMainEvent {
   const VideoEditorPlaybackChanged({required this.isPlaying});
@@ -175,4 +155,9 @@ class VideoEditorReorderingChanged extends VideoEditorMainEvent {
 
   @override
   List<Object?> get props => [isReordering];
+}
+
+/// Triggered when the timeline visibility should be toggled.
+class VideoEditorTimelineVisibilityToggled extends VideoEditorMainEvent {
+  const VideoEditorTimelineVisibilityToggled();
 }

@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/utils/hit_expanded_box.dart';
 
 /// Builds a [HitExpandedBox] at a fixed position with a child [Stack]
 /// that has a tappable handle positioned outside the main content's
@@ -100,8 +100,7 @@ void main() {
             textDirection: TextDirection.ltr,
             child: Center(
               child: HitExpandedBox(
-                height: 40,
-                child: SizedBox(width: 100),
+                child: SizedBox(width: 100, height: 40),
               ),
             ),
           ),
@@ -150,8 +149,9 @@ void main() {
             ),
           );
 
-          // Left handle spans from x=80..100, tap its center at x=90.
+          // Left handle is outside main content bounds: x in [80, 100].
           await tester.tapAt(const Offset(90, 125));
+
           expect(leftTapped, isTrue);
         },
       );
@@ -172,8 +172,9 @@ void main() {
             ),
           );
 
-          // Right handle spans from x=200..220, tap its center at x=210.
+          // Right handle is outside main content bounds: x in [200, 220].
           await tester.tapAt(const Offset(210, 125));
+
           expect(rightTapped, isTrue);
         },
       );
@@ -280,8 +281,7 @@ void main() {
                 rebuildState = setState;
                 return Center(
                   child: HitExpandedBox(
-                    height: height,
-                    child: const SizedBox(width: 100),
+                    child: SizedBox(width: 100, height: height),
                   ),
                 );
               },

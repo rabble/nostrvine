@@ -22,6 +22,7 @@ class ClipsTab extends StatelessWidget {
   const ClipsTab({
     required this.showRecordButton,
     this.targetAspectRatio,
+    this.scrollController,
     super.key,
   });
 
@@ -30,6 +31,9 @@ class ClipsTab extends StatelessWidget {
 
   /// Target aspect ratio for filtering compatible clips.
   final double? targetAspectRatio;
+
+  /// Optional scroll controller, e.g. from a parent bottom sheet.
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +91,8 @@ class ClipsTab extends StatelessWidget {
         return _MasonryLayout(
           clips: state.clips,
           selectedClipIds: state.selectedClipIds,
+          disabledClipIds: state.disabledClipIds,
+          scrollController: scrollController,
           targetAspectRatio: targetAspectRatio,
           onTapClip: (clip) => context.read<ClipsLibraryBloc>().add(
             ClipsLibraryToggleSelection(clip),
@@ -180,7 +186,7 @@ class ClipSelectionHeader extends StatelessWidget {
         return Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(top: 8, bottom: 16),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 spacing: 4,
@@ -230,11 +236,15 @@ class _MasonryLayout extends StatelessWidget {
     required this.selectedClipIds,
     required this.onTapClip,
     required this.onLongPressClip,
+    this.disabledClipIds = const {},
+    this.scrollController,
     this.targetAspectRatio,
   });
 
   final List<DivineVideoClip> clips;
   final Set<String> selectedClipIds;
+  final Set<String> disabledClipIds;
+  final ScrollController? scrollController;
   final ValueChanged<DivineVideoClip> onTapClip;
   final ValueChanged<DivineVideoClip> onLongPressClip;
   final double? targetAspectRatio;
@@ -249,6 +259,7 @@ class _MasonryLayout extends StatelessWidget {
         selectedClipIds.elementAt(i): i + 1,
     };
     return MasonryGridView.count(
+      controller: scrollController,
       padding: .fromSTEB(8, 0, 8, MediaQuery.viewPaddingOf(context).bottom),
       crossAxisCount: _columnCount,
       mainAxisSpacing: 4,
@@ -258,8 +269,10 @@ class _MasonryLayout extends StatelessWidget {
       itemBuilder: (context, index) {
         final clip = clips[index];
         final selectionIndex = selectionIndexById[clip.id] ?? -1;
-        final isLastInFirstRow =
-            index == _columnCount - 1 || index == clips.length - 1;
+        final firstRowLastIndex = clips.length < _columnCount
+            ? clips.length - 1
+            : _columnCount - 1;
+        final isLastInFirstRow = index == firstRowLastIndex;
         final borderRadius = BorderRadius.only(
           topLeft: index == 0 ? _radius : Radius.zero,
           topRight: isLastInFirstRow ? _radius : Radius.zero,
@@ -270,8 +283,9 @@ class _MasonryLayout extends StatelessWidget {
             clip: clip,
             selectionIndex: selectionIndex,
             disabled:
-                targetAspectRatio != null &&
-                targetAspectRatio != clip.targetAspectRatio.value,
+                disabledClipIds.contains(clip.id) ||
+                (targetAspectRatio != null &&
+                    targetAspectRatio != clip.targetAspectRatio.value),
             onTap: () => onTapClip(clip),
             onLongPress: () => onLongPressClip(clip),
           ),
@@ -291,7 +305,8 @@ class _AddClipButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: context.l10n.libraryAddClips,
+      // TODO(l10n): Replace with context.l10n when localization is added.
+      label: 'Select',
       child: GestureDetector(
         onTap: enable ? onTap : null,
         child: Opacity(
@@ -306,16 +321,11 @@ class _AddClipButton extends StatelessWidget {
               ),
             ),
             child: Text(
-              context.l10n.libraryAddClips,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: VineTheme.onPrimary,
-                fontSize: 18,
-                fontFamily: VineTheme.fontFamilyBricolage,
-                fontWeight: FontWeight.w800,
-                height: 1.33,
-                letterSpacing: 0.15,
-              ),
+              // TODO(l10n): Replace with context.l10n when localization
+              // is added.
+              'Select',
+              textAlign: .center,
+              style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
             ),
           ),
         ),

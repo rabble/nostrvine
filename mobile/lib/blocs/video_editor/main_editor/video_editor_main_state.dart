@@ -8,7 +8,6 @@ class VideoEditorMainState extends Equatable {
     this.openSubEditor,
     this.isLayerInteractionActive = false,
     this.isLayerOverRemoveArea = false,
-    this.layers = const [],
     this.isPlaying = false,
     this.isPlayerReady = false,
     this.isExternalPauseRequested = false,
@@ -20,6 +19,7 @@ class VideoEditorMainState extends Equatable {
     this.totalDuration = Duration.zero,
     this.isMuted = false,
     this.isReordering = false,
+    this.isTimelineHiddenByUser = false,
   });
 
   /// Whether the undo action is available.
@@ -39,9 +39,6 @@ class VideoEditorMainState extends Equatable {
 
   /// Whether the layer is currently positioned over the remove area.
   final bool isLayerOverRemoveArea;
-
-  /// The current list of layers in the editor.
-  final List<Layer> layers;
 
   /// Whether the video is currently playing.
   final bool isPlaying;
@@ -84,6 +81,9 @@ class VideoEditorMainState extends Equatable {
   /// Whether the timeline is in clip reorder mode.
   final bool isReordering;
 
+  /// Whether timeline visibility was manually toggled off by the user.
+  final bool isTimelineHiddenByUser;
+
   /// Creates a copy with the given fields replaced.
   ///
   /// Use [clearOpenSubEditor] to explicitly close the sub-editor.
@@ -95,7 +95,6 @@ class VideoEditorMainState extends Equatable {
     bool? isLayerInteractionActive,
     bool? isLayerOverRemoveArea,
     bool? isMuted,
-    List<Layer>? layers,
     bool? isPlaying,
     bool? isPlayerReady,
     bool? isExternalPauseRequested,
@@ -106,6 +105,7 @@ class VideoEditorMainState extends Equatable {
     Duration? currentPosition,
     Duration? totalDuration,
     bool? isReordering,
+    bool? isTimelineHiddenByUser,
   }) {
     return VideoEditorMainState(
       canUndo: canUndo ?? this.canUndo,
@@ -117,7 +117,6 @@ class VideoEditorMainState extends Equatable {
           isLayerInteractionActive ?? this.isLayerInteractionActive,
       isLayerOverRemoveArea:
           isLayerOverRemoveArea ?? this.isLayerOverRemoveArea,
-      layers: layers ?? this.layers,
       isPlaying: isPlaying ?? this.isPlaying,
       isPlayerReady: isPlayerReady ?? this.isPlayerReady,
       isExternalPauseRequested:
@@ -132,6 +131,8 @@ class VideoEditorMainState extends Equatable {
       totalDuration: totalDuration ?? this.totalDuration,
       isMuted: isMuted ?? this.isMuted,
       isReordering: isReordering ?? this.isReordering,
+      isTimelineHiddenByUser:
+          isTimelineHiddenByUser ?? this.isTimelineHiddenByUser,
     );
   }
 
@@ -142,7 +143,6 @@ class VideoEditorMainState extends Equatable {
     openSubEditor,
     isLayerInteractionActive,
     isLayerOverRemoveArea,
-    layers,
     isPlaying,
     isPlayerReady,
     isExternalPauseRequested,
@@ -154,5 +154,6 @@ class VideoEditorMainState extends Equatable {
     totalDuration,
     isMuted,
     isReordering,
+    isTimelineHiddenByUser,
   ];
 }

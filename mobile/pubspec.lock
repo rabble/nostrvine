@@ -252,10 +252,10 @@ packages:
     dependency: "direct dev"
     description:
       name: build_runner
-      sha256: "110c56ef29b5eb367b4d17fc79375fa8c18a6cd7acd92c05bb3986c17a079057"
+      sha256: "39ad4ca8a2876779737c60e4228b4bcd35d4352ef7e14e47514093edc012c734"
       url: "https://pub.dev"
     source: hosted
-    version: "2.10.4"
+    version: "2.11.1"
   built_collection:
     dependency: transitive
     description:
@@ -1488,10 +1488,10 @@ packages:
     dependency: transitive
     description:
       name: mockito
-      sha256: dac24d461418d363778d53198d9ac0510b9d073869f078450f195766ec48d05e
+      sha256: eff30d002f0c8bf073b6f929df4483b543133fcafce056870163587b03f1d422
       url: "https://pub.dev"
     source: hosted
-    version: "5.6.1"
+    version: "5.6.4"
   mocktail:
     dependency: "direct dev"
     description:
@@ -1800,18 +1800,18 @@ packages:
     dependency: "direct main"
     description:
       name: pro_image_editor
-      sha256: d7d06e085edb1b97e17bd7a47ae9d1cb86bf12179a67480bbcc870642bd98824
+      sha256: b12229ecf7371f930f4acc3bdba2a69fd69330cf53b08bb28768db7f21b569c7
       url: "https://pub.dev"
     source: hosted
-    version: "12.0.13"
+    version: "12.4.3"
   pro_video_editor:
     dependency: "direct main"
     description:
       name: pro_video_editor
-      sha256: cfed1424b3ca3d5981cc81efdd20b844c995c0ad2818e185eb5bc06a8674f728
+      sha256: "4c1a92374c443a2599f4a018208e3f0532e92c246912113989c65b60e4b552fe"
       url: "https://pub.dev"
     source: hosted
-    version: "1.14.2"
+    version: "1.15.0"
   process:
     dependency: transitive
     description:

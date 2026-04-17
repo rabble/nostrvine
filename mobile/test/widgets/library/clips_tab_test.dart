@@ -201,10 +201,10 @@ void main() {
       var created = false;
       await tester.pumpWidget(buildWidget(onCreate: () => created = true));
 
-      // Find and tap the Add button (text button, not icon)
-      final addButton = find.text(en.libraryAddClips);
-      expect(addButton, findsOneWidget);
-      await tester.tap(addButton);
+      // Find and tap the Select button
+      final selectButton = find.text('Select');
+      expect(selectButton, findsOneWidget);
+      await tester.tap(selectButton);
       expect(created, isTrue);
     });
   });

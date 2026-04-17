@@ -61,11 +61,11 @@ void main() {
         expect(find.byType(Container), findsWidgets);
       });
 
-      testWidgets('renders InkWell for tap', (tester) async {
+      testWidgets('renders GestureDetector for tap', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        expect(find.byType(InkWell), findsOneWidget);
+        expect(find.byType(GestureDetector), findsWidgets);
       });
     });
 
@@ -221,12 +221,21 @@ void main() {
     });
 
     group('disabled state', () {
-      testWidgets('InkWell onTap is null when no clips', (tester) async {
+      testWidgets('GestureDetector onTap is null when no clips', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
-        expect(inkWell.onTap, isNull);
+        final detector = tester
+            .widgetList<GestureDetector>(
+              find.descendant(
+                of: find.byType(VideoRecorderLibraryButton),
+                matching: find.byType(GestureDetector),
+              ),
+            )
+            .first;
+        expect(detector.onTap, isNull);
       });
     });
 

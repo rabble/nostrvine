@@ -31,9 +31,8 @@ typedef SplitExecutor =
 ///
 /// Supports undo/redo for clip mutations.
 class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
-  ClipEditorBloc({SplitExecutor? splitExecutor})
-    : _splitExecutor = splitExecutor,
-      super(const ClipEditorState()) {
+  ClipEditorBloc({required void Function() this.onFinalClipInvalidated})
+    : super(const ClipEditorState()) {
     // Clip data
     on<ClipEditorInitialized>(_onInitialized);
     on<ClipEditorClipRemoved>(_onClipRemoved);
@@ -69,7 +68,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     // Split
     on<ClipEditorOriginalClipReplaced>(_onOriginalClipReplaced);
-    on<ClipEditorSplitRequested>(_onSplitRequested);
+    on<ClipEditorSplitRequested>(_onSplitRequested, transformer: droppable());
 
     // Trim
     on<ClipEditorTrimUpdated>(_onTrimUpdated, transformer: restartable());
@@ -77,7 +76,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     on<ClipEditorTrimDragEnded>(_onTrimDragEnded);
   }
 
-  final SplitExecutor? _splitExecutor;
+  final void Function()? onFinalClipInvalidated;
 
   /// Pushes the current clip list onto the undo stack and clears redo.
   ClipEditorState _pushUndo(ClipEditorState s) {
@@ -513,7 +512,6 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     final selectedClip = clips[state.currentClipIndex];
     final splitPosition = state.splitPosition;
-    final currentClipIndex = state.currentClipIndex;
 
     // Validate split position before changing state
     if (!VideoEditorSplitService.isValidSplitPosition(
@@ -540,14 +538,50 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     // Stop editing mode
     emit(state.copyWith(isEditing: false, isPlaying: false));
 
-    if (_splitExecutor == null) return;
-
     try {
-      await _splitExecutor(
+      await VideoEditorSplitService.splitClip(
         sourceClip: selectedClip,
         splitPosition: splitPosition,
-        currentClipIndex: currentClipIndex,
+        onClipsCreated: (startClip, endClip) {
+          add(
+            ClipEditorOriginalClipReplaced(
+              sourceClipId: selectedClip.id,
+              startClip: startClip,
+              endClip: endClip,
+            ),
+          );
+        },
+        onThumbnailExtracted: (clip, thumbnailPath) {
+          add(
+            ClipEditorClipUpdated(
+              clipId: clip.id,
+              clip: clip.copyWith(thumbnailPath: thumbnailPath),
+            ),
+          );
+        },
+        onClipRendered: (clip, video) {
+          // Read the current clip from BLoC state to avoid
+          // overwriting fields updated by earlier callbacks
+          // (e.g. thumbnailPath from onThumbnailExtracted).
+          final current = state.clips.where(
+            (c) => c.id == clip.id,
+          );
+          final base = current.isNotEmpty ? current.first : clip;
+          add(
+            ClipEditorClipUpdated(
+              clipId: clip.id,
+              clip: base.copyWith(video: video),
+            ),
+          );
+          Log.debug(
+            '\u2705 Clip rendered: ${clip.id}',
+            name: 'VideoClipEditorScreen',
+            category: LogCategory.video,
+          );
+        },
       );
+
+      onFinalClipInvalidated?.call();
 
       Log.info(
         '✅ Successfully split clip into 2 segments',

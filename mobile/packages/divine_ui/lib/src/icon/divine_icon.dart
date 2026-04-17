@@ -29,6 +29,8 @@ enum DivineIconName {
   arrowLeft('arrow_left'),
   arrowRight('arrow_right'),
   arrowUp('arrow_up'),
+  arrowUUpLeft('arrow_uup_left'),
+  arrowUUpRight('arrow_uup_right'),
   arrowUpLeft('arrow_up_left'),
   arrowUpRight('arrow_up_right'),
   arrowsClockwise('arrows_clockwise'),

@@ -2,7 +2,10 @@
 // ABOUTME: video editor timeline. Each item has a time position, duration,
 // ABOUTME: row assignment, and trim state.
 
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// The type of overlay on the timeline.
 enum TimelineOverlayType {
@@ -27,11 +30,13 @@ class TimelineOverlayItem extends Equatable {
     required this.id,
     required this.type,
     required this.startTime,
-    required this.duration,
+    required this.endTime,
     this.row = 0,
     this.label = '',
-    this.trimStart = Duration.zero,
-    this.trimEnd = Duration.zero,
+    this.layer,
+    this.maxDuration,
+    this.waveformLeftChannel,
+    this.waveformRightChannel,
   });
 
   /// Unique identifier.
@@ -43,8 +48,8 @@ class TimelineOverlayItem extends Equatable {
   /// Where the item starts on the timeline.
   final Duration startTime;
 
-  /// Original full duration of the item.
-  final Duration duration;
+  /// Where the item ends on the timeline.
+  final Duration endTime;
 
   /// Row index within the strip. For layers, lower row = higher z-index
   /// (rendered in front).
@@ -53,47 +58,50 @@ class TimelineOverlayItem extends Equatable {
   /// Human-readable label (e.g. "Blur", "Beat Drop", "Hello World").
   final String label;
 
-  /// How much has been trimmed from the start.
-  final Duration trimStart;
+  /// The original layer data.
+  final Layer? layer;
 
-  /// How much has been trimmed from the end.
-  final Duration trimEnd;
+  /// Maximum allowed duration for this item.
+  ///
+  /// When set (e.g. for sound items), trimming cannot extend
+  /// the item beyond this duration — the item moves instead.
+  final Duration? maxDuration;
 
-  /// Effective duration after trimming (clamped to zero).
-  Duration get trimmedDuration {
-    final result = duration - trimStart - trimEnd;
-    return result.isNegative ? Duration.zero : result;
-  }
+  /// Left audio waveform amplitude samples for sound items.
+  final Float32List? waveformLeftChannel;
+
+  /// Right audio waveform amplitude samples for sound items.
+  final Float32List? waveformRightChannel;
 
   /// Start time in seconds for layout calculations.
   double get startTimeInSeconds => startTime.inMilliseconds / 1000.0;
+  double get durationInSeconds => duration.inMilliseconds / 1000;
 
-  /// Effective duration in seconds after trimming.
-  double get trimmedDurationInSeconds =>
-      trimmedDuration.inMilliseconds / 1000.0;
-
-  /// End time after trimming.
-  Duration get endTime => startTime + trimmedDuration;
+  Duration get duration => endTime - startTime;
 
   TimelineOverlayItem copyWith({
     String? id,
     TimelineOverlayType? type,
     Duration? startTime,
-    Duration? duration,
+    Duration? endTime,
     int? row,
     String? label,
-    Duration? trimStart,
-    Duration? trimEnd,
+    Layer? layer,
+    Duration? maxDuration,
+    Float32List? waveformLeftChannel,
+    Float32List? waveformRightChannel,
   }) {
     return TimelineOverlayItem(
       id: id ?? this.id,
       type: type ?? this.type,
       startTime: startTime ?? this.startTime,
-      duration: duration ?? this.duration,
+      endTime: endTime ?? this.endTime,
       row: row ?? this.row,
       label: label ?? this.label,
-      trimStart: trimStart ?? this.trimStart,
-      trimEnd: trimEnd ?? this.trimEnd,
+      layer: layer ?? this.layer,
+      maxDuration: maxDuration ?? this.maxDuration,
+      waveformLeftChannel: waveformLeftChannel ?? this.waveformLeftChannel,
+      waveformRightChannel: waveformRightChannel ?? this.waveformRightChannel,
     );
   }
 
@@ -102,10 +110,12 @@ class TimelineOverlayItem extends Equatable {
     id,
     type,
     startTime,
-    duration,
+    endTime,
     row,
     label,
-    trimStart,
-    trimEnd,
+    layer,
+    maxDuration,
+    waveformLeftChannel,
+    waveformRightChannel,
   ];
 }

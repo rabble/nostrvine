@@ -491,6 +491,9 @@ class VineTheme {
   /// Accent violet background color.
   static const Color accentVioletBackground = Color(0xFF2D214D);
 
+  /// Accent violet variant color.
+  static const Color accentVioletVariant = Color(0xFFE1E3FF);
+
   /// Accent purple color.
   static const Color accentPurple = Color(0xFF8568FF);
 

@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_sort_dropdown.dart';
@@ -99,14 +101,41 @@ class _AudioSelectionBottomSheetState
     }
   }
 
-  void _selectSound(AudioEvent sound) {
+  Future<void> _selectSound(AudioEvent sound) async {
     Log.info(
       'Sound selected: ${sound.title ?? 'Untitled'} (${sound.id})',
       name: 'AudioSelectionBottomSheet',
       category: LogCategory.ui,
     );
     _stopPlayback();
-    context.pop(sound);
+
+    if (sound.duration == null ||
+        sound.duration! >
+            (VideoEditorConstants.maxDuration.inMilliseconds / 1000)) {
+      final timingResult = await Navigator.of(context).push<AudioTimingResult>(
+        PageRouteBuilder(
+          opaque: false,
+          barrierColor: VineTheme.transparent,
+          transitionsBuilder: (_, animation, _, child) =>
+              FadeTransition(opacity: animation, child: child),
+          pageBuilder: (_, _, _) => VideoAudioEditorTimingScreen(
+            sound: sound,
+            enableDeleteButton: false,
+          ),
+        ),
+      );
+
+      if (timingResult != null && mounted) {
+        switch (timingResult) {
+          case AudioTimingConfirmed(:final sound):
+            context.pop(sound);
+          case AudioTimingDeleted():
+            break;
+        }
+      }
+    } else {
+      context.pop(sound);
+    }
   }
 
   List<AudioEvent> _filterSounds(List<AudioEvent> sounds) {

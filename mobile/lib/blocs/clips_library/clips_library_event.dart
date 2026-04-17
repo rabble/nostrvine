@@ -16,13 +16,19 @@ sealed class ClipsLibraryEvent extends Equatable {
 /// When [preSelectedIds] is provided, clips matching those IDs will
 /// be marked as selected after loading.
 final class ClipsLibraryLoadRequested extends ClipsLibraryEvent {
-  const ClipsLibraryLoadRequested({this.preSelectedIds = const {}});
+  const ClipsLibraryLoadRequested({
+    this.preSelectedIds = const {},
+    this.disabledClipIds = const {},
+  });
 
   /// Clip IDs to pre-select after loading (e.g. clips already in the editor).
   final Set<String> preSelectedIds;
 
+  /// Clip IDs that are already in the editor and cannot be deselected.
+  final Set<String> disabledClipIds;
+
   @override
-  List<Object?> get props => [preSelectedIds];
+  List<Object?> get props => [preSelectedIds, disabledClipIds];
 }
 
 /// Event to toggle selection of a clip.

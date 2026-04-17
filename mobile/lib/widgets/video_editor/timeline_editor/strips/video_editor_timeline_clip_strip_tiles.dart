@@ -59,10 +59,10 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
 
     var atLimit = false;
 
-    if (newTrimStart < Duration.zero) {
+    if (newTrimStart <= Duration.zero) {
       newTrimStart = Duration.zero;
       atLimit = true;
-    } else if (newTrimStart > maxTrimStart) {
+    } else if (newTrimStart >= maxTrimStart) {
       newTrimStart = maxTrimStart;
       atLimit = true;
     }
@@ -92,10 +92,10 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
 
     var atLimit = false;
 
-    if (newTrimEnd < Duration.zero) {
+    if (newTrimEnd <= Duration.zero) {
       newTrimEnd = Duration.zero;
       atLimit = true;
-    } else if (newTrimEnd > maxTrimEnd) {
+    } else if (newTrimEnd >= maxTrimEnd) {
       newTrimEnd = maxTrimEnd;
       atLimit = true;
     }
@@ -246,27 +246,38 @@ class _ClipTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: .circular(TimelineConstants.thumbnailRadius),
-      child: OverflowBox(
-        maxWidth: fullWidth,
-        minWidth: fullWidth,
-        alignment: Alignment.centerLeft,
-        child: Transform.translate(
-          offset: Offset(-trimStartOffset, 0),
-          child: SizedBox(
-            width: fullWidth,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // displayWidth: how wide the visible tile is (e.g. _reorderSize
+          // during drag). contentWidth: the natural clip width that drives
+          // thumbnail count — never changes during the reorder animation so
+          // thumbnails don't swap content while the tile shrinks/grows.
+          final displayWidth = math.max(fullWidth, constraints.maxWidth);
+          return SizedBox(
+            width: displayWidth,
             height: TimelineConstants.thumbnailStripHeight,
-            child: ValueListenableBuilder<List<StripThumbnail>>(
-              valueListenable: thumbnailNotifier,
-              builder: (context, stripThumbnails, _) {
-                return _ClipContainer(
-                  clip: clip,
-                  width: fullWidth,
-                  stripThumbnails: stripThumbnails,
-                );
-              },
+            child: ClipRect(
+              child: OverflowBox(
+                maxWidth: double.infinity,
+                alignment: Alignment.centerLeft,
+                child: Transform.translate(
+                  offset: Offset(-trimStartOffset, 0),
+                  child: ValueListenableBuilder<List<StripThumbnail>>(
+                    valueListenable: thumbnailNotifier,
+                    builder: (context, stripThumbnails, _) {
+                      return _ClipContainer(
+                        clip: clip,
+                        displayWidth: displayWidth,
+                        contentWidth: fullWidth,
+                        stripThumbnails: stripThumbnails,
+                      );
+                    },
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -276,73 +287,103 @@ class _ClipTile extends StatelessWidget {
 class _ClipContainer extends StatelessWidget {
   const _ClipContainer({
     required this.clip,
-    required this.width,
+    required this.displayWidth,
+    required this.contentWidth,
     required this.stripThumbnails,
   });
 
   final DivineVideoClip clip;
-  final double width;
+
+  /// Visible tile width — used to size each slot so thumbnails fill the tile.
+  final double displayWidth;
+
+  /// Natural clip width at the current zoom — used for count and timestamp
+  /// mapping so thumbnail content stays stable during the reorder animation.
+  final double contentWidth;
+
   final List<StripThumbnail> stripThumbnails;
 
-  int get _thumbnailCount =>
-      (width / TimelineConstants.thumbnailWidth).ceil().clamp(1, 100);
+  int get _thumbnailCount {
+    final natural = (contentWidth / TimelineConstants.thumbnailWidth).ceil();
+    // Keep visual slot count independent from loading progress so the strip
+    // does not collapse to a single slot while thumbnails are still streaming in.
+    return natural.clamp(1, 1000);
+  }
 
-  /// Maps a visual slot index to the nearest available [StripThumbnail] path.
+  /// Maps a visual slot index to a [StripThumbnail] path that falls
+  /// within the slot's time range.
   ///
-  /// Slots map across the full clip duration so thumbnails stay at fixed
-  /// positions regardless of trimming.
+  /// Each slot owns a fixed time window `[slotStart, slotEnd)`. Only a
+  /// thumbnail whose timestamp falls inside that window is returned.
+  /// This guarantees a slot never changes its image once a matching
+  /// thumbnail has been loaded — new thumbnails for *other* slots
+  /// don't cause a reassignment.
   String? _thumbnailForSlot(int slotIndex, int slotCount) {
     if (stripThumbnails.isEmpty) return null;
 
     final durationMs = clip.duration.inMilliseconds;
     if (durationMs <= 0) return stripThumbnails.first.path;
 
-    // Time at the center of this visual slot.
-    final slotTimeMs = durationMs * (slotIndex + 0.5) / slotCount;
+    // Fixed time window for this slot.
+    final slotStartMs = durationMs * slotIndex / slotCount;
+    final slotEndMs = durationMs * (slotIndex + 1) / slotCount;
+    final slotCenterMs = (slotStartMs + slotEndMs) / 2;
 
-    // Binary search for the closest thumbnail by timestamp.
+    // Binary search for the first thumbnail at or after slotStartMs.
     var lo = 0;
-    var hi = stripThumbnails.length - 1;
+    var hi = stripThumbnails.length;
     while (lo < hi) {
       final mid = (lo + hi) ~/ 2;
-      if (stripThumbnails[mid].timestamp.inMilliseconds < slotTimeMs) {
+      if (stripThumbnails[mid].timestamp.inMilliseconds < slotStartMs) {
         lo = mid + 1;
       } else {
         hi = mid;
       }
     }
-    // lo is the first thumbnail at or after slotTimeMs.
-    // Compare with the previous one to find which is closer.
-    if (lo > 0) {
-      final distLo = (slotTimeMs - stripThumbnails[lo].timestamp.inMilliseconds)
-          .abs();
-      final distPrev =
-          (slotTimeMs - stripThumbnails[lo - 1].timestamp.inMilliseconds).abs();
-      if (distPrev < distLo) return stripThumbnails[lo - 1].path;
+
+    // Scan candidates within [slotStartMs, slotEndMs) and pick the
+    // one closest to the slot center.
+    String? bestPath;
+    var bestDist = double.infinity;
+    for (var i = lo; i < stripThumbnails.length; i++) {
+      final tsMs = stripThumbnails[i].timestamp.inMilliseconds;
+      if (tsMs >= slotEndMs) break;
+      final dist = (tsMs - slotCenterMs).abs();
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestPath = stripThumbnails[i].path;
+      }
     }
-    return stripThumbnails[lo].path;
+
+    return bestPath;
   }
 
   @override
   Widget build(BuildContext context) {
     final count = _thumbnailCount;
-
-    return SizedBox(
-      width: width,
-      height: TimelineConstants.thumbnailStripHeight,
-      child: Row(
-        children: [
-          for (int i = 0; i < count; i++)
-            SizedBox(
-              width: width / count,
-              height: TimelineConstants.thumbnailStripHeight,
-              child: _ThumbnailImage(
-                thumbnailPath: clip.thumbnailPath,
-                stripThumbnailPath: _thumbnailForSlot(i, count),
-              ),
+    // Scale slots up only for tiny clips shown inside a larger container
+    // (e.g. the reorder tile where displayWidth > contentWidth). For normal
+    // and long clips keep thumbnailWidth fixed so each image represents the
+    // correct time span instead of stretching to fill the whole tile.
+    final slotWidth = contentWidth < displayWidth
+        ? math.max(
+            TimelineConstants.thumbnailWidth,
+            displayWidth / count,
+          )
+        : TimelineConstants.thumbnailWidth;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (int i = 0; i < count; i++)
+          SizedBox(
+            width: slotWidth,
+            height: TimelineConstants.thumbnailStripHeight,
+            child: _ThumbnailImage(
+              thumbnailPath: clip.thumbnailPath,
+              stripThumbnailPath: _thumbnailForSlot(i, count),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

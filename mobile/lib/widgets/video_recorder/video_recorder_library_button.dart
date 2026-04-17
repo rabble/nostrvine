@@ -47,10 +47,12 @@ class _VideoRecorderLibraryButtonState
 
     // Re-query library thumbnail whenever session clips change to empty
     // (e.g. user reset or deleted clips).
+    // Reload library thumbnail whenever a clip is removed, since
+    // deleteLastRecordedClip also deletes from the clip library.
     ref.listen(
       clipManagerProvider.select((p) => p.clips.length),
       (previous, next) {
-        if (next == 0) _loadLibraryThumbnail();
+        if (next < (previous ?? next + 1)) _loadLibraryThumbnail();
       },
     );
 

@@ -1,7 +1,6 @@
 // ABOUTME: Tests for VideoEditorFilterBottomBar widget.
 // ABOUTME: Validates filter list rendering, selection, and thumbnails.
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,10 +11,6 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
-
-class MockVideoEditorFilterBloc
-    extends MockBloc<VideoEditorFilterEvent, VideoEditorFilterState>
-    implements VideoEditorFilterBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -74,6 +69,7 @@ void main() {
                 onAddStickers: () {},
                 onAdjustVolume: () {},
                 onOpenClipsEditor: () {},
+                onOpenMusicLibrary: () {},
                 onAddEditTextLayer: ([_]) async => null,
                 originalClipAspectRatio: 9 / 16,
                 bodySizeNotifier: bodySizeNotifier,

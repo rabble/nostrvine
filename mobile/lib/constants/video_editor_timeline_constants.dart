@@ -56,7 +56,7 @@ abstract class TimelineConstants {
   static const double trimBorderWidth = 2;
 
   /// Extra hit-test area around each trim handle.
-  static const double trimHitAreaExtra = 12;
+  static const double trimHitAreaExtra = 32;
 
   /// Minimum trimmed duration for a clip.
   static const Duration minTrimDuration = Duration(milliseconds: 60);
@@ -66,14 +66,23 @@ abstract class TimelineConstants {
   /// Height of a single row in an overlay strip.
   static const double overlayRowHeight = 40;
 
+  /// Height of a single row in the sound overlay strip.
+  ///
+  /// Taller than other overlays to accommodate the waveform
+  /// visualisation below the label text.
+  static const double soundOverlayRowHeight = 64;
+
   /// Vertical gap between the clip strip and the first overlay strip.
   static const double overlayStripTopGap = 8;
 
   /// Vertical gap between different overlay strip sections.
   static const double overlayStripGap = 4;
 
+  /// Bar width for the compact sound-overlay waveform.
+  static const double soundWaveformBarWidth = 1;
+
   /// Vertical gap between overlay rows within a strip.
-  static const double overlayRowGap = 2;
+  static const double overlayRowGap = 6;
 
   /// Horizontal padding inside overlay item tiles.
   static const double overlayItemPadding = 6;
@@ -86,4 +95,16 @@ abstract class TimelineConstants {
 
   /// Shadow blur radius for dragged overlay items.
   static const double dragShadowBlurRadius = 6;
+
+  // --- Snap ---
+
+  /// Distance in logical pixels within which a free-moving edge first
+  /// snaps to a nearby snap point. Kept very small so the edge reaches
+  /// the snap point naturally instead of being pulled from a distance.
+  static const double snapCatchPx = 3;
+
+  /// Logical pixels of continued finger movement absorbed while the
+  /// handle is held at a snap point. After this distance the handle
+  /// releases and continues smoothly from the snap position.
+  static const double snapDeadZonePx = 10;
 }

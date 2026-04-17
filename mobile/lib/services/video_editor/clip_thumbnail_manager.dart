@@ -21,9 +21,15 @@ class ClipThumbnailManager {
 
   /// Syncs thumbnails with the current clip list — starts loading for
   /// new clips and cleans up removed ones.
+  ///
+  /// [priorityTimestamps] maps clip IDs to the exact timestamps
+  /// that the currently visible slots need. New clips whose ID is
+  /// in this map will generate those frames first before filling
+  /// the full-density set.
   void sync({
     required List<DivineVideoClip> clips,
     required double devicePixelRatio,
+    Map<String, List<Duration>> priorityTimestamps = const {},
   }) {
     final currentIds = clips.map((c) => c.id).toSet();
 
@@ -44,12 +50,20 @@ class ClipThumbnailManager {
     for (final clip in clips) {
       _notifiers.putIfAbsent(clip.id, () => ValueNotifier(const []));
       if (!_subscriptions.containsKey(clip.id)) {
-        _loadThumbnails(clip, devicePixelRatio);
+        _loadThumbnails(
+          clip,
+          devicePixelRatio,
+          priorityTimestamps: priorityTimestamps[clip.id],
+        );
       }
     }
   }
 
-  void _loadThumbnails(DivineVideoClip clip, double devicePixelRatio) {
+  void _loadThumbnails(
+    DivineVideoClip clip,
+    double devicePixelRatio, {
+    List<Duration>? priorityTimestamps,
+  }) {
     final videoPath = clip.video.file?.path;
     if (videoPath == null) return;
 
@@ -58,12 +72,21 @@ class ClipThumbnailManager {
       TimelineConstants.thumbnailStripHeight * devicePixelRatio,
     );
 
+    // Generate enough thumbnails to fill every slot at maximum zoom.
+    // ceil(maxPixelsPerSecond / thumbnailWidth) = ceil(600 / 48) = 13
+    final thumbsPerSecond =
+        (TimelineConstants.maxPixelsPerSecond /
+                TimelineConstants.thumbnailWidth)
+            .ceil();
+
     _subscriptions[clip.id] =
         VideoThumbnailService.generateStripThumbnails(
           videoPath: videoPath,
           clipId: clip.id,
           duration: clip.duration,
           outputSize: outputSize,
+          thumbsPerSecond: thumbsPerSecond,
+          priorityTimestamps: priorityTimestamps,
         ).listen((thumbnails) {
           _notifiers[clip.id]?.value = thumbnails;
         });

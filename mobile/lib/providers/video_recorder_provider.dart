@@ -1075,7 +1075,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
-    final navigation = context.push(LibraryScreen.clipsPath);
+    final navigation = context.pushNamed(
+      LibraryScreen.clipsNoSoundRouteName,
+    );
 
     // Wait for the push animation to finish before disposing the camera.
     // Disposing immediately would flash the camera-init screen behind the

@@ -634,12 +634,15 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
   /// Remove the most recent clip (undo last recording).
   ///
-  /// Safely removes only the last clip if any exist, otherwise logs debug
-  /// message.
-  Future<void> removeLastClip() async {
+  /// Delegates to [removeClipById] to update state and autosave, then
+  /// deletes the clip's associated files (video, thumbnail, ghost frame)
+  /// if they are not referenced by other drafts or library entries.
+  ///
+  /// No-ops when the clip list is empty.
+  Future<void> deleteLastRecordedClip() async {
     if (_clips.isEmpty) {
       Log.debug(
-        '⚠️ Cannot remove last clip - no clips available',
+        '⚠️ Cannot delete last clip - no clips available',
         name: 'ClipManagerNotifier',
         category: .video,
       );
@@ -647,10 +650,16 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     }
     final lastClip = _clips.last;
     Log.info(
-      '↩️  Removing last clip: ${lastClip.id}',
+      '↩️  Deleting last clip: ${lastClip.id}',
       name: 'ClipManagerNotifier',
       category: .video,
     );
+    // Delete from library first so consumers see clean state when
+    // the session-clip removal triggers rebuilds.
+    final clipLibraryService = ref.read(clipLibraryServiceProvider);
+    await clipLibraryService.deleteClip(lastClip.id);
+
+    // Remove from autosave and invalidate the final-rendered clip.
     await removeClipById(lastClip.id);
   }
 

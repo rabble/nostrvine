@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:time_formatter/time_formatter.dart';
 
@@ -15,35 +16,33 @@ class VideoEditorTimelineHeader extends StatelessWidget {
   /// Notifier driven by the scroll offset of the timeline.
   final ValueNotifier<Duration> playheadPosition;
 
+  static const _padding = EdgeInsets.symmetric(horizontal: 16);
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
-          padding: const .symmetric(horizontal: 16),
+          padding: _padding,
           scrollDirection: .horizontal,
           child: ConstrainedBox(
-            constraints: BoxConstraints(minWidth: constraints.maxWidth - 32),
+            constraints: BoxConstraints(
+              minWidth: constraints.maxWidth - _padding.horizontal,
+            ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: .spaceBetween,
               spacing: 8,
               children: [
                 const Row(
                   spacing: 8,
-                  children: [
-                    _PlayPauseButton(),
-                    _MuteButton(),
-                  ],
+                  children: [_PlayPauseButton(), _MuteButton()],
                 ),
 
                 _TimeDisplay(playheadPosition: playheadPosition),
 
                 const Row(
                   spacing: 8,
-                  children: [
-                    _UndoButton(),
-                    _RedoButton(),
-                  ],
+                  children: [_UndoButton(), _RedoButton()],
                 ),
               ],
             ),
@@ -113,12 +112,30 @@ class _TimeDisplay extends StatelessWidget {
 
     return ValueListenableBuilder<Duration>(
       valueListenable: playheadPosition,
-      builder: (context, position, _) => Text(
-        '${TimeFormatter.formatCompactDuration(position)} / '
-        '${TimeFormatter.formatCompactDuration(totalDuration)}',
-        style: _timeStyle,
-        maxLines: 1,
-      ),
+      builder: (context, position, _) {
+        final isOver =
+            position.inMilliseconds >
+            VideoEditorConstants.maxDuration.inMilliseconds;
+        final positionText = TextSpan(
+          text: TimeFormatter.formatCompactDuration(position),
+          style: isOver
+              ? _timeStyle.copyWith(color: VineTheme.warning)
+              : _timeStyle,
+        );
+        return Text.rich(
+          TextSpan(
+            children: [
+              positionText,
+              TextSpan(text: ' / ', style: _timeStyle),
+              TextSpan(
+                text: TimeFormatter.formatCompactDuration(totalDuration),
+                style: _timeStyle,
+              ),
+            ],
+          ),
+          maxLines: 1,
+        );
+      },
     );
   }
 }
@@ -133,7 +150,7 @@ class _UndoButton extends StatelessWidget {
     );
 
     return DivineIconButton(
-      icon: .arrowArcLeft,
+      icon: .arrowUUpLeft,
       size: .small,
       type: .ghost,
       semanticLabel: 'Undo',
@@ -156,7 +173,7 @@ class _RedoButton extends StatelessWidget {
     );
 
     return DivineIconButton(
-      icon: .arrowArcRight,
+      icon: .arrowUUpRight,
       size: .small,
       type: .ghost,
       semanticLabel: 'Redo',

@@ -119,7 +119,11 @@ void main() {
                   ),
                 ),
               ],
-              child: const MaterialApp(home: VideoMetadataScreen()),
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: VideoMetadataScreen(),
+              ),
             ),
           );
           await tester.pumpAndSettle();
@@ -146,7 +150,11 @@ void main() {
                   ),
                 ),
               ],
-              child: const MaterialApp(home: VideoMetadataScreen()),
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: VideoMetadataScreen(),
+              ),
             ),
           );
           await tester.pumpAndSettle();

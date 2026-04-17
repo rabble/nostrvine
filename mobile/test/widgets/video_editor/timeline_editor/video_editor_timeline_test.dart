@@ -2,13 +2,13 @@
 // ABOUTME: Validates timeline rendering, scroll content, playhead, and empty state.
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -32,18 +32,24 @@ class _MockTimelineOverlayBloc
     extends MockBloc<TimelineOverlayEvent, TimelineOverlayState>
     implements TimelineOverlayBloc {}
 
+class _MockVideoEditorFilterBloc
+    extends MockBloc<VideoEditorFilterEvent, VideoEditorFilterState>
+    implements VideoEditorFilterBloc {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group(VideoEditorTimeline, () {
+  group(VideoEditorTimelineScaffold, () {
     late _MockVideoEditorMainBloc mockMainBloc;
     late _MockClipEditorBloc mockClipBloc;
     late _MockTimelineOverlayBloc mockOverlayBloc;
+    late _MockVideoEditorFilterBloc mockFilterBloc;
 
     setUp(() {
       mockMainBloc = _MockVideoEditorMainBloc();
       mockClipBloc = _MockClipEditorBloc();
       mockOverlayBloc = _MockTimelineOverlayBloc();
+      mockFilterBloc = _MockVideoEditorFilterBloc();
 
       when(() => mockMainBloc.state).thenReturn(
         const VideoEditorMainState(),
@@ -62,6 +68,12 @@ void main() {
       );
       when(() => mockOverlayBloc.stream).thenAnswer(
         (_) => const Stream<TimelineOverlayState>.empty(),
+      );
+      when(() => mockFilterBloc.state).thenReturn(
+        const VideoEditorFilterState(filters: []),
+      );
+      when(() => mockFilterBloc.stream).thenAnswer(
+        (_) => const Stream<VideoEditorFilterState>.empty(),
       );
     });
 
@@ -88,6 +100,7 @@ void main() {
               onOpenClipsEditor: () {},
               onAddStickers: () {},
               onAdjustVolume: () {},
+              onOpenMusicLibrary: () {},
               onAddEditTextLayer: ([layer]) async => null,
               child: MultiBlocProvider(
                 providers: [
@@ -98,8 +111,12 @@ void main() {
                   BlocProvider<TimelineOverlayBloc>.value(
                     value: mockOverlayBloc,
                   ),
+                  BlocProvider<VideoEditorFilterBloc>.value(
+                    value: mockFilterBloc,
+                  ),
                 ],
-                child: const VideoEditorTimeline(),
+
+                child: const VideoEditorTimelineScaffold(),
               ),
             ),
           ),
@@ -133,7 +150,7 @@ void main() {
           buildWidget(clipState: ClipEditorState(clips: clips)),
         );
 
-        expect(find.byType(VideoEditorTimeline), findsOneWidget);
+        expect(find.byType(VideoEditorTimelineScaffold), findsOneWidget);
       });
 
       testWidgets('renders $VideoEditorTimelineHeader', (tester) async {
@@ -182,19 +199,14 @@ void main() {
         );
       });
 
-      testWidgets('uses background camera color', (tester) async {
+      testWidgets('does not show controls when not editing', (tester) async {
         final clips = [_createTestClip(id: 'a')];
 
         await tester.pumpWidget(
           buildWidget(clipState: ClipEditorState(clips: clips)),
         );
 
-        final container = tester.widget<Container>(
-          find.byWidgetPredicate(
-            (w) => w is Container && w.color == VineTheme.backgroundCamera,
-          ),
-        );
-        expect(container.color, equals(VineTheme.backgroundCamera));
+        expect(find.text('Done'), findsNothing);
       });
     });
 
@@ -209,10 +221,13 @@ void main() {
           ),
         );
 
-        final playhead = tester.widget<VideoEditorTimelinePlayhead>(
-          find.byType(VideoEditorTimelinePlayhead),
+        final opacity = tester.widget<AnimatedOpacity>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is AnimatedOpacity && widget.child is IgnorePointer,
+          ),
         );
-        expect(playhead.isVisible, isTrue);
+        expect(opacity.opacity, equals(1.0));
       });
 
       testWidgets('playhead is hidden when reordering', (tester) async {
@@ -225,10 +240,13 @@ void main() {
           ),
         );
 
-        final playhead = tester.widget<VideoEditorTimelinePlayhead>(
-          find.byType(VideoEditorTimelinePlayhead),
+        final opacity = tester.widget<AnimatedOpacity>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is AnimatedOpacity && widget.child is IgnorePointer,
+          ),
         );
-        expect(playhead.isVisible, isFalse);
+        expect(opacity.opacity, equals(0.0));
       });
     });
 

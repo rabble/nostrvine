@@ -82,6 +82,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           status: ClipsLibraryStatus.loaded,
           clips: clips,
           selectedClipIds: preSelectedIds,
+          disabledClipIds: event.disabledClipIds,
           selectedDuration: preSelectedDuration,
         ),
       );
@@ -111,6 +112,10 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     Emitter<ClipsLibraryState> emit,
   ) {
     final clip = event.clip;
+
+    // Disabled clips (already in the editor) cannot be toggled.
+    if (state.disabledClipIds.contains(clip.id)) return;
+
     final selectedIds = Set<String>.from(state.selectedClipIds);
     var selectedDuration = state.selectedDuration;
 

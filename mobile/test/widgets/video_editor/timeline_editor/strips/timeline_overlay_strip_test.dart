@@ -3,11 +3,13 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/timeline_trim_handles.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
 
 void main() {
   group(TimelineOverlayStrip, () {
@@ -15,7 +17,7 @@ void main() {
       id: 'item-1',
       type: TimelineOverlayType.layer,
       startTime: Duration(seconds: 1),
-      duration: Duration(seconds: 5),
+      endTime: Duration(seconds: 6),
       label: 'Test Layer',
     );
 
@@ -23,7 +25,7 @@ void main() {
       id: 'item-2',
       type: TimelineOverlayType.layer,
       startTime: Duration(seconds: 3),
-      duration: Duration(seconds: 4),
+      endTime: Duration(seconds: 7),
       row: 1,
       label: 'Second Layer',
     );
@@ -37,32 +39,35 @@ void main() {
       Color color = VineTheme.primary,
       bool isCollapsed = false,
       String? selectedItemId,
-      ValueChanged<String>? onItemTapped,
+      ValueChanged<TimelineOverlayItem>? onItemTapped,
       OverlayMoveCallback? onItemMoved,
       OverlayTrimCallback? onTrimChanged,
       ValueChanged<bool>? onTrimDragChanged,
-      ValueChanged<String>? onDragStarted,
+      ValueChanged<TimelineOverlayItem>? onDragStarted,
       VoidCallback? onDragEnded,
     }) {
-      return MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: TimelineOverlayStrip(
-              items: items,
-              rowCount: rowCount,
-              totalWidth: totalWidth,
-              pixelsPerSecond: pixelsPerSecond,
-              totalDuration: totalDuration,
-              color: color,
-              isCollapsed: isCollapsed,
-              selectedItemId: selectedItemId,
-              onItemTapped: onItemTapped,
-              onItemMoved: onItemMoved,
-              onTrimChanged: onTrimChanged,
-              onTrimDragChanged: onTrimDragChanged,
-              onDragStarted: onDragStarted,
-              onDragEnded: onDragEnded,
+      return BlocProvider(
+        create: (_) => TimelineOverlayBloc(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: TimelineOverlayStrip(
+                items: items,
+                rowCount: rowCount,
+                totalWidth: totalWidth,
+                pixelsPerSecond: pixelsPerSecond,
+                totalDuration: totalDuration,
+                color: color,
+                isCollapsed: isCollapsed,
+                selectedItemId: selectedItemId,
+                onItemTapped: onItemTapped,
+                onItemMoved: onItemMoved,
+                onTrimChanged: onTrimChanged,
+                onTrimDragChanged: onTrimDragChanged,
+                onDragStarted: onDragStarted,
+                onDragEnded: onDragEnded,
+              ),
             ),
           ),
         ),
@@ -121,9 +126,7 @@ void main() {
             id: 'zero',
             type: TimelineOverlayType.layer,
             startTime: Duration.zero,
-            duration: Duration(seconds: 2),
-            trimStart: Duration(seconds: 1),
-            trimEnd: Duration(seconds: 1),
+            endTime: Duration.zero,
             label: 'Zero',
           );
           await tester.pumpWidget(
@@ -136,30 +139,30 @@ void main() {
 
     group('interactions', () {
       testWidgets('calls onItemTapped when item is tapped', (tester) async {
-        String? tappedId;
+        TimelineOverlayItem? tappedItem;
         await tester.pumpWidget(
           buildWidget(
-            onItemTapped: (id) => tappedId = id,
+            onItemTapped: (item) => tappedItem = item,
           ),
         );
 
         await tester.tap(find.text('Test Layer'));
-        expect(tappedId, equals('item-1'));
+        expect(tappedItem?.id, equals('item-1'));
       });
 
       testWidgets(
         'calls onDragStarted on long press',
         (tester) async {
-          String? draggedId;
+          TimelineOverlayItem? draggedItem;
           await tester.pumpWidget(
             buildWidget(
-              onDragStarted: (id) => draggedId = id,
+              onDragStarted: (item) => draggedItem = item,
             ),
           );
 
           await tester.longPress(find.text('Test Layer'));
           await tester.pumpAndSettle();
-          expect(draggedId, equals('item-1'));
+          expect(draggedItem?.id, equals('item-1'));
         },
       );
     });

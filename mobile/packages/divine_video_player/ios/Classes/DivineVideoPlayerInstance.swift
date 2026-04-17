@@ -141,15 +141,24 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     propertiesOf: composition
                 )
                 self.textureOutput?.attach(to: playerItem)
+
+                let startPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value ?? 0
+                let startTime = startPositionMs > 0
+                    ? CMTime(value: startPositionMs, timescale: 1000)
+                    : CMTime.zero
+
                 if let existing = self.player {
                     existing.replaceCurrentItem(with: playerItem)
-                    await existing.seek(to: .zero)
+                    await existing.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
                 } else {
                     let newPlayer = AVPlayer(playerItem: playerItem)
                     self.player = newPlayer
                     self.textureOutput?.attachPlayer(newPlayer)
                     self.addTimeObserver()
                     self.observeStatus()
+                    if startPositionMs > 0 {
+                        await newPlayer.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
+                    }
                 }
 
                 self.observeEnd(for: self.player!.currentItem!)

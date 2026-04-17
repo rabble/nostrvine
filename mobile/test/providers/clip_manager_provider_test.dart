@@ -8,25 +8,36 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
+class _MockClipLibraryService extends Mock implements ClipLibraryService {}
+
 void main() {
   group('ClipManagerProvider', () {
     late ProviderContainer container;
     late _MockDraftStorageService mockDraftStorageService;
+    late _MockClipLibraryService mockClipLibraryService;
 
     setUp(() {
       mockDraftStorageService = _MockDraftStorageService();
+      mockClipLibraryService = _MockClipLibraryService();
       when(
         () => mockDraftStorageService.deleteDraft(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockClipLibraryService.deleteClip(any()),
       ).thenAnswer((_) async {});
       container = ProviderContainer(
         overrides: [
           draftStorageServiceProvider.overrideWithValue(
             mockDraftStorageService,
+          ),
+          clipLibraryServiceProvider.overrideWithValue(
+            mockClipLibraryService,
           ),
         ],
       );
@@ -144,7 +155,7 @@ void main() {
       expect(state.totalDuration, equals(const Duration(seconds: 3)));
     });
 
-    test('removeLastClip removes last clip', () async {
+    test('deleteLastClip deletes last clip', () async {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
@@ -164,7 +175,7 @@ void main() {
 
       expect(container.read(clipManagerProvider).clips.length, equals(2));
 
-      await notifier.removeLastClip();
+      await notifier.deleteLastRecordedClip();
 
       final state = container.read(clipManagerProvider);
       expect(state.clips.length, equals(1));

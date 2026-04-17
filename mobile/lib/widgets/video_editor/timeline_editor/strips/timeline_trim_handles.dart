@@ -4,8 +4,8 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
-import 'package:openvine/widgets/video_editor/timeline_editor/hit_expanded_box.dart';
 
 /// Callback reporting the horizontal drag delta in pixels.
 typedef TrimDragCallback = void Function(double dx);
@@ -26,6 +26,7 @@ class TimelineTrimHandles extends StatefulWidget {
     this.onRightDragUpdate,
     this.onDragStart,
     this.onDragEnd,
+    this.onDragPositionUpdate,
     this.handleColor = VineTheme.accentYellow,
     this.markerColor = TimelineConstants.trimHandleMarkerColor,
     this.handleWidth = TimelineConstants.trimHandleWidth,
@@ -54,6 +55,10 @@ class TimelineTrimHandles extends StatefulWidget {
 
   /// Called when a drag gesture ends on either handle.
   final VoidCallback? onDragEnd;
+
+  /// Called on every drag update with the current global finger position.
+  /// Use this to implement auto-scroll during trimming.
+  final ValueChanged<Offset>? onDragPositionUpdate;
 
   /// Background colour of the handles and border.
   final Color handleColor;
@@ -85,16 +90,18 @@ class TimelineTrimHandles extends StatefulWidget {
 }
 
 class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
-  void _onDragStart(DragStartDetails _) {
+  void _onDragStart(DragStartDetails details) {
     widget.onDragStart?.call();
   }
 
   void _onLeftDragUpdate(DragUpdateDetails details) {
     widget.onLeftDragUpdate?.call(details.delta.dx);
+    widget.onDragPositionUpdate?.call(details.globalPosition);
   }
 
   void _onRightDragUpdate(DragUpdateDetails details) {
     widget.onRightDragUpdate?.call(details.delta.dx);
+    widget.onDragPositionUpdate?.call(details.globalPosition);
   }
 
   void _onDragEnd(DragEndDetails _) {
@@ -109,7 +116,7 @@ class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
       double.infinity,
     );
 
-    return HitExpandedBox(
+    return _ExpandedHitSizedBox(
       expandLeft: handleW + widget.hitAreaExtra,
       expandRight: handleW + widget.hitAreaExtra,
       height: widget.height,
@@ -242,5 +249,83 @@ class _HandleVisual extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// A [SizedBox]-like widget that accepts hit-tests beyond its layout bounds.
+///
+/// Used so that trim handles positioned outside the content area via
+/// [Stack] + [Clip.none] remain interactive.
+class _ExpandedHitSizedBox extends SingleChildRenderObjectWidget {
+  const _ExpandedHitSizedBox({
+    required super.child,
+    required this.height,
+    this.expandLeft = 0,
+    this.expandRight = 0,
+  });
+
+  final double height;
+  final double expandLeft;
+  final double expandRight;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderExpandedHitSizedBox(
+      expandLeft: expandLeft,
+      expandRight: expandRight,
+      additionalConstraints: BoxConstraints.tightFor(height: height),
+    );
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderExpandedHitSizedBox renderObject,
+  ) {
+    renderObject
+      ..expandLeft = expandLeft
+      ..expandRight = expandRight
+      ..additionalConstraints = BoxConstraints.tightFor(height: height);
+  }
+}
+
+class _RenderExpandedHitSizedBox extends RenderConstrainedBox {
+  _RenderExpandedHitSizedBox({
+    required double expandLeft,
+    required double expandRight,
+    required super.additionalConstraints,
+  }) : _expandLeft = expandLeft,
+       _expandRight = expandRight;
+
+  double _expandLeft;
+  double get expandLeft => _expandLeft;
+  set expandLeft(double value) {
+    if (_expandLeft == value) return;
+    _expandLeft = value;
+  }
+
+  double _expandRight;
+  double get expandRight => _expandRight;
+  set expandRight(double value) {
+    if (_expandRight == value) return;
+    _expandRight = value;
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    final inBounds =
+        position.dx >= -_expandLeft &&
+        position.dx < size.width + _expandRight &&
+        position.dy >= 0 &&
+        position.dy < size.height;
+    if (inBounds) {
+      final childHit =
+          child?.hitTestChildren(result, position: position) ?? false;
+      if (childHit || hitTestSelf(position)) {
+        result.add(BoxHitTestEntry(this, position));
+        return true;
+      }
+    }
+    return false;
   }
 }

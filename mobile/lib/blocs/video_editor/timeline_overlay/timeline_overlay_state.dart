@@ -4,13 +4,21 @@ part of 'timeline_overlay_bloc.dart';
 class TimelineOverlayState extends Equatable {
   const TimelineOverlayState({
     this.items = const [],
+    this.audioTracks = const [],
     this.selectedItemId,
     this.draggingItemId,
+    this.trimmingItemId,
     this.collapsedTypes = const {},
   });
 
   /// All overlay items across all strip types.
   final List<TimelineOverlayItem> items;
+
+  /// Source audio events for the current sound items.
+  ///
+  /// Stored so the presentation layer can build native [AudioTrack]s
+  /// with the correct URL / asset path without reaching into Riverpod.
+  final List<AudioEvent> audioTracks;
 
   /// The currently selected item (shows trim handles), or `null`.
   final String? selectedItemId;
@@ -18,55 +26,35 @@ class TimelineOverlayState extends Equatable {
   /// The item being dragged, or `null`.
   final String? draggingItemId;
 
+  /// The item being trimmed, or `null`.
+  final String? trimmingItemId;
+
   /// Strip types that are in collapsed view.
   final Set<TimelineOverlayType> collapsedTypes;
 
-  /// Whether any item of [type] exists.
-  bool hasItemsOfType(TimelineOverlayType type) =>
-      items.any((i) => i.type == type);
-
-  /// Items filtered by type, sorted by row then start time.
-  List<TimelineOverlayItem> itemsOfType(TimelineOverlayType type) {
-    final filtered = items.where((i) => i.type == type).toList()
-      ..sort((a, b) {
-        final rowCmp = a.row.compareTo(b.row);
-        if (rowCmp != 0) return rowCmp;
-        return a.startTime.compareTo(b.startTime);
-      });
-    return filtered;
-  }
-
-  /// Number of rows used by items of [type].
-  int rowCountForType(TimelineOverlayType type) {
-    var maxRow = -1;
-    for (final item in items) {
-      if (item.type == type && item.row > maxRow) {
-        maxRow = item.row;
-      }
-    }
-    return maxRow + 1;
-  }
-
-  /// Whether [type] is collapsed.
-  bool isTypeCollapsed(TimelineOverlayType type) =>
-      collapsedTypes.contains(type);
-
   TimelineOverlayState copyWith({
     List<TimelineOverlayItem>? items,
+    List<AudioEvent>? audioTracks,
     String? selectedItemId,
     bool clearSelectedItemId = false,
     String? draggingItemId,
     bool clearDraggingItemId = false,
+    String? trimmingItemId,
+    bool clearTrimmingItemId = false,
     Set<TimelineOverlayType>? collapsedTypes,
   }) {
     return TimelineOverlayState(
       items: items ?? this.items,
+      audioTracks: audioTracks ?? this.audioTracks,
       selectedItemId: clearSelectedItemId
           ? null
           : (selectedItemId ?? this.selectedItemId),
       draggingItemId: clearDraggingItemId
           ? null
           : (draggingItemId ?? this.draggingItemId),
+      trimmingItemId: clearTrimmingItemId
+          ? null
+          : (trimmingItemId ?? this.trimmingItemId),
       collapsedTypes: collapsedTypes ?? this.collapsedTypes,
     );
   }
@@ -74,8 +62,10 @@ class TimelineOverlayState extends Equatable {
   @override
   List<Object?> get props => [
     items,
+    audioTracks,
     selectedItemId,
     draggingItemId,
+    trimmingItemId,
     collapsedTypes,
   ];
 }
