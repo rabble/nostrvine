@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -154,19 +155,22 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
           _continueToApp();
         },
         onSuccess: () {
-          // Navigate to explore screen after successful verification
-          if (mounted) {
-            context.go(ExploreScreen.path);
-          }
+          // Signal password managers to save credentials BEFORE we unmount
+          // the form via navigation.
+          if (!mounted) return;
+          TextInput.finishAutofillContext();
+          context.go(ExploreScreen.path);
         },
       ),
     );
   }
 
   void _continueToApp() {
-    if (mounted) {
-      context.go(ExploreScreen.path);
-    }
+    if (!mounted) return;
+    // Signal password managers to save credentials BEFORE we unmount
+    // the form via navigation.
+    TextInput.finishAutofillContext();
+    context.go(ExploreScreen.path);
   }
 
   @override

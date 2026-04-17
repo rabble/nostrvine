@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
@@ -15,6 +16,7 @@ import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../helpers/autofill_context_mock.dart';
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
@@ -299,6 +301,107 @@ void main() {
           findsOneWidget,
         );
       });
+    });
+
+    group('Autofill Context', () {
+      testWidgets(
+        'calls TextInput.finishAutofillContext when tapping Continue to App',
+        (tester) async {
+          final recorder = AutofillContextRecorder.install();
+
+          // Return verification-required result so the dialog is shown.
+          when(
+            () => mockOAuth.headlessRegister(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+              nsec: any(named: 'nsec'),
+              scope: any(named: 'scope'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              HeadlessRegisterResult(
+                success: true,
+                pubkey: 'test-pubkey',
+                verificationRequired: true,
+                deviceCode: 'test-device-code',
+                email: 'test@example.com',
+              ),
+              'test-verifier',
+            ),
+          );
+
+          // Build with GoRouter so context.go() in _continueToApp() succeeds.
+          // BlocProvider and ProviderScope must wrap MaterialApp.router so
+          // that dialogs opened via showDialog (which uses the root overlay)
+          // can find both the BLoC and Riverpod providers.
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, __) => const SecureAccountScreen(),
+              ),
+              GoRoute(
+                path: '/explore',
+                builder: (_, __) => const Scaffold(),
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                ...getStandardTestOverrides(),
+                oauthClientProvider.overrideWithValue(mockOAuth),
+                authServiceProvider.overrideWithValue(mockAuthService),
+              ],
+              child: BlocProvider<EmailVerificationCubit>(
+                create: (_) => EmailVerificationCubit(
+                  oauthClient: mockOAuth,
+                  authService: mockAuthService,
+                ),
+                child: MaterialApp.router(
+                  theme: VineTheme.theme,
+                  routerConfig: router,
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Enter valid credentials.
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Email'),
+              matching: find.byType(TextField),
+            ),
+            'test@example.com',
+          );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Password'),
+              matching: find.byType(TextField),
+            ),
+            'SecurePass123!',
+          );
+
+          // Submit the form — triggers headlessRegister → dialog shown.
+          await tester.tap(
+            find.widgetWithText(DivineButton, 'Secure account'),
+          );
+          // Pump through the async headlessRegister call and showDialog.
+          // Use pump() + pump(duration) to drain microtask + timer queues
+          // without relying on pumpAndSettle (which hangs on polling timers).
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+
+          // Tap "Continue to App" in the verification dialog.
+          await tester.tap(find.text('Continue to App'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(recorder.didFinishAutofillContext, isTrue);
+        },
+      );
     });
   });
 }
