@@ -203,16 +203,19 @@ class _PopularVideosTrendingContentState
     extends ConsumerState<_PopularVideosTrendingContent>
     with ScrollToHideMixin {
   late final StreamController<List<VideoEvent>> _videosStreamController;
+  late final StreamController<bool> _hasMoreStreamController;
 
   @override
   void initState() {
     super.initState();
     _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+    _hasMoreStreamController = StreamController<bool>.broadcast();
   }
 
   @override
   void dispose() {
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -222,6 +225,7 @@ class _PopularVideosTrendingContentState
     ref.listen(popularVideosFeedProvider, (previous, next) {
       if (next.hasValue) {
         _videosStreamController.add(next.value!.videos);
+        _hasMoreStreamController.add(next.value!.hasMoreContent);
       }
     });
     final popularVideosFeedNotifier = ref.read(
@@ -262,6 +266,9 @@ class _PopularVideosTrendingContentState
                     ),
                     initialIndex: index,
                     onLoadMore: popularVideosFeedNotifier.loadMore,
+                    hasMoreStream: _hasMoreStreamController.stream.startWith(
+                      widget.hasMoreContent,
+                    ),
                     contextTitle: 'Popular Videos',
                     trafficSource: ViewTrafficSource.discoveryPopular,
                   ),

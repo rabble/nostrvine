@@ -2,7 +2,7 @@
 
 ## Problem
 
-When the relay serves moderated content (age-restricted or removed), the app shows video metadata — author, title, description, like/comment/share buttons — but the video player is broken. No content warning overlay appears, no NIP-98 auth is attempted, and there is no mechanism to skip the video.
+When the relay serves moderated content (age-restricted or removed), the app shows video metadata — author, title, description, like/comment/share buttons — but the video player is broken. No content warning overlay appears, no viewer auth is attempted, and there is no mechanism to skip the video.
 
 ## Root Causes
 
@@ -17,7 +17,7 @@ Investigation revealed three specific gaps that let moderated content reach the 
 `_normalizeModerationLabel()` in `packages/models/lib/src/video_stats.dart:511` compares against a hardcoded `_recognizedModerationLabels` set (19 entries). Any label outside that set — e.g. `"sexual content"` (with a space), `"adult"`, `"restricted"`, new labels added server-side — returns `null` and is discarded in `_parseModerationLabels`. A video whose only signal was an unknown label arrives at the UI with `moderationLabels: []` and passes through the filter as if unmoderated.
 
 **3. No fallback when videos fail with 401/403 but weren't pre-filtered.**
-When a video slips past the content filter (missing labels, unknown labels, race conditions) but the Blossom media server returns 401/403, `PooledVideoErrorOverlay` renders a small icon and a "Content restricted" or "Age-restricted content" message inside the player area. The metadata overlay (`FeedVideoOverlay`) continues to render author info, description, and action buttons on top of that broken player. The user sees a mostly-normal video card with an error icon where the video should be. There is no auto-advance, no blur overlay, and no NIP-98 auth prompt for age-restricted content.
+When a video slips past the content filter (missing labels, unknown labels, race conditions) but the Blossom media server returns 401/403, `PooledVideoErrorOverlay` renders a small icon and a "Content restricted" or "Age-restricted content" message inside the player area. The metadata overlay (`FeedVideoOverlay`) continues to render author info, description, and action buttons on top of that broken player. The user sees a mostly-normal video card with an error icon where the video should be. There is no auto-advance, no blur overlay, and no viewer-auth retry for age-restricted content.
 
 ## Goals
 
@@ -132,7 +132,7 @@ if (status == PlaybackStatus.forbidden ||
 `_ModeratedContentOverlay` is a new full-screen overlay that:
 - Shows a shield/lock icon and a clear explanation ("This video was restricted by the relay" / "This video requires age verification").
 - Hides the author info, description, and interaction buttons (no likes/comments/shares on content the user cannot watch).
-- For `ageRestricted`, shows a "Verify age" button that triggers the existing `MediaAuthInterceptor` flow.
+- For `ageRestricted`, shows a "Verify age" button that triggers the existing `MediaAuthInterceptor` flow and retries playback with refreshed viewer auth headers.
 - For `forbidden`, shows a "Skip" button that advances `PooledVideoFeedController` to the next video.
 
 **Why not auto-skip:** Silent skipping breaks the user's mental model ("did I scroll?") and makes debugging impossible. A single tap to skip is low friction and preserves observability.
@@ -140,6 +140,30 @@ if (status == PlaybackStatus.forbidden ||
 **Why a new cubit instead of extending `VideoFeedBloc`:** Per the state-management rules, BLoCs should have a single responsibility. `VideoFeedBloc` owns "which videos are in the feed and in what order." Playback status is a different axis — per-item, frequently changing, scoped to the active viewport. Mixing it into `VideoFeedBloc` state would cause feed-wide rebuilds on per-video status changes.
 
 **Testing:** `blocTest` on `VideoPlaybackStatusCubit` for status transitions. Widget tests on `_ModeratedContentOverlay` for each status variant. Integration test in `integration_test/` covering: feed loads → video fails with 403 → overlay appears → skip button advances.
+
+### Part D — Shared viewer auth contract
+
+Age-gated media GET requests against `divine-blossom` accept two viewer-auth
+shapes:
+
+- Blossom/BUD-01 when the client knows the blob SHA-256 hash.
+- NIP-98 when the client only knows the media URL.
+
+`MediaViewerAuthService` is the selector for that contract. It chooses
+Blossom/BUD-01 when a SHA-256 hash is available, otherwise it falls back to
+NIP-98 for the exact media URL. Both playback stacks now use that same policy:
+
+- Legacy individual-controller playback calls `MediaViewerAuthService` through
+  `MediaAuthInterceptor` and `individual_video_providers.dart`.
+- Pooled playback passes viewer auth through `VideoItem.requestHeaders`,
+  forwards those headers into `media_kit` via `Media(..., httpHeaders: ...)`,
+  and retries the active item after age verification succeeds.
+
+This keeps the protocol boundary explicit:
+
+- Viewer media GETs: Blossom/BUD-01 or NIP-98, depending on request shape.
+- Backend API auth: NIP-98 only.
+- Upload/delete blob management: Blossom auth where required.
 
 ## Architecture Diagram
 
@@ -203,6 +227,13 @@ UI (PooledVideoFeed)
 | `test/widgets/video_feed_item/moderated_content_overlay_test.dart` | NEW: widget tests |
 | `lib/screens/feed/feed_video_overlay.dart` | Swap in `_ModeratedContentOverlay` when status is restricted |
 | `lib/screens/feed/pooled_fullscreen_video_feed_screen.dart` | Same, for fullscreen feed |
+| `lib/screens/feed/pooled_age_restricted_retry.dart` | NEW: shared pooled age-verification retry helper |
+| `lib/services/media_viewer_auth_service.dart` | NEW: shared viewer auth contract selector |
+| `lib/services/media_auth_interceptor.dart` | Reuse shared viewer auth contract + preference gating |
+| `lib/providers/individual_video_providers.dart` | Legacy playback now shares viewer auth contract |
+| `packages/pooled_video_player/lib/src/models/video_item.dart` | Carry request headers on pooled items |
+| `packages/pooled_video_player/lib/src/controllers/video_feed_controller.dart` | Forward viewer auth headers into `media_kit` and retry current item |
+| `packages/pooled_video_player/test/controllers/video_feed_controller_test.dart` | Verify authenticated pooled retries |
 | `lib/screens/feed/video_feed_page.dart` | Provide `VideoPlaybackStatusCubit` |
 | `integration_test/moderated_content_test.dart` | NEW: end-to-end |
 

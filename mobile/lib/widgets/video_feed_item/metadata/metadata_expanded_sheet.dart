@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -122,6 +123,7 @@ class _CaptionsSettingSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final captionsEnabled = ref.watch(subtitleVisibilityProvider);
+    final l10n = context.l10n;
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -137,12 +139,15 @@ class _CaptionsSettingSection extends ConsumerWidget {
             button: true,
             toggled: captionsEnabled,
             label: captionsEnabled
-                ? 'Captions enabled for all videos'
-                : 'Captions disabled for all videos',
+                ? l10n.metadataCaptionsEnabledSemantics
+                : l10n.metadataCaptionsDisabledSemantics,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Captions', style: VineTheme.titleSmallFont()),
+                Text(
+                  l10n.metadataCaptionsLabel,
+                  style: VineTheme.titleSmallFont(),
+                ),
                 const SizedBox(width: 8),
                 Switch(
                   value: captionsEnabled,

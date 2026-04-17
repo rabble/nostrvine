@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for VideoRecorderProviderState and VideoRecorderNotifier
 // ABOUTME: Tests state getters, properties, and recording lifecycle
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 
 import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;

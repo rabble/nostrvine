@@ -20,10 +20,12 @@ class RepostActionButton extends StatelessWidget {
     required this.video,
     super.key,
     this.isPreviewMode = false,
+    this.onInteracted,
   });
 
   final VideoEvent video;
   final bool isPreviewMode;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +51,7 @@ class RepostActionButton extends StatelessWidget {
           isReposted: data.isReposted,
           isRepostInProgress: data.isInProgress,
           totalReposts: data.count,
+          onInteracted: onInteracted,
         );
       },
     );
@@ -60,11 +63,13 @@ class _ActionButton extends StatelessWidget {
     this.isReposted = false,
     this.isRepostInProgress = false,
     this.totalReposts = 1,
+    this.onInteracted,
   });
 
   final bool isReposted;
   final bool isRepostInProgress;
   final int totalReposts;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +83,7 @@ class _ActionButton extends StatelessWidget {
       isLoading: isRepostInProgress,
       count: totalReposts,
       onPressed: () {
+        onInteracted?.call();
         context.read<VideoInteractionsBloc>().add(
           const VideoInteractionsRepostToggled(),
         );

@@ -1224,6 +1224,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoActionLike => 'Video liken';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance =>
+      'Automatisches Weiterblättern aktivieren';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Automatisches Weiterblättern deaktivieren';
+
+  @override
   String get videoActionRemoveRepost => 'Repost entfernen';
 
   @override
@@ -3397,14 +3408,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Dein Für-dich-Feed ist leer.\nEntdecke Videos und folge Creatorn, um ihn zu gestalten.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Noch keine Videos von Personen, denen du folgst.\nFinde Creator, die dir gefallen, und folge ihnen.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty =>
+      'Noch keine neuen Videos.\nSchau bald wieder rein.';
 
   @override
   String get feedExploreVideos => 'Videos entdecken';
@@ -3581,13 +3593,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navMyProfile => 'Mein Profil';
 
   @override
-  String get navSearch => 'Suche';
-
-  @override
   String get navNotifications => 'Benachrichtigungen';
-
-  @override
-  String get navSearchTooltip => 'Suche';
 
   @override
   String get navOpenCamera => 'Kamera öffnen';
@@ -4890,4 +4896,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Zu den Einstellungen';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

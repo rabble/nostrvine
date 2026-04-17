@@ -28,6 +28,16 @@ final class FullscreenFeedLoadMoreRequested extends FullscreenFeedEvent {
   List<Object?> get props => [];
 }
 
+/// Source pagination availability changed.
+final class FullscreenFeedHasMoreChanged extends FullscreenFeedEvent {
+  const FullscreenFeedHasMoreChanged(this.hasMore);
+
+  final bool hasMore;
+
+  @override
+  List<Object?> get props => [hasMore];
+}
+
 /// Current video index changed (user swiped).
 final class FullscreenFeedIndexChanged extends FullscreenFeedEvent {
   const FullscreenFeedIndexChanged(this.index);

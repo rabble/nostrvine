@@ -1,6 +1,7 @@
 // ABOUTME: Tests for VideoRecorderScreen - main video recording UI
 // ABOUTME: Tests screen initialization, camera setup, UI elements, and lifecycle
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:core';
 
 import 'package:flutter/foundation.dart';

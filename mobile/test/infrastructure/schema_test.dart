@@ -1,6 +1,7 @@
 // ABOUTME: Tests for Drift table schema definitions
 // ABOUTME: Verifies NostrEvents and UserProfiles tables are properly defined
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 
 import 'package:db_client/db_client.dart';

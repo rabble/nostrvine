@@ -1,4 +1,4 @@
-// ABOUTME: Integration tests for complete feature flag system end-to-end functionality
+// ABOUTME: Widget-level workflow tests for the feature flag system
 // ABOUTME: Validates flag service, providers, widgets, and screen working together
 
 import 'package:divine_ui/divine_ui.dart';

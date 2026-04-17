@@ -51,6 +51,7 @@ class ProfileRepository {
     ProfileStatsDao? profileStatsDao,
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileSearchFilter? profileSearchFilter,
+    BlockedProfileFilter? blockFilter,
     List<String> indexerRelays = defaultProfileIndexerRelays,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
@@ -58,6 +59,7 @@ class ProfileRepository {
        _profileStatsDao = profileStatsDao,
        _funnelcakeApiClient = funnelcakeApiClient,
        _profileSearchFilter = profileSearchFilter,
+       _blockFilter = blockFilter,
        _indexerRelays = indexerRelays;
 
   final NostrClient _nostrClient;
@@ -66,6 +68,7 @@ class ProfileRepository {
   final ProfileStatsDao? _profileStatsDao;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
+  final BlockedProfileFilter? _blockFilter;
   final List<String> _indexerRelays;
 
   /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
@@ -862,22 +865,28 @@ class ProfileRepository {
     yield _applyFilter(trimmed, enriched, useServerSort);
   }
 
-  /// Applies the configured search filter or falls back to name matching.
+  /// Applies the configured search filter or falls back to name matching,
+  /// then removes blocked/muted users.
   List<UserProfile> _applyFilter(
     String query,
     List<UserProfile> profiles,
     bool useServerSort,
   ) {
-    if (useServerSort) return profiles;
-
-    if (_profileSearchFilter != null) {
-      return _profileSearchFilter(query, profiles);
+    List<UserProfile> filtered;
+    if (useServerSort) {
+      filtered = profiles;
+    } else if (_profileSearchFilter != null) {
+      filtered = _profileSearchFilter(query, profiles);
+    } else {
+      final queryLower = query.toLowerCase();
+      filtered = profiles.where((profile) {
+        return profile.bestDisplayName.toLowerCase().contains(queryLower);
+      }).toList();
     }
 
-    final queryLower = query.toLowerCase();
-    return profiles.where((profile) {
-      return profile.bestDisplayName.toLowerCase().contains(queryLower);
-    }).toList();
+    final blockFilter = _blockFilter;
+    if (blockFilter == null) return filtered;
+    return filtered.where((p) => !blockFilter(p.pubkey)).toList();
   }
 
   /// Fetches a user profile from the Funnelcake REST API.

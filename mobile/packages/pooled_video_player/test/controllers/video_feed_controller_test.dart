@@ -4873,6 +4873,38 @@ void main() {
     });
 
     group('retryLoad', () {
+      test('passes request headers into Media when opening a video', () async {
+        const headers = {'Authorization': 'Nostr token'};
+        const video = VideoItem(
+          id: 'auth-video',
+          url: 'https://example.com/auth-video.mp4',
+          requestHeaders: headers,
+        );
+        final controller = VideoFeedController(
+          videos: [video],
+          pool: pool,
+          preloadAhead: 0,
+          preloadBehind: 0,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final setup = playerSetups[video.url]!;
+        final capturedMedia =
+            verify(
+                  () => setup.player.open(
+                    captureAny(),
+                    play: any(named: 'play'),
+                  ),
+                ).captured.single
+                as Media;
+
+        expect(capturedMedia.uri, equals(video.url));
+        expect(capturedMedia.httpHeaders, equals(headers));
+
+        controller.dispose();
+      });
+
       test('releases player and re-triggers preload', () async {
         final videos = createTestVideos(count: 3);
 
@@ -4964,6 +4996,79 @@ void main() {
         controller.dispose();
         await retryPool.dispose();
       });
+
+      test(
+        'retries an age-restricted load after request headers are updated',
+        () async {
+          var shouldRequireAuth = true;
+          Media? lastOpenedMedia;
+          final retryPool = TestablePlayerPool(
+            maxPlayers: 10,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup();
+              final mock = _MockPooledPlayer();
+              when(() => mock.player).thenReturn(setup.player);
+              when(
+                () => mock.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mock.isDisposed).thenReturn(false);
+              when(() => mock.wasRecycled).thenReturn(false);
+              when(mock.clearRecycled).thenReturn(null);
+              when(mock.dispose).thenAnswer((_) async {});
+              when(
+                () => setup.player.open(
+                  any(),
+                  play: any(named: 'play'),
+                ),
+              ).thenAnswer((invocation) async {
+                lastOpenedMedia = invocation.positionalArguments.first as Media;
+                if (shouldRequireAuth &&
+                    lastOpenedMedia!.httpHeaders?['Authorization'] !=
+                        'Nostr allowed') {
+                  throw Exception('401 Unauthorized');
+                }
+              });
+              return mock;
+            },
+          );
+
+          final controller = VideoFeedController(
+            videos: const [
+              VideoItem(
+                id: 'protected-video',
+                url: 'https://example.com/protected-video.mp4',
+              ),
+            ],
+            pool: retryPool,
+            preloadAhead: 0,
+            preloadBehind: 0,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), equals(LoadState.error));
+          expect(
+            controller.getIndexNotifier(0).value.errorType,
+            equals(VideoErrorType.ageRestricted),
+          );
+          expect(lastOpenedMedia?.httpHeaders, isNull);
+
+          shouldRequireAuth = false;
+          controller.updateRequestHeadersAndRetry(0, const {
+            'Authorization': 'Nostr allowed',
+          });
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.getLoadState(0), isNot(LoadState.error));
+          expect(
+            lastOpenedMedia?.httpHeaders,
+            equals(const {'Authorization': 'Nostr allowed'}),
+          );
+
+          controller.dispose();
+          await retryPool.dispose();
+        },
+      );
     });
 
     group('error type classification', () {

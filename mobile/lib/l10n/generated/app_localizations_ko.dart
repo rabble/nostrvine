@@ -1131,6 +1131,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionLike => '좋아요';
 
   @override
+  String get videoActionAutoLabel => '자동';
+
+  @override
+  String get videoActionEnableAutoAdvance => '자동 넘김 켜기';
+
+  @override
+  String get videoActionDisableAutoAdvance => '자동 넘김 끄기';
+
+  @override
   String get videoActionRemoveRepost => '리포스트 취소';
 
   @override
@@ -3201,14 +3210,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      '추천 피드가 비어 있어요.\n영상을 둘러보고 크리에이터를 팔로우해 피드를 채워보세요.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      '팔로우한 사용자의 영상이 아직 없어요.\n마음에 드는 크리에이터를 찾아 팔로우해 보세요.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => '아직 새로운 영상이 없어요.\n잠시 후 다시 확인해 주세요.';
 
   @override
   String get feedExploreVideos => '영상 둘러보기';
@@ -3379,13 +3388,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get navMyProfile => '내 프로필';
 
   @override
-  String get navSearch => '검색';
-
-  @override
   String get navNotifications => '알림';
-
-  @override
-  String get navSearchTooltip => '검색';
 
   @override
   String get navOpenCamera => '카메라 열기';
@@ -4653,4 +4656,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => '설정으로 이동';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

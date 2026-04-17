@@ -1,6 +1,7 @@
 // ABOUTME: TDD tests for DraftStorageService - persistent storage for vine drafts
 // ABOUTME: Tests save, load, delete, clear, and migration operations using Drift
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
@@ -644,7 +645,10 @@ void main() {
         final mockPlatform = MockPathProviderPlatform()
           ..setApplicationDocumentsPath(documentsPath);
         PathProviderPlatform.instance = mockPlatform;
+        SharedPreferences.setMockInitialValues({});
       });
+
+      tearDown(SharedPreferences.resetStatic);
 
       Map<String, dynamic> buildClipJson({
         required String id,

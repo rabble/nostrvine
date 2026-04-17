@@ -1,6 +1,7 @@
 // ABOUTME: Tests for DiscoverListsScreen pagination behavior
 // ABOUTME: Verifies pagination stops re-triggering when no more lists found
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:async';
 
 import 'package:flutter/material.dart';

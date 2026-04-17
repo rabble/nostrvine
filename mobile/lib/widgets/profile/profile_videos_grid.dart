@@ -72,6 +72,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   List<VideoEvent>? _lastPrefetchedVideos;
   final _videosStreamController =
       StreamController<List<VideoEvent>>.broadcast();
+  final _hasMoreStreamController = StreamController<bool>.broadcast();
   final _precachedThumbnailUrls = <String>{};
 
   /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
@@ -120,6 +121,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   void dispose() {
     disposePagination();
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -145,6 +147,13 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   void _onVideoTapped(int index, {required VoidCallback onLoadMore}) {
     final videos = widget.videos;
+    final hasMoreContent =
+        ref
+            .read(profileFeedProvider(widget.userIdHex))
+            .asData
+            ?.value
+            .hasMoreContent ??
+        false;
     Log.info(
       '🎯 ProfileVideosGrid TAP: gridIndex=$index, '
       'videoId=${videos[index].id}',
@@ -160,6 +169,9 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         videosStream: _videosStreamController.stream.startWith(videos),
         initialIndex: index,
         onLoadMore: onLoadMore,
+        hasMoreStream: _hasMoreStreamController.stream.startWith(
+          hasMoreContent,
+        ),
         trafficSource: ViewTrafficSource.profile,
       ),
     );
@@ -172,6 +184,9 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       next.whenData((feedState) {
         if (!_videosStreamController.isClosed) {
           _videosStreamController.add(feedState.videos);
+        }
+        if (!_hasMoreStreamController.isClosed) {
+          _hasMoreStreamController.add(feedState.hasMoreContent);
         }
       });
     });

@@ -1225,6 +1225,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoActionLike => 'Curtir vídeo';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Ativar avanço automático';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Desativar avanço automático';
+
+  @override
   String get videoActionRemoveRepost => 'Remover repost';
 
   @override
@@ -3381,14 +3390,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Seu feed Para você está vazio.\nExplore vídeos e siga criadores para personalizá-lo.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Ainda não há vídeos das pessoas que você segue.\nEncontre criadores de que goste e siga-os.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => 'Ainda não há vídeos novos.\nVolte em breve.';
 
   @override
   String get feedExploreVideos => 'Explorar vídeos';
@@ -3563,13 +3572,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get navMyProfile => 'Meu perfil';
 
   @override
-  String get navSearch => 'Buscar';
-
-  @override
   String get navNotifications => 'Notificações';
-
-  @override
-  String get navSearchTooltip => 'Buscar';
 
   @override
   String get navOpenCamera => 'Abrir câmera';
@@ -4868,4 +4871,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Ir para configurações';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

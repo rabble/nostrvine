@@ -40,10 +40,13 @@ class CategoryGalleryScreen extends ConsumerStatefulWidget {
 class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
   final StreamController<List<VideoEvent>> _videosStreamController =
       StreamController<List<VideoEvent>>.broadcast();
+  final StreamController<bool> _hasMoreStreamController =
+      StreamController<bool>.broadcast();
 
   @override
   void dispose() {
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -60,9 +63,12 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
         currentUserPubkey: currentUserPubkey,
       )..add(CategorySelected(widget.category)),
       child: BlocListener<CategoriesBloc, CategoriesState>(
-        listenWhen: (previous, current) => previous.videos != current.videos,
+        listenWhen: (previous, current) =>
+            previous.videos != current.videos ||
+            previous.hasMoreVideos != current.hasMoreVideos,
         listener: (_, state) {
           _videosStreamController.add(state.videos);
+          _hasMoreStreamController.add(state.hasMoreVideos);
         },
         child: BlocBuilder<CategoriesBloc, CategoriesState>(
           builder: (context, state) {
@@ -103,6 +109,9 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
                         const CategoryVideosLoadMore(),
                       );
                     },
+                    hasMoreStream: _hasMoreStreamController.stream.startWith(
+                      state.hasMoreVideos,
+                    ),
                     contextTitle: localizedCategoryName(
                       context.l10n,
                       widget.category.name,
