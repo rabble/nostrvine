@@ -67,6 +67,15 @@ class HeadlessLoginResult {
     this.errorDescription,
   });
 
+  /// Machine-readable server error code when [success] is `false`.
+  ///
+  /// Returns `null` for successful responses (where [code] holds the OAuth
+  /// authorization code instead). On failure this is the `code` field from
+  /// the server response body — e.g. `INVALID_CREDENTIALS`, `RATE_LIMITED`,
+  /// `EMAIL_NOT_VERIFIED`. UI layers can branch on this for targeted
+  /// messaging while keeping a generic human fallback in [errorDescription].
+  String? get errorCode => success ? null : code;
+
   factory HeadlessLoginResult.fromJson(Map<String, dynamic> json) {
     return HeadlessLoginResult(
       success: json['success'] as bool? ?? false,
@@ -81,6 +90,7 @@ class HeadlessLoginResult {
   factory HeadlessLoginResult.error(String message, {String? code}) {
     return HeadlessLoginResult(
       success: false,
+      code: code ?? 'client_error',
       error: code ?? 'client_error',
       errorDescription: message,
     );

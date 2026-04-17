@@ -127,10 +127,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.ancestor(
-            of: emailField,
-            matching: find.byType(AutofillGroup),
-          ),
+          find.ancestor(of: emailField, matching: find.byType(AutofillGroup)),
           findsOneWidget,
         );
         expect(
@@ -175,10 +172,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.widgetWithText(
-            DivineButton,
-            'Connect with a signer app',
-          ),
+          find.widgetWithText(DivineButton, 'Connect with a signer app'),
           findsOneWidget,
         );
       });
@@ -319,6 +313,61 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Invalid email or password'), findsOneWidget);
+      });
+
+      testWidgets('does not show Nostr-login hint before any sign-in attempt', (
+        tester,
+      ) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Signed up with Nostr?'), findsNothing);
+      });
+
+      testWidgets('shows Nostr-login hint after a failed sign-in', (
+        tester,
+      ) async {
+        when(
+          () => mockOAuth.headlessLogin(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            scope: any(named: 'scope'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            HeadlessLoginResult(
+              success: false,
+              error: 'invalid_credentials',
+              errorDescription: 'Invalid email or password',
+            ),
+            'test-verifier',
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
+          'nostr-user@example.com',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+          'NotTheirActualMethod!',
+        );
+
+        await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.textContaining('Signed up with Nostr?'), findsOneWidget);
+        expect(find.textContaining('Use an option below'), findsOneWidget);
       });
 
       testWidgets('shows email validation error for empty form', (

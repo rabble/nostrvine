@@ -161,15 +161,47 @@ void main() {
       test('parses error fields', () {
         final json = {
           'success': false,
-          'error': 'invalid_credentials',
+          'error': 'Invalid email or password',
+          'code': 'INVALID_CREDENTIALS',
           'error_description': 'Wrong password',
         };
 
         final result = HeadlessLoginResult.fromJson(json);
 
         expect(result.success, isFalse);
-        expect(result.error, 'invalid_credentials');
+        expect(result.error, 'Invalid email or password');
         expect(result.errorDescription, 'Wrong password');
+        expect(result.errorCode, 'INVALID_CREDENTIALS');
+      });
+    });
+
+    group('errorCode', () {
+      test('returns null on successful login', () {
+        final result = HeadlessLoginResult(
+          success: true,
+          code: 'auth_code_xyz',
+        );
+
+        expect(result.errorCode, isNull);
+      });
+
+      test('returns server code on failed login from JSON', () {
+        final result = HeadlessLoginResult.fromJson({
+          'success': false,
+          'code': 'RATE_LIMITED',
+          'error': 'Too many attempts',
+        });
+
+        expect(result.errorCode, 'RATE_LIMITED');
+      });
+
+      test('returns factory code on client-side error', () {
+        final result = HeadlessLoginResult.error(
+          'Cannot connect',
+          code: 'connection_error',
+        );
+
+        expect(result.errorCode, 'connection_error');
       });
     });
 
@@ -180,6 +212,7 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, 'client_error');
         expect(result.errorDescription, 'Login failed');
+        expect(result.errorCode, 'client_error');
       });
 
       test('creates error result with custom code', () {
@@ -191,6 +224,7 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, 'connection_error');
         expect(result.errorDescription, 'Network error');
+        expect(result.errorCode, 'connection_error');
       });
     });
   });

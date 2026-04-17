@@ -107,7 +107,19 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
   late TextEditingController _passwordController;
   late FocusNode _emailFocusNode;
   late FocusNode _passwordFocusNode;
+  final GlobalKey _alternativesKey = GlobalKey();
   bool _isConnectingAmber = false;
+
+  Future<void> _scrollToAlternatives() async {
+    final ctx = _alternativesKey.currentContext;
+    if (ctx == null) return;
+    await Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      alignment: 0.5,
+    );
+  }
 
   @override
   void initState() {
@@ -302,10 +314,18 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                   ),
                 ),
 
-                // General error
+                // General error + Nostr-login recovery hint.
+                // Shown on every failed login — preserves security (doesn't
+                // leak whether the account exists). The ~98% of Keycast users
+                // who signed up via Nostr (not email) otherwise have no way
+                // to discover that the alternatives below apply to them.
                 if (widget.state.generalError != null) ...[
                   const SizedBox(height: 16),
                   AuthErrorBox(message: widget.state.generalError!),
+                  const SizedBox(height: 12),
+                  _NostrLoginHint(
+                    onTap: isDisabled ? null : _scrollToAlternatives,
+                  ),
                 ],
 
                 const SizedBox(height: 24),
@@ -344,6 +364,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
 
                 // Alternative login methods
                 DivineButton(
+                  key: _alternativesKey,
                   type: .secondary,
                   expanded: true,
                   label: 'Import Nostr key',
@@ -432,6 +453,53 @@ void _showInfoSheet(BuildContext context) {
       ),
     ),
   );
+}
+
+/// Secondary hint shown alongside a failed-login error.
+///
+/// Points users who may have signed up with a Nostr signer (rather than
+/// email + password) toward the alternative sign-in options at the bottom
+/// of the screen. Tapping scrolls those options into view.
+class _NostrLoginHint extends StatelessWidget {
+  const _NostrLoginHint({required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Sign in with Nostr. Scroll to alternative options.',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: 'Signed up with Nostr? '),
+                TextSpan(
+                  text: 'Use an option below ↓',
+                  style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    decorationColor: VineTheme.vineGreenLight,
+                    color: VineTheme.vineGreenLight,
+                  ),
+                ),
+              ],
+            ),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Single info item in the info sheet.
