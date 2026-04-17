@@ -18,6 +18,7 @@ import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -107,18 +108,13 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
     unawaited(feedState.animateToPage(widget.index + 1));
   }
 
-  /// Triggers the existing age-verification flow via the Riverpod service.
-  /// On success, clears the cached moderated status so a retry can
-  /// re-classify the video using the newly unlocked auth cookie.
+  /// Triggers age verification and retries pooled playback with viewer auth.
   Future<void> _verifyAge(BuildContext context, VideoEvent video) async {
-    final ageVerificationService = ref.read(ageVerificationServiceProvider);
-    final verified = await ageVerificationService.verifyAdultContentAccess(
-      context,
-    );
-    if (!verified || !context.mounted) return;
-    context.read<VideoPlaybackStatusCubit>().report(
-      video.id,
-      PlaybackStatus.ready,
+    await retryAgeRestrictedPooledVideo(
+      context: context,
+      ref: ref,
+      video: video,
+      index: widget.index,
     );
   }
 

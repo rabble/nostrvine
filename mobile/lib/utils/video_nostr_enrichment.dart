@@ -64,7 +64,9 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
         // Check if Nostr event has original Vine metric tags
 
         return video.copyWith(
-          rawTags: parsed.rawTags,
+          // Merge: keep REST-only keys (e.g. `views` engagement metric that
+          // Nostr events never carry), but let Nostr win on key collisions.
+          rawTags: {...video.rawTags, ...parsed.rawTags},
           contentWarningLabels: video.contentWarningLabels.isEmpty
               ? parsed.contentWarningLabels
               : video.contentWarningLabels,

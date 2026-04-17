@@ -592,6 +592,7 @@ class VideoFeedController extends ChangeNotifier {
     required int startIndex,
     required Stopwatch? loadStopwatch,
     required String retryLogLabel,
+    Map<String, String>? requestHeaders,
     String diagnosticsReason = 'load_error',
   }) async {
     var attemptIndex = startIndex;
@@ -600,7 +601,10 @@ class VideoFeedController extends ChangeNotifier {
       final source = playbackSources[attemptIndex];
 
       try {
-        await player.open(Media(source), play: false);
+        await player.open(
+          Media(source, httpHeaders: requestHeaders),
+          play: false,
+        );
         return (openedSource: source, sourceIndex: attemptIndex);
       } on Exception catch (error) {
         final nextAttempt = attemptIndex + 1;
@@ -763,6 +767,7 @@ class VideoFeedController extends ChangeNotifier {
         player: player,
         playbackSources: playbackSources,
         startIndex: nextSourceIndex,
+        requestHeaders: _videos[index].requestHeaders,
         loadStopwatch: _loadStopwatches[index],
         retryLogLabel: 'stuck_retry',
         diagnosticsReason: 'stuck_playback',
@@ -798,6 +803,16 @@ class VideoFeedController extends ChangeNotifier {
     _logDebug('retry_load ${_videoDebugDetails(index)}');
     _releasePlayer(index);
     _updatePreloadWindow(_currentIndex);
+  }
+
+  /// Updates request headers for the video at [index] and retries loading it.
+  void updateRequestHeadersAndRetry(
+    int index,
+    Map<String, String>? requestHeaders,
+  ) {
+    if (_isDisposed || index < 0 || index >= _videos.length) return;
+    _videos[index] = _videos[index].copyWith(requestHeaders: requestHeaders);
+    retryLoad(index);
   }
 
   /// Called when the visible page changes.
@@ -1174,6 +1189,7 @@ class VideoFeedController extends ChangeNotifier {
         player: pooledPlayer.player,
         playbackSources: playbackSources,
         startIndex: sourceIndex,
+        requestHeaders: video.requestHeaders,
         loadStopwatch: loadStopwatch,
         retryLogLabel: 'open_retry',
       );

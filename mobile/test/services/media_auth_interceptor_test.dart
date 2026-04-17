@@ -1,17 +1,18 @@
 // ABOUTME: Tests for media authentication interceptor handling 401 errors
 // ABOUTME: Validates privacy-first auth flow for age-restricted Blossom content
 
-import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
+import 'package:openvine/services/media_viewer_auth_service.dart';
 
 class MockAgeVerificationService extends Mock
     implements AgeVerificationService {}
 
-class MockBlossomAuthService extends Mock implements BlossomAuthService {}
+class MockMediaViewerAuthService extends Mock
+    implements MediaViewerAuthService {}
 
 class MockBuildContext extends Mock implements BuildContext {}
 
@@ -19,7 +20,7 @@ class FakeBuildContext extends Fake implements BuildContext {}
 
 void main() {
   late MockAgeVerificationService mockAgeVerificationService;
-  late MockBlossomAuthService mockBlossomAuthService;
+  late MockMediaViewerAuthService mockMediaViewerAuthService;
   late MediaAuthInterceptor interceptor;
   late MockBuildContext mockContext;
 
@@ -29,11 +30,11 @@ void main() {
 
   setUp(() {
     mockAgeVerificationService = MockAgeVerificationService();
-    mockBlossomAuthService = MockBlossomAuthService();
+    mockMediaViewerAuthService = MockMediaViewerAuthService();
     mockContext = MockBuildContext();
     interceptor = MediaAuthInterceptor(
       ageVerificationService: mockAgeVerificationService,
-      blossomAuthService: mockBlossomAuthService,
+      mediaViewerAuthService: mockMediaViewerAuthService,
     );
 
     // Default mock behavior for preference checks
@@ -71,8 +72,9 @@ void main() {
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         ).called(1);
         verifyNever(
-          () => mockBlossomAuthService.createGetAuthHeader(
+          () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
         );
@@ -87,11 +89,14 @@ void main() {
           () => mockAgeVerificationService.shouldAutoShowAdultContent,
         ).thenReturn(true);
         when(
-          () => mockBlossomAuthService.createGetAuthHeader(
+          () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
-        ).thenAnswer((_) async => 'Nostr abc123token');
+        ).thenAnswer(
+          (_) async => {'Authorization': 'Nostr abc123token'},
+        );
 
         // Act
         final result = await interceptor.handleUnauthorizedMedia(
@@ -101,13 +106,14 @@ void main() {
         );
 
         // Assert
-        expect(result, equals('Nostr abc123token'));
+        expect(result, equals({'Authorization': 'Nostr abc123token'}));
         verifyNever(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         );
         verify(
-          () =>
-              mockBlossomAuthService.createGetAuthHeader(sha256Hash: 'abc123'),
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: 'abc123',
+          ),
         ).called(1);
       },
     );
@@ -121,11 +127,14 @@ void main() {
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         ).thenAnswer((_) async => true);
         when(
-          () => mockBlossomAuthService.createGetAuthHeader(
+          () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
-        ).thenAnswer((_) async => 'Nostr abc123token');
+        ).thenAnswer(
+          (_) async => {'Authorization': 'Nostr abc123token'},
+        );
 
         // Act
         final result = await interceptor.handleUnauthorizedMedia(
@@ -135,13 +144,14 @@ void main() {
         );
 
         // Assert
-        expect(result, equals('Nostr abc123token'));
+        expect(result, equals({'Authorization': 'Nostr abc123token'}));
         verify(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         ).called(1);
         verify(
-          () =>
-              mockBlossomAuthService.createGetAuthHeader(sha256Hash: 'abc123'),
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: 'abc123',
+          ),
         ).called(1);
       },
     );
@@ -152,11 +162,14 @@ void main() {
         () => mockAgeVerificationService.shouldAutoShowAdultContent,
       ).thenReturn(true);
       when(
-        () => mockBlossomAuthService.createGetAuthHeader(
+        () => mockMediaViewerAuthService.createAuthHeaders(
           sha256Hash: any(named: 'sha256Hash'),
+          url: any(named: 'url'),
           serverUrl: any(named: 'serverUrl'),
         ),
-      ).thenAnswer((_) async => 'Nostr tokenWithServer');
+      ).thenAnswer(
+        (_) async => {'Authorization': 'Nostr tokenWithServer'},
+      );
 
       // Act
       final result = await interceptor.handleUnauthorizedMedia(
@@ -167,9 +180,9 @@ void main() {
       );
 
       // Assert
-      expect(result, equals('Nostr tokenWithServer'));
+      expect(result, equals({'Authorization': 'Nostr tokenWithServer'}));
       verify(
-        () => mockBlossomAuthService.createGetAuthHeader(
+        () => mockMediaViewerAuthService.createAuthHeaders(
           sha256Hash: 'xyz789',
           serverUrl: 'https://blossom.example.com',
         ),
@@ -182,11 +195,12 @@ void main() {
         () => mockAgeVerificationService.shouldAutoShowAdultContent,
       ).thenReturn(true);
       when(
-        () => mockBlossomAuthService.createGetAuthHeader(
+        () => mockMediaViewerAuthService.createAuthHeaders(
           sha256Hash: any(named: 'sha256Hash'),
+          url: any(named: 'url'),
           serverUrl: any(named: 'serverUrl'),
         ),
-      ).thenAnswer((_) async => 'Nostr token');
+      ).thenAnswer((_) async => {'Authorization': 'Nostr token'});
 
       // Act - Test with different category (future-proofing for violence, etc.)
       await interceptor.handleUnauthorizedMedia(
@@ -197,7 +211,9 @@ void main() {
 
       // Assert - Should still work (currently only handles nudity/adult content)
       verify(
-        () => mockBlossomAuthService.createGetAuthHeader(sha256Hash: 'abc123'),
+        () => mockMediaViewerAuthService.createAuthHeaders(
+          sha256Hash: 'abc123',
+        ),
       ).called(1);
     });
 
@@ -209,8 +225,9 @@ void main() {
           () => mockAgeVerificationService.shouldAutoShowAdultContent,
         ).thenReturn(true);
         when(
-          () => mockBlossomAuthService.createGetAuthHeader(
+          () => mockMediaViewerAuthService.createAuthHeaders(
             sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
         ).thenAnswer((_) async => null);
@@ -229,16 +246,16 @@ void main() {
   });
 
   group('MediaAuthInterceptor - helper methods', () {
-    test('canCreateAuthHeaders delegates to BlossomAuthService', () {
+    test('canCreateAuthHeaders delegates to MediaViewerAuthService', () {
       // Arrange
-      when(() => mockBlossomAuthService.canCreateHeaders).thenReturn(true);
+      when(() => mockMediaViewerAuthService.canCreateHeaders).thenReturn(true);
 
       // Act
       final result = interceptor.canCreateAuthHeaders;
 
       // Assert
       expect(result, isTrue);
-      verify(() => mockBlossomAuthService.canCreateHeaders).called(1);
+      verify(() => mockMediaViewerAuthService.canCreateHeaders).called(1);
     });
   });
 }
