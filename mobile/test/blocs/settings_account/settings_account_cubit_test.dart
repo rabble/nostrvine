@@ -5,8 +5,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -15,13 +13,10 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
-class _MockFeatureFlagService extends Mock implements FeatureFlagService {}
-
 void main() {
   group(SettingsAccountCubit, () {
     late _MockAuthService mockAuthService;
     late _MockDraftStorageService mockDraftStorageService;
-    late _MockFeatureFlagService mockFeatureFlagService;
 
     final testAccounts = [
       KnownAccount(
@@ -43,7 +38,6 @@ void main() {
     setUp(() {
       mockAuthService = _MockAuthService();
       mockDraftStorageService = _MockDraftStorageService();
-      mockFeatureFlagService = _MockFeatureFlagService();
 
       when(
         () => mockAuthService.getKnownAccounts(),
@@ -54,15 +48,11 @@ void main() {
       when(
         () => mockDraftStorageService.getDraftCount(),
       ).thenAnswer((_) async => 0);
-      when(
-        () => mockFeatureFlagService.isEnabled(FeatureFlag.accountSwitching),
-      ).thenReturn(false);
     });
 
     SettingsAccountCubit buildCubit() => SettingsAccountCubit(
       authService: mockAuthService,
       draftStorageService: mockDraftStorageService,
-      featureFlagService: mockFeatureFlagService,
     );
 
     test('initial state is correct', () {
@@ -141,24 +131,6 @@ void main() {
 
     group('switchToAccount', () {
       blocTest<SettingsAccountCubit, SettingsAccountState>(
-        'does nothing when switching is disabled',
-        seed: () => SettingsAccountState(
-          status: SettingsAccountStatus.loaded,
-          accounts: testAccounts,
-          currentPubkey: testAccounts.first.pubkeyHex,
-        ),
-        build: buildCubit,
-        act: (cubit) => cubit.switchToAccount(testAccounts.last.pubkeyHex),
-        verify: (_) {
-          verifyNever(
-            () => mockAuthService.pendingAccountSwitchPubkey =
-                testAccounts.last.pubkeyHex,
-          );
-          verifyNever(() => mockAuthService.signOut());
-        },
-      );
-
-      blocTest<SettingsAccountCubit, SettingsAccountState>(
         'sets pending pubkey and signs out for different account',
         seed: () => SettingsAccountState(
           status: SettingsAccountStatus.loaded,
@@ -166,10 +138,6 @@ void main() {
           currentPubkey: testAccounts.first.pubkeyHex,
         ),
         setUp: () {
-          when(
-            () =>
-                mockFeatureFlagService.isEnabled(FeatureFlag.accountSwitching),
-          ).thenReturn(true);
           when(() => mockAuthService.signOut()).thenAnswer((_) async {});
         },
         build: buildCubit,
@@ -190,12 +158,6 @@ void main() {
           accounts: testAccounts,
           currentPubkey: testAccounts.first.pubkeyHex,
         ),
-        setUp: () {
-          when(
-            () =>
-                mockFeatureFlagService.isEnabled(FeatureFlag.accountSwitching),
-          ).thenReturn(true);
-        },
         build: buildCubit,
         act: (cubit) => cubit.switchToAccount(testAccounts.first.pubkeyHex),
         verify: (_) {
@@ -206,22 +168,8 @@ void main() {
 
     group('addNewAccount', () {
       blocTest<SettingsAccountCubit, SettingsAccountState>(
-        'does nothing when add account is disabled',
-        build: buildCubit,
-        act: (cubit) => cubit.addNewAccount(),
-        verify: (_) {
-          verifyNever(() => mockAuthService.signOut());
-          verifyNever(() => mockAuthService.pendingAccountSwitchPubkey = any());
-        },
-      );
-
-      blocTest<SettingsAccountCubit, SettingsAccountState>(
         'signs out without setting pending pubkey',
         setUp: () {
-          when(
-            () =>
-                mockFeatureFlagService.isEnabled(FeatureFlag.accountSwitching),
-          ).thenReturn(true);
           when(() => mockAuthService.signOut()).thenAnswer((_) async {});
         },
         build: buildCubit,

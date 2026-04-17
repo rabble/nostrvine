@@ -68,7 +68,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _accountCubit = SettingsAccountCubit(
       authService: ref.read(authServiceProvider),
       draftStorageService: ref.read(draftStorageServiceProvider),
-      featureFlagService: ref.read(featureFlagServiceProvider),
     )..load();
   }
 
