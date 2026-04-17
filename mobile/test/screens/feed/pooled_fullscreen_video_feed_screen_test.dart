@@ -15,15 +15,21 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/services/build_configuration.dart';
+import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
+import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 import '../../test_data/video_test_data.dart';
@@ -41,6 +47,72 @@ class MockPlayerStream extends Mock implements PlayerStream {}
 class MockPlayerState extends Mock implements PlayerState {}
 
 class MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
+
+class _MockMediaViewerAuthService extends Mock
+    implements MediaViewerAuthService {}
+
+class _MockSharedPreferences implements SharedPreferences {
+  @override
+  bool? getBool(String key) => null;
+
+  @override
+  Future<bool> setBool(String key, bool value) async => true;
+
+  @override
+  Future<bool> remove(String key) async => true;
+
+  @override
+  Object? get(String key) => null;
+
+  @override
+  double? getDouble(String key) => null;
+
+  @override
+  int? getInt(String key) => null;
+
+  @override
+  Set<String> getKeys() => const <String>{};
+
+  @override
+  String? getString(String key) => null;
+
+  @override
+  List<String>? getStringList(String key) => null;
+
+  @override
+  bool containsKey(String key) => false;
+
+  @override
+  Future<bool> setDouble(String key, double value) async => true;
+
+  @override
+  Future<bool> setInt(String key, int value) async => true;
+
+  @override
+  Future<bool> setString(String key, String value) async => true;
+
+  @override
+  Future<bool> setStringList(String key, List<String> value) async => true;
+
+  @override
+  Future<bool> clear() async => true;
+
+  @override
+  Future<void> reload() async {}
+
+  @override
+  Future<bool> commit() async => true;
+}
+
+class _FlagOverrideFeatureFlagService extends FeatureFlagService {
+  _FlagOverrideFeatureFlagService(this._enabled)
+    : super(_MockSharedPreferences(), const BuildConfiguration());
+
+  final Set<FeatureFlag> _enabled;
+
+  @override
+  bool isEnabled(FeatureFlag flag) => _enabled.contains(flag);
+}
 
 class _FakeBuildContext extends Fake implements BuildContext {}
 
@@ -329,6 +401,83 @@ void main() {
         expect(find.byType(WebVideoFeed), findsOneWidget);
         expect(find.byType(VideoOverlayActions), findsOneWidget);
       }, skip: !kIsWeb);
+
+      testWidgets(
+        'threads NIP-98 auth header provider into WebVideoFeed when the '
+        'hlsAuthWebPlayer flag is on',
+        (tester) async {
+          final mockAuthService = _MockMediaViewerAuthService();
+          when(
+            () => mockAuthService.createAuthHeaders(
+              sha256Hash: any(named: 'sha256Hash'),
+              url: any(named: 'url'),
+              serverUrl: any(named: 'serverUrl'),
+            ),
+          ).thenAnswer(
+            (_) async => const {'Authorization': 'Nostr threaded-token'},
+          );
+
+          final videos = createTestVideos(count: 1);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              additionalOverrides: [
+                featureFlagServiceProvider.overrideWith(
+                  (ref) => _FlagOverrideFeatureFlagService(
+                    const {FeatureFlag.hlsAuthWebPlayer},
+                  ),
+                ),
+                mediaViewerAuthServiceProvider.overrideWithValue(
+                  mockAuthService,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          final feed = tester.widget<WebVideoFeed>(find.byType(WebVideoFeed));
+          expect(feed.authHeaderProvider, isNotNull);
+
+          final header = await feed.authHeaderProvider!(
+            'https://media.divine.video/'
+                'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+            'GET',
+          );
+          expect(header, equals('Nostr threaded-token'));
+        },
+        skip: !kIsWeb,
+      );
+
+      testWidgets(
+        'does not thread an auth header provider when the flag is off',
+        (tester) async {
+          final videos = createTestVideos(count: 1);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              additionalOverrides: [
+                featureFlagServiceProvider.overrideWith(
+                  (ref) =>
+                      _FlagOverrideFeatureFlagService(const <FeatureFlag>{}),
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          final feed = tester.widget<WebVideoFeed>(find.byType(WebVideoFeed));
+          expect(feed.authHeaderProvider, isNull);
+        },
+        skip: !kIsWeb,
+      );
     });
 
     group('BLoC event dispatching', () {

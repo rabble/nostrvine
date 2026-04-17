@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
+import 'package:openvine/widgets/web_video_player.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart'
     as video_platform;
@@ -355,6 +356,63 @@ void main() {
 
       expect(state.debugControllerCount as int, lessThanOrEqualTo(1));
       expect(state.debugPlayerKeyCount as int, lessThanOrEqualTo(1));
+    },
+  );
+
+  testWidgets(
+    'forwards authHeaderProvider to each WebVideoPlayer item',
+    (tester) async {
+      final calls = <(String, String)>[];
+      Future<String?> provider(String url, String method) async {
+        calls.add((url, method));
+        return 'Nostr test-header';
+      }
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: WebVideoFeed(
+            videos: [_makeVideo()],
+            controllerFactory: ({required url, required headers}) =>
+                _FakeVideoPlayerController(),
+            authHeaderProvider: provider,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final player = tester.widget<WebVideoPlayer>(
+        find.byType(WebVideoPlayer),
+      );
+      expect(player.authHeaderProvider, isNotNull);
+
+      // Invoking the propagated callback must reach the original closure.
+      final header = await player.authHeaderProvider!(
+        'https://media.divine.video/abc',
+        'GET',
+      );
+      expect(header, equals('Nostr test-header'));
+      expect(calls, equals([('https://media.divine.video/abc', 'GET')]));
+    },
+  );
+
+  testWidgets(
+    'passes null authHeaderProvider by default (flag-off regression guard)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: WebVideoFeed(
+            videos: [_makeVideo()],
+            controllerFactory: ({required url, required headers}) =>
+                _FakeVideoPlayerController(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final player = tester.widget<WebVideoPlayer>(
+        find.byType(WebVideoPlayer),
+      );
+      expect(player.authHeaderProvider, isNull);
     },
   );
 

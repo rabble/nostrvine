@@ -4,6 +4,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hls_auth_web_player/hls_auth_web_player.dart'
+    show AuthHeaderProvider;
 import 'package:models/models.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_policy.dart';
 import 'package:openvine/widgets/web_video_player.dart';
@@ -53,6 +55,7 @@ class WebVideoFeed extends StatefulWidget {
     this.startThreshold = FeedAutoAdvanceDefaults.startThreshold,
     this.endThreshold = FeedAutoAdvanceDefaults.endThreshold,
     this.controllerFactory = defaultWebVideoPlayerControllerFactory,
+    this.authHeaderProvider,
     super.key,
   });
 
@@ -94,6 +97,14 @@ class WebVideoFeed extends StatefulWidget {
 
   /// Factory used to create underlying web video controllers.
   final WebVideoPlayerControllerFactory controllerFactory;
+
+  /// Provides NIP-98 `Authorization` header values for per-segment signing.
+  ///
+  /// When non-null, each [WebVideoPlayer] item routes playback through the
+  /// `HlsAuthWebPlayer` runtime. When null, the legacy `VideoPlayerController`
+  /// path is used. Callers are expected to gate this on
+  /// `kIsWeb && FeatureFlag.hlsAuthWebPlayer`.
+  final AuthHeaderProvider? authHeaderProvider;
 
   @override
   State<WebVideoFeed> createState() => WebVideoFeedState();
@@ -324,6 +335,7 @@ class WebVideoFeedState extends State<WebVideoFeed> {
           controllerFactory: widget.controllerFactory,
           controllersListenable: _controllers,
           itemBuilder: widget.itemBuilder,
+          authHeaderProvider: widget.authHeaderProvider,
           onInitialized: (controller) {
             if (!mounted) return;
             setState(() {
@@ -360,6 +372,7 @@ class _WebVideoFeedItem extends StatelessWidget {
     required this.controllerFactory,
     required this.controllersListenable,
     required this.itemBuilder,
+    required this.authHeaderProvider,
     required this.onInitialized,
     required this.onDisposed,
     required this.onError,
@@ -374,6 +387,7 @@ class _WebVideoFeedItem extends StatelessWidget {
   final WebVideoPlayerControllerFactory controllerFactory;
   final ValueListenable<Map<int, VideoPlayerController>> controllersListenable;
   final WebVideoFeedItemBuilder? itemBuilder;
+  final AuthHeaderProvider? authHeaderProvider;
   final ValueChanged<VideoPlayerController> onInitialized;
   final VoidCallback onDisposed;
   final VoidCallback onError;
@@ -389,6 +403,7 @@ class _WebVideoFeedItem extends StatelessWidget {
           autoPlay: isActive,
           headers: headers,
           controllerFactory: controllerFactory,
+          authHeaderProvider: authHeaderProvider,
           onInitialized: onInitialized,
           onDisposed: onDisposed,
           onError: onError,

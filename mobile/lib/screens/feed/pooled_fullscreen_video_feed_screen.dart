@@ -43,6 +43,7 @@ import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_player_subtitle_layer.dart';
+import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:openvine/widgets/web_video_player.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -674,6 +675,19 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   )
                 : null;
 
+            // Wire the NIP-98 auth header provider into WebVideoFeed only
+            // when running on web AND the HLS auth web player flag is on.
+            // When either condition is false, authHeaderProvider stays null
+            // and the legacy VideoPlayerController path is used unchanged.
+            final hlsAuthWebPlayerEnabled = ref.watch(
+              isFeatureEnabledProvider(FeatureFlag.hlsAuthWebPlayer),
+            );
+            final webAuthHeaderProvider = kIsWeb && hlsAuthWebPlayerEnabled
+                ? buildWebVideoAuthHeaderProvider(
+                    ref.watch(mediaViewerAuthServiceProvider),
+                  )
+                : null;
+
             return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
               extendBodyBehindAppBar: true,
@@ -695,6 +709,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       controllerFactory:
                           widget.webControllerFactory ??
                           defaultWebVideoPlayerControllerFactory,
+                      authHeaderProvider: webAuthHeaderProvider,
                       onActiveVideoChanged: (video, index) {
                         _pagePosition.value = index.toDouble();
                         _resumeAutoAdvanceAfterSwipe();
