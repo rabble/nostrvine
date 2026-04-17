@@ -31,7 +31,6 @@ import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/visibility_tracker.dart';
@@ -946,10 +945,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                   RouteType.likedVideos => LikedVideosScreenRouter.pathForIndex(
                     widget.index,
                   ),
-                  RouteType.search => SearchScreenPure.pathForTerm(
-                    term: ctx.searchTerm,
-                    index: widget.index,
-                  ),
                   _ => ExploreScreen.pathForIndex(widget.index),
                 };
 
@@ -1340,6 +1335,10 @@ class VideoOverlayActions extends ConsumerWidget {
     this.hideFollowButtonIfFollowing = false,
     this.topOffset = 8.0,
     this.overlayOpacity = 1.0,
+    this.showAutoButton = false,
+    this.isAutoEnabled = false,
+    this.onAutoPressed,
+    this.onInteracted,
   });
 
   final VideoEvent video;
@@ -1370,6 +1369,10 @@ class VideoOverlayActions extends ConsumerWidget {
   /// during page transitions. Transitions are animated by [AnimatedOpacity]
   /// inside [build]. Defaults to 1.0 (fully visible).
   final double overlayOpacity;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1494,6 +1497,7 @@ class VideoOverlayActions extends ConsumerWidget {
                             UserProfile.generatedNameFor(video.pubkey);
 
                         void navigateToProfile() {
+                          onInteracted?.call();
                           Log.info(
                             '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
                             name: 'VideoFeedItem',
@@ -1632,7 +1636,10 @@ class VideoOverlayActions extends ConsumerWidget {
                       ), // 2px + 10px from avatar container = 12px total
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => MetadataExpandedSheet.show(context, video),
+                        onTap: () {
+                          onInteracted?.call();
+                          MetadataExpandedSheet.show(context, video);
+                        },
                         child: Semantics(
                           identifier: 'video_description',
                           container: true,
@@ -1699,6 +1706,10 @@ class VideoOverlayActions extends ConsumerWidget {
                     video: video,
                     isFullscreen: isFullscreen,
                     isPreviewMode: isPreviewMode,
+                    showAutoButton: showAutoButton,
+                    isAutoEnabled: isAutoEnabled,
+                    onAutoPressed: onAutoPressed,
+                    onInteracted: onInteracted,
                   ),
                 ),
               ),
@@ -1774,11 +1785,19 @@ class VideoOverlayActionColumn extends ConsumerWidget {
     super.key,
     this.isPreviewMode = false,
     this.isFullscreen = false,
+    this.showAutoButton = false,
+    this.isAutoEnabled = false,
+    this.onAutoPressed,
+    this.onInteracted,
   });
 
   final VideoEvent video;
   final bool isPreviewMode;
   final bool isFullscreen;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1786,13 +1805,33 @@ class VideoOverlayActionColumn extends ConsumerWidget {
       spacing: 4,
       children: [
         if (!isFullscreen && !isPreviewMode) _VideoEditButton(video: video),
-        LikeActionButton(video: video, isPreviewMode: isPreviewMode),
-        CommentActionButton(video: video, isPreviewMode: isPreviewMode),
-        RepostActionButton(video: video, isPreviewMode: isPreviewMode),
-        ShareActionButton(video: video),
+        if (showAutoButton && onAutoPressed != null)
+          AutoActionButton(
+            isEnabled: isAutoEnabled,
+            onPressed: onAutoPressed!,
+          ),
+        LikeActionButton(
+          video: video,
+          isPreviewMode: isPreviewMode,
+          onInteracted: onInteracted,
+        ),
+        CommentActionButton(
+          video: video,
+          isPreviewMode: isPreviewMode,
+          onInteracted: onInteracted,
+        ),
+        RepostActionButton(
+          video: video,
+          isPreviewMode: isPreviewMode,
+          onInteracted: onInteracted,
+        ),
+        ShareActionButton(video: video, onInteracted: onInteracted),
         Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: MoreActionButton(video: video),
+          child: MoreActionButton(
+            video: video,
+            onInteracted: onInteracted,
+          ),
         ),
       ],
     );
@@ -2187,10 +2226,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _ContentWarningBadge._humanize(
-                              context,
-                              label,
-                            ),
+                            _ContentWarningBadge._humanize(context, label),
                             style: const TextStyle(
                               color: VineTheme.whiteText,
                               fontSize: 15,
@@ -2199,10 +2235,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _ContentWarningBadge._describe(
-                              context,
-                              label,
-                            ),
+                            _ContentWarningBadge._describe(context, label),
                             style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 13,

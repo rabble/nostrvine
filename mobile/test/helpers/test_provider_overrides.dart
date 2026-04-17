@@ -9,6 +9,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/services/build_configuration.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
@@ -46,20 +48,48 @@ class MockNip05VerificationService extends Mock
 class MockModerationLabelService extends Mock
     implements ModerationLabelService {}
 
+/// Flags whose BuildConfiguration default is off in production but whose
+/// test-suite behaviour assumes they are on. Widget tests for these surfaces
+/// pre-date the feature flag gate, so we enable them by default here instead
+/// of scattering per-test overrides.
+const Map<FeatureFlag, bool> _testDefaultFlagValues = {
+  FeatureFlag.feedAutoAdvance: true,
+};
+
+/// Test BuildConfiguration that overrides the production defaults for the
+/// flags listed in [_testDefaultFlagValues]. Used to make sure widget tests
+/// render the relevant UI even when the production env var is unset.
+class _TestBuildConfiguration extends BuildConfiguration {
+  const _TestBuildConfiguration();
+
+  @override
+  bool getDefault(FeatureFlag flag) {
+    final overridden = _testDefaultFlagValues[flag];
+    if (overridden != null) return overridden;
+    return super.getDefault(flag);
+  }
+}
+
 /// Creates a properly stubbed MockSharedPreferences for testing
 MockSharedPreferences createMockSharedPreferences() {
   final mockPrefs = MockSharedPreferences();
 
   // Stub all FeatureFlag methods to return sensible defaults
   for (final flag in FeatureFlag.values) {
-    when(() => mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
+    // Flags that the test suite expects to be ON by default so existing
+    // widget tests don't need per-file overrides. Add new flags here only
+    // if the legacy test behaviour assumed the feature was already live.
+    final defaultValue = _testDefaultFlagValues[flag];
+    when(() => mockPrefs.getBool('ff_${flag.name}')).thenReturn(defaultValue);
     when(
       () => mockPrefs.setBool('ff_${flag.name}', any()),
     ).thenAnswer((_) async => true);
     when(
       () => mockPrefs.remove('ff_${flag.name}'),
     ).thenAnswer((_) async => true);
-    when(() => mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
+    when(
+      () => mockPrefs.containsKey('ff_${flag.name}'),
+    ).thenReturn(defaultValue != null);
   }
 
   // Add common SharedPreferences stubs that tests might need
@@ -299,6 +329,12 @@ List<dynamic> getStandardTestOverrides({
   return [
     // Override sharedPreferencesProvider which throws in production
     sharedPreferencesProvider.overrideWithValue(mockPrefs),
+
+    // Override BuildConfiguration so flags listed in _testDefaultFlagValues
+    // are enabled by default across widget tests.
+    buildConfigurationProvider.overrideWithValue(
+      const _TestBuildConfiguration(),
+    ),
 
     // Always override NostrClient and SubscriptionManager with stubbed mocks
     // so FollowRepository never gets null Stream<Event> or

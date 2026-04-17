@@ -1665,6 +1665,164 @@ void main() {
         verifyNever(() => mockNostrClient.unsubscribe(any()));
       });
     });
+
+    group('block filter', () {
+      const blockedPubkey =
+          'dddddddddddddddddddddddddddddddd'
+          'dddddddddddddddddddddddddddddddd';
+      const allowedPubkey =
+          'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+          'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+      test(
+        'filters blocked user comments from loadComments',
+        () async {
+          final filteredRepo = CommentsRepository(
+            nostrClient: mockNostrClient,
+            blockFilter: (pubkey) => pubkey == blockedPubkey,
+          );
+
+          final blockedComment = _createCommentEvent(
+            id: 'blocked_comment',
+            content: 'Blocked comment',
+            pubkey: blockedPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+          );
+
+          final allowedComment = _createCommentEvent(
+            id: 'allowed_comment',
+            content: 'Allowed comment',
+            pubkey: allowedPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            createdAt: 2000,
+          );
+
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer(
+            (_) async => [blockedComment, allowedComment],
+          );
+
+          final result = await filteredRepo.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+          );
+
+          expect(result.comments, hasLength(1));
+          expect(
+            result.comments.first.content,
+            equals('Allowed comment'),
+          );
+          expect(
+            result.comments.first.authorPubkey,
+            equals(allowedPubkey),
+          );
+        },
+      );
+
+      test(
+        'watchComments stream excludes blocked authors',
+        () async {
+          final filteredRepo = CommentsRepository(
+            nostrClient: mockNostrClient,
+            blockFilter: (pubkey) => pubkey == blockedPubkey,
+          );
+
+          final controller = StreamController<Event>.broadcast();
+
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final stream = filteredRepo.watchComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            since: DateTime.fromMillisecondsSinceEpoch(1000000),
+          );
+
+          final comments = <Comment>[];
+          final sub = stream.listen(comments.add);
+
+          final blockedEvent = _createCommentEvent(
+            id: 'blocked_stream',
+            content: 'Blocked stream comment',
+            pubkey: blockedPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            createdAt: 3000,
+          );
+
+          final allowedEvent = _createCommentEvent(
+            id: 'allowed_stream',
+            content: 'Allowed stream comment',
+            pubkey: allowedPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            createdAt: 4000,
+          );
+
+          controller
+            ..add(blockedEvent)
+            ..add(allowedEvent);
+
+          await Future<void>.delayed(Duration.zero);
+
+          expect(comments, hasLength(1));
+          expect(
+            comments.first.content,
+            equals('Allowed stream comment'),
+          );
+
+          await sub.cancel();
+          await controller.close();
+        },
+      );
+
+      test(
+        'returns all comments when blockFilter is null',
+        () async {
+          // Default repository has no blockFilter.
+          final comment1 = _createCommentEvent(
+            id: 'c1',
+            content: 'Comment one',
+            pubkey: blockedPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+          );
+
+          final comment2 = _createCommentEvent(
+            id: 'c2',
+            content: 'Comment two',
+            pubkey: allowedPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            createdAt: 2000,
+          );
+
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [comment1, comment2]);
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+          );
+
+          expect(result.comments, hasLength(2));
+        },
+      );
+    });
   });
 }
 

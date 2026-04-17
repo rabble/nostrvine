@@ -1,3 +1,4 @@
+@Tags(['skip_very_good_optimization'])
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';

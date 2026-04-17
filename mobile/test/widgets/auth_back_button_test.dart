@@ -4,9 +4,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 import 'package:openvine/widgets/rounded_icon_button.dart';
+
+import '../helpers/go_router.dart';
 
 void main() {
   group(AuthBackButton, () {
@@ -68,6 +71,32 @@ void main() {
 
         await tester.tap(find.byType(RoundedIconButton));
         expect(tapped, isTrue);
+      });
+
+      testWidgets('does not call GoRouter.pop when there is nothing to pop', (
+        tester,
+      ) async {
+        final mockGoRouter = MockGoRouter();
+        when(mockGoRouter.canPop).thenReturn(false);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            home: MockGoRouterProvider(
+              goRouter: mockGoRouter,
+              child: const Scaffold(body: AuthBackButton()),
+            ),
+          ),
+        );
+
+        await tester.tap(find.byType(RoundedIconButton));
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        verify(mockGoRouter.canPop).called(1);
+        verifyNever(() => mockGoRouter.pop<dynamic>(any()));
       });
     });
   });

@@ -1189,6 +1189,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionLike => 'Videoyu beğen';
 
   @override
+  String get videoActionAutoLabel => 'Otomatik';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Otomatik ilerlemeyi aç';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Otomatik ilerlemeyi kapat';
+
+  @override
   String get videoActionRemoveRepost => 'Yeniden paylaşımı kaldır';
 
   @override
@@ -3320,14 +3329,15 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Senin İçin akışın boş.\nVideoları keşfet ve içerik üreticilerini takip ederek akışını şekillendir.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bul ve takip et.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty =>
+      'Henüz yeni video yok.\nBiraz sonra tekrar bak.';
 
   @override
   String get feedExploreVideos => 'Videoları Keşfet';
@@ -3504,13 +3514,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get navMyProfile => 'Profilim';
 
   @override
-  String get navSearch => 'Ara';
-
-  @override
   String get navNotifications => 'Bildirimler';
-
-  @override
-  String get navSearchTooltip => 'Ara';
 
   @override
   String get navOpenCamera => 'Kamerayı aç';
@@ -4797,4 +4801,15 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Ayarlara git';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

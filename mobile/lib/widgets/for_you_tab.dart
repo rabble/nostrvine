@@ -139,16 +139,19 @@ class _ForYouContent extends ConsumerStatefulWidget {
 class _ForYouContentState extends ConsumerState<_ForYouContent>
     with ScrollToHideMixin {
   late final StreamController<List<VideoEvent>> _videosStreamController;
+  late final StreamController<bool> _hasMoreStreamController;
 
   @override
   void initState() {
     super.initState();
     _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+    _hasMoreStreamController = StreamController<bool>.broadcast();
   }
 
   @override
   void dispose() {
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -170,6 +173,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
     ref.listen(forYouFeedProvider, (previous, next) {
       if (next.hasValue && next.value != null) {
         _videosStreamController.add(next.value!.videos);
+        _hasMoreStreamController.add(next.value!.hasMoreContent);
       }
     });
     final forYouFeedNotifier = ref.read(forYouFeedProvider.notifier);
@@ -205,6 +209,9 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                     ),
                     initialIndex: index,
                     onLoadMore: forYouFeedNotifier.loadMore,
+                    hasMoreStream: _hasMoreStreamController.stream.startWith(
+                      widget.hasMoreContent,
+                    ),
                     contextTitle: 'For You',
                     trafficSource: ViewTrafficSource.discoveryForYou,
                   ),

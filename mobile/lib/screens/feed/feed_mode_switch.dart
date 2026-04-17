@@ -4,12 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/utils/pause_aware_modals.dart';
 
 /// Feed mode picker overlay that displays the current feed mode
 /// and allows users to switch between modes via a bottom sheet.
@@ -93,20 +88,6 @@ class FeedModeSwitch extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final isNewSearchEnabled = ref.watch(
-                          isFeatureEnabledProvider(FeatureFlag.newSearch),
-                        );
-                        if (isNewSearchEnabled) {
-                          return const SizedBox.shrink();
-                        }
-                        return _SearchButton(
-                          onTap: () =>
-                              context.pushWithVideoPause(SearchScreenPure.path),
-                        );
-                      },
-                    ),
                   ],
                 );
               },
@@ -138,22 +119,5 @@ class FeedModeSwitch extends StatelessWidget {
       final mode = FeedMode.values.firstWhere((m) => m.name == selected);
       context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
     }
-  }
-}
-
-class _SearchButton extends StatelessWidget {
-  const _SearchButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return DiVineAppBarIconButton(
-      icon: SvgIconSource(DivineIconName.search.assetPath),
-      onPressed: onTap,
-      iconSize: 24,
-      semanticLabel: 'Search',
-      backgroundColor: VineTheme.scrim30,
-    );
   }
 }

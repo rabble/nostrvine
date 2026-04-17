@@ -23,11 +23,13 @@ class CommentActionButton extends ConsumerWidget {
   const CommentActionButton({
     required this.video,
     this.isPreviewMode = false,
+    this.onInteracted,
     super.key,
   });
 
   final VideoEvent video;
   final bool isPreviewMode;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,6 +49,7 @@ class CommentActionButton extends ConsumerWidget {
           isCommentsInProgress: data.isInProgress,
           totalComments: data.count,
           onPressed: () {
+            onInteracted?.call();
             Log.info(
               '💬 Comment button tapped for ${video.id}',
               name: 'VideoFeedItem',

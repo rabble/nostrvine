@@ -1,5 +1,5 @@
-// ABOUTME: End-to-end integration test for ProofMode data flow
-// ABOUTME: Verifies proof data flows from recording → draft → upload → Nostr publish
+// ABOUTME: Unit tests for ProofMode data flow across models
+// ABOUTME: Verifies proof data flows from draft → upload model → publish tag shape
 
 import 'dart:convert';
 

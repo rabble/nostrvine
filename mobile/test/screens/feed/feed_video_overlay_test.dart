@@ -122,6 +122,9 @@ void main() {
       bool includePlayer = true,
       ValueNotifier<double>? pagePositionOverride,
       int index = 0,
+      bool showAutoButton = false,
+      bool isAutoEnabled = false,
+      VoidCallback? onAutoPressed,
     }) {
       return testMaterialApp(
         additionalOverrides: [
@@ -150,6 +153,9 @@ void main() {
               player: includePlayer ? (player ?? mockPlayer) : null,
               firstFrameFuture: firstFrameFuture,
               listSources: listSources,
+              showAutoButton: showAutoButton,
+              isAutoEnabled: isAutoEnabled,
+              onAutoPressed: onAutoPressed,
             ),
           ),
         ),
@@ -325,6 +331,22 @@ void main() {
 
         expect(find.text('Loops'), findsOneWidget);
         expect(find.text('Likes'), findsOneWidget);
+      });
+
+      testWidgets('renders Auto action when enabled for the current feed', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            showAutoButton: true,
+            isAutoEnabled: true,
+            onAutoPressed: () {},
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Auto'), findsNothing);
+        expect(find.bySemanticsLabel('Disable auto advance'), findsOneWidget);
       });
     });
 

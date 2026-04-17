@@ -1191,6 +1191,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionLike => 'الإعجاب بالفيديو';
 
   @override
+  String get videoActionAutoLabel => 'تلقائي';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'تفعيل التقدّم التلقائي';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'إيقاف التقدّم التلقائي';
+
+  @override
   String get videoActionRemoveRepost => 'إزالة إعادة النشر';
 
   @override
@@ -3301,14 +3310,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'خلاصة \"لك\" فارغة.\nاستكشف مقاطع الفيديو وتابع المبدعين لتشكيلها.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'لا توجد مقاطع فيديو من الأشخاص الذين تتابعهم بعد.\nاعثر على مبدعين تحبهم وتابعهم.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty =>
+      'لا توجد مقاطع فيديو جديدة بعد.\nعد قريبًا للاطلاع.';
 
   @override
   String get feedExploreVideos => 'استكشاف مقاطع الفيديو';
@@ -3482,13 +3492,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navMyProfile => 'ملفي الشخصي';
 
   @override
-  String get navSearch => 'بحث';
-
-  @override
   String get navNotifications => 'الإشعارات';
-
-  @override
-  String get navSearchTooltip => 'بحث';
 
   @override
   String get navOpenCamera => 'فتح الكاميرا';
@@ -4770,4 +4774,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'الذهاب إلى الإعدادات';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

@@ -11,6 +11,7 @@ import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -262,8 +263,8 @@ class ClickableHashtagText extends ConsumerWidget {
     // Notify parent about video state change if callback provided
     onVideoStateChange?.call();
 
-    // Navigate to search with the username pre-filled
-    context.goSearch(searchTerm);
+    // Navigate to search results with the username pre-filled
+    context.go(SearchResultsPage.pathForQuery(searchTerm));
   }
 
   Future<void> _launchUrl(String rawUrl) async {

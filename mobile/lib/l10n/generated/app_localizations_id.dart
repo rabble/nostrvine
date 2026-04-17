@@ -1183,6 +1183,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoActionLike => 'Suka video';
 
   @override
+  String get videoActionAutoLabel => 'Otomatis';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Aktifkan lanjut otomatis';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Nonaktifkan lanjut otomatis';
+
+  @override
   String get videoActionRemoveRepost => 'Hapus repost';
 
   @override
@@ -3310,14 +3319,14 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Feed Untukmu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => 'Belum ada video baru.\nCek lagi nanti.';
 
   @override
   String get feedExploreVideos => 'Jelajahi Video';
@@ -3494,13 +3503,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get navMyProfile => 'Profilku';
 
   @override
-  String get navSearch => 'Cari';
-
-  @override
   String get navNotifications => 'Notifikasi';
-
-  @override
-  String get navSearchTooltip => 'Cari';
 
   @override
   String get navOpenCamera => 'Buka kamera';
@@ -4790,4 +4793,15 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Buka pengaturan';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

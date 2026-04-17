@@ -48,13 +48,6 @@ final exploreTabIndexProvider = StateProvider<int>((ref) => 1);
 /// Valid values: 'classics', 'new', 'popular', 'for_you', 'lists', 'apps'
 final forceExploreTabNameProvider = StateProvider<String?>((ref) => null);
 
-/// Temporary provider to hold the search screen's current video list
-/// This is set by SearchScreenPure when search results are available and consumed
-/// by activeVideoIdProvider to enable video playback from search results
-final searchScreenVideosProvider = StateProvider<List<VideoEvent>?>(
-  (ref) => null,
-);
-
 /// Explore feed state (discovery/all videos)
 /// Returns AsyncValue<VideoFeedState> for route-aware explore screen
 /// Uses tab-specific list when in feed mode, otherwise sorted by loop count
@@ -128,43 +121,6 @@ final videosForExploreRouteProvider = Provider<AsyncValue<VideoFeedState>>((
         },
         loading: () => const AsyncValue.loading(),
         error: AsyncValue.error,
-      );
-    },
-    loading: () => const AsyncValue.loading(),
-    error: AsyncValue.error,
-  );
-});
-
-/// Search feed state (search results)
-/// Returns AsyncValue<VideoFeedState> for route-aware search screen
-/// Provides search results as a video feed when on search route
-final videosForSearchRouteProvider = Provider<AsyncValue<VideoFeedState>>((
-  ref,
-) {
-  final contextAsync = ref.watch(pageContextProvider);
-
-  return contextAsync.when(
-    data: (ctx) {
-      if (ctx.type != RouteType.search) {
-        // Not on search route - return loading
-        return const AsyncValue.loading();
-      }
-
-      // Get search results from SearchScreenPure's state provider
-      final searchVideos = ref.watch(searchScreenVideosProvider);
-      ref.watch(divineHostFilterVersionProvider);
-      final videoEventService = ref.read(videoEventServiceProvider);
-      final visibleSearchVideos = searchVideos == null
-          ? const <VideoEvent>[]
-          : videoEventService.filterVideoList(searchVideos);
-
-      // Return search results wrapped in VideoFeedState
-      return AsyncValue.data(
-        VideoFeedState(
-          videos: visibleSearchVideos,
-          hasMoreContent: false, // Search results are finite
-          lastUpdated: DateTime.now(),
-        ),
       );
     },
     loading: () => const AsyncValue.loading(),

@@ -17,6 +17,7 @@ void main() {
     Color iconColor = VineTheme.whiteText,
     int count = 0,
     bool isLoading = false,
+    String? caption,
   }) {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -30,6 +31,7 @@ void main() {
           iconColor: iconColor,
           count: count,
           isLoading: isLoading,
+          caption: caption,
         ),
       ),
     );
@@ -81,6 +83,12 @@ void main() {
         await tester.pumpWidget(buildSubject(count: 1500));
 
         expect(find.text('1.5K'), findsOneWidget);
+      });
+
+      testWidgets('renders caption when provided', (tester) async {
+        await tester.pumpWidget(buildSubject(caption: 'Auto'));
+
+        expect(find.text('Auto'), findsOneWidget);
       });
     });
 

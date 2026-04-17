@@ -58,6 +58,10 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
     this.firstFrameFuture,
     this.listSources,
     this.onContentWarningRevealed,
+    this.showAutoButton = false,
+    this.isAutoEnabled = false,
+    this.onAutoPressed,
+    this.onInteracted,
     super.key,
   });
 
@@ -77,6 +81,10 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
 
   /// Called when the user reveals a content-warning overlay.
   final VoidCallback? onContentWarningRevealed;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
 
   @override
   ConsumerState<FeedVideoOverlay> createState() => _FeedVideoOverlayState();
@@ -248,13 +256,20 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                   video: video,
                   hasTextContent: hasTextContent,
                   listSources: widget.listSources,
+                  onInteracted: widget.onInteracted,
                 ),
               ),
               // Action buttons column (bottom-right)
               PositionedDirectional(
                 bottom: 14 + safeAreaBottom,
                 end: 16,
-                child: _ActionButtons(video: video),
+                child: _ActionButtons(
+                  video: video,
+                  showAutoButton: widget.showAutoButton,
+                  isAutoEnabled: widget.isAutoEnabled,
+                  onAutoPressed: widget.onAutoPressed,
+                  onInteracted: widget.onInteracted,
+                ),
               ),
             ],
           ),
@@ -269,11 +284,13 @@ class _AuthorInfoSection extends ConsumerWidget {
     required this.video,
     required this.hasTextContent,
     this.listSources,
+    this.onInteracted,
   });
 
   final VideoEvent video;
   final bool hasTextContent;
   final Set<String>? listSources;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -296,11 +313,16 @@ class _AuthorInfoSection extends ConsumerWidget {
         // Avatar and name row
         Row(
           children: [
-            _AuthorAvatar(pubkey: video.pubkey, avatarUrl: avatarUrl),
+            _AuthorAvatar(
+              pubkey: video.pubkey,
+              avatarUrl: avatarUrl,
+              onInteracted: onInteracted,
+            ),
             const SizedBox(width: 6),
             Expanded(
               child: GestureDetector(
                 onTap: () {
+                  onInteracted?.call();
                   final npub = normalizeToNpub(video.pubkey);
                   if (npub != null) {
                     context.pushWithVideoPause(
@@ -346,7 +368,10 @@ class _AuthorInfoSection extends ConsumerWidget {
           const SizedBox(height: 2),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => MetadataExpandedSheet.show(context, video),
+            onTap: () {
+              onInteracted?.call();
+              MetadataExpandedSheet.show(context, video);
+            },
             child: Semantics(
               identifier: 'video_description',
               container: true,
@@ -383,7 +408,10 @@ class _AuthorInfoSection extends ConsumerWidget {
         // List attribution (curated lists)
         if (listSources != null && listSources!.isNotEmpty) ...[
           const SizedBox(height: 4),
-          _ListAttribution(listSources: listSources!),
+          _ListAttribution(
+            listSources: listSources!,
+            onInteracted: onInteracted,
+          ),
         ],
         const SizedBox(height: 8),
       ],
@@ -392,10 +420,15 @@ class _AuthorInfoSection extends ConsumerWidget {
 }
 
 class _AuthorAvatar extends StatelessWidget {
-  const _AuthorAvatar({required this.pubkey, this.avatarUrl});
+  const _AuthorAvatar({
+    required this.pubkey,
+    this.avatarUrl,
+    this.onInteracted,
+  });
 
   final String pubkey;
   final String? avatarUrl;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context) {
@@ -409,6 +442,7 @@ class _AuthorAvatar extends StatelessWidget {
             size: 48,
             semanticLabel: 'Author avatar',
             onTap: () {
+              onInteracted?.call();
               final npub = normalizeToNpub(pubkey);
               if (npub != null) {
                 context.pushWithVideoPause(
@@ -429,12 +463,28 @@ class _AuthorAvatar extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.video});
+  const _ActionButtons({
+    required this.video,
+    this.showAutoButton = false,
+    this.isAutoEnabled = false,
+    this.onAutoPressed,
+    this.onInteracted,
+  });
 
   final VideoEvent video;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
 
   @override
-  Widget build(BuildContext context) => VideoOverlayActionColumn(video: video);
+  Widget build(BuildContext context) => VideoOverlayActionColumn(
+    video: video,
+    showAutoButton: showAutoButton,
+    isAutoEnabled: isAutoEnabled,
+    onAutoPressed: onAutoPressed,
+    onInteracted: onInteracted,
+  );
 }
 
 /// NIP-05 verification badge.
@@ -473,9 +523,13 @@ class _Nip05Badge extends ConsumerWidget {
 
 /// Displays curated list attribution chips and handles navigation.
 class _ListAttribution extends ConsumerWidget {
-  const _ListAttribution({required this.listSources});
+  const _ListAttribution({
+    required this.listSources,
+    this.onInteracted,
+  });
 
   final Set<String> listSources;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -485,6 +539,7 @@ class _ListAttribution extends ConsumerWidget {
       listIds: listSources,
       listLookup: curatedListRepository.getListById,
       onListTap: (listId, listName) {
+        onInteracted?.call();
         final list = curatedListRepository.getListById(listId);
         context.pushWithVideoPause(
           CuratedListFeedScreen.pathForId(listId),

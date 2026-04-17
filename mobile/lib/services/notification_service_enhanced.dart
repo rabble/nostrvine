@@ -35,6 +35,15 @@ class NotificationServiceEnhanced {
     return _instance!;
   }
 
+  /// Resets the singleton so the next access returns a fresh instance.
+  /// Call in test `tearDown` to prevent state leaking between test files
+  /// when tests run in a shared isolate (e.g. VGV optimized runner).
+  @visibleForTesting
+  static void resetInstance() {
+    _instance?.dispose();
+    _instance = null;
+  }
+
   final List<NotificationModel> _notifications = [];
   final Map<String, StreamSubscription> _subscriptions = {};
   final Lock _notificationLock = Lock(); // Mutex for atomic deduplication
