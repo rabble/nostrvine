@@ -298,6 +298,9 @@ void main() {
               trendingSoundsProvider.overrideWith(
                 MockTrendingSoundsLoadingNotifier.new,
               ),
+              soundLibraryServiceProvider.overrideWith(
+                (_) => Completer<SoundLibraryService>().future,
+              ),
             ],
           ),
         );
