@@ -159,7 +159,9 @@ class _TopActions extends ConsumerWidget {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     scaffoldMessenger.showSnackBar(
       DivineSnackbarContainer.snackBar(
-        draftSaved ? context.l10n.videoMetadataSavedToLibrarySnackbar : context.l10n.videoMetadataFailedToSaveSnackbar,
+        draftSaved
+            ? context.l10n.videoMetadataSavedToLibrarySnackbar
+            : context.l10n.videoMetadataFailedToSaveSnackbar,
       ),
     );
   }
@@ -184,7 +186,9 @@ class _BottomActions extends StatelessWidget {
     );
 
     return Semantics(
-      label: isTimelineHiddenByUser ? context.l10n.videoEditorShowTimelineSemanticLabel : context.l10n.videoEditorHideTimelineSemanticLabel,
+      label: isTimelineHiddenByUser
+          ? context.l10n.videoEditorShowTimelineSemanticLabel
+          : context.l10n.videoEditorHideTimelineSemanticLabel,
       button: true,
       child: Padding(
         padding: const .only(bottom: 8),

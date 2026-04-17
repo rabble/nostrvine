@@ -7,6 +7,18 @@ import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
 
+// English labels matching app_en.arb values.
+String _expirationLabel(VideoMetadataExpiration exp) {
+  return switch (exp) {
+    VideoMetadataExpiration.notExpire => 'Does not expire',
+    VideoMetadataExpiration.oneDay => '1 day',
+    VideoMetadataExpiration.oneWeek => '1 week',
+    VideoMetadataExpiration.oneMonth => '1 month',
+    VideoMetadataExpiration.oneYear => '1 year',
+    VideoMetadataExpiration.oneDecade => '1 decade',
+  };
+}
+
 void main() {
   group('VideoMetadataExpirationSelector', () {
     testWidgets('displays default expiration option', (tester) async {
@@ -24,7 +36,7 @@ void main() {
 
       // Default is "Never expire"
       expect(
-        find.text(VideoMetadataExpiration.notExpire.description),
+        find.text(_expirationLabel(VideoMetadataExpiration.notExpire)),
         findsOneWidget,
       );
       expect(find.text('Expiration'), findsOneWidget);
@@ -51,7 +63,7 @@ void main() {
       );
 
       expect(
-        find.text(VideoMetadataExpiration.oneDay.description),
+        find.text(_expirationLabel(VideoMetadataExpiration.oneDay)),
         findsOneWidget,
       );
     });
@@ -77,7 +89,7 @@ void main() {
 
       // Check that all expiration options are displayed
       for (final option in VideoMetadataExpiration.values) {
-        expect(find.text(option.description), findsAtLeastNWidgets(1));
+        expect(find.text(_expirationLabel(option)), findsAtLeastNWidgets(1));
       }
     });
 
