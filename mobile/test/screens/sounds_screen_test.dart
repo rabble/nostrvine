@@ -11,9 +11,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/sounds_screen.dart';
+import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
 import 'package:sound_service/sound_service.dart';
@@ -486,6 +488,12 @@ void main() {
             overrides: [
               trendingSoundsProvider.overrideWith(
                 () => MockTrendingSoundsNotifier(sounds: testSounds),
+              ),
+              // Force empty bundled sounds so the All Sounds list contains
+              // exactly one tile (`sound1`) and `soundTiles.last` stays in
+              // the viewport regardless of rootBundle timing across isolates.
+              soundLibraryServiceProvider.overrideWith(
+                (_) async => SoundLibraryService(),
               ),
             ],
           ),
