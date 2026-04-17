@@ -133,8 +133,7 @@ class _HlsAuthWebPlayerState extends State<HlsAuthWebPlayer> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (kIsWeb && status == HlsAuthWebPlaybackStatus.ready)
-          HtmlElementView(viewType: _viewType),
+        if (kIsWeb) HtmlElementView(viewType: _viewType),
         if (overlayBuilder != null)
           Positioned.fill(child: overlayBuilder(context, status)),
       ],

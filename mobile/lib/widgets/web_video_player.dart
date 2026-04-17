@@ -121,7 +121,11 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
   @override
   void didUpdateWidget(WebVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) {
+    final oldUseAuthPlayer = kIsWeb && oldWidget.authHeaderProvider != null;
+    final authModeChanged = oldUseAuthPlayer != _useAuthPlayer;
+    final urlChanged = oldWidget.url != widget.url;
+
+    if (authModeChanged || urlChanged) {
       _disposeController();
       if (!_useAuthPlayer) {
         _initializeController();
