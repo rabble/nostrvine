@@ -27,6 +27,12 @@ typedef WebOnActiveVideoChanged = void Function(VideoEvent video, int index);
 /// Callback fired when the active web player crosses the loop boundary.
 typedef WebOnCompleted = void Function(int index);
 
+/// Callback fired when a web player for [index] fails to load or initialise.
+///
+/// Used by auto-advance to skip past broken videos instead of getting stuck
+/// on them — a failed player never emits a loop-boundary crossing.
+typedef WebOnErrored = void Function(int index);
+
 /// A vertical-scrolling video feed for web platforms.
 ///
 /// Uses Flutter's [video_player] package (HTML5 video via video_player_web_hls)
@@ -39,6 +45,7 @@ class WebVideoFeed extends StatefulWidget {
     this.initialIndex = 0,
     this.onActiveVideoChanged,
     this.onCompleted,
+    this.onErrored,
     this.onNearEnd,
     this.nearEndThreshold = 3,
     this.headers = const {},
@@ -62,6 +69,12 @@ class WebVideoFeed extends StatefulWidget {
 
   /// Called when the active video crosses the loop boundary.
   final WebOnCompleted? onCompleted;
+
+  /// Called when a player at a given index fails to initialise.
+  ///
+  /// Wired to auto-advance so the feed can skip past a broken video instead
+  /// of getting stuck on it.
+  final WebOnErrored? onErrored;
 
   /// Called when near the end of the list for pagination.
   final void Function(int index)? onNearEnd;
@@ -260,6 +273,10 @@ class WebVideoFeedState extends State<WebVideoFeed> {
                 setState(() {
                   _attachCompletionListener(index, controller);
                 });
+              },
+              onError: () {
+                if (!mounted) return;
+                widget.onErrored?.call(index);
               },
             ),
             // Custom overlay layer

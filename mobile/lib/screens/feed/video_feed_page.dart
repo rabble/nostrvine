@@ -24,6 +24,7 @@ import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_completion_listener.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -277,6 +278,14 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       requestLoadMore: () =>
           context.read<VideoFeedBloc>().add(const VideoFeedLoadMoreRequested()),
     );
+  }
+
+  /// Treat a failed web player as "completed" so Auto skips past broken
+  /// videos. Only fires for the currently-active page to avoid advancing
+  /// when a background/preloaded player fails.
+  void _handleWebPlayerErrored(int index) {
+    if (index != _currentFeedIndex()) return;
+    _handleAutoAdvanceCompleted();
   }
 
   void _continuePendingAutoAdvance(VideoFeedState state) {
@@ -594,6 +603,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                         _resumeAutoAdvanceAfterSwipe();
                       },
                       onCompleted: (_) => _handleAutoAdvanceCompleted(),
+                      onErrored: _handleWebPlayerErrored,
                       onNearEnd: (index) {
                         if (state.hasMore) {
                           context.read<VideoFeedBloc>().add(
@@ -1031,71 +1041,78 @@ class _PooledVideoFeedItemContentState
     // usecase (e.g. Reels-style vertical videos).
     final isPortrait = !(video.dimensions != null) || video.isPortrait;
 
-    return ColoredBox(
-      color: VineTheme.backgroundColor,
-      child: PooledVideoPlayer(
-        index: widget.index,
-        isActive: widget.isActive,
-        thumbnailUrl: video.thumbnailUrl,
-        enableTapToPause: widget.isActive,
-        onTap: _handlePlayerTap,
-        onDoubleTap: _handleDoubleTapLike,
-        videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
-          videoController: videoController,
-          isPortrait: isPortrait,
-        ),
-        loadingBuilder: (context) => _VideoLoadingPlaceholder(
-          thumbnailUrl: video.thumbnailUrl,
-          isPortrait: isPortrait,
-          videoId: video.id,
-          feedMode: widget.contextTitle,
+    return FeedAutoAdvancePastErrorListener(
+      videoId: video.id,
+      isActive: widget.isActive,
+      isAutoAdvanceActive: widget.isAutoAdvanceActive,
+      onSkipBrokenVideo: widget.onAutoAdvanceCompleted ?? () {},
+      child: ColoredBox(
+        color: VineTheme.backgroundColor,
+        child: PooledVideoPlayer(
           index: widget.index,
-        ),
-        errorBuilder: (context, onRetry, errorType) {
-          // Capture the cubit eagerly so the post-frame callback doesn't
-          // walk the ancestor tree on a potentially-deactivated element.
-          final cubit = context.read<VideoPlaybackStatusCubit>();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            cubit.report(video.id, playbackStatusFromError(errorType));
-          });
-          return PooledVideoErrorOverlay(
-            video: video,
-            onRetry: onRetry,
-            errorType: errorType,
-          );
-        },
-        overlayBuilder: (context, videoController, player) =>
-            FeedAutoAdvanceCompletionListener(
-              player: player,
-              isEnabled: widget.isActive && widget.isAutoAdvanceActive,
-              onCompleted: widget.onAutoAdvanceCompleted ?? () {},
-              child: Stack(
-                children: [
-                  FeedVideoOverlay(
-                    video: video,
-                    isActive: widget.isActive,
-                    pagePosition: widget.pagePosition,
-                    index: widget.index,
-                    player: player,
-                    firstFrameFuture:
-                        videoController?.waitUntilFirstFrameRendered,
-                    listSources: widget.listSources,
-                    showAutoButton: widget.showAutoButton,
-                    isAutoEnabled: widget.isAutoEnabled,
-                    onAutoPressed: widget.onAutoPressed,
-                    onInteracted: widget.onInteracted,
-                    onContentWarningRevealed: () {
-                      _contentWarningRevealed = true;
-                    },
-                  ),
-                  Positioned.fill(
-                    child: DoubleTapHeartOverlay(trigger: _heartTrigger),
-                  ),
-                  if (!video.isFromDivineServer)
-                    _SlowExternalVideoOverlay(index: widget.index),
-                ],
+          isActive: widget.isActive,
+          thumbnailUrl: video.thumbnailUrl,
+          enableTapToPause: widget.isActive,
+          onTap: _handlePlayerTap,
+          onDoubleTap: _handleDoubleTapLike,
+          videoBuilder: (context, videoController, player) =>
+              _FittedVideoPlayer(
+                videoController: videoController,
+                isPortrait: isPortrait,
               ),
-            ),
+          loadingBuilder: (context) => _VideoLoadingPlaceholder(
+            thumbnailUrl: video.thumbnailUrl,
+            isPortrait: isPortrait,
+            videoId: video.id,
+            feedMode: widget.contextTitle,
+            index: widget.index,
+          ),
+          errorBuilder: (context, onRetry, errorType) {
+            // Capture the cubit eagerly so the post-frame callback doesn't
+            // walk the ancestor tree on a potentially-deactivated element.
+            final cubit = context.read<VideoPlaybackStatusCubit>();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              cubit.report(video.id, playbackStatusFromError(errorType));
+            });
+            return PooledVideoErrorOverlay(
+              video: video,
+              onRetry: onRetry,
+              errorType: errorType,
+            );
+          },
+          overlayBuilder: (context, videoController, player) =>
+              FeedAutoAdvanceCompletionListener(
+                player: player,
+                isEnabled: widget.isActive && widget.isAutoAdvanceActive,
+                onCompleted: widget.onAutoAdvanceCompleted ?? () {},
+                child: Stack(
+                  children: [
+                    FeedVideoOverlay(
+                      video: video,
+                      isActive: widget.isActive,
+                      pagePosition: widget.pagePosition,
+                      index: widget.index,
+                      player: player,
+                      firstFrameFuture:
+                          videoController?.waitUntilFirstFrameRendered,
+                      listSources: widget.listSources,
+                      showAutoButton: widget.showAutoButton,
+                      isAutoEnabled: widget.isAutoEnabled,
+                      onAutoPressed: widget.onAutoPressed,
+                      onInteracted: widget.onInteracted,
+                      onContentWarningRevealed: () {
+                        _contentWarningRevealed = true;
+                      },
+                    ),
+                    Positioned.fill(
+                      child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                    ),
+                    if (!video.isFromDivineServer)
+                      _SlowExternalVideoOverlay(index: widget.index),
+                  ],
+                ),
+              ),
+        ),
       ),
     );
   }

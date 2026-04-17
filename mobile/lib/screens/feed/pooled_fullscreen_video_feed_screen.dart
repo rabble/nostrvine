@@ -26,6 +26,7 @@ import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_completion_listener.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -427,6 +428,14 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     );
   }
 
+  /// Treat a failed web player as "completed" so Auto skips past broken
+  /// videos. Only fires for the currently-active page to avoid advancing
+  /// when a background/preloaded player fails.
+  void _handleWebPlayerErrored(int index) {
+    if (index != context.read<FullscreenFeedBloc>().state.currentIndex) return;
+    _handleAutoAdvanceCompleted();
+  }
+
   void _continuePendingAutoAdvance(FullscreenFeedState state) {
     continueFeedAutoAdvanceAfterPagination(
       cubit: _autoAdvanceCubit,
@@ -625,6 +634,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                         widget.onPageChanged?.call(index);
                       },
                       onCompleted: (_) => _handleAutoAdvanceCompleted(),
+                      onErrored: _handleWebPlayerErrored,
                       onNearEnd: (index) => _onNearEnd(state, index),
                       itemBuilder:
                           (
@@ -993,129 +1003,136 @@ class _PooledFullscreenItemContentState
       warnLabels: video.warnLabels,
     );
 
-    return ColoredBox(
-      color: VineTheme.backgroundColor,
-      child: PooledVideoPlayer(
-        index: widget.index,
-        isActive: widget.isActive,
-        thumbnailUrl: video.thumbnailUrl,
-        enableTapToPause: widget.isActive,
-        onTap: _handlePlayerTap,
-        onDoubleTap: _handleDoubleTapLike,
-        videoBuilder: (context, videoController, player) =>
-            PooledVideoMetricsTracker(
-              key: ValueKey('metrics-${video.id}'),
-              video: video,
-              player: player,
-              isActive: widget.isActive,
-              trafficSource: widget.trafficSource,
-              sourceDetail: widget.sourceDetail,
-              child: _FittedVideoPlayer(
-                videoController: videoController,
-                isPortrait: isPortrait,
-                videoWidth: video.width?.toDouble(),
-                videoHeight: video.height?.toDouble(),
-              ),
-            ),
-        loadingBuilder: (context) => _VideoLoadingPlaceholder(
+    return FeedAutoAdvancePastErrorListener(
+      videoId: video.id,
+      isActive: widget.isActive,
+      isAutoAdvanceActive: widget.isAutoAdvanceActive,
+      onSkipBrokenVideo: widget.onAutoAdvanceCompleted ?? () {},
+      child: ColoredBox(
+        color: VineTheme.backgroundColor,
+        child: PooledVideoPlayer(
+          index: widget.index,
+          isActive: widget.isActive,
           thumbnailUrl: video.thumbnailUrl,
-          isPortrait: isPortrait,
-        ),
-        errorBuilder: (context, onRetry, errorType) {
-          // Capture the cubit eagerly so the post-frame callback doesn't
-          // walk the ancestor tree on a potentially-deactivated element.
-          final cubit = context.read<VideoPlaybackStatusCubit>();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            cubit.report(video.id, playbackStatusFromError(errorType));
-          });
-          return PooledVideoErrorOverlay(
-            video: video,
-            onRetry: onRetry,
-            errorType: errorType,
-          );
-        },
-        overlayBuilder: (context, videoController, player) {
-          final playbackStatus = context.select(
-            (VideoPlaybackStatusCubit cubit) => cubit.state.statusFor(video.id),
-          );
-          if (playbackStatus == PlaybackStatus.forbidden ||
-              playbackStatus == PlaybackStatus.ageRestricted) {
-            return ModeratedContentOverlay(
-              status: playbackStatus,
-              onSkip: () => _skipToNextVideo(context),
-              onVerifyAge: playbackStatus == PlaybackStatus.ageRestricted
-                  ? () => _verifyAgeForVideo(context, video)
-                  : null,
-            );
-          }
-          if (showContentWarningOverlay && !_contentWarningRevealed) {
-            return ContentWarningBlurOverlay(
-              labels: overlayLabels,
-              onReveal: () => setState(() {
-                _contentWarningRevealed = true;
-              }),
-              onHideSimilar: () {
-                hideContentWarningsLikeThese(
-                  context: context,
-                  ref: ref,
-                  labels: overlayLabels,
-                );
-              },
-            );
-          }
-          return MediaQuery(
-            data: MediaQueryData.fromView(View.of(context)),
-            child: FeedAutoAdvanceCompletionListener(
-              player: player,
-              isEnabled: widget.isActive && widget.isAutoAdvanceActive,
-              onCompleted: widget.onAutoAdvanceCompleted ?? () {},
-              child: Stack(
-                children: [
-                  if (player != null)
-                    PausedVideoPlayOverlay(
-                      player: player,
-                      firstFrameFuture:
-                          videoController?.waitUntilFirstFrameRendered,
-                      isVisible: widget.isActive,
-                    ),
-                  // Subtitle overlay — needs player position stream
-                  if (video.hasSubtitles && player != null)
-                    Positioned.fill(
-                      child: _SubtitleLayer(video: video, player: player),
-                    ),
-                  ValueListenableBuilder<double>(
-                    valueListenable: widget.pagePosition,
-                    builder: (context, page, _) {
-                      final distance = (page - widget.index).abs().clamp(
-                        0.0,
-                        1.0,
-                      );
-                      return VideoOverlayActions(
-                        video: video,
-                        // isVisible:true — scroll opacity handles fading;
-                        // the hard-cut guard is not needed in fullscreen.
-                        isVisible: true,
-                        isActive: widget.isActive,
-                        overlayOpacity: _scrollDrivenOpacity(distance),
-                        hasBottomNavigation: false,
-                        contextTitle: widget.contextTitle,
-                        isFullscreen: true,
-                        topOffset: widget.isOwnVideo ? 64 : 8,
-                        showAutoButton: widget.showAutoButton,
-                        isAutoEnabled: widget.isAutoEnabled,
-                        onAutoPressed: widget.onAutoPressed,
-                        onInteracted: widget.onInteracted,
-                      );
-                    },
-                  ),
-                  Positioned.fill(
-                    child: DoubleTapHeartOverlay(trigger: _heartTrigger),
-                  ),
-                ],
+          enableTapToPause: widget.isActive,
+          onTap: _handlePlayerTap,
+          onDoubleTap: _handleDoubleTapLike,
+          videoBuilder: (context, videoController, player) =>
+              PooledVideoMetricsTracker(
+                key: ValueKey('metrics-${video.id}'),
+                video: video,
+                player: player,
+                isActive: widget.isActive,
+                trafficSource: widget.trafficSource,
+                sourceDetail: widget.sourceDetail,
+                child: _FittedVideoPlayer(
+                  videoController: videoController,
+                  isPortrait: isPortrait,
+                  videoWidth: video.width?.toDouble(),
+                  videoHeight: video.height?.toDouble(),
+                ),
               ),
-            ),
-          );
-        },
+          loadingBuilder: (context) => _VideoLoadingPlaceholder(
+            thumbnailUrl: video.thumbnailUrl,
+            isPortrait: isPortrait,
+          ),
+          errorBuilder: (context, onRetry, errorType) {
+            // Capture the cubit eagerly so the post-frame callback doesn't
+            // walk the ancestor tree on a potentially-deactivated element.
+            final cubit = context.read<VideoPlaybackStatusCubit>();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              cubit.report(video.id, playbackStatusFromError(errorType));
+            });
+            return PooledVideoErrorOverlay(
+              video: video,
+              onRetry: onRetry,
+              errorType: errorType,
+            );
+          },
+          overlayBuilder: (context, videoController, player) {
+            final playbackStatus = context.select(
+              (VideoPlaybackStatusCubit cubit) =>
+                  cubit.state.statusFor(video.id),
+            );
+            if (playbackStatus == PlaybackStatus.forbidden ||
+                playbackStatus == PlaybackStatus.ageRestricted) {
+              return ModeratedContentOverlay(
+                status: playbackStatus,
+                onSkip: () => _skipToNextVideo(context),
+                onVerifyAge: playbackStatus == PlaybackStatus.ageRestricted
+                    ? () => _verifyAgeForVideo(context, video)
+                    : null,
+              );
+            }
+            if (showContentWarningOverlay && !_contentWarningRevealed) {
+              return ContentWarningBlurOverlay(
+                labels: overlayLabels,
+                onReveal: () => setState(() {
+                  _contentWarningRevealed = true;
+                }),
+                onHideSimilar: () {
+                  hideContentWarningsLikeThese(
+                    context: context,
+                    ref: ref,
+                    labels: overlayLabels,
+                  );
+                },
+              );
+            }
+            return MediaQuery(
+              data: MediaQueryData.fromView(View.of(context)),
+              child: FeedAutoAdvanceCompletionListener(
+                player: player,
+                isEnabled: widget.isActive && widget.isAutoAdvanceActive,
+                onCompleted: widget.onAutoAdvanceCompleted ?? () {},
+                child: Stack(
+                  children: [
+                    if (player != null)
+                      PausedVideoPlayOverlay(
+                        player: player,
+                        firstFrameFuture:
+                            videoController?.waitUntilFirstFrameRendered,
+                        isVisible: widget.isActive,
+                      ),
+                    // Subtitle overlay — needs player position stream
+                    if (video.hasSubtitles && player != null)
+                      Positioned.fill(
+                        child: _SubtitleLayer(video: video, player: player),
+                      ),
+                    ValueListenableBuilder<double>(
+                      valueListenable: widget.pagePosition,
+                      builder: (context, page, _) {
+                        final distance = (page - widget.index).abs().clamp(
+                          0.0,
+                          1.0,
+                        );
+                        return VideoOverlayActions(
+                          video: video,
+                          // isVisible:true — scroll opacity handles fading;
+                          // the hard-cut guard is not needed in fullscreen.
+                          isVisible: true,
+                          isActive: widget.isActive,
+                          overlayOpacity: _scrollDrivenOpacity(distance),
+                          hasBottomNavigation: false,
+                          contextTitle: widget.contextTitle,
+                          isFullscreen: true,
+                          topOffset: widget.isOwnVideo ? 64 : 8,
+                          showAutoButton: widget.showAutoButton,
+                          isAutoEnabled: widget.isAutoEnabled,
+                          onAutoPressed: widget.onAutoPressed,
+                          onInteracted: widget.onInteracted,
+                        );
+                      },
+                    ),
+                    Positioned.fill(
+                      child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
