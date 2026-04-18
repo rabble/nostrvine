@@ -162,13 +162,6 @@ MockNostrClient createMockNostrService() {
   // type 'Null' is not a subtype of type 'Future<List<String>>'
   when(() => mockNostr.queryEvents(any())).thenAnswer((_) async => <Event>[]);
 
-  // Stub countEvents() to return zero (never null) so interaction repositories
-  // do not fail with type 'Null' is not a subtype of type
-  // 'Future<CountResult>' when fetching like/comment/repost counts.
-  when(() => mockNostr.countEvents(any())).thenAnswer(
-    (_) async => const CountResult(count: 0),
-  );
-
   // Stub publicKey with empty string default so tests that access it
   // do not get type 'Null' is not a subtype of type 'String'
   when(() => mockNostr.publicKey).thenReturn('');

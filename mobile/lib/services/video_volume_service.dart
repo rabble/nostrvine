@@ -34,6 +34,12 @@ class VideoVolumeService extends ChangeNotifier {
 
   VideoVolumeService._();
 
+  /// Creates a fresh instance for unit testing without touching the global
+  /// singleton or platform plugins.
+  @visibleForTesting
+  VideoVolumeService.forTesting({double initialVolume = 1.0})
+    : _volume = initialVolume;
+
   double _volume = 1.0;
   StreamSubscription<double>? _systemVolumeSubscription;
 
@@ -81,6 +87,11 @@ class VideoVolumeService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// Simulates a hardware volume change for testing the system-volume bridge.
+  @visibleForTesting
+  void simulateSystemVolumeChange(double systemVolume) =>
+      _onSystemVolumeChanged(systemVolume);
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
