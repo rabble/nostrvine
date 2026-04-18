@@ -14,17 +14,16 @@ import 'package:volume_controller/volume_controller.dart';
 ///
 /// Usage:
 /// ```dart
-/// final service = VideoVolumeService();
-/// await service.init();
+/// await VideoVolumeService.instance.init();
 ///
 /// VideoFeedController(
-///   initialVolume: service.volume,
-///   onVolumeChanged: service.onPlaybackVolumeChanged,
+///   initialVolume: VideoVolumeService.instance.volume,
+///   onVolumeChanged: VideoVolumeService.instance.onPlaybackVolumeChanged,
 ///   ...
 /// );
 ///
-/// service.addListener(() {
-///   feedController.setVolume(service.volume);
+/// VideoVolumeService.instance.addListener(() {
+///   feedController.setVolume(VideoVolumeService.instance.volume);
 /// });
 /// ```
 class VideoVolumeService extends ChangeNotifier {

@@ -94,8 +94,9 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
           builder: (context, bufferingSnapshot) {
             final isBuffering = bufferingSnapshot.data ?? false;
 
-            return StreamBuilder(
+            return StreamBuilder<double>(
               stream: widget.player.stream.volume,
+              initialData: widget.player.state.volume,
               builder: (context, volumeSnapshot) {
                 final isMuted = volumeSnapshot.data == 0;
 

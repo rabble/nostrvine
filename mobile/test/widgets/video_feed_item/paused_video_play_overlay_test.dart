@@ -32,6 +32,7 @@ void main() {
       when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
       when(() => mockPlayerState.playing).thenReturn(false);
       when(() => mockPlayerState.buffering).thenReturn(false);
+      when(() => mockPlayerState.volume).thenReturn(100.0);
       when(
         () => mockPlayerStream.playing,
       ).thenAnswer((_) => playingController.stream);

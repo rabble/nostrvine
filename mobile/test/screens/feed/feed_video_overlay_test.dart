@@ -111,6 +111,7 @@ void main() {
       ).thenAnswer((_) => const Stream<double>.empty());
       when(() => mockPlayerState.playing).thenReturn(false);
       when(() => mockPlayerState.buffering).thenReturn(false);
+      when(() => mockPlayerState.volume).thenReturn(100.0);
       when(
         () => mockVideoEventService.getRepostersForVideo(any()),
       ).thenAnswer((_) async => const <String>[]);
