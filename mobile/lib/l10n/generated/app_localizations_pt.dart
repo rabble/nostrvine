@@ -953,6 +953,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Reproduzir vídeo';
 
   @override
+  String get videoPlayerMute => 'Silenciar vídeo';
+
+  @override
+  String get videoPlayerUnmute => 'Ativar som do vídeo';
+
+  @override
   String get videoPlayerEditVideo => 'Editar vídeo';
 
   @override

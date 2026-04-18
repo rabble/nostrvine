@@ -867,6 +867,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoPlayerPlayVideo => '動画を再生';
 
   @override
+  String get videoPlayerMute => '動画をミュート';
+
+  @override
+  String get videoPlayerUnmute => '動画のミュートを解除';
+
+  @override
   String get videoPlayerEditVideo => '動画を編集';
 
   @override

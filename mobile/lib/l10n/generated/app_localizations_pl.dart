@@ -956,6 +956,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Odtwórz film';
 
   @override
+  String get videoPlayerMute => 'Wycisz film';
+
+  @override
+  String get videoPlayerUnmute => 'Włącz dźwięk filmu';
+
+  @override
   String get videoPlayerEditVideo => 'Edytuj film';
 
   @override

@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "Video laden...",
     "videoPlayerPlayVideo": "Video afspelen",
+    "videoPlayerMute": "Video dempen",
+    "videoPlayerUnmute": "Videogeluid inschakelen",
     "videoPlayerEditVideo": "Video bewerken",
     "videoPlayerEditVideoTooltip": "Video bewerken",
     "contentWarningLabel": "Inhoudswaarschuwing",

@@ -1684,6 +1684,18 @@ abstract class AppLocalizations {
   /// **'Play video'**
   String get videoPlayerPlayVideo;
 
+  /// No description provided for @videoPlayerMute.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute video'**
+  String get videoPlayerMute;
+
+  /// No description provided for @videoPlayerUnmute.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute video'**
+  String get videoPlayerUnmute;
+
   /// No description provided for @videoPlayerEditVideo.
   ///
   /// In en, this message translates to:

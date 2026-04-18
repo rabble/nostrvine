@@ -916,6 +916,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Videoyu oynat';
 
   @override
+  String get videoPlayerMute => 'Videoyu sessize al';
+
+  @override
+  String get videoPlayerUnmute => 'Videonun sesini aç';
+
+  @override
   String get videoPlayerEditVideo => 'Videoyu düzenle';
 
   @override

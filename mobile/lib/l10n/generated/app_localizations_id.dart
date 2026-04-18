@@ -915,6 +915,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Putar video';
 
   @override
+  String get videoPlayerMute => 'Bisukan video';
+
+  @override
+  String get videoPlayerUnmute => 'Aktifkan suara video';
+
+  @override
   String get videoPlayerEditVideo => 'Ubah video';
 
   @override

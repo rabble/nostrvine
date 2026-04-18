@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "Se încarcă videoclipul...",
     "videoPlayerPlayVideo": "Redă videoclipul",
+    "videoPlayerMute": "Dezactivează sunetul videoclipului",
+    "videoPlayerUnmute": "Activează sunetul videoclipului",
     "videoPlayerEditVideo": "Editează videoclipul",
     "videoPlayerEditVideoTooltip": "Editează videoclipul",
     "contentWarningLabel": "Atenționare de conținut",

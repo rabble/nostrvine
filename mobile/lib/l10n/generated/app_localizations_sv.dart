@@ -927,6 +927,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Spela upp video';
 
   @override
+  String get videoPlayerMute => 'Stäng av ljudet på videon';
+
+  @override
+  String get videoPlayerUnmute => 'Slå på ljudet för videon';
+
+  @override
   String get videoPlayerEditVideo => 'Redigera video';
 
   @override

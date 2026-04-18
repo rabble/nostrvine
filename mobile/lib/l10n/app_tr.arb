@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "Video yükleniyor...",
     "videoPlayerPlayVideo": "Videoyu oynat",
+    "videoPlayerMute": "Videoyu sessize al",
+    "videoPlayerUnmute": "Videonun sesini aç",
     "videoPlayerEditVideo": "Videoyu düzenle",
     "videoPlayerEditVideoTooltip": "Videoyu düzenle",
     "contentWarningLabel": "İçerik Uyarısı",

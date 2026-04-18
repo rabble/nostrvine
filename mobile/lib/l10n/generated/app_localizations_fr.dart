@@ -960,6 +960,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Lire la vidéo';
 
   @override
+  String get videoPlayerMute => 'Couper le son de la vidéo';
+
+  @override
+  String get videoPlayerUnmute => 'Réactiver le son de la vidéo';
+
+  @override
   String get videoPlayerEditVideo => 'Modifier la vidéo';
 
   @override

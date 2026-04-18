@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "動画を読み込み中...",
     "videoPlayerPlayVideo": "動画を再生",
+    "videoPlayerMute": "動画をミュート",
+    "videoPlayerUnmute": "動画のミュートを解除",
     "videoPlayerEditVideo": "動画を編集",
     "videoPlayerEditVideoTooltip": "動画を編集",
     "contentWarningLabel": "コンテンツ警告",

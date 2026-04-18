@@ -874,6 +874,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoPlayerPlayVideo => '영상 재생';
 
   @override
+  String get videoPlayerMute => '영상 음소거';
+
+  @override
+  String get videoPlayerUnmute => '영상 음소거 해제';
+
+  @override
   String get videoPlayerEditVideo => '영상 편집';
 
   @override

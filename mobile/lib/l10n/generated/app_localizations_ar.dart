@@ -921,6 +921,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoPlayerPlayVideo => 'تشغيل الفيديو';
 
   @override
+  String get videoPlayerMute => 'كتم الفيديو';
+
+  @override
+  String get videoPlayerUnmute => 'إلغاء كتم الفيديو';
+
+  @override
   String get videoPlayerEditVideo => 'تعديل الفيديو';
 
   @override

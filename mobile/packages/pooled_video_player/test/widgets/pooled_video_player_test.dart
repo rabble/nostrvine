@@ -250,7 +250,7 @@ void main() {
 
         await tester.pumpWidget(
           buildWidget(
-            overlayBuilder: (context, controller, player) =>
+            overlayBuilder: (context, controller, player, feedCtrl) =>
                 const Text('Overlay'),
           ),
         );
@@ -312,7 +312,7 @@ void main() {
 
         await tester.pumpWidget(
           buildWidget(
-            overlayBuilder: (context, controller, player) =>
+            overlayBuilder: (context, controller, player, feedCtrl) =>
                 const Text('Overlay'),
           ),
         );
@@ -366,7 +366,7 @@ void main() {
       testWidgets('shows overlayBuilder when provided', (tester) async {
         await tester.pumpWidget(
           buildWidget(
-            overlayBuilder: (context, controller, player) {
+            overlayBuilder: (context, controller, player, feedCtrl) {
               return Container(
                 key: const Key('overlay_widget'),
                 color: Colors.red.withValues(alpha: 0.5),
@@ -382,7 +382,7 @@ void main() {
       testWidgets('stacks video and overlay correctly', (tester) async {
         await tester.pumpWidget(
           buildWidget(
-            overlayBuilder: (context, controller, player) {
+            overlayBuilder: (context, controller, player, feedCtrl) {
               return Container(key: const Key('overlay_widget'));
             },
           ),
@@ -981,7 +981,7 @@ void main() {
 
         await tester.pumpWidget(
           buildWidget(
-            overlayBuilder: (context, controller, player) =>
+            overlayBuilder: (context, controller, player, feedCtrl) =>
                 const Text('Error Overlay'),
           ),
         );

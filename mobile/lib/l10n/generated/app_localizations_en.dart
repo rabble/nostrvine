@@ -935,6 +935,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Play video';
 
   @override
+  String get videoPlayerMute => 'Mute video';
+
+  @override
+  String get videoPlayerUnmute => 'Unmute video';
+
+  @override
   String get videoPlayerEditVideo => 'Edit video';
 
   @override

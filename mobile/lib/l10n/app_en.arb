@@ -462,6 +462,8 @@
   },
   "videoPlayerLoadingVideo": "Loading video...",
   "videoPlayerPlayVideo": "Play video",
+  "videoPlayerMute": "Mute video",
+  "videoPlayerUnmute": "Unmute video",
   "videoPlayerEditVideo": "Edit video",
   "videoPlayerEditVideoTooltip": "Edit video",
   "contentWarningLabel": "Content Warning",

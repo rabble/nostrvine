@@ -38,6 +38,9 @@ void main() {
       when(
         () => mockPlayerStream.buffering,
       ).thenAnswer((_) => bufferingController.stream);
+      when(
+        () => mockPlayerStream.volume,
+      ).thenAnswer((_) => const Stream<double>.empty());
     });
 
     tearDown(() async {
@@ -54,6 +57,7 @@ void main() {
             key: key,
             player: mockPlayer,
             firstFrameFuture: Future<void>.value(),
+            onToggleMuteState: () {},
           ),
         ),
       );
@@ -71,7 +75,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 220));
 
-        expect(find.bySemanticsLabel('Play video'), findsOneWidget);
+        expect(find.byKey(const ValueKey('paused-play')), findsOneWidget);
 
         await tester.pumpWidget(
           const MaterialApp(
@@ -88,7 +92,7 @@ void main() {
 
         // After remount _hasStartedPlayback resets, so the overlay is hidden
         // until the player transitions through playing again.
-        expect(find.bySemanticsLabel('Play video'), findsNothing);
+        expect(find.byKey(const ValueKey('paused-play')), findsNothing);
 
         playingController.add(true);
         await tester.pump();
@@ -96,7 +100,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 220));
 
-        expect(find.bySemanticsLabel('Play video'), findsOneWidget);
+        expect(find.byKey(const ValueKey('paused-play')), findsOneWidget);
       },
     );
   });

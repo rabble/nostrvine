@@ -969,6 +969,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Redă videoclipul';
 
   @override
+  String get videoPlayerMute => 'Dezactivează sunetul videoclipului';
+
+  @override
+  String get videoPlayerUnmute => 'Activează sunetul videoclipului';
+
+  @override
   String get videoPlayerEditVideo => 'Editează videoclipul';
 
   @override

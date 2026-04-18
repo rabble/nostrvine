@@ -941,6 +941,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Video afspelen';
 
   @override
+  String get videoPlayerMute => 'Video dempen';
+
+  @override
+  String get videoPlayerUnmute => 'Videogeluid inschakelen';
+
+  @override
   String get videoPlayerEditVideo => 'Video bewerken';
 
   @override

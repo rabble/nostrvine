@@ -106,6 +106,9 @@ void main() {
       when(
         () => mockStream.buffering,
       ).thenAnswer((_) => bufferingController.stream);
+      when(
+        () => mockStream.volume,
+      ).thenAnswer((_) => const Stream<double>.empty());
       when(() => mockPlayerState.playing).thenReturn(false);
       when(() => mockPlayerState.buffering).thenReturn(false);
       when(
@@ -155,6 +158,7 @@ void main() {
         player: includePlayer ? (player ?? mockPlayer) : null,
         firstFrameFuture: firstFrameFuture,
         listSources: listSources,
+        feedController: feedController,
         showAutoButton: showAutoButton,
         isAutoEnabled: isAutoEnabled,
         onAutoPressed: onAutoPressed,

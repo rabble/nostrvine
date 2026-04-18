@@ -951,6 +951,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Reproducir video';
 
   @override
+  String get videoPlayerMute => 'Silenciar video';
+
+  @override
+  String get videoPlayerUnmute => 'Activar sonido del video';
+
+  @override
   String get videoPlayerEditVideo => 'Editar video';
 
   @override

@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "Wczytywanie filmu...",
     "videoPlayerPlayVideo": "Odtwórz film",
+    "videoPlayerMute": "Wycisz film",
+    "videoPlayerUnmute": "Włącz dźwięk filmu",
     "videoPlayerEditVideo": "Edytuj film",
     "videoPlayerEditVideoTooltip": "Edytuj film",
     "contentWarningLabel": "Ostrzeżenie o treści",
