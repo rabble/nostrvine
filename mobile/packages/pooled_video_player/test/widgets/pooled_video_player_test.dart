@@ -543,6 +543,17 @@ void main() {
         expect(find.byIcon(Icons.refresh), findsOneWidget);
       });
 
+      testWidgets('default error retry triggers controller.retryLoad', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+
+        await tester.tap(find.byIcon(Icons.refresh));
+        await tester.pump();
+
+        verify(() => mockController.retryLoad(0)).called(1);
+      });
+
       testWidgets('shows custom errorBuilder when provided', (tester) async {
         await tester.pumpWidget(
           buildWidget(

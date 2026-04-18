@@ -30,7 +30,9 @@ _MockPooledPlayer _createMockPooledPlayer() {
   when(() => mockPooledPlayer.videoController).thenReturn(mockController);
   when(() => mockPooledPlayer.isDisposed).thenReturn(false);
   when(() => mockPooledPlayer.wasRecycled).thenAnswer((_) => recycled);
-  when(mockPooledPlayer.clearRecycled).thenAnswer((_) => recycled = false);
+  when(mockPooledPlayer.clearRecycled).thenAnswer(
+    (_) => recycled = false,
+  );
   when(mockPooledPlayer.recycle).thenAnswer((_) => recycled = true);
   when(mockPooledPlayer.dispose).thenAnswer((_) async {});
 
@@ -542,9 +544,9 @@ void main() {
         test('handles exception during stop gracefully', () async {
           await pool.getPlayer('https://example.com/v1.mp4');
 
-          when(
-            () => createdPlayers[0].player.stop(),
-          ).thenThrow(Exception('stop failed'));
+          final firstPlayer = createdPlayers[0].player;
+
+          when(firstPlayer.stop).thenThrow(Exception('stop failed'));
 
           expect(() => pool.stopAll(), returnsNormally);
         });
@@ -629,6 +631,92 @@ void main() {
             expect(pool.hasPlayer('https://example.com/v4.mp4'), isTrue);
           },
         );
+
+        group('testing hooks and edge cases', () {
+          test(
+            'drainPendingOperations waits for in-flight getPlayer lock',
+            () async {
+              final delayedPool = TestablePlayerPool(
+                maxPlayers: 1,
+                serialized: true,
+                mockPlayerFactory: (url) {
+                  final player = _createMockPooledPlayer();
+                  createdPlayers.add(player);
+                  return player;
+                },
+              );
+              addTearDown(delayedPool.dispose);
+
+              await delayedPool.getPlayer('https://example.com/v1.mp4');
+
+              final firstPlayer = createdPlayers[0].player;
+
+              final stopCompleter = Completer<void>();
+              when(firstPlayer.stop).thenAnswer(
+                (_) => stopCompleter.future,
+              );
+
+              final inFlight = delayedPool.getPlayer(
+                'https://example.com/v2.mp4',
+              );
+              await Future<void>.delayed(Duration.zero);
+
+              var drained = false;
+              final drainFuture = delayedPool.drainPendingOperations().then(
+                (_) => drained = true,
+              );
+
+              await Future<void>.delayed(Duration.zero);
+              expect(drained, isFalse);
+
+              stopCompleter.complete();
+              await inFlight;
+              await drainFuture;
+              expect(drained, isTrue);
+            },
+          );
+
+          test('getPlayerInternal exposes internal lookup path', () async {
+            final player = await pool.getPlayerInternal(
+              'https://example.com/internal.mp4',
+            );
+
+            expect(player, isNotNull);
+            expect(pool.hasPlayer('https://example.com/internal.mp4'), isTrue);
+          });
+
+          test('getPlayerInternal throws when pool is disposed', () async {
+            await pool.dispose();
+
+            await expectLater(
+              pool.getPlayerInternal('https://example.com/disposed.mp4'),
+              throwsA(isA<StateError>()),
+            );
+          });
+
+          test(
+            'recycle continues when stopping evicted player throws',
+            () async {
+              await pool.getPlayer('https://example.com/v1.mp4');
+              await pool.getPlayer('https://example.com/v2.mp4');
+              await pool.getPlayer('https://example.com/v3.mp4');
+
+              final firstPlayer = createdPlayers[0].player;
+
+              when(firstPlayer.stop).thenThrow(
+                Exception('stop failed'),
+              );
+
+              final recycled = await pool.getPlayer(
+                'https://example.com/v4.mp4',
+              );
+
+              expect(recycled, isNotNull);
+              expect(pool.hasPlayer('https://example.com/v4.mp4'), isTrue);
+              verify(createdPlayers[0].recycle).called(1);
+            },
+          );
+        });
 
         test(
           'skips multiple disposed LRU entries in a row and creates a new '
