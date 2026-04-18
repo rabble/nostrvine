@@ -1,6 +1,8 @@
 // ABOUTME: Tests for PooledVideoFeed widget
 // ABOUTME: Validates PageView, page changes, callbacks, and state management
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -279,7 +281,7 @@ void main() {
           find.byType(PooledVideoFeed),
         );
 
-        state.animateToPage(1);
+        unawaited(state.animateToPage(1));
         await tester.pumpAndSettle();
 
         expect(find.text('Video 1 (active)'), findsOneWidget);

@@ -9,7 +9,7 @@ void main() {
         isTrue,
       );
       expect(
-        const VideoIndexState(loadState: LoadState.none).isLoading,
+        const VideoIndexState().isLoading,
         isFalse,
       );
       expect(
