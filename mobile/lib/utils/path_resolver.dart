@@ -9,6 +9,10 @@ import 'package:path_provider/path_provider.dart' as path_provider;
 ///
 /// On web, path_provider has no documents directory; returns `''` so callers
 /// can join basenames without calling the plugin (avoids MissingPluginException).
+///
+/// The web branch is covered by `test/utils/path_resolver_test.dart` when run
+/// locally as `flutter test test/utils/path_resolver_test.dart --platform chrome`
+/// (not run in CI).
 Future<String> getDocumentsPath() async {
   if (kIsWeb) {
     return '';

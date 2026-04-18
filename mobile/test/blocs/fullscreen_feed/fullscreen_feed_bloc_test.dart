@@ -9,10 +9,13 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
+import 'package:openvine/services/media_availability_checker.dart';
 
 class MockFileInfo extends Mock implements FileInfo {}
 
@@ -65,6 +68,8 @@ void main() {
       Stream<bool>? hasMoreStream,
       MediaCacheManager? mediaCache,
       BlossomAuthService? blossomAuthService,
+      OnRemoveVideo? onRemoveVideo,
+      MediaAvailabilityChecker? availabilityChecker,
     }) => FullscreenFeedBloc(
       videosStream: videosController.stream,
       initialIndex: initialIndex,
@@ -72,6 +77,8 @@ void main() {
       hasMoreStream: hasMoreStream,
       mediaCache: mediaCache ?? mockMediaCache,
       blossomAuthService: blossomAuthService,
+      onRemoveVideo: onRemoveVideo,
+      availabilityChecker: availabilityChecker,
     );
 
     test('initial state has correct values', () {
@@ -212,6 +219,8 @@ void main() {
           2,
           true,
           false,
+          <String>{},
+          null,
         ]);
       });
     });
@@ -758,6 +767,321 @@ void main() {
           ).called(1);
         },
       );
+    });
+
+    group('FullscreenFeedVideoUnavailable', () {
+      MediaAvailabilityChecker checkerReturning(int statusCode) {
+        final client = MockClient(
+          (_) async => http.Response('', statusCode),
+        );
+        return MediaAvailabilityChecker(client: client);
+      }
+
+      MediaAvailabilityChecker throwingChecker() {
+        final client = MockClient(
+          (_) async => throw http.ClientException('timeout'),
+        );
+        return MediaAvailabilityChecker(client: client);
+      }
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'removes video and emits pending skip when HEAD confirms 404',
+        build: () {
+          final removed = <String>[];
+          return createBloc(
+            onRemoveVideo: removed.add,
+            availabilityChecker: checkerReturning(404),
+          );
+        },
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+          ],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video1')),
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.removedVideoIds,
+                'removedVideoIds',
+                equals({'video1'}),
+              )
+              .having(
+                (s) => s.pendingSkipTarget,
+                'pendingSkipTarget',
+                equals(1),
+              ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'calls onRemoveVideo callback when HEAD confirms 404',
+        build: () => createBloc(
+          onRemoveVideo: expectAsync1<void, String>((id) {
+            expect(id, equals('video1'));
+          }),
+          availabilityChecker: checkerReturning(404),
+        ),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [createTestVideo('video1')],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video1')),
+        wait: const Duration(milliseconds: 100),
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'does not remove or skip when HEAD returns 200 (transient error)',
+        build: () {
+          return createBloc(
+            onRemoveVideo: (_) => fail('should not remove on non-404'),
+            availabilityChecker: checkerReturning(200),
+          );
+        },
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [createTestVideo('video1')],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video1')),
+        wait: const Duration(milliseconds: 100),
+        expect: () => <FullscreenFeedState>[],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'does not remove when HEAD request throws (network error)',
+        build: () {
+          return createBloc(
+            onRemoveVideo: (_) => fail('should not remove on network error'),
+            availabilityChecker: throwingChecker(),
+          );
+        },
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [createTestVideo('video1')],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video1')),
+        wait: const Duration(milliseconds: 100),
+        expect: () => <FullscreenFeedState>[],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'deduplicates repeated unavailable events for the same video',
+        build: () {
+          var callCount = 0;
+          return createBloc(
+            onRemoveVideo: (_) => callCount++,
+            availabilityChecker: checkerReturning(404),
+          );
+        },
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+          ],
+        ),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedVideoUnavailable('video1'));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          bloc.add(const FullscreenFeedVideoUnavailable('video1'));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          bloc.add(const FullscreenFeedVideoUnavailable('video1'));
+        },
+        wait: const Duration(milliseconds: 200),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having(
+                (s) => s.removedVideoIds,
+                'removedVideoIds',
+                equals({'video1'}),
+              )
+              .having(
+                (s) => s.pendingSkipTarget,
+                'pendingSkipTarget',
+                equals(1),
+              ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'no-ops when video id is not in the current list',
+        build: () => createBloc(
+          onRemoveVideo: (_) => fail('unknown video should not trigger remove'),
+          availabilityChecker: checkerReturning(404),
+        ),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [createTestVideo('video1')],
+        ),
+        act: (bloc) =>
+            bloc.add(const FullscreenFeedVideoUnavailable('unknown')),
+        wait: const Duration(milliseconds: 50),
+        expect: () => <FullscreenFeedState>[],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'no-ops when video has no URL',
+        build: () => createBloc(
+          onRemoveVideo: (_) => fail('videos without URL cannot be confirmed'),
+          availabilityChecker: checkerReturning(404),
+        ),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            VideoEvent(
+              id: 'video1',
+              pubkey: '0' * 64,
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              content: '',
+              timestamp: DateTime.now(),
+              title: 'no url',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video1')),
+        wait: const Duration(milliseconds: 50),
+        expect: () => <FullscreenFeedState>[],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'skip target matches index of removed video + 1',
+        build: () => createBloc(
+          onRemoveVideo: (_) {},
+          availabilityChecker: checkerReturning(404),
+        ),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+            createTestVideo('video3'),
+          ],
+          currentIndex: 1,
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video2')),
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.pendingSkipTarget,
+            'pendingSkipTarget',
+            equals(2),
+          ),
+        ],
+      );
+    });
+
+    group('FullscreenFeedSkipAcknowledged', () {
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'clears pendingSkipTarget when acknowledged',
+        build: createBloc,
+        seed: () => const FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          pendingSkipTarget: 2,
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedSkipAcknowledged()),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.pendingSkipTarget,
+            'pendingSkipTarget',
+            isNull,
+          ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'no-ops when no pending skip',
+        build: createBloc,
+        seed: () => const FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedSkipAcknowledged()),
+        expect: () => <FullscreenFeedState>[],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'allows subsequent unavailable events to emit a new skip',
+        build: () => createBloc(
+          onRemoveVideo: (_) {},
+          availabilityChecker: MediaAvailabilityChecker(
+            client: MockClient((_) async => http.Response('', 404)),
+          ),
+        ),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+          ],
+        ),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedVideoUnavailable('video1'));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          bloc.add(const FullscreenFeedSkipAcknowledged());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          bloc.add(const FullscreenFeedVideoUnavailable('video2'));
+        },
+        wait: const Duration(milliseconds: 300),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.pendingSkipTarget,
+            'pendingSkipTarget after first unavailable',
+            equals(1),
+          ),
+          isA<FullscreenFeedState>().having(
+            (s) => s.pendingSkipTarget,
+            'pendingSkipTarget cleared',
+            isNull,
+          ),
+          isA<FullscreenFeedState>().having(
+            (s) => s.pendingSkipTarget,
+            'pendingSkipTarget after second unavailable',
+            equals(2),
+          ),
+        ],
+      );
+    });
+
+    group('props and copyWith for new fields', () {
+      test('removedVideoIds default is empty', () {
+        const state = FullscreenFeedState();
+        expect(state.removedVideoIds, isEmpty);
+      });
+
+      test('pendingSkipTarget default is null', () {
+        const state = FullscreenFeedState();
+        expect(state.pendingSkipTarget, isNull);
+      });
+
+      test('copyWith updates removedVideoIds', () {
+        const state = FullscreenFeedState();
+        final updated = state.copyWith(removedVideoIds: {'a', 'b'});
+        expect(updated.removedVideoIds, equals({'a', 'b'}));
+      });
+
+      test('copyWith updates pendingSkipTarget', () {
+        const state = FullscreenFeedState();
+        final updated = state.copyWith(pendingSkipTarget: 5);
+        expect(updated.pendingSkipTarget, equals(5));
+      });
+
+      test('copyWith clearPendingSkipTarget resets to null', () {
+        const state = FullscreenFeedState(pendingSkipTarget: 5);
+        final updated = state.copyWith(clearPendingSkipTarget: true);
+        expect(updated.pendingSkipTarget, isNull);
+      });
+
+      test('FullscreenFeedVideoUnavailable props contains videoId', () {
+        const event = FullscreenFeedVideoUnavailable('abc');
+        expect(event.props, equals(['abc']));
+      });
+
+      test('FullscreenFeedSkipAcknowledged props is empty', () {
+        const event = FullscreenFeedSkipAcknowledged();
+        expect(event.props, isEmpty);
+      });
     });
   });
 }

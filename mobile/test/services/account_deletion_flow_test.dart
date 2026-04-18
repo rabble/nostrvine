@@ -1,6 +1,6 @@
+@Tags(['skip_very_good_optimization', 'integration'])
 // ABOUTME: Integration test for complete account deletion flow
 // ABOUTME: Tests end-to-end deletion from Settings through sign out
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

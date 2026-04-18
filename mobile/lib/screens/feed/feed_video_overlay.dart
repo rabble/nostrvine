@@ -12,6 +12,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
@@ -350,7 +351,10 @@ class _AuthorInfoSection extends ConsumerWidget {
                       ],
                     ),
                     Text(
-                      '${StringUtils.formatCompactNumber(video.totalLoops)} ${video.totalLoops == 1 ? 'loop' : 'loops'}',
+                      context.l10n.videoFeedLoopCountLine(
+                        StringUtils.formatCompactNumber(video.totalLoops),
+                        video.totalLoops,
+                      ),
                       style: VineTheme.labelSmallFont(),
                     ),
                   ],

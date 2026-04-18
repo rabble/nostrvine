@@ -4,7 +4,10 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hls_auth_web_player/hls_auth_web_player.dart'
+    show AuthHeaderProvider;
 import 'package:models/models.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_policy.dart';
 import 'package:openvine/widgets/web_video_player.dart';
 import 'package:video_player/video_player.dart';
@@ -34,6 +37,9 @@ typedef WebOnCompleted = void Function(int index);
 /// on them — a failed player never emits a loop-boundary crossing.
 typedef WebOnErrored = void Function(int index);
 
+/// Callback fired when a web player needs viewer auth for [video].
+typedef WebOnRequiresAuth = void Function(VideoEvent video, int index);
+
 /// A vertical-scrolling video feed for web platforms.
 ///
 /// Uses Flutter's [video_player] package (HTML5 video via video_player_web_hls)
@@ -47,12 +53,14 @@ class WebVideoFeed extends StatefulWidget {
     this.onActiveVideoChanged,
     this.onCompleted,
     this.onErrored,
+    this.onRequiresAuth,
     this.onNearEnd,
     this.nearEndThreshold = 3,
     this.headers = const {},
     this.startThreshold = FeedAutoAdvanceDefaults.startThreshold,
     this.endThreshold = FeedAutoAdvanceDefaults.endThreshold,
     this.controllerFactory = defaultWebVideoPlayerControllerFactory,
+    this.authHeaderProvider,
     super.key,
   });
 
@@ -77,6 +85,12 @@ class WebVideoFeed extends StatefulWidget {
   /// of getting stuck on it.
   final WebOnErrored? onErrored;
 
+  /// Called when the NIP-98 web player reports `401`/`403`.
+  ///
+  /// This must stay separate from [onErrored] so auth-gated videos enter the
+  /// age-restricted UI instead of the broken-video skip/removal path.
+  final WebOnRequiresAuth? onRequiresAuth;
+
   /// Called when near the end of the list for pagination.
   final void Function(int index)? onNearEnd;
 
@@ -94,6 +108,14 @@ class WebVideoFeed extends StatefulWidget {
 
   /// Factory used to create underlying web video controllers.
   final WebVideoPlayerControllerFactory controllerFactory;
+
+  /// Provides NIP-98 `Authorization` header values for per-segment signing.
+  ///
+  /// When non-null, each [WebVideoPlayer] item routes playback through the
+  /// `HlsAuthWebPlayer` runtime. When null, the legacy `VideoPlayerController`
+  /// path is used. Callers are expected to gate this on
+  /// `kIsWeb && FeatureFlag.hlsAuthWebPlayer`.
+  final AuthHeaderProvider? authHeaderProvider;
 
   @override
   State<WebVideoFeed> createState() => WebVideoFeedState();
@@ -223,16 +245,10 @@ class WebVideoFeedState extends State<WebVideoFeed> {
   }
 
   GlobalKey<WebVideoPlayerState> _getPlayerKey(int index) {
-    return _playerKeys.putIfAbsent(
-      index,
-      GlobalKey<WebVideoPlayerState>.new,
-    );
+    return _playerKeys.putIfAbsent(index, GlobalKey<WebVideoPlayerState>.new);
   }
 
-  void _attachCompletionListener(
-    int index,
-    VideoPlayerController controller,
-  ) {
+  void _attachCompletionListener(int index, VideoPlayerController controller) {
     final previousController = _controllers.value[index];
     if (identical(previousController, controller) &&
         _controllerListeners.containsKey(index)) {
@@ -256,10 +272,7 @@ class WebVideoFeedState extends State<WebVideoFeed> {
     controller.addListener(listener);
   }
 
-  void _detachCompletionListener(
-    int index,
-    VideoPlayerController controller,
-  ) {
+  void _detachCompletionListener(int index, VideoPlayerController controller) {
     final listener = _controllerListeners.remove(index);
     if (listener != null) {
       try {
@@ -333,6 +346,8 @@ class WebVideoFeedState extends State<WebVideoFeed> {
           controllerFactory: widget.controllerFactory,
           controllersListenable: _controllers,
           itemBuilder: widget.itemBuilder,
+          authHeaderProvider: widget.authHeaderProvider,
+          hlsFallbackUrl: video.getFallbackUrl(),
           onInitialized: (controller) {
             if (!mounted) return;
             setState(() {
@@ -346,6 +361,10 @@ class WebVideoFeedState extends State<WebVideoFeed> {
           onError: () {
             if (!mounted) return;
             widget.onErrored?.call(index);
+          },
+          onRequiresAuth: () {
+            if (!mounted) return;
+            widget.onRequiresAuth?.call(video, index);
           },
         );
       },
@@ -369,9 +388,12 @@ class _WebVideoFeedItem extends StatelessWidget {
     required this.controllerFactory,
     required this.controllersListenable,
     required this.itemBuilder,
+    required this.authHeaderProvider,
+    required this.hlsFallbackUrl,
     required this.onInitialized,
     required this.onDisposed,
     required this.onError,
+    required this.onRequiresAuth,
   });
 
   final VideoEvent video;
@@ -383,9 +405,12 @@ class _WebVideoFeedItem extends StatelessWidget {
   final WebVideoPlayerControllerFactory controllerFactory;
   final ValueListenable<Map<int, VideoPlayerController>> controllersListenable;
   final WebVideoFeedItemBuilder? itemBuilder;
+  final AuthHeaderProvider? authHeaderProvider;
+  final String? hlsFallbackUrl;
   final ValueChanged<VideoPlayerController> onInitialized;
   final VoidCallback onDisposed;
   final VoidCallback onError;
+  final VoidCallback onRequiresAuth;
 
   @override
   Widget build(BuildContext context) {
@@ -398,9 +423,12 @@ class _WebVideoFeedItem extends StatelessWidget {
           autoPlay: isActive,
           headers: headers,
           controllerFactory: controllerFactory,
+          authHeaderProvider: authHeaderProvider,
+          hlsFallbackUrl: hlsFallbackUrl,
           onInitialized: onInitialized,
           onDisposed: onDisposed,
           onError: onError,
+          onRequiresAuth: onRequiresAuth,
         ),
         if (itemBuilder != null)
           ValueListenableBuilder<Map<int, VideoPlayerController>>(

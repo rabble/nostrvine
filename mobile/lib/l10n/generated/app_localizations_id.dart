@@ -828,11 +828,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Permintaan hapus berhasil dikirim';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Gagal menghapus konten: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klasik';
 
   @override
@@ -1215,6 +1210,17 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'loop',
+      one: 'loop',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'Bukan Divine';
 
   @override
@@ -1248,7 +1254,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get metadataRepostedByLabel => 'Di-repost oleh';
 
   @override
-  String get metadataLoopsLabel => 'Loop';
+  String metadataLoopsLabel(int count) {
+    return 'Loop';
+  }
 
   @override
   String get metadataLikesLabel => 'Suka';
@@ -2935,10 +2943,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuDeleteConfirmation => 'Yakin mau menghapus video ini?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.';
-
-  @override
   String get shareMenuCancel => 'Batal';
 
   @override
@@ -2951,9 +2955,24 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Permintaan hapus berhasil dikirim';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Gagal menghapus konten: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Penghapusan belum siap. Coba lagi sebentar lagi.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Kamu cuma bisa menghapus video milikmu sendiri.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Masuk lagi, lalu coba hapus.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Tidak bisa menandatangani permintaan hapus. Coba lagi.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Tidak bisa menghapus video ini. Coba lagi.';
 
   @override
   String get shareMenuFollowSetName => 'Nama Set Ikuti';
@@ -3021,11 +3040,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Penghapusan video diminta';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Gagal menghapus video: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Label konten';

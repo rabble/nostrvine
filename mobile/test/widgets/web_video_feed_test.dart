@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
+import 'package:openvine/widgets/web_video_player.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart'
     as video_platform;
@@ -150,6 +151,20 @@ VideoEvent _makeVideo({int seed = 0}) {
   );
 }
 
+VideoEvent _makeDivineVideo() {
+  const hash =
+      'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+  return VideoEvent(
+    id: 'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2',
+    pubkey:
+        'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3',
+    createdAt: 1700000000,
+    content: 'Divine video',
+    timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+    videoUrl: 'https://media.divine.video/$hash/720p.mp4',
+  );
+}
+
 void main() {
   late video_platform.VideoPlayerPlatform originalPlatform;
 
@@ -173,13 +188,7 @@ void main() {
           videos: [_makeVideo()],
           controllerFactory: ({required url, required headers}) => controller,
           itemBuilder:
-              (
-                context,
-                video,
-                index, {
-                required isActive,
-                controller,
-              }) {
+              (context, video, index, {required isActive, controller}) {
                 return Align(
                   alignment: Alignment.topLeft,
                   child: Text(controller == null ? 'waiting' : 'ready'),
@@ -284,14 +293,10 @@ void main() {
       await tester.pump();
 
       final state =
-          tester.state<State<WebVideoFeed>>(
-                find.byType(WebVideoFeed),
-              )
+          tester.state<State<WebVideoFeed>>(find.byType(WebVideoFeed))
               as dynamic;
       final pageController = tester
-          .widget<PageView>(
-            find.byType(PageView),
-          )
+          .widget<PageView>(find.byType(PageView))
           .controller!;
 
       // Drive PageView through several indices. Pages that drop out of the
@@ -318,15 +323,132 @@ void main() {
     },
   );
 
+  testWidgets('prunes stale controller entries when videos list shrinks', (
+    tester,
+  ) async {
+    final initial = List.generate(4, (i) => _makeVideo(seed: i));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebVideoFeed(
+          videos: initial,
+          controllerFactory: ({required url, required headers}) =>
+              _FakeVideoPlayerController(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Shrink the list — the feed should prune indices that no longer map
+    // to a valid video.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebVideoFeed(
+          videos: [initial.first],
+          controllerFactory: ({required url, required headers}) =>
+              _FakeVideoPlayerController(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final state =
+        tester.state<State<WebVideoFeed>>(find.byType(WebVideoFeed)) as dynamic;
+
+    expect(state.debugControllerCount as int, lessThanOrEqualTo(1));
+    expect(state.debugPlayerKeyCount as int, lessThanOrEqualTo(1));
+  });
+
+  testWidgets('forwards authHeaderProvider to each WebVideoPlayer item', (
+    tester,
+  ) async {
+    final calls = <(String, String)>[];
+    Future<String?> provider(String url, String method) async {
+      calls.add((url, method));
+      return 'Nostr test-header';
+    }
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebVideoFeed(
+          videos: [_makeVideo()],
+          controllerFactory: ({required url, required headers}) =>
+              _FakeVideoPlayerController(),
+          authHeaderProvider: provider,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final player = tester.widget<WebVideoPlayer>(find.byType(WebVideoPlayer));
+    expect(player.authHeaderProvider, isNotNull);
+
+    // Invoking the propagated callback must reach the original closure.
+    final header = await player.authHeaderProvider!(
+      'https://media.divine.video/abc',
+      'GET',
+    );
+    expect(header, equals('Nostr test-header'));
+    expect(calls, equals([('https://media.divine.video/abc', 'GET')]));
+  });
+
+  testWidgets('forwards auth-required callbacks separately from load errors', (
+    tester,
+  ) async {
+    final callbacks = <(String, int)>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebVideoFeed(
+          videos: [_makeVideo()],
+          controllerFactory: ({required url, required headers}) =>
+              _FakeVideoPlayerController(),
+          onErrored: (index) => callbacks.add(('error', index)),
+          onRequiresAuth: (video, index) =>
+              callbacks.add(('auth:${video.id}', index)),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final player = tester.widget<WebVideoPlayer>(find.byType(WebVideoPlayer));
+    player.onRequiresAuth?.call();
+
+    expect(callbacks, equals([('auth:${_makeVideo().id}', 0)]));
+  });
+
   testWidgets(
-    'prunes stale controller entries when videos list shrinks',
+    'forwards HLS fallback URLs for Divine media to the auth player',
     (tester) async {
-      final initial = List.generate(4, (i) => _makeVideo(seed: i));
+      Future<String?> provider(String url, String method) async {
+        return 'Nostr test-header';
+      }
 
       await tester.pumpWidget(
         MaterialApp(
           home: WebVideoFeed(
-            videos: initial,
+            videos: [_makeDivineVideo()],
+            controllerFactory: ({required url, required headers}) =>
+                _FakeVideoPlayerController(),
+            authHeaderProvider: provider,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final player = tester.widget<WebVideoPlayer>(find.byType(WebVideoPlayer));
+      expect(player.hlsFallbackUrl, isNotNull);
+      expect(player.hlsFallbackUrl, contains('/hls/'));
+      expect(player.hlsFallbackUrl, endsWith('.m3u8'));
+    },
+  );
+
+  testWidgets(
+    'passes null authHeaderProvider by default (flag-off regression guard)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: WebVideoFeed(
+            videos: [_makeVideo()],
             controllerFactory: ({required url, required headers}) =>
                 _FakeVideoPlayerController(),
           ),
@@ -334,27 +456,8 @@ void main() {
       );
       await tester.pump();
 
-      // Shrink the list — the feed should prune indices that no longer map
-      // to a valid video.
-      await tester.pumpWidget(
-        MaterialApp(
-          home: WebVideoFeed(
-            videos: [initial.first],
-            controllerFactory: ({required url, required headers}) =>
-                _FakeVideoPlayerController(),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      final state =
-          tester.state<State<WebVideoFeed>>(
-                find.byType(WebVideoFeed),
-              )
-              as dynamic;
-
-      expect(state.debugControllerCount as int, lessThanOrEqualTo(1));
-      expect(state.debugPlayerKeyCount as int, lessThanOrEqualTo(1));
+      final player = tester.widget<WebVideoPlayer>(find.byType(WebVideoPlayer));
+      expect(player.authHeaderProvider, isNull);
     },
   );
 
@@ -371,13 +474,7 @@ void main() {
             controllerFactory: ({required url, required headers}) =>
                 _FakeVideoPlayerController(),
             itemBuilder:
-                (
-                  context,
-                  video,
-                  index, {
-                  required isActive,
-                  controller,
-                }) {
+                (context, video, index, {required isActive, controller}) {
                   itemBuilderCalls.update(
                     index,
                     (prev) => prev + 1,

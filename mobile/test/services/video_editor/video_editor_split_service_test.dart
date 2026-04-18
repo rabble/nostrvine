@@ -45,6 +45,7 @@ class MockProVideoEditor extends ProVideoEditor {
   }
 }
 
+@Tags(['skip_very_good_optimization'])
 void main() {
   late MockProVideoEditor mockProVideoEditor;
 

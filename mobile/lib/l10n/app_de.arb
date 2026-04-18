@@ -2854,5 +2854,29 @@
   "videoMetadataRemoveSemanticLabel": "Entfernen",
   "metadataCaptionsLabel": "Untertitel",
   "metadataCaptionsEnabledSemantics": "Untertitel für alle Videos aktiviert",
-  "metadataCaptionsDisabledSemantics": "Untertitel für alle Videos deaktiviert"
+  "metadataCaptionsDisabledSemantics": "Untertitel für alle Videos deaktiviert",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "Die Löschanfrage konnte nicht signiert werden. Versuch es nochmal.",
+  "shareMenuDeleteFailedGeneric": "Dieses Video konnte nicht gelöscht werden. Versuch es nochmal.",
+  "shareMenuDeleteFailedNotAuthenticated": "Melde dich erneut an und versuch es nochmal.",
+  "shareMenuDeleteFailedNotInitialized": "Löschen ist noch nicht bereit. Versuch es gleich noch einmal.",
+  "shareMenuDeleteFailedNotOwner": "Du kannst nur deine eigenen Videos löschen.",
+  "videoEditorLayers": "Ebenen",
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{Loop} other{Loops}}"
 }

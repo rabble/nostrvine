@@ -2145,5 +2145,29 @@
   "videoActionDisableAutoAdvance": "자동 넘기기 비활성화",
   "metadataCaptionsLabel": "자막",
   "metadataCaptionsEnabledSemantics": "모든 동영상에서 자막이 활성화되었습니다",
-  "metadataCaptionsDisabledSemantics": "모든 동영상에서 자막이 비활성화되었습니다"
+  "metadataCaptionsDisabledSemantics": "모든 동영상에서 자막이 비활성화되었습니다",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "삭제 요청에 서명하지 못했어요. 다시 시도해요.",
+  "shareMenuDeleteFailedGeneric": "이 영상을 삭제하지 못했어요. 다시 시도해요.",
+  "shareMenuDeleteFailedNotAuthenticated": "다시 로그인한 뒤 삭제를 시도해요.",
+  "shareMenuDeleteFailedNotInitialized": "삭제 준비가 아직 안 됐어요. 잠시 뒤에 다시 시도해요.",
+  "shareMenuDeleteFailedNotOwner": "내가 올린 영상만 삭제할 수 있어요.",
+  "videoEditorLayers": "레이어",
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, other{루프}}"
 }

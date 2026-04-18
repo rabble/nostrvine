@@ -1501,7 +1501,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoGridDeleteVideoSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Permanently remove this content'**
+  /// **'Remove this video from Divine. It may still appear on other Nostr clients.'**
   String get videoGridDeleteVideoSubtitle;
 
   /// No description provided for @videoGridDeleteConfirmTitle.
@@ -1513,13 +1513,13 @@ abstract class AppLocalizations {
   /// No description provided for @videoGridDeleteConfirmMessage.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to delete this video?'**
+  /// **'This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.'**
   String get videoGridDeleteConfirmMessage;
 
   /// No description provided for @videoGridDeleteConfirmNote.
   ///
   /// In en, this message translates to:
-  /// **'This will send a delete request (NIP-09) to all relays. Some relays may still retain the content.'**
+  /// **'This will send a deletion request to relays. Note: Some relays may still have cached copies.'**
   String get videoGridDeleteConfirmNote;
 
   /// No description provided for @videoGridDeleteCancel.
@@ -1545,12 +1545,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete request sent successfully'**
   String get videoGridDeleteSuccess;
-
-  /// No description provided for @videoGridDeleteFailure.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete content: {error}'**
-  String videoGridDeleteFailure(Object error);
 
   /// No description provided for @exploreTabClassics.
   ///
@@ -2224,6 +2218,12 @@ abstract class AppLocalizations {
   /// **'{count} loops'**
   String videoDescriptionLoops(String count);
 
+  /// No description provided for @videoFeedLoopCountLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{compactCount} {count, plural, =1{loop} other{loops}}'**
+  String videoFeedLoopCountLine(String compactCount, int count);
+
   /// No description provided for @metadataBadgeNotDivine.
   ///
   /// In en, this message translates to:
@@ -2293,8 +2293,8 @@ abstract class AppLocalizations {
   /// No description provided for @metadataLoopsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Loops'**
-  String get metadataLoopsLabel;
+  /// **'{count, plural, =1{Loop} other{Loops}}'**
+  String metadataLoopsLabel(int count);
 
   /// No description provided for @metadataLikesLabel.
   ///
@@ -5195,7 +5195,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuDeleteVideoSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Permanently remove this content'**
+  /// **'Remove this video from Divine. It may still appear on other Nostr clients.'**
   String get shareMenuDeleteVideoSubtitle;
 
   /// No description provided for @shareMenuVideoInTheseLists.
@@ -5219,14 +5219,8 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuDeleteConfirmation.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to delete this video?'**
+  /// **'This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.'**
   String get shareMenuDeleteConfirmation;
-
-  /// No description provided for @shareMenuDeleteWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This will send a delete request (NIP-09) to all relays. Some relays may still retain the content.'**
-  String get shareMenuDeleteWarning;
 
   /// No description provided for @shareMenuCancel.
   ///
@@ -5249,14 +5243,38 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuDeleteRequestSent.
   ///
   /// In en, this message translates to:
-  /// **'Delete request sent successfully'**
+  /// **'Video deleted'**
   String get shareMenuDeleteRequestSent;
 
-  /// No description provided for @shareMenuFailedToDeleteContent.
+  /// No description provided for @shareMenuDeleteFailedNotInitialized.
   ///
   /// In en, this message translates to:
-  /// **'Failed to delete content: {error}'**
-  String shareMenuFailedToDeleteContent(String error);
+  /// **'Deletion isn\'t ready yet. Try again in a moment.'**
+  String get shareMenuDeleteFailedNotInitialized;
+
+  /// No description provided for @shareMenuDeleteFailedNotOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'You can only delete your own videos.'**
+  String get shareMenuDeleteFailedNotOwner;
+
+  /// No description provided for @shareMenuDeleteFailedNotAuthenticated.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again, then try deleting.'**
+  String get shareMenuDeleteFailedNotAuthenticated;
+
+  /// No description provided for @shareMenuDeleteFailedCouldNotSign.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign the delete request. Try again.'**
+  String get shareMenuDeleteFailedCouldNotSign;
+
+  /// No description provided for @shareMenuDeleteFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete this video. Try again.'**
+  String get shareMenuDeleteFailedGeneric;
 
   /// No description provided for @shareMenuFollowSetName.
   ///
@@ -5375,14 +5393,8 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuVideoDeletionRequested.
   ///
   /// In en, this message translates to:
-  /// **'Video deletion requested'**
+  /// **'Video deleted'**
   String get shareMenuVideoDeletionRequested;
-
-  /// No description provided for @shareMenuFailedToDeleteVideo.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete video: {error}'**
-  String shareMenuFailedToDeleteVideo(String error);
 
   /// No description provided for @shareMenuContentLabels.
   ///

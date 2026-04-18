@@ -2856,5 +2856,29 @@
   "videoActionDisableAutoAdvance": "تعطيل التشغيل التلقائي",
   "metadataCaptionsLabel": "التسميات التوضيحية",
   "metadataCaptionsEnabledSemantics": "التسميات التوضيحية مفعّلة لجميع مقاطع الفيديو",
-  "metadataCaptionsDisabledSemantics": "التسميات التوضيحية معطّلة لجميع مقاطع الفيديو"
+  "metadataCaptionsDisabledSemantics": "التسميات التوضيحية معطّلة لجميع مقاطع الفيديو",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "لم نتمكن من توقيع طلب الحذف. حاول مرة أخرى.",
+  "shareMenuDeleteFailedGeneric": "تعذّر حذف هذا الفيديو. حاول مرة أخرى.",
+  "shareMenuDeleteFailedNotAuthenticated": "سجّل الدخول مرة أخرى، ثم حاول الحذف.",
+  "shareMenuDeleteFailedNotInitialized": "الحذف غير جاهز بعد. حاول مرة أخرى بعد لحظة.",
+  "shareMenuDeleteFailedNotOwner": "يمكنك حذف مقاطع الفيديو الخاصة بك فقط.",
+  "videoEditorLayers": "الطبقات",
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{تكرار} other{تكرارات}}"
 }

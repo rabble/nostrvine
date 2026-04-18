@@ -36,6 +36,7 @@ import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
@@ -1493,6 +1494,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            localeListResolutionCallback: resolveAppUiLocale,
           ),
         );
       }
@@ -1512,6 +1514,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            localeListResolutionCallback: resolveAppUiLocale,
           ),
         ),
       );

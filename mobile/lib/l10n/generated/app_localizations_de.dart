@@ -856,11 +856,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Löschanfrage erfolgreich gesendet';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Inhalt konnte nicht gelöscht werden: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klassiker';
 
   @override
@@ -1258,6 +1253,17 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Loops',
+      one: 'Loop',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'Nicht Divine';
 
   @override
@@ -1291,7 +1297,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get metadataRepostedByLabel => 'Repostet von';
 
   @override
-  String get metadataLoopsLabel => 'Loops';
+  String metadataLoopsLabel(int count) {
+    return 'Loops';
+  }
 
   @override
   String get metadataLikesLabel => 'Likes';
@@ -3001,10 +3009,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bist du sicher, dass du dieses Video löschen willst?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Damit wird eine Löschanfrage (NIP-09) an alle Relays gesendet. Manche Relays behalten die Inhalte möglicherweise trotzdem.';
-
-  @override
   String get shareMenuCancel => 'Abbrechen';
 
   @override
@@ -3017,9 +3021,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Löschanfrage erfolgreich gesendet';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Inhalt konnte nicht gelöscht werden: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Löschen ist noch nicht bereit. Versuch es gleich noch einmal.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Du kannst nur deine eigenen Videos löschen.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Melde dich erneut an und versuch es nochmal.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Die Löschanfrage konnte nicht signiert werden. Versuch es nochmal.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Dieses Video konnte nicht gelöscht werden. Versuch es nochmal.';
 
   @override
   String get shareMenuFollowSetName => 'Follow-Set-Name';
@@ -3086,11 +3105,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video-Löschung angefordert';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Video konnte nicht gelöscht werden: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Inhalts-Labels';

@@ -242,6 +242,7 @@ void main() {
 
         // Assert
         expect(result.success, isFalse);
+        expect(result.failureKind, DeleteFailureKind.notOwner);
         expect(result.error, contains('Can only delete your own content'));
 
         // Verify createAndSignEvent was NOT called
@@ -364,7 +365,31 @@ void main() {
 
       // Assert
       expect(result.success, isFalse);
+      expect(result.failureKind, DeleteFailureKind.notInitialized);
       expect(result.error, contains('not initialized'));
     });
+
+    test(
+      'deleteContent should fail with couldNotSign when createAndSign returns null',
+      () async {
+        final video = createTestVideoEvent(testPublicKey);
+
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await service.deleteContent(
+          video: video,
+          reason: 'Personal choice',
+        );
+
+        expect(result.success, isFalse);
+        expect(result.failureKind, DeleteFailureKind.couldNotSign);
+      },
+    );
   });
 }

@@ -18,14 +18,18 @@ class MockPathProviderPlatform extends Fake
   }
 }
 
+@Tags(['skip_very_good_optimization'])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('UploadInitializationHelper', () {
     late String testBoxPath;
+    late PathProviderPlatform originalPathProviderInstance;
 
     setUp(() async {
-      // Set up mock path provider
+      // Preserve original instance so other tests in the same process
+      // don't inherit the mock (which only implements getApplicationSupportPath)
+      originalPathProviderInstance = PathProviderPlatform.instance;
       PathProviderPlatform.instance = MockPathProviderPlatform();
 
       // Initialize Hive with test directory
@@ -46,6 +50,10 @@ void main() {
     });
 
     tearDown(() async {
+      // Restore the original path provider so other tests in the same
+      // process aren't affected by our mock.
+      PathProviderPlatform.instance = originalPathProviderInstance;
+
       // Clean up Hive boxes
       try {
         if (Hive.isBoxOpen('pending_uploads')) {

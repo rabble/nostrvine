@@ -1,6 +1,6 @@
+@Tags(['skip_very_good_optimization', 'integration'])
 // ABOUTME: Integration test for video playback stopping behavior
 // ABOUTME: Verifies videos stop on route changes and background
-
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';

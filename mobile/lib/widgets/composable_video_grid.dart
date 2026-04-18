@@ -14,6 +14,7 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
@@ -435,9 +436,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   child: Text(
                     result.success
                         ? context.l10n.videoGridDeleteSuccess
-                        : context.l10n.videoGridDeleteFailure(
-                            result.error ?? '',
-                          ),
+                        : localizedDeleteFailureMessage(context, result),
                   ),
                 ),
               ],
@@ -452,7 +451,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.videoGridDeleteFailure(e)),
+            content: Text(context.l10n.shareMenuDeleteFailedGeneric),
             backgroundColor: VineTheme.error,
           ),
         );

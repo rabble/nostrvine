@@ -153,8 +153,18 @@
     }
   </script>
 
-  <!-- HLS.js for video_player_web_hls package - enables HLS video playback on web -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest" type="application/javascript"></script>
+  <!-- HLS.js for video_player_web_hls package - enables HLS video playback on web.
+       Pinned to a known-good version so the hls_auth_web_player loader
+       subclass stays compatible. -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15" type="application/javascript"></script>
+
+  <!-- hls_auth_web_player browser shim. Installs window.__divine* helpers
+       that the Dart runtime calls into. Gated at the app layer behind
+       FeatureFlag.hlsAuthWebPlayer so leaving this tag here has no effect
+       when the flag is off. The source of truth lives at
+       `packages/hls_auth_web_player/web/hls_auth_web_player.js` — keep this
+       copy in sync with it. -->
+  <script src="hls_auth_web_player.js" type="application/javascript"></script>
 
   <script src="flutter_bootstrap.js" defer></script>
   

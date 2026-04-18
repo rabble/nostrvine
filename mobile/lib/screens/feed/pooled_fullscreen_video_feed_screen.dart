@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:ui' show lerpDouble;
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,9 +43,11 @@ import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_player_subtitle_layer.dart';
+import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:openvine/widgets/web_video_player.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 
 // Scroll-fraction constants for overlay opacity during page transitions.
@@ -354,14 +356,23 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     final controller = _controller;
     if (controller == null || _lastPooledVideos == null) return;
 
-    final newVideos = state.pooledVideos
-        .where((v) => !_lastPooledVideos!.any((old) => old.id == v.id))
-        .toList();
+    final previousVideos = _lastPooledVideos!;
+    final nextVideos = state.pooledVideos;
+    final previousIds = previousVideos.map((v) => v.id).toList();
+    final nextIds = nextVideos.map((v) => v.id).toList();
+    final isAppendOnly =
+        nextIds.length >= previousIds.length &&
+        listEquals(nextIds.take(previousIds.length).toList(), previousIds);
 
-    if (newVideos.isNotEmpty) {
-      controller.addVideos(newVideos);
+    if (isAppendOnly) {
+      final newVideos = nextVideos.skip(previousVideos.length).toList();
+      if (newVideos.isNotEmpty) {
+        controller.addVideos(newVideos);
+      }
+    } else {
+      controller.replaceVideos(nextVideos, currentIndex: state.currentIndex);
     }
-    _lastPooledVideos = state.pooledVideos;
+    _lastPooledVideos = nextVideos;
   }
 
   /// Whether auto-advance is available on this build, determined from the
@@ -432,9 +443,64 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   /// Treat a failed web player as "completed" so Auto skips past broken
   /// videos. Only fires for the currently-active page to avoid advancing
   /// when a background/preloaded player fails.
+  ///
+  /// Also dispatches [FullscreenFeedVideoUnavailable] so the BLoC can
+  /// HEAD-confirm whether the asset is permanently missing (404) and, if so,
+  /// remove it from the feed for the rest of the session.
   void _handleWebPlayerErrored(int index) {
-    if (index != context.read<FullscreenFeedBloc>().state.currentIndex) return;
+    final bloc = context.read<FullscreenFeedBloc>();
+    if (index != bloc.state.currentIndex) return;
+    final video = bloc.state.currentVideo;
+    if (video != null) {
+      bloc.add(FullscreenFeedVideoUnavailable(video.id));
+    }
     _handleAutoAdvanceCompleted();
+  }
+
+  /// Treat auth-gated web playback as the existing age-restricted state,
+  /// not as a broken video. This keeps 401/403 out of the #3107 404-removal
+  /// path, which is only for confirmed missing assets.
+  void _handleWebPlayerRequiresAuth(VideoEvent video, int index) {
+    final bloc = context.read<FullscreenFeedBloc>();
+    if (index != bloc.state.currentIndex) return;
+    context.read<VideoPlaybackStatusCubit>().report(
+      video.id,
+      PlaybackStatus.ageRestricted,
+    );
+  }
+
+  /// Dispatch a [FullscreenFeedVideoUnavailable] event for the active video
+  /// when the cubit reports [PlaybackStatus.notFound]. Replaces the prior
+  /// per-item post-frame callback that violated the "no business logic in
+  /// widgets" rule.
+  void _dispatchVideoUnavailableIfActive(VideoPlaybackStatusState state) {
+    final bloc = context.read<FullscreenFeedBloc>();
+    final activeVideo = bloc.state.currentVideo;
+    if (activeVideo == null) return;
+    if (state.statusFor(activeVideo.id) != PlaybackStatus.notFound) return;
+    if (bloc.state.removedVideoIds.contains(activeVideo.id)) return;
+    bloc.add(FullscreenFeedVideoUnavailable(activeVideo.id));
+  }
+
+  /// React to a pending skip target emitted by the BLoC after a confirmed
+  /// 404. Animates the active feed (pooled on native, page controller on
+  /// web) and acknowledges the signal so the BLoC clears it.
+  Future<void> _handlePendingSkip(int nextIndex) async {
+    try {
+      _animateToPage(nextIndex);
+    } on Exception catch (error, stackTrace) {
+      Log.error(
+        'FullscreenFeedContent: animateToPage failed during skip',
+        name: 'FullscreenFeedContent',
+        category: LogCategory.video,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    if (!mounted) return;
+    context.read<FullscreenFeedBloc>().add(
+      const FullscreenFeedSkipAcknowledged(),
+    );
   }
 
   void _continuePendingAutoAdvance(FullscreenFeedState state) {
@@ -528,6 +594,25 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 if (video != null) CommentsScreen.show(context, video);
               },
             ),
+          // Dispatch FullscreenFeedVideoUnavailable when the active video's
+          // playback status becomes notFound. The BLoC owns the HEAD-confirm,
+          // removal, and dedupe logic — this listener is the screen-level
+          // bridge that replaces the per-item post-frame callback.
+          BlocListener<VideoPlaybackStatusCubit, VideoPlaybackStatusState>(
+            listener: (context, state) =>
+                _dispatchVideoUnavailableIfActive(state),
+          ),
+          // Animate the feed when the BLoC signals a pending skip after a
+          // confirmed 404 removal.
+          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+            listenWhen: (prev, curr) =>
+                prev.pendingSkipTarget != curr.pendingSkipTarget &&
+                curr.pendingSkipTarget != null,
+            listener: (context, state) {
+              final target = state.pendingSkipTarget;
+              if (target != null) unawaited(_handlePendingSkip(target));
+            },
+          ),
         ],
         child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
           builder: (context, state) {
@@ -602,6 +687,19 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   )
                 : null;
 
+            // Wire the NIP-98 auth header provider into WebVideoFeed only
+            // when running on web AND the HLS auth web player flag is on.
+            // When either condition is false, authHeaderProvider stays null
+            // and the legacy VideoPlayerController path is used unchanged.
+            final hlsAuthWebPlayerEnabled = ref.watch(
+              isFeatureEnabledProvider(FeatureFlag.hlsAuthWebPlayer),
+            );
+            final webAuthHeaderProvider = kIsWeb && hlsAuthWebPlayerEnabled
+                ? buildWebVideoAuthHeaderProvider(
+                    ref.watch(mediaViewerAuthServiceProvider),
+                  )
+                : null;
+
             return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
               extendBodyBehindAppBar: true,
@@ -623,6 +721,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       controllerFactory:
                           widget.webControllerFactory ??
                           defaultWebVideoPlayerControllerFactory,
+                      authHeaderProvider: webAuthHeaderProvider,
                       onActiveVideoChanged: (video, index) {
                         _pagePosition.value = index.toDouble();
                         _resumeAutoAdvanceAfterSwipe();
@@ -636,6 +735,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       },
                       onCompleted: (_) => _handleAutoAdvanceCompleted(),
                       onErrored: _handleWebPlayerErrored,
+                      onRequiresAuth: _handleWebPlayerRequiresAuth,
                       onNearEnd: (index) => _onNearEnd(state, index),
                       itemBuilder:
                           (
@@ -1165,10 +1265,7 @@ class _FittedVideoPlayer extends StatelessWidget {
 }
 
 class _VideoLoadingPlaceholder extends StatelessWidget {
-  const _VideoLoadingPlaceholder({
-    this.thumbnailUrl,
-    this.isPortrait = true,
-  });
+  const _VideoLoadingPlaceholder({this.thumbnailUrl, this.isPortrait = true});
 
   final String? thumbnailUrl;
   final bool isPortrait;

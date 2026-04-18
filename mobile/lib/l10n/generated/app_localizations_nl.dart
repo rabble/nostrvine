@@ -849,11 +849,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Verwijderverzoek succesvol verstuurd';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Inhoud verwijderen mislukt: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klassiekers';
 
   @override
@@ -1247,6 +1242,17 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'loops',
+      one: 'loop',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'Niet Divine';
 
   @override
@@ -1280,7 +1286,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get metadataRepostedByLabel => 'Gerepost door';
 
   @override
-  String get metadataLoopsLabel => 'Loops';
+  String metadataLoopsLabel(int count) {
+    return 'Loops';
+  }
 
   @override
   String get metadataLikesLabel => 'Likes';
@@ -2973,10 +2981,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Weet je zeker dat je deze video wilt verwijderen?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.';
-
-  @override
   String get shareMenuCancel => 'Annuleren';
 
   @override
@@ -2990,9 +2994,24 @@ class AppLocalizationsNl extends AppLocalizations {
       'Verwijderverzoek succesvol verstuurd';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Inhoud verwijderen mislukt: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Verwijderen is nog niet klaar. Probeer het zo meteen opnieuw.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Je kunt alleen je eigen video\'s verwijderen.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Log opnieuw in en probeer te verwijderen.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Kon het verwijderverzoek niet ondertekenen. Probeer opnieuw.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Kon deze video niet verwijderen. Probeer opnieuw.';
 
   @override
   String get shareMenuFollowSetName => 'Naam volgset';
@@ -3061,11 +3080,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get shareMenuVideoDeletionRequested =>
       'Video-verwijdering aangevraagd';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Video verwijderen mislukt: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Inhoudslabels';

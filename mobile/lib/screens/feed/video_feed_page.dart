@@ -34,6 +34,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
+import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:openvine/widgets/web_video_player.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -286,6 +287,16 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void _handleWebPlayerErrored(int index) {
     if (index != _currentFeedIndex()) return;
     _handleAutoAdvanceCompleted();
+  }
+
+  /// Treat auth-gated web playback as the existing age-restricted state,
+  /// not as a broken video that should be auto-skipped.
+  void _handleWebPlayerRequiresAuth(VideoEvent video, int index) {
+    if (index != _currentFeedIndex()) return;
+    context.read<VideoPlaybackStatusCubit>().report(
+      video.id,
+      PlaybackStatus.ageRestricted,
+    );
   }
 
   void _continuePendingAutoAdvance(VideoFeedState state) {
@@ -583,6 +594,19 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
               final effectiveAutoActive =
                   autoAdvanceAvailable && autoState.isEffectivelyActive;
 
+              // Wire the NIP-98 auth header provider into the web feed only
+              // when the HLS auth web player flag is on. When the flag is
+              // off the provider is null and the legacy video_player path
+              // is used, preserving current behavior.
+              final hlsAuthWebPlayerEnabled = ref.watch(
+                isFeatureEnabledProvider(FeatureFlag.hlsAuthWebPlayer),
+              );
+              final webAuthHeaderProvider = kIsWeb && hlsAuthWebPlayerEnabled
+                  ? buildWebVideoAuthHeaderProvider(
+                      ref.watch(mediaViewerAuthServiceProvider),
+                    )
+                  : null;
+
               // Note: RefreshIndicator removed - it conflicts with PageView
               // scrolling and adds memory overhead. Use the refresh button
               // instead.
@@ -597,6 +621,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       controllerFactory:
                           widget.webControllerFactory ??
                           defaultWebVideoPlayerControllerFactory,
+                      authHeaderProvider: webAuthHeaderProvider,
                       onActiveVideoChanged: (video, index) {
                         _currentWebIndex = index;
                         _pagePosition.value = index.toDouble();
@@ -604,6 +629,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       },
                       onCompleted: (_) => _handleAutoAdvanceCompleted(),
                       onErrored: _handleWebPlayerErrored,
+                      onRequiresAuth: _handleWebPlayerRequiresAuth,
                       onNearEnd: (index) {
                         if (state.hasMore) {
                           context.read<VideoFeedBloc>().add(

@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -66,6 +67,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       if (!mounted) return;
 
       if (result.success) {
+        TextInput.finishAutofillContext();
+        if (!mounted) return;
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -139,20 +142,25 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
               const SizedBox(height: 32),
 
-              // Password field
-              DivineAuthTextField(
-                controller: _passwordController,
-                label: context.l10n.authNewPasswordLabel,
-                obscureText: true,
-                errorText: _errorMessage,
-                enabled: !_isLoading,
-                onChanged: (_) {
-                  if (_errorMessage != null) {
-                    setState(() => _errorMessage = null);
-                  }
-                },
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _handleSubmit(),
+              // AutofillGroup + Form enables password manager save prompts.
+              AutofillGroup(
+                child: Form(
+                  child: DivineAuthTextField(
+                    controller: _passwordController,
+                    label: context.l10n.authNewPasswordLabel,
+                    obscureText: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    errorText: _errorMessage,
+                    enabled: !_isLoading,
+                    onChanged: (_) {
+                      if (_errorMessage != null) {
+                        setState(() => _errorMessage = null);
+                      }
+                    },
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _handleSubmit(),
+                  ),
+                ),
               ),
 
               const SizedBox(height: 32),

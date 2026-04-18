@@ -861,11 +861,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Solicitação de exclusão enviada com sucesso';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Falha ao excluir conteúdo: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Clássicos';
 
   @override
@@ -1257,6 +1252,17 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'loops',
+      one: 'loop',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'Não-Divine';
 
   @override
@@ -1290,7 +1296,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get metadataRepostedByLabel => 'Repostado por';
 
   @override
-  String get metadataLoopsLabel => 'Loops';
+  String metadataLoopsLabel(int count) {
+    return 'Loops';
+  }
 
   @override
   String get metadataLikesLabel => 'Curtidas';
@@ -2985,10 +2993,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Tem certeza que quer excluir este vídeo?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.';
-
-  @override
   String get shareMenuCancel => 'Cancelar';
 
   @override
@@ -3002,9 +3006,24 @@ class AppLocalizationsPt extends AppLocalizations {
       'Solicitação de exclusão enviada com sucesso';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Falha ao excluir conteúdo: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'A exclusão ainda não está pronta. Tenta de novo daqui a pouco.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Só podes apagar os teus próprios vídeos.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Inicia sessão outra vez e tenta apagar.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Não foi possível assinar o pedido de exclusão. Tenta de novo.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Não foi possível apagar este vídeo. Tenta de novo.';
 
   @override
   String get shareMenuFollowSetName => 'Nome da coleção de seguidos';
@@ -3072,11 +3091,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Exclusão de vídeo solicitada';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Falha ao excluir vídeo: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Rótulos de conteúdo';

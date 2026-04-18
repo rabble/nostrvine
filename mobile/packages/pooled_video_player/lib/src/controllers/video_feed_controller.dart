@@ -978,6 +978,146 @@ class VideoFeedController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Replaces the feed's video list and rebuilds index-owned playback state.
+  ///
+  /// Use this when the source list can shrink, reorder, or otherwise stop
+  /// being append-only. [addVideos] intentionally handles pagination only;
+  /// it cannot remove stale indices from the controller.
+  void replaceVideos(List<VideoItem> videos, {int? currentIndex}) {
+    if (_isDisposed) return;
+
+    final nextVideos = List<VideoItem>.from(videos);
+    final nextIndex = currentIndex ?? _currentIndex;
+    final clampedIndex = nextVideos.isEmpty
+        ? 0
+        : nextIndex.clamp(0, nextVideos.length - 1);
+
+    if (_hasSamePlaybackList(_videos, nextVideos) &&
+        clampedIndex == _currentIndex) {
+      return;
+    }
+
+    _logDebug(
+      'replace_videos oldCount=${_videos.length} '
+      'newCount=${nextVideos.length} current=$_currentIndex '
+      'nextCurrent=$clampedIndex',
+    );
+
+    _preloadGeneration++;
+    _releasePlaybackStateForReplacement();
+
+    _videos
+      ..clear()
+      ..addAll(nextVideos);
+    _currentIndex = clampedIndex;
+
+    if (_isActive && _videos.isNotEmpty) {
+      _updatePreloadWindow(_currentIndex);
+    }
+
+    notifyListeners();
+  }
+
+  bool _hasSamePlaybackList(List<VideoItem> current, List<VideoItem> next) {
+    if (current.length != next.length) return false;
+    for (var i = 0; i < current.length; i++) {
+      final a = current[i];
+      final b = next[i];
+      if (a.id != b.id ||
+          a.url != b.url ||
+          a.originalUrl != b.originalUrl ||
+          !mapEquals(a.requestHeaders, b.requestHeaders)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _releasePlaybackStateForReplacement() {
+    _stuckPlaybackTimer?.cancel();
+    _stuckPlaybackTimer = null;
+
+    for (final completer in _readyCompleters.values) {
+      if (!completer.isCompleted) completer.complete();
+    }
+    _readyCompleters.clear();
+
+    for (final subscription in _bufferSubscriptions.values) {
+      unawaited(subscription.cancel());
+    }
+    _bufferSubscriptions.clear();
+
+    for (final subscription in _playingSubscriptions.values) {
+      unawaited(subscription.cancel());
+    }
+    _playingSubscriptions.clear();
+
+    for (final subscription in _errorSubscriptions.values) {
+      unawaited(subscription.cancel());
+    }
+    _errorSubscriptions.clear();
+
+    for (final timer in _positionTimers.values) {
+      timer.cancel();
+    }
+    _positionTimers.clear();
+
+    for (final timer in _loadWatchdogTimers.values) {
+      timer.cancel();
+    }
+    _loadWatchdogTimers.clear();
+
+    final urlsToRelease = <String>[];
+    for (var i = 0; i < _videos.length; i++) {
+      if (_loadedPlayers.containsKey(i)) {
+        urlsToRelease.add(_videos[i].url);
+      }
+    }
+
+    for (final pooledPlayer in _loadedPlayers.values) {
+      unawaited(pooledPlayer.player.setVolume(0));
+      unawaited(pooledPlayer.player.pause());
+    }
+
+    _loadedPlayers.clear();
+    _loadStates.clear();
+    _errorTypes.clear();
+    _loadingIndices.clear();
+    for (final stopwatch in _loadStopwatches.values) {
+      stopwatch.stop();
+    }
+    _loadStopwatches.clear();
+    _openedSources.clear();
+    _stallRetryCount.clear();
+    _readyVideosAwaitingRecovery.clear();
+    _slowLoadIndices.clear();
+    _playbackSources.clear();
+    _playbackSourceIndices.clear();
+    _diagLoadFailovers.clear();
+    _diagStaleRecoveries.clear();
+    _diagStaleEscalations.clear();
+    _diagStuckFailovers.clear();
+    _userVisitedIndices.clear();
+
+    _lastHeartbeatPositionMs = null;
+    _staleHeartbeatCount = 0;
+    _staleRecoveryAttempts = 0;
+    _staleGraceHeartbeats = 0;
+    _positionHasAdvanced = false;
+    _initialPositionMs = null;
+    _rateCheckWallStartMs = null;
+    _rateCheckPositionStartMs = null;
+    _lastStateSnapshotWallMs = null;
+
+    for (final entry in _indexNotifiers.entries) {
+      entry.value.value = const VideoIndexState();
+    }
+
+    for (final url in urlsToRelease) {
+      unawaited(pool.release(url));
+    }
+  }
+
   void _updatePreloadWindow(int index) {
     final toKeep = <int>{};
 

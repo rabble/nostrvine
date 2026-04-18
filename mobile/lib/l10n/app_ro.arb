@@ -2854,5 +2854,29 @@
   "videoMetadataRemoveSemanticLabel": "Elimină",
   "metadataCaptionsLabel": "Subtitrări",
   "metadataCaptionsEnabledSemantics": "Subtitrări activate pentru toate videoclipurile",
-  "metadataCaptionsDisabledSemantics": "Subtitrări dezactivate pentru toate videoclipurile"
+  "metadataCaptionsDisabledSemantics": "Subtitrări dezactivate pentru toate videoclipurile",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "Nu am putut semna cererea de ștergere. Încearcă din nou.",
+  "shareMenuDeleteFailedGeneric": "Nu am putut șterge acest videoclip. Încearcă din nou.",
+  "shareMenuDeleteFailedNotAuthenticated": "Autentifică-te din nou, apoi încearcă să ștergi.",
+  "shareMenuDeleteFailedNotInitialized": "Ștergerea nu e încă gata. Încearcă din nou peste un moment.",
+  "shareMenuDeleteFailedNotOwner": "Poți șterge doar propriile videoclipuri.",
+  "videoEditorLayers": "Straturi",
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{buclă} other{bucle}}"
 }

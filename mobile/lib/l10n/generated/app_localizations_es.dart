@@ -858,11 +858,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pedido de eliminación enviado con éxito';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'No se pudo eliminar el contenido: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Clásicos';
 
   @override
@@ -1258,6 +1253,17 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'bucles',
+      one: 'bucle',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'No es de Divine';
 
   @override
@@ -1291,7 +1297,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get metadataRepostedByLabel => 'Reposteado por';
 
   @override
-  String get metadataLoopsLabel => 'Loops';
+  String metadataLoopsLabel(int count) {
+    return 'Loops';
+  }
 
   @override
   String get metadataLikesLabel => 'Me gusta';
@@ -3000,10 +3008,6 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Seguro que querés eliminar este video?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Esto envía un pedido de eliminación (NIP-09) a todos los relays. Algunos relays todavía pueden mantener el contenido.';
-
-  @override
   String get shareMenuCancel => 'Cancelar';
 
   @override
@@ -3017,9 +3021,24 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pedido de eliminación enviado con éxito';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'No se pudo eliminar el contenido: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'El borrado no está listo todavía. Probá de nuevo en un momento.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Solo podés borrar tus propios videos.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Volvé a iniciar sesión y probá borrar de nuevo.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'No pudimos firmar el pedido de borrado. Probá de nuevo.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'No pudimos borrar este video. Probá de nuevo.';
 
   @override
   String get shareMenuFollowSetName => 'Nombre del set de seguidos';
@@ -3088,11 +3107,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get shareMenuVideoDeletionRequested =>
       'Eliminación del video solicitada';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'No se pudo eliminar el video: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Etiquetas de contenido';

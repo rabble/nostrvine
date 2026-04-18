@@ -820,11 +820,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoGridDeleteSuccess => 'تم إرسال طلب الحذف بنجاح';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'فشل حذف المحتوى: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'الكلاسيكيات';
 
   @override
@@ -1223,6 +1218,17 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تكرارات',
+      one: 'تكرار',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'ليس Divine';
 
   @override
@@ -1256,7 +1262,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get metadataRepostedByLabel => 'أعاد نشره';
 
   @override
-  String get metadataLoopsLabel => 'التكرارات';
+  String metadataLoopsLabel(int count) {
+    return 'التكرارات';
+  }
 
   @override
   String get metadataLikesLabel => 'الإعجابات';
@@ -2930,10 +2938,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'هل أنت متأكد من رغبتك في حذف هذا الفيديو؟';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.';
-
-  @override
   String get shareMenuCancel => 'إلغاء';
 
   @override
@@ -2946,9 +2950,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'تم إرسال طلب الحذف بنجاح';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'فشل حذف المحتوى: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'الحذف غير جاهز بعد. حاول مرة أخرى بعد لحظة.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'يمكنك حذف مقاطع الفيديو الخاصة بك فقط.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'سجّل الدخول مرة أخرى، ثم حاول الحذف.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'لم نتمكن من توقيع طلب الحذف. حاول مرة أخرى.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'تعذّر حذف هذا الفيديو. حاول مرة أخرى.';
 
   @override
   String get shareMenuFollowSetName => 'اسم مجموعة المتابعة';
@@ -3015,11 +3034,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'تم طلب حذف الفيديو';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'فشل حذف الفيديو: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'وسوم المحتوى';

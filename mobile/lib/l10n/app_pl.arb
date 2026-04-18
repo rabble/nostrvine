@@ -2854,5 +2854,29 @@
   "videoMetadataRemoveSemanticLabel": "Usuń",
   "metadataCaptionsLabel": "Napisy",
   "metadataCaptionsEnabledSemantics": "Napisy włączone dla wszystkich filmów",
-  "metadataCaptionsDisabledSemantics": "Napisy wyłączone dla wszystkich filmów"
+  "metadataCaptionsDisabledSemantics": "Napisy wyłączone dla wszystkich filmów",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "Nie udało się podpisać żądania usunięcia. Spróbuj ponownie.",
+  "shareMenuDeleteFailedGeneric": "Nie udało się usunąć tego filmu. Spróbuj ponownie.",
+  "shareMenuDeleteFailedNotAuthenticated": "Zaloguj się ponownie i spróbuj usunąć.",
+  "shareMenuDeleteFailedNotInitialized": "Usuwanie nie jest jeszcze gotowe. Spróbuj ponownie za chwilę.",
+  "shareMenuDeleteFailedNotOwner": "Możesz usuwać tylko własne filmy.",
+  "videoEditorLayers": "Warstwy",
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{pętla} few{pętle} many{pętli} other{pętli}}"
 }

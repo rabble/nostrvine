@@ -1,6 +1,6 @@
+@Tags(['skip_very_good_optimization', 'integration'])
 // ABOUTME: Unit tests for bug report submission flow via BugReportService
 // ABOUTME: Tests NIP-17 + Blossom paths with mocked dependencies (no network calls)
-
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';

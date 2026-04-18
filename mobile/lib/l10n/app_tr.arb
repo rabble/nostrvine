@@ -2856,5 +2856,29 @@
   "videoActionDisableAutoAdvance": "Otomatik ilerlemeyi devre dışı bırak",
   "metadataCaptionsLabel": "Altyazılar",
   "metadataCaptionsEnabledSemantics": "Tüm videolar için altyazılar etkin",
-  "metadataCaptionsDisabledSemantics": "Tüm videolar için altyazılar devre dışı"
+  "metadataCaptionsDisabledSemantics": "Tüm videolar için altyazılar devre dışı",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "Silme isteği imzalanamadı. Tekrar dene.",
+  "shareMenuDeleteFailedGeneric": "Bu video silinemedi. Tekrar dene.",
+  "shareMenuDeleteFailedNotAuthenticated": "Tekrar giriş yap, sonra silmeyi dene.",
+  "shareMenuDeleteFailedNotInitialized": "Silme henüz hazır değil. Birazdan tekrar dene.",
+  "shareMenuDeleteFailedNotOwner": "Yalnızca kendi videolarını silebilirsin.",
+  "videoEditorLayers": "Katmanlar",
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{döngü} other{döngüler}}"
 }

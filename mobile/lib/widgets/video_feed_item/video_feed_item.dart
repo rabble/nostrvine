@@ -1577,7 +1577,12 @@ class VideoOverlayActions extends ConsumerWidget {
                                       ],
                                     ),
                                     Text(
-                                      '${StringUtils.formatCompactNumber(video.totalLoops)} ${video.totalLoops == 1 ? 'loop' : 'loops'}',
+                                      context.l10n.videoFeedLoopCountLine(
+                                        StringUtils.formatCompactNumber(
+                                          video.totalLoops,
+                                        ),
+                                        video.totalLoops,
+                                      ),
                                       style: const TextStyle(
                                         fontFamily: 'Inter',
                                         fontSize: 14,

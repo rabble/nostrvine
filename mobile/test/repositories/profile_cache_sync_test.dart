@@ -1,6 +1,6 @@
+@Tags(['skip_very_good_optimization', 'integration'])
 // ABOUTME: Test that profile caches stay in sync across services
 // ABOUTME: Verifies ProfileRepository cache operations work correctly
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';

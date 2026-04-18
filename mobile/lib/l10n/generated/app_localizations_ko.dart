@@ -783,11 +783,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteSuccess => '삭제 요청을 보냈어요';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return '콘텐츠를 삭제하지 못했어요: $error';
-  }
-
-  @override
   String get exploreTabClassics => '클래식';
 
   @override
@@ -1163,6 +1158,16 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '루프',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'Divine 아님';
 
   @override
@@ -1196,7 +1201,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get metadataRepostedByLabel => '리포스트';
 
   @override
-  String get metadataLoopsLabel => '루프';
+  String metadataLoopsLabel(int count) {
+    return '루프';
+  }
 
   @override
   String get metadataLikesLabel => '좋아요';
@@ -2819,10 +2826,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteConfirmation => '이 영상을 정말 삭제할까요?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
-
-  @override
   String get shareMenuCancel => '취소';
 
   @override
@@ -2835,9 +2838,20 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteRequestSent => '삭제 요청을 보냈어요';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return '콘텐츠 삭제에 실패했어요: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      '삭제 준비가 아직 안 됐어요. 잠시 뒤에 다시 시도해요.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner => '내가 올린 영상만 삭제할 수 있어요.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated => '다시 로그인한 뒤 삭제를 시도해요.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign => '삭제 요청에 서명하지 못했어요. 다시 시도해요.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric => '이 영상을 삭제하지 못했어요. 다시 시도해요.';
 
   @override
   String get shareMenuFollowSetName => '팔로우 세트 이름';
@@ -2904,11 +2918,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => '영상 삭제를 요청했어요';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return '영상 삭제에 실패했어요: $error';
-  }
 
   @override
   String get shareMenuContentLabels => '콘텐츠 라벨';

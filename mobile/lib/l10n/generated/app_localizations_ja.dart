@@ -781,11 +781,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoGridDeleteSuccess => '削除リクエストを送ったよ';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'コンテンツの削除がうまくいかなかった: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'クラシック';
 
   @override
@@ -1156,6 +1151,16 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ループ',
+    );
+    return '$compactCount$_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'Divine 以外';
 
   @override
@@ -1189,7 +1194,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get metadataRepostedByLabel => 'リポスト元';
 
   @override
-  String get metadataLoopsLabel => 'ループ';
+  String metadataLoopsLabel(int count) {
+    return 'ループ';
+  }
 
   @override
   String get metadataLikesLabel => 'いいね';
@@ -2807,10 +2814,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteConfirmation => 'この動画を本当に削除する?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではキャッシュが残ることもあるよ。';
-
-  @override
   String get shareMenuCancel => 'キャンセル';
 
   @override
@@ -2823,9 +2826,20 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteRequestSent => '削除リクエストを送ったよ';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'コンテンツの削除がうまくいかなかった: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      '削除の準備がまだだよ。少し待ってからもう一度試してね。';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner => '自分の動画だけ削除できるよ。';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated => 'もう一度ログインしてから削除してね。';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign => '削除リクエストに署名できなかったよ。もう一度試してね。';
+
+  @override
+  String get shareMenuDeleteFailedGeneric => 'この動画を削除できなかったよ。もう一度試してね。';
 
   @override
   String get shareMenuFollowSetName => 'フォローセット名';
@@ -2891,11 +2905,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => '動画の削除をリクエストしたよ';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return '動画の削除がうまくいかなかった: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'コンテンツラベル';

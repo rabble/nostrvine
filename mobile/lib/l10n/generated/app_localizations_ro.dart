@@ -876,11 +876,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cererea de ștergere a fost trimisă cu succes';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'N-am putut șterge conținutul: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Clasice';
 
   @override
@@ -1273,6 +1268,17 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'bucle',
+      one: 'buclă',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'Nu e Divine';
 
   @override
@@ -1306,7 +1312,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get metadataRepostedByLabel => 'Redistribuit de';
 
   @override
-  String get metadataLoopsLabel => 'Bucle';
+  String metadataLoopsLabel(int count) {
+    return 'Bucle';
+  }
 
   @override
   String get metadataLikesLabel => 'Aprecieri';
@@ -3057,10 +3065,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sigur vrei să ștergi acest videoclip?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.';
-
-  @override
   String get shareMenuCancel => 'Anulează';
 
   @override
@@ -3074,9 +3078,24 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cererea de ștergere a fost trimisă cu succes';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'N-am putut șterge conținutul: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Ștergerea nu e încă gata. Încearcă din nou peste un moment.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Poți șterge doar propriile videoclipuri.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Autentifică-te din nou, apoi încearcă să ștergi.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Nu am putut semna cererea de ștergere. Încearcă din nou.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Nu am putut șterge acest videoclip. Încearcă din nou.';
 
   @override
   String get shareMenuFollowSetName => 'Numele setului de urmărire';
@@ -3145,11 +3164,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get shareMenuVideoDeletionRequested =>
       'Cerere de ștergere a videoclipului trimisă';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'N-am putut șterge videoclipul: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Etichete de conținut';

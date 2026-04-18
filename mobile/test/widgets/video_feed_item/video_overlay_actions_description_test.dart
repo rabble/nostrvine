@@ -11,9 +11,14 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 import '../../helpers/test_provider_overrides.dart';
+
+AppLocalizations _l10n(WidgetTester tester) => AppLocalizations.of(
+  tester.element(find.byType(Scaffold).first),
+);
 
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
@@ -79,8 +84,50 @@ void main() {
     await tester.tap(find.text('Tap this description'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Loops'), findsOneWidget);
+    final l10n = _l10n(tester);
+    expect(
+      find.text(l10n.metadataLoopsLabel(testVideo.totalLoops)),
+      findsOneWidget,
+    );
     expect(find.text('Likes'), findsOneWidget);
+  });
+
+  testWidgets('author line uses localized singular loop label for 1', (
+    tester,
+  ) async {
+    testVideo = testVideo.copyWith(originalLoops: 1);
+
+    await tester.pumpWidget(
+      testProviderScope(
+        additionalOverrides: [
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BlocProvider<VideoInteractionsBloc>.value(
+              value: mockInteractionsBloc,
+              child: VideoOverlayActions(
+                video: testVideo,
+                isVisible: true,
+                isActive: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final l10n = _l10n(tester);
+    expect(
+      find.text(
+        l10n.videoFeedLoopCountLine(StringUtils.formatCompactNumber(1), 1),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets(

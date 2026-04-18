@@ -829,11 +829,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Silme isteği başarıyla gönderildi';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'İçerik silinemedi: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klasikler';
 
   @override
@@ -1222,6 +1217,17 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'döngüler',
+      one: 'döngü',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'Divine Değil';
 
   @override
@@ -1255,7 +1261,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get metadataRepostedByLabel => 'Yeniden paylaşan';
 
   @override
-  String get metadataLoopsLabel => 'Döngüler';
+  String metadataLoopsLabel(int count) {
+    return 'Döngüler';
+  }
 
   @override
   String get metadataLikesLabel => 'Beğeniler';
@@ -2946,10 +2954,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu videoyu silmek istediğinden emin misin?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
-
-  @override
   String get shareMenuCancel => 'İptal';
 
   @override
@@ -2962,9 +2966,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Silme isteği başarıyla gönderildi';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'İçerik silinemedi: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Silme henüz hazır değil. Birazdan tekrar dene.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Yalnızca kendi videolarını silebilirsin.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Tekrar giriş yap, sonra silmeyi dene.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Silme isteği imzalanamadı. Tekrar dene.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Bu video silinemedi. Tekrar dene.';
 
   @override
   String get shareMenuFollowSetName => 'Takip Seti Adı';
@@ -3032,11 +3051,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Video silme isteği alındı';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Video silinemedi: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'İçerik etiketleri';

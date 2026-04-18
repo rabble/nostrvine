@@ -835,11 +835,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Borttagningsbegäran skickad';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Kunde inte ta bort innehåll: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klassiker';
 
   @override
@@ -1235,6 +1230,17 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'loopar',
+      one: 'loop',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'Inte Divine';
 
   @override
@@ -1268,7 +1274,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get metadataRepostedByLabel => 'Återpublicerad av';
 
   @override
-  String get metadataLoopsLabel => 'Loopar';
+  String metadataLoopsLabel(int count) {
+    return 'Loopar';
+  }
 
   @override
   String get metadataLikesLabel => 'Gillamarkeringar';
@@ -2958,10 +2966,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Är du säker på att du vill ta bort den här videon?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.';
-
-  @override
   String get shareMenuCancel => 'Avbryt';
 
   @override
@@ -2974,9 +2978,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuDeleteRequestSent => 'Borttagningsbegäran skickad';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Kunde inte ta bort innehåll: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Borttagningen är inte redo än. Försök igen om en stund.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Du kan bara ta bort dina egna videor.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Logga in igen och försök ta bort.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Kunde inte signera borttagningsbegäran. Försök igen.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Kunde inte ta bort den här videon. Försök igen.';
 
   @override
   String get shareMenuFollowSetName => 'Namn på följsamling';
@@ -3043,11 +3062,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Videoborttagning begärd';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Kunde inte ta bort videon: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Innehållsetiketter';

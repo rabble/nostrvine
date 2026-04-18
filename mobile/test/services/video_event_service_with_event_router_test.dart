@@ -1,6 +1,6 @@
+@Tags(['skip_very_good_optimization', 'integration'])
 // ABOUTME: Integration tests for VideoEventService + EventRouter ensuring all events are cached
 // ABOUTME: Verifies that events from subscriptions are automatically routed to database
-
 import 'dart:async';
 import 'dart:io';
 

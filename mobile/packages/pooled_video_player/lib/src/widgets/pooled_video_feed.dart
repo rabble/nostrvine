@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import 'package:pooled_video_player/src/controllers/player_pool.dart';
@@ -175,12 +176,21 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
       _controller.addListener(_onControllerChanged);
     }
 
-    if (_ownsController && widget.videos != oldWidget.videos) {
-      final newVideos = widget.videos
-          .where((v) => !oldWidget.videos.contains(v))
-          .toList();
-      if (newVideos.isNotEmpty) {
-        _controller.addVideos(newVideos);
+    if (_ownsController && !listEquals(widget.videos, oldWidget.videos)) {
+      final oldIds = oldWidget.videos.map((v) => v.id).toList();
+      final newIds = widget.videos.map((v) => v.id).toList();
+      final isAppendOnly =
+          newIds.length >= oldIds.length &&
+          listEquals(newIds.take(oldIds.length).toList(), oldIds);
+
+      if (isAppendOnly) {
+        final newVideos = widget.videos.skip(oldWidget.videos.length).toList();
+        if (newVideos.isNotEmpty) {
+          _controller.addVideos(newVideos);
+        }
+      } else {
+        _controller.replaceVideos(widget.videos, currentIndex: _currentIndex);
+        _videoCount = _controller.videoCount;
       }
     }
   }

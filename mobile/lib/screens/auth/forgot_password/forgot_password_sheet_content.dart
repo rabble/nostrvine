@@ -207,6 +207,7 @@ class _ForgotPasswordForm extends StatelessWidget {
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
+                autofillHints: const [AutofillHints.email],
                 validator: Validators.validateEmail,
               ),
               if (errorMessage != null) ...[

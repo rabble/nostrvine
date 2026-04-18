@@ -87,6 +87,7 @@ Additional expectations:
 - Run `mobile/scripts/golden.sh verify` for visual changes.
 - If you touch `mobile/packages/videos_repository`, run `flutter test --coverage` from that package.
 - Add or update tests next to the changed feature or package.
+- Web-only branches: VM shards skip tests guarded with `kIsWeb`. Mobile CI does **not** run browser tests; before merging changes that touch `getDocumentsPath` / web document paths, run manually from `mobile/`: `flutter test test/utils/path_resolver_test.dart --platform chrome` (headless setups may need `CHROME_EXECUTABLE` and `xvfb-run -a`).
 
 ## Engineering Guardrails
 

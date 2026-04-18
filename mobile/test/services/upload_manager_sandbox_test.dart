@@ -1,6 +1,9 @@
 // ABOUTME: Regression tests for macOS sandbox compliance in UploadManager
 // ABOUTME: Ensures no access to ~/Documents and proper permission error handling
 
+@Tags(['skip_very_good_optimization'])
+library;
+
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';

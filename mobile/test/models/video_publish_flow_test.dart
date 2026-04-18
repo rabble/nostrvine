@@ -1,6 +1,6 @@
+@Tags(['skip_very_good_optimization', 'integration'])
 // ABOUTME: Integration test verifying video upload completes before Nostr event publishing
 // ABOUTME: Tests TDD failing case: publish should wait for upload to complete and populate videoId/cdnUrl
-
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/pending_upload.dart';

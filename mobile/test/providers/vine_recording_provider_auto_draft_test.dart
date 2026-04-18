@@ -13,6 +13,7 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
+@Tags(['skip_very_good_optimization'])
 void main() {
   group('VineRecordingProvider auto-draft', () {
     late ProviderContainer container;

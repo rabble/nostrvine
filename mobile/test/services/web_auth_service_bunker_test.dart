@@ -25,10 +25,14 @@ void main() {
     setUp(() {
       authService = WebAuthService();
       mockBunkerClient = MockNsecBunkerClient();
+      // WebAuthService is a singleton — clear bunker client state that may
+      // have leaked from prior tests (random test ordering exposes this).
+      authService.setBunkerClient(null);
     });
 
     tearDown(() async {
       await authService.disconnect();
+      authService.setBunkerClient(null);
     });
 
     group('Bunker Authentication', () {

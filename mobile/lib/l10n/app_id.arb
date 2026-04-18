@@ -2856,5 +2856,29 @@
   "videoActionDisableAutoAdvance": "Nonaktifkan lanjut otomatis",
   "metadataCaptionsLabel": "Teks",
   "metadataCaptionsEnabledSemantics": "Teks diaktifkan untuk semua video",
-  "metadataCaptionsDisabledSemantics": "Teks dinonaktifkan untuk semua video"
+  "metadataCaptionsDisabledSemantics": "Teks dinonaktifkan untuk semua video",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "Tidak bisa menandatangani permintaan hapus. Coba lagi.",
+  "shareMenuDeleteFailedGeneric": "Tidak bisa menghapus video ini. Coba lagi.",
+  "shareMenuDeleteFailedNotAuthenticated": "Masuk lagi, lalu coba hapus.",
+  "shareMenuDeleteFailedNotInitialized": "Penghapusan belum siap. Coba lagi sebentar lagi.",
+  "shareMenuDeleteFailedNotOwner": "Kamu cuma bisa menghapus video milikmu sendiri.",
+  "videoEditorLayers": "Lapisan",
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}"
 }

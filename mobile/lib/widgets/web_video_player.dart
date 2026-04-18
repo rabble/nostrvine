@@ -1,8 +1,12 @@
 // ABOUTME: Web-native video player using Flutter's video_player package
 // ABOUTME: Drop-in replacement for media_kit Video widget on web platforms
 
+import 'dart:math' as math;
+
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:hls_auth_web_player/hls_auth_web_player.dart' as hls_auth;
 import 'package:video_player/video_player.dart';
 
 typedef WebVideoPlayerControllerFactory =
@@ -18,6 +22,12 @@ VideoPlayerController defaultWebVideoPlayerControllerFactory({
 
 /// A simple video player widget for web that uses Flutter's video_player
 /// package (backed by HTML5 video element via video_player_web_hls).
+///
+/// When [authHeaderProvider] is non-null AND running on web, the widget
+/// swaps in the `HlsAuthWebPlayer` which attaches NIP-98 auth headers per
+/// segment. Callers are expected to gate [authHeaderProvider] on
+/// `kIsWeb && FeatureFlag.hlsAuthWebPlayer` — when either condition is
+/// false, pass `null` to preserve the legacy behavior.
 class WebVideoPlayer extends StatefulWidget {
   /// Creates a web video player.
   const WebVideoPlayer({
@@ -29,8 +39,11 @@ class WebVideoPlayer extends StatefulWidget {
     this.onInitialized,
     this.onDisposed,
     this.onError,
+    this.onRequiresAuth,
     this.initializeTimeout = const Duration(seconds: 8),
     this.controllerFactory = defaultWebVideoPlayerControllerFactory,
+    this.authHeaderProvider,
+    this.hlsFallbackUrl,
     super.key,
   });
 
@@ -46,10 +59,10 @@ class WebVideoPlayer extends StatefulWidget {
   /// How the video should fit within its container.
   final BoxFit fit;
 
-  /// HTTP headers for the video request.
+  /// HTTP headers for the video request (legacy path only).
   final Map<String, String> headers;
 
-  /// Called when the video controller is initialized.
+  /// Called when the video controller is initialized (legacy path only).
   final ValueChanged<VideoPlayerController>? onInitialized;
 
   /// Called when the underlying [VideoPlayerController] has been disposed.
@@ -61,11 +74,26 @@ class WebVideoPlayer extends StatefulWidget {
   /// Called when an error occurs.
   final VoidCallback? onError;
 
+  /// Called when the NIP-98 path reports the origin needs viewer auth
+  /// (`401`/`403`). The feed layer translates this into the
+  /// `ageRestricted` playback status.
+  final VoidCallback? onRequiresAuth;
+
   /// Maximum time to wait for the underlying HTML5 player to initialize.
   final Duration initializeTimeout;
 
-  /// Factory used to create the underlying controller.
+  /// Factory used to create the underlying controller (legacy path).
   final WebVideoPlayerControllerFactory controllerFactory;
+
+  /// Provides NIP-98 `Authorization` header values for per-segment signing.
+  /// When non-null and running on web, the widget routes playback through
+  /// `HlsAuthWebPlayer`. When null, the legacy `VideoPlayerController` path
+  /// is used (preserves all existing behavior).
+  final hls_auth.AuthHeaderProvider? authHeaderProvider;
+
+  /// Optional HLS manifest to try if the primary MP4 source fails with a
+  /// non-auth error. Only used on the NIP-98 path.
+  final String? hlsFallbackUrl;
 
   @override
   State<WebVideoPlayer> createState() => WebVideoPlayerState();
@@ -80,18 +108,28 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
   /// The video player controller for external access.
   VideoPlayerController? get controller => _controller;
 
+  bool get _useAuthPlayer => kIsWeb && widget.authHeaderProvider != null;
+
   @override
   void initState() {
     super.initState();
-    _initializeController();
+    if (!_useAuthPlayer) {
+      _initializeController();
+    }
   }
 
   @override
   void didUpdateWidget(WebVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) {
+    final oldUseAuthPlayer = kIsWeb && oldWidget.authHeaderProvider != null;
+    final authModeChanged = oldUseAuthPlayer != _useAuthPlayer;
+    final urlChanged = oldWidget.url != widget.url;
+
+    if (authModeChanged || urlChanged) {
       _disposeController();
-      _initializeController();
+      if (!_useAuthPlayer) {
+        _initializeController();
+      }
     }
   }
 
@@ -110,12 +148,18 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
       }
 
       await controller.setLooping(widget.looping);
-      if (widget.autoPlay) {
-        await controller.play();
-      }
-
       setState(() => _isInitialized = true);
       widget.onInitialized?.call(controller);
+
+      if (widget.autoPlay) {
+        try {
+          await controller.play();
+        } on Exception {
+          // Browser autoplay policy can reject play() after the media is
+          // fully initialized. Keep the player available instead of showing
+          // a false load failure.
+        }
+      }
     } on Exception {
       await controller.dispose();
       if (!mounted) return;
@@ -167,6 +211,16 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    if (_useAuthPlayer) {
+      return _HlsAuthPlayerShim(
+        url: widget.url,
+        hlsFallbackUrl: widget.hlsFallbackUrl,
+        authHeader: widget.authHeaderProvider!,
+        onError: widget.onError,
+        onRequiresAuth: widget.onRequiresAuth,
+      );
+    }
+
     if (_hasError) {
       return const ColoredBox(
         color: VineTheme.backgroundColor,
@@ -202,16 +256,162 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
-      child: FittedBox(
-        fit: widget.fit,
-        child: SizedBox(
-          width: controller.value.size.width,
-          height: controller.value.size.height,
-          // The underlying HTML video element can otherwise swallow taps that
-          // should go to the overlay action buttons.
-          child: IgnorePointer(
-            child: VideoPlayer(controller),
-          ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final viewportSize = constraints.biggest;
+          final fittedSize = _fittedVideoSize(
+            videoSize: controller.value.size,
+            viewportSize: viewportSize,
+            fit: widget.fit,
+          );
+
+          return Center(
+            child: ClipRect(
+              child: OverflowBox(
+                minWidth: fittedSize.width,
+                maxWidth: fittedSize.width,
+                minHeight: fittedSize.height,
+                maxHeight: fittedSize.height,
+                child: SizedBox(
+                  width: fittedSize.width,
+                  height: fittedSize.height,
+                  // The underlying HTML video element can otherwise swallow
+                  // taps that should go to the overlay action buttons.
+                  child: IgnorePointer(
+                    child: VideoPlayer(controller),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+Size _fittedVideoSize({
+  required Size videoSize,
+  required Size viewportSize,
+  required BoxFit fit,
+}) {
+  if (videoSize.width <= 0 ||
+      videoSize.height <= 0 ||
+      !viewportSize.width.isFinite ||
+      !viewportSize.height.isFinite ||
+      viewportSize.width <= 0 ||
+      viewportSize.height <= 0) {
+    return videoSize;
+  }
+
+  final widthScale = viewportSize.width / videoSize.width;
+  final heightScale = viewportSize.height / videoSize.height;
+
+  final scale = switch (fit) {
+    BoxFit.contain => math.min(widthScale, heightScale),
+    BoxFit.cover => math.max(widthScale, heightScale),
+    BoxFit.fill => null,
+    BoxFit.fitWidth => widthScale,
+    BoxFit.fitHeight => heightScale,
+    BoxFit.none => 1.0,
+    BoxFit.scaleDown => math.min(1.0, math.min(widthScale, heightScale)),
+  };
+
+  if (scale == null) {
+    return viewportSize;
+  }
+
+  return Size(videoSize.width * scale, videoSize.height * scale);
+}
+
+class _HlsAuthPlayerShim extends StatelessWidget {
+  const _HlsAuthPlayerShim({
+    required this.url,
+    required this.hlsFallbackUrl,
+    required this.authHeader,
+    required this.onError,
+    required this.onRequiresAuth,
+  });
+
+  final String url;
+  final String? hlsFallbackUrl;
+  final hls_auth.AuthHeaderProvider authHeader;
+  final VoidCallback? onError;
+  final VoidCallback? onRequiresAuth;
+
+  @override
+  Widget build(BuildContext context) {
+    return hls_auth.HlsAuthWebPlayer(
+      url: url,
+      hlsFallbackUrl: hlsFallbackUrl,
+      authHeader: authHeader,
+      onStatusChanged: (status) {
+        switch (status) {
+          case hls_auth.HlsAuthWebPlaybackStatus.requiresAuth:
+            onRequiresAuth?.call();
+          case hls_auth.HlsAuthWebPlaybackStatus.failure:
+            onError?.call();
+          case hls_auth.HlsAuthWebPlaybackStatus.idle:
+          case hls_auth.HlsAuthWebPlaybackStatus.loading:
+          case hls_auth.HlsAuthWebPlaybackStatus.ready:
+            break;
+        }
+      },
+      overlayBuilder: (context, status) {
+        switch (status) {
+          case hls_auth.HlsAuthWebPlaybackStatus.failure:
+            return const _AuthPlayerFailureSurface();
+          case hls_auth.HlsAuthWebPlaybackStatus.idle:
+          case hls_auth.HlsAuthWebPlaybackStatus.loading:
+            return const _AuthPlayerLoadingSurface();
+          case hls_auth.HlsAuthWebPlaybackStatus.requiresAuth:
+          case hls_auth.HlsAuthWebPlaybackStatus.ready:
+            return const SizedBox.shrink();
+        }
+      },
+    );
+  }
+}
+
+class _AuthPlayerLoadingSurface extends StatelessWidget {
+  const _AuthPlayerLoadingSurface();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: VineTheme.backgroundColor,
+      child: Center(
+        child: CircularProgressIndicator(color: VineTheme.whiteText),
+      ),
+    );
+  }
+}
+
+class _AuthPlayerFailureSurface extends StatelessWidget {
+  const _AuthPlayerFailureSurface();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: VineTheme.backgroundColor,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: VineTheme.secondaryText,
+              size: 48,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Failed to load video',
+              style: TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 16,
+              ),
+            ),
+          ],
         ),
       ),
     );

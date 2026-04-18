@@ -2854,5 +2854,29 @@
   "videoMetadataRemoveSemanticLabel": "Verwijderen",
   "metadataCaptionsLabel": "Ondertitels",
   "metadataCaptionsEnabledSemantics": "Ondertitels ingeschakeld voor alle video's",
-  "metadataCaptionsDisabledSemantics": "Ondertitels uitgeschakeld voor alle video's"
+  "metadataCaptionsDisabledSemantics": "Ondertitels uitgeschakeld voor alle video's",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "Kon het verwijderverzoek niet ondertekenen. Probeer opnieuw.",
+  "shareMenuDeleteFailedGeneric": "Kon deze video niet verwijderen. Probeer opnieuw.",
+  "shareMenuDeleteFailedNotAuthenticated": "Log opnieuw in en probeer te verwijderen.",
+  "shareMenuDeleteFailedNotInitialized": "Verwijderen is nog niet klaar. Probeer het zo meteen opnieuw.",
+  "shareMenuDeleteFailedNotOwner": "Je kunt alleen je eigen video's verwijderen.",
+  "videoEditorLayers": "Lagen",
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}"
 }

@@ -19,6 +19,7 @@ import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/social_service.dart';
+import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
@@ -1040,14 +1041,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           dialogContext.l10n.shareMenuDeleteConfirmation,
           style: const TextStyle(color: VineTheme.whiteText),
         ),
-        const SizedBox(height: 12),
-        Text(
-          dialogContext.l10n.shareMenuDeleteWarning,
-          style: const TextStyle(
-            color: VineTheme.secondaryText,
-            fontSize: 12,
-          ),
-        ),
       ],
     ),
     actions: [
@@ -1066,7 +1059,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     ],
   );
 
-  /// Delete the user's content using NIP-09
+  /// Deletes the user's own video via [contentDeletionServiceProvider].
   Future<void> _deleteContent() async {
     // Capture the router before any navigation happens
     // This allows us to navigate after the bottom sheet is dismissed
@@ -1120,9 +1113,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   child: Text(
                     result.success
                         ? context.l10n.shareMenuDeleteRequestSent
-                        : context.l10n.shareMenuFailedToDeleteContent(
-                            result.error ?? '',
-                          ),
+                        : localizedDeleteFailureMessage(context, result),
                   ),
                 ),
               ],
@@ -1168,7 +1159,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.shareMenuFailedToDeleteContent('$e'),
+              context.l10n.shareMenuDeleteFailedGeneric,
             ),
             backgroundColor: VineTheme.error,
           ),
@@ -1865,7 +1856,18 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
           );
         }
       } else {
-        throw Exception(result.error ?? 'Unknown error');
+        if (mounted) {
+          setState(() => _isDeleting = false);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                localizedDeleteFailureMessage(context, result),
+              ),
+              backgroundColor: VineTheme.error,
+            ),
+          );
+        }
       }
     } catch (e) {
       Log.error(
@@ -1880,7 +1882,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.shareMenuFailedToDeleteVideo('$e'),
+              context.l10n.shareMenuDeleteFailedGeneric,
             ),
             backgroundColor: VineTheme.error,
           ),

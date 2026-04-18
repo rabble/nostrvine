@@ -859,11 +859,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Żądanie usunięcia wysłane pomyślnie';
 
   @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Nie udało się usunąć treści: $error';
-  }
-
-  @override
   String get exploreTabClassics => 'Klasyki';
 
   @override
@@ -1261,6 +1256,19 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'pętli',
+      many: 'pętli',
+      few: 'pętle',
+      one: 'pętla',
+    );
+    return '$compactCount $_temp0';
+  }
+
+  @override
   String get metadataBadgeNotDivine => 'Nie Divine';
 
   @override
@@ -1294,7 +1302,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get metadataRepostedByLabel => 'Repostowane przez';
 
   @override
-  String get metadataLoopsLabel => 'Pętle';
+  String metadataLoopsLabel(int count) {
+    return 'Pętle';
+  }
 
   @override
   String get metadataLikesLabel => 'Polubienia';
@@ -3055,10 +3065,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeleteConfirmation => 'Na pewno chcesz usunąć ten film?';
 
   @override
-  String get shareMenuDeleteWarning =>
-      'To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
-
-  @override
   String get shareMenuCancel => 'Anuluj';
 
   @override
@@ -3072,9 +3078,24 @@ class AppLocalizationsPl extends AppLocalizations {
       'Żądanie usunięcia wysłane pomyślnie';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Nie udało się usunąć treści: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Usuwanie nie jest jeszcze gotowe. Spróbuj ponownie za chwilę.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Możesz usuwać tylko własne filmy.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Zaloguj się ponownie i spróbuj usunąć.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Nie udało się podpisać żądania usunięcia. Spróbuj ponownie.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Nie udało się usunąć tego filmu. Spróbuj ponownie.';
 
   @override
   String get shareMenuFollowSetName => 'Nazwa zestawu obserwowanych';
@@ -3141,11 +3162,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shareMenuVideoDeletionRequested => 'Zażądano usunięcia filmu';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Nie udało się usunąć filmu: $error';
-  }
 
   @override
   String get shareMenuContentLabels => 'Etykiety treści';

@@ -2854,5 +2854,29 @@
   "videoMetadataRemoveSemanticLabel": "Eliminar",
   "metadataCaptionsLabel": "Subtítulos",
   "metadataCaptionsEnabledSemantics": "Subtítulos activados para todos los vídeos",
-  "metadataCaptionsDisabledSemantics": "Subtítulos desactivados para todos los vídeos"
+  "metadataCaptionsDisabledSemantics": "Subtítulos desactivados para todos los vídeos",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "No pudimos firmar el pedido de borrado. Probá de nuevo.",
+  "shareMenuDeleteFailedGeneric": "No pudimos borrar este video. Probá de nuevo.",
+  "shareMenuDeleteFailedNotAuthenticated": "Volvé a iniciar sesión y probá borrar de nuevo.",
+  "shareMenuDeleteFailedNotInitialized": "El borrado no está listo todavía. Probá de nuevo en un momento.",
+  "shareMenuDeleteFailedNotOwner": "Solo podés borrar tus propios videos.",
+  "videoEditorLayers": "Capas",
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{bucle} other{bucles}}"
 }

@@ -2856,5 +2856,29 @@
   "videoActionDisableAutoAdvance": "自動送りを無効にする",
   "metadataCaptionsLabel": "字幕",
   "metadataCaptionsEnabledSemantics": "すべての動画で字幕が有効になっています",
-  "metadataCaptionsDisabledSemantics": "すべての動画で字幕が無効になっています"
+  "metadataCaptionsDisabledSemantics": "すべての動画で字幕が無効になっています",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "削除リクエストに署名できなかったよ。もう一度試してね。",
+  "shareMenuDeleteFailedGeneric": "この動画を削除できなかったよ。もう一度試してね。",
+  "shareMenuDeleteFailedNotAuthenticated": "もう一度ログインしてから削除してね。",
+  "shareMenuDeleteFailedNotInitialized": "削除の準備がまだだよ。少し待ってからもう一度試してね。",
+  "shareMenuDeleteFailedNotOwner": "自分の動画だけ削除できるよ。",
+  "videoEditorLayers": "レイヤー",
+  "videoFeedLoopCountLine": "{compactCount}{count, plural, other{ループ}}"
 }

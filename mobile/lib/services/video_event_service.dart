@@ -889,7 +889,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
     }
 
-    // Mark as locally deleted to prevent pagination resurrection
+    // Mark as locally deleted to prevent pagination resurrection.
+    //
+    // Semantics: removal is permanent for the lifetime of this service.
+    // Even if subsequent relay queries return the same event id, it will
+    // be filtered out via [isVideoLocallyDeleted]. This is intentional —
+    // a session-only removal avoids surprising the user by re-adding a
+    // video they just swiped past when the fullscreen feed paginates.
+    // The set is cleared only when the service is recreated (app
+    // restart or test tearDown).
     _locallyDeletedVideoIds.add(videoId);
 
     if (removedCount > 0) {

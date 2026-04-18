@@ -14,11 +14,13 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
@@ -53,6 +55,10 @@ const _testVideoId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
 const _testPubkey =
     'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
+
+AppLocalizations _l10n(WidgetTester tester) => AppLocalizations.of(
+  tester.element(find.byType(Scaffold).first),
+);
 
 void main() {
   group(FeedVideoOverlay, () {
@@ -427,7 +433,11 @@ void main() {
         await tester.tap(find.text('Test video content'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Loops'), findsOneWidget);
+        final l10n = _l10n(tester);
+        expect(
+          find.text(l10n.metadataLoopsLabel(testVideo.totalLoops)),
+          findsOneWidget,
+        );
         expect(find.text('Likes'), findsOneWidget);
       });
 
@@ -445,6 +455,61 @@ void main() {
 
         expect(find.text('Auto'), findsNothing);
         expect(find.bySemanticsLabel('Disable auto advance'), findsOneWidget);
+      });
+    });
+
+    group('loop count labels (l10n)', () {
+      testWidgets('shows plural English loops for zero totalLoops', (
+        tester,
+      ) async {
+        testVideo = testVideo.copyWith();
+        expect(testVideo.totalLoops, 0);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(
+            l10n.videoFeedLoopCountLine(StringUtils.formatCompactNumber(0), 0),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows singular English loop when totalLoops is 1', (
+        tester,
+      ) async {
+        testVideo = testVideo.copyWith(originalLoops: 1);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(
+            l10n.videoFeedLoopCountLine(StringUtils.formatCompactNumber(1), 1),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows compact plural for large loop counts', (tester) async {
+        testVideo = testVideo.copyWith(originalLoops: 1200);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(
+            l10n.videoFeedLoopCountLine(
+              StringUtils.formatCompactNumber(1200),
+              1200,
+            ),
+          ),
+          findsOneWidget,
+        );
       });
     });
 
@@ -473,31 +538,29 @@ void main() {
         throw StateError('Scroll-faded Opacity widget not found in tree');
       }
 
-      testWidgets(
-        'overlay is fully opaque when pagePosition matches index',
-        (tester) async {
-          // index=0, pagePosition=0.0 → distance=0 → opacity=1.0
-          await tester.pumpWidget(buildSubject());
-          await tester.pump();
-          pagePosition.value = 0.0;
-          await tester.pump();
+      testWidgets('overlay is fully opaque when pagePosition matches index', (
+        tester,
+      ) async {
+        // index=0, pagePosition=0.0 → distance=0 → opacity=1.0
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        pagePosition.value = 0.0;
+        await tester.pump();
 
-          expect(overlayOpacity(tester), equals(1.0));
-        },
-      );
+        expect(overlayOpacity(tester), equals(1.0));
+      });
 
-      testWidgets(
-        'overlay is fully hidden when scrolled a full page away',
-        (tester) async {
-          // index=0, pagePosition=1.0 → distance=1.0 → opacity=0.0
-          await tester.pumpWidget(buildSubject());
-          await tester.pump();
-          pagePosition.value = 1.0;
-          await tester.pump();
+      testWidgets('overlay is fully hidden when scrolled a full page away', (
+        tester,
+      ) async {
+        // index=0, pagePosition=1.0 → distance=1.0 → opacity=0.0
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        pagePosition.value = 1.0;
+        await tester.pump();
 
-          expect(overlayOpacity(tester), equals(0.0));
-        },
-      );
+        expect(overlayOpacity(tester), equals(0.0));
+      });
 
       testWidgets(
         'overlay uses dimmed opacity in the middle of the scroll band',
@@ -509,28 +572,24 @@ void main() {
           pagePosition.value = 0.3;
           await tester.pump();
 
-          expect(
-            overlayOpacity(tester),
-            closeTo(kOverlayDimmedOpacity, 1e-9),
-          );
+          expect(overlayOpacity(tester), closeTo(kOverlayDimmedOpacity, 1e-9));
         },
       );
 
-      testWidgets(
-        'overlay opacity updates when pagePosition changes',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
-          await tester.pump();
+      testWidgets('overlay opacity updates when pagePosition changes', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
 
-          pagePosition.value = 0.0;
-          await tester.pump();
-          expect(overlayOpacity(tester), equals(1.0));
+        pagePosition.value = 0.0;
+        await tester.pump();
+        expect(overlayOpacity(tester), equals(1.0));
 
-          pagePosition.value = 1.0;
-          await tester.pump();
-          expect(overlayOpacity(tester), equals(0.0));
-        },
-      );
+        pagePosition.value = 1.0;
+        await tester.pump();
+        expect(overlayOpacity(tester), equals(0.0));
+      });
 
       testWidgets(
         'overlay is fully opaque for a non-zero index when pagePosition matches',

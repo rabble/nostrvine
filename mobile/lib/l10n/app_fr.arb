@@ -2854,5 +2854,29 @@
   "videoMetadataRemoveSemanticLabel": "Supprimer",
   "metadataCaptionsLabel": "Sous-titres",
   "metadataCaptionsEnabledSemantics": "Sous-titres activés pour toutes les vidéos",
-  "metadataCaptionsDisabledSemantics": "Sous-titres désactivés pour toutes les vidéos"
+  "metadataCaptionsDisabledSemantics": "Sous-titres désactivés pour toutes les vidéos",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuDeleteFailedCouldNotSign": "Impossible de signer la demande de suppression. Réessaie.",
+  "shareMenuDeleteFailedGeneric": "Impossible de supprimer cette vidéo. Réessaie.",
+  "shareMenuDeleteFailedNotAuthenticated": "Reconnecte-toi, puis réessaie de supprimer.",
+  "shareMenuDeleteFailedNotInitialized": "La suppression n'est pas prête. Réessaie dans un instant.",
+  "shareMenuDeleteFailedNotOwner": "Tu peux supprimer uniquement tes propres vidéos.",
+  "videoEditorLayers": "Calques",
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{boucle} other{boucles}}"
 }
