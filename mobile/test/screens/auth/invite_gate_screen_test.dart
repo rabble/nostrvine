@@ -156,6 +156,48 @@ void main() {
       verify(() => mockInviteApiClient.validateCode('AB12-EF34')).called(1);
     });
 
+    testWidgets(
+      'confetti sticker ignores pointer events so input remains tappable',
+      (tester) async {
+        when(
+          () => mockInviteApiClient.getClientConfig(),
+        ).thenAnswer(
+          (_) async => const InviteClientConfig(
+            mode: OnboardingMode.inviteCodeRequired,
+            supportEmail: 'support@divine.video',
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final confettiFinder = find.byWidgetPredicate(
+          (widget) =>
+              widget is DivineSticker &&
+              widget.sticker == DivineStickerName.confetti,
+        );
+        expect(confettiFinder, findsOneWidget);
+        expect(
+          find.ancestor(
+            of: confettiFinder,
+            matching: find.byWidgetPredicate(
+              (widget) => widget is IgnorePointer && widget.ignoring,
+            ),
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(
+          find.byType(TextField),
+          warnIfMissed: false,
+        );
+        await tester.enterText(find.byType(TextField), 'ab12ef34');
+        await tester.pumpAndSettle();
+
+        expect(find.text('AB12-EF34'), findsOneWidget);
+      },
+    );
+
     testWidgets('shows initial recovery error from query params', (
       tester,
     ) async {

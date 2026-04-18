@@ -268,9 +268,16 @@ class _InviteCodeEntryPage extends StatelessWidget {
                 Positioned(
                   top: constraints.maxHeight / 2 - 80,
                   left: -36,
-                  child: Transform.rotate(
-                    angle: 12 * 3.14159 / 180,
-                    child: const DivineSticker(sticker: .confetti, size: 174),
+                  child: IgnorePointer(
+                    child: ExcludeSemantics(
+                      child: Transform.rotate(
+                        angle: 12 * 3.14159 / 180,
+                        child: const DivineSticker(
+                          sticker: .confetti,
+                          size: 174,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
 
