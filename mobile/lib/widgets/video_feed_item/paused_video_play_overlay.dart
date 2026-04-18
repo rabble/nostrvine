@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -130,17 +131,18 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
                                 mainAxisSize: .min,
                                 spacing: 16,
                                 children: [
-                                  DivineIconButton(
-                                    icon: isMuted
-                                        ? .speakerSimpleX
-                                        : .speakerHigh,
-                                    size: .small,
-                                    type: .ghost,
-                                    semanticLabel: isMuted
-                                        ? context.l10n.videoPlayerUnmute
-                                        : context.l10n.videoPlayerMute,
-                                    onPressed: widget.onToggleMuteState,
-                                  ),
+                                  if (!kIsWeb)
+                                    DivineIconButton(
+                                      icon: isMuted
+                                          ? .speakerSimpleX
+                                          : .speakerHigh,
+                                      size: .small,
+                                      type: .ghost,
+                                      semanticLabel: isMuted
+                                          ? context.l10n.videoPlayerUnmute
+                                          : context.l10n.videoPlayerMute,
+                                      onPressed: widget.onToggleMuteState,
+                                    ),
                                   IgnorePointer(
                                     child: CenterPlaybackControl(
                                       key: const ValueKey('paused-play'),
