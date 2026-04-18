@@ -337,7 +337,7 @@ flutter:
     - assets/icon/
     - assets/loading-brand.gif
     - assets/loading-brand-sprite.png
-    - assets/seed_data/seed_events.sql
+    - assets/seed_data/seed_events.json
     - assets/seed_data/classic_viner_profiles.json
     - assets/seed_media/manifest.json
     - assets/seed_media/videos/
