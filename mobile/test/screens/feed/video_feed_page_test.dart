@@ -49,10 +49,12 @@ _MockPlayer _stubPlayer(
   when(() => stream.position).thenAnswer((_) => positionStream);
   when(() => stream.playing).thenAnswer((_) => const Stream<bool>.empty());
   when(() => stream.buffering).thenAnswer((_) => const Stream<bool>.empty());
+  when(() => stream.volume).thenAnswer((_) => const Stream<double>.empty());
   when(() => state.duration).thenReturn(duration);
   when(() => state.position).thenReturn(Duration.zero);
   when(() => state.playing).thenReturn(true);
   when(() => state.buffering).thenReturn(false);
+  when(() => state.volume).thenReturn(1);
 
   return player;
 }
