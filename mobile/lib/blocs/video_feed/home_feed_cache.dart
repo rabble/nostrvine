@@ -70,6 +70,7 @@ class HomeFeedCache {
         .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
         .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
         .map((v) => v.toVideoEvent())
+        .whereNotExpired()
         .toList();
 
     return HomeFeedResult(videos: videos);

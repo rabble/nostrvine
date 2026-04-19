@@ -424,8 +424,9 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 Expanded(
                   child: Text(
                     result.success
-                        ? 'Delete request sent successfully'
-                        : 'Failed to delete content: ${result.error}',
+                        ? 'Video deleted'
+                        : "Couldn't delete this video. Check your "
+                              'connection and try again.',
                   ),
                 ),
               ],

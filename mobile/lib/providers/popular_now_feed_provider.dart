@@ -92,7 +92,10 @@ class PopularNowFeed extends _$PopularNowFeed {
 
       try {
         final stats = await client.getRecentVideos();
-        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = stats
+            .map((v) => v.toVideoEvent())
+            .whereNotExpired()
+            .toList();
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
           // Store cursor for pagination (oldest video timestamp)
@@ -230,7 +233,10 @@ class PopularNowFeed extends _$PopularNowFeed {
 
         // Use cursor (before parameter) for pagination
         final stats = await client.getRecentVideos(before: _nextCursor);
-        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = stats
+            .map((v) => v.toVideoEvent())
+            .whereNotExpired()
+            .toList();
 
         if (!ref.mounted) return;
 
@@ -391,7 +397,10 @@ class PopularNowFeed extends _$PopularNowFeed {
       try {
         final client = ref.read(funnelcakeApiClientProvider);
         final stats = await client.getRecentVideos();
-        final apiVideos = stats.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = stats
+            .map((v) => v.toVideoEvent())
+            .whereNotExpired()
+            .toList();
 
         // Check if provider is still mounted after async gap
         if (!ref.mounted) return;

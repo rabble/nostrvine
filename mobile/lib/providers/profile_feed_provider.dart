@@ -105,7 +105,10 @@ class ProfileFeed extends _$ProfileFeed {
         final result = await funnelcakeClient.getVideosByAuthor(
           pubkey: userId,
         );
-        final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = result.videos
+            .map((v) => v.toVideoEvent())
+            .whereNotExpired()
+            .toList();
         restPageCount = apiVideos.length;
         _totalVideoCount = result.totalCount;
 
@@ -464,7 +467,10 @@ class ProfileFeed extends _$ProfileFeed {
       final result = await client.getVideosByAuthor(
         pubkey: userId,
       );
-      final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
+      final apiVideos = result.videos
+          .map((v) => v.toVideoEvent())
+          .whereNotExpired()
+          .toList();
 
       if (!ref.mounted) return;
 
@@ -585,7 +591,10 @@ class ProfileFeed extends _$ProfileFeed {
           pubkey: userId,
           offset: offset,
         );
-        final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = result.videos
+            .map((v) => v.toVideoEvent())
+            .whereNotExpired()
+            .toList();
 
         if (!ref.mounted) return;
         _nextOffset = offset + apiVideos.length;
@@ -766,7 +775,10 @@ class ProfileFeed extends _$ProfileFeed {
         final result = await client.getVideosByAuthor(
           pubkey: userId,
         );
-        final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = result.videos
+            .map((v) => v.toVideoEvent())
+            .whereNotExpired()
+            .toList();
 
         if (!ref.mounted) return;
 

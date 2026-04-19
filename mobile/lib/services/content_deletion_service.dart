@@ -121,7 +121,12 @@ class ContentDeletionService {
     }
   }
 
-  /// Delete user's own content using NIP-09
+  /// Delete user's own content using NIP-09.
+  ///
+  /// The deletion is only considered successful when at least one relay
+  /// returns an `OK true` acknowledgement (NIP-20). If every relay rejects
+  /// the event or none respond before the publish timeout, the operation
+  /// fails and is NOT added to local deletion history — the user can retry.
   Future<DeleteResult> deleteContent({
     required VideoEvent video,
     required String reason,
@@ -146,44 +151,47 @@ class ContentDeletionService {
         additionalContext: additionalContext,
       );
 
-      if (deleteEvent != null) {
-        final sentEvent = await _nostrService.publishEvent(deleteEvent);
-        if (sentEvent == null) {
-          Log.error(
-            'Failed to publish delete request to relays',
-            name: 'ContentDeletionService',
-            category: LogCategory.system,
-          );
-          // Still save locally even if publish fails
-        } else {
-          Log.info(
-            'Delete request published to relays',
-            name: 'ContentDeletionService',
-            category: LogCategory.system,
-          );
-        }
+      if (deleteEvent == null) {
+        return DeleteResult.failure('Failed to create delete event');
+      }
 
-        // Save deletion to local history
-        final deletion = ContentDeletion(
-          deleteEventId: deleteEvent.id,
-          originalEventId: video.id,
-          reason: reason,
-          deletedAt: DateTime.now(),
-          additionalContext: additionalContext,
-        );
+      final outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
 
-        _deletionHistory.add(deletion);
-        await _saveDeletionHistory();
-
-        Log.debug(
-          '📱️ Content deletion request submitted: ${deleteEvent.id}',
+      if (outcome.failed) {
+        Log.error(
+          'Delete publish not confirmed by any relay: ${outcome.summary}',
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
-        return DeleteResult.createSuccess(deleteEvent.id);
-      } else {
-        return DeleteResult.failure('Failed to create delete event');
+        return DeleteResult.failure(
+          'Relay did not confirm deletion: ${outcome.summary}',
+        );
       }
+
+      Log.info(
+        'Delete request confirmed by relay(s): ${outcome.acceptedBy}',
+        name: 'ContentDeletionService',
+        category: LogCategory.system,
+      );
+
+      // Relay accepted — now it is safe to persist the deletion locally.
+      final deletion = ContentDeletion(
+        deleteEventId: deleteEvent.id,
+        originalEventId: video.id,
+        reason: reason,
+        deletedAt: DateTime.now(),
+        additionalContext: additionalContext,
+      );
+
+      _deletionHistory.add(deletion);
+      await _saveDeletionHistory();
+
+      Log.debug(
+        '📱️ Content deletion confirmed: ${deleteEvent.id}',
+        name: 'ContentDeletionService',
+        category: LogCategory.system,
+      );
+      return DeleteResult.createSuccess(deleteEvent.id);
     } catch (e) {
       Log.error(
         'Failed to delete content: $e',

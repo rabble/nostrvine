@@ -28,6 +28,15 @@ import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 
+/// Raised when a content deletion was rejected or unconfirmed by relays.
+class DeleteFailedException implements Exception {
+  const DeleteFailedException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'DeleteFailedException: $message';
+}
+
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator();
 
@@ -1096,8 +1105,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                 Expanded(
                   child: Text(
                     result.success
-                        ? 'Delete request sent successfully'
-                        : 'Failed to delete content: ${result.error}',
+                        ? 'Video deleted'
+                        : "Couldn't delete this video. Check your "
+                              'connection and try again.',
                   ),
                 ),
               ],
@@ -1799,28 +1809,47 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         reason: DeleteReason.personalChoice,
       );
 
-      if (result.success) {
-        final videoEventService = ref.read(videoEventServiceProvider);
-        videoEventService.removeVideoCompletely(widget.video.id);
+      if (!result.success) {
+        throw DeleteFailedException(result.error ?? 'Unknown error');
+      }
 
-        Log.info(
-          'Video deleted successfully: ${widget.video.id}',
-          name: 'EditVideoDialog',
-          category: LogCategory.ui,
+      final videoEventService = ref.read(videoEventServiceProvider);
+      videoEventService.removeVideoCompletely(widget.video.id);
+
+      Log.info(
+        'Video deleted successfully: ${widget.video.id}',
+        name: 'EditVideoDialog',
+        category: LogCategory.ui,
+      );
+
+      if (mounted) {
+        context.pop(); // Close edit dialog
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Video deleted'),
+            backgroundColor: VineTheme.vineGreen,
+          ),
         );
+      }
+    } on DeleteFailedException catch (e) {
+      Log.warning(
+        'Delete rejected or unconfirmed: ${e.message}',
+        name: 'EditVideoDialog',
+        category: LogCategory.ui,
+      );
 
-        if (mounted) {
-          context.pop(); // Close edit dialog
+      if (mounted) {
+        setState(() => _isDeleting = false);
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Video deletion requested'),
-              backgroundColor: VineTheme.vineGreen,
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Couldn't delete this video. Check your connection and try again.",
             ),
-          );
-        }
-      } else {
-        throw Exception(result.error ?? 'Unknown error');
+            backgroundColor: VineTheme.error,
+          ),
+        );
       }
     } catch (e) {
       Log.error(
@@ -1833,8 +1862,8 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         setState(() => _isDeleting = false);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete video: $e'),
+          const SnackBar(
+            content: Text('Something went wrong. Please try again.'),
             backgroundColor: VineTheme.error,
           ),
         );
