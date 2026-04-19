@@ -4,7 +4,8 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
-import 'package:drift/drift.dart' show Variable;
+import 'package:drift/drift.dart' show Batch;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/services/classic_viner_seed_preload_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -37,23 +38,23 @@ class SeedDataPreloadService {
         );
 
         final raw = await rootBundle.loadString(_seedAsset);
-        final bundle = jsonDecode(raw) as Map<String, dynamic>;
-        final events = (bundle['events'] as List? ?? const [])
-            .cast<Map<String, dynamic>>();
-        final profiles = (bundle['profiles'] as List? ?? const [])
-            .cast<Map<String, dynamic>>();
-        final metrics = (bundle['metrics'] as List? ?? const [])
-            .cast<Map<String, dynamic>>();
+        final bundle = await compute(_decodeBundle, raw);
+        final events = ((bundle['events'] as List?) ?? const [])
+            .whereType<Map<String, dynamic>>();
+        final profiles = ((bundle['profiles'] as List?) ?? const [])
+            .whereType<Map<String, dynamic>>();
+        final metrics = ((bundle['metrics'] as List?) ?? const [])
+            .whereType<Map<String, dynamic>>();
 
-        await db.transaction(() async {
+        await db.batch((batch) {
           for (final event in events) {
-            await _insertEvent(db, event);
+            _insertEvent(batch, event);
           }
           for (final profile in profiles) {
-            await _insertProfile(db, profile);
+            _insertProfile(batch, profile);
           }
           for (final metric in metrics) {
-            await _insertMetric(db, metric);
+            _insertMetric(batch, metric);
           }
         });
 
@@ -85,106 +86,67 @@ class SeedDataPreloadService {
     }
   }
 
-  static Future<void> _insertEvent(
-    AppDatabase db,
-    Map<String, dynamic> event,
-  ) async {
-    await db.customInsert(
+  static Map<String, dynamic> _decodeBundle(String raw) =>
+      jsonDecode(raw) as Map<String, dynamic>;
+
+  // Drift encodes DateTime columns as unix seconds by default.
+  static int _dateTimeToSql(String iso) =>
+      DateTime.parse(iso).millisecondsSinceEpoch ~/ 1000;
+
+  static void _insertEvent(Batch batch, Map<String, dynamic> event) {
+    batch.customStatement(
       'INSERT OR IGNORE INTO event '
       '(id, pubkey, created_at, kind, tags, content, sig, sources) '
       'VALUES (?, ?, ?, ?, ?, ?, ?, NULL)',
-      variables: [
-        Variable.withString(event['id'] as String),
-        Variable.withString(event['pubkey'] as String),
-        Variable.withInt(event['created_at'] as int),
-        Variable.withInt(event['kind'] as int),
-        Variable.withString(jsonEncode(event['tags'])),
-        Variable.withString(event['content'] as String),
-        Variable.withString(event['sig'] as String),
+      [
+        event['id'] as String,
+        event['pubkey'] as String,
+        event['created_at'] as int,
+        event['kind'] as int,
+        jsonEncode(event['tags']),
+        event['content'] as String,
+        event['sig'] as String,
       ],
     );
   }
 
-  static Future<void> _insertProfile(
-    AppDatabase db,
-    Map<String, dynamic> profile,
-  ) async {
-    final displayName = profile['display_name'] as String?;
-    final name = profile['name'] as String?;
-    final picture = profile['picture'] as String?;
-    final banner = profile['banner'] as String?;
-    final about = profile['about'] as String?;
-    final website = profile['website'] as String?;
-    final nip05 = profile['nip05'] as String?;
-    final lud16 = profile['lud16'] as String?;
-    final lud06 = profile['lud06'] as String?;
-    final rawData = profile['raw_data'] as String?;
-    await db.customInsert(
+  static void _insertProfile(Batch batch, Map<String, dynamic> profile) {
+    batch.customStatement(
       'INSERT OR IGNORE INTO user_profiles '
       '(pubkey, display_name, name, picture, banner, about, website, '
       'nip05, lud16, lud06, raw_data, created_at, event_id, last_fetched) '
       'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      variables: [
-        Variable.withString(profile['pubkey'] as String),
-        if (displayName != null)
-          Variable.withString(displayName)
-        else
-          const Variable(null),
-        if (name != null) Variable.withString(name) else const Variable(null),
-        if (picture != null)
-          Variable.withString(picture)
-        else
-          const Variable(null),
-        if (banner != null)
-          Variable.withString(banner)
-        else
-          const Variable(null),
-        if (about != null) Variable.withString(about) else const Variable(null),
-        if (website != null)
-          Variable.withString(website)
-        else
-          const Variable(null),
-        if (nip05 != null) Variable.withString(nip05) else const Variable(null),
-        if (lud16 != null) Variable.withString(lud16) else const Variable(null),
-        if (lud06 != null) Variable.withString(lud06) else const Variable(null),
-        if (rawData != null)
-          Variable.withString(rawData)
-        else
-          const Variable(null),
-        Variable.withDateTime(DateTime.parse(profile['created_at'] as String)),
-        Variable.withString(profile['event_id'] as String),
-        Variable.withDateTime(
-          DateTime.parse(profile['last_fetched'] as String),
-        ),
+      [
+        profile['pubkey'] as String,
+        profile['display_name'] as String?,
+        profile['name'] as String?,
+        profile['picture'] as String?,
+        profile['banner'] as String?,
+        profile['about'] as String?,
+        profile['website'] as String?,
+        profile['nip05'] as String?,
+        profile['lud16'] as String?,
+        profile['lud06'] as String?,
+        profile['raw_data'] as String?,
+        _dateTimeToSql(profile['created_at'] as String),
+        profile['event_id'] as String,
+        _dateTimeToSql(profile['last_fetched'] as String),
       ],
     );
   }
 
-  static Future<void> _insertMetric(
-    AppDatabase db,
-    Map<String, dynamic> metric,
-  ) async {
-    final loopCount = metric['loop_count'] as int?;
-    final likes = metric['likes'] as int?;
-    final views = metric['views'] as int?;
-    final comments = metric['comments'] as int?;
-    await db.customInsert(
+  static void _insertMetric(Batch batch, Map<String, dynamic> metric) {
+    batch.customStatement(
       'INSERT OR IGNORE INTO video_metrics '
       '(event_id, loop_count, likes, views, comments, updated_at) '
       'VALUES (?, ?, ?, ?, ?, ?)',
-      variables: [
-        Variable.withString(metric['event_id'] as String),
-        if (loopCount != null)
-          Variable.withInt(loopCount)
-        else
-          const Variable(null),
-        if (likes != null) Variable.withInt(likes) else const Variable(null),
-        if (views != null) Variable.withInt(views) else const Variable(null),
-        if (comments != null)
-          Variable.withInt(comments)
-        else
-          const Variable(null),
-        Variable.withDateTime(DateTime.parse(metric['updated_at'] as String)),
+      [
+        metric['event_id'] as String,
+        metric['loop_count'] as int?,
+        metric['likes'] as int?,
+        metric['views'] as int?,
+        metric['comments'] as int?,
+        _dateTimeToSql(metric['updated_at'] as String),
       ],
     );
   }
