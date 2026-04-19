@@ -76,6 +76,19 @@ void main() {
       expect(outcome.transientRelays, isEmpty);
     });
 
+    test('asserts disjoint sets — same relay in both acceptedBy and rejectedBy',
+        () {
+      expect(
+        () => PublishOutcome(
+          eventId: 'a' * 64,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {'wss://a': 'rejected'},
+          noResponseFrom: const {},
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
     test('preserves full event id (no truncation) in toString', () {
       // Nostr event id is 64 hex chars — literal here since Dart `const`
       // context doesn't allow `'a' * 64`.
