@@ -374,6 +374,169 @@ void main() {
       });
     });
 
+    group('publishEventAwaitOk', () {
+      PublishOutcome accepted(String eventId) => PublishOutcome(
+        eventId: eventId,
+        acceptedBy: const ['wss://relay.test'],
+        rejectedBy: const {},
+        noResponseFrom: const [],
+      );
+
+      PublishOutcome rejected(String eventId) => PublishOutcome(
+        eventId: eventId,
+        acceptedBy: const [],
+        rejectedBy: const {'wss://relay.test': 'blocked: policy'},
+        noResponseFrom: const [],
+      );
+
+      test('returns confirmed outcome when relay accepts the event', () async {
+        final event = _createTestEvent();
+        when(() => mockRelayManager.connectedRelays).thenReturn([
+          'wss://relay.test',
+        ]);
+        when(
+          () => mockNostr.sendEventAwaitOk(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => accepted(event.id));
+
+        final outcome = await client.publishEventAwaitOk(event);
+
+        expect(outcome.confirmed, isTrue);
+        expect(outcome.acceptedBy, equals(['wss://relay.test']));
+      });
+
+      test(
+        'returns failed outcome and rolls back optimistic cache when relay '
+        'rejects',
+        () async {
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final mockNostrEventsDao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(
+            () => mockDatabase.nostrEventsDao,
+          ).thenReturn(mockNostrEventsDao);
+          when(
+            () => mockNostrEventsDao.upsertEvent(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockNostrEventsDao.deleteEventsByIds(any()),
+          ).thenAnswer((_) async => 1);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+
+          final event = _createTestEvent(kind: EventKind.textNote);
+          when(() => mockRelayManager.connectedRelays).thenReturn([
+            'wss://relay.test',
+          ]);
+          when(
+            () => mockNostr.sendEventAwaitOk(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => rejected(event.id));
+
+          final outcome = await clientWithCache.publishEventAwaitOk(event);
+
+          expect(outcome.failed, isTrue);
+          verify(() => mockNostrEventsDao.upsertEvent(event)).called(1);
+          verify(
+            () => mockNostrEventsDao.deleteEventsByIds([event.id]),
+          ).called(1);
+        },
+      );
+
+      test(
+        'returns failed outcome without attempting send when no relays are '
+        'reachable',
+        () async {
+          final event = _createTestEvent();
+          when(() => mockRelayManager.connectedRelays).thenReturn([]);
+          when(
+            mockRelayManager.retryDisconnectedRelays,
+          ).thenAnswer((_) async {});
+
+          final outcome = await client.publishEventAwaitOk(event);
+
+          expect(outcome.failed, isTrue);
+          expect(outcome.eventId, equals(event.id));
+          verify(mockRelayManager.retryDisconnectedRelays).called(1);
+          verifyNever(
+            () => mockNostr.sendEventAwaitOk(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'removes target events from cache after confirmed deletion',
+        () async {
+          final mockDbClient = _MockAppDbClient();
+          final mockDatabase = _MockAppDatabase();
+          final mockNostrEventsDao = _MockNostrEventsDao();
+          when(() => mockDbClient.database).thenReturn(mockDatabase);
+          when(
+            () => mockDatabase.nostrEventsDao,
+          ).thenReturn(mockNostrEventsDao);
+          when(
+            () => mockNostrEventsDao.deleteEventsByIds(any()),
+          ).thenAnswer((_) async => 1);
+
+          final clientWithCache = NostrClient.forTesting(
+            nostr: mockNostr,
+            relayManager: mockRelayManager,
+            dbClient: mockDbClient,
+          );
+
+          final deleteEvent = Event(
+            testPublicKey,
+            EventKind.eventDeletion,
+            [
+              ['e', 'target_event_id'],
+              ['k', '34236'],
+            ],
+            'deleted',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          )..sig = 'test_sig';
+
+          when(() => mockRelayManager.connectedRelays).thenReturn([
+            'wss://relay.test',
+          ]);
+          when(
+            () => mockNostr.sendEventAwaitOk(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(deleteEvent.id));
+
+          final outcome = await clientWithCache.publishEventAwaitOk(
+            deleteEvent,
+          );
+
+          expect(outcome.confirmed, isTrue);
+          verify(
+            () => mockNostrEventsDao.deleteEventsByIds(['target_event_id']),
+          ).called(1);
+        },
+      );
+    });
+
     group('queryEvents', () {
       test('queries events via WebSocket', () async {
         final filters = [
