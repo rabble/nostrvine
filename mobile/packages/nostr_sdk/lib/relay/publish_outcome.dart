@@ -1,41 +1,98 @@
-// ABOUTME: Result type for publishing an event with relay OK confirmation.
-// ABOUTME: Tracks per-relay acceptance, rejection, and timeout outcomes.
+// ABOUTME: PublishOutcome summarizes per-relay NIP-20 OK responses
+// ABOUTME: for one publish attempt. Supports retry policy decisions.
 
 import 'dart:async';
 
-/// Outcome of a publish operation that awaits relay OK confirmations.
+import 'package:meta/meta.dart';
+
+/// Permanent rejection prefixes per NIP-01. Relays emit these in the fourth
+/// element of an `["OK", id, false, reason]` frame to hint at whether a retry
+/// could succeed. We treat these as permanent — retry would be wasted work.
+const Set<String> _permanentRejectionPrefixes = {
+  'blocked:',
+  'invalid:',
+  'pow:',
+  'restricted:',
+  'auth-required:',
+  'rate-limited:',
+};
+
+/// Result of publishing a single Nostr event to one or more relays.
 ///
-/// Per NIP-20, relays respond to `EVENT` messages with `OK` frames indicating
-/// acceptance (`true`) or rejection (`false`) with an optional reason.
+/// A publish can have three outcomes per relay:
+/// - Accepted: relay sent `["OK", id, true, _]`
+/// - Rejected: relay sent `["OK", id, false, reason]`
+/// - No response: timeout elapsed without any OK frame
+///
+/// Callers decide user-facing behavior based on the combined result. See
+/// [acceptedByAll], [acceptedByAny], [failed], [transientRelays], and the
+/// legacy aliases [confirmed] / [summary] preserved for callers from
+/// the initial delete-reliability rollout.
+@immutable
 class PublishOutcome {
-  const PublishOutcome({
+  /// Creates a publish outcome from per-relay ack state. Asserts the three
+  /// sets are disjoint (each relay appears in at most one bucket) — this
+  /// prevents contradictory answers from [transientRelays] / [failed].
+  PublishOutcome({
     required this.eventId,
     required this.acceptedBy,
     required this.rejectedBy,
     required this.noResponseFrom,
-  });
+  }) {
+    assert(() {
+      final rejectedKeys = rejectedBy.keys.toSet();
+      final overlap = acceptedBy.intersection(rejectedKeys)
+          .union(acceptedBy.intersection(noResponseFrom))
+          .union(rejectedKeys.intersection(noResponseFrom));
+      return overlap.isEmpty;
+    }(), 'acceptedBy, rejectedBy.keys, and noResponseFrom must be disjoint');
+  }
 
-  /// The id of the event that was published.
+  /// Full 64-hex-char event id — never truncated.
   final String eventId;
 
-  /// Relay URLs that returned `OK true`.
-  final List<String> acceptedBy;
+  /// Relay URLs that responded with `["OK", id, true, _]`.
+  final Set<String> acceptedBy;
 
-  /// Relay URLs that returned `OK false`, mapped to the reason returned.
+  /// Relay URLs that responded with `["OK", id, false, reason]`, mapped to
+  /// the reason string (may be empty).
   final Map<String, String> rejectedBy;
 
-  /// Relays the event was sent to that did not respond before timeout or
-  /// disconnected without answering.
-  final List<String> noResponseFrom;
+  /// Relay URLs that were targeted but did not respond within the timeout.
+  final Set<String> noResponseFrom;
 
-  /// `true` when at least one relay confirmed acceptance.
-  bool get confirmed => acceptedBy.isNotEmpty;
+  /// True when every targeted relay accepted.
+  ///
+  /// Returns `false` when no relays were targeted (all three sets empty) —
+  /// vacuous truth is surprising in this API, so "all of zero" is treated
+  /// as a non-successful outcome. Use [acceptedByAny] if you want a
+  /// positive signal only when at least one relay accepted.
+  bool get acceptedByAll =>
+      acceptedBy.isNotEmpty && rejectedBy.isEmpty && noResponseFrom.isEmpty;
 
-  /// `true` when every targeted relay either rejected the event or failed to
-  /// respond. Callers should treat this as a hard failure.
+  /// True when at least one relay accepted. Same as legacy [confirmed].
+  bool get acceptedByAny => acceptedBy.isNotEmpty;
+
+  /// Legacy alias for [acceptedByAny]. Preserved for callers from the
+  /// initial delete-reliability rollout before the retry-aware API landed.
+  bool get confirmed => acceptedByAny;
+
+  /// True when no relay accepted.
   bool get failed => acceptedBy.isEmpty;
 
-  /// A short, human-readable summary for logs and error messages.
+  /// Relays that *could* succeed on retry — no-response plus rejections
+  /// whose reason does not start with a permanent NIP-01 prefix.
+  Set<String> get transientRelays {
+    final transient = <String>{...noResponseFrom};
+    rejectedBy.forEach((relay, reason) {
+      if (!_isPermanent(reason)) transient.add(relay);
+    });
+    return transient;
+  }
+
+  /// A short, human-readable summary for logs and error messages. Legacy
+  /// helper preserved for callers from the initial delete-reliability
+  /// rollout.
   String get summary {
     if (confirmed) {
       return 'accepted by ${acceptedBy.length} relay'
@@ -51,15 +108,33 @@ class PublishOutcome {
     return 'no relay reached';
   }
 
+  static bool _isPermanent(String reason) {
+    for (final prefix in _permanentRejectionPrefixes) {
+      if (reason.startsWith(prefix)) return true;
+    }
+    return false;
+  }
+
   @override
   String toString() =>
-      'PublishOutcome(eventId: $eventId, accepted: $acceptedBy, '
-      'rejected: $rejectedBy, noResponse: $noResponseFrom)';
+      'PublishOutcome(eventId: $eventId, '
+      'acceptedBy: $acceptedBy, '
+      'rejectedBy: $rejectedBy, '
+      'noResponseFrom: $noResponseFrom)';
 }
 
 /// Internal tracker used by [RelayPool] to correlate OK frames with the
 /// original publish call.
+///
+/// Preserved from the initial delete-reliability rollout for any
+/// external callers that reference this class. The in-package publish
+/// flow has moved to the private `_PendingPublish` type inside
+/// `relay_pool.dart` which collects every relay's response before
+/// completing (rather than first-accept-wins), giving retry logic
+/// the full picture. Prefer `RelayPool.sendAwaitOk` for new code.
 class PublishTracker {
+  /// Creates a tracker that resolves after [timeout] if not all
+  /// expected relays have responded.
   PublishTracker({
     required this.eventId,
     required this.expectedRelays,
@@ -80,14 +155,16 @@ class PublishTracker {
   late final Timer _timer;
   bool _closed = false;
 
+  /// Future that resolves with the [PublishOutcome] when the tracker
+  /// completes.
   Future<PublishOutcome> get future => _completer.future;
 
   /// Call when the relay returned `OK true`.
   void onAccepted(String relayUrl) {
     if (_closed) return;
     _accepted.add(relayUrl);
-    // First confirmation is enough for deletion-style operations; we still
-    // collect the remaining responses but complete immediately.
+    // First confirmation is enough for deletion-style operations; we
+    // still collect the remaining responses but complete immediately.
     _complete();
   }
 
@@ -123,13 +200,13 @@ class PublishTracker {
     _timer.cancel();
     final noResponse = expectedRelays
         .where((r) => !_accepted.contains(r) && !_rejected.containsKey(r))
-        .toList(growable: false);
+        .toSet();
     _completer.complete(
       PublishOutcome(
         eventId: eventId,
-        acceptedBy: _accepted.toList(growable: false),
+        acceptedBy: Set<String>.unmodifiable(_accepted),
         rejectedBy: Map<String, String>.unmodifiable(_rejected),
-        noResponseFrom: noResponse,
+        noResponseFrom: Set<String>.unmodifiable(noResponse),
       ),
     );
   }
@@ -143,9 +220,9 @@ class PublishTracker {
       _completer.complete(
         PublishOutcome(
           eventId: eventId,
-          acceptedBy: _accepted.toList(growable: false),
+          acceptedBy: Set<String>.unmodifiable(_accepted),
           rejectedBy: Map<String, String>.unmodifiable(_rejected),
-          noResponseFrom: expectedRelays.toList(growable: false),
+          noResponseFrom: Set<String>.unmodifiable(expectedRelays),
         ),
       );
     }
