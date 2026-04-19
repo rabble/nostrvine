@@ -101,27 +101,24 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
         return CustomScrollView(
           physics: const ClampingScrollPhysics(),
           slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(4),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 4,
-                  mainAxisSpacing: 4,
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  if (index >= likedVideos.length) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final videoEvent = likedVideos[index];
-                  return _LikedGridTile(
-                    videoEvent: videoEvent,
-                    index: index,
-                    allVideos: likedVideos,
-                  );
-                }, childCount: likedVideos.length),
+            SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 4,
+                mainAxisSpacing: 4,
               ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                if (index >= likedVideos.length) {
+                  return const SizedBox.shrink();
+                }
+
+                final videoEvent = likedVideos[index];
+                return _LikedGridTile(
+                  videoEvent: videoEvent,
+                  index: index,
+                  allVideos: likedVideos,
+                );
+              }, childCount: likedVideos.length),
             ),
             if (state.isLoadingMore) const ProfileTabLoadingMoreSliver(),
           ],

@@ -199,8 +199,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // Dynamic tab bar top inset. Grows from 0 to safeAreaTop as the
     // action buttons row's bottom edge scrolls past the safe area.
     final safeAreaTop = MediaQuery.paddingOf(context).top;
-    final triggerScroll =
-        _headerHeight + _actionButtonsHeight - safeAreaTop;
+    final triggerScroll = _headerHeight + _actionButtonsHeight - safeAreaTop;
     final newInset = (offset - triggerScroll).clamp(0.0, safeAreaTop);
     if (newInset != _tabBarTopInset) {
       setState(() {
@@ -514,39 +513,45 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     //   so it can paint over the tab bar's top safeAreaTop padding area
     //   (CSS z-index equivalent — the action buttons row overlaps the tabs
     //   group by safeAreaTop).
-    content = ColoredBox(
-      color: VineTheme.surfaceBackground,
-      child: Stack(
-        children: [
-          ProfileBannerLayer(
-            userIdHex: widget.userIdHex,
-            isOwnProfile: widget.isOwnProfile,
-            profile: widget.profile,
-            scrollController: widget.scrollController,
-          ),
-          content,
-          // Action buttons overlay — painted above the NestedScrollView.
-          ValueListenableBuilder<double>(
-            valueListenable: _actionButtonsTop,
-            builder: (_, top, child) => Positioned(
-              top: top,
-              left: 0,
-              right: 0,
-              height: _actionButtonsHeight,
-              child: child!,
-            ),
-            child: ProfileActionButtons(
+    content = ClipRRect(
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(30),
+        bottomRight: Radius.circular(30),
+      ),
+      child: ColoredBox(
+        color: VineTheme.surfaceBackground,
+        child: Stack(
+          children: [
+            ProfileBannerLayer(
               userIdHex: widget.userIdHex,
               isOwnProfile: widget.isOwnProfile,
-              displayName: widget.displayName,
-              onEditProfile: widget.onEditProfile,
-              onOpenClips: widget.onOpenClips,
-              onMessageUser: widget.onMessageUser,
-              onShareProfile: widget.onShareProfile,
-              onBlockedTap: widget.onBlockedTap,
+              profile: widget.profile,
+              scrollController: widget.scrollController,
             ),
-          ),
-        ],
+            content,
+            // Action buttons overlay — painted above the NestedScrollView.
+            ValueListenableBuilder<double>(
+              valueListenable: _actionButtonsTop,
+              builder: (_, top, child) => Positioned(
+                top: top,
+                left: 0,
+                right: 0,
+                height: _actionButtonsHeight,
+                child: child!,
+              ),
+              child: ProfileActionButtons(
+                userIdHex: widget.userIdHex,
+                isOwnProfile: widget.isOwnProfile,
+                displayName: widget.displayName,
+                onEditProfile: widget.onEditProfile,
+                onOpenClips: widget.onOpenClips,
+                onMessageUser: widget.onMessageUser,
+                onShareProfile: widget.onShareProfile,
+                onBlockedTap: widget.onBlockedTap,
+              ),
+            ),
+          ],
+        ),
       ),
     );
 
@@ -579,17 +584,28 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 /// Adds a [topInset] (typically the safe area top) so that when pinned
 /// behind the status bar, the tab bar icons sit below the status bar
 /// rather than behind it.
+///
+/// Also renders the 2px [VineTheme.outlineMuted] divider at the bottom of
+/// the header. The rounded top corners of the tab content viewport are
+/// applied separately, on the body's [ColoredBox] wrapper.
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   _SliverAppBarDelegate(this._tabBar, {required this.topInset});
 
   final TabBar _tabBar;
   final double topInset;
 
-  @override
-  double get minExtent => _tabBar.preferredSize.height + topInset;
+  /// Height of the divider line painted between the tab bar and the tile
+  /// grid.
+  static const double _dividerHeight = 2;
+
+  double get _totalExtent =>
+      _tabBar.preferredSize.height + topInset + _dividerHeight;
 
   @override
-  double get maxExtent => _tabBar.preferredSize.height + topInset;
+  double get minExtent => _totalExtent;
+
+  @override
+  double get maxExtent => _totalExtent;
 
   @override
   Widget build(
@@ -597,18 +613,18 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) => DecoratedBox(
-    decoration: const BoxDecoration(
-      color: VineTheme.surfaceBackground,
-      border: Border(
-        bottom: BorderSide(
-          color: VineTheme.outlineMuted,
-          width: 2,
+    decoration: const BoxDecoration(color: VineTheme.surfaceBackground),
+    child: Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.only(top: topInset),
+          child: _tabBar,
         ),
-      ),
-    ),
-    child: Padding(
-      padding: EdgeInsets.only(top: topInset),
-      child: _tabBar,
+        const ColoredBox(
+          color: VineTheme.outlineMuted,
+          child: SizedBox(height: _dividerHeight, width: double.infinity),
+        ),
+      ],
     ),
   );
 

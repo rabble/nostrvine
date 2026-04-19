@@ -101,27 +101,24 @@ class _ProfileRepostsGridState extends State<ProfileRepostsGrid>
         return CustomScrollView(
           physics: const ClampingScrollPhysics(),
           slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(2),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 2,
-                  mainAxisSpacing: 2,
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  if (index >= repostedVideos.length) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final videoEvent = repostedVideos[index];
-                  return _RepostGridTile(
-                    videoEvent: videoEvent,
-                    index: index,
-                    allVideos: repostedVideos,
-                  );
-                }, childCount: repostedVideos.length),
+            SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 2,
+                mainAxisSpacing: 2,
               ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                if (index >= repostedVideos.length) {
+                  return const SizedBox.shrink();
+                }
+
+                final videoEvent = repostedVideos[index];
+                return _RepostGridTile(
+                  videoEvent: videoEvent,
+                  index: index,
+                  allVideos: repostedVideos,
+                );
+              }, childCount: repostedVideos.length),
             ),
             if (state.isLoadingMore) const ProfileTabLoadingMoreSliver(),
           ],

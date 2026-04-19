@@ -363,12 +363,12 @@ class _UniqueIdentifier extends ConsumerWidget {
     if (hasNip05) {
       if (verificationFailed && !isOwnProfile) {
         // Don't show unverified NIP-05s for other users - potential impersonation
-        displayText = npub;
+        displayText = _truncateNpubForDisplay(npub);
       } else {
         displayText = nip05!;
       }
     } else {
-      displayText = npub;
+      displayText = _truncateNpubForDisplay(npub);
     }
 
     return GestureDetector(
@@ -389,6 +389,21 @@ class _UniqueIdentifier extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Maximum characters of a raw npub to show before the ellipsis when it is
+/// used as the fallback identifier on the profile screen.
+const int _profileNpubMaxChars = 16;
+
+/// Trim a raw npub for the profile identifier row.
+///
+/// Shows the first [_profileNpubMaxChars] characters followed by an ellipsis
+/// when the npub is longer than that. Used only when no NIP-05 / divine
+/// username is available (or the NIP-05 is unverified on another user's
+/// profile).
+String _truncateNpubForDisplay(String npub) {
+  if (npub.length <= _profileNpubMaxChars) return npub;
+  return '${npub.substring(0, _profileNpubMaxChars)}...';
 }
 
 /// Build a shareable profile URL.

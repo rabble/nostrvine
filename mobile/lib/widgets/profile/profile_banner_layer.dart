@@ -35,8 +35,7 @@ class ProfileBannerLayer extends ConsumerStatefulWidget {
   final double height;
 
   @override
-  ConsumerState<ProfileBannerLayer> createState() =>
-      _ProfileBannerLayerState();
+  ConsumerState<ProfileBannerLayer> createState() => _ProfileBannerLayerState();
 }
 
 class _ProfileBannerLayerState extends ConsumerState<ProfileBannerLayer> {
@@ -85,8 +84,9 @@ class _ProfileBannerLayerState extends ConsumerState<ProfileBannerLayer> {
     } else if (widget.profile != null) {
       effectiveProfile = widget.profile;
     } else {
-      effectiveProfile =
-          ref.watch(fetchUserProfileProvider(widget.userIdHex)).value;
+      effectiveProfile = ref
+          .watch(fetchUserProfileProvider(widget.userIdHex))
+          .value;
     }
 
     final hasBannerImage = effectiveProfile?.hasBannerImage ?? false;

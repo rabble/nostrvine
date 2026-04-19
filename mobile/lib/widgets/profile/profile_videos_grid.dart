@@ -286,11 +286,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       physics: const ClampingScrollPhysics(),
       slivers: [
         SliverPadding(
-          padding: .fromLTRB(
-            4,
-            4,
-            4,
-            4 + MediaQuery.viewPaddingOf(context).bottom,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewPaddingOf(context).bottom,
           ),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
