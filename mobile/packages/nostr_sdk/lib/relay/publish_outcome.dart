@@ -26,12 +26,21 @@ const Set<String> _permanentRejectionPrefixes = {
 /// [acceptedByAll], [acceptedByAny], [failed], and [transientRelays].
 @immutable
 class PublishOutcome {
-  const PublishOutcome({
+  PublishOutcome({
     required this.eventId,
     required this.acceptedBy,
     required this.rejectedBy,
     required this.noResponseFrom,
-  });
+  }) {
+    assert(() {
+      final rejectedKeys = rejectedBy.keys.toSet();
+      final overlap = acceptedBy
+          .intersection(rejectedKeys)
+          .union(acceptedBy.intersection(noResponseFrom))
+          .union(rejectedKeys.intersection(noResponseFrom));
+      return overlap.isEmpty;
+    }(), 'acceptedBy, rejectedBy.keys, and noResponseFrom must be disjoint');
+  }
 
   /// Full 64-hex-char event id — never truncated.
   final String eventId;
@@ -47,6 +56,11 @@ class PublishOutcome {
   final Set<String> noResponseFrom;
 
   /// True when every targeted relay accepted.
+  ///
+  /// Returns `false` when no relays were targeted (all three sets empty) —
+  /// vacuous truth is surprising in this API, so "all of zero" is treated as
+  /// a non-successful outcome. Use [acceptedByAny] if you want a positive
+  /// signal only when at least one relay accepted.
   bool get acceptedByAll =>
       acceptedBy.isNotEmpty && rejectedBy.isEmpty && noResponseFrom.isEmpty;
 
