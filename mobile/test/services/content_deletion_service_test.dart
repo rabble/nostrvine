@@ -161,7 +161,8 @@ void main() {
       );
 
       test(
-        'does NOT save deletion locally when every relay rejects the publish',
+        'fails with relayRejected and does NOT save locally when every relay '
+        'rejects the publish',
         () async {
           final video = createTestVideoEvent(testPublicKey);
           final deleteEvent = createTestEvent(
@@ -195,7 +196,7 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.error, contains('Relay did not confirm'));
+          expect(result.failureKind, equals(DeleteFailureKind.relayRejected));
           expect(result.error, contains('blocked: policy'));
           expect(service.hasBeenDeleted(video.id), isFalse);
           expect(service.deletionHistory, isEmpty);
@@ -203,7 +204,8 @@ void main() {
       );
 
       test(
-        'does NOT save deletion locally when no relay answers before timeout',
+        'fails with relayRejected and does NOT save locally when no relay '
+        'answers before timeout',
         () async {
           final video = createTestVideoEvent(testPublicKey);
           final deleteEvent = createTestEvent(
@@ -237,7 +239,7 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.error, contains('no relay'));
+          expect(result.failureKind, equals(DeleteFailureKind.relayRejected));
           expect(service.hasBeenDeleted(video.id), isFalse);
           expect(service.deletionHistory, isEmpty);
         },
@@ -297,7 +299,8 @@ void main() {
       );
 
       test(
-        'refuses to delete content owned by another user before publishing',
+        'refuses with notOwner when deleting another user content before '
+        'publishing',
         () async {
           final otherUserPubkey = getPublicKey(generatePrivateKey());
           final video = createTestVideoEvent(otherUserPubkey);
@@ -308,7 +311,7 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.error, contains('Can only delete your own content'));
+          expect(result.failureKind, equals(DeleteFailureKind.notOwner));
 
           verifyNever(
             () => mockAuthService.createAndSignEvent(
@@ -326,23 +329,29 @@ void main() {
         },
       );
 
-      test('fails fast when the service is not initialized', () async {
-        final uninitializedService = ContentDeletionService(
-          nostrService: mockNostrService,
-          authService: mockAuthService,
-          prefs: prefs,
-        );
+      test(
+        'fails with notInitialized when the service has not been initialized',
+        () async {
+          final uninitializedService = ContentDeletionService(
+            nostrService: mockNostrService,
+            authService: mockAuthService,
+            prefs: prefs,
+          );
 
-        final video = createTestVideoEvent(testPublicKey);
+          final video = createTestVideoEvent(testPublicKey);
 
-        final result = await uninitializedService.deleteContent(
-          video: video,
-          reason: 'Test reason',
-        );
+          final result = await uninitializedService.deleteContent(
+            video: video,
+            reason: 'Test reason',
+          );
 
-        expect(result.success, isFalse);
-        expect(result.error, contains('not initialized'));
-      });
+          expect(result.success, isFalse);
+          expect(
+            result.failureKind,
+            equals(DeleteFailureKind.notInitialized),
+          );
+        },
+      );
     });
 
     group('quickDelete', () {

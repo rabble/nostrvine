@@ -1,20 +1,28 @@
 // ABOUTME: TDD widget test for Clips button in profile action buttons
 // ABOUTME: Tests that Clips button is prominently displayed and navigates correctly
 
+@Tags(['skip_very_good_optimization'])
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../helpers/test_provider_overrides.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 void main() {
   group('Profile Clips Button', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    tearDown(SharedPreferences.resetStatic);
+
     testWidgets('should render Clips button in action buttons row', (
       tester,
     ) async {
@@ -22,6 +30,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Padding(
               padding: const EdgeInsets.all(20),
@@ -105,19 +115,18 @@ void main() {
     testWidgets(
       'should navigate to ClipLibraryScreen when Clips button tapped',
       (tester) async {
-        SharedPreferences.setMockInitialValues({});
-        final sharedPreferences = await SharedPreferences.getInstance();
         final mockDraftStorageService = _MockDraftStorageService();
 
         await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          testProviderScope(
+            additionalOverrides: [
               draftStorageServiceProvider.overrideWithValue(
                 mockDraftStorageService,
               ),
             ],
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: Builder(
                   builder: (context) => ElevatedButton(
@@ -152,6 +161,8 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: Padding(
                 padding: const EdgeInsets.all(20),
@@ -254,6 +265,8 @@ void main() {
       // Test own profile (shows all three buttons)
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Padding(
               padding: const EdgeInsets.all(20),
@@ -299,6 +312,8 @@ void main() {
       // Test other user's profile (no Edit/Clips/Share buttons)
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Padding(
               padding: const EdgeInsets.all(20),

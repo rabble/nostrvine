@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
 /// Repost action button with count display for video overlay.
@@ -19,10 +20,12 @@ class RepostActionButton extends StatelessWidget {
     required this.video,
     super.key,
     this.isPreviewMode = false,
+    this.onInteracted,
   });
 
   final VideoEvent video;
   final bool isPreviewMode;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +51,7 @@ class RepostActionButton extends StatelessWidget {
           isReposted: data.isReposted,
           isRepostInProgress: data.isInProgress,
           totalReposts: data.count,
+          onInteracted: onInteracted,
         );
       },
     );
@@ -59,22 +63,27 @@ class _ActionButton extends StatelessWidget {
     this.isReposted = false,
     this.isRepostInProgress = false,
     this.totalReposts = 1,
+    this.onInteracted,
   });
 
   final bool isReposted;
   final bool isRepostInProgress;
   final int totalReposts;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context) {
     return VideoActionButton(
       icon: .repeatDuo,
       semanticIdentifier: 'repost_button',
-      semanticLabel: isReposted ? 'Remove repost' : 'Repost video',
+      semanticLabel: isReposted
+          ? context.l10n.videoActionRemoveRepost
+          : context.l10n.videoActionRepost,
       iconColor: isReposted ? VineTheme.vineGreen : VineTheme.whiteText,
       isLoading: isRepostInProgress,
       count: totalReposts,
       onPressed: () {
+        onInteracted?.call();
         context.read<VideoInteractionsBloc>().add(
           const VideoInteractionsRepostToggled(),
         );

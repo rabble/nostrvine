@@ -13,6 +13,7 @@ Generic Flutter and Dart standards live in `.claude/rules/`:
 - `rules/routing.md`: `go_router` patterns
 - `rules/ui_theming.md`: theme usage, Page/View split, spacing and typography
 - `rules/error_handling.md`: exceptions and failure handling
+- `rules/localization.md`: l10n-first UI, ARB workflow, `context.l10n` usage
 
 ## Project Rules
 

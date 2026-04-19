@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
@@ -27,6 +28,8 @@ void main() {
 
     Widget buildSubject({bool showAll = false}) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: BlocProvider<HashtagSearchBloc>.value(
             value: mockBloc,
@@ -144,5 +147,58 @@ void main() {
         ).called(1);
       },
     );
+
+    group('loading more indicator', () {
+      testWidgets(
+        'shows loading indicator when showAll and isLoadingMore',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            const HashtagSearchState(
+              status: HashtagSearchStatus.success,
+              results: ['flutter'],
+              hasMore: true,
+              isLoadingMore: true,
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hides loading indicator when showAll and not isLoadingMore',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            const HashtagSearchState(
+              status: HashtagSearchStatus.success,
+              results: ['flutter'],
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not show loading indicator when not showAll',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            const HashtagSearchState(
+              status: HashtagSearchStatus.success,
+              results: ['flutter'],
+              isLoadingMore: true,
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+    });
   });
 }

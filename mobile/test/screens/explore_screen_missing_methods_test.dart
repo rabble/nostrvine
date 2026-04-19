@@ -110,7 +110,7 @@ void main() {}
 //          await tester.pumpWidget(
 //            UncontrolledProviderScope(
 //              container: testContainer,
-//              child: MaterialApp(home: ExploreScreen(key: key)),
+//              child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: ExploreScreen(key: key)),
 //            ),
 //          );
 //
@@ -146,7 +146,7 @@ void main() {}
 //          await tester.pumpWidget(
 //            UncontrolledProviderScope(
 //              container: testContainer,
-//              child: MaterialApp(home: ExploreScreen(key: key)),
+//              child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: ExploreScreen(key: key)),
 //            ),
 //          );
 //
@@ -182,7 +182,7 @@ void main() {}
 //          await tester.pumpWidget(
 //            UncontrolledProviderScope(
 //              container: testContainer,
-//              child: MaterialApp(home: ExploreScreen(key: key)),
+//              child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: ExploreScreen(key: key)),
 //            ),
 //          );
 //
@@ -218,7 +218,7 @@ void main() {}
 //          await tester.pumpWidget(
 //            UncontrolledProviderScope(
 //              container: testContainer,
-//              child: MaterialApp(home: ExploreScreen(key: key)),
+//              child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: ExploreScreen(key: key)),
 //            ),
 //          );
 //
@@ -254,7 +254,7 @@ void main() {}
 //          await tester.pumpWidget(
 //            UncontrolledProviderScope(
 //              container: testContainer,
-//              child: MaterialApp(home: ExploreScreen(key: key)),
+//              child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: ExploreScreen(key: key)),
 //            ),
 //          );
 //
@@ -290,7 +290,7 @@ void main() {}
 //          await tester.pumpWidget(
 //            UncontrolledProviderScope(
 //              container: testContainer,
-//              child: MaterialApp(home: ExploreScreen(key: key)),
+//              child: MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, home: ExploreScreen(key: key)),
 //            ),
 //          );
 //

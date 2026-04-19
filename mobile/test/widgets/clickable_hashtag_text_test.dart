@@ -1,9 +1,59 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+
+class _FakeUrlLauncherPlatform extends UrlLauncherPlatform {
+  String? launchedUrl;
+
+  @override
+  Future<bool> canLaunch(String url) async => true;
+
+  @override
+  Future<bool> launch(
+    String url, {
+    required bool useSafariVC,
+    required bool useWebView,
+    required bool enableJavaScript,
+    required bool enableDomStorage,
+    required bool universalLinksOnly,
+    required Map<String, String> headers,
+    String? webOnlyWindowName,
+  }) async {
+    launchedUrl = url;
+    return true;
+  }
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+}
+
+const _testHexPubkey =
+    '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
 void main() {
   group('ClickableHashtagText', () {
+    late UrlLauncherPlatform originalUrlLauncherPlatform;
+    late _FakeUrlLauncherPlatform fakeUrlLauncherPlatform;
+
+    setUp(() {
+      originalUrlLauncherPlatform = UrlLauncherPlatform.instance;
+      fakeUrlLauncherPlatform = _FakeUrlLauncherPlatform();
+      UrlLauncherPlatform.instance = fakeUrlLauncherPlatform;
+    });
+
+    tearDown(() {
+      UrlLauncherPlatform.instance = originalUrlLauncherPlatform;
+    });
+
     testWidgets('displays plain text without hashtags correctly', (
       tester,
     ) async {
@@ -11,6 +61,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClickableHashtagText(text: plainText)),
         ),
       );
@@ -24,6 +76,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClickableHashtagText(text: textWithHashtag)),
         ),
       );
@@ -38,6 +92,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClickableHashtagText(text: textWithHashtags)),
         ),
       );
@@ -51,6 +107,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClickableHashtagText(text: textWithTrailingHashtag),
           ),
@@ -68,6 +126,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClickableHashtagText(text: textWithComplexHashtags),
           ),
@@ -87,6 +147,8 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ClickableHashtagText(text: longText, maxLines: 2),
           ),
@@ -100,6 +162,8 @@ void main() {
     testWidgets('handles empty text', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClickableHashtagText(text: '')),
         ),
       );
@@ -112,6 +176,8 @@ void main() {
     testWidgets('handles text with only spaces', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClickableHashtagText(text: '   ')),
         ),
       );
@@ -140,6 +206,8 @@ void main() {
       for (final testText in testCases) {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ClickableHashtagText(text: testText)),
           ),
         );
@@ -150,6 +218,135 @@ void main() {
         // Clear the widget tree before next test
         await tester.pumpWidget(Container());
       }
+    });
+
+    testWidgets('launches bare domains as external links', (tester) async {
+      const textWithLink = 'Read more at example.com/docs';
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: ClickableHashtagText(text: textWithLink)),
+          ),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.byType(Text));
+      final textSpan = text.textSpan! as TextSpan;
+      final spans = textSpan.children!.cast<TextSpan>();
+      final linkSpan = spans.firstWhere(
+        (span) => span.text == 'example.com/docs',
+      );
+
+      expect(linkSpan.recognizer, isNotNull);
+
+      final recognizer = linkSpan.recognizer! as TapGestureRecognizer;
+      recognizer.onTap!();
+      await tester.pump();
+
+      expect(fakeUrlLauncherPlatform.launchedUrl, 'https://example.com/docs');
+    });
+
+    testWidgets('parses bare npub mentions as tappable profile spans', (
+      tester,
+    ) async {
+      final npub = NostrKeyUtils.encodePubKey(_testHexPubkey);
+      final textWithMention = 'Find me at $npub';
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: ClickableHashtagText(text: textWithMention)),
+          ),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.byType(Text));
+      expect(text.textSpan, isNotNull);
+
+      final textSpan = text.textSpan! as TextSpan;
+      final spans = textSpan.children!.cast<TextSpan>();
+      final mentionSpan = spans.firstWhere(
+        (span) => span.text != null && span.text!.startsWith('@npub1'),
+      );
+
+      expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());
+    });
+
+    testWidgets('parses bare nprofile mentions as tappable profile spans', (
+      tester,
+    ) async {
+      final nprofile = NIP19Tlv.encodeNprofile(
+        Nprofile(pubkey: _testHexPubkey),
+      );
+      final textWithMention = 'Find me at $nprofile';
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: ClickableHashtagText(text: textWithMention)),
+          ),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.byType(Text));
+      expect(text.textSpan, isNotNull);
+
+      final textSpan = text.textSpan! as TextSpan;
+      final spans = textSpan.children!.cast<TextSpan>();
+      final mentionSpan = spans.firstWhere(
+        (span) => span.text != null && span.text!.startsWith('@npub1'),
+      );
+
+      expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());
+    });
+
+    testWidgets('uses display nip05 when no profile name is available', (
+      tester,
+    ) async {
+      final npub = NostrKeyUtils.encodePubKey(_testHexPubkey);
+      final textWithMention = 'Find me at $npub';
+      final profile = UserProfile(
+        pubkey: _testHexPubkey,
+        nip05: '_@alice.divine.video',
+        rawData: const {},
+        createdAt: DateTime.utc(2026, 4, 16),
+        eventId:
+            'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            userProfileReactiveProvider(_testHexPubkey).overrideWith(
+              (ref) => Stream.value(profile),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: ClickableHashtagText(text: textWithMention)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(find.byType(Text));
+      expect(text.textSpan, isNotNull);
+
+      final textSpan = text.textSpan! as TextSpan;
+      final spans = textSpan.children!.cast<TextSpan>();
+      final mentionSpan = spans.firstWhere(
+        (span) => span.text == '@alice.divine.video',
+      );
+
+      expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());
     });
 
     // Note: Testing tap functionality and navigation requires integration testing

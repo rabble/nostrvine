@@ -1,11 +1,12 @@
 // ABOUTME: Unit tests for WebAuthService nsec bunker authentication integration
 // ABOUTME: Tests bunker authentication flow and signer functionality in WebAuthService
 
+@Tags(['skip_very_good_optimization'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/web_auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class MockNsecBunkerClient extends Mock implements NsecBunkerClient {}
 
@@ -24,10 +25,14 @@ void main() {
     setUp(() {
       authService = WebAuthService();
       mockBunkerClient = MockNsecBunkerClient();
+      // WebAuthService is a singleton — clear bunker client state that may
+      // have leaked from prior tests (random test ordering exposes this).
+      authService.setBunkerClient(null);
     });
 
     tearDown(() async {
       await authService.disconnect();
+      authService.setBunkerClient(null);
     });
 
     group('Bunker Authentication', () {

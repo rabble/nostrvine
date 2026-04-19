@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:test/test.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
@@ -2834,7 +2835,7 @@ void main() {
     });
 
     group('getUserProfile', () {
-      test('returns profile on successful response', () async {
+      test('returns UserProfileFound on successful response', () async {
         const validResponse = '''
 {
   "profile": {
@@ -2850,16 +2851,17 @@ void main() {
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response(validResponse, 200));
 
-        final profile = await client.getUserProfile(testPubkey);
+        final result = await client.getUserProfile(testPubkey);
 
-        expect(profile, isNotNull);
-        expect(profile!['pubkey'], equals(testPubkey));
-        expect(profile['name'], equals('testuser'));
-        expect(profile['display_name'], equals('Test User'));
+        expect(result, isA<UserProfileFound>());
+        final found = result! as UserProfileFound;
+        expect(found.profile.pubkey, equals(testPubkey));
+        expect(found.profile.name, equals('testuser'));
+        expect(found.profile.displayName, equals('Test User'));
       });
 
       test(
-        'includes social, stats, and engagement in normal response',
+        'includes social, stats, and engagement in UserProfileFound',
         () async {
           const responseWithStats = '''
 {
@@ -2886,30 +2888,30 @@ void main() {
             () => mockHttpClient.get(any(), headers: any(named: 'headers')),
           ).thenAnswer((_) async => http.Response(responseWithStats, 200));
 
-          final profile = await client.getUserProfile(testPubkey);
+          final result = await client.getUserProfile(testPubkey);
 
-          expect(profile, isNotNull);
-          expect(profile!['_noProfile'], isNull);
-          expect(profile['name'], equals('testuser'));
+          expect(result, isA<UserProfileFound>());
+          final found = result! as UserProfileFound;
+          expect(found.profile.name, equals('testuser'));
 
           // Social
-          final social = profile['social'] as Map<String, dynamic>;
-          expect(social['follower_count'], equals(42));
-          expect(social['following_count'], equals(10));
+          expect(found.social, isNotNull);
+          expect(found.social!.followerCount, equals(42));
+          expect(found.social!.followingCount, equals(10));
 
           // Stats
-          final stats = profile['stats'] as Map<String, dynamic>;
-          expect(stats['video_count'], equals(5));
+          expect(found.stats, isNotNull);
+          expect(found.stats!.videoCount, equals(5));
 
           // Engagement
-          final engagement = profile['engagement'] as Map<String, dynamic>;
-          expect(engagement['total_reactions'], equals(100));
-          expect(engagement['total_loops'], equals(50.5));
+          expect(found.engagement, isNotNull);
+          expect(found.engagement!.totalReactions, equals(100));
+          expect(found.engagement!.totalLoops, equals(50.5));
         },
       );
 
       test(
-        'includes social, stats, and engagement in _noProfile sentinel',
+        'returns UserProfileNotPublished when profile is null, includes stats',
         () async {
           const noProfileWithStats = '''
 {
@@ -2934,22 +2936,22 @@ void main() {
 
           final result = await client.getUserProfile(testPubkey);
 
-          expect(result, isNotNull);
-          expect(result!['_noProfile'], isTrue);
-          expect(result['pubkey'], equals(testPubkey));
+          expect(result, isA<UserProfileNotPublished>());
+          final notPublished = result! as UserProfileNotPublished;
+          expect(notPublished.pubkey, equals(testPubkey));
 
-          // Stats should be preserved even on _noProfile sentinel
-          final social = result['social'] as Map<String, dynamic>;
-          expect(social['follower_count'], equals(15));
+          // Stats should be preserved even for UserProfileNotPublished
+          expect(notPublished.social, isNotNull);
+          expect(notPublished.social!.followerCount, equals(15));
 
-          final engagement = result['engagement'] as Map<String, dynamic>;
-          expect(engagement['total_reactions'], equals(500));
-          expect(engagement['total_loops'], equals(120.0));
+          expect(notPublished.engagement, isNotNull);
+          expect(notPublished.engagement!.totalReactions, equals(500));
+          expect(notPublished.engagement!.totalLoops, equals(120.0));
         },
       );
 
       test(
-        'returns _noProfile sentinel when profile has no name fields',
+        'returns UserProfileNotPublished when profile has no name fields',
         () async {
           const noNameResponse = '''
 {"profile": {"about": "just about"}}
@@ -2958,25 +2960,26 @@ void main() {
             () => mockHttpClient.get(any(), headers: any(named: 'headers')),
           ).thenAnswer((_) async => http.Response(noNameResponse, 200));
 
-          final profile = await client.getUserProfile(testPubkey);
+          final result = await client.getUserProfile(testPubkey);
 
-          expect(profile, isNotNull);
-          expect(profile!['_noProfile'], isTrue);
-          expect(profile['pubkey'], equals(testPubkey));
+          expect(result, isA<UserProfileNotPublished>());
+          expect(
+            (result! as UserProfileNotPublished).pubkey,
+            equals(testPubkey),
+          );
         },
       );
 
-      test('returns _noProfile sentinel when profile is null', () async {
+      test('returns UserProfileNotPublished when profile is null', () async {
         const nullProfileResponse = '{"profile": null}';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response(nullProfileResponse, 200));
 
-        final profile = await client.getUserProfile(testPubkey);
+        final result = await client.getUserProfile(testPubkey);
 
-        expect(profile, isNotNull);
-        expect(profile!['_noProfile'], isTrue);
-        expect(profile['pubkey'], equals(testPubkey));
+        expect(result, isA<UserProfileNotPublished>());
+        expect((result! as UserProfileNotPublished).pubkey, equals(testPubkey));
       });
 
       test('returns null on 404', () async {
@@ -3560,8 +3563,16 @@ void main() {
         final result = await client.getBulkProfiles(['pub1', 'pub2']);
 
         expect(result.profiles, hasLength(2));
-        expect(result.profiles['pub1']?['name'], equals('Alice'));
-        expect(result.profiles['pub2']?['name'], equals('Bob'));
+        expect(result.profiles['pub1'], isA<UserProfileFound>());
+        expect(
+          (result.profiles['pub1']! as UserProfileFound).profile.name,
+          equals('Alice'),
+        );
+        expect(result.profiles['pub2'], isA<UserProfileFound>());
+        expect(
+          (result.profiles['pub2']! as UserProfileFound).profile.name,
+          equals('Bob'),
+        );
       });
 
       test('sends correct POST body', () async {
@@ -3611,11 +3622,17 @@ void main() {
         final result = await client.getBulkProfiles(['pub1']);
 
         expect(result.profiles, hasLength(1));
-        expect(result.profiles['pub1']?['name'], equals('Valid'));
+        expect(result.profiles['pub1'], isA<UserProfileFound>());
+        expect(
+          (result.profiles['pub1']! as UserProfileFound).profile.name,
+          equals('Valid'),
+        );
       });
 
-      test('returns _noProfile sentinel for users with null profile', () async {
-        const response = '''
+      test(
+        'returns UserProfileNotPublished for users with null profile',
+        () async {
+          const response = '''
 {
   "users": [
     {"pubkey": "pub1", "profile": null},
@@ -3623,24 +3640,30 @@ void main() {
   ]
 }
 ''';
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer((_) async => http.Response(response, 200));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async => http.Response(response, 200));
 
-        final result = await client.getBulkProfiles(['pub1', 'pub2']);
+          final result = await client.getBulkProfiles(['pub1', 'pub2']);
 
-        expect(result.profiles, hasLength(2));
-        expect(result.profiles['pub1']?['_noProfile'], isTrue);
-        expect(result.profiles['pub2']?['name'], equals('Valid'));
-      });
+          expect(result.profiles, hasLength(2));
+          expect(result.profiles['pub1'], isA<UserProfileNotPublished>());
+          expect(result.profiles['pub2'], isA<UserProfileFound>());
+          expect(
+            (result.profiles['pub2']! as UserProfileFound).profile.name,
+            equals('Valid'),
+          );
+        },
+      );
 
-      test('returns _noProfile sentinel for users with all-null '
-          'profile fields', () async {
-        const response = '''
+      test(
+        'returns UserProfileNotPublished for users with all-null profile',
+        () async {
+          const response = '''
 {
   "users": [
     {
@@ -3650,19 +3673,20 @@ void main() {
   ]
 }
 ''';
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer((_) async => http.Response(response, 200));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async => http.Response(response, 200));
 
-        final result = await client.getBulkProfiles(['pub1']);
+          final result = await client.getBulkProfiles(['pub1']);
 
-        expect(result.profiles, hasLength(1));
-        expect(result.profiles['pub1']?['_noProfile'], isTrue);
-      });
+          expect(result.profiles, hasLength(1));
+          expect(result.profiles['pub1'], isA<UserProfileNotPublished>());
+        },
+      );
 
       test('sends correct headers for POST', () async {
         when(
@@ -3976,9 +4000,10 @@ void main() {
         final categories = await client.getCategories();
 
         expect(categories, hasLength(2));
-        expect(categories[0]['name'], equals('music'));
-        expect(categories[0]['video_count'], equals(1500));
-        expect(categories[1]['name'], equals('comedy'));
+        expect(categories[0], isA<VideoCategory>());
+        expect(categories[0].name, equals('music'));
+        expect(categories[0].videoCount, equals(1500));
+        expect(categories[1].name, equals('comedy'));
       });
 
       test('includes query parameter when provided', () async {

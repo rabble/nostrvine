@@ -260,4 +260,31 @@ void main() {
       );
     });
   });
+
+  group(IndexerRelayConfig, () {
+    group('safeFallbackRelays (#2931)', () {
+      test('is non-empty so DM reachability degrades gracefully', () {
+        // Regression guard for #2931: when NIP-65 discovery fails or
+        // returns empty, AuthService applies this list so the client is
+        // not stuck Divine-only. An empty list would silently break DM
+        // delivery for imported accounts without a published kind 10002.
+        expect(IndexerRelayConfig.safeFallbackRelays, isNotEmpty);
+      });
+
+      test('contains only secure WebSocket URLs', () {
+        for (final url in IndexerRelayConfig.safeFallbackRelays) {
+          expect(
+            url,
+            startsWith('wss://'),
+            reason: 'fallback relay $url must use wss:// for secure transport',
+          );
+        }
+      });
+
+      test('contains only unique entries', () {
+        const urls = IndexerRelayConfig.safeFallbackRelays;
+        expect(urls.toSet().length, equals(urls.length));
+      });
+    });
+  });
 }

@@ -1,8 +1,8 @@
 // ABOUTME: Service to clear user-specific cached data when identity changes
 // ABOUTME: Prevents data leakage between different Nostr accounts after reinstall
 
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service to clean up user-specific data from SharedPreferences.
 ///
@@ -62,6 +62,8 @@ class UserDataCleanupService {
   static const List<String> identityChangePrefixes = [
     'following_list_', // follow cache per pubkey
     'relay_discovery_', // relay discovery cache per npub
+    'dm.newestSyncedAt.', // DM sync cursor per pubkey
+    'dm.oldestSyncedAt.', // DM sync cursor per pubkey
   ];
 
   /// Checks if user-specific data should be cleared for the given pubkey.

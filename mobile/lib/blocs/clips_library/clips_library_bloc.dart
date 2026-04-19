@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'clips_library_event.dart';
 part 'clips_library_state.dart';
@@ -65,7 +65,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
-          clearError: true,
         ),
       );
     } catch (e, stackTrace) {
@@ -75,12 +74,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: ClipsLibraryStatus.error,
-          errorMessage: e.toString(),
-        ),
-      );
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
   }
 
@@ -151,7 +145,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           selectedClipIds: const {},
           selectedDuration: Duration.zero,
           lastDeletedCount: deletedCount,
-          clearError: true,
         ),
       );
     } catch (e, stackTrace) {
@@ -161,12 +154,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: ClipsLibraryStatus.error,
-          errorMessage: 'Failed to delete clips: $e',
-        ),
-      );
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
   }
 
@@ -203,7 +191,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           selectedClipIds: selectedIds,
           selectedDuration: selectedDuration,
           lastDeletedCount: 1,
-          clearError: true,
         ),
       );
     } catch (e, stackTrace) {
@@ -213,12 +200,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: ClipsLibraryStatus.error,
-          errorMessage: 'Failed to delete clip: $e',
-        ),
-      );
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
   }
 

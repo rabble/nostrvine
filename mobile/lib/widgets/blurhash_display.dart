@@ -5,9 +5,9 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:blurhash_service/blurhash_service.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/services/blurhash_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Widget that displays a blurhash as a placeholder image
 class BlurhashDisplay extends StatefulWidget {

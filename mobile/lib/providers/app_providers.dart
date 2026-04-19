@@ -5,12 +5,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:curation_service/curation_service.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:http/http.dart';
@@ -22,6 +27,7 @@ import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/config/app_config.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
@@ -31,10 +37,6 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/repositories/categories_repository.dart';
-import 'package:openvine/repositories/dm_repository.dart';
-import 'package:openvine/repositories/dm_sync_state.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -46,8 +48,6 @@ import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
-import 'package:openvine/services/blossom_auth_service.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/bug_report_service.dart';
@@ -60,7 +60,6 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/crosspost_api_client.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/email_verification_listener.dart';
@@ -69,11 +68,12 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
+import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
-import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/services/notification_preferences_service.dart';
@@ -83,6 +83,7 @@ import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/push_notification_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
@@ -105,12 +106,12 @@ import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/search_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sound_service/sound_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'app_providers.g.dart';
@@ -174,9 +175,7 @@ final notificationPreferencesServiceProvider =
         publishPreferences: (prefs) {
           return ref
               .read(pushNotificationServiceProvider)
-              .updatePreferences(
-                prefs,
-              );
+              .updatePreferences(prefs);
         },
       );
     });
@@ -197,20 +196,14 @@ final nostrAppAuditServiceProvider = Provider<NostrAppAuditService>((ref) {
   return NostrAppAuditService(
     workerBaseUri: Uri.parse(AppConfig.appsDirectoryBaseUrl),
     authTokenProvider:
-        ({
-          required url,
-          required method,
-          required payload,
-        }) async {
+        ({required url, required method, required payload}) async {
           final token = await nip98AuthService.createAuthToken(
             url: url,
             method: HttpMethod.post,
             payload: payload,
           );
           if (token == null) return null;
-          return AuditAuthToken(
-            authorizationHeader: token.authorizationHeader,
-          );
+          return AuditAuthToken(authorizationHeader: token.authorizationHeader);
         },
     httpClient: client,
   );
@@ -850,10 +843,7 @@ void blocklistSyncBridge(Ref ref) {
 
     try {
       await Future.wait([
-        blocklistService.syncMuteListsInBackground(
-          nostrService,
-          pubkey,
-        ),
+        blocklistService.syncMuteListsInBackground(nostrService, pubkey),
         blocklistService.syncBlockListsInBackground(
           nostrService,
           authService,
@@ -1142,19 +1132,43 @@ void pushNotificationSync(Ref ref) {
   final authService = ref.watch(authServiceProvider);
 
   Future<void> requestPermissionAndRegister(String pubkey) async {
-    final firebaseMessaging = ref.read(firebaseMessagingProvider);
-    final pushService = ref.read(pushNotificationServiceProvider);
-    final settings = await firebaseMessaging.requestPermission();
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      Log.info(
-        'Push notification permission denied by user',
+    try {
+      final firebaseMessaging = ref.read(firebaseMessagingProvider);
+      final pushService = ref.read(pushNotificationServiceProvider);
+
+      // Only prompt the user if permission has never been decided. Rapid
+      // auth state changes (account switching, E2E tests) otherwise cause
+      // concurrent `requestPermission` calls, and Firebase throws
+      // `PlatformException([firebase_messaging/unknown] A request for
+      // permissions is already running)` — silently losing FCM registration
+      // in production and failing E2E tests via unhandled async errors.
+      final current = await firebaseMessaging.getNotificationSettings();
+      final settings =
+          current.authorizationStatus == AuthorizationStatus.notDetermined
+          ? await firebaseMessaging.requestPermission()
+          : current;
+
+      if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        Log.info(
+          'Push notification permission denied by user',
+          name: 'PushNotificationSync',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      await pushService.register(pubkey);
+    } catch (e) {
+      // Push registration is non-critical — a failure must not propagate
+      // out of this async stream listener. If it did, the uncaught error
+      // would reach the test binding's `handleUncaughtError` and fail the
+      // surrounding integration test.
+      Log.warning(
+        'Push notification registration failed: $e',
         name: 'PushNotificationSync',
         category: LogCategory.system,
       );
-      return;
     }
-
-    await pushService.register(pubkey);
   }
 
   String? lastAuthenticatedPubkey = authService.currentPublicKeyHex;
@@ -1165,15 +1179,25 @@ void pushNotificationSync(Ref ref) {
 
   // React to auth state changes
   final subscription = authService.authStateStream.listen((authState) async {
-    final currentPubkey = authService.currentPublicKeyHex;
-    if (authState == AuthState.authenticated && currentPubkey != null) {
-      lastAuthenticatedPubkey = currentPubkey;
-      await requestPermissionAndRegister(currentPubkey);
-    } else if (authState == AuthState.unauthenticated &&
-        lastAuthenticatedPubkey != null) {
-      await ref
-          .read(pushNotificationServiceProvider)
-          .deregister(lastAuthenticatedPubkey!);
+    try {
+      final currentPubkey = authService.currentPublicKeyHex;
+      if (authState == AuthState.authenticated && currentPubkey != null) {
+        lastAuthenticatedPubkey = currentPubkey;
+        await requestPermissionAndRegister(currentPubkey);
+      } else if (authState == AuthState.unauthenticated &&
+          lastAuthenticatedPubkey != null) {
+        await ref
+            .read(pushNotificationServiceProvider)
+            .deregister(lastAuthenticatedPubkey!);
+      }
+    } catch (e) {
+      // Never let push/deregister errors escape the listener — see
+      // `requestPermissionAndRegister` for context.
+      Log.warning(
+        'Push notification sync listener failed: $e',
+        name: 'PushNotificationSync',
+        category: LogCategory.system,
+      );
     }
   });
 
@@ -1291,6 +1315,9 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
     await db.conversationsDao.clearAll();
     await db.notificationsDao.clearAll();
     await NotificationServiceEnhanced.instance.clearAllData();
+    // Clear DM sync cursors so the next login triggers a full re-fetch
+    // from relays instead of using stale `since:` boundaries.
+    await DmSyncState(prefs).clearAll();
   };
 
   return service;
@@ -1411,10 +1438,13 @@ FollowRepository followRepository(Ref ref) {
 
   final repository = FollowRepository(
     nostrClient: nostrClient,
-    personalEventCache: personalEventCache,
+    isCacheInitialized: () => personalEventCache.isInitialized,
+    getCachedEventsByKind: personalEventCache.getEventsByKind,
+    cacheUserEvent: personalEventCache.cacheUserEvent,
     funnelcakeApiClient: funnelcakeApiClient,
     profileStatsDao: profileStatsDao,
     indexerRelayUrls: env.indexerRelays,
+    queryContactList: ContactListCompletionHelper.queryContactList,
     isOnline: () =>
         connectionStatus.isOnline && authService.canPublishNostrWritesNow,
     queueOfflineAction: pendingActionService != null
@@ -1566,6 +1596,7 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final env = ref.watch(currentEnvironmentProvider);
 
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
@@ -1575,6 +1606,7 @@ ProfileRepository? profileRepository(Ref ref) {
     indexerRelays: env.indexerRelays,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
+    blockFilter: blocklistService.shouldFilterFromFeeds,
   );
 
   // Pre-load known cached pubkeys and wire into SubscriptionManager
@@ -1685,17 +1717,31 @@ Nip98AuthService nip98AuthService(Ref ref) {
 @riverpod
 BlossomAuthService blossomAuthService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  return BlossomAuthService(authService: authService);
+  return BlossomAuthService(
+    authProvider: _BlossomAuthAdapter(authService),
+  );
 }
+
+/// Shared viewer auth service for media GET requests.
+final mediaViewerAuthServiceProvider = Provider<MediaViewerAuthService>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  final blossomAuthService = ref.watch(blossomAuthServiceProvider);
+  final nip98AuthService = ref.watch(nip98AuthServiceProvider);
+  return MediaViewerAuthService(
+    authService: authService,
+    blossomAuthService: blossomAuthService,
+    nip98AuthService: nip98AuthService,
+  );
+});
 
 /// Media authentication interceptor for handling 401 unauthorized responses
 @riverpod
 MediaAuthInterceptor mediaAuthInterceptor(Ref ref) {
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
-  final blossomAuthService = ref.watch(blossomAuthServiceProvider);
+  final mediaViewerAuthService = ref.watch(mediaViewerAuthServiceProvider);
   return MediaAuthInterceptor(
     ageVerificationService: ageVerificationService,
-    blossomAuthService: blossomAuthService,
+    mediaViewerAuthService: mediaViewerAuthService,
   );
 }
 
@@ -1705,7 +1751,8 @@ BlossomUploadService blossomUploadService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   final env = ref.read(currentEnvironmentProvider);
   return BlossomUploadService(
-    authService: authService,
+    authProvider: _BlossomAuthAdapter(authService),
+    performanceMonitor: _FirebasePerformanceAdapter(),
     defaultServerUrl: env.blossomUrl,
   );
 }
@@ -1788,9 +1835,10 @@ CurationService curationService(Ref ref) {
 
   return CurationService(
     nostrService: nostrService,
-    videoEventService: videoEventService,
+    videoEventCache: videoEventService,
     likesRepository: likesRepository,
-    authService: authService,
+    signer: authService.requireIdentity,
+    divineTeamPubkeys: AppConstants.divineTeamPubkeys,
   );
 }
 
@@ -2059,9 +2107,16 @@ BugReportService bugReportService(Ref ref) {
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Sets auth credentials eagerly so read/send operations work immediately.
-/// The relay subscription is NOT started here — it is driven by the inbox
-/// UI lifecycle via [ConversationListBloc] (#2766).
+/// Sets auth credentials eagerly so read/send operations work immediately,
+/// then starts the gift-wrap subscription so DMs are ingested for the whole
+/// authenticated session — not just while [InboxPage] is mounted (#2931).
+///
+/// Cold-start cost is bounded by two existing mechanisms that landed with
+/// the original lazy-inbox work (#2766):
+/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+///   limits the relay backlog to recent events on every open after the first.
+/// - Decryption is offloaded to a background isolate via
+///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
 /// Uses `keepAlive: true` because the repository must survive transient
 /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -2084,18 +2139,15 @@ DmRepository dmRepository(Ref ref) {
 
   ref.onDispose(repository.stopListening);
 
-  // Set credentials when the signer's public key is available.
-  // This does NOT start the relay subscription — that is lazy (#2766).
+  // Set credentials and open the gift-wrap subscription as soon as the
+  // signer is ready. The subscription is auth-session-scoped (not inbox-
+  // scoped) so DMs are ingested even when the user never visits /inbox.
+  // See docs/plans/2026-04-05-dm-scaling-fix-design.md and #2931.
   if (ref.watch(isNostrReadyProvider)) {
     final publicKey = nostrService.publicKey;
     if (publicKey.isNotEmpty) {
       final signer = nostrService.signer;
 
-      // initialize() wires credentials only — it does NOT open the
-      // gift-wrap subscription. The inbox screen (InboxPage) starts the
-      // subscription via startListening() on mount and tears it down on
-      // dispose so cold start does no DM network/decrypt work.
-      // See docs/plans/2026-04-05-dm-scaling-fix-design.md.
       repository.setCredentials(
         userPubkey: publicKey,
         signer: signer,
@@ -2105,6 +2157,11 @@ DmRepository dmRepository(Ref ref) {
           nostrService: nostrService,
         ),
       );
+
+      // Open the gift-wrap subscription for the whole authenticated
+      // session. Bounded by `since: newestSyncedAt - 2d` and isolate
+      // decrypt so cold start stays cheap regardless of lifetime DM count.
+      unawaited(repository.startListening());
     }
   }
 
@@ -2127,9 +2184,11 @@ DmRepository dmRepository(Ref ref) {
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final repository = CommentsRepository(
     nostrClient: nostrClient,
     funnelcakeApiClient: funnelcakeClient,
+    blockFilter: blocklistService.shouldFilterFromFeeds,
   );
   ref.onDispose(repository.clearCommentCountCache);
   return repository;
@@ -2390,9 +2449,7 @@ class _AuthServiceBridgeAdapter implements BridgeAuthProvider {
 
   @override
   List<BridgeRelay> get userRelays => _authService.userRelays
-      .map(
-        (r) => BridgeRelay(url: r.url, read: r.read, write: r.write),
-      )
+      .map((r) => BridgeRelay(url: r.url, read: r.read, write: r.write))
       .toList();
 
   @override
@@ -2411,4 +2468,50 @@ class _AuthServiceBridgeAdapter implements BridgeAuthProvider {
     if (event == null) return null;
     return BridgeSignedEvent(json: event.toJson());
   }
+}
+
+/// Adapts the app-level [AuthService] to the package-level
+/// [BlossomAuthProvider] interface.
+class _BlossomAuthAdapter implements BlossomAuthProvider {
+  const _BlossomAuthAdapter(this._authService);
+
+  final AuthService _authService;
+
+  @override
+  bool get isAuthenticated => _authService.isAuthenticated;
+
+  @override
+  Future<BlossomSignedEvent?> createAndSignEvent({
+    required int kind,
+    required String content,
+    required List<List<String>> tags,
+  }) async {
+    final event = await _authService.createAndSignEvent(
+      kind: kind,
+      content: content,
+      tags: tags,
+    );
+    if (event == null) return null;
+    return BlossomSignedEvent(json: event.toJson());
+  }
+}
+
+/// Adapts [PerformanceMonitoringService] to the package-level
+/// [BlossomPerformanceMonitor] interface.
+class _FirebasePerformanceAdapter implements BlossomPerformanceMonitor {
+  @override
+  Future<void> startTrace(String traceName) =>
+      PerformanceMonitoringService.instance.startTrace(traceName);
+
+  @override
+  Future<void> stopTrace(String traceName) =>
+      PerformanceMonitoringService.instance.stopTrace(traceName);
+
+  @override
+  void setMetric(String traceName, String metricName, int value) =>
+      PerformanceMonitoringService.instance.setMetric(
+        traceName,
+        metricName,
+        value,
+      );
 }

@@ -9,6 +9,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
@@ -24,7 +26,7 @@ class ContentPreferencesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Content Preferences',
+        title: context.l10n.contentPreferencesTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -41,17 +43,20 @@ class ContentPreferencesScreen extends ConsumerWidget {
                   Icons.filter_list,
                   color: VineTheme.vineGreen,
                 ),
-                title: const Text(
-                  'Content Filters',
-                  style: TextStyle(
+                title: Text(
+                  context.l10n.contentPreferencesContentFilters,
+                  style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                subtitle: const Text(
-                  'Manage content warning filters',
-                  style: TextStyle(color: VineTheme.lightText, fontSize: 14),
+                subtitle: Text(
+                  context.l10n.contentPreferencesContentFiltersSubtitle,
+                  style: const TextStyle(
+                    color: VineTheme.lightText,
+                    fontSize: 14,
+                  ),
                 ),
                 trailing: const Icon(
                   Icons.chevron_right,
@@ -85,13 +90,17 @@ class _LanguageSettingState extends ConsumerState<_LanguageSetting> {
     final currentCode = languageService.contentLanguage;
     final isCustom = languageService.isCustomLanguageSet;
     final displayName = LanguagePreferenceService.displayNameFor(currentCode);
-    final subtitle = isCustom ? displayName : '$displayName (device default)';
+    final subtitle = isCustom
+        ? displayName
+        : context.l10n.contentPreferencesContentLanguageDeviceDefault(
+            displayName,
+          );
 
     return ListTile(
       leading: const Icon(Icons.language, color: VineTheme.vineGreen),
-      title: const Text(
-        'Content Language',
-        style: TextStyle(
+      title: Text(
+        context.l10n.contentPreferencesContentLanguage,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
@@ -129,23 +138,25 @@ class _LanguageSettingState extends ConsumerState<_LanguageSetting> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
+              Padding(
+                padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Content Language',
-                  style: TextStyle(
+                  context.l10n.contentPreferencesContentLanguage,
+                  style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Tag your videos with a language so viewers can '
-                  'filter content.',
-                  style: TextStyle(color: VineTheme.lightText, fontSize: 13),
+                  context.l10n.contentPreferencesTagYourVideos,
+                  style: const TextStyle(
+                    color: VineTheme.lightText,
+                    fontSize: 13,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -157,9 +168,9 @@ class _LanguageSettingState extends ConsumerState<_LanguageSetting> {
                       : Icons.radio_button_off,
                   color: VineTheme.vineGreen,
                 ),
-                title: const Text(
-                  'Use device language (default)',
-                  style: TextStyle(color: VineTheme.whiteText),
+                title: Text(
+                  context.l10n.contentPreferencesUseDeviceLanguage,
+                  style: const TextStyle(color: VineTheme.whiteText),
                 ),
                 subtitle: Text(
                   LanguagePreferenceService.displayNameFor(
@@ -252,17 +263,17 @@ class _AudioSharingToggleState extends ConsumerState<_AudioSharingToggle> {
         await audioSharingService.setAudioSharingEnabled(value);
         setState(() {});
       },
-      title: const Text(
-        'Make my audio available for reuse',
-        style: TextStyle(
+      title: Text(
+        context.l10n.contentPreferencesAudioSharing,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
       ),
-      subtitle: const Text(
-        'When enabled, others can use audio from your videos',
-        style: TextStyle(color: VineTheme.lightText, fontSize: 14),
+      subtitle: Text(
+        context.l10n.contentPreferencesAudioSharingSubtitle,
+        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
       ),
       activeThumbColor: VineTheme.vineGreen,
       secondary: const Icon(Icons.music_note, color: VineTheme.vineGreen),
@@ -324,9 +335,9 @@ class _AccountContentLabelsTileState
         Icons.warning_amber_rounded,
         color: VineTheme.vineGreen,
       ),
-      title: const Text(
-        'Account Labels',
-        style: TextStyle(
+      title: Text(
+        context.l10n.contentPreferencesAccountLabels,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
@@ -334,8 +345,12 @@ class _AccountContentLabelsTileState
       ),
       subtitle: Text(
         _accountLabels.isNotEmpty
-            ? _accountLabels.map((l) => l.displayName).join(', ')
-            : 'Self-label your content',
+            ? _accountLabels
+                  .map(
+                    (l) => localizedContentLabelName(context.l10n, l),
+                  )
+                  .join(', ')
+            : context.l10n.contentPreferencesAccountLabelsEmpty,
         style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
       ),
       trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
@@ -406,25 +421,28 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Account Content Labels',
+                    context.l10n.contentPreferencesAccountContentLabels,
                     style: VineTheme.titleLargeFont(),
                   ),
                   if (_selected.isNotEmpty)
                     TextButton(
                       onPressed: _clearAll,
-                      child: const Text(
-                        'Clear All',
-                        style: TextStyle(color: VineTheme.vineGreen),
+                      child: Text(
+                        context.l10n.contentPreferencesClearAll,
+                        style: const TextStyle(color: VineTheme.vineGreen),
                       ),
                     ),
                 ],
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Select all that apply to your account',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+                context.l10n.contentPreferencesSelectAllThatApply,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 13,
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -439,7 +457,10 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                     value: isChecked,
                     onChanged: (_) => _toggle(label),
                     title: Text(
-                      label.displayName,
+                      localizedContentLabelName(
+                        context.l10n,
+                        label,
+                      ),
                       style: const TextStyle(
                         color: VineTheme.whiteText,
                         fontSize: 15,
@@ -470,8 +491,10 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                     ),
                     child: Text(
                       _selected.isEmpty
-                          ? 'Done (No Labels)'
-                          : 'Done (${_selected.length} selected)',
+                          ? context.l10n.contentPreferencesDoneNoLabels
+                          : context.l10n.contentPreferencesDoneCount(
+                              _selected.length,
+                            ),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -513,19 +536,19 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
 
         String currentDisplayName;
         if (currentDevice == null) {
-          currentDisplayName = 'Auto (recommended)';
+          currentDisplayName = context.l10n.contentPreferencesAutoRecommended;
         } else {
           final device = devices.where((d) => d.id == currentDevice);
           currentDisplayName = device.isNotEmpty
               ? _formatAudioDeviceName(device.first.name)
-              : 'Auto (recommended)';
+              : context.l10n.contentPreferencesAutoRecommended;
         }
 
         return ListTile(
           leading: const Icon(Icons.mic, color: VineTheme.vineGreen),
-          title: const Text(
-            'Audio Input Device',
-            style: TextStyle(
+          title: Text(
+            context.l10n.contentPreferencesAudioInputDevice,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -543,7 +566,7 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
   }
 
   String _formatAudioDeviceName(String name) {
-    if (name.isEmpty) return 'Unknown Microphone';
+    if (name.isEmpty) return context.l10n.contentPreferencesUnknownMicrophone;
     return name;
   }
 
@@ -564,11 +587,11 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Text(
-                'Select Audio Input',
-                style: TextStyle(
+                context.l10n.contentPreferencesSelectAudioInput,
+                style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -583,13 +606,16 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
                     : Icons.radio_button_off,
                 color: VineTheme.vineGreen,
               ),
-              title: const Text(
-                'Auto (recommended)',
-                style: TextStyle(color: VineTheme.whiteText),
+              title: Text(
+                context.l10n.contentPreferencesAutoRecommended,
+                style: const TextStyle(color: VineTheme.whiteText),
               ),
-              subtitle: const Text(
-                'Automatically selects the best microphone',
-                style: TextStyle(color: VineTheme.lightText, fontSize: 12),
+              subtitle: Text(
+                context.l10n.contentPreferencesAutoSelectsBest,
+                style: const TextStyle(
+                  color: VineTheme.lightText,
+                  fontSize: 12,
+                ),
               ),
               onTap: () async {
                 await audioDevicePref.setPreferredDeviceId(null);

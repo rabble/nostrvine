@@ -27,11 +27,23 @@ jobs:
           cache: true
       - name: 📦 Install dependencies
         run: flutter pub get
+      - name: 🌐 Verify HLS auth web shim is synced
+        run: bash scripts/check_hls_auth_web_shim_sync.sh
+      - name: 🌐 Smoke-test HLS auth web shim
+        run: node scripts/test_hls_auth_web_shim.mjs
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs
           if [ -n "$(git status --porcelain)" ]; then
             echo "⚠️ Generated files are out of date. Please run 'dart run build_runner build' and commit the changes."
+            git diff --name-only
+            exit 1
+          fi
+      - name: 🌐 Verify l10n generated files
+        run: |
+          flutter gen-l10n
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "⚠️ L10n generated files are out of date. Please run 'flutter gen-l10n' and commit the changes."
             git diff --name-only
             exit 1
           fi
@@ -72,36 +84,8 @@ jobs:
       - name: 🕵️ Analyze code
         run: flutter analyze lib test integration_test
   tests:
-    name: Tests (shard ${{ matrix.shard_number }}/${{ matrix.shard_count }})
+    name: Tests
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - shard_index: 0
-            shard_number: 1
-            shard_count: 8
-          - shard_index: 1
-            shard_number: 2
-            shard_count: 8
-          - shard_index: 2
-            shard_number: 3
-            shard_count: 8
-          - shard_index: 3
-            shard_number: 4
-            shard_count: 8
-          - shard_index: 4
-            shard_number: 5
-            shard_count: 8
-          - shard_index: 5
-            shard_number: 6
-            shard_count: 8
-          - shard_index: 6
-            shard_number: 7
-            shard_count: 8
-          - shard_index: 7
-            shard_number: 8
-            shard_count: 8
     defaults:
       run:
         working-directory: mobile/
@@ -115,8 +99,16 @@ jobs:
           cache: true
       - name: 📦 Install dependencies
         run: flutter pub get
-      - name: 🚀 Run Flutter test shard
-        run: scripts/ci/run_flutter_test_shard.sh ${{ matrix.shard_index }} ${{ matrix.shard_count }}
+      - name: 🛠️ Install Very Good CLI
+        run: dart pub global activate very_good_cli
+      - name: 🚀 Run Flutter tests
+        # concurrency=2 is a compromise: the merged runner runs alongside
+        # one tagged file at a time, keeping most of the parallel speedup
+        # while halving the chance of singleton/DB races between tagged
+        # files (e.g. AppDatabase "database is locked", path_provider
+        # pollution). concurrency=1 worked but pushed the job past 1 hour
+        # because each tagged file pays a full Dart VM startup cost.
+        run: very_good test --optimization --concurrency=2 --exclude-tags integration --test-randomize-ordering-seed random
   mobile-ci:
     name: Mobile CI
     if: ${{ always() }}

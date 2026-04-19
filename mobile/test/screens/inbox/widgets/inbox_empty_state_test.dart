@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 
 void main() {
@@ -8,6 +9,8 @@ void main() {
       testWidgets('renders "No messages yet" text', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: InboxEmptyState()),
           ),
         );
@@ -18,6 +21,8 @@ void main() {
       testWidgets('renders encouraging subtext', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: InboxEmptyState()),
           ),
         );

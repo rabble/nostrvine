@@ -11,8 +11,8 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/state/curation_state.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'curation_providers.g.dart';
 

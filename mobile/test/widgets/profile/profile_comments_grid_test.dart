@@ -1,3 +1,4 @@
+@Tags(['skip_very_good_optimization'])
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/profile/profile_comments_grid.dart';
 
 import '../../helpers/go_router.dart';
@@ -62,6 +64,8 @@ void main() {
 
     Widget buildSubject({bool isOwnProfile = true, MockGoRouter? goRouter}) {
       final app = MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: Scaffold(
           body: BlocProvider<ProfileCommentsBloc>.value(
@@ -99,7 +103,6 @@ void main() {
         when(() => mockBloc.state).thenReturn(
           const ProfileCommentsState(
             status: ProfileCommentsStatus.failure,
-            error: 'Failed to load comments',
           ),
         );
 
@@ -294,6 +297,8 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               theme: VineTheme.theme,
               home: Scaffold(
                 body: NestedScrollView(
@@ -340,6 +345,8 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               theme: VineTheme.theme,
               home: Scaffold(
                 body: NestedScrollView(

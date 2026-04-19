@@ -12,7 +12,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
-import 'package:openvine/models/video_category.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_category_name.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/widgets/categories/category_visuals.dart';
@@ -39,10 +40,13 @@ class CategoryGalleryScreen extends ConsumerStatefulWidget {
 class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
   final StreamController<List<VideoEvent>> _videosStreamController =
       StreamController<List<VideoEvent>>.broadcast();
+  final StreamController<bool> _hasMoreStreamController =
+      StreamController<bool>.broadcast();
 
   @override
   void dispose() {
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -59,9 +63,12 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
         currentUserPubkey: currentUserPubkey,
       )..add(CategorySelected(widget.category)),
       child: BlocListener<CategoriesBloc, CategoriesState>(
-        listenWhen: (previous, current) => previous.videos != current.videos,
+        listenWhen: (previous, current) =>
+            previous.videos != current.videos ||
+            previous.hasMoreVideos != current.hasMoreVideos,
         listener: (_, state) {
           _videosStreamController.add(state.videos);
+          _hasMoreStreamController.add(state.hasMoreVideos);
         },
         child: BlocBuilder<CategoriesBloc, CategoriesState>(
           builder: (context, state) {
@@ -102,7 +109,13 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
                         const CategoryVideosLoadMore(),
                       );
                     },
-                    contextTitle: widget.category.displayName,
+                    hasMoreStream: _hasMoreStreamController.stream.startWith(
+                      state.hasMoreVideos,
+                    ),
+                    contextTitle: localizedCategoryName(
+                      context.l10n,
+                      widget.category.name,
+                    ),
                   ),
                 );
               },
@@ -273,7 +286,7 @@ class _CategoryGalleryHeader extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.only(top: 18),
                     child: Text(
-                      category.displayName,
+                      localizedCategoryName(context.l10n, category.name),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: VineTheme.titleMediumFont().copyWith(

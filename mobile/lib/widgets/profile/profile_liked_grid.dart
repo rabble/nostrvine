@@ -9,15 +9,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Grid widget displaying user's liked videos
 ///
@@ -81,8 +82,8 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
         }
 
         if (state.status == ProfileLikedVideosStatus.failure) {
-          return const ProfileTabErrorState(
-            message: 'Error loading liked videos',
+          return ProfileTabErrorState(
+            message: context.l10n.profileErrorLoadingLiked,
           );
         }
 
@@ -91,10 +92,10 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
         if (likedVideos.isEmpty) {
           return ProfileTabEmptyState(
             icon: DivineIconName.heart,
-            title: 'No Liked Videos Yet',
+            title: context.l10n.profileNoLikedVideosTitle,
             subtitle: widget.isOwnProfile
-                ? 'Videos you like will appear here'
-                : 'Videos they like will appear here',
+                ? context.l10n.profileLikedOwnEmpty
+                : context.l10n.profileLikedOtherEmpty,
           );
         }
 

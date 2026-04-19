@@ -388,18 +388,32 @@ class VideoEvent {
           // Event reference - check for audio reference marker
           // Format: ["e", "<audio-event-id>", "<relay>", "audio"]
           // The marker can be at index 2 (no relay) or index 3 (with relay)
+          // Also recognize bundled sound IDs (prefixed "bundled_") even
+          // without the "audio" marker for backward compatibility.
           // Only use the first audio reference found
-          if (tag.length >= 3 && audioEventId == null) {
-            final marker = tag.length >= 4 ? tag[3] : tag[2];
-            if (marker == 'audio' && tagValue.isNotEmpty) {
+          if (audioEventId == null && tagValue.isNotEmpty) {
+            if (tag.length >= 3) {
+              final marker = tag.length >= 4 ? tag[3] : tag[2];
+              if (marker == 'audio') {
+                audioEventId = tagValue;
+                if (tag.length >= 4 && tag[2].isNotEmpty) {
+                  audioEventRelay = tag[2];
+                }
+                developer.log(
+                  '🎵 Found audio reference: $audioEventId '
+                  '(relay: $audioEventRelay)',
+                  name: 'VideoEvent',
+                );
+              }
+            }
+            // Bundled sounds may lack the "audio" marker
+            if (audioEventId == null && tagValue.startsWith('bundled_')) {
               audioEventId = tagValue;
-              // Relay hint is at index 2 if marker is at index 3
-              if (tag.length >= 4 && tag[2].isNotEmpty) {
+              if (tag.length >= 3 && tag[2].isNotEmpty) {
                 audioEventRelay = tag[2];
               }
               developer.log(
-                '🎵 Found audio reference: $audioEventId '
-                '(relay: $audioEventRelay)',
+                '🎵 Found bundled audio reference: $audioEventId',
                 name: 'VideoEvent',
               );
             }
@@ -814,6 +828,18 @@ class VideoEvent {
   /// Total loops combining archived Vine loops and live diVine views.
   int get totalLoops =>
       (originalLoops ?? 0) + (int.tryParse(rawTags['views'] ?? '') ?? 0);
+
+  /// Whether this video carries any loop-count metadata.
+  ///
+  /// Used by the fullscreen player to decide whether to render
+  /// `"$totalLoops loops"` or fall back to relative time. Returns true when
+  /// any of the three loop-related fields is present, even when the
+  /// derived [totalLoops] is zero (a deliberate `0` count is still
+  /// metadata).
+  bool get hasLoopMetadata =>
+      originalLoops != null ||
+      rawTags.containsKey('loops') ||
+      rawTags.containsKey('views');
 
   /// Returns true if this video has an audio reference (Kind 1063).
   bool get hasAudioReference => audioEventId != null;

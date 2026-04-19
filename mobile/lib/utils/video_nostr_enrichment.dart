@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Enrich REST API videos with full Nostr event data.
 ///
@@ -64,7 +64,9 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
         // Check if Nostr event has original Vine metric tags
 
         return video.copyWith(
-          rawTags: parsed.rawTags,
+          // Merge: keep REST-only keys (e.g. `views` engagement metric that
+          // Nostr events never carry), but let Nostr win on key collisions.
+          rawTags: {...video.rawTags, ...parsed.rawTags},
           contentWarningLabels: video.contentWarningLabels.isEmpty
               ? parsed.contentWarningLabels
               : video.contentWarningLabels,

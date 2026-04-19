@@ -2,15 +2,17 @@
 // ABOUTME: Covers share sheet rendering, contact row, more actions, feature
 // ABOUTME: flags, save/bookmark, copy link, share via, and error handling
 
+@Tags(['skip_very_good_optimization'])
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
@@ -29,15 +31,18 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _FakeVideoEvent extends Fake implements VideoEvent {}
 
-/// Fake notifier that provides test data for curatedListsStateProvider
-List<CuratedList> _fakeLists = [];
-
+/// Fake notifier that provides test data for curatedListsStateProvider.
+///
+/// Uses a static field instead of a module-level variable so that state
+/// does not leak between test files when running in a shared isolate.
 class _FakeCuratedListsState extends CuratedListsState {
+  static List<CuratedList> fakeLists = [];
+
   @override
   CuratedListService? get service => null;
 
   @override
-  Future<List<CuratedList>> build() async => _fakeLists;
+  Future<List<CuratedList>> build() async => fakeLists;
 }
 
 void main() {
@@ -76,7 +81,7 @@ void main() {
 
     mockBookmarkService = _MockBookmarkService();
     mockVideoSharingService = _MockVideoSharingService();
-    _fakeLists = [];
+    _FakeCuratedListsState.fakeLists = [];
 
     when(
       () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
@@ -110,6 +115,8 @@ void main() {
         ).overrideWithValue(debugToolsEnabled),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: ShareActionButton(video: testVideo)),
       ),
     );
@@ -341,6 +348,8 @@ void main() {
           ).overrideWithValue(true),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ShareActionButton(video: testVideo)),
         ),
       );

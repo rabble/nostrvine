@@ -6,11 +6,11 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
@@ -109,6 +109,9 @@ void main() {
       // Default stub for blocklist checks
       when(
         () => mockContentBlocklistService.isBlocked(any()),
+      ).thenReturn(false);
+      when(
+        () => mockContentBlocklistService.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
     });
 
@@ -2456,6 +2459,10 @@ void main() {
               .having((s) => s.mentionSuggestions, 'suggestions', isEmpty),
         ],
       );
+
+      // Blocklist filtering for mention suggestions is now handled at the
+      // repository level (ProfileRepository.blockFilter + CommentsRepository
+      // .blockFilter), not in the BLoC. See repository-level tests.
     });
 
     group('MentionSuggestionsCleared', () {
@@ -2737,35 +2744,6 @@ void main() {
               id: validId('existing'),
               content: 'Already here',
               authorPubkey: validId('someone'),
-              createdAt: DateTime.now(),
-              rootEventId: validId('root'),
-              rootAuthorPubkey: validId('author'),
-            ),
-          ),
-        ),
-        expect: () => <CommentsState>[],
-      );
-
-      blocTest<CommentsBloc, CommentsState>(
-        'skips comment from blocked user',
-        setUp: () {
-          when(
-            () => mockContentBlocklistService.isBlocked(validId('blocked')),
-          ).thenReturn(true);
-        },
-        seed: () => CommentsState(
-          status: CommentsStatus.success,
-          rootEventId: validId('root'),
-          rootEventKind: testRootEventKind,
-          rootAuthorPubkey: validId('author'),
-        ),
-        build: createBloc,
-        act: (bloc) => bloc.add(
-          NewCommentReceived(
-            Comment(
-              id: validId('blockedComment'),
-              content: 'From blocked user',
-              authorPubkey: validId('blocked'),
               createdAt: DateTime.now(),
               rootEventId: validId('root'),
               rootAuthorPubkey: validId('author'),

@@ -1,4 +1,5 @@
 // Test for BackgroundActivityManager functionality
+@Tags(['skip_very_good_optimization'])
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/background_activity_manager.dart';
@@ -38,12 +39,17 @@ void main() {
     late BackgroundActivityManager manager;
     late TestBackgroundService testService;
 
-    setUp(() {
+    setUp(() async {
       manager = BackgroundActivityManager();
       testService = TestBackgroundService();
 
-      // Clear any previously registered services for clean test state
-      // In a real implementation, we might want a reset method for testing
+      // BackgroundActivityManager is a process-wide singleton. Tests in this
+      // file share the same instance and run in random order, so reset its
+      // state to foreground + drain any pending lifecycle notifications before
+      // each test. Otherwise a prior test that transitioned to background can
+      // cause "should provide status information" to observe stale state.
+      manager.onAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await pumpEventQueue();
     });
 
     test('should start in foreground state', () {
@@ -59,9 +65,12 @@ void main() {
 
       expect(manager.isAppInBackground, isTrue);
 
-      // Wait for async service notifications to complete
-      // The implementation uses Future.microtask() which needs event loop processing
-      await Future.delayed(const Duration(milliseconds: 10));
+      // _performImmediateBackgroundActions wraps each service notification in
+      // Future.microtask(() async { await Future.any([Future(fn), ...]); }),
+      // so the notification chain is microtask → Timer(0) → completion. Drain
+      // the event queue deterministically instead of relying on a fixed
+      // wall-clock delay, which is flaky under CI load.
+      await pumpEventQueue();
 
       expect(testService.backgroundCalled, isTrue);
     });
@@ -72,8 +81,8 @@ void main() {
       // Go to background then resume
       manager.onAppLifecycleStateChanged(AppLifecycleState.paused);
 
-      // Wait for background notification
-      await Future.delayed(const Duration(milliseconds: 10));
+      // Drain the background notification chain before transitioning back.
+      await pumpEventQueue();
 
       manager.onAppLifecycleStateChanged(AppLifecycleState.resumed);
 

@@ -11,10 +11,10 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class UserListPeopleScreen extends ConsumerStatefulWidget {
   const UserListPeopleScreen({required this.userList, super.key});
@@ -347,7 +347,11 @@ class _PeopleCarousel extends StatelessWidget {
         height: 100,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
+          padding: const EdgeInsetsDirectional.only(
+            start: 16,
+            end: 16,
+            top: 12,
+          ),
           itemCount: pubkeys.length,
           itemBuilder: (context, index) =>
               _PeopleAvatarItem(pubkey: pubkeys[index]),
@@ -377,7 +381,7 @@ class _PeopleAvatarItem extends ConsumerWidget {
           context.push(OtherProfileScreen.pathForNpub(npub));
         },
         child: Padding(
-          padding: const EdgeInsets.only(right: 12),
+          padding: const EdgeInsetsDirectional.only(end: 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

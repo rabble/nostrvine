@@ -42,15 +42,9 @@ void main() {
     });
 
     test('integratedApps flag should have correct metadata', () {
-      expect(
-        FeatureFlag.integratedApps.displayName,
-        equals('Integrated Apps'),
-      );
+      expect(FeatureFlag.integratedApps.displayName, equals('Integrated Apps'));
       expect(FeatureFlag.integratedApps.description, isNotEmpty);
-      expect(
-        FeatureFlag.integratedApps.description.length,
-        greaterThan(10),
-      );
+      expect(FeatureFlag.integratedApps.description.length, greaterThan(10));
     });
 
     test('should provide meaningful descriptions', () {

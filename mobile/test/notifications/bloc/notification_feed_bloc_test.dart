@@ -5,11 +5,11 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 
 class _MockNotificationRepository extends Mock
     implements NotificationRepository {}
@@ -31,6 +31,7 @@ SingleNotification _single({
   String pubkey = 'abc123',
   String displayName = 'Alice',
   bool isRead = false,
+  String? targetEventId,
 }) {
   return SingleNotification(
     id: id,
@@ -38,6 +39,28 @@ SingleNotification _single({
     actor: _actor(pubkey: pubkey, displayName: displayName),
     timestamp: DateTime(2026),
     isRead: isRead,
+    targetEventId: targetEventId,
+  );
+}
+
+/// Test grouped notification helper.
+GroupedNotification _grouped({
+  String id = 'group_like_video1',
+  String? targetEventId = 'video1',
+  int totalCount = 3,
+  bool isRead = false,
+}) {
+  return GroupedNotification(
+    id: id,
+    type: NotificationKind.like,
+    actors: [
+      _actor(),
+      _actor(pubkey: 'def456', displayName: 'Bob'),
+    ],
+    totalCount: totalCount,
+    timestamp: DateTime(2026),
+    isRead: isRead,
+    targetEventId: targetEventId,
   );
 }
 
@@ -46,9 +69,20 @@ void main() {
     late _MockNotificationRepository mockNotificationRepo;
     late _MockFollowRepository mockFollowRepo;
 
+    setUpAll(() {
+      registerFallbackValue(_single());
+    });
+
     setUp(() {
       mockNotificationRepo = _MockNotificationRepository();
       mockFollowRepo = _MockFollowRepository();
+
+      when(
+        () => mockNotificationRepo.filterRealtimeNotification(any()),
+      ).thenAnswer(
+        (invocation) =>
+            invocation.positionalArguments.first as NotificationItem,
+      );
     });
 
     NotificationFeedBloc createBloc() => NotificationFeedBloc(
@@ -256,6 +290,23 @@ void main() {
         ),
         expect: () => <NotificationFeedState>[],
       );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'deduplicates by targetEventId — skips if grouped notification '
+        'already covers that video',
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_grouped()],
+          unreadCount: 1,
+        ),
+        act: (bloc) => bloc.add(
+          NotificationFeedRealtimeReceived(
+            _single(id: 'new-like', targetEventId: 'video1'),
+          ),
+        ),
+        expect: () => <NotificationFeedState>[],
+      );
     });
 
     group('NotificationFeedItemTapped', () {
@@ -350,6 +401,29 @@ void main() {
         act: (bloc) => bloc.add(NotificationFeedFollowBack('pub123')),
         expect: () => <NotificationFeedState>[],
         errors: () => [isA<Exception>()],
+      );
+    });
+
+    group('realtime blocklist filtering', () {
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'skips realtime notification when repository filter returns null',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.filterRealtimeNotification(any()),
+          ).thenReturn(null);
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_single(id: 'existing')],
+          unreadCount: 1,
+        ),
+        act: (bloc) => bloc.add(
+          NotificationFeedRealtimeReceived(
+            _single(id: 'blocked-notif'),
+          ),
+        ),
+        expect: () => <NotificationFeedState>[],
       );
     });
   });

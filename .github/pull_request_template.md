@@ -10,7 +10,7 @@
 
 <!--- Describe your changes in detail -->
 
-**Related Issue:** Closes #
+**Related Issue:** Closes # or Relates to #
 
 ## Type of Change
 

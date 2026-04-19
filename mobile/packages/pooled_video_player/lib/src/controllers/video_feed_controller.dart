@@ -23,6 +23,62 @@ enum LoadState {
   error,
 }
 
+/// Temporary diagnostic switch for the iOS playback investigation.
+///
+/// When `true`, [VideoFeedController] emits extra source-selection and
+/// session-summary logs alongside the existing stutter/stall diagnostics.
+/// The goal is to answer: which media source (progressive /720p.mp4, raw
+/// blob, HLS, or original) is chosen on each platform, and which one is
+/// actually streaming when a pause or stall is observed.
+///
+/// Leave enabled while we still need the data; flip to `false` (or delete
+/// along with the log call sites) once the iOS pause cause is known.
+const bool kPlaybackDiagnosticsEnabled = true;
+
+/// Classification of a playback URL used by diagnostic logs.
+///
+/// Keep short and stable — these strings are compared in logs and tests.
+enum PlaybackSourceKind {
+  /// Divine progressive derivative (e.g. `/720p.mp4`, `/480p.mp4`).
+  progressive,
+
+  /// Divine HLS master/variant playlist (`/hls/master.m3u8`).
+  hls,
+
+  /// Raw Divine blob (the bare hash URL, served as the original upload).
+  raw,
+
+  /// Anything else — non-Divine host, original event URL, unknown format.
+  original,
+}
+
+/// Classifies a playback URL into a [PlaybackSourceKind].
+///
+/// Visible for tests.
+@visibleForTesting
+PlaybackSourceKind classifyPlaybackSourceKind(String url) {
+  if (url.isEmpty) return PlaybackSourceKind.original;
+  final hash = _extractCanonicalDivineBlobHash(url);
+  if (hash == null) return PlaybackSourceKind.original;
+
+  final lower = url.toLowerCase();
+  if (lower.contains('/hls/')) return PlaybackSourceKind.hls;
+  if (RegExp(r'/\d{3,4}p\.mp4($|\?)').hasMatch(lower)) {
+    return PlaybackSourceKind.progressive;
+  }
+  // Bare canonical raw blob URL ends with the hash itself.
+  if (lower.endsWith(hash.toLowerCase())) return PlaybackSourceKind.raw;
+  return PlaybackSourceKind.original;
+}
+
+String _sourceKindLabel(String url) => classifyPlaybackSourceKind(url).name;
+
+String _sourceKindLabelOrNone(String? url) =>
+    url == null ? 'none' : _sourceKindLabel(url);
+
+List<String> _sourceKindLabels(Iterable<String> urls) =>
+    urls.map(_sourceKindLabel).toList(growable: false);
+
 String? _extractCanonicalDivineBlobHash(String url) {
   try {
     final uri = Uri.parse(url);
@@ -186,8 +242,37 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, List<String>> _playbackSources = {};
   final Map<int, int> _playbackSourceIndices = {};
   final Map<int, int> _stallRetryCount = {};
+
+  // Playback diagnostics counters (per index).  Only written when
+  // [kPlaybackDiagnosticsEnabled] is true — cheap no-op otherwise.
+  final Map<int, int> _diagLoadFailovers = {};
+  final Map<int, int> _diagStaleRecoveries = {};
+  final Map<int, int> _diagStaleEscalations = {};
+  final Map<int, int> _diagStuckFailovers = {};
   final Set<int> _readyVideosAwaitingRecovery = {};
   final Set<int> _slowLoadIndices = {};
+
+  /// Indices that have ever been the user's "current video" in their
+  /// current player generation.
+  ///
+  /// Used by [_resume] to distinguish two cases that look identical from
+  /// the player's perspective but mean very different things:
+  ///
+  /// - **First transition from preload→current** (index NOT in set):
+  ///   The player was prepared by [_pauseAndRewindPreloaded], which on
+  ///   iOS via media_kit/mpv may have failed to actually rewind to
+  ///   position 0 — `player.state.position` cannot be trusted. The
+  ///   resume must explicitly seek to zero before play().
+  ///
+  /// - **Swipe-back to a previously-watched video** (index IN set):
+  ///   The player was paused by the swipe-away path at the user's
+  ///   actual last-watched position. That position is meaningful and
+  ///   must be preserved — no force-seek.
+  ///
+  /// The entry is added when [_resume] runs for an index, and cleared
+  /// when the index is released or its player is evicted, so a fresh
+  /// preload after a release is treated as a new "first transition".
+  final Set<int> _userVisitedIndices = {};
   final Map<int, Completer<void>> _readyCompleters = {};
   int _preloadGeneration = 0;
   Timer? _stuckPlaybackTimer;
@@ -230,6 +315,34 @@ class VideoFeedController extends ChangeNotifier {
   /// video. Used together with [_positionHasAdvanced] to detect the first
   /// real position change.
   int? _initialPositionMs;
+
+  /// Wall-clock time (ms since epoch) when the slow-playback rate check
+  /// window started for the current video. See [_checkPlaybackRate].
+  int? _rateCheckWallStartMs;
+
+  /// Position (ms) at the start of the current slow-playback rate window.
+  int? _rateCheckPositionStartMs;
+
+  /// Wall-clock time (ms since epoch) of the last `player_state_snapshot`
+  /// log line. Used to throttle snapshots to roughly one per interval.
+  int? _lastStateSnapshotWallMs;
+
+  /// Rate check window duration in ms. Playback rate is evaluated over
+  /// windows of this length; see [_checkPlaybackRate].
+  static const _playbackRateWindowMs = 2000;
+
+  /// Minimum `positionDelta / wallDelta` ratio (as a percentage) below
+  /// which playback is considered slow. 50% = half real-time.
+  static const _slowPlaybackRateThresholdPct = 50;
+
+  /// Minimum position advance (in ms) before a rate check is allowed
+  /// to flag the window as slow. If position didn't advance at all,
+  /// the existing stale-position watchdog handles it; the slow-playback
+  /// check is specifically for the "crawling forward" case.
+  static const _slowPlaybackMinAdvanceMs = 50;
+
+  /// Minimum interval between `player_state_snapshot` log lines, in ms.
+  static const _stateSnapshotIntervalMs = 2000;
 
   /// Number of consecutive stale heartbeats before triggering recovery.
   /// With a 100ms heartbeat interval, this means ~800ms of confirmed
@@ -479,6 +592,8 @@ class VideoFeedController extends ChangeNotifier {
     required int startIndex,
     required Stopwatch? loadStopwatch,
     required String retryLogLabel,
+    Map<String, String>? requestHeaders,
+    String diagnosticsReason = 'load_error',
   }) async {
     var attemptIndex = startIndex;
 
@@ -486,19 +601,42 @@ class VideoFeedController extends ChangeNotifier {
       final source = playbackSources[attemptIndex];
 
       try {
-        await player.open(Media(source), play: false);
+        await player.open(
+          Media(source, httpHeaders: requestHeaders),
+          play: false,
+        );
         return (openedSource: source, sourceIndex: attemptIndex);
       } on Exception catch (error) {
         final nextAttempt = attemptIndex + 1;
         if (nextAttempt >= playbackSources.length) rethrow;
+        final nextSource = playbackSources[nextAttempt];
 
-        _logDebug(
-          '$retryLogLabel ${_videoDebugDetails(index)} '
-          'failedSource=$source '
-          'retrySource=${playbackSources[nextAttempt]} '
-          'elapsedMs=${loadStopwatch?.elapsedMilliseconds} '
-          'error=$error',
-        );
+        if (kPlaybackDiagnosticsEnabled) {
+          _diagLoadFailovers.update(
+            index,
+            (v) => v + 1,
+            ifAbsent: () => 1,
+          );
+          _logDebug(
+            '$retryLogLabel ${_videoDebugDetails(index)} '
+            'reason=$diagnosticsReason '
+            'failedSource=$source '
+            'fromKind=${_sourceKindLabel(source)} '
+            'retrySource=$nextSource '
+            'toKind=${_sourceKindLabel(nextSource)} '
+            'attempt=$attemptIndex '
+            'elapsedMs=${loadStopwatch?.elapsedMilliseconds} '
+            'error=$error',
+          );
+        } else {
+          _logDebug(
+            '$retryLogLabel ${_videoDebugDetails(index)} '
+            'failedSource=$source '
+            'retrySource=$nextSource '
+            'elapsedMs=${loadStopwatch?.elapsedMilliseconds} '
+            'error=$error',
+          );
+        }
         attemptIndex = nextAttempt;
       }
     }
@@ -591,11 +729,30 @@ class VideoFeedController extends ChangeNotifier {
       return;
     }
 
-    _logWarning(
-      'stuck_failover ${_videoDebugDetails(index)} '
-      'failedSource=${_openedSources[index]} '
-      'retrySource=${playbackSources[nextSourceIndex]}',
-    );
+    final failedSource = _openedSources[index];
+    final retrySource = playbackSources[nextSourceIndex];
+    if (kPlaybackDiagnosticsEnabled) {
+      _diagStuckFailovers.update(
+        index,
+        (v) => v + 1,
+        ifAbsent: () => 1,
+      );
+      _logWarning(
+        'stuck_failover ${_videoDebugDetails(index)} '
+        'reason=stuck_playback '
+        'failedSource=$failedSource '
+        'fromKind=${_sourceKindLabelOrNone(failedSource)} '
+        'retrySource=$retrySource '
+        'toKind=${_sourceKindLabel(retrySource)} '
+        'attempt=$nextSourceIndex',
+      );
+    } else {
+      _logWarning(
+        'stuck_failover ${_videoDebugDetails(index)} '
+        'failedSource=$failedSource '
+        'retrySource=$retrySource',
+      );
+    }
 
     _stopLoadWatchdog(index);
     _stopPositionTimer(index);
@@ -610,8 +767,10 @@ class VideoFeedController extends ChangeNotifier {
         player: player,
         playbackSources: playbackSources,
         startIndex: nextSourceIndex,
+        requestHeaders: _videos[index].requestHeaders,
         loadStopwatch: _loadStopwatches[index],
         retryLogLabel: 'stuck_retry',
+        diagnosticsReason: 'stuck_playback',
       );
       _playbackSourceIndices[index] = reopened.sourceIndex;
       _openedSources[index] = reopened.openedSource;
@@ -644,6 +803,16 @@ class VideoFeedController extends ChangeNotifier {
     _logDebug('retry_load ${_videoDebugDetails(index)}');
     _releasePlayer(index);
     _updatePreloadWindow(_currentIndex);
+  }
+
+  /// Updates request headers for the video at [index] and retries loading it.
+  void updateRequestHeadersAndRetry(
+    int index,
+    Map<String, String>? requestHeaders,
+  ) {
+    if (_isDisposed || index < 0 || index >= _videos.length) return;
+    _videos[index] = _videos[index].copyWith(requestHeaders: requestHeaders);
+    retryLoad(index);
   }
 
   /// Called when the visible page changes.
@@ -807,6 +976,146 @@ class VideoFeedController extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  /// Replaces the feed's video list and rebuilds index-owned playback state.
+  ///
+  /// Use this when the source list can shrink, reorder, or otherwise stop
+  /// being append-only. [addVideos] intentionally handles pagination only;
+  /// it cannot remove stale indices from the controller.
+  void replaceVideos(List<VideoItem> videos, {int? currentIndex}) {
+    if (_isDisposed) return;
+
+    final nextVideos = List<VideoItem>.from(videos);
+    final nextIndex = currentIndex ?? _currentIndex;
+    final clampedIndex = nextVideos.isEmpty
+        ? 0
+        : nextIndex.clamp(0, nextVideos.length - 1);
+
+    if (_hasSamePlaybackList(_videos, nextVideos) &&
+        clampedIndex == _currentIndex) {
+      return;
+    }
+
+    _logDebug(
+      'replace_videos oldCount=${_videos.length} '
+      'newCount=${nextVideos.length} current=$_currentIndex '
+      'nextCurrent=$clampedIndex',
+    );
+
+    _preloadGeneration++;
+    _releasePlaybackStateForReplacement();
+
+    _videos
+      ..clear()
+      ..addAll(nextVideos);
+    _currentIndex = clampedIndex;
+
+    if (_isActive && _videos.isNotEmpty) {
+      _updatePreloadWindow(_currentIndex);
+    }
+
+    notifyListeners();
+  }
+
+  bool _hasSamePlaybackList(List<VideoItem> current, List<VideoItem> next) {
+    if (current.length != next.length) return false;
+    for (var i = 0; i < current.length; i++) {
+      final a = current[i];
+      final b = next[i];
+      if (a.id != b.id ||
+          a.url != b.url ||
+          a.originalUrl != b.originalUrl ||
+          !mapEquals(a.requestHeaders, b.requestHeaders)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _releasePlaybackStateForReplacement() {
+    _stuckPlaybackTimer?.cancel();
+    _stuckPlaybackTimer = null;
+
+    for (final completer in _readyCompleters.values) {
+      if (!completer.isCompleted) completer.complete();
+    }
+    _readyCompleters.clear();
+
+    for (final subscription in _bufferSubscriptions.values) {
+      unawaited(subscription.cancel());
+    }
+    _bufferSubscriptions.clear();
+
+    for (final subscription in _playingSubscriptions.values) {
+      unawaited(subscription.cancel());
+    }
+    _playingSubscriptions.clear();
+
+    for (final subscription in _errorSubscriptions.values) {
+      unawaited(subscription.cancel());
+    }
+    _errorSubscriptions.clear();
+
+    for (final timer in _positionTimers.values) {
+      timer.cancel();
+    }
+    _positionTimers.clear();
+
+    for (final timer in _loadWatchdogTimers.values) {
+      timer.cancel();
+    }
+    _loadWatchdogTimers.clear();
+
+    final urlsToRelease = <String>[];
+    for (var i = 0; i < _videos.length; i++) {
+      if (_loadedPlayers.containsKey(i)) {
+        urlsToRelease.add(_videos[i].url);
+      }
+    }
+
+    for (final pooledPlayer in _loadedPlayers.values) {
+      unawaited(pooledPlayer.player.setVolume(0));
+      unawaited(pooledPlayer.player.pause());
+    }
+
+    _loadedPlayers.clear();
+    _loadStates.clear();
+    _errorTypes.clear();
+    _loadingIndices.clear();
+    for (final stopwatch in _loadStopwatches.values) {
+      stopwatch.stop();
+    }
+    _loadStopwatches.clear();
+    _openedSources.clear();
+    _stallRetryCount.clear();
+    _readyVideosAwaitingRecovery.clear();
+    _slowLoadIndices.clear();
+    _playbackSources.clear();
+    _playbackSourceIndices.clear();
+    _diagLoadFailovers.clear();
+    _diagStaleRecoveries.clear();
+    _diagStaleEscalations.clear();
+    _diagStuckFailovers.clear();
+    _userVisitedIndices.clear();
+
+    _lastHeartbeatPositionMs = null;
+    _staleHeartbeatCount = 0;
+    _staleRecoveryAttempts = 0;
+    _staleGraceHeartbeats = 0;
+    _positionHasAdvanced = false;
+    _initialPositionMs = null;
+    _rateCheckWallStartMs = null;
+    _rateCheckPositionStartMs = null;
+    _lastStateSnapshotWallMs = null;
+
+    for (final entry in _indexNotifiers.entries) {
+      entry.value.value = const VideoIndexState();
+    }
+
+    for (final url in urlsToRelease) {
+      unawaited(pool.release(url));
+    }
   }
 
   void _updatePreloadWindow(int index) {
@@ -1020,12 +1329,29 @@ class VideoFeedController extends ChangeNotifier {
         player: pooledPlayer.player,
         playbackSources: playbackSources,
         startIndex: sourceIndex,
+        requestHeaders: video.requestHeaders,
         loadStopwatch: loadStopwatch,
         retryLogLabel: 'open_retry',
       );
       await pooledPlayer.player.setPlaylistMode(PlaylistMode.single);
       _playbackSourceIndices[index] = opened.sourceIndex;
       _openedSources[index] = opened.openedSource;
+
+      if (kPlaybackDiagnosticsEnabled) {
+        final fallbackList = playbackSources
+            .skip(opened.sourceIndex + 1)
+            .toList(growable: false);
+        _logDebug(
+          'source_selected ${_videoDebugDetails(index)} '
+          'resolvedSource=${opened.openedSource} '
+          'sourceKind=${_sourceKindLabel(opened.openedSource)} '
+          'sourceIndex=${opened.sourceIndex} '
+          'totalSources=${playbackSources.length} '
+          'fallbackSources=${fallbackList.join(',')} '
+          'fallbackKinds=${_sourceKindLabels(fallbackList).join(',')} '
+          'elapsedMs=${loadStopwatch.elapsedMilliseconds}',
+        );
+      }
 
       _logDebug(
         'open_complete ${_videoDebugDetails(index)} '
@@ -1105,6 +1431,9 @@ class VideoFeedController extends ChangeNotifier {
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
     _loadingIndices.remove(index);
+    // Same reason as in [_releasePlayer]: a fresh preload after an
+    // eviction should be treated as a new "first transition".
+    _userVisitedIndices.remove(index);
     _notifyIndex(index);
   }
 
@@ -1389,12 +1718,40 @@ class VideoFeedController extends ChangeNotifier {
     bool forcePlay = true,
   }) async {
     try {
-      // Seek to zero only when the video has reached the end so it loops.
-      // Mid-playback position is preserved for swiped-away videos.
-      // Preloaded videos are already at position zero from _onBufferReady.
-      final duration = player.state.duration;
-      if (duration > Duration.zero && player.state.position >= duration) {
+      // First-resume force-seek to zero.
+      //
+      // _pauseAndRewindPreloaded is supposed to leave preloaded players
+      // at position 0, but on iOS via media_kit/mpv the seek-to-zero
+      // silently fails: by the time the user swipes here,
+      // `player.state.position` reports the muted-buffer-fill stop point
+      // (~400ms typical, sometimes near end-of-video). The previous
+      // implementation trusted "preloaded videos are at zero" and only
+      // seeked at end-of-video, so every preloaded clip started ~400ms
+      // in. See journal:
+      // 2026-04-10-flutter-pooled-player-preload-rewind-silent-failure.md
+      //
+      // Fix: on the FIRST resume of an index in its current player
+      // generation, unconditionally seek to zero. Subsequent resumes
+      // (swipe-back to a video the user has already watched) preserve
+      // the user's last-watched position via the existing path below.
+      final isFirstResume = !_userVisitedIndices.contains(index);
+      if (isFirstResume) {
+        final positionBeforeMs = player.state.position.inMilliseconds;
+        _logDebug(
+          'resume_force_seek_zero ${_videoDebugDetails(index)} '
+          'positionBefore=$positionBeforeMs '
+          'reason=preload_to_current',
+        );
         await player.seek(Duration.zero);
+        _userVisitedIndices.add(index);
+      } else {
+        // Loop-end seek for swipe-backs: if the previous playback ran
+        // off the end of the clip and was paused there, seek to zero on
+        // resume so the loop restarts.
+        final duration = player.state.duration;
+        if (duration > Duration.zero && player.state.position >= duration) {
+          await player.seek(Duration.zero);
+        }
       }
 
       // Guard: user may have scrolled away during the seek.
@@ -1448,6 +1805,11 @@ class VideoFeedController extends ChangeNotifier {
     _staleGraceHeartbeats = _staleGraceAfterPlay;
     _positionHasAdvanced = false;
     _initialPositionMs = null;
+    // Reset slow-playback rate check and state-snapshot windows. The
+    // next timer tick will establish new start values.
+    _rateCheckWallStartMs = null;
+    _rateCheckPositionStartMs = null;
+    _lastStateSnapshotWallMs = null;
 
     // Use the shorter of the caller's interval and the stale-detection
     // interval so both position callbacks and recovery work correctly.
@@ -1461,14 +1823,24 @@ class VideoFeedController extends ChangeNotifier {
       final player = _loadedPlayers[index]?.player;
       if (player == null) return;
 
+      // Read position ONCE per tick and share it across all the
+      // diagnostics + stale watchdog. Reading it multiple times via
+      // `player.state.position` would waste cycles in production AND
+      // burn through test mocks whose `thenAnswer` callbacks advance
+      // state on each call.
+      final positionMs = player.state.position.inMilliseconds;
+
+      // Playback diagnostics for the current video. These run on
+      // every heartbeat but throttle their log output internally.
+      if (kPlaybackDiagnosticsEnabled && index == _currentIndex) {
+        _emitStateSnapshotIfDue(index, player, positionMs);
+        _checkPlaybackRate(index, player, positionMs);
+      }
+
       // Stale-position watchdog: detect and recover from mpv decoder
       // stalls caused by B-frame encoded videos.
       if (index == _currentIndex) {
-        _checkStalePosition(
-          index,
-          player,
-          player.state.position.inMilliseconds,
-        );
+        _checkStalePosition(index, player, positionMs);
       }
 
       // Loop enforcement: seek back to zero when position exceeds
@@ -1489,6 +1861,111 @@ class VideoFeedController extends ChangeNotifier {
         positionCallback?.call(index, player.state.position);
       }
     });
+  }
+
+  /// Detects slowly-advancing playback — the "crawling forward" case
+  /// that the existing [_checkStalePosition] watchdog misses because
+  /// it only flags fully-frozen positions (`positionMs ==
+  /// _lastHeartbeatPositionMs` at exact equality).
+  ///
+  /// Motivation: on iOS via media_kit/mpv a video can enter a state
+  /// where it reports `playing=true buffering=false` but position
+  /// advances at a fraction of wall-clock rate — e.g. 533ms of
+  /// position over 13 seconds of wall time (~4% real-time). The
+  /// stale-position watchdog silently misses this because position
+  /// *is* technically changing between heartbeats, so
+  /// `_staleHeartbeatCount` never increments. To the user it looks
+  /// like the video is frozen.
+  ///
+  /// This method evaluates the position-advance rate over
+  /// [_playbackRateWindowMs] wall-clock windows and logs
+  /// `slow_playback_detected` when the rate drops below
+  /// [_slowPlaybackRateThresholdPct]. The window resets after every
+  /// evaluation so recurring slowness keeps being reported.
+  ///
+  /// Only runs when [kPlaybackDiagnosticsEnabled] is true. Only runs
+  /// for the current video; preloaded background players are
+  /// expected to be paused so their position does not advance.
+  ///
+  /// [positionMs] is the already-read position for this heartbeat
+  /// tick, passed in so we don't read `player.state.position` a
+  /// second time.
+  void _checkPlaybackRate(int index, Player player, int positionMs) {
+    // Don't evaluate rate while buffering or while paused — those are
+    // expected to have zero position advance and would always look
+    // "slow".
+    if (!player.state.playing || player.state.buffering) {
+      _rateCheckWallStartMs = null;
+      _rateCheckPositionStartMs = null;
+      return;
+    }
+
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+    if (_rateCheckWallStartMs == null) {
+      _rateCheckWallStartMs = nowMs;
+      _rateCheckPositionStartMs = positionMs;
+      return;
+    }
+
+    final wallDelta = nowMs - _rateCheckWallStartMs!;
+    if (wallDelta < _playbackRateWindowMs) return;
+
+    final positionDelta = positionMs - _rateCheckPositionStartMs!;
+
+    // If position hasn't advanced at all, that's the stale watchdog's
+    // job. Only log here for the "slow but advancing" case.
+    if (positionDelta > _slowPlaybackMinAdvanceMs) {
+      final ratePct = wallDelta > 0 ? (positionDelta * 100) ~/ wallDelta : 0;
+      if (ratePct < _slowPlaybackRateThresholdPct) {
+        _logWarning(
+          'slow_playback_detected ${_videoDebugDetails(index)} '
+          'positionDeltaMs=$positionDelta '
+          'wallDeltaMs=$wallDelta '
+          'ratePct=$ratePct '
+          'currentPositionMs=$positionMs '
+          'sourceKind=${_sourceKindLabelOrNone(_openedSources[index])}',
+        );
+      }
+    }
+
+    // Start a new window whether we logged or not, so the next window
+    // measures fresh deltas.
+    _rateCheckWallStartMs = nowMs;
+    _rateCheckPositionStartMs = positionMs;
+  }
+
+  /// Emits a periodic `player_state_snapshot` log line that dumps the
+  /// raw `player.state` values regardless of whether the stream
+  /// listeners have fired. Lets us see divergence between what the
+  /// stream last reported (which drives the Dart-side cached state)
+  /// and what mpv actually believes now — e.g. mpv setting
+  /// `core-idle` without emitting a matching `buffering=true` event.
+  ///
+  /// Throttled to [_stateSnapshotIntervalMs] to keep production log
+  /// volume reasonable (~1 line every 2 seconds per active video).
+  ///
+  /// Only runs when [kPlaybackDiagnosticsEnabled] is true.
+  ///
+  /// [positionMs] is the already-read position for this heartbeat
+  /// tick, passed in so we don't read `player.state.position` a
+  /// second time.
+  void _emitStateSnapshotIfDue(int index, Player player, int positionMs) {
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (_lastStateSnapshotWallMs != null &&
+        nowMs - _lastStateSnapshotWallMs! < _stateSnapshotIntervalMs) {
+      return;
+    }
+    _lastStateSnapshotWallMs = nowMs;
+
+    _logDebug(
+      'player_state_snapshot ${_videoDebugDetails(index)} '
+      'playing=${player.state.playing} '
+      'buffering=${player.state.buffering} '
+      'positionMs=$positionMs '
+      'completed=${player.state.completed} '
+      'sourceKind=${_sourceKindLabelOrNone(_openedSources[index])}',
+    );
   }
 
   /// Checks whether the current video's position has stalled. If the position
@@ -1522,7 +1999,8 @@ class VideoFeedController extends ChangeNotifier {
         _positionHasAdvanced = true;
         _logDebug(
           'STUTTER_DEBUG position_first_advance index=$index '
-          'initialMs=$_initialPositionMs newMs=$positionMs',
+          'initialMs=$_initialPositionMs newMs=$positionMs '
+          'sourceKind=${_sourceKindLabelOrNone(_openedSources[index])}',
         );
         // Also unblock preloads now that playback is confirmed.
         _completeReady(index);
@@ -1562,10 +2040,18 @@ class VideoFeedController extends ChangeNotifier {
       // After repeated failed recoveries, the stream is likely corrupt
       // (e.g. missing h264 PPS headers). Give up so the user can swipe past.
       if (_staleRecoveryAttempts > _maxStaleRecoveryAttempts) {
+        if (kPlaybackDiagnosticsEnabled) {
+          _diagStaleEscalations.update(
+            index,
+            (v) => v + 1,
+            ifAbsent: () => 1,
+          );
+        }
         _logError(
           'stale_gave_up index=$index '
           'attempts=$_staleRecoveryAttempts '
           'positionMs=$positionMs '
+          'sourceKind=${_sourceKindLabelOrNone(_openedSources[index])} '
           '${_videoDebugDetails(index)}',
         );
         _staleRecoveryAttempts = 0;
@@ -1577,10 +2063,18 @@ class VideoFeedController extends ChangeNotifier {
         return;
       }
 
+      if (kPlaybackDiagnosticsEnabled) {
+        _diagStaleRecoveries.update(
+          index,
+          (v) => v + 1,
+          ifAbsent: () => 1,
+        );
+      }
       _logDebug(
         'stale_position_detected index=$index '
         'positionMs=$positionMs '
         'attempt=$_staleRecoveryAttempts '
+        'sourceKind=${_sourceKindLabelOrNone(_openedSources[index])} '
         '${_videoDebugDetails(index)}',
       );
       _recoverStalePlayer(index, player, positionMs);
@@ -1661,6 +2155,10 @@ class VideoFeedController extends ChangeNotifier {
     // Unblock any pending preload wait for this index.
     _completeReady(index);
 
+    if (kPlaybackDiagnosticsEnabled) {
+      _emitSessionSummary(index, reason: 'release');
+    }
+
     // Stop audio before removing from tracking to prevent audio leaks.
     // The player stays in the pool for reuse, but must be silent.
     final player = _loadedPlayers[index]?.player;
@@ -1686,7 +2184,47 @@ class VideoFeedController extends ChangeNotifier {
     _loadStates.remove(index);
     _errorTypes.remove(index);
     _loadingIndices.remove(index);
+    _diagLoadFailovers.remove(index);
+    _diagStaleRecoveries.remove(index);
+    _diagStaleEscalations.remove(index);
+    _diagStuckFailovers.remove(index);
+    // Reset the user-visited tracking so a fresh preload after a release
+    // is treated as a new "first transition from preload to current" by
+    // [_resume]. Without this, scrolling far past a video and back would
+    // skip the force-seek-zero and reproduce the original bug.
+    _userVisitedIndices.remove(index);
     _notifyIndex(index);
+  }
+
+  /// Emits a one-line summary of diagnostic counters and the final source
+  /// for [index]. Only called when [kPlaybackDiagnosticsEnabled] is true.
+  void _emitSessionSummary(int index, {required String reason}) {
+    final loadFailovers = _diagLoadFailovers[index] ?? 0;
+    final staleRecoveries = _diagStaleRecoveries[index] ?? 0;
+    final staleEscalations = _diagStaleEscalations[index] ?? 0;
+    final stuckFailovers = _diagStuckFailovers[index] ?? 0;
+
+    // Skip noise: don't emit a summary for indices we never opened.
+    final hasActivity =
+        loadFailovers > 0 ||
+        staleRecoveries > 0 ||
+        staleEscalations > 0 ||
+        stuckFailovers > 0 ||
+        _openedSources.containsKey(index);
+    if (!hasActivity) return;
+
+    final finalSource = _openedSources[index];
+    _logDebug(
+      'session_summary ${_videoDebugDetails(index)} '
+      'reason=$reason '
+      'finalSource=$finalSource '
+      'finalSourceKind=${_sourceKindLabelOrNone(finalSource)} '
+      'loadFailovers=$loadFailovers '
+      'staleRecoveries=$staleRecoveries '
+      'staleEscalations=$staleEscalations '
+      'stuckFailovers=$stuckFailovers '
+      'errorType=${_errorTypes[index]}',
+    );
   }
 
   @override
@@ -1745,6 +2283,21 @@ class VideoFeedController extends ChangeNotifier {
       }
     }
 
+    if (kPlaybackDiagnosticsEnabled) {
+      // Flush summaries for any indices still considered active so the
+      // final state is captured before counters are cleared.
+      final summaryIndices = <int>{
+        ..._loadedPlayers.keys,
+        ..._diagLoadFailovers.keys,
+        ..._diagStaleRecoveries.keys,
+        ..._diagStaleEscalations.keys,
+        ..._diagStuckFailovers.keys,
+      };
+      for (final i in summaryIndices) {
+        _emitSessionSummary(i, reason: 'dispose');
+      }
+    }
+
     // Clear loaded players so _notifyIndex reports null controllers.
     _loadedPlayers.clear();
     _loadStates.clear();
@@ -1758,6 +2311,11 @@ class VideoFeedController extends ChangeNotifier {
     _readyVideosAwaitingRecovery.clear();
     _playbackSources.clear();
     _playbackSourceIndices.clear();
+    _diagLoadFailovers.clear();
+    _diagStaleRecoveries.clear();
+    _diagStaleEscalations.clear();
+    _diagStuckFailovers.clear();
+    _userVisitedIndices.clear();
 
     // Notify all index listeners that their video is gone.  This causes
     // ValueListenableBuilder to rebuild with videoController == null,

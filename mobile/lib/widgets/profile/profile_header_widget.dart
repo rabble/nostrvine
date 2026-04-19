@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/l10n/email_verification_error_l10n.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -46,8 +48,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
 
-  /// The number of videos loaded in the profile grid.
-  final int videoCount;
+  /// Server-authoritative video count (from X-Total-Count header).
+  /// When null, the header shows a loading state until ProfileStats resolve.
+  final int? videoCount;
 
   /// Optional profile owned by the parent widget.
   /// When provided, avoids a second profile fetch path.
@@ -109,6 +112,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final watchedStats = ref
         .watch(userProfileStatsReactiveProvider(userIdHex))
         .value;
+    final resolvedVideoCount = watchedStats?.videoCount ?? videoCount;
 
     // Use profile color as header background (like original Vine)
     // Color covers avatar/stats, then fades to dark for name/bio readability
@@ -135,7 +139,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                 : null,
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 0, 16),
+            padding: const EdgeInsetsDirectional.fromSTEB(24, 20, 0, 16),
             child: Column(
               children: [
                 // Setup profile banner for new users with default names
@@ -187,15 +191,16 @@ class ProfileHeaderWidget extends ConsumerWidget {
                                 spacing: 12,
                                 children: [
                                   ProfileStatColumn(
-                                    count:
-                                        watchedStats?.videoCount ?? videoCount,
-                                    label: 'Videos',
-                                    isLoading: false,
+                                    count: resolvedVideoCount,
+                                    label: context.l10n.profileVideosLabel,
+                                    isLoading: resolvedVideoCount == null,
                                   ),
                                   ProfileFollowersStat(
                                     pubkey: userIdHex,
                                     displayName: displayName,
                                     isOwnProfile: isOwnProfile,
+                                    initialCount:
+                                        effectiveProfile?.followerCount,
                                   ),
                                   ProfileFollowingStat(
                                     pubkey: userIdHex,
@@ -270,12 +275,12 @@ class _SetupProfileBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Complete Your Profile',
+                  context.l10n.profileCompleteYourProfile,
                   style: VineTheme.titleSmallFont(),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Add your name, bio, and picture to get started',
+                  context.l10n.profileCompleteSubtitle,
                   style: VineTheme.bodySmallFont(
                     color: VineTheme.onSurfaceMuted,
                   ),
@@ -294,7 +299,7 @@ class _SetupProfileBanner extends StatelessWidget {
               ),
             ),
             child: Text(
-              'Set Up',
+              context.l10n.profileSetUpButton,
               style: VineTheme.labelMediumFont(color: VineTheme.accentPurple),
             ),
           ),
@@ -328,7 +333,7 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
             children: [
               _buildIcon(state),
               const SizedBox(width: 12),
-              Expanded(child: _buildContent(state)),
+              Expanded(child: _buildContent(context, state)),
               _buildAction(context, state),
             ],
           ),
@@ -360,30 +365,42 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
     }
   }
 
-  Widget _buildContent(EmailVerificationState state) {
+  Widget _buildContent(BuildContext context, EmailVerificationState state) {
     switch (state.status) {
       case EmailVerificationStatus.polling:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Verifying Email...', style: VineTheme.titleSmallFont()),
+            Text(
+              context.l10n.profileVerifyingEmail,
+              style: VineTheme.titleSmallFont(),
+            ),
             const SizedBox(height: 4),
             Text(
               state.pendingEmail?.isNotEmpty == true
-                  ? 'Check ${state.pendingEmail} for verification link'
-                  : 'Waiting for email verification',
+                  ? context.l10n.profileCheckEmailVerification(
+                      state.pendingEmail!,
+                    )
+                  : context.l10n.profileWaitingForVerification,
               style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
             ),
           ],
         );
       case EmailVerificationStatus.failure:
+        final errorCode = state.errorCode;
+        final errorMessage = errorCode == null
+            ? context.l10n.profilePleaseTryAgain
+            : context.l10n.emailVerificationErrorMessage(errorCode);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Verification Failed', style: VineTheme.titleSmallFont()),
+            Text(
+              context.l10n.profileVerificationFailed,
+              style: VineTheme.titleSmallFont(),
+            ),
             const SizedBox(height: 4),
             Text(
-              state.error ?? 'Please try again',
+              errorMessage,
               style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -395,10 +412,13 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Secure Your Account', style: VineTheme.titleSmallFont()),
+            Text(
+              context.l10n.profileSecureYourAccount,
+              style: VineTheme.titleSmallFont(),
+            ),
             const SizedBox(height: 4),
             Text(
-              'Add email & password to recover your account on any device',
+              context.l10n.profileSecureSubtitle,
               style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
             ),
           ],
@@ -425,7 +445,7 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
             ),
           ),
           child: Text(
-            'Retry',
+            context.l10n.profileRetryButton,
             style: VineTheme.labelMediumFont(color: VineTheme.error),
           ),
         );
@@ -442,7 +462,7 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
             ),
           ),
           child: Text(
-            'Register',
+            context.l10n.profileRegisterButton,
             style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
           ),
         );
@@ -510,10 +530,13 @@ class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Session Expired', style: VineTheme.titleSmallFont()),
+                Text(
+                  context.l10n.profileSessionExpired,
+                  style: VineTheme.titleSmallFont(),
+                ),
                 const SizedBox(height: 4),
                 Text(
-                  'Sign in again to restore full access',
+                  context.l10n.profileSignInToRestore,
                   style: VineTheme.bodySmallFont(
                     color: VineTheme.onSurfaceMuted,
                   ),
@@ -538,7 +561,7 @@ class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Text(
-                    'Sign in',
+                    context.l10n.profileSignInButton,
                     style: VineTheme.labelMediumFont(
                       color: VineTheme.accentOrange,
                     ),
@@ -547,7 +570,7 @@ class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
           IconButton(
             onPressed: _dismissBanner,
             icon: const Icon(Icons.close, color: VineTheme.whiteText, size: 20),
-            tooltip: 'Dismiss',
+            tooltip: context.l10n.profileDismissTooltip,
           ),
         ],
       ),
@@ -580,7 +603,7 @@ class _ProfileNameAndBio extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -675,7 +698,7 @@ class _UniqueIdentifier extends ConsumerWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsetsDirectional.only(start: 8),
               child: GestureDetector(
                 onTap: () {
                   // Only use NIP-05 subdomain when verification passed
@@ -687,7 +710,7 @@ class _UniqueIdentifier extends ConsumerWidget {
                   ClipboardUtils.copy(
                     context,
                     profileUrl,
-                    message: 'Profile link copied',
+                    message: context.l10n.profileLinkCopied,
                   );
                 },
                 child: SvgPicture.asset(
@@ -778,7 +801,9 @@ class _AboutTextState extends State<_AboutText> {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    _isExpanded ? 'Show less' : 'Show more',
+                    _isExpanded
+                        ? context.l10n.profileShowLess
+                        : context.l10n.profileShowMore,
                     style: VineTheme.bodySmallFont(color: VineTheme.vineGreen),
                   ),
                 ),

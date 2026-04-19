@@ -3,7 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/vine_sound.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/sound_picker_provider.dart';
 
 void main() {

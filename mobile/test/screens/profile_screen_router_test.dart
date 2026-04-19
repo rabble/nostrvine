@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
@@ -15,7 +16,11 @@ import 'package:openvine/state/video_feed_state.dart';
 void main() {
   Widget shell(ProviderContainer c) => UncontrolledProviderScope(
     container: c,
-    child: MaterialApp.router(routerConfig: c.read(goRouterProvider)),
+    child: MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: c.read(goRouterProvider),
+    ),
   );
 
   final now = DateTime.now();

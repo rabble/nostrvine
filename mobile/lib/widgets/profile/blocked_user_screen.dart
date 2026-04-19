@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Screen shown when viewing a blocked or unavailable user's profile.
 class BlockedUserScreen extends StatelessWidget {
@@ -21,10 +22,10 @@ class BlockedUserScreen extends StatelessWidget {
         onBackPressed: onBack,
         backgroundMode: DiVineAppBarBackgroundMode.transparent,
       ),
-      body: const Center(
+      body: Center(
         child: Text(
-          'This account is not available',
-          style: TextStyle(color: VineTheme.lightText, fontSize: 16),
+          context.l10n.profileBlockedAccountNotAvailable,
+          style: const TextStyle(color: VineTheme.lightText, fontSize: 16),
         ),
       ),
     );

@@ -13,11 +13,11 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Tab widget displaying For You personalized recommendations.
 ///
@@ -139,16 +139,19 @@ class _ForYouContent extends ConsumerStatefulWidget {
 class _ForYouContentState extends ConsumerState<_ForYouContent>
     with ScrollToHideMixin {
   late final StreamController<List<VideoEvent>> _videosStreamController;
+  late final StreamController<bool> _hasMoreStreamController;
 
   @override
   void initState() {
     super.initState();
     _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+    _hasMoreStreamController = StreamController<bool>.broadcast();
   }
 
   @override
   void dispose() {
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -170,6 +173,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
     ref.listen(forYouFeedProvider, (previous, next) {
       if (next.hasValue && next.value != null) {
         _videosStreamController.add(next.value!.videos);
+        _hasMoreStreamController.add(next.value!.hasMoreContent);
       }
     });
     final forYouFeedNotifier = ref.read(forYouFeedProvider.notifier);
@@ -205,6 +209,9 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                     ),
                     initialIndex: index,
                     onLoadMore: forYouFeedNotifier.loadMore,
+                    hasMoreStream: _hasMoreStreamController.stream.startWith(
+                      widget.hasMoreContent,
+                    ),
                     contextTitle: 'For You',
                     trafficSource: ViewTrafficSource.discoveryForYou,
                   ),
@@ -525,7 +532,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
 
   Widget _buildFutureFeatureItem(String text) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 8),
+      padding: const EdgeInsetsDirectional.only(start: 8, bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

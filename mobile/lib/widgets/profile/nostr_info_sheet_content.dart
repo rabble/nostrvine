@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Content widget for the Nostr information bottom sheet.
@@ -34,60 +35,47 @@ class NostrInfoSheetContent extends StatelessWidget {
           RichText(
             text: TextSpan(
               style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
-              children: const [
+              children: [
                 TextSpan(
-                  text: 'DiVine is built on Nostr,',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  text: context.l10n.nostrInfoIntroBuiltOn,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
+                TextSpan(text: context.l10n.nostrInfoIntroDescription),
                 TextSpan(
-                  text:
-                      ' a censorship-resistant open protocol that lets people communicate online without relying on a single company or platform. ',
-                ),
-                TextSpan(
-                  text:
-                      'When you sign up for Divine, you get a new Nostr identity.',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  text: context.l10n.nostrInfoIntroIdentity,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            'Nostr lets you own your content, identity and social graph, which '
-            'you can use across many apps. The result is more choice, less '
-            'lock-in, and a healthier, more resilient social internet.',
+            context.l10n.nostrInfoOwnership,
             style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
           ),
           const SizedBox(height: 16),
           Text(
-            'Nostr lingo:',
+            context.l10n.nostrInfoLingo,
             style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
           ),
           const SizedBox(height: 8),
           // npub explanation
-          const _NostrBulletPoint(
-            boldText: 'npub:',
-            normalText:
-                " Your public Nostr address. It's safe to share and lets others "
-                'find, follow, or message you across Nostr apps.',
+          _NostrBulletPoint(
+            boldText: context.l10n.nostrInfoNpubLabel,
+            normalText: context.l10n.nostrInfoNpubDescription,
           ),
           const SizedBox(height: 8),
           // nsec explanation
-          const _NostrBulletPoint(
-            boldText: 'nsec:',
-            normalText:
-                ' Your private key and proof of ownership. It gives full '
-                'control of your Nostr identity, so ',
-            italicSuffix: 'always keep it secret!',
+          _NostrBulletPoint(
+            boldText: context.l10n.nostrInfoNsecLabel,
+            normalText: context.l10n.nostrInfoNsecDescription,
+            italicSuffix: context.l10n.nostrInfoNsecWarning,
           ),
           const SizedBox(height: 8),
           // Nostr username explanation
-          const _NostrBulletPoint(
-            boldText: 'Nostr username:',
-            normalText:
-                ' A human-readable name (like @name.divine.video) that links to '
-                'your npub. It makes your Nostr identity easier to recognize '
-                'and verify, similar to an email address.',
+          _NostrBulletPoint(
+            boldText: context.l10n.nostrInfoUsernameLabel,
+            normalText: context.l10n.nostrInfoUsernameDescription,
           ),
           const SizedBox(height: 16),
           // Learn more link
@@ -101,9 +89,9 @@ class NostrInfoSheetContent extends StatelessWidget {
             child: RichText(
               text: TextSpan(
                 style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
-                children: const [
-                  TextSpan(text: 'Learn more at '),
-                  TextSpan(
+                children: [
+                  TextSpan(text: context.l10n.nostrInfoLearnMoreAt),
+                  const TextSpan(
                     text: 'divine.video/about',
                     style: TextStyle(
                       decoration: TextDecoration.underline,
@@ -127,13 +115,16 @@ class NostrInfoSheetContent extends StatelessWidget {
                   vertical: 12,
                   horizontal: 16,
                 ),
-                side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
+                side: const BorderSide(
+                  color: VineTheme.outlineMuted,
+                  width: 2,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
               child: Text(
-                'Got it!',
+                context.l10n.nostrInfoGotIt,
                 style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

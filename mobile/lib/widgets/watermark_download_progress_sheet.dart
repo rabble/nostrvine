@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/watermark_download_provider.dart';
 import 'package:openvine/services/watermark_download_service.dart';
@@ -113,10 +114,10 @@ class _WatermarkDownloadProgressSheetState
               ),
             ),
             const SizedBox(height: 16),
-            Text(_stageLabel, style: VineTheme.titleMediumFont()),
+            Text(_stageLabel(context), style: VineTheme.titleMediumFont()),
             const SizedBox(height: 8),
             Text(
-              _stageDescription,
+              _stageDescription(context),
               style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
             ),
           ] else if (_result is WatermarkDownloadSuccess) ...[
@@ -126,14 +127,17 @@ class _WatermarkDownloadProgressSheetState
               size: 48,
             ),
             const SizedBox(height: 16),
-            Text('Saved to Camera Roll', style: VineTheme.titleMediumFont()),
+            Text(
+              context.l10n.watermarkDownloadSavedToCameraRoll,
+              style: VineTheme.titleMediumFont(),
+            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: _shareFile,
                 icon: const Icon(Icons.share),
-                label: const Text('Share'),
+                label: Text(context.l10n.watermarkDownloadShare),
                 style: FilledButton.styleFrom(
                   backgroundColor: VineTheme.vineGreen,
                   foregroundColor: VineTheme.onPrimary,
@@ -145,7 +149,7 @@ class _WatermarkDownloadProgressSheetState
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Done',
+                context.l10n.watermarkDownloadDone,
                 style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
               ),
             ),
@@ -156,10 +160,13 @@ class _WatermarkDownloadProgressSheetState
               size: 48,
             ),
             const SizedBox(height: 16),
-            Text('Photos Access Needed', style: VineTheme.titleMediumFont()),
+            Text(
+              context.l10n.watermarkDownloadPhotosAccessNeeded,
+              style: VineTheme.titleMediumFont(),
+            ),
             const SizedBox(height: 8),
             Text(
-              'To save videos, allow Photos access in Settings.',
+              context.l10n.watermarkDownloadPhotosAccessDescription,
               style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
               textAlign: TextAlign.center,
             ),
@@ -173,21 +180,24 @@ class _WatermarkDownloadProgressSheetState
                   foregroundColor: VineTheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: const Text('Open Settings'),
+                child: Text(context.l10n.watermarkDownloadOpenSettings),
               ),
             ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Not Now',
+                context.l10n.watermarkDownloadNotNow,
                 style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
               ),
             ),
           ] else if (_result is WatermarkDownloadFailure) ...[
             const Icon(Icons.error_outline, color: VineTheme.error, size: 48),
             const SizedBox(height: 16),
-            Text('Download Failed', style: VineTheme.titleMediumFont()),
+            Text(
+              context.l10n.watermarkDownloadFailed,
+              style: VineTheme.titleMediumFont(),
+            ),
             const SizedBox(height: 8),
             Text(
               (_result! as WatermarkDownloadFailure).reason,
@@ -198,7 +208,7 @@ class _WatermarkDownloadProgressSheetState
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Dismiss',
+                context.l10n.watermarkDownloadDismiss,
                 style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
               ),
             ),
@@ -210,18 +220,21 @@ class _WatermarkDownloadProgressSheetState
     ),
   );
 
-  String get _stageLabel => switch (_stage) {
-    WatermarkDownloadStage.downloading => 'Downloading Video',
-    WatermarkDownloadStage.watermarking => 'Adding Watermark',
-    WatermarkDownloadStage.saving => 'Saving to Camera Roll',
+  String _stageLabel(BuildContext context) => switch (_stage) {
+    WatermarkDownloadStage.downloading =>
+      context.l10n.watermarkDownloadStageDownloading,
+    WatermarkDownloadStage.watermarking =>
+      context.l10n.watermarkDownloadStageWatermarking,
+    WatermarkDownloadStage.saving => context.l10n.watermarkDownloadStageSaving,
   };
 
-  String get _stageDescription => switch (_stage) {
+  String _stageDescription(BuildContext context) => switch (_stage) {
     WatermarkDownloadStage.downloading =>
-      'Fetching the video from the network...',
-    WatermarkDownloadStage.watermarking => 'Applying the Divine watermark...',
+      context.l10n.watermarkDownloadStageDownloadingDesc,
+    WatermarkDownloadStage.watermarking =>
+      context.l10n.watermarkDownloadStageWatermarkingDesc,
     WatermarkDownloadStage.saving =>
-      'Saving the watermarked video to your camera roll...',
+      context.l10n.watermarkDownloadStageSavingDesc,
   };
 
   Future<void> _openSettings() async {

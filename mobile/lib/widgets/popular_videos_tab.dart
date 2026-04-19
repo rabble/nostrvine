@@ -15,12 +15,12 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Tab widget displaying popular/trending videos sorted by loop count.
 ///
@@ -203,16 +203,19 @@ class _PopularVideosTrendingContentState
     extends ConsumerState<_PopularVideosTrendingContent>
     with ScrollToHideMixin {
   late final StreamController<List<VideoEvent>> _videosStreamController;
+  late final StreamController<bool> _hasMoreStreamController;
 
   @override
   void initState() {
     super.initState();
     _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+    _hasMoreStreamController = StreamController<bool>.broadcast();
   }
 
   @override
   void dispose() {
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -222,6 +225,7 @@ class _PopularVideosTrendingContentState
     ref.listen(popularVideosFeedProvider, (previous, next) {
       if (next.hasValue) {
         _videosStreamController.add(next.value!.videos);
+        _hasMoreStreamController.add(next.value!.hasMoreContent);
       }
     });
     final popularVideosFeedNotifier = ref.read(
@@ -262,6 +266,9 @@ class _PopularVideosTrendingContentState
                     ),
                     initialIndex: index,
                     onLoadMore: popularVideosFeedNotifier.loadMore,
+                    hasMoreStream: _hasMoreStreamController.stream.startWith(
+                      widget.hasMoreContent,
+                    ),
                     contextTitle: 'Popular Videos',
                     trafficSource: ViewTrafficSource.discoveryPopular,
                   ),

@@ -194,6 +194,20 @@ if [ "$CURRENT_BRANCH" != "main" ]; then
     fi
     echo "No merge conflicts with main"
     echo ""
+
+    # Validate branch name matches semantic PR title convention
+    # CI requires PR titles like: feat: ..., fix(scope): ..., chore!: ...
+    # Branch names follow: type/issue-description, so extract the prefix
+    BRANCH_PREFIX=$(echo "$CURRENT_BRANCH" | sed -n 's|^\([a-z]*\)[/\-].*|\1|p')
+    VALID_TYPES="feat fix docs style refactor perf test build ci chore revert"
+    if [ -n "$BRANCH_PREFIX" ]; then
+        if ! echo " $VALID_TYPES " | grep -q " $BRANCH_PREFIX "; then
+            echo "⚠️  Branch prefix '$BRANCH_PREFIX' is not a valid semantic type."
+            echo "   Valid types: $VALID_TYPES"
+            echo "   PR title must match: <type>(<optional scope>): <description>"
+            echo ""
+        fi
+    fi
 fi
 
 # Get list of changed Dart files (excluding generated files)

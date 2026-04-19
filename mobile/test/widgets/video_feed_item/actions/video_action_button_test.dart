@@ -5,6 +5,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
 void main() {
@@ -16,8 +17,11 @@ void main() {
     Color iconColor = VineTheme.whiteText,
     int count = 0,
     bool isLoading = false,
+    String? caption,
   }) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: VideoActionButton(
           icon: icon,
@@ -27,6 +31,7 @@ void main() {
           iconColor: iconColor,
           count: count,
           isLoading: isLoading,
+          caption: caption,
         ),
       ),
     );
@@ -77,7 +82,13 @@ void main() {
       testWidgets('formats large counts compactly', (tester) async {
         await tester.pumpWidget(buildSubject(count: 1500));
 
-        expect(find.text('1.5k'), findsOneWidget);
+        expect(find.text('1.5K'), findsOneWidget);
+      });
+
+      testWidgets('renders caption when provided', (tester) async {
+        await tester.pumpWidget(buildSubject(caption: 'Auto'));
+
+        expect(find.text('Auto'), findsOneWidget);
       });
     });
 

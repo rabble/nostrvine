@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/widgets/people_section.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
@@ -36,6 +37,8 @@ void main() {
 
     Widget buildSubject({bool showAll = false}) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: BlocProvider<UserSearchBloc>.value(
             value: mockBloc,
@@ -153,5 +156,58 @@ void main() {
         ).called(1);
       },
     );
+
+    group('loading more indicator', () {
+      testWidgets(
+        'shows loading indicator when showAll and isLoadingMore',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            UserSearchState(
+              status: UserSearchStatus.success,
+              results: [testProfile],
+              hasMore: true,
+              isLoadingMore: true,
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hides loading indicator when showAll and not isLoadingMore',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            UserSearchState(
+              status: UserSearchStatus.success,
+              results: [testProfile],
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not show loading indicator when not showAll',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            UserSearchState(
+              status: UserSearchStatus.success,
+              results: [testProfile],
+              isLoadingMore: true,
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+    });
   });
 }

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
@@ -18,6 +19,10 @@ void main() {
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
   late VideoEvent testVideo;
+
+  setUpAll(() {
+    registerFallbackValue(const VideoInteractionsLikeToggled());
+  });
 
   setUp(() {
     testVideo = VideoEvent(
@@ -34,10 +39,17 @@ void main() {
     required VideoEvent video,
     bool isPreviewMode = false,
     VideoInteractionsBloc? bloc,
+    VoidCallback? onInteracted,
   }) {
     final widget = MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: LikeActionButton(video: video, isPreviewMode: isPreviewMode),
+        body: LikeActionButton(
+          video: video,
+          isPreviewMode: isPreviewMode,
+          onInteracted: onInteracted,
+        ),
       ),
     );
 
@@ -164,6 +176,28 @@ void main() {
         await tester.pumpWidget(buildSubject(video: testVideo, bloc: mockBloc));
 
         expect(find.text('0'), findsNothing);
+      });
+
+      testWidgets('calls onInteracted before dispatching like toggle', (
+        tester,
+      ) async {
+        var interacted = false;
+        when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
+
+        await tester.pumpWidget(
+          buildSubject(
+            video: testVideo,
+            bloc: mockBloc,
+            onInteracted: () => interacted = true,
+          ),
+        );
+
+        await tester.tap(find.byType(IconButton));
+
+        expect(interacted, isTrue);
+        verify(() => mockBloc.add(const VideoInteractionsLikeToggled())).called(
+          1,
+        );
       });
     });
   });

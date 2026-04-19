@@ -275,9 +275,9 @@ class _CloseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
+    return PositionedDirectional(
       top: 6,
-      left: 16,
+      start: 16,
       child: SafeArea(
         child: Hero(
           tag: VideoEditorConstants.heroBackButtonId,

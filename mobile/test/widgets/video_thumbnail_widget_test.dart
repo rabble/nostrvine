@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
@@ -43,6 +44,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithThumbnail,
@@ -71,6 +74,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: VideoThumbnailWidget(
                 video: divineHostedVideo,
@@ -91,6 +96,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithBlurhash,
@@ -116,6 +123,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithBoth,
@@ -136,6 +145,8 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: VideoThumbnailWidget(
                 video: videoWithNeither,
@@ -159,6 +170,8 @@ void main() {
     testWidgets('shows play icon when requested', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithBlurhash,
@@ -179,6 +192,8 @@ void main() {
     testWidgets('applies border radius when provided', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithThumbnail,
@@ -200,6 +215,8 @@ void main() {
       // Start with video that has thumbnail
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithThumbnail,
@@ -216,6 +233,8 @@ void main() {
       // Update to video with only blurhash (no thumbnail)
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithBlurhash,
@@ -236,6 +255,8 @@ void main() {
     testWidgets('respects thumbnail size parameter', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithThumbnail,
@@ -256,6 +277,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithBlurhash,
@@ -278,6 +301,8 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithThumbnail,
@@ -304,6 +329,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithEmptyUrl,

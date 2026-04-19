@@ -33,7 +33,7 @@
 # Testing
 /test/unit/                     @agent-testing
 /test/widget/                   @agent-testing
-/test/integration/              @agent-testing
+/integration_test/e2e/          @agent-testing
 /test/helpers/                  @agent-testing
 /test/mocks/                    @agent-testing
 

@@ -2,13 +2,14 @@
 // ABOUTME: Verifies share icon renders, share sheet opens with correct sections,
 // ABOUTME: and standard action items display in the unified share sheet.
 
+@Tags(['skip_very_good_optimization'])
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -98,6 +99,36 @@ void main() {
       // Find Semantics widget with share button label
       final semanticsFinder = find.bySemanticsLabel('Share video');
       expect(semanticsFinder, findsOneWidget);
+    });
+
+    testWidgets('calls onInteracted before opening the share sheet', (
+      tester,
+    ) async {
+      var interacted = false;
+      final mockAuth = createMockAuthService();
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: Scaffold(
+            body: ShareActionButton(
+              video: testVideo,
+              onInteracted: () => interacted = true,
+            ),
+          ),
+          additionalOverrides: [
+            videoSharingServiceProvider.overrideWith(
+              (ref) => mockVideoSharingService,
+            ),
+          ],
+          mockAuthService: mockAuth,
+          mockProfileRepository: mockProfileRepository,
+        ),
+      );
+
+      await tester.tap(find.byType(IconButton));
+      await tester.pump();
+
+      expect(interacted, isTrue);
     });
 
     group('share menu', () {

@@ -2617,7 +2617,7 @@ final class PushNotificationSyncProvider
 }
 
 String _$pushNotificationSyncHash() =>
-    r'fed5d3b0d5d729c415c77b8d0a88c090abf4095d';
+    r'42aa13bfec4492b045273818e6a4a88b28949b06';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -2673,7 +2673,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'3c3497cc89997f9995bdee112182fb36a35cc198';
+    r'56d99094bba86b89b54ababd0ab82604bc95cc4e';
 
 /// Subscription manager for centralized subscription management
 
@@ -3010,7 +3010,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'5eb08600816786c7447419fa0202c5532dd24678';
+String _$followRepositoryHash() => r'a94622f52c4a1e843f707fa192b08ba65c75d6c2';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -3268,7 +3268,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'6e187aec8d40ff7f2de997c131d89d808e410a39';
+String _$profileRepositoryHash() => r'3bfe6e383fd841b79ea445f95fef8f89da9bb19c';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -3426,7 +3426,7 @@ final class BlossomAuthServiceProvider
 }
 
 String _$blossomAuthServiceHash() =>
-    r'e64f2eebfd131f289245c69c1c7dd4f0575bf85d';
+    r'18b397ce487844dd002ada34930c6ce08f0566f8';
 
 /// Media authentication interceptor for handling 401 unauthorized responses
 
@@ -3479,7 +3479,7 @@ final class MediaAuthInterceptorProvider
 }
 
 String _$mediaAuthInterceptorHash() =>
-    r'adae18db875674843f6ced55608bb65a5ef7f445';
+    r'214d6a37de9072814c52d22cf97a2c8c643664a8';
 
 /// Blossom upload service (uses user-configured Blossom server)
 
@@ -3532,7 +3532,7 @@ final class BlossomUploadServiceProvider
 }
 
 String _$blossomUploadServiceHash() =>
-    r'dd7f21326fc6c7cbc8ea291e9e9ca7c337da54f4';
+    r'8b83e68824cc146d304111a8d88e5ea8fadb2cc7';
 
 /// Upload manager uses only Blossom upload service
 
@@ -3839,7 +3839,7 @@ final class CurationServiceProvider
   }
 }
 
-String _$curationServiceHash() => r'8eeffdbdad64deb0b10c3983346c3d3c83a1aa02';
+String _$curationServiceHash() => r'c2e09557d5382b0286cedd6f09854b9537af477e';
 
 /// Content reporting service for NIP-56 compliance
 
@@ -4459,9 +4459,16 @@ String _$bugReportServiceHash() => r'a243bf5fae16e223b148a829b14f9857af1c4592';
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Sets auth credentials eagerly so read/send operations work immediately.
-/// The relay subscription is NOT started here — it is driven by the inbox
-/// UI lifecycle via [ConversationListBloc] (#2766).
+/// Sets auth credentials eagerly so read/send operations work immediately,
+/// then starts the gift-wrap subscription so DMs are ingested for the whole
+/// authenticated session — not just while [InboxPage] is mounted (#2931).
+///
+/// Cold-start cost is bounded by two existing mechanisms that landed with
+/// the original lazy-inbox work (#2766):
+/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+///   limits the relay backlog to recent events on every open after the first.
+/// - Decryption is offloaded to a background isolate via
+///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
 /// Uses `keepAlive: true` because the repository must survive transient
 /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -4479,9 +4486,16 @@ const dmRepositoryProvider = DmRepositoryProvider._();
 /// and sending encrypted direct messages. Works with any [NostrSigner]
 /// (local keys, Keycast RPC, Amber, etc.).
 ///
-/// Sets auth credentials eagerly so read/send operations work immediately.
-/// The relay subscription is NOT started here — it is driven by the inbox
-/// UI lifecycle via [ConversationListBloc] (#2766).
+/// Sets auth credentials eagerly so read/send operations work immediately,
+/// then starts the gift-wrap subscription so DMs are ingested for the whole
+/// authenticated session — not just while [InboxPage] is mounted (#2931).
+///
+/// Cold-start cost is bounded by two existing mechanisms that landed with
+/// the original lazy-inbox work (#2766):
+/// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+///   limits the relay backlog to recent events on every open after the first.
+/// - Decryption is offloaded to a background isolate via
+///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
 /// Uses `keepAlive: true` because the repository must survive transient
 /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -4499,9 +4513,16 @@ final class DmRepositoryProvider
   /// and sending encrypted direct messages. Works with any [NostrSigner]
   /// (local keys, Keycast RPC, Amber, etc.).
   ///
-  /// Sets auth credentials eagerly so read/send operations work immediately.
-  /// The relay subscription is NOT started here — it is driven by the inbox
-  /// UI lifecycle via [ConversationListBloc] (#2766).
+  /// Sets auth credentials eagerly so read/send operations work immediately,
+  /// then starts the gift-wrap subscription so DMs are ingested for the whole
+  /// authenticated session — not just while [InboxPage] is mounted (#2931).
+  ///
+  /// Cold-start cost is bounded by two existing mechanisms that landed with
+  /// the original lazy-inbox work (#2766):
+  /// - The `since: newestSyncedAt - 2d` filter in [DmRepository.startListening]
+  ///   limits the relay backlog to recent events on every open after the first.
+  /// - Decryption is offloaded to a background isolate via
+  ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
   ///
   /// Uses `keepAlive: true` because the repository must survive transient
   /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
@@ -4542,7 +4563,7 @@ final class DmRepositoryProvider
   }
 }
 
-String _$dmRepositoryHash() => r'30503db56d4371ec8d639cebcaf711fa372966bd';
+String _$dmRepositoryHash() => r'a2fa1b080fa8ff0db62cc19074de841115603487';
 
 /// Provider for CommentsRepository instance
 ///
@@ -4616,7 +4637,7 @@ final class CommentsRepositoryProvider
 }
 
 String _$commentsRepositoryHash() =>
-    r'1c3dd068215ea906fc969029178752b2f04ba846';
+    r'bc4e74db3003bcf6884e467471892a1d8f01a194';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///

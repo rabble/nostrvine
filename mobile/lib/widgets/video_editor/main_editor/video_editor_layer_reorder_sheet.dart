@@ -2,8 +2,8 @@ import 'dart:ui';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A bottom sheet that displays the video editor's layers in a
 /// reorderable list.

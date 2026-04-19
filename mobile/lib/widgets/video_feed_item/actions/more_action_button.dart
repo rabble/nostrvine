@@ -4,17 +4,23 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Three-dots more action button for the video overlay.
 ///
 /// Opens the expanded metadata sheet showing title, stats, creator, tags,
 /// collaborators, inspired-by, reposted-by, and sounds.
 class MoreActionButton extends StatelessWidget {
-  const MoreActionButton({required this.video, super.key});
+  const MoreActionButton({
+    required this.video,
+    this.onInteracted,
+    super.key,
+  });
 
   final VideoEvent video;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +29,10 @@ class MoreActionButton extends StatelessWidget {
       container: true,
       explicitChildNodes: true,
       button: true,
-      label: 'More options',
+      label: context.l10n.videoActionMoreOptions,
       child: GestureDetector(
         onTap: () {
+          onInteracted?.call();
           Log.info(
             'More button tapped for ${video.id}',
             name: 'MoreActionButton',

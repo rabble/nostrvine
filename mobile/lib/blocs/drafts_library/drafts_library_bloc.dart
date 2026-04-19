@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'drafts_library_event.dart';
 part 'drafts_library_state.dart';
@@ -69,7 +69,7 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      emit(DraftsLibraryError(message: e.toString()));
+      emit(const DraftsLibraryError());
     }
   }
 

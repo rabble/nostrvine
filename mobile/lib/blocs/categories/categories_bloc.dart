@@ -1,12 +1,11 @@
 // ABOUTME: BLoC for fetching and managing video categories from Funnelcake API
 // ABOUTME: Handles loading categories list and videos within a selected category
 
+import 'package:categories_repository/categories_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
-import 'package:openvine/models/video_category.dart';
-import 'package:openvine/repositories/categories_repository.dart';
 
 part 'categories_event.dart';
 part 'categories_state.dart';
@@ -51,20 +50,12 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
           categories: categories,
         ),
       );
-    } on FunnelcakeException catch (e) {
-      emit(
-        state.copyWith(
-          categoriesStatus: CategoriesStatus.error,
-          errorMessage: e.toString(),
-        ),
-      );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          categoriesStatus: CategoriesStatus.error,
-          errorMessage: 'Failed to load categories: $e',
-        ),
-      );
+    } on FunnelcakeException catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(categoriesStatus: CategoriesStatus.error));
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(categoriesStatus: CategoriesStatus.error));
     }
   }
 
@@ -87,20 +78,12 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
         category: event.category,
         sortOrder: state.sortOrder,
       );
-    } on FunnelcakeException catch (e) {
-      emit(
-        state.copyWith(
-          videosStatus: CategoriesVideosStatus.error,
-          errorMessage: e.toString(),
-        ),
-      );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          videosStatus: CategoriesVideosStatus.error,
-          errorMessage: 'Failed to load category videos: $e',
-        ),
-      );
+    } on FunnelcakeException catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(videosStatus: CategoriesVideosStatus.error));
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(videosStatus: CategoriesVideosStatus.error));
     }
   }
 
@@ -173,13 +156,9 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
         category: state.selectedCategory!,
         sortOrder: event.sort,
       );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          videosStatus: CategoriesVideosStatus.error,
-          errorMessage: 'Failed to load videos: $e',
-        ),
-      );
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(videosStatus: CategoriesVideosStatus.error));
     }
   }
 

@@ -5,16 +5,18 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
     implements VideoFeedBloc {}
 
 void main() {
-  group('FeedModeSwitch', () {
+  group(FeedModeSwitch, () {
     late _MockVideoFeedBloc mockBloc;
 
     setUp(() {
@@ -30,15 +32,19 @@ void main() {
     });
 
     Widget createTestWidget() {
-      return MaterialApp(
-        home: Scaffold(
-          body: Stack(
-            children: [
-              BlocProvider<VideoFeedBloc>.value(
-                value: mockBloc,
-                child: const FeedModeSwitch(),
-              ),
-            ],
+      return ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Stack(
+              children: [
+                BlocProvider<VideoFeedBloc>.value(
+                  value: mockBloc,
+                  child: const FeedModeSwitch(),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -79,7 +85,7 @@ void main() {
         );
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.byType(FeedModeSwitch));
+        await tester.tap(find.text('New'));
         await tester.pumpAndSettle();
 
         expect(find.byType(VineBottomSheet), findsOneWidget);
@@ -96,7 +102,7 @@ void main() {
         );
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.byType(FeedModeSwitch));
+        await tester.tap(find.text('New'));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Following'));
@@ -110,14 +116,12 @@ void main() {
       testWidgets('dispatches VideoFeedModeChanged when new selected', (
         tester,
       ) async {
-        when(() => mockBloc.state).thenReturn(
-          const VideoFeedState(
-            status: VideoFeedStatus.success,
-          ),
-        );
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const VideoFeedState(status: VideoFeedStatus.success));
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.byType(FeedModeSwitch));
+        await tester.tap(find.text('For You'));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('New'));
@@ -139,7 +143,7 @@ void main() {
         );
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.byType(FeedModeSwitch));
+        await tester.tap(find.text('New'));
         await tester.pumpAndSettle();
 
         // Dismiss by tapping outside (on the barrier)
@@ -154,9 +158,7 @@ void main() {
       whenListen(
         mockBloc,
         Stream.fromIterable([
-          const VideoFeedState(
-            status: VideoFeedStatus.success,
-          ),
+          const VideoFeedState(status: VideoFeedStatus.success),
         ]),
         initialState: const VideoFeedState(
           status: VideoFeedStatus.success,

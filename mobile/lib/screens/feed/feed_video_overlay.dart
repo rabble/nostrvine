@@ -12,18 +12,20 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -33,12 +35,14 @@ import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Video overlay for the home feed matching the new design.
 ///
@@ -56,6 +60,10 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
     this.firstFrameFuture,
     this.listSources,
     this.onContentWarningRevealed,
+    this.showAutoButton = false,
+    this.isAutoEnabled = false,
+    this.onAutoPressed,
+    this.onInteracted,
     super.key,
   });
 
@@ -75,6 +83,10 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
 
   /// Called when the user reveals a content-warning overlay.
   final VoidCallback? onContentWarningRevealed;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
 
   @override
   ConsumerState<FeedVideoOverlay> createState() => _FeedVideoOverlayState();
@@ -97,18 +109,13 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
     unawaited(feedState.animateToPage(widget.index + 1));
   }
 
-  /// Triggers the existing age-verification flow via the Riverpod service.
-  /// On success, clears the cached moderated status so a retry can
-  /// re-classify the video using the newly unlocked auth cookie.
+  /// Triggers age verification and retries pooled playback with viewer auth.
   Future<void> _verifyAge(BuildContext context, VideoEvent video) async {
-    final ageVerificationService = ref.read(ageVerificationServiceProvider);
-    final verified = await ageVerificationService.verifyAdultContentAccess(
-      context,
-    );
-    if (!verified || !context.mounted) return;
-    context.read<VideoPlaybackStatusCubit>().report(
-      video.id,
-      PlaybackStatus.ready,
+    await retryAgeRestrictedPooledVideo(
+      context: context,
+      ref: ref,
+      video: video,
+      index: widget.index,
     );
   }
 
@@ -227,9 +234,9 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
           child: Stack(
             children: [
               // ProofMode and Vine badges (top-right)
-              Positioned(
+              PositionedDirectional(
                 top: MediaQuery.viewPaddingOf(context).top + 64,
-                right: 16,
+                end: 16,
                 child: GestureDetector(
                   onTap: () => context.showVideoPausingDialog<void>(
                     builder: (context) => BadgeExplanationModal(video: video),
@@ -238,21 +245,28 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                 ),
               ),
               // Author info and description (bottom-left)
-              Positioned(
+              PositionedDirectional(
                 bottom: 14 + safeAreaBottom,
-                left: 16,
-                right: 80,
+                start: 16,
+                end: 80,
                 child: _AuthorInfoSection(
                   video: video,
                   hasTextContent: hasTextContent,
                   listSources: widget.listSources,
+                  onInteracted: widget.onInteracted,
                 ),
               ),
               // Action buttons column (bottom-right)
-              Positioned(
+              PositionedDirectional(
                 bottom: 14 + safeAreaBottom,
-                right: 16,
-                child: _ActionButtons(video: video),
+                end: 16,
+                child: _ActionButtons(
+                  video: video,
+                  showAutoButton: widget.showAutoButton,
+                  isAutoEnabled: widget.isAutoEnabled,
+                  onAutoPressed: widget.onAutoPressed,
+                  onInteracted: widget.onInteracted,
+                ),
               ),
             ],
           ),
@@ -267,11 +281,13 @@ class _AuthorInfoSection extends ConsumerWidget {
     required this.video,
     required this.hasTextContent,
     this.listSources,
+    this.onInteracted,
   });
 
   final VideoEvent video;
   final bool hasTextContent;
   final Set<String>? listSources;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -294,11 +310,16 @@ class _AuthorInfoSection extends ConsumerWidget {
         // Avatar and name row
         Row(
           children: [
-            _AuthorAvatar(pubkey: video.pubkey, avatarUrl: avatarUrl),
+            _AuthorAvatar(
+              pubkey: video.pubkey,
+              avatarUrl: avatarUrl,
+              onInteracted: onInteracted,
+            ),
             const SizedBox(width: 6),
             Expanded(
               child: GestureDetector(
                 onTap: () {
+                  onInteracted?.call();
                   final npub = normalizeToNpub(video.pubkey);
                   if (npub != null) {
                     context.pushWithVideoPause(
@@ -329,7 +350,13 @@ class _AuthorInfoSection extends ConsumerWidget {
                         _Nip05Badge(pubkey: video.pubkey),
                       ],
                     ),
-                    Text(video.relativeTime, style: VineTheme.labelSmallFont()),
+                    Text(
+                      context.l10n.videoFeedLoopCountLine(
+                        StringUtils.formatCompactNumber(video.totalLoops),
+                        video.totalLoops,
+                      ),
+                      style: VineTheme.labelSmallFont(),
+                    ),
                   ],
                 ),
               ),
@@ -339,20 +366,29 @@ class _AuthorInfoSection extends ConsumerWidget {
         // Video description
         if (hasTextContent) ...[
           const SizedBox(height: 2),
-          Semantics(
-            identifier: 'video_description',
-            container: true,
-            explicitChildNodes: true,
-            label:
-                'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-            child: ClickableHashtagText(
-              text:
-                  (video.content.isNotEmpty ? video.content : video.title ?? '')
-                      .trim(),
-              style: VineTheme.bodyMediumFont(),
-              hashtagStyle: VineTheme.bodySmallFont(),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              onInteracted?.call();
+              MetadataExpandedSheet.show(context, video);
+            },
+            child: Semantics(
+              identifier: 'video_description',
+              container: true,
+              explicitChildNodes: true,
+              label:
+                  'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
+              child: ClickableHashtagText(
+                text:
+                    (video.content.isNotEmpty
+                            ? video.content
+                            : video.title ?? '')
+                        .trim(),
+                style: VineTheme.bodyMediumFont(),
+                hashtagStyle: VineTheme.bodySmallFont(),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
           // Collaborator avatars
@@ -365,28 +401,34 @@ class _AuthorInfoSection extends ConsumerWidget {
             const SizedBox(height: 4),
             InspiredByAttributionRow(video: video, isActive: true),
           ],
-          // Audio attribution (only for videos with shared audio)
-          if (video.hasAudioReference) ...[
-            const SizedBox(height: 4),
-            AudioAttributionRow(video: video),
-          ],
-          // List attribution (curated lists)
-          if (listSources != null && listSources!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            _ListAttribution(listSources: listSources!),
-          ],
-          const SizedBox(height: 8),
         ],
+        // Audio attribution (all videos)
+        const SizedBox(height: 4),
+        AudioAttributionRow(video: video),
+        // List attribution (curated lists)
+        if (listSources != null && listSources!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          _ListAttribution(
+            listSources: listSources!,
+            onInteracted: onInteracted,
+          ),
+        ],
+        const SizedBox(height: 8),
       ],
     );
   }
 }
 
 class _AuthorAvatar extends StatelessWidget {
-  const _AuthorAvatar({required this.pubkey, this.avatarUrl});
+  const _AuthorAvatar({
+    required this.pubkey,
+    this.avatarUrl,
+    this.onInteracted,
+  });
 
   final String pubkey;
   final String? avatarUrl;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context) {
@@ -400,6 +442,7 @@ class _AuthorAvatar extends StatelessWidget {
             size: 48,
             semanticLabel: 'Author avatar',
             onTap: () {
+              onInteracted?.call();
               final npub = normalizeToNpub(pubkey);
               if (npub != null) {
                 context.pushWithVideoPause(
@@ -408,8 +451,8 @@ class _AuthorAvatar extends StatelessWidget {
               }
             },
           ),
-          Positioned(
-            left: 31,
+          PositionedDirectional(
+            start: 31,
             top: 31,
             child: VideoFollowButton(pubkey: pubkey, hideIfFollowing: true),
           ),
@@ -420,12 +463,28 @@ class _AuthorAvatar extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.video});
+  const _ActionButtons({
+    required this.video,
+    this.showAutoButton = false,
+    this.isAutoEnabled = false,
+    this.onAutoPressed,
+    this.onInteracted,
+  });
 
   final VideoEvent video;
+  final bool showAutoButton;
+  final bool isAutoEnabled;
+  final VoidCallback? onAutoPressed;
+  final VoidCallback? onInteracted;
 
   @override
-  Widget build(BuildContext context) => VideoOverlayActionColumn(video: video);
+  Widget build(BuildContext context) => VideoOverlayActionColumn(
+    video: video,
+    showAutoButton: showAutoButton,
+    isAutoEnabled: isAutoEnabled,
+    onAutoPressed: onAutoPressed,
+    onInteracted: onInteracted,
+  );
 }
 
 /// NIP-05 verification badge.
@@ -464,9 +523,13 @@ class _Nip05Badge extends ConsumerWidget {
 
 /// Displays curated list attribution chips and handles navigation.
 class _ListAttribution extends ConsumerWidget {
-  const _ListAttribution({required this.listSources});
+  const _ListAttribution({
+    required this.listSources,
+    this.onInteracted,
+  });
 
   final Set<String> listSources;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -476,6 +539,7 @@ class _ListAttribution extends ConsumerWidget {
       listIds: listSources,
       listLookup: curatedListRepository.getListById,
       onListTap: (listId, listName) {
+        onInteracted?.call();
         final list = curatedListRepository.getListById(listId);
         context.pushWithVideoPause(
           CuratedListFeedScreen.pathForId(listId),

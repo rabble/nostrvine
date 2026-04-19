@@ -293,7 +293,7 @@ class _ScrollableContent extends StatelessWidget {
                         vertical: 16,
                       ),
                       child: Align(
-                        alignment: Alignment.centerLeft,
+                        alignment: AlignmentDirectional.centerStart,
                         child: Text(
                           contentTitle!,
                           style: VineTheme.titleMediumFont(
@@ -372,7 +372,7 @@ class _FixedContent extends StatelessWidget {
                             vertical: 16,
                           ),
                           child: Align(
-                            alignment: Alignment.centerLeft,
+                            alignment: AlignmentDirectional.centerStart,
                             child: Text(
                               contentTitle!,
                               style: VineTheme.titleMediumFont(

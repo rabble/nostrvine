@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.8+497
+version: 1.0.9+498
 
 environment:
   sdk: ^3.11.0
@@ -25,15 +25,22 @@ environment:
 workspace:
   - packages/app_update_repository
   - packages/app_version_client
+  - packages/blossom_upload_service
+  - packages/blurhash_service
+  - packages/categories_repository
   - packages/comments_repository
   - packages/count_formatter
   - packages/curated_list_repository
+  - packages/curation_service
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
+  - packages/dm_repository
   - packages/divine_video_player
+  - packages/follow_repository
   - packages/funnelcake_api_client
   - packages/hashtag_repository
+  - packages/hls_auth_web_player
   - packages/image_metadata_stripper
   - packages/invite_api_client
   - packages/keycast_flutter
@@ -51,8 +58,11 @@ workspace:
   - packages/profile_repository
   - packages/reposts_repository
   - packages/sound_service
+  - packages/sounds_repository
   - packages/time_formatter
   - packages/tv_static_effect
+  - packages/unified_logger
+  - packages/video_event_cache
   - packages/videos_repository
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -68,6 +78,8 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+
+  blossom_upload_service:
 
   # State management
   flutter_riverpod: ^3.0.0
@@ -103,6 +115,7 @@ dependencies:
     path: packages/divine_camera
   divine_video_player:
     path: packages/divine_video_player
+  dm_repository:
   video_player: ^2.9.1 # Uses native AVPlayer (iOS/macOS) and ExoPlayer (Android)
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
   image: ^4.1.7 # Image processing for GIF generation
@@ -139,8 +152,23 @@ dependencies:
   blurhash_dart: ^1.2.1 # Generate blurhash for progressive image loading
   skeletonizer: ^2.1.2 # Skeleton loading animations with shimmer effect
 
+  # Blurhash Service - Blurhash generation and decoding for image placeholders
+  blurhash_service:
+
+  # Categories Repository - Video categories from Funnelcake API
+  categories_repository:
+
+  # Curation Service - NIP-51 video curation sets and content discovery
+  curation_service:
+
+  # Video Event Cache - Abstract interface for video event caching
+  video_event_cache:
+
   # Sound Service - Sound effects (countdown beeps, etc.)
   sound_service:
+
+  # Sounds Repository - Kind 1063 audio events from Nostr relays
+  sounds_repository:
 
   # Notification Repository - Notification enrichment and grouping
   notification_repository:
@@ -156,8 +184,16 @@ dependencies:
 
   keycast_flutter:
 
+  # Follow Repository - Follow relationship management
+  follow_repository:
+
   # Hashtag Repository - Hashtag search data layer
   hashtag_repository:
+
+  # HLS + NIP-98 Auth Web Player - Web-only video player with per-segment
+  # NIP-98 signing for age-restricted media. Gated behind
+  # FeatureFlag.hlsAuthWebPlayer.
+  hls_auth_web_player:
 
   # Videos Repository - Video feed data layer
   videos_repository:
@@ -171,11 +207,16 @@ dependencies:
   # Divine UI - Shared UI components
   divine_ui:
 
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+
   # Logging
   logging: ^1.2.0
+  unified_logger:
 
   # Date formatting
-  intl: ^0.19.0
+  intl: ">=0.19.0 <1.0.0"
 
   # Missing dependencies required by nostr_sdk
   equatable: ^2.0.5
@@ -186,6 +227,14 @@ dependencies:
   firebase_crashlytics: ^5.0.7
   firebase_analytics: ^12.1.2
   go_router: ^16.2.4
+  # Runtime splash-screen control via FlutterNativeSplash.preserve/remove.
+  # Used ONLY for the runtime API — do NOT add a flutter_native_splash:
+  # config block or run `dart run flutter_native_splash:create`. The
+  # existing platform splash assets (Android launch_background.xml with
+  # Zendesk theme inheritance, iOS LaunchScreen.storyboard, Android 12+
+  # values-v31 styles) are hand-authored and should not be regenerated.
+  # See #2749 and #2953 for context on the welcome-screen flash fix.
+  flutter_native_splash: ^2.4.7
   flutter_local_notifications: ^19.4.2
   package_info_plus: ^9.0.0
   uuid: ^4.5.1
@@ -271,6 +320,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -287,7 +337,7 @@ flutter:
     - assets/icon/
     - assets/loading-brand.gif
     - assets/loading-brand-sprite.png
-    - assets/seed_data/seed_events.sql
+    - assets/seed_data/seed_events.json
     - assets/seed_data/classic_viner_profiles.json
     - assets/seed_media/manifest.json
     - assets/seed_media/videos/

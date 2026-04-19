@@ -4,10 +4,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/actions/comment_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
@@ -35,12 +37,18 @@ void main() {
     required VideoEvent video,
     bool isPreviewMode = false,
     VideoInteractionsBloc? bloc,
+    VoidCallback? onInteracted,
   }) {
-    final widget = MaterialApp(
-      home: Scaffold(
-        body: CommentActionButton(
-          video: video,
-          isPreviewMode: isPreviewMode,
+    final widget = ProviderScope(
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: CommentActionButton(
+            video: video,
+            isPreviewMode: isPreviewMode,
+            onInteracted: onInteracted,
+          ),
         ),
       ),
     );
@@ -182,6 +190,27 @@ void main() {
         );
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
+
+      testWidgets('calls onInteracted before opening comments', (
+        tester,
+      ) async {
+        var interacted = false;
+        when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
+
+        await tester.pumpWidget(
+          buildSubject(
+            video: testVideo,
+            bloc: mockBloc,
+            onInteracted: () => interacted = true,
+          ),
+        );
+
+        await tester.tap(find.byType(IconButton));
+        await tester.pump();
+
+        expect(interacted, isTrue);
+        expect(tester.takeException(), isNotNull);
       });
     });
   });

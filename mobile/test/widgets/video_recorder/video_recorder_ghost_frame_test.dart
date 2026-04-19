@@ -7,6 +7,7 @@ import 'package:divine_camera/divine_camera.dart' show CameraLensMetadata;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
@@ -85,6 +86,8 @@ void main() {
           }),
         ],
         child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: VideoRecorderGhostFrame()),
         ),
       );
@@ -139,6 +142,8 @@ void main() {
               }),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: VideoRecorderGhostFrame()),
             ),
           ),
@@ -186,6 +191,8 @@ void main() {
               }),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: VideoRecorderGhostFrame()),
             ),
           ),
@@ -231,6 +238,8 @@ void main() {
               }),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: VideoRecorderGhostFrame()),
             ),
           ),
@@ -266,6 +275,8 @@ void main() {
               }),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: VideoRecorderGhostFrame()),
             ),
           ),

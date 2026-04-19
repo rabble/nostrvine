@@ -4,13 +4,18 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/comments/comments.dart';
 
 void main() {
   group('CommentsDragHandle', () {
     testWidgets('renders container with correct dimensions', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: CommentsDragHandle())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: CommentsDragHandle()),
+        ),
       );
 
       // Find the Container
@@ -25,7 +30,11 @@ void main() {
 
     testWidgets('has correct visual styling', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: CommentsDragHandle())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: CommentsDragHandle()),
+        ),
       );
 
       // Find the Container and verify its decoration
@@ -39,7 +48,11 @@ void main() {
 
     testWidgets('has correct margin', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: CommentsDragHandle())),
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: CommentsDragHandle()),
+        ),
       );
 
       final container = tester.widget<Container>(find.byType(Container));

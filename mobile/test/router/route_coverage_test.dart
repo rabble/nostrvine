@@ -18,7 +18,6 @@ import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
@@ -253,42 +252,6 @@ void main() {
       });
     });
 
-    group('Search routes parse correctly', () {
-      test(
-        '${SearchScreenPure.path} parses to RouteType.search (grid mode)',
-        () {
-          final context = parseRoute(SearchScreenPure.path);
-          expect(context.type, RouteType.search);
-          expect(context.searchTerm, isNull);
-          expect(context.videoIndex, isNull);
-        },
-      );
-
-      test(
-        '${SearchScreenPure.pathForTerm(term: 'flutter')} parses to RouteType.search with term',
-        () {
-          final context = parseRoute(
-            SearchScreenPure.pathForTerm(term: 'flutter'),
-          );
-          expect(context.type, RouteType.search);
-          expect(context.searchTerm, 'flutter');
-          expect(context.videoIndex, isNull);
-        },
-      );
-
-      test(
-        '${SearchScreenPure.pathForTerm(term: 'flutter', index: 5)} parses to RouteType.search (feed mode)',
-        () {
-          final context = parseRoute(
-            SearchScreenPure.pathForTerm(term: 'flutter', index: 5),
-          );
-          expect(context.type, RouteType.search);
-          expect(context.searchTerm, 'flutter');
-          expect(context.videoIndex, 5);
-        },
-      );
-    });
-
     group('Hashtag routes parse correctly', () {
       test(
         '${HashtagScreenRouter.pathForTag('nostr')} parses to RouteType.hashtag',
@@ -381,12 +344,6 @@ void main() {
         final context = parseRoute('${HashtagScreenRouter.basePath}/$encoded');
         expect(context.hashtag, 'nostr+bitcoin');
       });
-
-      test('URL-encoded search term is decoded', () {
-        final encoded = Uri.encodeComponent('flutter dart');
-        final context = parseRoute('${SearchScreenPure.path}/$encoded');
-        expect(context.searchTerm, 'flutter dart');
-      });
     });
   });
 
@@ -405,7 +362,6 @@ void main() {
       'profile feed': ProfileScreenRouter.pathForIndex('npub1test', 2),
       'hashtag': HashtagScreenRouter.pathForTag('nostr'),
       'category gallery': CategoryGalleryScreen.locationFor('animals'),
-      'search with term': SearchScreenPure.pathForTerm(term: 'flutter'),
       'settings': SettingsScreen.path,
       'relay settings': RelaySettingsScreen.path,
     };
@@ -436,7 +392,6 @@ void main() {
         RouteType.profile: ProfileScreenRouter.pathForNpub('npub1test'),
         RouteType.hashtag: HashtagScreenRouter.pathForTag('test'),
         RouteType.categoryGallery: CategoryGalleryScreen.locationFor('animals'),
-        RouteType.search: SearchScreenPure.path,
         RouteType.videoRecorder: VideoRecorderScreen.path,
         RouteType.videoEditor: VideoEditorScreen.path,
         RouteType.videoMetadata: VideoMetadataScreen.path,

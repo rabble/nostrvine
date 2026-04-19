@@ -3,17 +3,20 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/l10n/email_verification_error_l10n.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class SecureAccountScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -69,6 +72,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       _generalError = null;
     });
 
+    final l10n = context.l10n;
     try {
       final oauth = ref.read(oauthClientProvider);
       final email = _emailController.text.trim();
@@ -80,7 +84,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       final nsec = await authService.exportNsec();
 
       if (nsec == null) {
-        _setGeneralError('Unable to access your keys. Please try again.');
+        _setGeneralError(l10n.authUnableToAccessKeys);
         return;
       }
 
@@ -96,7 +100,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
         name: 'SecureAccountScreen',
         category: LogCategory.auth,
       );
-      _setGeneralError('An unexpected error occurred. Please try again.');
+      _setGeneralError(l10n.authUnexpectedError);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -118,7 +122,9 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     );
 
     if (!result.success) {
-      _setGeneralError(result.errorDescription ?? 'Registration failed');
+      _setGeneralError(
+        result.errorDescription ?? context.l10n.authRegistrationFailed,
+      );
       return;
     }
 
@@ -142,26 +148,33 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   void _showVerificationDialog(String email) {
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => _VerificationDialog(
-        email: email,
-        onContinue: () {
-          Navigator.of(dialogContext).pop();
-          _continueToApp();
-        },
-        onSuccess: () {
-          // Navigate to explore screen after successful verification
-          if (mounted) {
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: _VerificationDialog(
+          email: email,
+          onContinue: () {
+            Navigator.of(dialogContext).pop();
+            _continueToApp();
+          },
+          onSuccess: () {
+            // Signal password managers to save credentials BEFORE we unmount
+            // the form via navigation.
+            if (!mounted) return;
+            TextInput.finishAutofillContext();
             context.go(ExploreScreen.path);
-          }
-        },
+          },
+        ),
       ),
     );
   }
 
   void _continueToApp() {
-    if (mounted) {
-      context.go(ExploreScreen.path);
-    }
+    if (!mounted) return;
+    // Signal password managers to save credentials BEFORE we unmount
+    // the form via navigation.
+    TextInput.finishAutofillContext();
+    context.go(ExploreScreen.path);
   }
 
   @override
@@ -212,7 +225,7 @@ class _VerificationDialog extends ConsumerWidget {
       builder: (context, verificationState) {
         // Auto-close when verification completes (user is no longer anonymous)
         if (!verificationState.isPolling &&
-            verificationState.error == null &&
+            verificationState.errorCode == null &&
             !authService.isAnonymous) {
           // Use post-frame callback to avoid calling Navigator during build
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -221,7 +234,8 @@ class _VerificationDialog extends ConsumerWidget {
         }
 
         // Show error state if verification failed
-        if (verificationState.error != null) {
+        final errorCode = verificationState.errorCode;
+        if (errorCode != null) {
           return AlertDialog(
             backgroundColor: VineTheme.cardBackground,
             title: const Row(
@@ -235,7 +249,7 @@ class _VerificationDialog extends ConsumerWidget {
               ],
             ),
             content: Text(
-              verificationState.error!,
+              context.l10n.emailVerificationErrorMessage(errorCode),
               style: const TextStyle(color: VineTheme.secondaryText),
             ),
             actions: [

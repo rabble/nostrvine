@@ -11,9 +11,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
-import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
@@ -23,6 +26,9 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.da
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../helpers/test_provider_overrides.dart';
 
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
@@ -45,6 +51,10 @@ const _audioPubkey =
 const _audioEventId =
     '1111111111111111111111111111111111111111111111111111111111111111';
 
+AppLocalizations _l10n(WidgetTester tester) => AppLocalizations.of(
+  tester.element(find.byType(Scaffold).first),
+);
+
 UserProfile _makeProfile(String pubkey, String name) => UserProfile(
   pubkey: pubkey,
   displayName: name,
@@ -64,6 +74,7 @@ VideoEvent _makeVideo({
   String? title,
   String content = '',
   Map<String, String> rawTags = const {},
+  int originalLoops = 1500,
 }) => VideoEvent(
   id: 'test_video_id_00000000000000000000000000000000000000000000000000',
   pubkey: _creatorPubkey,
@@ -78,7 +89,7 @@ VideoEvent _makeVideo({
   inspiredByVideo: inspiredByVideo,
   reposterPubkeys: reposterPubkeys,
   audioEventId: audioEventId,
-  originalLoops: 1500,
+  originalLoops: originalLoops,
   rawTags: rawTags,
 );
 
@@ -113,9 +124,9 @@ void main() {
     when(
       () => mockRepostersCubit.stream,
     ).thenAnswer((_) => const Stream.empty());
-    when(() => mockRepostersCubit.state).thenReturn(
-      const VideoRepostersState(isLoading: false),
-    );
+    when(
+      () => mockRepostersCubit.state,
+    ).thenReturn(const VideoRepostersState(isLoading: false));
     when(() => mockRepostersCubit.close()).thenAnswer((_) async {});
   });
 
@@ -130,8 +141,17 @@ void main() {
     }
 
     return UncontrolledProviderScope(
-      container: ProviderContainer(overrides: providerOverrides),
+      container: ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(
+            createMockSharedPreferences(),
+          ),
+          ...providerOverrides,
+        ],
+      ),
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: MultiBlocProvider(
             providers: [
@@ -164,6 +184,20 @@ void main() {
       expect(find.text('A description'), findsOneWidget);
     });
 
+    testWidgets('renders description with clickable rich text', (tester) async {
+      final video = _makeVideo(
+        title: 'Who knew?',
+        content: 'Read more at https://example.com/docs #proof',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+
+      expect(find.text('Who knew?'), findsOneWidget);
+      expect(find.byType(ClickableHashtagText), findsOneWidget);
+    });
+
     testWidgets('hides title section when both are empty', (tester) async {
       final video = _makeVideo();
 
@@ -179,6 +213,115 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // Captions setting
+  // ---------------------------------------------------------------------------
+  group('Captions setting', () {
+    testWidgets('renders captions row even when video has no subtitles', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Captions'), findsOneWidget);
+      expect(find.byType(Switch), findsOneWidget);
+    });
+
+    testWidgets('defaults captions switch to on from global preference', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: _makeVideo())),
+      );
+      await tester.pumpAndSettle();
+
+      final switchWidget = tester.widget<Switch>(find.byType(Switch));
+      expect(switchWidget.value, isTrue);
+      expect(switchWidget.activeThumbColor, VineTheme.whiteText);
+      expect(switchWidget.activeTrackColor, VineTheme.vineGreen);
+      expect(switchWidget.inactiveThumbColor, VineTheme.whiteText);
+      expect(switchWidget.inactiveTrackColor, VineTheme.surfaceContainer);
+    });
+
+    testWidgets('renders captions after the primary metadata content', (
+      tester,
+    ) async {
+      final video = _makeVideo(
+        title: 'Why',
+        content: 'Because',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+      await tester.pumpAndSettle();
+
+      final titleY = tester.getTopLeft(find.text('Why')).dy;
+      final captionsY = tester.getTopLeft(find.text('Captions')).dy;
+
+      expect(captionsY, greaterThan(titleY));
+    });
+
+    testWidgets('keeps captions label adjacent to the toggle', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: _makeVideo())),
+      );
+      await tester.pumpAndSettle();
+
+      final labelRight = tester.getTopRight(find.text('Captions')).dx;
+      final switchLeft = tester.getTopLeft(find.byType(Switch)).dx;
+
+      expect(switchLeft - labelRight, lessThanOrEqualTo(24));
+    });
+
+    testWidgets('toggling captions switch updates global provider state', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MultiBlocProvider(
+                providers: [
+                  BlocProvider<VideoInteractionsBloc>.value(
+                    value: mockInteractionsBloc,
+                  ),
+                  BlocProvider<VideoRepostersCubit>.value(
+                    value: mockRepostersCubit,
+                  ),
+                ],
+                child: MetadataExpandedSheet(video: _makeVideo()),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      expect(container.read(subtitleVisibilityProvider), isFalse);
+      expect(prefs.getBool('subtitle_visibility_enabled'), isFalse);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Stats row
   // ---------------------------------------------------------------------------
   group(MetadataStatsRow, () {
@@ -189,21 +332,34 @@ void main() {
         buildSubject(child: MetadataStatsRow(video: video)),
       );
 
-      expect(find.text('1.5k'), findsOneWidget); // originalLoops
+      expect(find.text('1.5K'), findsOneWidget); // originalLoops
       expect(find.text('250'), findsOneWidget); // likeCount
       expect(find.text('42'), findsOneWidget); // commentCount
       expect(find.text('15'), findsOneWidget); // repostCount
-      expect(find.text('Loops'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(
+        find.text(l10n.metadataLoopsLabel(video.totalLoops)),
+        findsOneWidget,
+      );
       expect(find.text('Likes'), findsOneWidget);
       expect(find.text('Comments'), findsOneWidget);
       expect(find.text('Reposts'), findsOneWidget);
     });
 
+    testWidgets('uses singular Loop label when count is 1', (tester) async {
+      final video = _makeVideo(originalLoops: 1);
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataStatsRow(video: video)),
+      );
+
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.metadataLoopsLabel(1)), findsOneWidget);
+    });
+
     testWidgets('shows dash when loading', (tester) async {
       when(() => mockInteractionsBloc.state).thenReturn(
-        const VideoInteractionsState(
-          status: VideoInteractionsStatus.loading,
-        ),
+        const VideoInteractionsState(status: VideoInteractionsStatus.loading),
       );
 
       final video = _makeVideo();
@@ -243,6 +399,17 @@ void main() {
   // ---------------------------------------------------------------------------
   group(MetadataBadgesRow, () {
     testWidgets('renders Human-Made badge when hasProofMode', (tester) async {
+      final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
+      await tester.pumpWidget(
+        buildSubject(child: MetadataBadgesRow(video: video)),
+      );
+
+      expect(find.textContaining('Human-Made'), findsOneWidget);
+    });
+
+    testWidgets('renders Human-Made badge without the divine logo', (
+      tester,
+    ) async {
       final video = _makeVideo(
         rawTags: {'verification': 'verified_mobile'},
       );
@@ -251,6 +418,7 @@ void main() {
       );
 
       expect(find.textContaining('Human-Made'), findsOneWidget);
+      expect(find.byType(DivineIcon), findsNothing);
     });
 
     testWidgets('renders Not Divine badge for external videos', (tester) async {
@@ -265,9 +433,7 @@ void main() {
 
     testWidgets('renders both badges with dot separator', (tester) async {
       // hasProofMode but not Divine hosted
-      final video = _makeVideo(
-        rawTags: {'verification': 'verified_web'},
-      );
+      final video = _makeVideo(rawTags: {'verification': 'verified_web'});
       await tester.pumpWidget(
         buildSubject(child: MetadataBadgesRow(video: video)),
       );
@@ -510,9 +676,7 @@ void main() {
       final video = _makeVideo();
 
       await tester.pumpWidget(
-        buildSubject(
-          child: MetadataRepostedBySection(video: video),
-        ),
+        buildSubject(child: MetadataRepostedBySection(video: video)),
       );
       await tester.pumpAndSettle();
 
@@ -573,9 +737,9 @@ void main() {
       await tester.pumpWidget(
         buildSubject(
           providerOverrides: [
-            soundByIdProvider(_audioEventId).overrideWith(
-              (ref) async => _testAudio,
-            ),
+            soundByIdProvider(
+              _audioEventId,
+            ).overrideWith((ref) async => _testAudio),
             userProfileReactiveProvider(_audioPubkey).overrideWith(
               (ref) =>
                   Stream.value(_makeProfile(_audioPubkey, 'Audio Creator')),
@@ -642,9 +806,9 @@ void main() {
             fetchUserProfileProvider(_reposterPubkey).overrideWith(
               (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
             ),
-            soundByIdProvider(_audioEventId).overrideWith(
-              (ref) async => _testAudio,
-            ),
+            soundByIdProvider(
+              _audioEventId,
+            ).overrideWith((ref) async => _testAudio),
             userProfileReactiveProvider(_audioPubkey).overrideWith(
               (ref) =>
                   Stream.value(_makeProfile(_audioPubkey, 'Audio Creator')),
@@ -663,7 +827,11 @@ void main() {
       );
 
       // Stats
-      expect(find.text('Loops'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(
+        find.text(l10n.metadataLoopsLabel(video.totalLoops)),
+        findsOneWidget,
+      );
       expect(find.text('Likes'), findsOneWidget);
 
       // Badges row (Human-Made from verification, not Classic Vine)
@@ -706,10 +874,7 @@ void main() {
     testWidgets('renders only populated sections for sparse video', (
       tester,
     ) async {
-      final video = _makeVideo(
-        title: 'Simple video',
-        hashtags: ['hello'],
-      );
+      final video = _makeVideo(title: 'Simple video', hashtags: ['hello']);
 
       await tester.pumpWidget(
         buildSubject(

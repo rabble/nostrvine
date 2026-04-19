@@ -1,3 +1,4 @@
+@Tags(['skip_very_good_optimization'])
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/global_error_widget.dart';

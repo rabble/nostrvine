@@ -8,6 +8,7 @@
 /// - Various typed exceptions for error handling
 library;
 
+export 'src/blocked_comment_filter.dart';
 export 'src/comments_repository.dart';
 export 'src/exceptions.dart';
 export 'src/models/models.dart';

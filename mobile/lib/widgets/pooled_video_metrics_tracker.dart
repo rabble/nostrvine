@@ -10,8 +10,8 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/view_event_publisher.dart'
     show ViewTrafficSource;
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Tracks video playback metrics for pooled videos using media_kit Player.
 ///

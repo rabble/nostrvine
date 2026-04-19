@@ -652,6 +652,7 @@ void main() {
         'bunker_url': 'wss://keycast.example.com',
         'access_token': 'test_token',
         'scope': 'policy:full',
+        'user_pubkey': pubkeyHex,
       });
       when(
         () => mockSecureStorage.read(key: 'keycast_session'),
@@ -666,6 +667,81 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'refuses to archive OAuth session when global slot belongs to a '
+      'different pubkey (corruption guard)',
+      () async {
+        // Reproduces Bug 2 corruption mechanism: the global keycast_session
+        // slot contains a session belonging to a DIFFERENT user (e.g., from
+        // a diverged local-first restore), but signOut archives for the
+        // current identity. Without validation, _archiveSignerInfo would
+        // write the wrong session into the current user's archive key,
+        // silently corrupting it.
+        final currentPubkeyHex = testKeyContainer.publicKeyHex;
+        const otherPubkeyHex =
+            '89ef92b9ebe6dc1e4ea398f6477f227e9542'
+            '9627b0a33dc89b640e137b256be5';
+
+        // Global slot contains a session for a different user.
+        final otherSessionJson = jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'other_user_token',
+          'scope': 'policy:full',
+          'user_pubkey': otherPubkeyHex,
+        });
+        when(
+          () => mockSecureStorage.read(key: 'keycast_session'),
+        ).thenAnswer((_) async => otherSessionJson);
+
+        await authService.signOut();
+
+        // The current user's archive key must NOT contain the other
+        // user's session. Either nothing is written, or if something is
+        // written, it must not be the other user's session data.
+        verifyNever(
+          () => mockSecureStorage.write(
+            key: 'keycast_session_$currentPubkeyHex',
+            value: any(
+              named: 'value',
+              that: contains('other_user_token'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'refuses to archive OAuth session with null userPubkey (legacy)',
+      () async {
+        // Legacy sessions created before pubkey binding have
+        // user_pubkey=null. They cannot be verified as belonging to
+        // any specific account, so archiving them would propagate
+        // the corruption. _archiveSignerInfo must skip them entirely.
+        final currentPubkeyHex = testKeyContainer.publicKeyHex;
+
+        final legacySessionJson = jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'legacy_token',
+          'scope': 'policy:full',
+          // No user_pubkey — legacy session
+        });
+        when(
+          () => mockSecureStorage.read(key: 'keycast_session'),
+        ).thenAnswer((_) async => legacySessionJson);
+
+        await authService.signOut();
+
+        // Legacy session must NOT be written to the per-account
+        // archive because its ownership is unverifiable.
+        verifyNever(
+          () => mockSecureStorage.write(
+            key: 'keycast_session_$currentPubkeyHex',
+            value: any(named: 'value', that: contains('legacy_token')),
+          ),
+        );
+      },
+    );
 
     test('skips archiving when no signer info present', () async {
       // All reads return null by default — no signer info to archive
@@ -776,6 +852,7 @@ void main() {
         'bunker_url': 'wss://keycast.example.com',
         'access_token': 'test_token',
         'scope': 'policy:full',
+        'user_pubkey': pubkeyHex,
       });
       when(
         () => mockSecureStorage.read(key: 'keycast_session_$pubkeyHex'),
@@ -806,6 +883,123 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'rejects legacy OAuth session with null userPubkey in signInForAccount',
+      () async {
+        // Legacy sessions (created before userPubkey binding) have
+        // user_pubkey=null. signInForAccount must NOT accept them
+        // because the session's identity is unverifiable — it could
+        // belong to a different account.
+        final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        // Archived session has userPubkey bound (would pass restore)
+        final archivedSessionJson = jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'archived_token',
+          'scope': 'policy:full',
+          'user_pubkey': pubkeyHex,
+        });
+        when(
+          () => mockSecureStorage.read(key: 'keycast_session_$pubkeyHex'),
+        ).thenAnswer((_) async => archivedSessionJson);
+
+        // But the GLOBAL session slot holds a legacy session (no pubkey)
+        final legacySessionJson = jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'legacy_global_token',
+          'scope': 'policy:full',
+          // No user_pubkey — legacy
+        });
+        when(
+          () => mockSecureStorage.read(key: 'keycast_session'),
+        ).thenAnswer((_) async => legacySessionJson);
+
+        // No local keys fallback
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        // The legacy session should be rejected (no userPubkey match),
+        // refresh should be skipped (userPubkey != pubkeyHex), and
+        // the method should throw SessionExpiredException.
+        await expectLater(
+          _ignoringDiscoveryErrors(
+            () => authService.signInForAccount(
+              pubkeyHex,
+              AuthenticationSource.divineOAuth,
+            ),
+          ),
+          throwsA(isA<SessionExpiredException>()),
+        );
+      },
+    );
+
+    test(
+      'deletes corrupt OAuth archive when userPubkey does not match',
+      () async {
+        // Reproduces the state observed on device: an archive for
+        // account A actually contains a session belonging to account B
+        // (from pre-fix corruption). _restoreSignerInfo must detect the
+        // mismatch, delete the corrupt archive, and NOT write the wrong
+        // session to the global slot.
+        final requestedPubkeyHex = testKeyContainer.publicKeyHex;
+        const otherPubkeyHex =
+            '89ef92b9ebe6dc1e4ea398f6477f227e9542'
+            '9627b0a33dc89b640e137b256be5';
+
+        final corruptSessionJson = jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'other_user_token',
+          'scope': 'policy:full',
+          'user_pubkey': otherPubkeyHex,
+        });
+        when(
+          () => mockSecureStorage.read(
+            key: 'keycast_session_$requestedPubkeyHex',
+          ),
+        ).thenAnswer((_) async => corruptSessionJson);
+
+        // No local keys fallback so we end up at SessionExpiredException
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        await expectLater(
+          _ignoringDiscoveryErrors(
+            () => authService.signInForAccount(
+              requestedPubkeyHex,
+              AuthenticationSource.divineOAuth,
+            ),
+          ),
+          throwsA(isA<SessionExpiredException>()),
+        );
+
+        // Corrupt archive must be deleted
+        verify(
+          () => mockSecureStorage.delete(
+            key: 'keycast_session_$requestedPubkeyHex',
+          ),
+        ).called(1);
+
+        // Global slot must NOT be written with the corrupt session
+        verifyNever(
+          () => mockSecureStorage.write(
+            key: 'keycast_session',
+            value: any(
+              named: 'value',
+              that: contains('other_user_token'),
+            ),
+          ),
+        );
+      },
+    );
 
     test('sets auth source in SharedPreferences', () async {
       final pubkeyHex = testKeyContainer.publicKeyHex;
@@ -1019,9 +1213,18 @@ void main() {
     });
 
     test(
-      'throws when OAuth session not found for divineOAuth source',
+      'throws $SessionExpiredException when OAuth session not found '
+      'and no local keys',
       () async {
         final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        // No local keys available for fallback
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
 
         await expectLater(
           _ignoringDiscoveryErrors(
@@ -1030,19 +1233,13 @@ void main() {
               AuthenticationSource.divineOAuth,
             ),
           ),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('No archived OAuth session found'),
-            ),
-          ),
+          throwsA(isA<SessionExpiredException>()),
         );
       },
     );
 
     test(
-      'throws $SessionExpiredException when OAuth session is expired',
+      'recovers with local keys when OAuth session is expired',
       () async {
         final pubkeyHex = testKeyContainer.publicKeyHex;
 
@@ -1055,6 +1252,50 @@ void main() {
         when(
           () => mockSecureStorage.read(key: 'keycast_session'),
         ).thenAnswer((_) async => jsonEncode(expiredSession.toJson()));
+
+        // Local keys are available for fallback
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => testKeyContainer);
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInForAccount(
+            pubkeyHex,
+            AuthenticationSource.divineOAuth,
+          ),
+        );
+
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(authService.hasExpiredOAuthSession, isTrue);
+      },
+    );
+
+    test(
+      'throws $SessionExpiredException when OAuth session is expired '
+      'and no local keys',
+      () async {
+        final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        // Store an expired session (expired 1 hour ago)
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'wss://relay.example.com',
+          accessToken: 'expired-token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        );
+        when(
+          () => mockSecureStorage.read(key: 'keycast_session'),
+        ).thenAnswer((_) async => jsonEncode(expiredSession.toJson()));
+
+        // No local keys available for fallback
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
 
         await expectLater(
           _ignoringDiscoveryErrors(
@@ -1170,12 +1411,20 @@ void main() {
         final value = invocation.namedArguments[#value] as String;
         storage[key] = value;
       });
+      when(
+        () => mockSecureStorage.delete(key: any(named: 'key')),
+      ).thenAnswer((invocation) async {
+        final key = invocation.namedArguments[#key] as String;
+        storage.remove(key);
+      });
 
-      // Set up active OAuth session
+      // Set up active OAuth session with bound userPubkey (post-fix
+      // sessions always have this set).
       final sessionData = {
         'bunker_url': 'wss://keycast.example.com',
         'access_token': 'my_token',
         'scope': 'policy:full',
+        'user_pubkey': pubkeyHex,
       };
       storage['keycast_session'] = jsonEncode(sessionData);
 
@@ -1210,6 +1459,246 @@ void main() {
       expect(restored['bunker_url'], equals('wss://keycast.example.com'));
       expect(restored['access_token'], equals('my_token'));
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // _initializeDivineOAuth divergence tiebreaker
+  // ---------------------------------------------------------------------------
+
+  group('initialize (divineOAuth): divergence tiebreaker', () {
+    late SecureKeyContainer localKeyContainer;
+
+    setUp(() {
+      // Use a different nsec so localKey does not match testKeyContainer.
+      localKeyContainer = SecureKeyContainer.fromNsec(
+        'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+      );
+    });
+
+    test(
+      'preserves session and forces slow path when session matches '
+      'last-used npub but local key does not (multi-device Keycast)',
+      () async {
+        // Scenario: user added a Keycast account originally registered
+        // on another device. Fresh OAuth session was bound to that
+        // pubkey. Local PRIMARY still has an older device-only key.
+        // On next launch, divergence is detected; the tiebreaker must
+        // pick the session (which matches last_used_npub) and force
+        // the slow path that uses the session — NOT clear it.
+        final sessionPubkey = testKeyContainer.publicKeyHex;
+        final sessionNpub = testKeyContainer.npub;
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'last_used_npub': sessionNpub,
+          kKnownAccountsKey: '[]',
+        });
+
+        final storage = <String, String>{};
+        final sessionData = {
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'fresh_multi_device_token',
+          'scope': 'policy:full',
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 1))
+              .toIso8601String(),
+          'user_pubkey': sessionPubkey,
+        };
+        storage['keycast_session'] = jsonEncode(sessionData);
+
+        when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final key = invocation.namedArguments[#key] as String;
+          return storage[key];
+        });
+        when(
+          () => mockSecureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          final value = invocation.namedArguments[#value] as String;
+          storage[key] = value;
+        });
+        when(
+          () => mockSecureStorage.delete(key: any(named: 'key')),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          storage.remove(key);
+        });
+
+        // Local PRIMARY has a DIFFERENT key than the session
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => localKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        // Session must NOT be cleared — it is the authoritative side.
+        expect(
+          storage['keycast_session'],
+          isNotNull,
+          reason:
+              'Session matches last_used_npub and should be preserved '
+              '(tiebreaker picks session over stale local key)',
+        );
+        final preserved =
+            jsonDecode(storage['keycast_session']!) as Map<String, dynamic>;
+        expect(preserved['access_token'], equals('fresh_multi_device_token'));
+
+        // The stale local key should be archived to its per-identity
+        // slot so the user can switch back via the welcome screen.
+        verify(
+          () => mockKeyStorage.storeIdentityKeyContainer(
+            localKeyContainer.npub,
+            any(),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    test(
+      'clears session when local key matches last-used npub but session '
+      'does not (local is authoritative)',
+      () async {
+        // Scenario: the global OAuth slot is stale (e.g., from an old
+        // session). The local key corresponds to the current user.
+        // The tiebreaker must clear the stale session so it does not
+        // pollute future sign-ins.
+        final localNpub = localKeyContainer.npub;
+        const staleSessionPubkey =
+            '89ef92b9ebe6dc1e4ea398f6477f227e9542'
+            '9627b0a33dc89b640e137b256be5';
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'last_used_npub': localNpub,
+          kKnownAccountsKey: '[]',
+        });
+
+        final storage = <String, String>{};
+        final sessionData = {
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'stale_token',
+          'scope': 'policy:full',
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 1))
+              .toIso8601String(),
+          'user_pubkey': staleSessionPubkey,
+        };
+        storage['keycast_session'] = jsonEncode(sessionData);
+        storage['keycast_refresh_token'] = 'stale_refresh';
+        storage['keycast_auth_handle'] = 'stale_handle';
+
+        when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final key = invocation.namedArguments[#key] as String;
+          return storage[key];
+        });
+        when(
+          () => mockSecureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          final value = invocation.namedArguments[#value] as String;
+          storage[key] = value;
+        });
+        when(
+          () => mockSecureStorage.delete(key: any(named: 'key')),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          storage.remove(key);
+        });
+
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => localKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        // Stale session must be cleared
+        expect(
+          storage['keycast_session'],
+          isNull,
+          reason: 'Stale session should be cleared when local key wins',
+        );
+        expect(storage['keycast_refresh_token'], isNull);
+        expect(storage['keycast_auth_handle'], isNull);
+      },
+    );
+
+    test(
+      'clears session on ambiguous divergence (neither side matches '
+      'last_used_npub)',
+      () async {
+        // Safe default: when neither session nor local key matches
+        // the last-used npub, clear the session to avoid propagating
+        // unknown state.
+        const unknownNpub =
+            'npub1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'last_used_npub': unknownNpub,
+          kKnownAccountsKey: '[]',
+        });
+
+        final storage = <String, String>{};
+        final sessionData = {
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'unknown_token',
+          'scope': 'policy:full',
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 1))
+              .toIso8601String(),
+          'user_pubkey': testKeyContainer.publicKeyHex,
+        };
+        storage['keycast_session'] = jsonEncode(sessionData);
+
+        when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final key = invocation.namedArguments[#key] as String;
+          return storage[key];
+        });
+        when(
+          () => mockSecureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          final value = invocation.namedArguments[#value] as String;
+          storage[key] = value;
+        });
+        when(
+          () => mockSecureStorage.delete(key: any(named: 'key')),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          storage.remove(key);
+        });
+
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => localKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        // Ambiguous → safe default: clear session
+        expect(storage['keycast_session'], isNull);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

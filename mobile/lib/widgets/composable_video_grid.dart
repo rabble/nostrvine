@@ -9,10 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
@@ -192,7 +194,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     // Wrap with RefreshIndicator if onRefresh is provided
     if (widget.onRefresh != null) {
       return RefreshIndicator(
-        semanticsLabel: 'searching for more videos',
+        semanticsLabel: context.l10n.videoGridRefreshLabel,
         onRefresh: widget.onRefresh!,
         displacement: 70,
         color: VineTheme.onPrimary,
@@ -230,10 +232,10 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 children: [
                   const Icon(Icons.more_vert, color: VineTheme.whiteText),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Video Options',
-                      style: TextStyle(
+                      context.l10n.videoGridOptionsTitle,
+                      style: const TextStyle(
                         color: VineTheme.whiteText,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -266,16 +268,19 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   size: 20,
                 ),
               ),
-              title: const Text(
-                'Edit Video',
-                style: TextStyle(
+              title: Text(
+                context.l10n.videoGridEditVideo,
+                style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              subtitle: const Text(
-                'Update title, description, and hashtags',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+              subtitle: Text(
+                context.l10n.videoGridEditVideoSubtitle,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 12,
+                ),
               ),
               onTap: () {
                 context.pop();
@@ -298,16 +303,19 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   size: 20,
                 ),
               ),
-              title: const Text(
-                'Delete Video',
-                style: TextStyle(
+              title: Text(
+                context.l10n.videoGridDeleteVideo,
+                style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              subtitle: const Text(
-                'Permanently remove this content',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+              subtitle: Text(
+                context.l10n.videoGridDeleteVideoSubtitle,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 12,
+                ),
               ),
               onTap: () {
                 context.pop();
@@ -331,34 +339,37 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: const Text(
-          'Delete Video',
-          style: TextStyle(color: VineTheme.whiteText),
+        title: Text(
+          context.l10n.videoGridDeleteConfirmTitle,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Are you sure you want to delete this video?',
-              style: TextStyle(color: VineTheme.whiteText),
+              context.l10n.videoGridDeleteConfirmMessage,
+              style: const TextStyle(color: VineTheme.whiteText),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
-              'This will send a delete request (NIP-09) to all relays. Some relays may still retain the content.',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+              context.l10n.videoGridDeleteConfirmNote,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.videoGridDeleteCancel),
           ),
           TextButton(
             onPressed: () => context.pop(true),
             style: TextButton.styleFrom(foregroundColor: VineTheme.error),
-            child: const Text('Delete'),
+            child: Text(context.l10n.videoGridDeleteConfirm),
           ),
         ],
       ),
@@ -379,10 +390,10 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       // Show loading snackbar
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -390,12 +401,12 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                     color: VineTheme.whiteText,
                   ),
                 ),
-                SizedBox(width: 12),
-                Text('Deleting content...'),
+                const SizedBox(width: 12),
+                Text(context.l10n.videoGridDeletingContent),
               ],
             ),
             backgroundColor: VineTheme.warning,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -424,9 +435,8 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 Expanded(
                   child: Text(
                     result.success
-                        ? 'Video deleted'
-                        : "Couldn't delete this video. Check your "
-                              'connection and try again.',
+                        ? context.l10n.videoGridDeleteSuccess
+                        : localizedDeleteFailureMessage(context, result),
                   ),
                 ),
               ],
@@ -441,7 +451,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete content: $e'),
+            content: Text(context.l10n.shareMenuDeleteFailedGeneric),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -490,9 +500,9 @@ class _VideoItem extends StatelessWidget {
                 child: _VideoInfoSection(video: video, index: index),
               ),
               if (isInSubscribedList)
-                Positioned(
+                PositionedDirectional(
                   top: 6,
-                  left: 6,
+                  start: 6,
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(

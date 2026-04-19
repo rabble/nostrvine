@@ -1,3 +1,4 @@
+@Tags(['skip_very_good_optimization'])
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 
 import '../../helpers/go_router.dart';
@@ -50,6 +52,8 @@ void main() {
       MockGoRouter? goRouter,
     }) {
       final app = MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: Scaffold(
           body: BlocProvider<ProfileLikedVideosBloc>.value(
@@ -249,6 +253,8 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               theme: VineTheme.theme,
               home: Scaffold(
                 body: NestedScrollView(
@@ -292,6 +298,8 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               theme: VineTheme.theme,
               home: Scaffold(
                 body: NestedScrollView(

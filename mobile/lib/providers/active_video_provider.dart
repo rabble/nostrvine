@@ -9,9 +9,9 @@ import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:riverpod/src/providers/provider.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Active video ID derived from router state and app lifecycle
 /// Returns null when app is backgrounded, overlay is visible, or no valid video at current index
@@ -79,8 +79,6 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       return null;
     case RouteType.explore:
       videosAsync = ref.watch(videosForExploreRouteProvider);
-    case RouteType.search:
-      videosAsync = ref.watch(videosForSearchRouteProvider);
     case RouteType.likedVideos:
       // Liked videos feed mode uses PooledFullscreenVideoFeedScreen inline,
       // which self-manages playback. Return null.
@@ -130,9 +128,11 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.discoverLists:
     case RouteType.creatorAnalytics:
     case RouteType.sound:
+    case RouteType.originalSound:
     case RouteType.secureAccount:
     case RouteType.messageRequests:
     case RouteType.requestPreview:
+    case RouteType.appLanguage:
       // Non-video routes - return null
       Log.debug(
         '[ACTIVE] ❌ Non-video route: ${ctx.type}',

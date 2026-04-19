@@ -6,11 +6,13 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   /// Route name for navigation
@@ -44,7 +46,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     final password = _passwordController.text;
     if (password.length < 8) {
       setState(() {
-        _errorMessage = 'Password must be at least 8 characters';
+        _errorMessage = context.l10n.authPasswordTooShort;
       });
       return;
     }
@@ -65,15 +67,18 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       if (!mounted) return;
 
       if (result.success) {
+        TextInput.finishAutofillContext();
+        if (!mounted) return;
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password reset successful. Please log in.'),
+          SnackBar(
+            content: Text(context.l10n.authPasswordResetSuccess),
           ),
         );
       } else {
         setState(() {
-          _errorMessage = result.message ?? 'Password reset failed';
+          _errorMessage =
+              result.message ?? context.l10n.authPasswordResetFailed;
         });
       }
     } catch (e) {
@@ -84,7 +89,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       );
       if (mounted) {
         setState(() {
-          _errorMessage = 'An unexpected error occurred. Please try again.';
+          _errorMessage = context.l10n.authUnexpectedError;
         });
       }
     } finally {
@@ -108,16 +113,14 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               const SizedBox(height: 8),
 
               // Back button
-              AuthBackButton(
-                onPressed: _isLoading ? null : () => context.pop(),
-              ),
+              AuthBackButton(enabled: !_isLoading),
 
               const SizedBox(height: 32),
 
               // Title
-              const Text(
-                'Reset Password',
-                style: TextStyle(
+              Text(
+                context.l10n.authResetPasswordTitle,
+                style: const TextStyle(
                   fontFamily: VineTheme.fontFamilyBricolage,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -128,10 +131,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               const SizedBox(height: 12),
 
               // Subtitle
-              const Text(
-                'Please enter your new password. It must be at '
-                'least 8 characters in length.',
-                style: TextStyle(
+              Text(
+                context.l10n.authResetPasswordSubtitle,
+                style: const TextStyle(
                   fontSize: 16,
                   color: VineTheme.secondaryText,
                   height: 1.4,
@@ -140,27 +142,32 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
               const SizedBox(height: 32),
 
-              // Password field
-              DivineAuthTextField(
-                controller: _passwordController,
-                label: 'New Password',
-                obscureText: true,
-                errorText: _errorMessage,
-                enabled: !_isLoading,
-                onChanged: (_) {
-                  if (_errorMessage != null) {
-                    setState(() => _errorMessage = null);
-                  }
-                },
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _handleSubmit(),
+              // AutofillGroup + Form enables password manager save prompts.
+              AutofillGroup(
+                child: Form(
+                  child: DivineAuthTextField(
+                    controller: _passwordController,
+                    label: context.l10n.authNewPasswordLabel,
+                    obscureText: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    errorText: _errorMessage,
+                    enabled: !_isLoading,
+                    onChanged: (_) {
+                      if (_errorMessage != null) {
+                        setState(() => _errorMessage = null);
+                      }
+                    },
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _handleSubmit(),
+                  ),
+                ),
               ),
 
               const SizedBox(height: 32),
 
               // Samoyed sticker
               const Align(
-                alignment: Alignment.centerRight,
+                alignment: AlignmentDirectional.centerEnd,
                 child: DivineSticker(
                   sticker: DivineStickerName.samoyedDog,
                   size: 160,
@@ -172,7 +179,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               // Update password button
               DivineButton(
                 expanded: true,
-                label: 'Update password',
+                label: context.l10n.authUpdatePassword,
                 isLoading: _isLoading,
                 onPressed: _handleSubmit,
               ),

@@ -1,8 +1,8 @@
 // ABOUTME: Service for managing the preferred audio input device on macOS
 // ABOUTME: Stores user's preferred microphone choice for video recording
 
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for managing the user's preferred audio input device for recording.
 /// On macOS, users can have multiple audio devices (built-in mic, USB mics,

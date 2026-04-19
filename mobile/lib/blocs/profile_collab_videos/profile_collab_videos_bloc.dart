@@ -6,7 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_collab_videos_event.dart';
@@ -91,21 +91,16 @@ class ProfileCollabVideosBloc
           videos: collabVideos,
           hasMoreContent: videos.length >= _pageSize,
           paginationCursor: cursor,
-          clearError: true,
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'ProfileCollabVideosBloc: Failed to fetch collab videos - $e',
         name: 'ProfileCollabVideosBloc',
         category: LogCategory.video,
       );
-      emit(
-        state.copyWith(
-          status: ProfileCollabVideosStatus.failure,
-          error: 'Failed to load collab videos',
-        ),
-      );
+      addError(e, stackTrace);
+      emit(state.copyWith(status: ProfileCollabVideosStatus.failure));
     }
   }
 

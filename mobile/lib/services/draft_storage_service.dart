@@ -11,9 +11,9 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class DraftStorageService {
   DraftStorageService({

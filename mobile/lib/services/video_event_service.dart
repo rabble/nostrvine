@@ -46,8 +46,9 @@ import 'package:openvine/services/repost_resolver.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/utils/log_batcher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
+import 'package:video_event_cache/video_event_cache.dart';
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -121,7 +122,7 @@ enum SubscriptionType {
 
 /// Service for handling video events (NIP-71 kinds 22, 34236) with separate lists per subscription type
 /// REFACTORED: Multiple event lists per subscription type with proper REQ filtering
-class VideoEventService extends ChangeNotifier {
+class VideoEventService extends ChangeNotifier implements VideoEventCache {
   VideoEventService(
     this._nostrService, {
     required SubscriptionManager subscriptionManager,
@@ -671,6 +672,7 @@ class VideoEventService extends ChangeNotifier {
   List<VideoEvent> get homeFeedVideos => getVideos(SubscriptionType.homeFeed);
 
   /// Get discovery videos (all videos for exploration)
+  @override
   List<VideoEvent> get discoveryVideos => getVideos(SubscriptionType.discovery);
 
   /// Get profile videos (from specific user)
@@ -887,7 +889,15 @@ class VideoEventService extends ChangeNotifier {
       }
     }
 
-    // Mark as locally deleted to prevent pagination resurrection
+    // Mark as locally deleted to prevent pagination resurrection.
+    //
+    // Semantics: removal is permanent for the lifetime of this service.
+    // Even if subsequent relay queries return the same event id, it will
+    // be filtered out via [isVideoLocallyDeleted]. This is intentional —
+    // a session-only removal avoids surprising the user by re-adding a
+    // video they just swiped past when the fullscreen feed paginates.
+    // The set is cleared only when the service is recreated (app
+    // restart or test tearDown).
     _locallyDeletedVideoIds.add(videoId);
 
     if (removedCount > 0) {
@@ -5045,6 +5055,7 @@ class VideoEventService extends ChangeNotifier {
   }
 
   /// Add a video event to the cache (for external services like CurationService)
+  @override
   void addVideoEvent(VideoEvent videoEvent) {
     _addVideoToSubscription(videoEvent, SubscriptionType.discovery);
   }

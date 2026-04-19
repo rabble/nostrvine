@@ -2,7 +2,7 @@
 // ABOUTME: Single source of truth for video playback state based on real visibility detection
 
 import 'dart:async';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Visibility info for a video widget
 class VideoVisibilityInfo {

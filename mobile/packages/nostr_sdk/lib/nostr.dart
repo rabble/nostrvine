@@ -58,7 +58,7 @@ class Nostr {
   ///
   /// Throws [StateError] if the signer has no public key available
   /// (e.g. not yet configured or session expired).
-  Future<String> _ensurePublicKey() async {
+  Future<String> ensurePublicKey() async {
     if (_cachedPublicKey.isEmpty) {
       await refreshPublicKey();
     }
@@ -97,7 +97,7 @@ class Nostr {
       tags.add(["k", targetKind.toString()]);
     }
 
-    final pk = await _ensurePublicKey();
+    final pk = await ensurePublicKey();
     Event event = Event(pk, EventKind.reaction, tags, content);
     return await sendEvent(
       event,
@@ -111,7 +111,7 @@ class Nostr {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    final pk = await _ensurePublicKey();
+    final pk = await ensurePublicKey();
     Event event = Event(pk, EventKind.eventDeletion, [
       ["e", eventId],
     ], "delete");
@@ -132,7 +132,7 @@ class Nostr {
       tags.add(["e", eventId]);
     }
 
-    final pk = await _ensurePublicKey();
+    final pk = await ensurePublicKey();
     Event event = Event(pk, EventKind.eventDeletion, tags, "delete");
     return await sendEvent(
       event,
@@ -152,7 +152,7 @@ class Nostr {
     if (StringUtil.isNotBlank(relayAddr)) {
       tag.add(relayAddr!);
     }
-    final pk = await _ensurePublicKey();
+    final pk = await ensurePublicKey();
     Event event = Event(pk, EventKind.repost, [tag], content);
     return await sendEvent(
       event,
@@ -168,7 +168,7 @@ class Nostr {
     List<String>? targetRelays,
   }) async {
     final tags = contacts.toJson();
-    final pk = await _ensurePublicKey();
+    final pk = await ensurePublicKey();
     final event = Event(pk, EventKind.contactList, tags, content);
     return await sendEvent(
       event,

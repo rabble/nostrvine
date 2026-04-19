@@ -1,9 +1,11 @@
+@Tags(['skip_very_good_optimization'])
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_user_chip.dart';
@@ -34,6 +36,8 @@ void main() {
               ).overrideWith((ref) => mockProfile),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: VideoMetadataUserChip.fromPubkey(pubkey: testPubkey),
               ),
@@ -57,6 +61,8 @@ void main() {
               ).overrideWith((ref) => mockProfile),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: VideoMetadataUserChip.fromPubkey(pubkey: testPubkey),
               ),
@@ -76,6 +82,8 @@ void main() {
               ).overrideWith((ref) => throw Exception('Loading')),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: VideoMetadataUserChip.fromPubkey(pubkey: testPubkey),
               ),
@@ -100,6 +108,8 @@ void main() {
               ).overrideWith((ref) => mockProfile),
             ],
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: VideoMetadataUserChip.fromPubkey(
                   pubkey: testPubkey,
@@ -126,6 +136,8 @@ void main() {
               ).overrideWith((ref) => mockProfile),
             ],
             child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: VideoMetadataUserChip.fromPubkey(pubkey: testPubkey),
               ),
@@ -152,6 +164,8 @@ void main() {
               ).overrideWith((ref) => mockProfile),
             ],
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: VideoMetadataUserChip.fromPubkey(
                   pubkey: testPubkey,
@@ -177,6 +191,8 @@ void main() {
         await tester.pumpWidget(
           const ProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: VideoMetadataUserChip.fromNpub(npub: testNpub),
               ),

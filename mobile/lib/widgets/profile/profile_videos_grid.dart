@@ -11,21 +11,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Internal class that represents a video entry in the grid
 /// It can be a video event or an uploading video
@@ -71,6 +72,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   List<VideoEvent>? _lastPrefetchedVideos;
   final _videosStreamController =
       StreamController<List<VideoEvent>>.broadcast();
+  final _hasMoreStreamController = StreamController<bool>.broadcast();
   final _precachedThumbnailUrls = <String>{};
 
   /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
@@ -119,6 +121,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   void dispose() {
     disposePagination();
     _videosStreamController.close();
+    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -144,6 +147,13 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   void _onVideoTapped(int index, {required VoidCallback onLoadMore}) {
     final videos = widget.videos;
+    final hasMoreContent =
+        ref
+            .read(profileFeedProvider(widget.userIdHex))
+            .asData
+            ?.value
+            .hasMoreContent ??
+        false;
     Log.info(
       '🎯 ProfileVideosGrid TAP: gridIndex=$index, '
       'videoId=${videos[index].id}',
@@ -159,6 +169,9 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         videosStream: _videosStreamController.stream.startWith(videos),
         initialIndex: index,
         onLoadMore: onLoadMore,
+        hasMoreStream: _hasMoreStreamController.stream.startWith(
+          hasMoreContent,
+        ),
         trafficSource: ViewTrafficSource.profile,
       ),
     );
@@ -171,6 +184,9 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       next.whenData((feedState) {
         if (!_videosStreamController.isClosed) {
           _videosStreamController.add(feedState.videos);
+        }
+        if (!_hasMoreStreamController.isClosed) {
+          _hasMoreStreamController.add(feedState.hasMoreContent);
         }
       });
     });
@@ -258,14 +274,16 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
     if (allVideos.isEmpty) {
       if (widget.isLoading) {
-        return const ProfileTabLoadingState(message: 'Loading videos...');
+        return ProfileTabLoadingState(
+          message: context.l10n.profileLoadingVideos,
+        );
       }
       return ProfileTabEmptyState(
         icon: DivineIconName.videoCamera,
-        title: 'No Videos Yet',
+        title: context.l10n.profileNoVideosTitle,
         subtitle: isOwnProfile
-            ? 'Share your first video to see it here'
-            : "This user hasn't shared any videos yet",
+            ? context.l10n.profileNoVideosOwnSubtitle
+            : context.l10n.profileNoVideosOtherSubtitle,
         onRefresh: loadMoreProfileVideos,
       );
     }
@@ -383,7 +401,7 @@ class _VideoGridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     identifier: 'video_thumbnail_$index',
-    label: 'Video thumbnail ${index + 1}',
+    label: context.l10n.profileVideoThumbnailLabel(index + 1),
     button: true,
     child: GestureDetector(
       onTap: onTap,

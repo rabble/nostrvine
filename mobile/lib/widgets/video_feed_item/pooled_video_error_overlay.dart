@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -67,10 +68,10 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
         : DivineIconName.warningCircle;
 
     final message = type == VideoErrorType.ageRestricted
-        ? 'Age-restricted content'
+        ? context.l10n.videoErrorAgeRestricted
         : isModerationRestricted
-        ? 'Content restricted'
-        : _userMessage(type);
+        ? context.l10n.videoErrorContentRestricted
+        : _userMessage(context, type);
 
     final showRetry = !isModerationRestricted;
 
@@ -97,7 +98,7 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
                 ),
                 if (showRetry)
                   DivineButton(
-                    label: 'Retry',
+                    label: context.l10n.videoErrorRetry,
                     type: DivineButtonType.tertiary,
                     size: DivineButtonSize.small,
                     onPressed: onRetry,
@@ -110,10 +111,11 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
     );
   }
 
-  static String _userMessage(VideoErrorType type) => switch (type) {
-    VideoErrorType.ageRestricted => 'Age-restricted content',
-    VideoErrorType.forbidden => 'Content restricted',
-    VideoErrorType.notFound => 'Video not found',
-    VideoErrorType.generic => 'Video playback error',
-  };
+  static String _userMessage(BuildContext context, VideoErrorType type) =>
+      switch (type) {
+        VideoErrorType.ageRestricted => context.l10n.videoErrorAgeRestricted,
+        VideoErrorType.forbidden => context.l10n.videoErrorContentRestricted,
+        VideoErrorType.notFound => context.l10n.videoErrorNotFound,
+        VideoErrorType.generic => context.l10n.videoErrorPlayback,
+      };
 }

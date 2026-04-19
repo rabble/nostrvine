@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
 
 /// Action buttons shown on profile page
@@ -61,7 +62,7 @@ class ProfileActionButtons extends StatelessWidget {
           child: DivineButton(
             expanded: true,
             leadingIcon: .pencilSimpleLineDuo,
-            label: 'Edit',
+            label: context.l10n.profileEditLabel,
             onPressed: onEditProfile,
           ),
         ),
@@ -71,7 +72,7 @@ class ProfileActionButtons extends StatelessWidget {
             expanded: true,
             type: .secondary,
             leadingIcon: .filmSlate,
-            label: 'Library',
+            label: context.l10n.profileLibraryLabel,
             onPressed: onOpenClips,
           ),
         ),

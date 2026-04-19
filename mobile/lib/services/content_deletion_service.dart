@@ -8,8 +8,31 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+/// Machine-readable reason when [DeleteResult.success] is false.
+enum DeleteFailureKind {
+  /// [ContentDeletionService] was not initialized.
+  notInitialized,
+
+  /// The video does not belong to the signed-in user.
+  notOwner,
+
+  /// User is not authenticated when creating the delete event.
+  notAuthenticated,
+
+  /// Signing or constructing the kind 5 delete event failed.
+  couldNotSign,
+
+  /// Every relay rejected the delete event or no relay responded before the
+  /// publish timeout. The delete is NOT persisted locally so the user can
+  /// retry.
+  relayRejected,
+
+  /// Unexpected error (including outer [deleteContent] catch).
+  unknown,
+}
 
 /// Delete request result
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
@@ -19,11 +42,15 @@ class DeleteResult {
     required this.timestamp,
     this.error,
     this.deleteEventId,
+    this.failureKind,
   });
   final bool success;
   final String? error;
   final String? deleteEventId;
   final DateTime timestamp;
+
+  /// Set when [success] is false; use for localized UI messages.
+  final DeleteFailureKind? failureKind;
 
   static DeleteResult createSuccess(String deleteEventId) => DeleteResult(
     success: true,
@@ -31,8 +58,13 @@ class DeleteResult {
     timestamp: DateTime.now(),
   );
 
-  static DeleteResult failure(String error) =>
-      DeleteResult(success: false, error: error, timestamp: DateTime.now());
+  static DeleteResult failure(String error, DeleteFailureKind kind) =>
+      DeleteResult(
+        success: false,
+        error: error,
+        failureKind: kind,
+        timestamp: DateTime.now(),
+      );
 }
 
 /// Content deletion record for tracking
@@ -126,7 +158,8 @@ class ContentDeletionService {
   /// The deletion is only considered successful when at least one relay
   /// returns an `OK true` acknowledgement (NIP-20). If every relay rejects
   /// the event or none respond before the publish timeout, the operation
-  /// fails and is NOT added to local deletion history — the user can retry.
+  /// fails with [DeleteFailureKind.relayRejected] and is NOT added to local
+  /// deletion history — the caller can retry.
   Future<DeleteResult> deleteContent({
     required VideoEvent video,
     required String reason,
@@ -134,42 +167,54 @@ class ContentDeletionService {
   }) async {
     try {
       if (!_isInitialized) {
-        return DeleteResult.failure('Deletion service not initialized');
+        return DeleteResult.failure(
+          'Deletion service not initialized',
+          DeleteFailureKind.notInitialized,
+        );
       }
 
       // Verify this is the user's own content
       if (!_isUserOwnContent(video)) {
-        return DeleteResult.failure('Can only delete your own content');
+        return DeleteResult.failure(
+          'Can only delete your own content',
+          DeleteFailureKind.notOwner,
+        );
       }
 
       // Create NIP-09 delete event (kind 5)
       // OpenVine only uses kind 34236 (addressable short videos)
-      final deleteEvent = await _createDeleteEvent(
+      final deleteOutcome = await _createDeleteEvent(
         originalEventId: video.id,
         originalEventKind: NIP71VideoKinds.getPreferredKind(),
         reason: reason,
         additionalContext: additionalContext,
       );
 
+      final deleteEvent = deleteOutcome.event;
       if (deleteEvent == null) {
-        return DeleteResult.failure('Failed to create delete event');
+        final kind = deleteOutcome.failureKind!;
+        return DeleteResult.failure(_failureMessageForKind(kind), kind);
       }
 
-      final outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
+      final publishOutcome = await _nostrService.publishEventAwaitOk(
+        deleteEvent,
+      );
 
-      if (outcome.failed) {
+      if (publishOutcome.failed) {
         Log.error(
-          'Delete publish not confirmed by any relay: ${outcome.summary}',
+          'Delete publish not confirmed by any relay: '
+          '${publishOutcome.summary}',
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
         return DeleteResult.failure(
-          'Relay did not confirm deletion: ${outcome.summary}',
+          'Relay did not confirm deletion: ${publishOutcome.summary}',
+          DeleteFailureKind.relayRejected,
         );
       }
 
       Log.info(
-        'Delete request confirmed by relay(s): ${outcome.acceptedBy}',
+        'Delete request confirmed by relay(s): ${publishOutcome.acceptedBy}',
         name: 'ContentDeletionService',
         category: LogCategory.system,
       );
@@ -198,7 +243,27 @@ class ContentDeletionService {
         name: 'ContentDeletionService',
         category: LogCategory.system,
       );
-      return DeleteResult.failure('Failed to delete content: $e');
+      return DeleteResult.failure(
+        'Failed to delete content: $e',
+        DeleteFailureKind.unknown,
+      );
+    }
+  }
+
+  static String _failureMessageForKind(DeleteFailureKind kind) {
+    switch (kind) {
+      case DeleteFailureKind.notInitialized:
+        return 'Deletion service not initialized';
+      case DeleteFailureKind.notOwner:
+        return 'Can only delete your own content';
+      case DeleteFailureKind.notAuthenticated:
+        return 'Cannot create delete event: not authenticated';
+      case DeleteFailureKind.couldNotSign:
+        return 'Failed to create delete event';
+      case DeleteFailureKind.relayRejected:
+        return 'Relay did not confirm deletion';
+      case DeleteFailureKind.unknown:
+        return 'Failed to delete content';
     }
   }
 
@@ -254,8 +319,9 @@ class ContentDeletionService {
     }
   }
 
-  /// Create NIP-09 delete event (kind 5)
-  Future<Event?> _createDeleteEvent({
+  /// Create NIP-09 delete event (kind 5).
+  /// On success [event] is non-null and [failureKind] is null; otherwise [event] is null.
+  Future<({Event? event, DeleteFailureKind? failureKind})> _createDeleteEvent({
     required String originalEventId,
     required int originalEventKind,
     required String reason,
@@ -268,7 +334,7 @@ class ContentDeletionService {
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
-        return null;
+        return (event: null, failureKind: DeleteFailureKind.notAuthenticated);
       }
 
       // Build NIP-09 compliant tags (kind 5)
@@ -306,7 +372,7 @@ class ContentDeletionService {
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
-        return null;
+        return (event: null, failureKind: DeleteFailureKind.couldNotSign);
       }
 
       Log.info(
@@ -320,14 +386,14 @@ class ContentDeletionService {
         category: LogCategory.system,
       );
 
-      return signedEvent;
+      return (event: signedEvent, failureKind: null);
     } catch (e) {
       Log.error(
         'Failed to create NIP-09 delete event: $e',
         name: 'ContentDeletionService',
         category: LogCategory.system,
       );
-      return null;
+      return (event: null, failureKind: DeleteFailureKind.unknown);
     }
   }
 

@@ -5,9 +5,9 @@ import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:models/models.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 typedef ClassicVinerAvatarCacheWriter =
     Future<void> Function({

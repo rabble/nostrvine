@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -28,10 +29,14 @@ import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
+import 'package:openvine/l10n/email_verification_error_l10n.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
@@ -48,13 +53,14 @@ import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
+import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
 import 'package:openvine/services/openvine_media_cache.dart';
@@ -66,7 +72,7 @@ import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
@@ -74,6 +80,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// Top-level background message handler required by Firebase.
@@ -376,7 +383,15 @@ Future<void> _startOpenVineApp() async {
   final startTime = DateTime.now();
 
   // Ensure bindings are initialized first (required for everything)
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Keep the native splash visible until auth resolves. AuthService calls
+  // FlutterNativeSplash.remove() in its initialize() finally block once a
+  // terminal auth state is reached. The Future.delayed is a safety net for
+  // catastrophic hangs — 5s is chosen to cover slow bunker/relay reconnects.
+  // See #2749 and #2953 for the investigation.
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  Future.delayed(const Duration(seconds: 5), FlutterNativeSplash.remove);
 
   // Lock app to portrait mode only (portrait up and portrait down)
   // Skip on desktop platforms where orientation lock doesn't apply
@@ -411,6 +426,13 @@ Future<void> _startOpenVineApp() async {
     isWeb: kIsWeb,
     configureCache: DivineVideoPlayerController.configureCache,
   );
+
+  // Dispose any zombie native players from a previous Dart VM
+  // (e.g. hot restart). Must happen after configureCache so the
+  // global method channel is already registered.
+  if (!kIsWeb) {
+    await DivineVideoPlayerController.disposeAll();
+  }
 
   StartupPerformanceService.instance.completePhase('bindings');
 
@@ -678,6 +700,24 @@ Future<void> _startOpenVineApp() async {
       } catch (_) {}
       // Still show the error widget (dark placeholder) but don't report
       // as fatal.
+      FlutterError.presentError(details);
+      return;
+    }
+
+    final recoverableReason = classifyRecoverableFlutterError(details);
+    if (recoverableReason != null) {
+      Log.warning(
+        'Recoverable Flutter resource load error (non-fatal): '
+        '${details.exception}',
+        name: 'Main',
+      );
+      try {
+        FirebaseCrashlytics.instance.recordError(
+          details.exception,
+          details.stack,
+          reason: recoverableReason,
+        );
+      } catch (_) {}
       FlutterError.presentError(details);
       return;
     }
@@ -1195,12 +1235,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
+            // TODO(#3032): Currently unreachable — GoRouter intercepts
+            // deep links before DeepLinkService can parse them.
             case DeepLinkType.search:
               if (deepLink.searchTerm != null) {
-                // Include index if present, otherwise use grid view
-                final targetPath = SearchScreenPure.pathForTerm(
-                  term: deepLink.searchTerm,
-                  index: deepLink.index,
+                final targetPath = SearchResultsPage.pathForQuery(
+                  deepLink.searchTerm!,
                 );
                 Log.info(
                   '📱 Navigating to search: $targetPath',
@@ -1350,10 +1390,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             router.go(ExploreScreen.path);
           }
           return true; // Handled
-        case RouteType.search:
-          // Go back to explore
-          router.go(ExploreScreen.path);
-          return true; // Handled
         case RouteType.videoRecorder:
         case RouteType.videoEditor:
         case RouteType.videoMetadata:
@@ -1380,7 +1416,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           RouteType.hashtag => HashtagScreenRouter.pathForTag(
             ctx.hashtag ?? '',
           ),
-          RouteType.search => SearchScreenPure.path,
           RouteType.home => VideoFeedPage.pathForIndex(0),
           _ => ExploreScreen.path,
         };
@@ -1444,27 +1479,46 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       return false; // Not handled - let PopScope handle it (may exit app)
     }
 
-    // On iOS/macOS/Windows, use PopScope. On Android, platform channel handles it
-    final app = (!kIsWeb && io.Platform.isAndroid)
-        ? MaterialApp.router(
+    // Build MaterialApp with locale from LocaleCubit.
+    // The BlocBuilder is used because the cubit is provided further down
+    // in the widget tree by MultiBlocProvider.
+    Widget buildApp(Locale? locale) {
+      if (!kIsWeb && io.Platform.isAndroid) {
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: VineTheme.statusBarStyle,
+          child: MaterialApp.router(
             title: 'Divine',
             debugShowCheckedModeBanner: false,
             theme: VineTheme.theme,
             routerConfig: router,
-          )
-        : PopScope(
-            canPop: false,
-            onPopInvokedWithResult: (didPop, result) async {
-              if (didPop) return;
-              await handleBackNavigation(router, ref);
-            },
-            child: MaterialApp.router(
-              title: 'Divine',
-              debugShowCheckedModeBanner: false,
-              theme: VineTheme.theme,
-              routerConfig: router,
-            ),
-          );
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localeListResolutionCallback: resolveAppUiLocale,
+          ),
+        );
+      }
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          await handleBackNavigation(router, ref);
+        },
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: VineTheme.statusBarStyle,
+          child: MaterialApp.router(
+            title: 'Divine',
+            debugShowCheckedModeBanner: false,
+            theme: VineTheme.theme,
+            routerConfig: router,
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localeListResolutionCallback: resolveAppUiLocale,
+          ),
+        ),
+      );
+    }
 
     /// Creates the publish service with callbacks wired to this notifier.
     Future<VideoPublishService> createPublishService({
@@ -1531,6 +1585,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
+            create: (_) => LocaleCubit(
+              localePreferenceService: LocalePreferenceService(
+                sharedPreferences: ref.read(sharedPreferencesProvider),
+              ),
+            ),
+          ),
+          BlocProvider(
             create: (_) => BackgroundPublishBloc(
               videoPublishServiceFactory: createPublishService,
               draftStorageService: ref.read(draftStorageServiceProvider),
@@ -1577,10 +1638,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               previous.status != EmailVerificationStatus.failure,
           listener: (context, state) {
             final messenger = ScaffoldMessenger.maybeOf(context);
-            if (messenger != null && state.error != null) {
+            final errorCode = state.errorCode;
+            if (messenger != null && errorCode != null) {
               messenger.showSnackBar(
                 SnackBar(
-                  content: Text(state.error!),
+                  content: Text(
+                    context.l10n.emailVerificationErrorMessage(errorCode),
+                  ),
                   backgroundColor: VineTheme.error,
                   behavior: SnackBarBehavior.floating,
                   duration: const Duration(seconds: 5),
@@ -1590,7 +1654,14 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           },
           child: UpdateDialogListener(
             child: _UploadFailureListener(
-              child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+              child: GeoBlockingGate(
+                child: AppLifecycleHandler(
+                  child: BlocBuilder<LocaleCubit, LocaleState>(
+                    builder: (context, localeState) =>
+                        buildApp(localeState.locale),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

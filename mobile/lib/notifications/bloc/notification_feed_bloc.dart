@@ -6,9 +6,9 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 
 part 'notification_feed_event.dart';
 part 'notification_feed_state.dart';
@@ -66,11 +66,12 @@ class NotificationFeedBloc
 
     try {
       final page = await _notificationRepository.refresh();
+      final filtered = page.items;
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: filtered,
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -119,11 +120,12 @@ class NotificationFeedBloc
   ) async {
     try {
       final page = await _notificationRepository.refresh();
+      final filtered = page.items;
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: filtered,
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -141,11 +143,12 @@ class NotificationFeedBloc
   ) async {
     try {
       final page = await _notificationRepository.refresh();
+      final filtered = page.items;
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: filtered,
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -164,10 +167,20 @@ class NotificationFeedBloc
     NotificationFeedRealtimeReceived event,
     Emitter<NotificationFeedState> emit,
   ) {
-    final incoming = event.notification;
+    final incoming = _notificationRepository.filterRealtimeNotification(
+      event.notification,
+    );
+    if (incoming == null) return;
 
-    // Deduplicate — skip if we already have this notification.
-    final exists = state.notifications.any((n) => n.id == incoming.id);
+    // Deduplicate — skip if we already have this notification by ID,
+    // or if a grouped notification already covers this target event.
+    final exists = state.notifications.any(
+      (n) =>
+          n.id == incoming.id ||
+          (incoming.targetEventId != null &&
+              n is GroupedNotification &&
+              n.targetEventId == incoming.targetEventId),
+    );
     if (exists) return;
 
     emit(

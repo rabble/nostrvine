@@ -7,18 +7,11 @@ import 'package:bip340/bip340.dart' as schnorr;
 import 'package:crypto/crypto.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 const _canonicalPayloadAux =
     '00000000000000000000000000000000'
     '00000000000000000000000000000000';
-
-/// Optional capability for signers that can expose a local private key to an
-/// isolate-safe decrypt pipeline.
-abstract interface class IsolateDecryptSigner implements NostrSigner {
-  bool get canDecryptInIsolate;
-  T withPrivateKeyHex<T>(T Function(String hex) operation);
-}
 
 /// NostrSigner implementation backed by a local [SecureKeyContainer].
 ///

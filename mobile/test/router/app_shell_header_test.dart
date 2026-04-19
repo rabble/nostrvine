@@ -4,19 +4,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
 
 void main() {
   Widget shell(ProviderContainer c) => UncontrolledProviderScope(
     container: c,
     child: ProviderScope(
-      child: MaterialApp.router(routerConfig: c.read(goRouterProvider)),
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: c.read(goRouterProvider),
+      ),
     ),
   );
 
@@ -76,21 +80,6 @@ void main() {
       addTearDown(c.dispose);
       await tester.pumpWidget(shell(c));
       c.read(goRouterProvider).go(HashtagScreenRouter.pathForTag('comedy'));
-      await tester.pumpAndSettle();
-
-      // Should find back button in AppBar
-      final backButton = find.descendant(
-        of: find.byType(AppBar),
-        matching: find.byIcon(Icons.arrow_back),
-      );
-      expect(backButton, findsOneWidget);
-    });
-
-    testWidgets('Back button shown on search route', (tester) async {
-      final c = ProviderContainer();
-      addTearDown(c.dispose);
-      await tester.pumpWidget(shell(c));
-      c.read(goRouterProvider).go(SearchScreenPure.path);
       await tester.pumpAndSettle();
 
       // Should find back button in AppBar

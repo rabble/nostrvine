@@ -1,7 +1,9 @@
+@Tags(['skip_very_good_optimization'])
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
 
 void main() {
@@ -27,6 +29,8 @@ void main() {
     int? overflowCount,
   }) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: NotificationAvatarStack(
           actors: actors,

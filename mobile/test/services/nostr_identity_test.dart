@@ -6,6 +6,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/nostr_identity.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 
 class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
 
@@ -37,6 +38,16 @@ void main() {
       final identity = LocalNostrIdentity(keyContainer: mockKeyContainer);
 
       expect(identity.pubkey, equals(testPublicKey));
+    });
+
+    test('npub encodes pubkey to bech32 format', () {
+      final identity = LocalNostrIdentity(keyContainer: mockKeyContainer);
+
+      expect(identity.npub, startsWith('npub1'));
+      expect(
+        identity.npub,
+        equals(NostrKeyUtils.encodePubKey(testPublicKey)),
+      );
     });
 
     test('getPublicKey returns pubkey', () async {

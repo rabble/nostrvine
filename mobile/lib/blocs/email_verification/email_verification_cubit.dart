@@ -10,7 +10,7 @@ import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/invite_error_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'email_verification_state.dart';
 
@@ -104,12 +104,15 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   }
 
   /// Emit a failure state from outside the cubit (e.g., token verification).
-  void emitFailure(String error) {
+  ///
+  /// Callers must pass a reason code — state never carries English strings;
+  /// the UI layer is responsible for mapping the code to localized copy.
+  void emitFailure(EmailVerificationError errorCode) {
     _cleanup();
     emit(
       EmailVerificationState(
         status: EmailVerificationStatus.failure,
-        error: error,
+        errorCode: errorCode,
       ),
     );
   }
@@ -152,7 +155,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     emit(
       const EmailVerificationState(
         status: EmailVerificationStatus.failure,
-        error: 'Verification timed out. Please try registering again.',
+        errorCode: EmailVerificationError.timeout,
       ),
     );
   }
@@ -251,7 +254,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
             emit(
               const EmailVerificationState(
                 status: EmailVerificationStatus.failure,
-                error: 'Verification failed - missing authorization code',
+                errorCode: EmailVerificationError.missingAuthCode,
               ),
             );
           }
@@ -290,9 +293,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
             );
             _cleanup();
             emit(
-              EmailVerificationState(
+              const EmailVerificationState(
                 status: EmailVerificationStatus.failure,
-                error: errorMsg,
+                errorCode: EmailVerificationError.pollFailed,
               ),
             );
           }
@@ -366,7 +369,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
           emit(
             const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Sign-in failed. Please try logging in manually.',
+              errorCode: EmailVerificationError.signInFailed,
             ),
           );
         }
@@ -383,7 +386,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         emit(
           EmailVerificationState(
             status: EmailVerificationStatus.failure,
-            error: InviteErrorUtils.activationFailureMessage(e),
+            errorCode: InviteErrorUtils.toEmailVerificationError(e),
             showInviteGateRecovery: inviteCode != null,
             inviteRecoveryCode: inviteCode,
           ),
@@ -398,9 +401,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         );
         _cleanup();
         emit(
-          EmailVerificationState(
+          const EmailVerificationState(
             status: EmailVerificationStatus.failure,
-            error: e.message,
+            errorCode: EmailVerificationError.oauthExchange,
           ),
         );
         return; // Don't retry OAuth errors
@@ -423,7 +426,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
           emit(
             const EmailVerificationState(
               status: EmailVerificationStatus.failure,
-              error: 'Network error during sign-in. Please try again.',
+              errorCode: EmailVerificationError.networkExchange,
             ),
           );
           return;

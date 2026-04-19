@@ -4,6 +4,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 
+@Tags(['skip_very_good_optimization'])
 void main() {
   group('TopHashtagsService Performance Tests', () {
     test('Hashtags load quickly from JSON asset (< 200ms)', () async {

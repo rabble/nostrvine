@@ -37,6 +37,20 @@ enum FeatureFlag {
   integratedApps(
     'Integrated Apps',
     'Enable the integrated Nostr apps directory and sandbox',
+  ),
+  accountSwitching(
+    'Account Switching',
+    'Enable switching between remembered accounts in Settings',
+  ),
+  feedAutoAdvance(
+    'Feed Auto Advance',
+    'Show the Auto rail control and let the feed advance automatically '
+        'after each completed play',
+  ),
+  hlsAuthWebPlayer(
+    'HLS + NIP-98 Web Player',
+    'Route web video playback through hls.js with NIP-98 auth headers so '
+        'age-gated and other 401-protected media can be viewed on web',
   )
   ;
 

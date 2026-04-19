@@ -6,11 +6,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Comment action button with count display for video overlay.
 ///
@@ -22,11 +23,13 @@ class CommentActionButton extends ConsumerWidget {
   const CommentActionButton({
     required this.video,
     this.isPreviewMode = false,
+    this.onInteracted,
     super.key,
   });
 
   final VideoEvent video;
   final bool isPreviewMode;
+  final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,6 +49,7 @@ class CommentActionButton extends ConsumerWidget {
           isCommentsInProgress: data.isInProgress,
           totalComments: data.count,
           onPressed: () {
+            onInteracted?.call();
             Log.info(
               '💬 Comment button tapped for ${video.id}',
               name: 'VideoFeedItem',
@@ -117,7 +121,7 @@ class _ActionButton extends StatelessWidget {
     return VideoActionButton(
       icon: .chatDuo,
       semanticIdentifier: 'comments_button',
-      semanticLabel: 'View comments',
+      semanticLabel: context.l10n.videoActionViewComments,
       isLoading: isCommentsInProgress,
       count: totalComments,
       onPressed: onPressed,

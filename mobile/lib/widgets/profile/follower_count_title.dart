@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// A title widget that shows a label with a count subtitle.
 ///
@@ -51,7 +52,7 @@ class FollowerCountTitle<B extends StateStreamable<S>, S>
           children: [
             Text(title, style: VineTheme.titleLargeFont()),
             Text(
-              '$count users',
+              context.l10n.profileFollowerCountUsers(count),
               style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
             ),
           ],

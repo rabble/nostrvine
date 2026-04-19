@@ -26,13 +26,14 @@ import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/original_sound_detail_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
@@ -44,8 +45,8 @@ import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Route types supported by the app
 enum RouteType {
@@ -57,7 +58,6 @@ enum RouteType {
   likedVideos, // Current user's liked videos feed
   hashtag, // Still supported as push route within explore
   categoryGallery, // Category gallery pushed from explore categories
-  search,
   videoRecorder, // Video recorder screen
   videoEditor, // Video editor screen
   videoMetadata, // Video editor meta screen
@@ -84,7 +84,9 @@ enum RouteType {
   discoverLists, // Discover public lists screen
   creatorAnalytics, // Creator analytics dashboard (profile owner)
   sound, // Sound detail screen for audio reuse
+  originalSound, // Original sound detail screen (creator's own audio)
   contentPreferences, // Content preferences (language, audio, filters)
+  appLanguage, // App language picker (UI locale override)
   supportCenter, // Support center (bug reports, logs, FAQ, legal links)
   legal, // Legal screen (ToS, Privacy, Safety, DMCA, Licenses)
   nostrSettings, // Nostr settings (relays, media servers, keys, account)
@@ -106,7 +108,6 @@ class RouteContext {
     this.npub,
     this.hashtag,
     this.categoryName,
-    this.searchTerm,
     this.listId,
     this.soundId,
     this.videoId,
@@ -120,7 +121,6 @@ class RouteContext {
   final String? npub;
   final String? hashtag;
   final String? categoryName;
-  final String? searchTerm;
   final String? listId;
   final String? soundId;
   final String? videoId;
@@ -233,36 +233,6 @@ RouteContext parseRoute(String path) {
         categoryName: categoryName,
       );
 
-    case 'search':
-      // /search - grid mode, no term
-      // /search/term - grid mode with search term
-      // /search/term/5 - feed mode with search term at index 5
-      String? searchTerm;
-      int? index;
-
-      if (segments.length > 1) {
-        // Try parsing segment 1 as index first
-        final maybeIndex = int.tryParse(segments[1]);
-        if (maybeIndex != null) {
-          // Legacy format: /search/5 (no search term, just index)
-          index = maybeIndex < 0 ? 0 : maybeIndex;
-        } else {
-          // segment 1 is search term
-          searchTerm = Uri.decodeComponent(segments[1]);
-          // Check for index in segment 2
-          if (segments.length > 2) {
-            final rawIndex = int.tryParse(segments[2]);
-            index = rawIndex != null && rawIndex < 0 ? 0 : rawIndex;
-          }
-        }
-      }
-
-      return RouteContext(
-        type: RouteType.search,
-        searchTerm: searchTerm,
-        videoIndex: index,
-      );
-
     case 'video-recorder':
       return const RouteContext(type: RouteType.videoRecorder);
 
@@ -314,6 +284,9 @@ RouteContext parseRoute(String path) {
 
     case 'content-preferences':
       return const RouteContext(type: RouteType.contentPreferences);
+
+    case 'app-language':
+      return const RouteContext(type: RouteType.appLanguage);
 
     case 'support-center':
       return const RouteContext(type: RouteType.supportCenter);
@@ -378,6 +351,16 @@ RouteContext parseRoute(String path) {
       }
       final soundId = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.sound, soundId: soundId);
+
+    case 'original-sound':
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final originalSoundPubkey = Uri.decodeComponent(segments[1]);
+      return RouteContext(
+        type: RouteType.originalSound,
+        npub: originalSoundPubkey,
+      );
 
     case 'profile-view':
       if (segments.length < 2) {
@@ -470,28 +453,6 @@ String buildRoute(RouteContext context) {
       }
       return CategoryGalleryScreen.locationFor(categoryName);
 
-    case RouteType.search:
-      // Grid mode (null videoIndex):
-      //   - With term: '/search/{term}'
-      //   - Without term: '/search'
-      // Feed mode (videoIndex set):
-      //   - With term: '/search/{term}/{index}'
-      //   - Without term (legacy): '/search/{index}'
-      if (context.searchTerm != null) {
-        final rawIndex = context.videoIndex;
-        final index = rawIndex != null && rawIndex < 0 ? 0 : rawIndex;
-        return SearchScreenPure.pathForTerm(
-          term: context.searchTerm,
-          index: index,
-        );
-      }
-
-      // Legacy format without search term
-      if (context.videoIndex == null) return SearchScreenPure.path;
-      final rawIndex = context.videoIndex!;
-      final index = rawIndex < 0 ? 0 : rawIndex;
-      return '${SearchScreenPure.path}/$index';
-
     case RouteType.videoRecorder:
       return VideoRecorderScreen.path;
 
@@ -538,6 +499,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.contentPreferences:
       return ContentPreferencesScreen.path;
+
+    case RouteType.appLanguage:
+      return AppLanguageScreen.path;
 
     case RouteType.supportCenter:
       return SupportCenterScreen.path;
@@ -596,6 +560,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.sound:
       return SoundDetailScreen.pathForId(context.soundId ?? '');
+
+    case RouteType.originalSound:
+      return OriginalSoundDetailScreen.pathForPubkey(context.npub ?? '');
 
     case RouteType.secureAccount:
       return SecureAccountScreen.path;

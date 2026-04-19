@@ -9,7 +9,7 @@ import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Watches router location changes and redirects to canonical URLs when needed.
 /// Safe to watch at app root; contains guards to avoid loops.

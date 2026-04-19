@@ -10,16 +10,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Grid widget displaying user's collab videos.
 ///
@@ -109,8 +110,8 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
         }
 
         if (state.status == ProfileCollabVideosStatus.failure) {
-          return const ProfileTabErrorState(
-            message: 'Error loading collab videos',
+          return ProfileTabErrorState(
+            message: context.l10n.profileErrorLoadingCollabs,
           );
         }
 
@@ -120,10 +121,10 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
           return ProfileTabEmptyState(
             icon: DivineIconName.userCircle,
             iconColor: VineTheme.onSurfaceMuted,
-            title: 'No Collabs Yet',
+            title: context.l10n.profileNoCollabsTitle,
             subtitle: widget.isOwnProfile
-                ? 'Videos you collaborate on will appear here'
-                : 'Videos they collaborate on will appear here',
+                ? context.l10n.profileCollabsOwnEmpty
+                : context.l10n.profileCollabsOtherEmpty,
             subtitleColor: VineTheme.onSurfaceMuted,
           );
         }
