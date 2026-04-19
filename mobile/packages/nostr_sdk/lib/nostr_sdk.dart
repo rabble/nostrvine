@@ -45,6 +45,7 @@ export 'nip94/file_metadata.dart';
 export 'nostr.dart';
 export 'relay/event_filter.dart';
 // Relay management
+export 'relay/publish_outcome.dart';
 export 'relay/relay_mode.dart';
 export 'relay/relay.dart';
 export 'relay/relay_base.dart';
