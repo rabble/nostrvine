@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Możesz usuwać tylko własne filmy.",
     "shareMenuDeleteFailedNotAuthenticated": "Zaloguj się ponownie i spróbuj usunąć.",
     "shareMenuDeleteFailedCouldNotSign": "Nie udało się podpisać żądania usunięcia. Spróbuj ponownie.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "Nie udało się usunąć tego filmu. Spróbuj ponownie.",
     "shareMenuFollowSetName": "Nazwa zestawu obserwowanych",
     "shareMenuFollowSetNameHint": "np. Twórcy treści, Muzycy itp.",

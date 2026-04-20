@@ -3043,6 +3043,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Löschanfrage konnte nicht signiert werden. Versuch es nochmal.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Dieses Video konnte nicht gelöscht werden. Versuch es nochmal.';
 

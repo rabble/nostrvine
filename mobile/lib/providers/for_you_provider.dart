@@ -1,6 +1,7 @@
 // ABOUTME: For You recommendations provider - ML-powered personalized video feed
 // ABOUTME: Uses Funnelcake REST API for Gorse-based recommendations (staging only)
 
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -107,9 +108,7 @@ class ForYouFeed extends _$ForYouFeed {
         pubkey: currentUserPubkey,
         limit: limit,
       );
-      final resultVideos = response.videos
-          .map((v) => v.toVideoEvent())
-          .toList();
+      final resultVideos = response.videos.toVideoEvents();
 
       Log.info(
         '✅ ForYouFeed: Got ${resultVideos.length} recommendations, source: ${response.source}',
@@ -178,9 +177,7 @@ class ForYouFeed extends _$ForYouFeed {
         pubkey: currentUserPubkey,
         limit: newLimit,
       );
-      final resultVideos = response.videos
-          .map((v) => v.toVideoEvent())
-          .toList();
+      final resultVideos = response.videos.toVideoEvents();
 
       if (!ref.mounted) return;
 

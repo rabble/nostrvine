@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Du kan bara ta bort dina egna videor.",
     "shareMenuDeleteFailedNotAuthenticated": "Logga in igen och försök ta bort.",
     "shareMenuDeleteFailedCouldNotSign": "Kunde inte signera borttagningsbegäran. Försök igen.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "Kunde inte ta bort den här videon. Försök igen.",
     "shareMenuFollowSetName": "Namn på följsamling",
     "shareMenuFollowSetNameHint": "t.ex. Kreatörer, Musiker osv.",

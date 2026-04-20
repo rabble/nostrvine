@@ -1305,19 +1305,75 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   // Wire database cleanup callback so signOut() clears DM and notification data.
   // Stop DM listening FIRST to prevent in-flight event handlers from writing
   // to tables that are being cleared (H3 race condition fix).
-  service.onDatabaseCleanup = () async {
-    try {
-      await ref.read(dmRepositoryProvider).stopListening();
-    } catch (_) {
-      // DmRepository may not exist yet (e.g., first launch).
-    }
-    await db.directMessagesDao.clearAll();
-    await db.conversationsDao.clearAll();
-    await db.notificationsDao.clearAll();
-    await NotificationServiceEnhanced.instance.clearAllData();
-    // Clear DM sync cursors so the next login triggers a full re-fetch
-    // from relays instead of using stale `since:` boundaries.
-    await DmSyncState(prefs).clearAll();
+  //
+  // When [deleteUserData] is true (destructive sign-out or identity change),
+  // also deletes per-user DAO rows scoped by [userPubkey].
+  // Non-destructive sign-out (account switch) skips per-user deletion since
+  // those rows are already scoped by ownerPubkey.
+  service.onDatabaseCleanup =
+      ({String? userPubkey, bool deleteUserData = false}) async {
+        try {
+          await ref.read(dmRepositoryProvider).stopListening();
+        } catch (_) {
+          // DmRepository may not exist yet (e.g., first launch).
+        }
+        await db.directMessagesDao.clearAll();
+        await db.conversationsDao.clearAll();
+        await db.notificationsDao.clearAll();
+        await NotificationServiceEnhanced.instance.clearAllData();
+        // Clear DM sync cursors so the next login triggers a full re-fetch
+        // from relays instead of using stale `since:` boundaries.
+        await DmSyncState(prefs).clearAll();
+
+        // Per-user data cleanup (#2999): only on destructive paths
+        if (deleteUserData && userPubkey != null) {
+          Future<void> safeDelete(
+            String name,
+            Future<int> Function() fn,
+          ) async {
+            try {
+              await fn();
+            } catch (e) {
+              Log.warning(
+                'Failed to clean $name for $userPubkey: $e',
+                name: 'UserDataCleanup',
+                category: LogCategory.auth,
+              );
+            }
+          }
+
+          await safeDelete(
+            'drafts',
+            () => db.draftsDao.deleteAllForUser(userPubkey),
+          );
+          await safeDelete(
+            'clips',
+            () => db.clipsDao.deleteAllForUser(userPubkey),
+          );
+          await safeDelete(
+            'pendingUploads',
+            () => db.pendingUploadsDao.deleteAllForUser(userPubkey),
+          );
+          await safeDelete(
+            'personalReactions',
+            () => db.personalReactionsDao.deleteAllForUser(userPubkey),
+          );
+          await safeDelete(
+            'personalReposts',
+            () => db.personalRepostsDao.deleteAllForUser(userPubkey),
+          );
+          await safeDelete(
+            'pendingActions',
+            () => db.pendingActionsDao.clearAll(userPubkey),
+          );
+        }
+      };
+
+  // Wire legacy row claim callback so session setup can attribute
+  // pre-multi-account drafts/clips to the current user.
+  service.onClaimLegacyRows = (String userPubkey) async {
+    await db.draftsDao.claimLegacyRows(userPubkey);
+    await db.clipsDao.claimLegacyRows(userPubkey);
   };
 
   return service;

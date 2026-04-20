@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Je kunt alleen je eigen video's verwijderen.",
     "shareMenuDeleteFailedNotAuthenticated": "Log opnieuw in en probeer te verwijderen.",
     "shareMenuDeleteFailedCouldNotSign": "Kon het verwijderverzoek niet ondertekenen. Probeer opnieuw.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "Kon deze video niet verwijderen. Probeer opnieuw.",
     "shareMenuFollowSetName": "Naam volgset",
     "shareMenuFollowSetNameHint": "Bijv. content creators, muzikanten, enz.",

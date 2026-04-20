@@ -62,6 +62,7 @@ Map<String, dynamic> _$VideoEventToJson(VideoEvent instance) =>
       'stableId': instance.stableId,
       'totalLikes': instance.totalLikes,
       'totalLoops': instance.totalLoops,
+      'hasLoopMetadata': instance.hasLoopMetadata,
       'hasAudioReference': instance.hasAudioReference,
       'proofModeVerificationLevel': instance.proofModeVerificationLevel,
       'proofModeManifest': instance.proofModeManifest,

@@ -1,5 +1,5 @@
 // ABOUTME: Tests for SeedDataPreloadService seed data loading
-// ABOUTME: Verifies service skips load when DB non-empty and loads when empty
+// ABOUTME: Verifies JSON loading and parameterized round-trip for tricky input
 
 import 'dart:convert';
 import 'dart:io';
@@ -26,6 +26,53 @@ class _TrackingClassicVinerService extends ClassicVinerSeedPreloadService {
   }
 }
 
+/// Wires up a mock handler so [rootBundle.loadString] returns [payload] for
+/// the seed asset path.
+void _mockSeedAsset(String payload) {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMessageHandler('flutter/assets', (ByteData? message) async {
+        if (message == null) return null;
+        final assetName = utf8.decode(message.buffer.asUint8List());
+        if (assetName == 'assets/seed_data/seed_events.json') {
+          final bytes = Uint8List.fromList(utf8.encode(payload));
+          return ByteData.sublistView(bytes);
+        }
+        return null;
+      });
+}
+
+String _encodeBundle({
+  List<Map<String, dynamic>> events = const [],
+  List<Map<String, dynamic>> profiles = const [],
+  List<Map<String, dynamic>> metrics = const [],
+}) {
+  return jsonEncode({
+    'meta': {'events': events.length},
+    'events': events,
+    'profiles': profiles,
+    'metrics': metrics,
+  });
+}
+
+Map<String, dynamic> _eventFixture({
+  required String id,
+  required List<dynamic> tags,
+  String content = 'Seed video',
+}) {
+  return {
+    'id': id,
+    'pubkey':
+        'c0ffee1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+    'created_at': 1234567890,
+    'kind': 34236,
+    'tags': tags,
+    'content': content,
+    'sig':
+        'abc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd'
+        'ef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd',
+  };
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -38,14 +85,12 @@ void main() {
 
     tearDown(() async {
       await db.close();
-      // Clear the asset bundle cache and mock message handlers to prevent test pollution
       rootBundle.clear();
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler('flutter/assets', null);
     });
 
     test('skips load when database already has events', () async {
-      // Insert an event to make DB non-empty
       final event = Event(
         '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
         34236,
@@ -56,98 +101,151 @@ void main() {
       event.id =
           'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
       event.sig =
-          'abc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789';
+          'abc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc'
+          'def1234567890abcdef1234567890abcdef1234567890abcdef123456789';
 
       await db.nostrEventsDao.upsertEvent(event);
 
-      // Should skip load
       await SeedDataPreloadService.loadSeedDataIfNeeded(db);
 
-      // Count should still be 1 (no seed data added)
       final count = await db.nostrEventsDao.getEventCount();
       expect(count, equals(1));
     });
 
-    test('loads seed data when database is empty', () async {
-      // Mock asset to return minimal SQL
-      const mockSql = '''
-INSERT OR IGNORE INTO event (id, pubkey, created_at, kind, tags, content, sig, sources)
-VALUES ('seed1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd', 'seedpubkey1234567890abcdef1234567890abcdef1234567890abcdef12345678', 1234567890, 34236, '[]', 'Seed video', 'seedsig1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab', NULL);
+    test('loads seed events when database is empty', () async {
+      _mockSeedAsset(
+        _encodeBundle(
+          events: [
+            _eventFixture(
+              id:
+                  '5eed1234567890abcdef1234567890abcdef1234567890ab'
+                  'cdef1234567890abcd',
+              tags: const [
+                ['d', 'abc123'],
+              ],
+            ),
+            _eventFixture(
+              id:
+                  '5eed2234567890abcdef1234567890abcdef1234567890ab'
+                  'cdef1234567890abcd',
+              tags: const [],
+              content: '{"name":"Alice"}',
+            ),
+          ],
+        ),
+      );
 
-INSERT OR IGNORE INTO event (id, pubkey, created_at, kind, tags, content, sig, sources)
-VALUES ('seed2234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd', 'seedpubkey2234567890abcdef1234567890abcdef1234567890abcdef12345678', 1234567891, 0, '[]', '{"name":"Alice"}', 'seedsig2234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab', NULL);
-''';
-
-      // Override rootBundle for test
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler('flutter/assets', (ByteData? message) async {
-            if (message == null) return null;
-
-            // The message is the asset name as UTF-8 bytes
-            final assetName = utf8.decode(message.buffer.asUint8List());
-
-            if (assetName == 'assets/seed_data/seed_events.sql') {
-              // Return the SQL content as bytes
-              final bytes = Uint8List.fromList(utf8.encode(mockSql));
-              return ByteData.sublistView(bytes);
-            }
-
-            return null;
-          });
-
-      // Database should be empty
       expect(await db.nostrEventsDao.getEventCount(), equals(0));
 
-      // Load seed data
       await SeedDataPreloadService.loadSeedDataIfNeeded(db);
 
-      // Should have 2 events now
       final count = await db.nostrEventsDao.getEventCount();
       expect(count, equals(2));
     });
 
-    test('handles missing asset gracefully', () async {
-      // Override rootBundle to return null (asset not found)
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler('flutter/assets', (ByteData? message) async {
-            return null; // Asset not found
-          });
-
-      // Should not throw, just log error
-      await expectLater(
-        SeedDataPreloadService.loadSeedDataIfNeeded(db),
-        completes,
+    test('round-trips tag JSON containing a semicolon', () async {
+      // This is the bug in #3093: the old loader split on every `;`, which
+      // tore INSERT statements apart when an author name like "ig; phaxn"
+      // contained a semicolon inside its string literal.
+      const id =
+          '5e0c01017890abcdef1234567890abcdef1234567890abcdef1234567890abcd';
+      _mockSeedAsset(
+        _encodeBundle(
+          events: [
+            _eventFixture(
+              id: id,
+              tags: const [
+                ['author', 'ig; phaxn'],
+                ['title', 'hotter than the sun'],
+              ],
+            ),
+          ],
+        ),
       );
 
-      // Database should still be empty
-      expect(await db.nostrEventsDao.getEventCount(), equals(0));
+      await SeedDataPreloadService.loadSeedDataIfNeeded(db);
+
+      expect(await db.nostrEventsDao.getEventCount(), equals(1));
+      final row = await db.nostrEventsDao.getEventById(id);
+      expect(row, isNotNull);
+      expect(
+        row!.tags,
+        anyElement(equals(['author', 'ig; phaxn'])),
+      );
     });
 
-    test('handles malformed SQL gracefully', () async {
-      // Mock asset with invalid SQL
-      const badSql = 'INVALID SQL SYNTAX HERE;;;';
+    test('round-trips content with single quotes', () async {
+      const id =
+          'a0057007890abcdef1234567890abcdef1234567890abcdef1234567890abcd12';
+      _mockSeedAsset(
+        _encodeBundle(
+          events: [
+            _eventFixture(
+              id: id,
+              tags: const [
+                ['title', "When you're finally brave enough"],
+              ],
+              content: "She's out of her mind",
+            ),
+          ],
+        ),
+      );
 
+      await SeedDataPreloadService.loadSeedDataIfNeeded(db);
+
+      final row = await db.nostrEventsDao.getEventById(id);
+      expect(row, isNotNull);
+      expect(row!.content, equals("She's out of her mind"));
+      expect(row.tags.first[1], equals("When you're finally brave enough"));
+    });
+
+    test('round-trips content with brackets and backslashes', () async {
+      const id =
+          'b7ac7e157890abcdef1234567890abcdef1234567890abcdef1234567890abcd';
+      const trickyContent = r'Look at [this] \and\ "that"';
+      _mockSeedAsset(
+        _encodeBundle(
+          events: [
+            _eventFixture(
+              id: id,
+              tags: const [
+                ['title', '[fixed]'],
+              ],
+              content: trickyContent,
+            ),
+          ],
+        ),
+      );
+
+      await SeedDataPreloadService.loadSeedDataIfNeeded(db);
+
+      final row = await db.nostrEventsDao.getEventById(id);
+      expect(row, isNotNull);
+      expect(row!.content, equals(trickyContent));
+    });
+
+    test('handles missing asset gracefully', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler('flutter/assets', (ByteData? message) async {
-            if (message == null) return null;
-
-            final assetName = utf8.decode(message.buffer.asUint8List());
-
-            if (assetName == 'assets/seed_data/seed_events.sql') {
-              final bytes = Uint8List.fromList(utf8.encode(badSql));
-              return ByteData.sublistView(bytes);
-            }
-
             return null;
           });
 
-      // Should not throw, just log error
       await expectLater(
         SeedDataPreloadService.loadSeedDataIfNeeded(db),
         completes,
       );
 
-      // Database should still be empty (no events inserted)
+      expect(await db.nostrEventsDao.getEventCount(), equals(0));
+    });
+
+    test('handles malformed JSON gracefully', () async {
+      _mockSeedAsset('{not json at all');
+
+      await expectLater(
+        SeedDataPreloadService.loadSeedDataIfNeeded(db),
+        completes,
+      );
+
       expect(await db.nostrEventsDao.getEventCount(), equals(0));
     });
 
@@ -165,7 +263,6 @@ VALUES ('seed2234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd', 's
         markerDirectoryProvider: () async => markerDir,
       );
 
-      // Insert an event so the SQL seed path is skipped
       final event = Event(
         '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
         34236,
@@ -176,7 +273,8 @@ VALUES ('seed2234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd', 's
       event.id =
           'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
       event.sig =
-          'abc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789';
+          'abc1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc'
+          'def1234567890abcdef1234567890abcdef1234567890abcdef123456789';
       await db.nostrEventsDao.upsertEvent(event);
 
       await SeedDataPreloadService.loadSeedDataIfNeeded(

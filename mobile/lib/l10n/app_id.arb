@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Kamu cuma bisa menghapus video milikmu sendiri.",
     "shareMenuDeleteFailedNotAuthenticated": "Masuk lagi, lalu coba hapus.",
     "shareMenuDeleteFailedCouldNotSign": "Tidak bisa menandatangani permintaan hapus. Coba lagi.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "Tidak bisa menghapus video ini. Coba lagi.",
     "shareMenuFollowSetName": "Nama Set Ikuti",
     "shareMenuFollowSetNameHint": "contoh: Kreator Konten, Musisi, dll.",

@@ -38,8 +38,13 @@ void main() {
       when(
         () => mockCleanupService.clearUserSpecificData(
           reason: any(named: 'reason'),
+          userPubkey: any(named: 'userPubkey'),
+          deleteUserData: any(named: 'deleteUserData'),
         ),
       ).thenAnswer((_) async => 0);
+      when(
+        () => mockCleanupService.claimLegacyRows(any()),
+      ).thenAnswer((_) async {});
     });
 
     test('returns success when no OAuth client is configured', () async {
@@ -57,31 +62,28 @@ void main() {
       expect(error, isNull);
     });
 
-    test(
-      'returns failure when session is unavailable after refresh',
-      () async {
-        // Create AuthService with OAuth client
-        authService = AuthService(
-          userDataCleanupService: mockCleanupService,
-          keyStorage: mockKeyStorage,
-          oauthClient: mockOAuthClient,
-        );
+    test('returns failure when session is unavailable after refresh', () async {
+      // Create AuthService with OAuth client
+      authService = AuthService(
+        userDataCleanupService: mockCleanupService,
+        keyStorage: mockKeyStorage,
+        oauthClient: mockOAuthClient,
+      );
 
-        // Mock: no session even after refresh attempt
-        when(
-          () => mockOAuthClient.getSessionOrRefresh(),
-        ).thenAnswer((_) async => null);
+      // Mock: no session even after refresh attempt
+      when(
+        () => mockOAuthClient.getSessionOrRefresh(),
+      ).thenAnswer((_) async => null);
 
-        // Act
-        final (success, error) = await authService.deleteKeycastAccount();
+      // Act
+      final (success, error) = await authService.deleteKeycastAccount();
 
-        // Assert — now correctly reports failure
-        expect(success, isFalse);
-        expect(error, contains('Session expired'));
-        verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
-        verifyNever(() => mockOAuthClient.deleteAccount(any()));
-      },
-    );
+      // Assert — now correctly reports failure
+      expect(success, isFalse);
+      expect(error, contains('Session expired'));
+      verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
+      verifyNever(() => mockOAuthClient.deleteAccount(any()));
+    });
 
     test(
       'returns failure when session has no access token after refresh',

@@ -111,7 +111,7 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
         platform: _platformFor(state.sortOrder),
       );
 
-      final newVideos = videoStats.map((s) => s.toVideoEvent()).toList();
+      final newVideos = videoStats.toVideoEvents();
 
       // Deduplicate
       final existingIds = state.videos.map((v) => v.id).toSet();
@@ -193,7 +193,7 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
       emit(
         state.copyWith(
           videosStatus: CategoriesVideosStatus.loaded,
-          videos: hotVideoStats.map((s) => s.toVideoEvent()).toList(),
+          videos: hotVideoStats.toVideoEvents(),
           hasMoreVideos: false,
         ),
       );
@@ -209,7 +209,7 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     emit(
       state.copyWith(
         videosStatus: CategoriesVideosStatus.loaded,
-        videos: videoStats.map((s) => s.toVideoEvent()).toList(),
+        videos: videoStats.toVideoEvents(),
         hasMoreVideos: videoStats.length >= 50,
       ),
     );
@@ -228,7 +228,7 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
       category: category.name,
       limit: 50,
     );
-    return response.videos.map((video) => video.toVideoEvent()).toList();
+    return response.videos.toVideoEvents();
   }
 
   String _apiSortFor(String sortOrder) {

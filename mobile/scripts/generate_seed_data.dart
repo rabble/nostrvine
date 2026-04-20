@@ -247,9 +247,9 @@ Future<void> main() async {
 
     print('[SEED GEN] Found ${profileEvents.length} total profiles');
 
-    // Step 6: Generate SQL
-    print('[SEED GEN] Generating SQL...');
-    final sql = _generateSQL(
+    // Step 6: Generate JSON bundle
+    print('[SEED GEN] Generating JSON bundle...');
+    final bundle = _generateBundle(
       finalVideos,
       profileEvents,
       editorPicksEvent,
@@ -257,9 +257,9 @@ Future<void> main() async {
     );
 
     // Step 7: Write to file
-    final outputFile = File('assets/seed_data/seed_events.sql');
+    final outputFile = File('assets/seed_data/seed_events.json');
     await outputFile.create(recursive: true);
-    await outputFile.writeAsString(sql);
+    await outputFile.writeAsString(jsonEncode(bundle));
 
     final fileSize = await outputFile.length();
     final fileSizeMB = fileSize / (1024 * 1024);
@@ -310,141 +310,106 @@ Future<void> main() async {
   }
 }
 
-String _generateSQL(
+Map<String, dynamic> _generateBundle(
   List<Map<String, dynamic>> videos,
   List<Map<String, dynamic>> profiles,
   Map<String, dynamic>? curationList,
   int editorPicksCount,
 ) {
-  final buffer = StringBuffer();
-
-  buffer.writeln('-- Divine Seed Data');
-  buffer.writeln('-- Generated: ${DateTime.now().toIso8601String()}');
-  buffer.writeln('-- Videos: ${videos.length}');
-  buffer.writeln("--   Editor's Picks: $editorPicksCount");
-  buffer.writeln('--   Popular: ${videos.length - editorPicksCount}');
-  buffer.writeln('-- Profiles: ${profiles.length}');
-  buffer.writeln('-- Curation lists: ${curationList != null ? 1 : 0}');
-  buffer.writeln();
-
-  // Curation list event (Editor's Picks)
-  if (curationList != null) {
-    buffer.writeln("-- Editor's Picks Curation List (kind 30005)");
-    buffer.writeln(_generateEventInsert(curationList));
-    buffer.writeln();
-  }
-
-  // Video events
-  buffer.writeln('-- Video Events (kind 34236)');
-  for (final video in videos) {
-    buffer.writeln(_generateEventInsert(video));
-  }
-
-  buffer.writeln();
-
-  // Profile events
-  buffer.writeln('-- User Profiles (kind 0)');
+  final nowIso = DateTime.now().toIso8601String();
+  final events = <Map<String, dynamic>>[
+    if (curationList != null) _eventJson(curationList),
+    ...videos.map(_eventJson),
+    ...profiles.map(_eventJson),
+  ];
+  final profileRows = <Map<String, dynamic>>[];
   for (final profile in profiles) {
-    buffer.writeln(_generateEventInsert(profile));
-    buffer.writeln(_generateProfileInsert(profile));
+    final row = _profileJson(profile, generatedAtIso: nowIso);
+    if (row != null) profileRows.add(row);
   }
-
-  buffer.writeln();
-
-  // Video metrics
-  buffer.writeln('-- Video Metrics');
-  for (final video in videos) {
-    buffer.writeln(_generateMetricsInsert(video));
-  }
-
-  return buffer.toString();
+  final metrics = videos
+      .map((v) => _metricsJson(v, updatedAtIso: nowIso))
+      .toList();
+  return {
+    'meta': {
+      'generated_at': nowIso,
+      'videos': videos.length,
+      'editor_picks': editorPicksCount,
+      'popular': videos.length - editorPicksCount,
+      'profiles': profiles.length,
+      'curation_lists': curationList != null ? 1 : 0,
+    },
+    'events': events,
+    'profiles': profileRows,
+    'metrics': metrics,
+  };
 }
 
-String _generateEventInsert(Map<String, dynamic> event) {
-  return '''
-INSERT OR IGNORE INTO event (id, pubkey, created_at, kind, tags, content, sig, sources)
-VALUES (
-  '${_escape(event['id'] as String)}',
-  '${_escape(event['pubkey'] as String)}',
-  ${event['created_at']},
-  ${event['kind']},
-  '${_escape(jsonEncode(event['tags']))}',
-  '${_escape(event['content'] as String)}',
-  '${_escape(event['sig'] as String)}',
-  NULL
-);''';
+Map<String, dynamic> _eventJson(Map<String, dynamic> event) {
+  return {
+    'id': event['id'],
+    'pubkey': event['pubkey'],
+    'created_at': event['created_at'],
+    'kind': event['kind'],
+    'tags': event['tags'],
+    'content': event['content'],
+    'sig': event['sig'],
+  };
 }
 
-String _generateProfileInsert(Map<String, dynamic> event) {
+Map<String, dynamic>? _profileJson(
+  Map<String, dynamic> event, {
+  required String generatedAtIso,
+}) {
   try {
     final profile =
         jsonDecode(event['content'] as String) as Map<String, dynamic>;
     final createdAt = DateTime.fromMillisecondsSinceEpoch(
       (event['created_at'] as int) * 1000,
     );
-
-    return '''
-INSERT OR IGNORE INTO user_profiles (
-  pubkey, display_name, name, picture, banner, about, website,
-  nip05, lud16, lud06, raw_data, created_at, event_id, last_fetched
-)
-VALUES (
-  '${_escape(event['pubkey'] as String)}',
-  ${_sqlString(profile['display_name'])},
-  ${_sqlString(profile['name'])},
-  ${_sqlString(profile['picture'])},
-  ${_sqlString(profile['banner'])},
-  ${_sqlString(profile['about'])},
-  ${_sqlString(profile['website'])},
-  ${_sqlString(profile['nip05'])},
-  ${_sqlString(profile['lud16'])},
-  ${_sqlString(profile['lud06'])},
-  '${_escape(event['content'] as String)}',
-  '${createdAt.toIso8601String()}',
-  '${_escape(event['id'] as String)}',
-  '${DateTime.now().toIso8601String()}'
-);''';
-  } catch (e) {
-    return '-- Skipped malformed profile for ${event['pubkey']}';
+    return {
+      'pubkey': event['pubkey'],
+      'display_name': profile['display_name'],
+      'name': profile['name'],
+      'picture': profile['picture'],
+      'banner': profile['banner'],
+      'about': profile['about'],
+      'website': profile['website'],
+      'nip05': profile['nip05'],
+      'lud16': profile['lud16'],
+      'lud06': profile['lud06'],
+      'raw_data': event['content'],
+      'created_at': createdAt.toIso8601String(),
+      'event_id': event['id'],
+      'last_fetched': generatedAtIso,
+    };
+  } catch (_) {
+    return null;
   }
 }
 
-String _generateMetricsInsert(Map<String, dynamic> event) {
+Map<String, dynamic> _metricsJson(
+  Map<String, dynamic> event, {
+  required String updatedAtIso,
+}) {
   final tags = event['tags'] as List;
-  final loopCount = _getTagValue(tags, 'loops');
-  final likes = _getTagValue(tags, 'likes');
-  final views = _getTagValue(tags, 'views');
-  final comments = _getTagValue(tags, 'comments');
-
-  return '''
-INSERT OR IGNORE INTO video_metrics (event_id, loop_count, likes, views, comments, updated_at)
-VALUES (
-  '${_escape(event['id'] as String)}',
-  ${loopCount ?? 'NULL'},
-  ${likes ?? 'NULL'},
-  ${views ?? 'NULL'},
-  ${comments ?? 'NULL'},
-  '${DateTime.now().toIso8601String()}'
-);''';
+  return {
+    'event_id': event['id'],
+    'loop_count': _tagInt(tags, 'loops'),
+    'likes': _tagInt(tags, 'likes'),
+    'views': _tagInt(tags, 'views'),
+    'comments': _tagInt(tags, 'comments'),
+    'updated_at': updatedAtIso,
+  };
 }
 
-String? _getTagValue(List tags, String tagName) {
-  try {
-    for (final tag in tags) {
-      if (tag is List && tag.length >= 2 && tag[0].toString() == tagName) {
-        final value = int.tryParse(tag[1].toString());
-        return value?.toString();
-      }
+int? _tagInt(List tags, String tagName) {
+  for (final tag in tags) {
+    if (tag is List && tag.length >= 2 && tag[0].toString() == tagName) {
+      return int.tryParse(tag[1].toString());
     }
-  } catch (_) {}
+  }
   return null;
-}
-
-String _escape(String str) => str.replaceAll("'", "''");
-
-String _sqlString(dynamic value) {
-  if (value == null) return 'NULL';
-  return "'${_escape(value.toString())}'";
 }
 
 /// Download media files for top videos

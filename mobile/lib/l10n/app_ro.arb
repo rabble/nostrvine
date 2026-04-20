@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Poți șterge doar propriile videoclipuri.",
     "shareMenuDeleteFailedNotAuthenticated": "Autentifică-te din nou, apoi încearcă să ștergi.",
     "shareMenuDeleteFailedCouldNotSign": "Nu am putut semna cererea de ștergere. Încearcă din nou.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "Nu am putut șterge acest videoclip. Încearcă din nou.",
     "shareMenuFollowSetName": "Numele setului de urmărire",
     "shareMenuFollowSetNameHint": "ex. Creatori de conținut, Muzicieni etc.",

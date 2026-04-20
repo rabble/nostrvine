@@ -3000,6 +3000,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte signera borttagningsbegäran. Försök igen.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Kunde inte ta bort den här videon. Försök igen.';
 

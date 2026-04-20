@@ -3038,6 +3038,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non è stato possibile firmare la richiesta di eliminazione. Riprova.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Non è stato possibile eliminare questo video. Riprova.';
 

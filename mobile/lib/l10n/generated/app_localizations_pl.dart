@@ -3104,6 +3104,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się podpisać żądania usunięcia. Spróbuj ponownie.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Nie udało się usunąć tego filmu. Spróbuj ponownie.';
 

@@ -15,6 +15,7 @@ import '../subscription.dart';
 import '../utils/string_util.dart';
 import 'client_connected.dart';
 import 'event_filter.dart';
+import 'publish_outcome.dart';
 import 'relay.dart';
 import 'relay_type.dart';
 
@@ -56,6 +57,9 @@ class RelayPool {
 
   // Track pending AUTH events to match with OK responses
   final Map<String, String> _pendingAuthEvents = {};
+
+  /// Track publishes awaiting OK confirmations (per event id).
+  final Map<String, PublishTracker> _pendingPublishes = {};
 
   Relay Function(String) tempRelayGener;
 
@@ -374,6 +378,16 @@ class RelayPool {
         final eventId = json[1] as String;
         final success = json[2] as bool;
         final message = json.length > 3 ? json[3] as String : '';
+
+        // Check if this OK is for a publish we are awaiting.
+        final publishTracker = _pendingPublishes[eventId];
+        if (publishTracker != null) {
+          if (success) {
+            publishTracker.onAccepted(relay.url);
+          } else {
+            publishTracker.onRejected(relay.url, message);
+          }
+        }
 
         // Check if this is responding to our AUTH event
         if (_pendingAuthEvents.containsKey(eventId)) {
@@ -834,7 +848,26 @@ class RelayPool {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    bool hadSubmitSend = false;
+    final sentTo = await _sendCollect(
+      message,
+      tempRelays: tempRelays,
+      targetRelays: targetRelays,
+    );
+    return sentTo.isNotEmpty;
+  }
+
+  /// Same as [send] but returns the list of relay URLs the message reached.
+  ///
+  /// An entry in the returned list means the relay's WebSocket accepted the
+  /// frame (or it was queued for pending-auth delivery). It does NOT mean the
+  /// relay accepted the event at the protocol level — use
+  /// [sendEventAwaitOk] for that guarantee.
+  Future<List<String>> _sendCollect(
+    List<dynamic> message, {
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) async {
+    final sentTo = <String>[];
 
     for (final relay in _relaysSnapshot()) {
       if (message[0] == "EVENT") {
@@ -865,13 +898,13 @@ class RelayPool {
             );
             var result = await relay.send(message, forceSend: true);
             if (result) {
-              hadSubmitSend = true;
+              sentTo.add(relay.url);
             }
             // Don't queue this message since we're sending it
           } else {
             log('🔐 Queueing message for authentication: ${message[0]}');
             relay.pendingAuthedMessages.add(message);
-            hadSubmitSend = true;
+            sentTo.add(relay.url);
           }
           log(
             '🔐 Pending authed messages count: ${relay.pendingAuthedMessages.length}',
@@ -882,7 +915,7 @@ class RelayPool {
           );
           var result = await relay.send(message);
           if (result) {
-            hadSubmitSend = true;
+            sentTo.add(relay.url);
           }
         }
       } catch (err) {
@@ -896,12 +929,61 @@ class RelayPool {
         var tempRelay = checkAndGenTempRelay(tempRelayAddr);
         var result = await tempRelay.send(message);
         if (result) {
-          hadSubmitSend = true;
+          sentTo.add(tempRelay.url);
         }
       }
     }
 
-    return hadSubmitSend;
+    return sentTo;
+  }
+
+  /// Send an `EVENT` message and wait for `OK` confirmations from relays.
+  ///
+  /// Registers a [PublishTracker] keyed on the event id. The returned future
+  /// completes when either:
+  ///  * at least one relay has confirmed acceptance (`OK true`), OR
+  ///  * every targeted relay has responded (accept or reject), OR
+  ///  * [timeout] elapses.
+  ///
+  /// If no relay received the message at the WebSocket level, the tracker
+  /// completes immediately with an empty [PublishOutcome] (all in
+  /// `noResponseFrom`). Callers must inspect [PublishOutcome.confirmed] to
+  /// decide whether the publish succeeded.
+  Future<PublishOutcome> sendEventAwaitOk(
+    List<dynamic> message, {
+    required String eventId,
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    // Register tracker BEFORE sending so a fast relay can't respond with OK
+    // before we start listening.
+    final existing = _pendingPublishes[eventId];
+    if (existing != null) {
+      return existing.future;
+    }
+    final tracker = PublishTracker(
+      eventId: eventId,
+      expectedRelays: <String>{},
+      timeout: timeout,
+    );
+    _pendingPublishes[eventId] = tracker;
+
+    final sentTo = await _sendCollect(
+      message,
+      tempRelays: tempRelays,
+      targetRelays: targetRelays,
+    );
+    tracker.expectedRelays.addAll(sentTo);
+
+    if (sentTo.isEmpty) {
+      tracker.cancel();
+    }
+
+    unawaited(
+      tracker.future.whenComplete(() => _pendingPublishes.remove(eventId)),
+    );
+    return tracker.future;
   }
 
   void reconnect() {

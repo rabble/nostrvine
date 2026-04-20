@@ -83,9 +83,7 @@ void main() {
     when(
       () => mockKeyStorage.storeIdentityKeyContainer(any(), any()),
     ).thenAnswer((_) async {});
-    when(
-      () => mockKeyStorage.getKeyContainer(),
-    ).thenAnswer((_) async => null);
+    when(() => mockKeyStorage.getKeyContainer()).thenAnswer((_) async => null);
     when(
       () => mockKeyStorage.switchToIdentity(
         any(),
@@ -100,8 +98,13 @@ void main() {
       () => mockCleanupService.clearUserSpecificData(
         reason: any(named: 'reason'),
         isIdentityChange: any(named: 'isIdentityChange'),
+        userPubkey: any(named: 'userPubkey'),
+        deleteUserData: any(named: 'deleteUserData'),
       ),
     ).thenAnswer((_) async => 0);
+    when(
+      () => mockCleanupService.claimLegacyRows(any()),
+    ).thenAnswer((_) async {});
 
     when(
       () => mockSecureStorage.read(key: any(named: 'key')),
@@ -128,139 +131,130 @@ void main() {
   });
 
   group('Bug #2233: signing after account switch', () {
-    test(
-      'createAndSignEvent fails when PRIMARY key slot has different nsec '
-      'than _currentKeyContainer',
-      () async {
-        // ── Setup: simulate the state AFTER the corruption ──
-        //
-        // 1. signInForAccount(pubkeyA, automatic) loaded identity[npubA]
-        //    into _currentKeyContainer (has pubkey_A).
-        // 2. PRIMARY key slot still has nsec_B from a previous import.
-        //
-        // We mock getIdentityKeyContainer to return containerA (pubkey_A)
-        // and withPrivateKey to return nsec_B (simulating corrupted PRIMARY).
+    test('createAndSignEvent fails when PRIMARY key slot has different nsec '
+        'than _currentKeyContainer', () async {
+      // ── Setup: simulate the state AFTER the corruption ──
+      //
+      // 1. signInForAccount(pubkeyA, automatic) loaded identity[npubA]
+      //    into _currentKeyContainer (has pubkey_A).
+      // 2. PRIMARY key slot still has nsec_B from a previous import.
+      //
+      // We mock getIdentityKeyContainer to return containerA (pubkey_A)
+      // and withPrivateKey to return nsec_B (simulating corrupted PRIMARY).
 
-        final npubA = containerA.npub;
+      final npubA = containerA.npub;
 
-        // getIdentityKeyContainer returns A's container
-        when(
-          () => mockKeyStorage.getIdentityKeyContainer(
-            npubA,
-            biometricPrompt: any(named: 'biometricPrompt'),
-          ),
-        ).thenAnswer((_) async => containerA);
+      // getIdentityKeyContainer returns A's container
+      when(
+        () => mockKeyStorage.getIdentityKeyContainer(
+          npubA,
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => containerA);
 
-        // Track which private key the PRIMARY slot holds.
-        // Starts with nsec_B (simulating corrupted state from previous import).
-        String? privateKeyBHex;
-        containerB.withPrivateKey<void>((pk) => privateKeyBHex = pk);
-        String? privateKeyAHex;
-        containerA.withPrivateKey<void>((pk) => privateKeyAHex = pk);
-        var primaryPrivateKey = privateKeyBHex!;
+      // Track which private key the PRIMARY slot holds.
+      // Starts with nsec_B (simulating corrupted state from previous import).
+      String? privateKeyBHex;
+      containerB.withPrivateKey<void>((pk) => privateKeyBHex = pk);
+      String? privateKeyAHex;
+      containerA.withPrivateKey<void>((pk) => privateKeyAHex = pk);
+      var primaryPrivateKey = privateKeyBHex!;
 
-        // switchToIdentity syncs PRIMARY — the fix calls this before signing
-        when(
-          () => mockKeyStorage.switchToIdentity(
-            any(),
-            biometricPrompt: any(named: 'biometricPrompt'),
-          ),
-        ).thenAnswer((_) async {
-          primaryPrivateKey = privateKeyAHex!;
-          return true;
-        });
+      // switchToIdentity syncs PRIMARY — the fix calls this before signing
+      when(
+        () => mockKeyStorage.switchToIdentity(
+          any(),
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async {
+        primaryPrivateKey = privateKeyAHex!;
+        return true;
+      });
 
-        when(
-          () => mockKeyStorage.withPrivateKey<Event?>(
-            any(),
-            biometricPrompt: any(named: 'biometricPrompt'),
-          ),
-        ).thenAnswer((invocation) async {
-          final operation =
-              invocation.positionalArguments[0] as Event? Function(String);
-          // Returns whatever PRIMARY currently holds
-          return operation(primaryPrivateKey);
-        });
+      when(
+        () => mockKeyStorage.withPrivateKey<Event?>(
+          any(),
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((invocation) async {
+        final operation =
+            invocation.positionalArguments[0] as Event? Function(String);
+        // Returns whatever PRIMARY currently holds
+        return operation(primaryPrivateKey);
+      });
 
-        // Sign in as account A
-        await _ignoringDiscoveryErrors(
-          () => authService.signInForAccount(
-            containerA.publicKeyHex,
-            AuthenticationSource.automatic,
-          ),
-        );
+      // Sign in as account A
+      await _ignoringDiscoveryErrors(
+        () => authService.signInForAccount(
+          containerA.publicKeyHex,
+          AuthenticationSource.automatic,
+        ),
+      );
 
-        expect(authService.isAuthenticated, isTrue);
-        expect(
-          authService.currentPublicKeyHex,
-          equals(containerA.publicKeyHex),
-        );
+      expect(authService.isAuthenticated, isTrue);
+      expect(authService.currentPublicKeyHex, equals(containerA.publicKeyHex));
 
-        // ── Act: try to sign an event ──
-        final signedEvent = await authService.createAndSignEvent(
-          kind: 1,
-          content: 'test after account switch',
-        );
+      // ── Act: try to sign an event ──
+      final signedEvent = await authService.createAndSignEvent(
+        kind: 1,
+        content: 'test after account switch',
+      );
 
-        // ── Assert: signing should succeed (fails with bug #2233) ──
-        expect(
-          signedEvent,
-          isNotNull,
-          reason:
-              'BUG #2233: createAndSignEvent returns null because '
-              '_keyStorage.withPrivateKey reads nsec_B from PRIMARY but '
-              'the event was created with pubkey_A from '
-              '_currentKeyContainer.',
-        );
-      },
-    );
+      // ── Assert: signing should succeed (fails with bug #2233) ──
+      expect(
+        signedEvent,
+        isNotNull,
+        reason:
+            'BUG #2233: createAndSignEvent returns null because '
+            '_keyStorage.withPrivateKey reads nsec_B from PRIMARY but '
+            'the event was created with pubkey_A from '
+            '_currentKeyContainer.',
+      );
+    });
 
-    test(
-      'createAndSignEvent succeeds when PRIMARY key slot matches '
-      '_currentKeyContainer',
-      () async {
-        // Control case: when PRIMARY has the correct nsec, signing works.
+    test('createAndSignEvent succeeds when PRIMARY key slot matches '
+        '_currentKeyContainer', () async {
+      // Control case: when PRIMARY has the correct nsec, signing works.
 
-        final npubA = containerA.npub;
+      final npubA = containerA.npub;
 
-        when(
-          () => mockKeyStorage.getIdentityKeyContainer(
-            npubA,
-            biometricPrompt: any(named: 'biometricPrompt'),
-          ),
-        ).thenAnswer((_) async => containerA);
+      when(
+        () => mockKeyStorage.getIdentityKeyContainer(
+          npubA,
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => containerA);
 
-        // withPrivateKey returns nsec_A (correct key)
-        String? privateKeyAHex;
-        containerA.withPrivateKey<void>((pk) => privateKeyAHex = pk);
+      // withPrivateKey returns nsec_A (correct key)
+      String? privateKeyAHex;
+      containerA.withPrivateKey<void>((pk) => privateKeyAHex = pk);
 
-        when(
-          () => mockKeyStorage.withPrivateKey<Event?>(
-            any(),
-            biometricPrompt: any(named: 'biometricPrompt'),
-          ),
-        ).thenAnswer((invocation) async {
-          final operation =
-              invocation.positionalArguments[0] as Event? Function(String);
-          return operation(privateKeyAHex!);
-        });
+      when(
+        () => mockKeyStorage.withPrivateKey<Event?>(
+          any(),
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((invocation) async {
+        final operation =
+            invocation.positionalArguments[0] as Event? Function(String);
+        return operation(privateKeyAHex!);
+      });
 
-        await _ignoringDiscoveryErrors(
-          () => authService.signInForAccount(
-            containerA.publicKeyHex,
-            AuthenticationSource.automatic,
-          ),
-        );
+      await _ignoringDiscoveryErrors(
+        () => authService.signInForAccount(
+          containerA.publicKeyHex,
+          AuthenticationSource.automatic,
+        ),
+      );
 
-        final signedEvent = await authService.createAndSignEvent(
-          kind: 1,
-          content: 'test with matching keys',
-        );
+      final signedEvent = await authService.createAndSignEvent(
+        kind: 1,
+        content: 'test with matching keys',
+      );
 
-        expect(signedEvent, isNotNull);
-        expect(signedEvent!.pubkey, equals(containerA.publicKeyHex));
-      },
-    );
+      expect(signedEvent, isNotNull);
+      expect(signedEvent!.pubkey, equals(containerA.publicKeyHex));
+    });
 
     test(
       'createAndSignEvent fails when PRIMARY key slot was wiped by deleteKeys '

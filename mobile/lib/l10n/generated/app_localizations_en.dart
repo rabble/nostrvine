@@ -3000,6 +3000,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t sign the delete request. Try again.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Couldn\'t delete this video. Try again.';
 
