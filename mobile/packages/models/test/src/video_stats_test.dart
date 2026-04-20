@@ -910,6 +910,142 @@ void main() {
       });
     });
 
+    group('collaboratorPubkeys (p tag extraction)', () {
+      const authorPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const collaborator1 =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      const collaborator2 =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+
+      Map<String, dynamic> buildJson(List<List<String>> tags) => {
+        'id': 'video-id',
+        'pubkey': authorPubkey,
+        'created_at': 1700000000,
+        'kind': 34236,
+        'video_url': 'https://example.com/video.mp4',
+        'tags': tags,
+        'reactions': 0,
+        'comments': 0,
+        'reposts': 0,
+        'engagement_score': 0,
+      };
+
+      test('extracts p-tag pubkeys from flat JSON', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1],
+            ['p', collaborator2],
+          ]),
+        );
+
+        expect(
+          stats.collaboratorPubkeys,
+          equals([collaborator1, collaborator2]),
+        );
+      });
+
+      test('extracts p-tag pubkeys from nested event payload', () {
+        final stats = VideoStats.fromJson(const {
+          'event': {
+            'id': 'video-id',
+            'pubkey': authorPubkey,
+            'created_at': 1700000000,
+            'kind': 34236,
+            'tags': [
+              ['d', 'video-1'],
+              ['url', 'https://example.com/video.mp4'],
+              ['p', collaborator1],
+            ],
+          },
+          'stats': {
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+          },
+        });
+
+        expect(stats.collaboratorPubkeys, equals([collaborator1]));
+      });
+
+      test('excludes the event author pubkey', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', authorPubkey],
+            ['p', collaborator1],
+          ]),
+        );
+
+        expect(stats.collaboratorPubkeys, equals([collaborator1]));
+      });
+
+      test('deduplicates repeated p tags', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1],
+            ['p', collaborator1],
+            ['p', collaborator2],
+          ]),
+        );
+
+        expect(
+          stats.collaboratorPubkeys,
+          equals([collaborator1, collaborator2]),
+        );
+      });
+
+      test('lowercases uppercase p-tag values and compares against author', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1.toUpperCase()],
+            ['p', authorPubkey.toUpperCase()],
+          ]),
+        );
+
+        expect(stats.collaboratorPubkeys, equals([collaborator1]));
+      });
+
+      test('ignores empty p tags', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', ''],
+            ['p', collaborator1],
+          ]),
+        );
+
+        expect(stats.collaboratorPubkeys, equals([collaborator1]));
+      });
+
+      test('returns empty list when no p tags present', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['d', 'video-1'],
+            ['url', 'https://example.com/video.mp4'],
+          ]),
+        );
+
+        expect(stats.collaboratorPubkeys, isEmpty);
+      });
+
+      test('forwards collaboratorPubkeys through toVideoEvent', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1],
+            ['p', collaborator2],
+          ]),
+        );
+
+        final event = stats.toVideoEvent();
+
+        expect(
+          event.collaboratorPubkeys,
+          equals([collaborator1, collaborator2]),
+        );
+        expect(event.hasCollaborators, isTrue);
+      });
+    });
+
     group('toVideoEvent', () {
       test('converts to VideoEvent with all fields', () {
         final stats = VideoStats(
@@ -1041,6 +1177,73 @@ void main() {
 
         expect(videoEvent.content, equals(''));
       });
+
+      test(
+        'propagates NIP-40 expiration tag from REST event data into VideoEvent',
+        () {
+          final futureExpiry =
+              (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600;
+          final json = {
+            'event': {
+              'id': 'test-id',
+              'pubkey': 'test-pubkey',
+              'created_at': 1700000000,
+              'kind': 34236,
+              'content': 'Test',
+              'tags': [
+                ['d', 'video-1'],
+                ['url', 'https://example.com/video.mp4'],
+                ['expiration', futureExpiry.toString()],
+              ],
+            },
+            'stats': {
+              'reactions': 0,
+              'comments': 0,
+              'reposts': 0,
+              'engagement_score': 0,
+            },
+          };
+
+          final stats = VideoStats.fromJson(json);
+          final event = stats.toVideoEvent();
+
+          expect(event.expirationTimestamp, equals(futureExpiry));
+          expect(event.isExpired, isFalse);
+        },
+      );
+
+      test(
+        'sets isExpired to true when the expiration timestamp is in the past',
+        () {
+          final pastExpiry =
+              (DateTime.now().millisecondsSinceEpoch ~/ 1000) - 3600;
+          final json = {
+            'event': {
+              'id': 'test-id',
+              'pubkey': 'test-pubkey',
+              'created_at': 1700000000,
+              'kind': 34236,
+              'content': 'Test',
+              'tags': [
+                ['d', 'video-1'],
+                ['url', 'https://example.com/video.mp4'],
+                ['expiration', pastExpiry.toString()],
+              ],
+            },
+            'stats': {
+              'reactions': 0,
+              'comments': 0,
+              'reposts': 0,
+              'engagement_score': 0,
+            },
+          };
+
+          final event = VideoStats.fromJson(json).toVideoEvent();
+
+          expect(event.expirationTimestamp, equals(pastExpiry));
+          expect(event.isExpired, isTrue);
+        },
+      );
 
       test('maps API reactions count to originalLikes as fallback', () {
         final stats = VideoStats(

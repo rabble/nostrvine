@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "自分の動画だけ削除できるよ。",
     "shareMenuDeleteFailedNotAuthenticated": "もう一度ログインしてから削除してね。",
     "shareMenuDeleteFailedCouldNotSign": "削除リクエストに署名できなかったよ。もう一度試してね。",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "この動画を削除できなかったよ。もう一度試してね。",
     "shareMenuFollowSetName": "フォローセット名",
     "shareMenuFollowSetNameHint": "例: クリエイター、ミュージシャンなど",

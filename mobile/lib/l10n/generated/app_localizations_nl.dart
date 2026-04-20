@@ -3015,6 +3015,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon het verwijderverzoek niet ondertekenen. Probeer opnieuw.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Kon deze video niet verwijderen. Probeer opnieuw.';
 

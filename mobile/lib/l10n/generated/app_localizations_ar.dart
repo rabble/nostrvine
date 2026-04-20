@@ -2974,6 +2974,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'لم نتمكن من توقيع طلب الحذف. حاول مرة أخرى.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'تعذّر حذف هذا الفيديو. حاول مرة أخرى.';
 

@@ -5270,6 +5270,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t sign the delete request. Try again.'**
   String get shareMenuDeleteFailedCouldNotSign;
 
+  /// No description provided for @shareMenuDeleteFailedRelayRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the relay. Check your connection and try again.'**
+  String get shareMenuDeleteFailedRelayRejected;
+
   /// No description provided for @shareMenuDeleteFailedGeneric.
   ///
   /// In en, this message translates to:

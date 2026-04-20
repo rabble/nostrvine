@@ -3027,6 +3027,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível assinar o pedido de exclusão. Tenta de novo.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Não foi possível apagar este vídeo. Tenta de novo.';
 

@@ -3047,6 +3047,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de signer la demande de suppression. Réessaie.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Impossible de supprimer cette vidéo. Réessaie.';
 

@@ -188,6 +188,9 @@ void main() {
             '["pubkey1","pubkey2"]',
           );
           await prefs.setString('relay_discovery_npub1abc', 'relay_data');
+          // DM sync cursors are also per-pubkey and should be cleared
+          await prefs.setInt('dm.newestSyncedAt.abc123', 1700000000);
+          await prefs.setInt('dm.oldestSyncedAt.abc123', 1699000000);
 
           await service.clearUserSpecificData(
             reason: 'identity_change',
@@ -197,6 +200,8 @@ void main() {
           // Dynamic prefix keys should be cleared on identity change
           expect(prefs.containsKey('following_list_abc123'), isFalse);
           expect(prefs.containsKey('relay_discovery_npub1abc'), isFalse);
+          expect(prefs.containsKey('dm.newestSyncedAt.abc123'), isFalse);
+          expect(prefs.containsKey('dm.oldestSyncedAt.abc123'), isFalse);
         },
       );
 
@@ -231,6 +236,59 @@ void main() {
         expect(prefs.containsKey('some_other_cache_abc'), isTrue);
         // Matching prefix should be cleared
         expect(prefs.containsKey('following_list_abc123'), isFalse);
+      });
+
+      test(
+        'passes userPubkey and deleteUserData to onDatabaseCleanup',
+        () async {
+          String? receivedPubkey;
+          var receivedDeleteUserData = false;
+          service.onDatabaseCleanup =
+              ({String? userPubkey, bool deleteUserData = false}) async {
+                receivedPubkey = userPubkey;
+                receivedDeleteUserData = deleteUserData;
+              };
+
+          await service.clearUserSpecificData(
+            reason: 'explicit_logout',
+            userPubkey: 'abc123',
+            deleteUserData: true,
+          );
+
+          expect(receivedPubkey, equals('abc123'));
+          expect(receivedDeleteUserData, isTrue);
+        },
+      );
+
+      test(
+        'passes deleteUserData=false by default to onDatabaseCleanup',
+        () async {
+          var receivedDeleteUserData = true;
+          service.onDatabaseCleanup =
+              ({String? userPubkey, bool deleteUserData = false}) async {
+                receivedDeleteUserData = deleteUserData;
+              };
+
+          await service.clearUserSpecificData(reason: 'explicit_logout');
+
+          expect(receivedDeleteUserData, isFalse);
+        },
+      );
+
+      test('claimLegacyRows calls onClaimLegacyRows callback', () async {
+        String? receivedPubkey;
+        service.onClaimLegacyRows = (String pubkey) async {
+          receivedPubkey = pubkey;
+        };
+
+        await service.claimLegacyRows('abc123');
+
+        expect(receivedPubkey, equals('abc123'));
+      });
+
+      test('claimLegacyRows is safe when callback not set', () async {
+        // Should not throw
+        await service.claimLegacyRows('abc123');
       });
     });
 
@@ -289,41 +347,6 @@ void main() {
         expect(prefixes, isNot(contains('curated_lists')));
         expect(prefixes, isNot(contains('seen_video_ids')));
       });
-    });
-
-    group('DM sync state cleanup', () {
-      test(
-        'clears dm sync cursor keys on identity change',
-        () async {
-          await prefs.setInt('dm.newestSyncedAt.pubkeyA', 1000);
-          await prefs.setInt('dm.oldestSyncedAt.pubkeyA', 500);
-          await prefs.setInt('dm.newestSyncedAt.pubkeyB', 2000);
-          await prefs.setInt('dm.oldestSyncedAt.pubkeyB', 1500);
-
-          await service.clearUserSpecificData(
-            reason: 'identity_change',
-            isIdentityChange: true,
-          );
-
-          expect(prefs.containsKey('dm.newestSyncedAt.pubkeyA'), isFalse);
-          expect(prefs.containsKey('dm.oldestSyncedAt.pubkeyA'), isFalse);
-          expect(prefs.containsKey('dm.newestSyncedAt.pubkeyB'), isFalse);
-          expect(prefs.containsKey('dm.oldestSyncedAt.pubkeyB'), isFalse);
-        },
-      );
-
-      test(
-        'preserves dm sync cursor keys on non-identity-change cleanup',
-        () async {
-          await prefs.setInt('dm.newestSyncedAt.pubkeyA', 1000);
-          await prefs.setInt('dm.oldestSyncedAt.pubkeyA', 500);
-
-          await service.clearUserSpecificData(reason: 'explicit_logout');
-
-          expect(prefs.containsKey('dm.newestSyncedAt.pubkeyA'), isTrue);
-          expect(prefs.containsKey('dm.oldestSyncedAt.pubkeyA'), isTrue);
-        },
-      );
     });
   });
 }

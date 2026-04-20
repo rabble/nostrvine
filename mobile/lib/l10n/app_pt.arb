@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Só podes apagar os teus próprios vídeos.",
     "shareMenuDeleteFailedNotAuthenticated": "Inicia sessão outra vez e tenta apagar.",
     "shareMenuDeleteFailedCouldNotSign": "Não foi possível assinar o pedido de exclusão. Tenta de novo.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "Não foi possível apagar este vídeo. Tenta de novo.",
     "shareMenuFollowSetName": "Nome da coleção de seguidos",
     "shareMenuFollowSetNameHint": "ex.: Criadores de conteúdo, Músicos, etc.",

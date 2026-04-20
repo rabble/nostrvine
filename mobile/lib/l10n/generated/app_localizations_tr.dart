@@ -2989,6 +2989,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Silme isteği imzalanamadı. Tekrar dene.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Bu video silinemedi. Tekrar dene.';
 

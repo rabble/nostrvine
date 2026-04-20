@@ -2848,6 +2848,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteFailedCouldNotSign => '削除リクエストに署名できなかったよ。もう一度試してね。';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric => 'この動画を削除できなかったよ。もう一度試してね。';
 
   @override

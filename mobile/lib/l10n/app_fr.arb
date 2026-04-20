@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Tu peux supprimer uniquement tes propres vidéos.",
     "shareMenuDeleteFailedNotAuthenticated": "Reconnecte-toi, puis réessaie de supprimer.",
     "shareMenuDeleteFailedCouldNotSign": "Impossible de signer la demande de suppression. Réessaie.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "Impossible de supprimer cette vidéo. Réessaie.",
     "shareMenuFollowSetName": "Nom de l'ensemble d'abonnements",
     "shareMenuFollowSetNameHint": "ex. Créateurs de contenu, Musiciens, etc.",

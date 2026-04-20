@@ -1522,6 +1522,7 @@
   "shareMenuDeleteFailedNotOwner": "You can only delete your own videos.",
   "shareMenuDeleteFailedNotAuthenticated": "Sign in again, then try deleting.",
   "shareMenuDeleteFailedCouldNotSign": "Couldn't sign the delete request. Try again.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
   "shareMenuDeleteFailedGeneric": "Couldn't delete this video. Try again.",
   "shareMenuFollowSetName": "Follow Set Name",
   "shareMenuFollowSetNameHint": "e.g., Content Creators, Musicians, etc.",

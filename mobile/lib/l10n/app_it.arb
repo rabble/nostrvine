@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Puoi eliminare solo i tuoi video.",
     "shareMenuDeleteFailedNotAuthenticated": "Accedi di nuovo, poi riprova a eliminare.",
     "shareMenuDeleteFailedCouldNotSign": "Non è stato possibile firmare la richiesta di eliminazione. Riprova.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "Non è stato possibile eliminare questo video. Riprova.",
     "shareMenuFollowSetName": "Nome set di follow",
     "shareMenuFollowSetNameHint": "es. Content creator, Musicisti, ecc.",

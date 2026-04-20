@@ -173,8 +173,13 @@ void main() {
       () => mockCleanupService.clearUserSpecificData(
         reason: any(named: 'reason'),
         isIdentityChange: any(named: 'isIdentityChange'),
+        userPubkey: any(named: 'userPubkey'),
+        deleteUserData: any(named: 'deleteUserData'),
       ),
     ).thenAnswer((_) async => 0);
+    when(
+      () => mockCleanupService.claimLegacyRows(any()),
+    ).thenAnswer((_) async {});
 
     // Mock OAuth client: logout clears the same keys that the real
     // KeycastOAuth.logout() would clear via SecureKeycastStorage.
@@ -243,10 +248,7 @@ void main() {
       // Verify recovery prefs point to A
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('last_used_npub'), equals(accountA.npub));
-      expect(
-        prefs.getString('authentication_source'),
-        equals('divineOAuth'),
-      );
+      expect(prefs.getString('authentication_source'), equals('divineOAuth'));
 
       // Verify A's OAuth session was restored to the active slot
       final restoredSessionJson = fakeSecureStorage.data['keycast_session'];
@@ -300,9 +302,9 @@ void main() {
           refreshToken: 'new_refresh_token_A',
           userPubkey: accountA.publicKeyHex,
         );
-        when(() => mockOAuthClient.refreshSession()).thenAnswer(
-          (_) async => refreshedSession,
-        );
+        when(
+          () => mockOAuthClient.refreshSession(),
+        ).thenAnswer((_) async => refreshedSession);
 
         // Create fresh AuthService (simulates app restart)
         authService = createAuthService();
