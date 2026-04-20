@@ -7,6 +7,7 @@ import 'event_kind.dart';
 import 'event_mem_box.dart';
 import 'nip02/contact_list.dart';
 import 'relay/event_filter.dart';
+import 'relay/publish_outcome.dart';
 import 'relay/relay.dart';
 import 'relay/relay_pool.dart';
 import 'relay/relay_type.dart';
@@ -198,6 +199,42 @@ class Nostr {
       return event;
     }
     return null;
+  }
+
+  /// Signs (if needed) and publishes [event], returning a [PublishOutcome]
+  /// that reflects each target relay's NIP-20 OK response.
+  ///
+  /// If signing fails, returns an empty outcome (no acceptedBy / rejectedBy /
+  /// noResponseFrom entries). The caller inspects [PublishOutcome.failed] /
+  /// [PublishOutcome.acceptedByAny] to decide follow-up behavior.
+  ///
+  /// This is the [sendEvent] sibling that surfaces per-relay acknowledgements
+  /// instead of collapsing to a single `Event?`. See
+  /// [RelayPool.sendAwaitOk] for the underlying completer bookkeeping.
+  Future<PublishOutcome> sendEventAwaitOk(
+    Event event, {
+    Duration timeout = const Duration(seconds: 15),
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) async {
+    if (StringUtil.isBlank(event.sig)) {
+      await signEvent(event);
+      if (StringUtil.isBlank(event.sig)) {
+        return PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        );
+      }
+    }
+
+    return _pool.sendAwaitOk(
+      event,
+      timeout: timeout,
+      tempRelays: tempRelays,
+      targetRelays: targetRelays,
+    );
   }
 
   void checkEventSign(Event event) {
