@@ -117,6 +117,7 @@ final class CommentsState extends Equatable {
     this.rootAddressableId,
     this.commentsById = const {},
     this.error,
+    this.lastActionFeedback,
     this.mainInputText = '',
     this.replyInputText = '',
     this.activeReplyCommentId,
@@ -280,6 +281,12 @@ final class CommentsState extends Equatable {
   /// UI layer maps this to localized string via BlocListener.
   final CommentsError? error;
 
+  /// User-facing feedback describing the most recent post/delete comment
+  /// publish attempt, derived from [PublishResultMapper]. The UI reads
+  /// this to render a retry-aware snackbar, and the bloc clears it when
+  /// the next action begins.
+  final PublishUserFeedback? lastActionFeedback;
+
   /// Text content of the main comment input
   final String mainInputText;
 
@@ -304,6 +311,8 @@ final class CommentsState extends Equatable {
     String? rootAddressableId,
     Map<String, Comment>? commentsById,
     CommentsError? error,
+    PublishUserFeedback? lastActionFeedback,
+    bool clearFeedback = false,
     String? mainInputText,
     String? replyInputText,
     String? activeReplyCommentId,
@@ -330,6 +339,9 @@ final class CommentsState extends Equatable {
       rootAddressableId: rootAddressableId ?? this.rootAddressableId,
       commentsById: commentsById ?? this.commentsById,
       error: error,
+      lastActionFeedback: clearFeedback
+          ? null
+          : (lastActionFeedback ?? this.lastActionFeedback),
       mainInputText: mainInputText ?? this.mainInputText,
       replyInputText: replyInputText ?? this.replyInputText,
       activeReplyCommentId: activeReplyCommentId ?? this.activeReplyCommentId,
@@ -422,6 +434,7 @@ final class CommentsState extends Equatable {
     rootAddressableId,
     commentsById,
     error,
+    lastActionFeedback,
     mainInputText,
     replyInputText,
     activeReplyCommentId,

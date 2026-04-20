@@ -12,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:meta/meta.dart' show visibleForTesting;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
@@ -329,10 +330,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       replyToEventId: event.parentCommentId,
       replyToAuthorPubkey: event.parentAuthorPubkey,
     );
-    final withPlaceholder = {
-      ...state.commentsById,
-      placeholderId: placeholder,
-    };
+    final withPlaceholder = {...state.commentsById, placeholderId: placeholder};
     if (isReply) {
       emit(state.clearActiveReply(commentsById: withPlaceholder));
     } else {
@@ -341,6 +339,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
           commentsById: withPlaceholder,
           mainInputText: '',
           activeMentions: const {},
+          clearFeedback: true,
         ),
       );
     }
@@ -383,7 +382,24 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
           replyCountsByCommentId: _computeReplyCounts(reconciled),
         ),
       );
-    } catch (e) {
+    } on PostCommentFailedException catch (e, stackTrace) {
+      addError(e, stackTrace);
+      final rolled = Map<String, Comment>.from(state.commentsById)
+        ..remove(placeholderId);
+      emit(
+        state.copyWith(
+          commentsById: rolled,
+          mainInputText: isReply ? state.mainInputText : previousMain,
+          replyInputText: isReply ? previousReply : state.replyInputText,
+          activeMentions: previousMentions,
+          error: isReply
+              ? CommentsError.postReplyFailed
+              : CommentsError.postCommentFailed,
+          lastActionFeedback: e.feedback,
+        ),
+      );
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
       Log.error(
         'Error posting comment: $e',
         name: 'CommentsBloc',
@@ -435,7 +451,16 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
           replyCountsByCommentId: _computeReplyCounts(updatedCommentsById),
         ),
       );
-    } catch (e) {
+    } on DeleteCommentFailedException catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          error: CommentsError.deleteCommentFailed,
+          lastActionFeedback: e.feedback,
+        ),
+      );
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
       Log.error(
         'Error deleting comment: $e',
         name: 'CommentsBloc',

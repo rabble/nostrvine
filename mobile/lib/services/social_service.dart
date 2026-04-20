@@ -125,11 +125,18 @@ class SocialService {
         throw Exception('Failed to create deletion request event');
       }
 
-      // Publish the deletion request
-      final sentEvent = await _nostrService.publishEvent(event);
+      // Publish the deletion request with retry. This is a user-initiated
+      // destructive action — surface a typed failure so the caller can
+      // inspect PublishOutcome + feedback.
+      final outcome = await _nostrService.publishEventWithRetry(event);
 
-      if (sentEvent == null) {
-        throw Exception('Failed to publish deletion request to relays');
+      if (!outcome.acceptedByAny) {
+        final feedback = PublishResultMapper.map(outcome);
+        throw Exception(
+          'Failed to publish deletion request to relays '
+          '(retryable=${feedback.retryable} '
+          'reason=${feedback.firstRejectionReason ?? 'n/a'})',
+        );
       }
 
       Log.info(

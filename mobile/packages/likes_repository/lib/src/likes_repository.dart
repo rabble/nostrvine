@@ -131,9 +131,7 @@ class LikesRepository {
     if (_isDisposed || _likedIdsController.isClosed) return;
     final sortedRecords = _likeRecords.values.toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    _likedIdsController.add(
-      sortedRecords.map((r) => r.targetEventId).toList(),
-    );
+    _likedIdsController.add(sortedRecords.map((r) => r.targetEventId).toList());
   }
 
   /// Emits the current downvoted event IDs ordered by recency.
@@ -304,27 +302,32 @@ class LikesRepository {
     // to rollback + rethrow to preserve the original contract for tests
     // and non-app embedders.
     try {
-      final reactionEvent = await _nostrClient.sendLike(
-        eventId,
-        content: _likeContent,
+      final outcome = await _nostrClient.sendLikeAwaitOk(
+        eventId: eventId,
+        authorPubkey: authorPubkey,
         addressableId: addressableId,
-        targetAuthorPubkey: authorPubkey,
         targetKind: targetKind,
+        content: _likeContent,
+        policy: const RetryPolicy(),
       );
 
-      if (reactionEvent == null) {
-        throw const LikeFailedException('Failed to publish like reaction');
+      if (!outcome.acceptedByAny) {
+        throw LikeFailedException(
+          'Failed to publish like reaction',
+          outcome: outcome,
+          feedback: PublishResultMapper.map(outcome),
+        );
       }
 
       final confirmed = LikeRecord(
         targetEventId: eventId,
-        reactionEventId: reactionEvent.id,
+        reactionEventId: outcome.eventId,
         createdAt: placeholder.createdAt,
       );
       _likeRecords[eventId] = confirmed;
       await _localStorage?.saveLikeRecord(confirmed);
 
-      return reactionEvent.id;
+      return outcome.eventId;
     } catch (e, stackTrace) {
       if (_queueOfflineAction != null) {
         developer.log(
@@ -360,17 +363,22 @@ class LikesRepository {
     String? addressableId,
     int? targetKind,
   }) async {
-    // Publish Kind 7 reaction event via NostrClient
-    final reactionEvent = await _nostrClient.sendLike(
-      eventId,
-      content: _likeContent,
+    // Publish Kind 7 reaction event via NostrClient with retry.
+    final outcome = await _nostrClient.sendLikeAwaitOk(
+      eventId: eventId,
+      authorPubkey: authorPubkey,
       addressableId: addressableId,
-      targetAuthorPubkey: authorPubkey,
       targetKind: targetKind,
+      content: _likeContent,
+      policy: const RetryPolicy(),
     );
 
-    if (reactionEvent == null) {
-      throw const LikeFailedException('Failed to publish like reaction');
+    if (!outcome.acceptedByAny) {
+      throw LikeFailedException(
+        'Failed to publish like reaction',
+        outcome: outcome,
+        feedback: PublishResultMapper.map(outcome),
+      );
     }
 
     // Update local record with real event ID if we have a placeholder
@@ -379,14 +387,14 @@ class LikesRepository {
         existingRecord.reactionEventId.startsWith('pending_')) {
       final record = LikeRecord(
         targetEventId: eventId,
-        reactionEventId: reactionEvent.id,
+        reactionEventId: outcome.eventId,
         createdAt: existingRecord.createdAt,
       );
       _likeRecords[eventId] = record;
       await _localStorage?.saveLikeRecord(record);
     }
 
-    return reactionEvent.id;
+    return outcome.eventId;
   }
 
   /// Unlike an event.
@@ -445,11 +453,17 @@ class LikesRepository {
     }
 
     try {
-      final deletionEvent = await _nostrClient.deleteEvent(
+      final outcome = await _nostrClient.deleteEventAwaitOk(
         snapshotRecord.reactionEventId,
+        policy: const RetryPolicy(),
       );
-      if (deletionEvent == null) {
-        throw const UnlikeFailedException('Failed to publish unlike deletion');
+
+      if (!outcome.acceptedByAny) {
+        throw UnlikeFailedException(
+          'Failed to publish unlike deletion',
+          outcome: outcome,
+          feedback: PublishResultMapper.map(outcome),
+        );
       }
     } catch (e, stackTrace) {
       if (_queueOfflineAction != null) {
@@ -500,13 +514,18 @@ class LikesRepository {
       return;
     }
 
-    // Publish Kind 5 deletion event via NostrClient
-    final deletionEvent = await _nostrClient.deleteEvent(
+    // Publish Kind 5 deletion event via NostrClient with retry.
+    final outcome = await _nostrClient.deleteEventAwaitOk(
       record.reactionEventId,
+      policy: const RetryPolicy(),
     );
 
-    if (deletionEvent == null) {
-      throw const UnlikeFailedException('Failed to publish unlike deletion');
+    if (!outcome.acceptedByAny) {
+      throw UnlikeFailedException(
+        'Failed to publish unlike deletion',
+        outcome: outcome,
+        feedback: PublishResultMapper.map(outcome),
+      );
     }
 
     // Remove from cache and storage
@@ -573,10 +592,7 @@ class LikesRepository {
     if (cached != null) return cached;
 
     // Query relays for count of Kind 7 reactions on this event
-    final filterByE = Filter(
-      kinds: const [EventKind.reaction],
-      e: [eventId],
-    );
+    final filterByE = Filter(kinds: const [EventKind.reaction], e: [eventId]);
 
     int count;
 
@@ -641,10 +657,7 @@ class LikesRepository {
     if (uncachedIds.isEmpty) return counts;
 
     // Query relays for count of Kind 7 reactions on uncached events
-    final filterByE = Filter(
-      kinds: const [EventKind.reaction],
-      e: uncachedIds,
-    );
+    final filterByE = Filter(kinds: const [EventKind.reaction], e: uncachedIds);
 
     // NIP-45 COUNT with multiple event IDs returns total count, not per-event
     // So we need to fall back to querying events and counting client-side
@@ -732,10 +745,7 @@ class LikesRepository {
       return (upvotes: <String, int>{}, downvotes: <String, int>{});
     }
 
-    final filter = Filter(
-      kinds: const [EventKind.reaction],
-      e: eventIds,
-    );
+    final filter = Filter(kinds: const [EventKind.reaction], e: eventIds);
 
     final events = await _nostrClient.queryEvents([filter]);
 
@@ -855,26 +865,29 @@ class LikesRepository {
     // 2. Online → publish kind 7 with '-'; on success swap the placeholder
     // for the real id, on failure roll back memory + stream.
     try {
-      final reactionEvent = await _nostrClient.sendLike(
-        eventId,
-        content: _downvoteContent,
-        targetAuthorPubkey: authorPubkey,
+      final outcome = await _nostrClient.sendLikeAwaitOk(
+        eventId: eventId,
+        authorPubkey: authorPubkey,
         targetKind: targetKind,
+        content: _downvoteContent,
+        policy: const RetryPolicy(),
       );
 
-      if (reactionEvent == null) {
-        throw const LikeFailedException(
+      if (!outcome.acceptedByAny) {
+        throw LikeFailedException(
           'Failed to publish downvote reaction',
+          outcome: outcome,
+          feedback: PublishResultMapper.map(outcome),
         );
       }
 
       _downvoteRecords[eventId] = LikeRecord(
         targetEventId: eventId,
-        reactionEventId: reactionEvent.id,
+        reactionEventId: outcome.eventId,
         createdAt: placeholder.createdAt,
       );
 
-      return reactionEvent.id;
+      return outcome.eventId;
     } catch (_) {
       _downvoteRecords.remove(eventId);
       _emitDownvotedIds();
@@ -912,12 +925,15 @@ class LikesRepository {
 
     // 3. Publish kind 5 deletion; on failure roll back memory + stream.
     try {
-      final deletionEvent = await _nostrClient.deleteEvent(
+      final outcome = await _nostrClient.deleteEventAwaitOk(
         snapshotRecord.reactionEventId,
+        policy: const RetryPolicy(),
       );
-      if (deletionEvent == null) {
-        throw const UnlikeFailedException(
+      if (!outcome.acceptedByAny) {
+        throw UnlikeFailedException(
           'Failed to publish downvote deletion',
+          outcome: outcome,
+          feedback: PublishResultMapper.map(outcome),
         );
       }
     } catch (_) {
@@ -956,9 +972,16 @@ class LikesRepository {
   ///
   /// Used for vote switching (removing old vote before publishing new one).
   Future<void> deleteReaction(String reactionEventId) async {
-    final deletionEvent = await _nostrClient.deleteEvent(reactionEventId);
-    if (deletionEvent == null) {
-      throw const UnlikeFailedException('Failed to delete reaction');
+    final outcome = await _nostrClient.deleteEventAwaitOk(
+      reactionEventId,
+      policy: const RetryPolicy(),
+    );
+    if (!outcome.acceptedByAny) {
+      throw UnlikeFailedException(
+        'Failed to delete reaction',
+        outcome: outcome,
+        feedback: PublishResultMapper.map(outcome),
+      );
     }
   }
 
@@ -1220,16 +1243,13 @@ class LikesRepository {
     // Use a deterministic subscription ID so we can unsubscribe later
     _reactionSubscriptionId = 'likes_repo_reactions_$currentUserPubkey';
 
-    final eventStream = _nostrClient.subscribe(
-      [
-        Filter(
-          authors: [currentUserPubkey],
-          kinds: const [EventKind.reaction],
-          limit: 1,
-        ),
-      ],
-      subscriptionId: _reactionSubscriptionId,
-    );
+    final eventStream = _nostrClient.subscribe([
+      Filter(
+        authors: [currentUserPubkey],
+        kinds: const [EventKind.reaction],
+        limit: 1,
+      ),
+    ], subscriptionId: _reactionSubscriptionId);
 
     _reactionSubscription = eventStream.listen(
       _processIncomingReaction,

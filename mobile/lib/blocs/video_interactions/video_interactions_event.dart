@@ -126,12 +126,14 @@ class _LikeSettleNotLiked extends _LikeSettleOutcome {
 
 /// Publish threw an unexpected error — revert to the pre-tap baseline.
 class _LikeSettleFailed extends _LikeSettleOutcome {
-  const _LikeSettleFailed({required this.wasLiked});
+  const _LikeSettleFailed({required this.wasLiked, this.error, this.feedback});
 
   final bool wasLiked;
+  final VideoInteractionsError? error;
+  final PublishUserFeedback? feedback;
 
   @override
-  List<Object?> get props => [wasLiked];
+  List<Object?> get props => [wasLiked, error, feedback];
 }
 
 /// Outcome of a fire-and-forget repost publish.
@@ -169,10 +171,11 @@ class _RepostSettleNotReposted extends _RepostSettleOutcome {
 
 /// Publish threw an unexpected error — revert to the pre-tap baseline.
 class _RepostSettleFailed extends _RepostSettleOutcome {
-  const _RepostSettleFailed({required this.wasReposted});
+  const _RepostSettleFailed({required this.wasReposted, this.error});
 
   final bool wasReposted;
+  final VideoInteractionsError? error;
 
   @override
-  List<Object?> get props => [wasReposted];
+  List<Object?> get props => [wasReposted, error];
 }

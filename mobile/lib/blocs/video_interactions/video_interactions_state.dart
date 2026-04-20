@@ -33,6 +33,9 @@ enum VideoInteractionsStatus {
 /// and this bloc emits the optimistic count + status before awaiting, so the
 /// UI flips immediately and rolls back on failure. See
 /// [LikesRepository.likeEvent] and [RepostsRepository.repostVideo].
+/// - [lastActionFeedback]: Publish feedback from the most recent like/repost
+///   toggle, surfaced so the UI can render a retry-aware snackbar. Cleared
+///   when the user begins a new action.
 class VideoInteractionsState extends Equatable {
   const VideoInteractionsState({
     this.status = VideoInteractionsStatus.initial,
@@ -42,6 +45,8 @@ class VideoInteractionsState extends Equatable {
     this.repostCount,
     this.commentCount,
     this.isCommentsInProgress = false,
+    this.error,
+    this.lastActionFeedback,
   });
 
   /// Current status of the bloc.
@@ -68,6 +73,14 @@ class VideoInteractionsState extends Equatable {
   /// Whether a comments operation is currently in progress.
   final bool isCommentsInProgress;
 
+  /// Error that occurred, if any.
+  final VideoInteractionsError? error;
+
+  /// User-facing feedback describing the most recent failed like/repost
+  /// action, derived from [PublishResultMapper]. The UI reads this to show
+  /// a retry-aware snackbar and clears it on the next action.
+  final PublishUserFeedback? lastActionFeedback;
+
   /// Whether interaction counts are still loading.
   bool get isLoading =>
       status == VideoInteractionsStatus.initial ||
@@ -85,6 +98,10 @@ class VideoInteractionsState extends Equatable {
     int? repostCount,
     int? commentCount,
     bool? isCommentsInProgress,
+    VideoInteractionsError? error,
+    PublishUserFeedback? lastActionFeedback,
+    bool clearError = false,
+    bool clearFeedback = false,
   }) {
     return VideoInteractionsState(
       status: status ?? this.status,
@@ -94,6 +111,10 @@ class VideoInteractionsState extends Equatable {
       repostCount: repostCount ?? this.repostCount,
       commentCount: commentCount ?? this.commentCount,
       isCommentsInProgress: isCommentsInProgress ?? this.isCommentsInProgress,
+      error: clearError ? null : (error ?? this.error),
+      lastActionFeedback: clearFeedback
+          ? null
+          : (lastActionFeedback ?? this.lastActionFeedback),
     );
   }
 
@@ -106,5 +127,19 @@ class VideoInteractionsState extends Equatable {
     repostCount,
     commentCount,
     isCommentsInProgress,
+    error,
+    lastActionFeedback,
   ];
+}
+
+/// Errors that can occur in video interactions.
+enum VideoInteractionsError {
+  /// Failed to fetch counts.
+  fetchFailed,
+
+  /// Failed to toggle like.
+  likeFailed,
+
+  /// Failed to toggle repost.
+  repostFailed,
 }
