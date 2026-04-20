@@ -2,9 +2,13 @@
 // ABOUTME: relay list when indexer discovery returns empty, so
 // ABOUTME: Keycast-provisioned accounts become discoverable. #3174 / keycast#94.
 
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
@@ -138,7 +142,7 @@ void main() {
         expect(
           invocation.event.tags,
           equals([
-            ['r', 'wss://relay.divine.video'],
+            ['r', AppConstants.defaultRelayUrl],
           ]),
         );
         expect(invocation.event.sig, isNotEmpty);
@@ -147,7 +151,7 @@ void main() {
         expect(
           invocation.targetRelays,
           equals([
-            'wss://relay.divine.video',
+            AppConstants.defaultRelayUrl,
             ...IndexerRelayConfig.defaultIndexers,
           ]),
         );
@@ -320,5 +324,44 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool(flagKey) ?? false, isFalse);
     });
+
+    test(
+      'flag is NOT set when signer hangs past timeout (retriable next login)',
+      () {
+        // Simulate a hung Keycast/Amber signer that never completes.
+        when(() => mockSigner.signEvent(any())).thenAnswer(
+          (_) => Completer<Event?>().future,
+        );
+
+        fakeAsync((async) {
+          final discovery = _ControllableRelayDiscoveryService(
+            outcome: () => RelayDiscoveryResult.failure('No relay list found'),
+          );
+          final recorder = _BootstrapCallbackRecorder(publishResult: true);
+          final authService = buildAuthService(
+            discovery,
+            identity: buildIdentity(),
+            recorder: recorder,
+          );
+
+          // Launch the operation (signer hangs forever).
+          authService.debugDiscoverUserRelays(testNpub);
+
+          // Drive past the 10s bootstrap sign timeout.
+          async.elapse(const Duration(seconds: 15));
+          async.flushMicrotasks();
+
+          // Signer timed out → callback never invoked → flag not set.
+          expect(recorder.invocations, isEmpty);
+
+          bool? flagValue;
+          SharedPreferences.getInstance().then((prefs) {
+            flagValue = prefs.getBool(flagKey);
+          });
+          async.flushMicrotasks();
+          expect(flagValue ?? false, isFalse);
+        });
+      },
+    );
   });
 }

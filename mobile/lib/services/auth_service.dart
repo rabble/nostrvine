@@ -17,6 +17,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
         SecureKeyStorage,
         SecureKeyStorageException;
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
@@ -145,6 +146,12 @@ typedef BootstrapRelayListCallback =
 /// SharedPreferences key prefix for the per-pubkey one-shot flag that records
 /// whether we have already published a bootstrap kind:10002 on this device.
 const _kBootstrapKind10002Prefix = 'bootstrap_kind10002_published_';
+
+/// Upper bound on how long to wait for the signer when producing the
+/// bootstrap kind:10002 event. If the signer does not respond within this
+/// window (hung Keycast RPC, unreachable Amber, etc.) we abandon the publish
+/// and leave the flag unset so the next login retries. See #3174 / #3162.
+const _kBootstrapSignTimeout = Duration(seconds: 10);
 
 /// Main authentication service for the Divine app
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via
@@ -4024,8 +4031,9 @@ class AuthService implements BackgroundAwareService {
   /// `relay.nos.social`). That in turn degrades reachability for every
   /// downstream publish operation (profile save, likes, comments) because
   /// the client can only connect to the fallback relay set. This method
-  /// self-publishes a minimal kind:10002 pointing at `wss://relay.divine.video`
-  /// so subsequent logins on this or any other client can discover it.
+  /// self-publishes a minimal kind:10002 pointing at
+  /// [AppConstants.defaultRelayUrl] so subsequent logins on this or any other
+  /// client can discover it.
   ///
   /// Guards:
   /// - fires at most once per (device, pubkey): tracked via
@@ -4060,12 +4068,29 @@ class AuthService implements BackgroundAwareService {
         pubkeyHex,
         EventKind.relayListMetadata,
         <List<String>>[
-          <String>['r', 'wss://relay.divine.video'],
+          <String>['r', AppConstants.defaultRelayUrl],
         ],
         '',
       );
 
-      final signed = await identity.signEvent(unsigned);
+      // Cap how long we wait for the signer. A hung Keycast RPC would
+      // otherwise block first-login past the existing NIP-65 discovery
+      // timeout. On timeout we leave the flag unset so the next login retries.
+      final Event? signed;
+      try {
+        signed = await identity
+            .signEvent(unsigned)
+            .timeout(_kBootstrapSignTimeout);
+      } on TimeoutException {
+        Log.warning(
+          'Bootstrap kind:10002: signer timed out after '
+          '${_kBootstrapSignTimeout.inSeconds}s — will retry on next login',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return;
+      }
+
       if (signed == null || signed.sig.isEmpty) {
         Log.warning(
           'Bootstrap kind:10002: signer returned null / unsigned — will retry '
@@ -4077,7 +4102,7 @@ class AuthService implements BackgroundAwareService {
       }
 
       final targetRelays = <String>[
-        'wss://relay.divine.video',
+        AppConstants.defaultRelayUrl,
         ...IndexerRelayConfig.defaultIndexers,
       ];
 
