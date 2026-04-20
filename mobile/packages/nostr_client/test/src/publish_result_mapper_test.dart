@@ -1,7 +1,6 @@
 // ABOUTME: Tests for PublishResultMapper - canonical outcome → UX decision.
 
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:test/test.dart';
 
 void main() {

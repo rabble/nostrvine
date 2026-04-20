@@ -369,7 +369,7 @@ class NostrClient {
   ///
   /// The returned outcome is the **last attempt's** outcome so rejection
   /// reasons that went permanent in a later retry surface correctly.
-  /// [statisticsObserver.onPublishOutcome] fires once per attempt so
+  /// `statisticsObserver.onPublishOutcome` fires once per attempt so
   /// observers can measure per-try latency as well as final result.
   Future<PublishOutcome> publishEventWithRetry(
     Event event, {

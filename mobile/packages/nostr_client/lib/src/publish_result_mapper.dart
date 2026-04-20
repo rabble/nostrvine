@@ -1,5 +1,5 @@
-// ABOUTME: Maps a PublishOutcome to PublishUserFeedback — single source of
-// ABOUTME: truth for how every service domain translates publish results into UX.
+// ABOUTME: Maps a PublishOutcome to PublishUserFeedback — single
+// ABOUTME: source of truth for publish-result UX across services.
 
 import 'package:meta/meta.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
@@ -8,7 +8,14 @@ import 'package:nostr_sdk/relay/publish_outcome.dart';
 ///
 /// UI layers use [PublishSeverity.success] for positive confirmations and
 /// [PublishSeverity.error] for failure snackbars / banners.
-enum PublishSeverity { success, error }
+enum PublishSeverity {
+  /// The publish succeeded — at least one relay accepted.
+  success,
+
+  /// The publish failed — no relay accepted (no response, rejection,
+  /// or nothing was attempted).
+  error,
+}
 
 /// User-facing summary of a publish attempt, derived from a
 /// [PublishOutcome].
@@ -20,6 +27,8 @@ enum PublishSeverity { success, error }
 /// relay's explanation when available.
 @immutable
 class PublishUserFeedback {
+  /// Builds user-facing feedback from a publish outcome. Use
+  /// [PublishResultMapper.map] in normal code paths.
   const PublishUserFeedback({
     required this.severity,
     required this.messageKey,
@@ -27,6 +36,7 @@ class PublishUserFeedback {
     this.firstRejectionReason,
   });
 
+  /// Severity bucket for the publish result.
   final PublishSeverity severity;
 
   /// i18n key for the user-facing message. Consumers look this up in
@@ -56,6 +66,8 @@ class PublishUserFeedback {
 abstract class PublishResultMapper {
   PublishResultMapper._();
 
+  /// Map a [PublishOutcome] to the user-facing feedback consumers should
+  /// render. See the class doc for the decision tree.
   static PublishUserFeedback map(PublishOutcome outcome) {
     if (outcome.acceptedByAny) {
       return const PublishUserFeedback(

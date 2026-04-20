@@ -6,18 +6,12 @@ import 'package:test/test.dart';
 void main() {
   group(RetryPolicy, () {
     test('delayFor returns baseDelay on the first retry', () {
-      const policy = RetryPolicy(
-        baseDelay: Duration(seconds: 2),
-        maxDelay: Duration(seconds: 30),
-      );
+      const policy = RetryPolicy();
       expect(policy.delayFor(1), const Duration(seconds: 2));
     });
 
     test('delayFor doubles each attempt up to maxDelay', () {
-      const policy = RetryPolicy(
-        baseDelay: Duration(seconds: 2),
-        maxDelay: Duration(seconds: 30),
-      );
+      const policy = RetryPolicy();
       expect(policy.delayFor(1), const Duration(seconds: 2));
       expect(policy.delayFor(2), const Duration(seconds: 4));
       expect(policy.delayFor(3), const Duration(seconds: 8));
@@ -26,7 +20,6 @@ void main() {
 
     test('delayFor caps at maxDelay', () {
       const policy = RetryPolicy(
-        baseDelay: Duration(seconds: 2),
         maxDelay: Duration(seconds: 10),
       );
       expect(policy.delayFor(1), const Duration(seconds: 2));

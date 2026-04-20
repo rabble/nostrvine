@@ -4,13 +4,16 @@
 import 'package:meta/meta.dart';
 
 /// Configuration for bounded-retry publish via
-/// [NostrClient.publishEventWithRetry].
+/// `NostrClient.publishEventWithRetry`.
 ///
 /// Defaults chosen for typical user-initiated publishes: 3 attempts total
 /// (initial + 2 retries), 2s initial delay doubling each retry, 15s
 /// per-attempt timeout, 30s cap so long backoffs don't feel stalled.
 @immutable
 class RetryPolicy {
+  /// Creates a retry policy. Defaults are sensible for user-initiated
+  /// publishes; override for background/high-stakes flows (e.g. account
+  /// deletion raises `maxAttempts` to 5).
   const RetryPolicy({
     this.maxAttempts = 3,
     this.baseDelay = const Duration(seconds: 2),
