@@ -847,6 +847,42 @@ class NostrClient {
     return likeEvent;
   }
 
+  /// Publishes a Kind 7 reaction and resolves per-relay NIP-20 OK acks.
+  ///
+  /// Builds a reaction event with the same tag structure as [sendLike]
+  /// (`e`, `p`, optional `a`, optional `k`) and routes through
+  /// [publishEventAwaitOk] (or [publishEventWithRetry] when [policy] is
+  /// non-null) so callers can surface a [PublishOutcome] / retry the
+  /// transient relays.
+  ///
+  /// Parameters mirror [sendLike]. [content] defaults to `+` for an upvote;
+  /// pass `-` for a downvote.
+  Future<PublishOutcome> sendLikeAwaitOk({
+    required String eventId,
+    required String authorPubkey,
+    String? addressableId,
+    int? targetKind,
+    String content = '+',
+    RetryPolicy? policy,
+    List<String>? targetRelays,
+  }) async {
+    final tags = <List<String>>[
+      ['e', eventId],
+      ['p', authorPubkey],
+      if (addressableId != null && addressableId.isNotEmpty)
+        ['a', addressableId],
+      if (targetKind != null) ['k', '$targetKind'],
+    ];
+    final event = Event(publicKey, EventKind.reaction, tags, content);
+    return policy == null
+        ? publishEventAwaitOk(event, targetRelays: targetRelays)
+        : publishEventWithRetry(
+            event,
+            policy: policy,
+            targetRelays: targetRelays,
+          );
+  }
+
   /// Sends a user profile (Kind 0 metadata event).
   ///
   /// Routes through [publishEvent] to ensure relay health checks and
@@ -885,6 +921,34 @@ class NostrClient {
       _cacheEvent(repostEvent);
     }
     return repostEvent;
+  }
+
+  /// Publishes a Kind 6 repost and resolves per-relay NIP-20 OK acks.
+  ///
+  /// Builds the event locally with an `e` tag referencing [eventId] (and the
+  /// optional [relayHint] as the third tag element). Route through
+  /// [publishEventWithRetry] when [policy] is supplied so transient failures
+  /// are retried; otherwise [publishEventAwaitOk] is used.
+  Future<PublishOutcome> sendRepostAwaitOk({
+    required String eventId,
+    String? relayHint,
+    String content = '',
+    RetryPolicy? policy,
+    List<String>? targetRelays,
+  }) async {
+    final eTag = <String>[
+      'e',
+      eventId,
+      if (relayHint != null && relayHint.isNotEmpty) relayHint,
+    ];
+    final event = Event(publicKey, EventKind.repost, [eTag], content);
+    return policy == null
+        ? publishEventAwaitOk(event, targetRelays: targetRelays)
+        : publishEventWithRetry(
+            event,
+            policy: policy,
+            targetRelays: targetRelays,
+          );
   }
 
   /// Sends a generic repost (Kind 16) for addressable events.
@@ -964,6 +1028,35 @@ class NostrClient {
       _handleDeletionEvent(deletionEvent);
     }
     return deletionEvent;
+  }
+
+  /// Publishes a NIP-09 deletion request (Kind 5) and resolves per-relay
+  /// NIP-20 OK acks.
+  ///
+  /// Builds a Kind 5 event with a single `e` tag referencing [eventId] and
+  /// the content `"delete"`. Routes through [publishEventAwaitOk] (or
+  /// [publishEventWithRetry] when [policy] is non-null) so callers can
+  /// surface a [PublishOutcome] instead of a nullable [Event].
+  Future<PublishOutcome> deleteEventAwaitOk(
+    String eventId, {
+    RetryPolicy? policy,
+    List<String>? targetRelays,
+  }) async {
+    final event = Event(
+      publicKey,
+      EventKind.eventDeletion,
+      [
+        ['e', eventId],
+      ],
+      'delete',
+    );
+    return policy == null
+        ? publishEventAwaitOk(event, targetRelays: targetRelays)
+        : publishEventWithRetry(
+            event,
+            policy: policy,
+            targetRelays: targetRelays,
+          );
   }
 
   /// Deletes multiple events
