@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:meta/meta.dart';
 import 'package:nostr_sdk/utils/relay_addr_util.dart';
 
 import '../count_response.dart';
@@ -15,6 +16,7 @@ import '../subscription.dart';
 import '../utils/string_util.dart';
 import 'client_connected.dart';
 import 'event_filter.dart';
+import 'publish_outcome.dart';
 import 'relay.dart';
 import 'relay_type.dart';
 
@@ -56,6 +58,10 @@ class RelayPool {
 
   // Track pending AUTH events to match with OK responses
   final Map<String, String> _pendingAuthEvents = {};
+
+  // Track pending publishes (non-AUTH EVENT frames) awaiting NIP-20 OK acks.
+  // Keyed by event.id. Entries are removed when the publish resolves.
+  final Map<String, _PendingPublish> _pendingPublishes = {};
 
   Relay Function(String) tempRelayGener;
 
@@ -412,6 +418,17 @@ class RelayPool {
           } else {
             relay.relayStatus.authed = false;
             log('🔐 AUTH failed for ${relay.url}: $message');
+          }
+        }
+
+        // Publish flow: route OK to any pending sendAwaitOk completer
+        // keyed by event.id. Unrelated OK frames (including AUTH) are
+        // not tracked here and are ignored.
+        final pending = _pendingPublishes[eventId];
+        if (pending != null) {
+          pending.recordOk(relay.url, success, message);
+          if (pending.completer.isCompleted) {
+            _pendingPublishes.remove(eventId);
           }
         }
       }
@@ -910,6 +927,89 @@ class RelayPool {
     }
   }
 
+  /// Sends an EVENT message and returns a [PublishOutcome] reflecting each
+  /// target relay's NIP-20 OK response. Resolves when every target has
+  /// responded OR [timeout] elapses.
+  Future<PublishOutcome> sendAwaitOk(
+    Event event, {
+    Duration timeout = const Duration(seconds: 15),
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) async {
+    assert(
+      event.id.isNotEmpty && event.sig.isNotEmpty,
+      'sendAwaitOk requires a signed event',
+    );
+
+    // Determine the full target relay set that will actually receive the
+    // frame. Needed before calling send() so the pending completer knows
+    // which relays to wait on.
+    final targets = <String>{};
+    for (final relay in _relaysSnapshot()) {
+      if (!relay.relayStatus.writeAccess) continue;
+      if (targetRelays != null &&
+          targetRelays.isNotEmpty &&
+          !targetRelays.contains(relay.url)) {
+        continue;
+      }
+      targets.add(relay.url);
+    }
+    if (tempRelays != null) targets.addAll(tempRelays);
+
+    if (targets.isEmpty) {
+      return PublishOutcome(
+        eventId: event.id,
+        acceptedBy: const {},
+        rejectedBy: const {},
+        noResponseFrom: const {},
+      );
+    }
+
+    final pending = _PendingPublish(
+      eventId: event.id,
+      targetRelays: targets,
+      timeout: timeout,
+    );
+    _pendingPublishes[event.id] = pending;
+
+    final submitted = await send(
+      ['EVENT', event.toJson()],
+      tempRelays: tempRelays,
+      targetRelays: targetRelays,
+    );
+
+    if (!submitted) {
+      // Nothing actually reached a relay — resolve with all targets as
+      // no-response immediately rather than waiting for the timeout.
+      _pendingPublishes.remove(event.id);
+      pending.cancelTimer();
+      return PublishOutcome(
+        eventId: event.id,
+        acceptedBy: const {},
+        rejectedBy: const {},
+        noResponseFrom: targets,
+      );
+    }
+
+    return pending.completer.future.whenComplete(() {
+      _pendingPublishes.remove(event.id);
+    });
+  }
+
+  @visibleForTesting
+  void addRelay(Relay relay) {
+    _relays[relay.url] = relay;
+    relay.onMessage = _onEvent;
+  }
+
+  @visibleForTesting
+  int get pendingPublishCountForTesting => _pendingPublishes.length;
+
+  @visibleForTesting
+  void handleMessageForTesting(Relay relay, List<dynamic> message) {
+    _onEvent(relay, message);
+  }
+
   Relay checkAndGenTempRelay(String addr) {
     var tempRelay = _tempRelays[addr];
     if (tempRelay == null) {
@@ -1230,4 +1330,68 @@ class RelayPool {
 
     return relays;
   }
+}
+
+/// Per-publish state for [RelayPool.sendAwaitOk].
+///
+/// One instance per in-flight publish, keyed by event id in the pool's
+/// `_pendingPublishes` map. Collects per-relay OK frames from the message
+/// handler and resolves [completer] once every target relay has responded
+/// or [timeout] fires.
+class _PendingPublish {
+  _PendingPublish({
+    required this.eventId,
+    required this.targetRelays,
+    required this.timeout,
+  }) : completer = Completer<PublishOutcome>() {
+    timer = Timer(timeout, _onTimeout);
+  }
+
+  final String eventId;
+  final Set<String> targetRelays;
+  final Duration timeout;
+  final Completer<PublishOutcome> completer;
+  late final Timer timer;
+
+  final Set<String> _acceptedBy = {};
+  final Map<String, String> _rejectedBy = {};
+
+  void recordOk(String relayUrl, bool accepted, String reason) {
+    if (!targetRelays.contains(relayUrl)) return;
+    if (_acceptedBy.contains(relayUrl) ||
+        _rejectedBy.containsKey(relayUrl)) {
+      return; // ignore duplicate frames from the same relay
+    }
+    if (accepted) {
+      _acceptedBy.add(relayUrl);
+    } else {
+      _rejectedBy[relayUrl] = reason;
+    }
+    if (_isComplete) _finish();
+  }
+
+  bool get _isComplete =>
+      (_acceptedBy.length + _rejectedBy.length) >= targetRelays.length;
+
+  void _finish() {
+    if (completer.isCompleted) return;
+    timer.cancel();
+    final noResponse = targetRelays
+        .difference(_acceptedBy)
+        .difference(_rejectedBy.keys.toSet());
+    completer.complete(
+      PublishOutcome(
+        eventId: eventId,
+        acceptedBy: Set.unmodifiable(_acceptedBy),
+        rejectedBy: Map.unmodifiable(_rejectedBy),
+        noResponseFrom: Set.unmodifiable(noResponse),
+      ),
+    );
+  }
+
+  void _onTimeout() {
+    _finish();
+  }
+
+  void cancelTimer() => timer.cancel();
 }
