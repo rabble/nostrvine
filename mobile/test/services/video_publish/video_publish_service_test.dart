@@ -5,6 +5,7 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AspectRatio;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
@@ -15,6 +16,34 @@ import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+VideoPublishResult _okResult() {
+  final outcome = PublishOutcome(
+    eventId: 'event123',
+    acceptedBy: const {'wss://relay.divine.video'},
+    rejectedBy: const {},
+    noResponseFrom: const {},
+  );
+  return VideoPublishResult.success(
+    eventId: 'event123',
+    outcome: outcome,
+    feedback: PublishResultMapper.map(outcome),
+  );
+}
+
+VideoPublishResult _failResult() {
+  final outcome = PublishOutcome(
+    eventId: 'event123',
+    acceptedBy: const {},
+    rejectedBy: const {},
+    noResponseFrom: const {'wss://relay.divine.video'},
+  );
+  return VideoPublishResult.failure(
+    eventId: 'event123',
+    outcome: outcome,
+    feedback: PublishResultMapper.map(outcome),
+  );
+}
 
 // Mock classes
 class MockUploadManager extends Mock implements UploadManager {}
@@ -237,9 +266,7 @@ void main() {
             (_) async =>
                 _createPendingUpload(status: UploadStatus.readyToPublish),
           );
-          when(
-            () => mockUploadManager.getUpload(any()),
-          ).thenReturn(
+          when(() => mockUploadManager.getUpload(any())).thenReturn(
             _createPendingUpload(status: UploadStatus.readyToPublish),
           );
           when(
@@ -251,7 +278,7 @@ void main() {
               expirationTimestamp: any(named: 'expirationTimestamp'),
               allowAudioReuse: any(named: 'allowAudioReuse'),
             ),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer((_) async => _failResult());
           when(
             () => mockBlossomService.getBlossomServer(),
           ).thenAnswer((_) async => 'https://test.server');
@@ -476,7 +503,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
           ),
-        ).thenAnswer((_) async => false);
+        ).thenAnswer((_) async => _failResult());
         when(
           () => mockBlossomService.getBlossomServer(),
         ).thenAnswer((_) async => 'https://test.server');
@@ -542,7 +569,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => _okResult());
 
         final draft = _createTestDraft();
 
@@ -737,7 +764,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => _okResult());
 
         final draft = _createTestDraft();
         final result = await service.publishVideo(draft: draft);
@@ -824,7 +851,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => _okResult());
 
         final draft = _createTestDraft();
         final result = await service.publishVideo(draft: draft);
@@ -1321,5 +1348,5 @@ void _setupSuccessfulPublish({
       language: any(named: 'language'),
       contentWarning: any(named: 'contentWarning'),
     ),
-  ).thenAnswer((_) async => true);
+  ).thenAnswer((_) async => _okResult());
 }

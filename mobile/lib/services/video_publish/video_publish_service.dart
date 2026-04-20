@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
@@ -27,22 +28,42 @@ sealed class PublishResult extends Equatable {
 }
 
 class PublishSuccess extends PublishResult {
-  const PublishSuccess({this.inviteWarnings = const []});
+  const PublishSuccess({
+    this.inviteWarnings = const [],
+    this.outcome,
+    this.feedback,
+  });
 
   final List<CollaboratorInviteWarning> inviteWarnings;
 
   bool get hasInviteWarnings => inviteWarnings.isNotEmpty;
 
+  /// Per-relay outcome of the Nostr publish (null for legacy callers or
+  /// pre-publish successes without a mapped outcome).
+  final PublishOutcome? outcome;
+
+  /// UI-facing feedback mapped from [outcome] via [PublishResultMapper].
+  final PublishUserFeedback? feedback;
+
   @override
-  List<Object?> get props => [inviteWarnings];
+  List<Object?> get props => [inviteWarnings, outcome, feedback];
 }
 
 class PublishError extends PublishResult {
-  const PublishError(this.userMessage);
+  const PublishError(this.userMessage, {this.outcome, this.feedback});
   final String userMessage;
 
+  /// Per-relay outcome when the failure happened at the relay round-trip.
+  /// Null for pre-publish failures (validation, auth, signing).
+  final PublishOutcome? outcome;
+
+  /// UI-facing feedback mapped via [PublishResultMapper] — populated when
+  /// [outcome] is populated. UIs should surface a Retry affordance iff
+  /// `feedback?.retryable == true`.
+  final PublishUserFeedback? feedback;
+
   @override
-  List<Object?> get props => [userMessage];
+  List<Object?> get props => [userMessage, outcome, feedback];
 }
 
 class CollaboratorInviteWarning extends Equatable {
@@ -179,7 +200,7 @@ class VideoPublishService {
       // Publish Nostr event
       Log.info('📝 Publishing Nostr event...', category: .video);
 
-      final published = await videoEventPublisher.publishVideoEvent(
+      final publishOutcome = await videoEventPublisher.publishVideoEvent(
         upload: pendingUpload,
         title: draft.title,
         description: draft.description,
@@ -199,12 +220,17 @@ class VideoPublishService {
         contentWarning: draft.contentWarning,
       );
 
-      if (!published) {
+      if (!publishOutcome.success) {
         Log.error('❌ Failed to publish Nostr event', category: .video);
-        return await _handleUploadError(
-          Exception('Failed to publish Nostr event'),
-          StackTrace.current,
-          draft,
+        // Pre-publish failures use [error]; post-publish failures carry
+        // [outcome]/[feedback] so UIs can render a Retry action when
+        // PublishResultMapper tags the outcome as retryable.
+        return PublishError(
+          publishOutcome.error ??
+              publishOutcome.feedback?.messageKey ??
+              'Failed to publish Nostr event',
+          outcome: publishOutcome.outcome,
+          feedback: publishOutcome.feedback,
         );
       }
 
@@ -219,7 +245,11 @@ class VideoPublishService {
       Log.debug('🗑️ Deleted publish draft: ${draft.id}', category: .video);
 
       Log.info('📝 Published successfully', category: .video);
-      return PublishSuccess(inviteWarnings: inviteWarnings);
+      return PublishSuccess(
+        inviteWarnings: inviteWarnings,
+        outcome: publishOutcome.outcome,
+        feedback: publishOutcome.feedback,
+      );
     } catch (e, stackTrace) {
       return _handleUploadError(e, stackTrace, draft);
     }

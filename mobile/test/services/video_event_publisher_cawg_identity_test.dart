@@ -35,6 +35,7 @@ void main() {
     registerFallbackValue(UploadStatus.pending);
     registerFallbackValue(_FakeFilter());
     registerFallbackValue(<Filter>[]);
+    registerFallbackValue(const RetryPolicy());
   });
 
   group('VideoEventPublisher - CAWG identity tag integration', () {
@@ -95,10 +96,20 @@ void main() {
         return capturedEvent!;
       });
 
-      when(() => mockNostrService.publishEvent(any())).thenAnswer((
-        invocation,
-      ) async {
-        return invocation.positionalArguments[0] as Event;
+      when(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments[0] as Event;
+        return PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {'wss://relay.divine.video'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        );
       });
       when(
         () => mockNostrService.queryEvents(
@@ -133,7 +144,7 @@ void main() {
 
         final published = await publisher.publishDirectUpload(upload);
 
-        expect(published, isTrue);
+        expect(published.success, isTrue);
         expect(capturedEvent, isNotNull);
         expect(capturedEvent!.pubkey, equals(upload.nostrPubkey));
 
@@ -174,7 +185,7 @@ void main() {
 
         final published = await publisher.publishDirectUpload(upload);
 
-        expect(published, isTrue);
+        expect(published.success, isTrue);
         expect(capturedEvent, isNotNull);
         expect(
           capturedEvent!.tags,
@@ -213,7 +224,7 @@ void main() {
 
         final published = await publisher.publishDirectUpload(upload);
 
-        expect(published, isTrue);
+        expect(published.success, isTrue);
         expect(capturedEvent, isNotNull);
         expect(
           capturedEvent!.tags,
