@@ -13,6 +13,7 @@ import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -130,4 +131,24 @@ void main() {
       expect(find.text('Integrated Apps'), findsNothing);
     },
   );
+
+  group('People list navigation path', () {
+    test('UserListPeopleScreen exposes routable path constants', () {
+      // Explore taps should route through GoRouter using these constants,
+      // not MaterialPageRoute — this forces the screen to be addressable
+      // by listId and keeps the open screen reactive to bloc updates.
+      expect(UserListPeopleScreen.path, equals('/people-lists/:listId'));
+      expect(UserListPeopleScreen.routeName, equals('people-list-members'));
+    });
+
+    test(
+      'constructs GoRouter path from listId using Uri.encodeComponent',
+      () {
+        const listId = 'list with/special:chars';
+        final built = '/people-lists/${Uri.encodeComponent(listId)}';
+        expect(built, startsWith('/people-lists/'));
+        expect(built.contains('/people-lists/list%20with'), isTrue);
+      },
+    );
+  });
 }

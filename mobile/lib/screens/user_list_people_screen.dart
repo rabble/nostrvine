@@ -1,11 +1,13 @@
 // ABOUTME: Screen for displaying people from a NIP-51 kind 30000 user list with their videos
-// ABOUTME: Shows horizontal carousel of people at top, video grid below
+// ABOUTME: Selects the UserList by id from PeopleListsBloc so it reacts to repository updates.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/features/people_lists/people_lists.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -17,33 +19,114 @@ import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-class UserListPeopleScreen extends ConsumerStatefulWidget {
-  const UserListPeopleScreen({required this.userList, super.key});
+/// Screen that renders a single NIP-51 kind 30000 people list.
+///
+/// The screen is addressed by [listId] and selects the matching [UserList]
+/// from [PeopleListsBloc] with a [BlocSelector], so edits made elsewhere
+/// (add/remove member, rename) are reflected without rebuilding the route.
+class UserListPeopleScreen extends StatelessWidget {
+  const UserListPeopleScreen({required this.listId, super.key});
 
-  final UserList userList;
+  /// GoRouter name for this route.
+  static const routeName = 'people-list-members';
+
+  /// GoRouter path template for this route.
+  static const path = '/people-lists/:listId';
+
+  /// Full list id (NIP-51 addressable identifier). Never truncated.
+  final String listId;
 
   @override
-  ConsumerState<UserListPeopleScreen> createState() =>
-      _UserListPeopleScreenState();
+  Widget build(BuildContext context) {
+    return BlocSelector<PeopleListsBloc, PeopleListsState, UserList?>(
+      selector: (state) {
+        for (final list in state.lists) {
+          if (list.id == listId) return list;
+        }
+        return null;
+      },
+      builder: (context, userList) {
+        if (userList == null) {
+          return const _ListNotFoundView();
+        }
+        return _UserListPeopleView(userList: userList);
+      },
+    );
+  }
 }
 
-class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
-    with ScrollToHideMixin {
-  int? _activeVideoIndex;
+/// Shown when the selected [UserList] is not present in bloc state.
+class _ListNotFoundView extends StatelessWidget {
+  const _ListNotFoundView();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
+      appBar: DiVineAppBar(
+        title: 'People list',
+        showBackButton: true,
+        onBackPressed: context.pop,
+      ),
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.group_off, size: 64, color: VineTheme.secondaryText),
+            SizedBox(height: 16),
+            Text(
+              'List not found',
+              style: TextStyle(
+                color: VineTheme.primaryText,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'This list may have been deleted.',
+              style: TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Body view for a resolved [UserList].
+class _UserListPeopleView extends ConsumerStatefulWidget {
+  const _UserListPeopleView({required this.userList});
+
+  final UserList userList;
+
+  @override
+  ConsumerState<_UserListPeopleView> createState() =>
+      _UserListPeopleViewState();
+}
+
+class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
+    with ScrollToHideMixin {
+  int? _activeVideoIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final userList = widget.userList;
+    return Scaffold(
+      backgroundColor: VineTheme.backgroundColor,
       appBar: _activeVideoIndex == null
           ? DiVineAppBar(
-              title: widget.userList.name,
-              subtitle: widget.userList.description,
+              title: userList.name,
+              subtitle: userList.description,
               showBackButton: true,
               onBackPressed: context.pop,
             )
           : null,
-      body: widget.userList.pubkeys.isEmpty
+      body: userList.pubkeys.isEmpty
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -70,14 +153,14 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
               ),
             )
           : _activeVideoIndex != null
-          ? _buildVideoPlayer()
-          : _buildListContent(),
+          ? _buildVideoPlayer(userList)
+          : _buildListContent(userList),
     );
   }
 
-  Widget _buildListContent() {
+  Widget _buildListContent(UserList userList) {
     final videosAsync = ref.watch(
-      userListMemberVideosProvider(widget.userList.pubkeys),
+      userListMemberVideosProvider(userList.pubkeys),
     );
 
     measureHeaderHeight();
@@ -141,7 +224,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                   },
                   onRefresh: () async {
                     ref.invalidate(
-                      userListMemberVideosProvider(widget.userList.pubkeys),
+                      userListMemberVideosProvider(userList.pubkeys),
                     );
                   },
                   emptyBuilder: () => const Center(
@@ -163,7 +246,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
               right: 0,
               child: _PeopleCarousel(
                 key: headerKey,
-                pubkeys: widget.userList.pubkeys,
+                pubkeys: userList.pubkeys,
               ),
             ),
           ],
@@ -197,9 +280,9 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
     );
   }
 
-  Widget _buildVideoPlayer() {
+  Widget _buildVideoPlayer(UserList userList) {
     final videosAsync = ref.watch(
-      userListMemberVideosProvider(widget.userList.pubkeys),
+      userListMemberVideosProvider(userList.pubkeys),
     );
 
     return videosAsync.when(
@@ -221,7 +304,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
               removedIdsStream: ref
                   .read(videoEventServiceProvider)
                   .removedVideoIds,
-              contextTitle: widget.userList.name,
+              contextTitle: userList.name,
             ),
             // Header bar showing list name and back button
             Positioned(
@@ -272,7 +355,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              widget.userList.name,
+                              userList.name,
                               style: const TextStyle(
                                 color: VineTheme.whiteText,
                                 fontSize: 16,
@@ -281,9 +364,9 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            if (widget.userList.description != null)
+                            if (userList.description != null)
                               Text(
-                                widget.userList.description!,
+                                userList.description!,
                                 style: const TextStyle(
                                   color: VineTheme.secondaryText,
                                   fontSize: 12,

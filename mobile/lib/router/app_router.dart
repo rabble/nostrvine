@@ -68,6 +68,7 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
@@ -524,6 +525,25 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: DiscoverListsScreen.path,
         name: DiscoverListsScreen.routeName,
         builder: (ctx, st) => const DiscoverListsScreen(),
+      ),
+
+      // PEOPLE LIST MEMBERS route (NIP-51 kind 30000 people lists).
+      // Addressed by list id so the screen can select the current list
+      // from PeopleListsBloc and react to repository updates without a
+      // route rebuild. Outside shell — the screen owns its own AppBar.
+      GoRoute(
+        path: UserListPeopleScreen.path,
+        name: UserListPeopleScreen.routeName,
+        builder: (ctx, st) {
+          final listId = st.pathParameters['listId'];
+          if (listId == null || listId.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'People list'),
+              body: Center(child: Text('Invalid list')),
+            );
+          }
+          return UserListPeopleScreen(listId: listId);
+        },
       ),
       GoRoute(
         path: WelcomeScreen.path,
@@ -1104,6 +1124,7 @@ int tabIndexFromLocation(String loc) {
     case 'sound':
     case 'list':
     case 'discover-lists':
+    case 'people-lists':
     case 'creator-analytics':
     case 'hashtag':
     case 'categories':

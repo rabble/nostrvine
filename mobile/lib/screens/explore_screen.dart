@@ -27,7 +27,6 @@ import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
-import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
@@ -933,11 +932,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                           );
                           // Stop any playing videos before navigating
                           disposeAllVideoControllers(ref);
-                          Navigator.of(context, rootNavigator: true).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  UserListPeopleScreen(userList: userList),
-                            ),
+                          context.push(
+                            '/people-lists/'
+                            '${Uri.encodeComponent(userList.id)}',
                           );
                         },
                       ),
