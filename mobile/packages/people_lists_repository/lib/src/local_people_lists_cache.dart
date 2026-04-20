@@ -2,6 +2,7 @@
 // ABOUTME: Scopes entries by owner pubkey and enforces deletion tombstones.
 
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:hive_ce/hive_ce.dart';
 import 'package:models/models.dart';
@@ -17,6 +18,14 @@ abstract class _CacheKeys {
   static const String receivedAtMillis = 'receivedAtMillis';
   static const String deletedAtMillis = 'deletedAtMillis';
 }
+
+/// Logger name used for cache-level diagnostic log entries.
+const String _logName = 'people_lists_repository.local_cache';
+
+/// Log level used for recoverable, non-fatal decode failures.
+///
+/// `dart:developer`'s convention is 900 for WARNING.
+const int _logLevelWarning = 900;
 
 /// Local cache for kind 30000 people lists, scoped by owner pubkey.
 ///
@@ -41,6 +50,10 @@ class LocalPeopleListsCache {
 
   /// Returns all non-tombstoned lists owned by [ownerPubkey], sorted by
   /// `updatedAt` descending.
+  ///
+  /// Throws any error raised by the injected box opener (for example if the
+  /// Hive box cannot be opened). Malformed individual rows are logged via
+  /// `dart:developer` and skipped; they do not cause the call to throw.
   Future<List<UserList>> readLists({required String ownerPubkey}) async {
     final box = await _box();
     return _collectLists(box, ownerPubkey);
@@ -48,6 +61,10 @@ class LocalPeopleListsCache {
 
   /// Emits the current lists for [ownerPubkey] immediately, then re-emits on
   /// each box mutation that affects this owner.
+  ///
+  /// If opening the Hive box fails, the error is forwarded onto the returned
+  /// stream. Malformed individual rows are logged and skipped; they do not
+  /// terminate the stream.
   Stream<List<UserList>> watchLists({required String ownerPubkey}) {
     late StreamController<List<UserList>> controller;
     StreamSubscription<BoxEvent>? subscription;
@@ -80,6 +97,8 @@ class LocalPeopleListsCache {
   /// Persists [list] for [ownerPubkey] unless a tombstone with a later or
   /// equal timestamp already exists. [receivedAt] is stored alongside the
   /// record for diagnostics and future sync logic.
+  ///
+  /// Throws if the Hive box cannot be opened or the underlying write fails.
   Future<void> putList({
     required String ownerPubkey,
     required UserList list,
@@ -100,6 +119,9 @@ class LocalPeopleListsCache {
 
   /// Persists every entry in [lists] via [putList], sharing the same
   /// [receivedAt] timestamp.
+  ///
+  /// Throws if the Hive box cannot be opened or any underlying write fails.
+  /// A partial failure leaves previously written entries in the box.
   Future<void> putLists({
     required String ownerPubkey,
     required Iterable<UserList> lists,
@@ -119,6 +141,8 @@ class LocalPeopleListsCache {
   ///
   /// A later recreation with a strictly newer `updatedAt` will replace the
   /// tombstone when written via [putList].
+  ///
+  /// Throws if the Hive box cannot be opened or an underlying write fails.
   Future<void> markDeleted({
     required String ownerPubkey,
     required String listId,
@@ -143,6 +167,8 @@ class LocalPeopleListsCache {
   }
 
   /// Removes every list record and tombstone owned by [ownerPubkey].
+  ///
+  /// Throws if the Hive box cannot be opened or the bulk delete fails.
   Future<void> clearOwner({required String ownerPubkey}) async {
     final box = await _box();
     final keysToDelete = box.keys
@@ -191,13 +217,29 @@ class LocalPeopleListsCache {
     return records;
   }
 
+  /// Decodes a single stored record into a [UserList].
+  ///
+  /// Returns `null` and logs a warning when the record is shaped unexpectedly
+  /// or when [UserList.fromJson] throws. A single malformed row must not
+  /// poison the whole `readLists`/`watchLists` result.
   UserList? _decodeList(Map<dynamic, dynamic> record) {
     final raw = record[_CacheKeys.list];
     if (raw is! Map) return null;
-    final json = Map<String, dynamic>.from(
-      raw.map((key, value) => MapEntry(key.toString(), value)),
-    );
-    return UserList.fromJson(json);
+    try {
+      final json = Map<String, dynamic>.from(
+        raw.map((key, value) => MapEntry(key.toString(), value)),
+      );
+      return UserList.fromJson(json);
+    } on Object catch (error, stackTrace) {
+      developer.log(
+        'Dropped malformed people-list record during decode',
+        name: _logName,
+        level: _logLevelWarning,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   int? _tombstoneMillis(Box<dynamic> box, String ownerPubkey, String listId) {

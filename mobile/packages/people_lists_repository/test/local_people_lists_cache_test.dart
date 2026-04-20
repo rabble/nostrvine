@@ -37,17 +37,6 @@ UserList _list({
   );
 }
 
-/// Microtask counts used while waiting for async stream plumbing.
-const _maxDrainMicrotasks = 50;
-
-/// Pumps the event loop until [check] returns true or a safety cap is hit.
-Future<void> _drainUntil(bool Function() check) async {
-  for (var i = 0; i < _maxDrainMicrotasks; i++) {
-    if (check()) return;
-    await Future<void>.delayed(Duration.zero);
-  }
-}
-
 void main() {
   group(LocalPeopleListsCache, () {
     late Directory tempDir;
@@ -172,6 +161,41 @@ void main() {
 
         expect(lists.map((l) => l.id), equals(['keep-me']));
       });
+
+      test(
+        'skips malformed rows and returns the remaining good rows',
+        () async {
+          // Share a single Hive box between the cache and the raw writer so
+          // we can inject a malformed row behind the cache's back.
+          const boxName = 'people_lists_test_shared';
+          Future<Box<dynamic>> openShared() =>
+              Hive.openBox<dynamic>(boxName, path: tempDir.path);
+
+          final cache = LocalPeopleListsCache(openBox: openShared);
+          final box = await openShared();
+
+          await cache.putList(
+            ownerPubkey: _ownerA,
+            list: _list(
+              id: 'good',
+              updatedAt: DateTime.utc(2026, 4, 1),
+            ),
+            receivedAt: DateTime.utc(2026, 4, 1),
+          );
+
+          // Malformed record: `list` payload is missing required fields so
+          // `UserList.fromJson` will throw when the cache tries to decode it.
+          await box.put('list:$_ownerA:broken', <String, dynamic>{
+            'ownerPubkey': _ownerA,
+            'list': <String, dynamic>{'nope': 'no required fields'},
+            'receivedAtMillis': 0,
+          });
+
+          final lists = await cache.readLists(ownerPubkey: _ownerA);
+
+          expect(lists.map((l) => l.id), equals(['good']));
+        },
+      );
     });
 
     group('putList', () {
@@ -249,8 +273,8 @@ void main() {
             .watchLists(ownerPubkey: _ownerA)
             .listen(emissions.add);
 
-        await _drainUntil(() => emissions.isNotEmpty);
-        expect(emissions, isNotEmpty);
+        await pumpEventQueue();
+        expect(emissions, hasLength(1));
         expect(emissions.first.map((l) => l.id), equals(['initial']));
 
         await cache.putList(
@@ -261,11 +285,7 @@ void main() {
           ),
           receivedAt: DateTime.utc(2026, 4, 5),
         );
-        await _drainUntil(
-          () =>
-              emissions.isNotEmpty &&
-              emissions.last.map((l) => l.id).join(',') == 'second,initial',
-        );
+        await pumpEventQueue();
 
         expect(
           emissions.last.map((l) => l.id),
@@ -278,13 +298,20 @@ void main() {
       test('does not emit for a different owner', () async {
         final cache = LocalPeopleListsCache(openBox: makeOpener());
 
+        // Warm the cache so the watch stream's first emission arrives
+        // synchronously once we subscribe.
+        await cache.readLists(ownerPubkey: _ownerA);
+
         final emissionsForA = <List<UserList>>[];
         final subscription = cache
             .watchLists(ownerPubkey: _ownerA)
             .listen(emissionsForA.add);
-        await _drainUntil(() => emissionsForA.isNotEmpty);
+        await pumpEventQueue();
         expect(emissionsForA, hasLength(1));
         expect(emissionsForA.first, isEmpty);
+
+        // Snapshot the exact emissions we had before touching the other owner.
+        final before = List<List<UserList>>.from(emissionsForA);
 
         await cache.putList(
           ownerPubkey: _ownerB,
@@ -294,9 +321,10 @@ void main() {
           ),
           receivedAt: DateTime.utc(2026, 4, 5),
         );
-        await _drainUntil(() => false); // burn max microtasks
+        await pumpEventQueue();
 
-        expect(emissionsForA, hasLength(1));
+        // Writing under owner B must produce zero additional emissions for A.
+        expect(emissionsForA, equals(before));
 
         await subscription.cancel();
       });
@@ -317,14 +345,14 @@ void main() {
         final subscription = cache
             .watchLists(ownerPubkey: _ownerA)
             .listen(emissions.add);
-        await _drainUntil(() => emissions.isNotEmpty);
+        await pumpEventQueue();
 
         await cache.markDeleted(
           ownerPubkey: _ownerA,
           listId: 'temporary',
           deletedAt: DateTime.utc(2026, 4, 2),
         );
-        await _drainUntil(() => emissions.last.isEmpty);
+        await pumpEventQueue();
 
         expect(emissions.last, isEmpty);
 
