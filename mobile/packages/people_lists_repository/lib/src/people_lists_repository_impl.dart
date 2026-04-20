@@ -75,6 +75,10 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
       final list = Nip51PeopleListCodec.decode(event);
       if (list == null) continue;
       final current = existingById[list.id];
+      // list.updatedAt is derived from the relay event's created_at by
+      // Nip51PeopleListCodec, so comparing it against the cached list's
+      // updatedAt correctly detects stale relay echoes. If the codec ever
+      // stops sourcing updatedAt from created_at, revisit this guard.
       if (current != null && current.updatedAt.isAfter(list.updatedAt)) {
         continue;
       }
@@ -237,10 +241,13 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
   /// Generates a NIP-33 `d`-tag list identifier from [instant].
   ///
   /// NIP-33 parameterised replaceable events are identified by
-  /// `kind:pubkey:d-tag`; callers pick any string. We use the instant's
-  /// microsecond epoch to keep identifiers monotonic and collision-resistant
-  /// without introducing a random dependency.
+  /// `kind:pubkey:d-tag`; callers pick any string. We combine the instant's
+  /// microsecond epoch with a short entropy tail derived from a fresh
+  /// `Object` identity hash so two `createList` calls that land in the same
+  /// microsecond still produce distinct ids and do not clobber each other
+  /// via NIP-33 replacement.
   String _generateListId(DateTime instant) {
-    return 'list-${instant.microsecondsSinceEpoch}';
+    final entropy = Object().hashCode.toRadixString(36);
+    return 'list-${instant.microsecondsSinceEpoch}-$entropy';
   }
 }

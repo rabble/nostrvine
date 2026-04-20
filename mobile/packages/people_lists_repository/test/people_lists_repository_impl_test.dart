@@ -59,13 +59,11 @@ void main() {
     });
 
     PeopleListsRepositoryImpl buildRepository({
-      NostrClient? nostrClient,
+      required NostrClient nostrClient,
       LocalPeopleListsCache? cache,
     }) {
-      final mock = nostrClient ?? _MockNostrClient();
-      when(() => (mock as _MockNostrClient).publicKey).thenReturn(_ownerPubkey);
       return PeopleListsRepositoryImpl(
-        nostrClient: mock,
+        nostrClient: nostrClient,
         cache: cache ?? LocalPeopleListsCache(openBox: makeOpener()),
       );
     }
