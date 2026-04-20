@@ -614,6 +614,36 @@ void main() {
       });
     });
 
+    group('deleteAll', () {
+      test('deletes actions for every user', () async {
+        final actionA = PendingAction.create(
+          type: PendingActionType.like,
+          targetId: testTargetId,
+          userPubkey: testUserPubkey,
+        );
+        final actionB = PendingAction.create(
+          type: PendingActionType.follow,
+          targetId: testTargetId2,
+          userPubkey: testUserPubkey2,
+        );
+
+        await dao.upsertAction(actionA);
+        await dao.upsertAction(actionB);
+
+        final deleted = await dao.deleteAll();
+
+        expect(deleted, equals(2));
+        expect(await dao.getAllActions(testUserPubkey), isEmpty);
+        expect(await dao.getAllActions(testUserPubkey2), isEmpty);
+      });
+
+      test('returns 0 when the table is already empty', () async {
+        final deleted = await dao.deleteAll();
+
+        expect(deleted, equals(0));
+      });
+    });
+
     group('resetSyncingToPending', () {
       test('resets syncing actions to pending', () async {
         final syncing = PendingAction.create(

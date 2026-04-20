@@ -1302,7 +1302,7 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
   final db = ref.watch(databaseProvider);
   final service = UserDataCleanupService(prefs);
 
-  // Wire database cleanup callback so signOut() clears DM and notification data.
+  // Wire database cleanup callback so signOut() clears every per-user table.
   // Stop DM listening FIRST to prevent in-flight event handlers from writing
   // to tables that are being cleared (H3 race condition fix).
   service.onDatabaseCleanup = () async {
@@ -1311,9 +1311,18 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
     } catch (_) {
       // DmRepository may not exist yet (e.g., first launch).
     }
+    // Messaging & notifications.
     await db.directMessagesDao.clearAll();
     await db.conversationsDao.clearAll();
     await db.notificationsDao.clearAll();
+    // Authoring surfaces: drafts, clips, pending uploads (#2999).
+    await db.draftsDao.clearAll();
+    await db.clipsDao.clearAll();
+    await db.pendingUploadsDao.clearAll();
+    // Personal engagement & offline action queue (#2999).
+    await db.personalReactionsDao.deleteAll();
+    await db.personalRepostsDao.deleteAll();
+    await db.pendingActionsDao.deleteAll();
     await NotificationServiceEnhanced.instance.clearAllData();
     // Clear DM sync cursors so the next login triggers a full re-fetch
     // from relays instead of using stale `since:` boundaries.
@@ -1717,9 +1726,7 @@ Nip98AuthService nip98AuthService(Ref ref) {
 @riverpod
 BlossomAuthService blossomAuthService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  return BlossomAuthService(
-    authProvider: _BlossomAuthAdapter(authService),
-  );
+  return BlossomAuthService(authProvider: _BlossomAuthAdapter(authService));
 }
 
 /// Shared viewer auth service for media GET requests.

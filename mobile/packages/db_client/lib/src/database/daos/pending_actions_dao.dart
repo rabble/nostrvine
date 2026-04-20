@@ -8,14 +8,7 @@ import 'package:meta/meta.dart';
 part 'pending_actions_dao.g.dart';
 
 /// Type of social action queued for offline sync
-enum PendingActionType {
-  like,
-  unlike,
-  repost,
-  unrepost,
-  follow,
-  unfollow,
-}
+enum PendingActionType { like, unlike, repost, unrepost, follow, unfollow }
 
 /// Status of a pending action in the sync queue
 enum PendingActionStatus {
@@ -209,9 +202,9 @@ class PendingActionsDao extends DatabaseAccessor<AppDatabase>
 
   /// Upsert a pending action
   Future<void> upsertAction(PendingAction action) {
-    return into(pendingActions).insertOnConflictUpdate(
-      _modelToCompanion(action),
-    );
+    return into(
+      pendingActions,
+    ).insertOnConflictUpdate(_modelToCompanion(action));
   }
 
   /// Get action by ID
@@ -368,6 +361,14 @@ class PendingActionsDao extends DatabaseAccessor<AppDatabase>
     return (delete(
       pendingActions,
     )..where((t) => t.userPubkey.equals(userPubkey))).go();
+  }
+
+  /// Delete every pending action, regardless of user.
+  ///
+  /// Used when logging out to wipe queued offline actions so they do not
+  /// sync under a different account on the next login.
+  Future<int> deleteAll() {
+    return delete(pendingActions).go();
   }
 
   /// Reset syncing actions to pending (for app restart recovery)
