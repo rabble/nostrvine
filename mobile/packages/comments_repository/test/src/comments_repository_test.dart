@@ -38,6 +38,7 @@ void main() {
     setUpAll(() {
       registerFallbackValue(<Filter>[]);
       registerFallbackValue(FakeEvent());
+      registerFallbackValue(const RetryPolicy());
     });
 
     setUp(() {
@@ -721,8 +722,20 @@ void main() {
       test('posts top-level comment with correct tags', () async {
         Event? capturedEvent;
 
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishOutcome(
+            eventId: capturedEvent!.id,
+            acceptedBy: const {'wss://relay.example.com'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          );
         });
 
         await repository.postComment(
@@ -789,8 +802,20 @@ void main() {
         const parentAuthorPubkey =
             'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishOutcome(
+            eventId: capturedEvent!.id,
+            acceptedBy: const {'wss://relay.example.com'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          );
         });
 
         await repository.postComment(
@@ -856,10 +881,22 @@ void main() {
           Event? capturedEvent;
           const testAddressableId = '34236:$testRootAuthorPubkey:my-video-dtag';
 
-          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+          when(
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((
             inv,
           ) async {
-            return capturedEvent = inv.positionalArguments.first as Event;
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishOutcome(
+              eventId: capturedEvent!.id,
+              acceptedBy: const {'wss://relay.example.com'},
+              rejectedBy: const {},
+              noResponseFrom: const {},
+            );
           });
 
           await repository.postComment(
@@ -908,10 +945,22 @@ void main() {
               'ffffffffffffffffffffffffffffffff'
               'ffffffffffffffff';
 
-          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+          when(
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((
             inv,
           ) async {
-            return capturedEvent = inv.positionalArguments.first as Event;
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishOutcome(
+              eventId: capturedEvent!.id,
+              acceptedBy: const {'wss://relay.example.com'},
+              rejectedBy: const {},
+              noResponseFrom: const {},
+            );
           });
 
           await repository.postComment(
@@ -948,10 +997,22 @@ void main() {
         () async {
           Event? capturedEvent;
 
-          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+          when(
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((
             inv,
           ) async {
-            return capturedEvent = inv.positionalArguments.first as Event;
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishOutcome(
+              eventId: capturedEvent!.id,
+              acceptedBy: const {'wss://relay.example.com'},
+              rejectedBy: const {},
+              noResponseFrom: const {},
+            );
           });
 
           await repository.postComment(
@@ -976,9 +1037,21 @@ void main() {
       );
 
       test('returns created Comment', () async {
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return inv.positionalArguments.first as Event
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((inv) async {
+          final e = inv.positionalArguments.first as Event
             ..id = 'created_event_id';
+          return PublishOutcome(
+            eventId: e.id,
+            acceptedBy: const {'wss://relay.example.com'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          );
         });
 
         final result = await repository.postComment(
@@ -1024,8 +1097,20 @@ void main() {
       test('trims content before posting', () async {
         Event? capturedEvent;
 
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishOutcome(
+            eventId: capturedEvent!.id,
+            acceptedBy: const {'wss://relay.example.com'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          );
         });
 
         await repository.postComment(
@@ -1040,8 +1125,19 @@ void main() {
 
       test('throws PostCommentFailedException when publish fails', () async {
         when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: 'placeholder' * 8,
+            acceptedBy: const {},
+            rejectedBy: const {},
+            noResponseFrom: const {'wss://relay.example.com'},
+          ),
+        );
 
         expect(
           () => repository.postComment(
@@ -1056,7 +1152,11 @@ void main() {
 
       test('throws PostCommentFailedException on exception', () async {
         when(
-          () => mockNostrClient.publishEvent(any()),
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).thenThrow(Exception('Network error'));
 
         expect(
@@ -1190,8 +1290,22 @@ void main() {
         when(() => mockNostrClient.countEvents(any())).thenAnswer(
           (_) async => const CountResult(count: 5),
         );
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (inv) async => inv.positionalArguments.first as Event,
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (inv) async {
+            final e = inv.positionalArguments.first as Event;
+            return PublishOutcome(
+              eventId: e.id,
+              acceptedBy: const {'wss://relay.example.com'},
+              rejectedBy: const {},
+              noResponseFrom: const {},
+            );
+          },
         );
 
         await repository.getCommentsCount(testRootEventId);
@@ -1231,8 +1345,20 @@ void main() {
       test('publishes deletion event with correct tags', () async {
         Event? capturedEvent;
 
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishOutcome(
+            eventId: capturedEvent!.id,
+            acceptedBy: const {'wss://relay.example.com'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          );
         });
 
         await repository.deleteComment(commentId: testCommentId);
@@ -1259,8 +1385,20 @@ void main() {
       test('publishes deletion event with reason when provided', () async {
         Event? capturedEvent;
 
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishOutcome(
+            eventId: capturedEvent!.id,
+            acceptedBy: const {'wss://relay.example.com'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          );
         });
 
         await repository.deleteComment(
@@ -1277,10 +1415,22 @@ void main() {
         () async {
           Event? capturedEvent;
 
-          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+          when(
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((
             inv,
           ) async {
-            return capturedEvent = inv.positionalArguments.first as Event;
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishOutcome(
+              eventId: capturedEvent!.id,
+              acceptedBy: const {'wss://relay.example.com'},
+              rejectedBy: const {},
+              noResponseFrom: const {},
+            );
           });
 
           await repository.deleteComment(commentId: testCommentId);
@@ -1294,8 +1444,19 @@ void main() {
         'throws DeleteCommentFailedException when publish returns null',
         () async {
           when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer(
+            (_) async => PublishOutcome(
+              eventId: 'placeholder' * 8,
+              acceptedBy: const {},
+              rejectedBy: const {},
+              noResponseFrom: const {'wss://relay.example.com'},
+            ),
+          );
 
           expect(
             () => repository.deleteComment(commentId: testCommentId),
@@ -1306,7 +1467,11 @@ void main() {
 
       test('throws DeleteCommentFailedException on exception', () async {
         when(
-          () => mockNostrClient.publishEvent(any()),
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).thenThrow(Exception('Network error'));
 
         expect(
@@ -1316,7 +1481,13 @@ void main() {
       });
 
       test('rethrows DeleteCommentFailedException', () async {
-        when(() => mockNostrClient.publishEvent(any())).thenThrow(
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenThrow(
           const DeleteCommentFailedException('Custom error'),
         );
 
@@ -1336,8 +1507,22 @@ void main() {
         when(() => mockNostrClient.countEvents(any())).thenAnswer(
           (_) async => const CountResult(count: 10),
         );
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (inv) async => inv.positionalArguments.first as Event,
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (inv) async {
+            final e = inv.positionalArguments.first as Event;
+            return PublishOutcome(
+              eventId: e.id,
+              acceptedBy: const {'wss://relay.example.com'},
+              rejectedBy: const {},
+              noResponseFrom: const {},
+            );
+          },
         );
 
         await repository.getCommentsCount(testRootEventId);
@@ -1355,8 +1540,22 @@ void main() {
         when(() => mockNostrClient.countEvents(any())).thenAnswer(
           (_) async => const CountResult(count: 10),
         );
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (inv) async => inv.positionalArguments.first as Event,
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (inv) async {
+            final e = inv.positionalArguments.first as Event;
+            return PublishOutcome(
+              eventId: e.id,
+              acceptedBy: const {'wss://relay.example.com'},
+              rejectedBy: const {},
+              noResponseFrom: const {},
+            );
+          },
         );
 
         await repository.getCommentsCount(testRootEventId);

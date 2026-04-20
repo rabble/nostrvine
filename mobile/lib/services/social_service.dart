@@ -380,18 +380,28 @@ class SocialService {
       );
 
       if (event != null) {
-        // Cache the follow set event immediately after creation
-        _personalEventCache?.cacheUserEvent(event);
-
-        final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent != null) {
-          // Update local set with Nostr event ID
+        // Publish with retry. Gate the local follow-set mutation (commit
+        // of nostrEventId) on outcome.acceptedByAny so the local map only
+        // reflects events the relays acknowledged — per the PR contract
+        // "don't commit to local follow map until acceptedByAny".
+        final outcome = await _nostrService.publishEventWithRetry(event);
+        if (outcome.acceptedByAny) {
+          _personalEventCache?.cacheUserEvent(event);
           final setIndex = _followSets.indexWhere((s) => s.id == set.id);
           if (setIndex != -1) {
             _followSets[setIndex] = set.copyWith(nostrEventId: event.id);
           }
           Log.debug(
             'Published follow set to Nostr: ${set.name} (${event.id})',
+            name: 'SocialService',
+            category: LogCategory.system,
+          );
+        } else {
+          final feedback = PublishResultMapper.map(outcome);
+          Log.warning(
+            'Follow-set publish failed: ${set.name} '
+            'retryable=${feedback.retryable} '
+            'reason=${feedback.firstRejectionReason ?? 'n/a'}',
             name: 'SocialService',
             category: LogCategory.system,
           );
@@ -510,11 +520,18 @@ class SocialService {
         throw Exception('Failed to create deletion request event');
       }
 
-      // Publish the deletion request
-      final sentEvent = await _nostrService.publishEvent(event);
+      // Publish the deletion request with retry. This is a user-initiated
+      // destructive action — surface a typed failure so the caller can
+      // inspect PublishOutcome + feedback.
+      final outcome = await _nostrService.publishEventWithRetry(event);
 
-      if (sentEvent == null) {
-        throw Exception('Failed to publish deletion request to relays');
+      if (!outcome.acceptedByAny) {
+        final feedback = PublishResultMapper.map(outcome);
+        throw Exception(
+          'Failed to publish deletion request to relays '
+          '(retryable=${feedback.retryable} '
+          'reason=${feedback.firstRejectionReason ?? 'n/a'})',
+        );
       }
 
       Log.info(

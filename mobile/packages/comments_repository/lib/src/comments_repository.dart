@@ -265,20 +265,26 @@ class CommentsRepository {
     );
 
     try {
-      // Broadcast the event (NostrClient handles signing)
-      final sentEvent = await _nostrClient.publishEvent(event);
+      // Broadcast with retry on transient relay failures. NostrClient
+      // signs the event before publishing and surfaces per-relay ack state
+      // via the returned outcome.
+      final outcome = await _nostrClient.publishEventWithRetry(event);
 
-      if (sentEvent == null) {
-        throw const PostCommentFailedException('Failed to publish comment');
+      if (!outcome.acceptedByAny) {
+        throw PostCommentFailedException(
+          'Failed to publish comment',
+          outcome,
+          PublishResultMapper.map(outcome),
+        );
       }
 
       final cached = _commentCountCache[rootEventId];
       if (cached != null) _commentCountCache[rootEventId] = cached + 1;
 
       return Comment(
-        id: sentEvent.id,
+        id: outcome.eventId,
         content: trimmedContent,
-        authorPubkey: sentEvent.pubkey,
+        authorPubkey: event.pubkey,
         createdAt: event.createdAtDateTime,
         rootEventId: rootEventId,
         rootAuthorPubkey: rootEventAuthorPubkey,
@@ -405,10 +411,12 @@ class CommentsRepository {
         reason ?? '',
       );
 
-      final sentEvent = await _nostrClient.publishEvent(event);
-      if (sentEvent == null) {
-        throw const DeleteCommentFailedException(
+      final outcome = await _nostrClient.publishEventWithRetry(event);
+      if (!outcome.acceptedByAny) {
+        throw DeleteCommentFailedException(
           'Failed to publish deletion request',
+          outcome,
+          PublishResultMapper.map(outcome),
         );
       }
 

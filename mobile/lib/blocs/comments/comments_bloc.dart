@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:meta/meta.dart' show visibleForTesting;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
@@ -306,7 +307,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       }
     }
 
-    emit(state.copyWith(isPosting: true));
+    emit(state.copyWith(isPosting: true, clearFeedback: true));
 
     try {
       final postedComment = await _commentsRepository.postComment(
@@ -342,7 +343,22 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
           ),
         );
       }
-    } catch (e) {
+    } on PostCommentFailedException catch (e, stackTrace) {
+      addError(e, stackTrace);
+      // Preserve the draft text on the state so the user can retry
+      // without retyping (contract: keep mainInputText / replyInputText
+      // untouched on failure).
+      emit(
+        state.copyWith(
+          isPosting: false,
+          error: isReply
+              ? CommentsError.postReplyFailed
+              : CommentsError.postCommentFailed,
+          lastActionFeedback: e.feedback,
+        ),
+      );
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
       Log.error(
         'Error posting comment: $e',
         name: 'CommentsBloc',
@@ -389,7 +405,16 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
           replyCountsByCommentId: _computeReplyCounts(updatedCommentsById),
         ),
       );
-    } catch (e) {
+    } on DeleteCommentFailedException catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          error: CommentsError.deleteCommentFailed,
+          lastActionFeedback: e.feedback,
+        ),
+      );
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
       Log.error(
         'Error deleting comment: $e',
         name: 'CommentsBloc',

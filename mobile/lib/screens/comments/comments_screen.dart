@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:models/models.dart' hide NIP71VideoKinds;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -240,12 +241,55 @@ class _CommentsScreenBody extends StatelessWidget {
       listenWhen: (prev, next) =>
           prev.error != next.error && next.error != null,
       listener: (context, state) {
-        if (state.error != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(_errorToString(state.error!))));
-          context.read<CommentsBloc>().add(const CommentErrorCleared());
-        }
+        if (state.error == null) return;
+
+        // When the failure is a publish outcome failure, prefer the
+        // PublishResultMapper-derived message over the generic label so
+        // the user learns whether to retry. Fall back to the legacy
+        // error label for non-publish errors (load/vote/report/block).
+        final feedback = state.lastActionFeedback;
+        final useFeedback =
+            feedback != null &&
+            (state.error == CommentsError.postCommentFailed ||
+                state.error == CommentsError.postReplyFailed ||
+                state.error == CommentsError.deleteCommentFailed);
+        final baseMessage = useFeedback
+            ? _feedbackToMessage(feedback)
+            : _errorToString(state.error!);
+        final messenger = ScaffoldMessenger.of(context);
+        final bloc = context.read<CommentsBloc>();
+
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(baseMessage),
+            action: (useFeedback && feedback.retryable)
+                ? SnackBarAction(
+                    label: 'Retry',
+                    onPressed: () {
+                      // Re-emit CommentSubmitted. The bloc still has the
+                      // preserved draft text in state.mainInputText /
+                      // state.replyInputText, so retrying won't lose the
+                      // user's typed comment.
+                      if (state.error == CommentsError.postReplyFailed &&
+                          state.activeReplyCommentId != null) {
+                        final parentId = state.activeReplyCommentId!;
+                        final reply = state.commentsById[parentId];
+                        bloc.add(
+                          CommentSubmitted(
+                            parentCommentId: parentId,
+                            parentAuthorPubkey: reply?.authorPubkey,
+                          ),
+                        );
+                      } else if (state.error ==
+                          CommentsError.postCommentFailed) {
+                        bloc.add(const CommentSubmitted());
+                      }
+                    },
+                  )
+                : null,
+          ),
+        );
+        bloc.add(const CommentErrorCleared());
       },
       child: SizedBox(
         child: CommentsList(
@@ -255,6 +299,20 @@ class _CommentsScreenBody extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Produces a terse human-readable message for a [PublishUserFeedback].
+String _feedbackToMessage(PublishUserFeedback feedback) {
+  final reason = feedback.firstRejectionReason;
+  return switch (feedback.messageKey) {
+    'publish_no_relays_available' =>
+      'Could not reach any relays. Check your connection.',
+    'publish_no_relay_response' => 'No response from relays. Try again?',
+    'publish_rejected_permanent' when reason != null && reason.isNotEmpty =>
+      'Could not send: $reason',
+    'publish_rejected_permanent' => 'Could not send.',
+    _ => 'Something went wrong.',
+  };
 }
 
 /// Main comment input widget that reads from CommentsBloc state

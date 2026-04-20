@@ -2,6 +2,8 @@
 // ABOUTME: Provides typed exceptions for specific failure cases
 // ABOUTME: to enable precise error handling by consumers.
 
+import 'package:nostr_client/nostr_client.dart';
+
 /// Base exception for all comments repository errors.
 abstract class CommentsRepositoryException implements Exception {
   /// Creates a new comments repository exception.
@@ -28,7 +30,18 @@ class LoadCommentsFailedException extends CommentsRepositoryException {
 /// Exception thrown when posting a comment fails.
 class PostCommentFailedException extends CommentsRepositoryException {
   /// Creates a new post comment failed exception.
-  const PostCommentFailedException([super.message]);
+  const PostCommentFailedException([
+    super.message,
+    this.outcome,
+    this.feedback,
+  ]);
+
+  /// Per-relay OK/rejection state from the failed publish attempt, when
+  /// available. Null when the failure is from a legacy code path.
+  final PublishOutcome? outcome;
+
+  /// User-facing feedback derived from [outcome] via [PublishResultMapper].
+  final PublishUserFeedback? feedback;
 }
 
 /// Exception thrown when counting comments fails.
@@ -46,7 +59,18 @@ class InvalidCommentContentException extends CommentsRepositoryException {
 /// Exception thrown when deleting a comment fails.
 class DeleteCommentFailedException extends CommentsRepositoryException {
   /// Creates a new delete comment failed exception.
-  const DeleteCommentFailedException([super.message]);
+  const DeleteCommentFailedException([
+    super.message,
+    this.outcome,
+    this.feedback,
+  ]);
+
+  /// Per-relay OK/rejection state from the failed publish attempt, when
+  /// available. Null when the failure is from a legacy code path.
+  final PublishOutcome? outcome;
+
+  /// User-facing feedback derived from [outcome] via [PublishResultMapper].
+  final PublishUserFeedback? feedback;
 }
 
 /// Exception thrown when watching comments fails.
