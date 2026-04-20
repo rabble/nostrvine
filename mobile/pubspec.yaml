@@ -206,6 +206,9 @@ dependencies:
   # FeatureFlag.hlsAuthWebPlayer.
   hls_auth_web_player:
 
+  # People Lists Repository - NIP-51 kind 30000 follow sets
+  people_lists_repository:
+
   # Videos Repository - Video feed data layer
   videos_repository:
 

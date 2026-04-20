@@ -8,8 +8,7 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
-  equatable: ^2.0.5
-  hive_ce: ^2.6.0
+  hive_ce:
   models:
   nostr_client:
   nostr_sdk:

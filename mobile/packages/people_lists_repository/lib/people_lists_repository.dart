@@ -1,5 +1,5 @@
 /// People lists repository.
-///
-/// Manages NIP-51 kind 30000 follow sets — create, read, update, delete,
-/// with relay publish/subscribe and local cache.
 library;
+
+export 'src/people_list_publish_result.dart';
+export 'src/people_lists_repository.dart';
