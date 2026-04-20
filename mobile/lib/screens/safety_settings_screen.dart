@@ -102,9 +102,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
           constraints: const BoxConstraints(maxWidth: 600),
           child: _isLoading
               ? const Center(
-                  child: CircularProgressIndicator(
-                    color: VineTheme.vineGreen,
-                  ),
+                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
                 )
               : ListView(
                   children: [
@@ -409,16 +407,39 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
 
   Future<void> _unblockUser(String pubkey) async {
     final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
-    blocklistRepository.unblockUser(pubkey);
+    final result = await blocklistRepository.unblockUser(pubkey);
 
-    if (mounted) {
+    if (!mounted) return;
+
+    if (result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.l10n.safetySettingsUserUnblocked),
           duration: const Duration(seconds: 2),
         ),
       );
+      return;
     }
+
+    // Relay failure — surface it with Retry if the outcome is transient.
+    final feedback = result.feedback;
+    final retryable = feedback?.retryable ?? false;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: VineTheme.error,
+        content: Text(
+          result.error ??
+              feedback?.firstRejectionReason ??
+              'Unblock failed — please try again',
+        ),
+        action: retryable
+            ? SnackBarAction(
+                label: context.l10n.commonRetry,
+                onPressed: () => _unblockUser(pubkey),
+              )
+            : null,
+      ),
+    );
   }
 }
 

@@ -74,7 +74,9 @@ void main() {
               reason: ContentFilterReason.other,
               details: 'Reported from DM conversation',
             ),
-          ).thenAnswer((_) async => ReportResult.createSuccess('report-id'));
+          ).thenAnswer(
+            (_) async => ReportResult.createSuccess(reportId: 'report-id'),
+          );
         },
         build: createCubit,
         act: (cubit) async {
@@ -148,7 +150,7 @@ void main() {
               pubkey,
               ourPubkey: currentUserPubkey,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => BlocklistResult.success_());
         },
         build: createCubit,
         act: (cubit) => cubit.blockUser(pubkey),
@@ -200,7 +202,7 @@ void main() {
         setUp: () {
           when(
             () => mockBlocklistRepository.unblockUser(pubkey),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => BlocklistResult.success_());
         },
         build: createCubit,
         act: (cubit) => cubit.unblockUser(pubkey),

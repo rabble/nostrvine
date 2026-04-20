@@ -369,49 +369,46 @@ void main() {
         },
       );
 
-      test(
-        'does not log "Cannot add new events after calling close" '
-        'when bloc closes before loadComments completes',
-        () async {
-          final loadCompleter = Completer<CommentThread>();
+      test('does not log "Cannot add new events after calling close" '
+          'when bloc closes before loadComments completes', () async {
+        final loadCompleter = Completer<CommentThread>();
 
-          when(
-            () => mockCommentsRepository.loadComments(
-              rootEventId: any(named: 'rootEventId'),
-              rootEventKind: any(named: 'rootEventKind'),
-              rootAddressableId: any(named: 'rootAddressableId'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) => loadCompleter.future);
+        when(
+          () => mockCommentsRepository.loadComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => loadCompleter.future);
 
-          await LogCaptureService().clearAllLogs();
+        await LogCaptureService().clearAllLogs();
 
-          final bloc = createBloc()..add(const CommentsLoadRequested());
+        final bloc = createBloc()..add(const CommentsLoadRequested());
 
-          // Drive the handler to its `await loadComments(...)` point.
-          await pumpEventQueue();
+        // Drive the handler to its `await loadComments(...)` point.
+        await pumpEventQueue();
 
-          // User dismisses the sheet before the load resolves.
-          await bloc.close();
+        // User dismisses the sheet before the load resolves.
+        await bloc.close();
 
-          // The load now resolves against a closed bloc; the resumed
-          // continuation must be guarded by `if (!isClosed)`.
-          loadCompleter.complete(CommentThread.empty(validId('root')));
-          await pumpEventQueue();
+        // The load now resolves against a closed bloc; the resumed
+        // continuation must be guarded by `if (!isClosed)`.
+        loadCompleter.complete(CommentThread.empty(validId('root')));
+        await pumpEventQueue();
 
-          final hasCloseError = LogCaptureService()
-              .getRecentLogs(minLevel: LogLevel.error)
-              .any(
-                (entry) =>
-                    entry.name == 'CommentsBloc' &&
-                    entry.message.contains(
-                      'Cannot add new events after calling close',
-                    ),
-              );
-          expect(hasCloseError, isFalse);
-          expect(bloc.isClosed, isTrue);
-        },
-      );
+        final hasCloseError = LogCaptureService()
+            .getRecentLogs(minLevel: LogLevel.error)
+            .any(
+              (entry) =>
+                  entry.name == 'CommentsBloc' &&
+                  entry.message.contains(
+                    'Cannot add new events after calling close',
+                  ),
+            );
+        expect(hasCloseError, isFalse);
+        expect(bloc.isClosed, isTrue);
+      });
     });
 
     group('CommentsLoadMoreRequested', () {
@@ -2305,7 +2302,9 @@ void main() {
               reason: any(named: 'reason'),
               details: any(named: 'details'),
             ),
-          ).thenAnswer((_) async => ReportResult.createSuccess('report-id'));
+          ).thenAnswer(
+            (_) async => ReportResult.createSuccess(reportId: 'report-id'),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(
@@ -2364,7 +2363,7 @@ void main() {
         setUp: () {
           when(
             () => mockContentBlocklistRepository.blockUser(any()),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => BlocklistResult.success_());
           when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
         },
         build: createBloc,
