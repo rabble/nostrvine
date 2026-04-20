@@ -196,15 +196,20 @@ class VideoFeedController extends ChangeNotifier {
   /// UI can show a slow-loading indicator or skip action.
   final Duration slowLoadThreshold;
 
-  /// Maximum playback duration before automatically seeking back to zero.
+  /// Maximum playback duration before the fallback force-seek fires,
+  /// seeking the player back to [Duration.zero].
   ///
-  /// When set, videos whose position exceeds this duration are
-  /// automatically seeked back to [Duration.zero], creating a loop.
-  /// This is useful for enforcing a maximum loop length on videos
-  /// that are longer than the allowed duration.
+  /// **Effective enforcement window**: `maxLoopDuration +
+  /// [_loopEnforcementGraceMs] ms`. The grace window allows mpv's native
+  /// [PlaylistMode.single] loop to fire first on well-behaved content; the
+  /// force-seek is a fallback for external servers where native looping can
+  /// fail (see PR #2384 for the original failure modes: deferred duration,
+  /// silent seek failure under no-Range-support, and timer loss). Without
+  /// the grace, the force-seek beat mpv's native loop and clipped the
+  /// last-frame hold on containers with AAC audio padding — see #1845.
   ///
-  /// When `null`, no loop enforcement is applied (the player's own
-  /// [PlaylistMode] controls looping).
+  /// When `null`, no fallback enforcement is applied — only the player's own
+  /// [PlaylistMode] controls looping.
   final Duration? maxLoopDuration;
 
   /// Optional structured logging callback.
@@ -373,6 +378,15 @@ class VideoFeedController extends ChangeNotifier {
   /// is within this threshold, we skip the redundant `play()` nudge that
   /// otherwise causes a visible micro-stutter every loop cycle.
   static const _loopBoundaryThresholdMs = 500;
+
+  /// Grace window (in milliseconds) added to [maxLoopDuration] before the
+  /// fallback force-seek fires. Lets mpv's native [PlaylistMode.single] loop
+  /// win the race on well-behaved content whose container EOS falls just
+  /// past [maxLoopDuration] — e.g. 720p derivatives with AAC audio padding
+  /// that extends container EOS ~39 ms past the video stream end. Without
+  /// this grace the force-seek beat mpv's native loop and clipped the
+  /// last-frame hold. See #1845.
+  static const _loopEnforcementGraceMs = 500;
 
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
@@ -1843,16 +1857,24 @@ class VideoFeedController extends ChangeNotifier {
         _checkStalePosition(index, player, positionMs);
       }
 
-      // Loop enforcement: seek back to zero when position exceeds
-      // maxLoopDuration.
+      // Loop enforcement fallback: seek back to zero when position
+      // exceeds maxLoopDuration by the grace window. The grace lets mpv's
+      // native PlaylistMode.single loop fire first on well-behaved content
+      // (see #1845 — without it the force-seek beat mpv's native loop and
+      // clipped the last-frame hold on containers with AAC audio padding).
+      // This fallback still catches external-server failure modes from
+      // PR #2384.
       if (maxLoopDuration != null &&
           index == _currentIndex &&
           player.state.playing &&
-          player.state.position >= maxLoopDuration!) {
+          player.state.position >=
+              maxLoopDuration! +
+                  const Duration(milliseconds: _loopEnforcementGraceMs)) {
         _logDebug(
-          'loop_enforcement ${_videoDebugDetails(index)} '
+          'loop_enforcement_fallback ${_videoDebugDetails(index)} '
           'positionMs=${player.state.position.inMilliseconds} '
-          'maxMs=${maxLoopDuration!.inMilliseconds}',
+          'maxMs=${maxLoopDuration!.inMilliseconds} '
+          'graceMs=$_loopEnforcementGraceMs',
         );
         unawaited(player.seek(Duration.zero));
       }
