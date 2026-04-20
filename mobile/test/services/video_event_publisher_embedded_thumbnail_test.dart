@@ -27,6 +27,13 @@ class EmbeddedThumbnailGenerator {
     };
 
     try {
+      // Verify video file exists before attempting extraction
+      final videoFile = File(videoPath);
+      if (!videoFile.existsSync()) {
+        result['error'] = 'File not found: $videoPath';
+        return result;
+      }
+
       // Extract thumbnail bytes from video
       final thumbnailResult = await VideoThumbnailService.extractThumbnailBytes(
         videoPath: videoPath,
