@@ -910,6 +910,142 @@ void main() {
       });
     });
 
+    group('collaboratorPubkeys (p tag extraction)', () {
+      const authorPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const collaborator1 =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      const collaborator2 =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+
+      Map<String, dynamic> buildJson(List<List<String>> tags) => {
+        'id': 'video-id',
+        'pubkey': authorPubkey,
+        'created_at': 1700000000,
+        'kind': 34236,
+        'video_url': 'https://example.com/video.mp4',
+        'tags': tags,
+        'reactions': 0,
+        'comments': 0,
+        'reposts': 0,
+        'engagement_score': 0,
+      };
+
+      test('extracts p-tag pubkeys from flat JSON', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1],
+            ['p', collaborator2],
+          ]),
+        );
+
+        expect(
+          stats.collaboratorPubkeys,
+          equals([collaborator1, collaborator2]),
+        );
+      });
+
+      test('extracts p-tag pubkeys from nested event payload', () {
+        final stats = VideoStats.fromJson(const {
+          'event': {
+            'id': 'video-id',
+            'pubkey': authorPubkey,
+            'created_at': 1700000000,
+            'kind': 34236,
+            'tags': [
+              ['d', 'video-1'],
+              ['url', 'https://example.com/video.mp4'],
+              ['p', collaborator1],
+            ],
+          },
+          'stats': {
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+          },
+        });
+
+        expect(stats.collaboratorPubkeys, equals([collaborator1]));
+      });
+
+      test('excludes the event author pubkey', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', authorPubkey],
+            ['p', collaborator1],
+          ]),
+        );
+
+        expect(stats.collaboratorPubkeys, equals([collaborator1]));
+      });
+
+      test('deduplicates repeated p tags', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1],
+            ['p', collaborator1],
+            ['p', collaborator2],
+          ]),
+        );
+
+        expect(
+          stats.collaboratorPubkeys,
+          equals([collaborator1, collaborator2]),
+        );
+      });
+
+      test('lowercases uppercase p-tag values and compares against author', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1.toUpperCase()],
+            ['p', authorPubkey.toUpperCase()],
+          ]),
+        );
+
+        expect(stats.collaboratorPubkeys, equals([collaborator1]));
+      });
+
+      test('ignores empty p tags', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', ''],
+            ['p', collaborator1],
+          ]),
+        );
+
+        expect(stats.collaboratorPubkeys, equals([collaborator1]));
+      });
+
+      test('returns empty list when no p tags present', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['d', 'video-1'],
+            ['url', 'https://example.com/video.mp4'],
+          ]),
+        );
+
+        expect(stats.collaboratorPubkeys, isEmpty);
+      });
+
+      test('forwards collaboratorPubkeys through toVideoEvent', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1],
+            ['p', collaborator2],
+          ]),
+        );
+
+        final event = stats.toVideoEvent();
+
+        expect(
+          event.collaboratorPubkeys,
+          equals([collaborator1, collaborator2]),
+        );
+        expect(event.hasCollaborators, isTrue);
+      });
+    });
+
     group('toVideoEvent', () {
       test('converts to VideoEvent with all fields', () {
         final stats = VideoStats(
