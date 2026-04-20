@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_content_label_name.dart';
@@ -1737,11 +1738,48 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         throw Exception('Failed to create updated event');
       }
 
-      // Publish the updated event
+      // Publish the updated event via publishEventWithRetry so transient
+      // relay failures get bounded retry + per-attempt timeout + proper
+      // per-relay OK accounting. The old call site used publishEvent and
+      // ignored the result, which left the local cache believing an
+      // unpublished edit had landed (ghost-update bug).
       final nostrService = ref.read(nostrServiceProvider);
-      await nostrService.publishEvent(event);
+      final outcome = await nostrService.publishEventWithRetry(event);
+      final feedback = PublishResultMapper.map(outcome);
 
-      // Update local cache for immediate UI update
+      if (!mounted) return;
+
+      if (!outcome.acceptedByAny) {
+        Log.error(
+          'Video rebroadcast rejected by every relay: $outcome',
+          name: 'ShareVideoMenu',
+          category: LogCategory.ui,
+        );
+        // Do NOT update the local cache — a failed publish must not
+        // look successful in feeds. Re-enable the Update button and
+        // surface retry UX when the outcome is transient.
+        setState(() => _isUpdating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_copyForUpdateFeedback(context, feedback)),
+            backgroundColor: VineTheme.error,
+            action: feedback.retryable
+                ? SnackBarAction(
+                    // Retry label — l10n key will be introduced in a
+                    // follow-up PR that adds retry UX across all
+                    // migrated services. Ship English fallback today.
+                    label: 'Retry',
+                    onPressed: _updateVideo,
+                  )
+                : null,
+          ),
+        );
+        return;
+      }
+
+      // Only now that at least one relay accepted the event do we
+      // update local caches. This fixes the ghost-update bug where a
+      // failed rebroadcast still appeared updated in every feed.
       final personalEventCache = ref.read(personalEventCacheServiceProvider);
       personalEventCache.cacheUserEvent(event);
 
@@ -1754,16 +1792,14 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       final updatedVideoEvent = VideoEvent.fromNostrEvent(event);
       videoEventService.updateVideoEvent(updatedVideoEvent);
 
-      if (mounted) {
-        context.pop(); // Close edit dialog
+      context.pop(); // Close edit dialog
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.shareMenuVideoUpdated),
-            backgroundColor: VineTheme.vineGreen,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.shareMenuVideoUpdated),
+          backgroundColor: VineTheme.vineGreen,
+        ),
+      );
     } catch (e) {
       Log.error(
         'Failed to update video: $e',
@@ -1783,6 +1819,34 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
           ),
         );
       }
+    }
+  }
+
+  /// Copy for a rebroadcast feedback. Later PR will replace this with
+  /// AppLocalizations lookups keyed on [feedback.messageKey]. For now
+  /// we fall back to the existing generic update-failed copy and append
+  /// the relay rejection reason when available.
+  String _copyForUpdateFeedback(
+    BuildContext context,
+    PublishUserFeedback feedback,
+  ) {
+    final reason = feedback.firstRejectionReason;
+    if (reason != null && reason.isNotEmpty) {
+      return context.l10n.shareMenuFailedToUpdateVideo(reason);
+    }
+    switch (feedback.messageKey) {
+      case 'publish_no_relay_response':
+        return context.l10n.shareMenuFailedToUpdateVideo(
+          'no relay responded',
+        );
+      case 'publish_no_relays_available':
+        return context.l10n.shareMenuFailedToUpdateVideo(
+          'no relays available',
+        );
+      case 'publish_rejected_permanent':
+        return context.l10n.shareMenuFailedToUpdateVideo('rejected');
+      default:
+        return context.l10n.shareMenuFailedToUpdateVideo('error');
     }
   }
 
