@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +11,19 @@ void main() {
     late SharedPreferences prefs;
 
     setUp(() async {
+      // Stub the volume_controller platform channel to suppress
+      // MissingPluginException during tests.
+      const volumeEventChannel = EventChannel(
+        'com.kurenai7968.volume_controller.volume_listener_event',
+      );
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockStreamHandler(
+        volumeEventChannel,
+        MockStreamHandler.inline(
+          onListen: (_, events) => events.endOfStream(),
+        ),
+      );
+
       SharedPreferences.setMockInitialValues(<String, Object>{});
       prefs = await SharedPreferences.getInstance();
     });
