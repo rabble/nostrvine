@@ -20,6 +20,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
+import 'package:hive_ce/hive_ce.dart';
 import 'package:http/http.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -101,7 +102,6 @@ import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
-import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
@@ -112,6 +112,7 @@ import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/search_utils.dart';
+import 'package:people_lists_repository/people_lists_repository.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
@@ -2075,17 +2076,25 @@ SubscribedListVideoCache? subscribedListVideoCache(Ref ref) {
   return cache;
 }
 
-/// User list service for NIP-51 kind 30000 people lists
-@riverpod
-Future<UserListService> userListService(Ref ref) async {
-  final prefs = ref.watch(sharedPreferencesProvider);
+/// Name of the Hive box used for caching NIP-51 kind 30000 people lists.
+const String _peopleListsBoxName = 'people_lists_v1';
 
-  final service = UserListService(prefs: prefs);
-
-  // Initialize the service to load lists
-  await service.initialize();
-
-  return service;
+/// Repository for NIP-51 kind 30000 people lists.
+///
+/// Wires the shared [NostrClient] (via [nostrServiceProvider]) into a
+/// [PeopleListsRepositoryImpl] backed by a [LocalPeopleListsCache] that opens
+/// a lazily-created `hive_ce` box named [_peopleListsBoxName]. The repository
+/// itself has no Flutter dependencies; this provider owns all UI glue.
+@Riverpod(keepAlive: true)
+PeopleListsRepository peopleListsRepository(Ref ref) {
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final cache = LocalPeopleListsCache(
+    openBox: () => Hive.openBox<dynamic>(_peopleListsBoxName),
+  );
+  return PeopleListsRepositoryImpl(
+    nostrClient: nostrClient,
+    cache: cache,
+  );
 }
 
 /// Bookmark service for NIP-51 bookmarks

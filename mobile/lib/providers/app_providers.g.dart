@@ -4052,49 +4052,73 @@ final class SubscribedListVideoCacheProvider
 String _$subscribedListVideoCacheHash() =>
     r'e7d9c2f15e09ab7d3848597e7d288749e3050f08';
 
-/// User list service for NIP-51 kind 30000 people lists
+/// Repository for NIP-51 kind 30000 people lists.
+///
+/// Wires the shared [NostrClient] (via [nostrServiceProvider]) into a
+/// [PeopleListsRepositoryImpl] backed by a [LocalPeopleListsCache] that opens
+/// a lazily-created `hive_ce` box named [_peopleListsBoxName]. The repository
+/// itself has no Flutter dependencies; this provider owns all UI glue.
 
-@ProviderFor(userListService)
-const userListServiceProvider = UserListServiceProvider._();
+@ProviderFor(peopleListsRepository)
+const peopleListsRepositoryProvider = PeopleListsRepositoryProvider._();
 
-/// User list service for NIP-51 kind 30000 people lists
+/// Repository for NIP-51 kind 30000 people lists.
+///
+/// Wires the shared [NostrClient] (via [nostrServiceProvider]) into a
+/// [PeopleListsRepositoryImpl] backed by a [LocalPeopleListsCache] that opens
+/// a lazily-created `hive_ce` box named [_peopleListsBoxName]. The repository
+/// itself has no Flutter dependencies; this provider owns all UI glue.
 
-final class UserListServiceProvider
+final class PeopleListsRepositoryProvider
     extends
         $FunctionalProvider<
-          AsyncValue<UserListService>,
-          UserListService,
-          FutureOr<UserListService>
+          PeopleListsRepository,
+          PeopleListsRepository,
+          PeopleListsRepository
         >
-    with $FutureModifier<UserListService>, $FutureProvider<UserListService> {
-  /// User list service for NIP-51 kind 30000 people lists
-  const UserListServiceProvider._()
+    with $Provider<PeopleListsRepository> {
+  /// Repository for NIP-51 kind 30000 people lists.
+  ///
+  /// Wires the shared [NostrClient] (via [nostrServiceProvider]) into a
+  /// [PeopleListsRepositoryImpl] backed by a [LocalPeopleListsCache] that opens
+  /// a lazily-created `hive_ce` box named [_peopleListsBoxName]. The repository
+  /// itself has no Flutter dependencies; this provider owns all UI glue.
+  const PeopleListsRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'userListServiceProvider',
-        isAutoDispose: true,
+        name: r'peopleListsRepositoryProvider',
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$userListServiceHash();
+  String debugGetCreateSourceHash() => _$peopleListsRepositoryHash();
 
   @$internal
   @override
-  $FutureProviderElement<UserListService> $createElement(
+  $ProviderElement<PeopleListsRepository> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $ProviderElement(pointer);
 
   @override
-  FutureOr<UserListService> create(Ref ref) {
-    return userListService(ref);
+  PeopleListsRepository create(Ref ref) {
+    return peopleListsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PeopleListsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PeopleListsRepository>(value),
+    );
   }
 }
 
-String _$userListServiceHash() => r'fd9e01e02e1be679106308e3166c3581a80b4b51';
+String _$peopleListsRepositoryHash() =>
+    r'1b80c4d4b9229393068846048b6596a0c1688e45';
 
 /// Bookmark service for NIP-51 bookmarks
 

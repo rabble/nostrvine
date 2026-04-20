@@ -5,6 +5,8 @@ import 'dart:async';
 
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
@@ -13,11 +15,28 @@ import 'package:unified_logger/unified_logger.dart';
 
 part 'list_providers.g.dart';
 
-/// Provider for all user lists (kind 30000 - people lists)
+/// Provider for all user lists (NIP-51 kind 30000 people lists).
+///
+/// Sources data from the cache-backed [PeopleListsRepository] and re-emits on
+/// every local mutation. Emits an empty list when:
+/// - the [FeatureFlag.curatedLists] feature flag is disabled, or
+/// - no user is currently authenticated (no owner pubkey to scope by).
 @riverpod
-Future<List<UserList>> userLists(Ref ref) async {
-  final service = await ref.watch(userListServiceProvider.future);
-  return service.lists;
+Stream<List<UserList>> userLists(Ref ref) {
+  final isEnabled = ref.watch(
+    isFeatureEnabledProvider(FeatureFlag.curatedLists),
+  );
+  if (!isEnabled) {
+    return Stream.value(const <UserList>[]);
+  }
+
+  final ownerPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+  if (ownerPubkey == null || ownerPubkey.isEmpty) {
+    return Stream.value(const <UserList>[]);
+  }
+
+  final repository = ref.watch(peopleListsRepositoryProvider);
+  return repository.watchLists(ownerPubkey: ownerPubkey);
 }
 
 /// Provider for all curated video lists (kind 30005)

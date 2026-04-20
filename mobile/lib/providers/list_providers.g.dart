@@ -8,22 +8,37 @@ part of 'list_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Provider for all user lists (kind 30000 - people lists)
+/// Provider for all user lists (NIP-51 kind 30000 people lists).
+///
+/// Sources data from the cache-backed [PeopleListsRepository] and re-emits on
+/// every local mutation. Emits an empty list when:
+/// - the [FeatureFlag.curatedLists] feature flag is disabled, or
+/// - no user is currently authenticated (no owner pubkey to scope by).
 
 @ProviderFor(userLists)
 const userListsProvider = UserListsProvider._();
 
-/// Provider for all user lists (kind 30000 - people lists)
+/// Provider for all user lists (NIP-51 kind 30000 people lists).
+///
+/// Sources data from the cache-backed [PeopleListsRepository] and re-emits on
+/// every local mutation. Emits an empty list when:
+/// - the [FeatureFlag.curatedLists] feature flag is disabled, or
+/// - no user is currently authenticated (no owner pubkey to scope by).
 
 final class UserListsProvider
     extends
         $FunctionalProvider<
           AsyncValue<List<UserList>>,
           List<UserList>,
-          FutureOr<List<UserList>>
+          Stream<List<UserList>>
         >
-    with $FutureModifier<List<UserList>>, $FutureProvider<List<UserList>> {
-  /// Provider for all user lists (kind 30000 - people lists)
+    with $FutureModifier<List<UserList>>, $StreamProvider<List<UserList>> {
+  /// Provider for all user lists (NIP-51 kind 30000 people lists).
+  ///
+  /// Sources data from the cache-backed [PeopleListsRepository] and re-emits on
+  /// every local mutation. Emits an empty list when:
+  /// - the [FeatureFlag.curatedLists] feature flag is disabled, or
+  /// - no user is currently authenticated (no owner pubkey to scope by).
   const UserListsProvider._()
     : super(
         from: null,
@@ -40,17 +55,17 @@ final class UserListsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<UserList>> $createElement(
+  $StreamProviderElement<List<UserList>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<UserList>> create(Ref ref) {
+  Stream<List<UserList>> create(Ref ref) {
     return userLists(ref);
   }
 }
 
-String _$userListsHash() => r'dc1bef2ba8574f8c26a348c27b5cdb0d7aff077f';
+String _$userListsHash() => r'ccf1833e87a5d7cc2895fcfa7c1f7ed94b6fd00e';
 
 /// Provider for all curated video lists (kind 30005)
 
