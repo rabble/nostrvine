@@ -3,12 +3,11 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/utils/string_utils.dart';
 
 /// Individual stat column widget for followers/following/likes/loops counts.
 ///
-/// Numbers use Bricolage Grotesque ExtraBold 20/28 (matching Figma).
+/// Numbers use [VineTheme.statNumberFont] (Bricolage Grotesque 800 20/28/0).
 /// Labels use bodySmall (Inter 12/16). Both are center-aligned.
 class ProfileStatColumn extends StatelessWidget {
   const ProfileStatColumn({
@@ -24,16 +23,6 @@ class ProfileStatColumn extends StatelessWidget {
   final bool isLoading;
   final VoidCallback? onTap;
 
-  /// Bricolage Grotesque ExtraBold 20/28 — matches the Figma stat number style.
-  static TextStyle _numberStyle({Color color = VineTheme.whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
-        fontSize: 20,
-        fontWeight: FontWeight.w800,
-        height: 28 / 20,
-        letterSpacing: 0,
-        color: color,
-      );
-
   @override
   Widget build(BuildContext context) {
     final column = Column(
@@ -46,7 +35,7 @@ class ProfileStatColumn extends StatelessWidget {
                 ? '—'
                 : StringUtils.formatCompactNumber(count!),
             key: ValueKey(isLoading ? 'loading' : count),
-            style: _numberStyle(
+            style: VineTheme.statNumberFont(
               color: isLoading || count == null
                   ? VineTheme.onSurfaceMuted
                   : VineTheme.whiteText,

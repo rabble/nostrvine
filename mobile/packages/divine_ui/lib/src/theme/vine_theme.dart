@@ -103,6 +103,18 @@ class VineTheme {
         color: color,
       );
 
+  /// Stat number: Bricolage Grotesque 800 20/28/0 — matches the Figma
+  /// profile stat-column number style (Followers / Following / Likes /
+  /// Loops). Sits between `titleLargeFont` (22) and `titleMediumFont` (16).
+  static TextStyle statNumberFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 20,
+        fontWeight: FontWeight.w800,
+        height: 28 / 20,
+        letterSpacing: 0,
+        color: color,
+      );
+
   /// Title medium: Bricolage Grotesque 800 16/24/0.15
   static TextStyle titleMediumFont({Color color = whiteText}) =>
       GoogleFonts.bricolageGrotesque(

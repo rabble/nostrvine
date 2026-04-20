@@ -27,6 +27,7 @@ import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_s
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Profile header widget displaying avatar, stats, name, and bio.
 class ProfileHeaderWidget extends ConsumerWidget {
@@ -512,12 +513,12 @@ class ProfileBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     // Gradient scrim that fades to the surface background at the bottom.
     // Applied as foregroundDecoration so it overlays the background content.
-    const scrimDecoration = BoxDecoration(
+    final scrimDecoration = BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          Color(0x0000150D), // surfaceBackground at 0% opacity
+          VineTheme.surfaceBackground.withValues(alpha: 0),
           VineTheme.surfaceBackground,
         ],
       ),
@@ -553,7 +554,8 @@ class ProfileBanner extends StatelessWidget {
 }
 
 /// Banner with a network image and a gradient scrim overlay.
-/// Separated to handle the [Image.network] error builder cleanly.
+/// Uses [VineCachedImage] so banner art benefits from the shared on-disk
+/// cache layer instead of hitting the network on every rebuild.
 class _BannerImage extends StatelessWidget {
   const _BannerImage({
     required this.bannerUrl,
@@ -573,10 +575,9 @@ class _BannerImage extends StatelessWidget {
       foregroundDecoration: scrimDecoration,
       clipBehavior: Clip.hardEdge,
       decoration: const BoxDecoration(color: VineTheme.surfaceBackground),
-      child: Image.network(
-        bannerUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      child: VineCachedImage(
+        imageUrl: bannerUrl,
+        errorWidget: (_, _, _) => const SizedBox.shrink(),
       ),
     );
   }
@@ -802,13 +803,7 @@ class _ProfileActionLabel extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 badgeCount.toString(),
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  height: 16 / 11,
-                  letterSpacing: 0.5,
-                ),
+                style: VineTheme.labelSmallFont(),
               ),
             ),
           ),
@@ -840,33 +835,37 @@ class _AvatarLightbox extends StatelessWidget {
   Widget build(BuildContext context) {
     final safeAreaTop = MediaQuery.of(context).padding.top;
 
-    return GestureDetector(
-      onTap: () => Navigator.of(context).pop(),
-      child: SizedBox.expand(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-          child: ColoredBox(
-            color: VineTheme.scrim65,
-            child: Stack(
-              children: [
-                Center(
-                  child: UserAvatar(
-                    imageUrl: imageUrl,
-                    size: 288,
-                    cornerRadius: 112,
+    return Semantics(
+      label: 'Close avatar preview',
+      button: true,
+      child: GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: SizedBox.expand(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+            child: ColoredBox(
+              color: VineTheme.scrim65,
+              child: Stack(
+                children: [
+                  Center(
+                    child: UserAvatar(
+                      imageUrl: imageUrl,
+                      size: 288,
+                      cornerRadius: 112,
+                    ),
                   ),
-                ),
-                Positioned(
-                  top: safeAreaTop + 12,
-                  left: 12,
-                  child: DivineIconButton(
-                    icon: DivineIconName.x,
-                    type: DivineIconButtonType.ghostSecondary,
-                    size: DivineIconButtonSize.small,
-                    onPressed: () => Navigator.of(context).pop(),
+                  Positioned(
+                    top: safeAreaTop + 12,
+                    left: 12,
+                    child: DivineIconButton(
+                      icon: DivineIconName.x,
+                      type: DivineIconButtonType.ghostSecondary,
+                      size: DivineIconButtonSize.small,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

@@ -236,7 +236,7 @@ class _FollowButton extends StatelessWidget {
       onPressed: onPressed,
       size: .small,
       leadingIcon: DivineIconName.userPlus,
-      label: 'Follow',
+      label: context.l10n.profileFollowLabel,
     );
   }
 }

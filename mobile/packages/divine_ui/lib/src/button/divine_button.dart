@@ -262,8 +262,11 @@ class _DivineButtonContent extends StatelessWidget {
     final content = Row(
       mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
+      // 8px between children when we have a label alongside icon(s); no gap
+      // in icon-only mode so the button stays tight.
+      spacing: _noLabel ? 0 : 8,
       children: [
-        if (isLoading) ...[
+        if (isLoading)
           SizedBox(
             width: _iconSize,
             height: _iconSize,
@@ -271,15 +274,12 @@ class _DivineButtonContent extends StatelessWidget {
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(_foregroundColor),
             ),
-          ),
-          if (!_noLabel) const SizedBox(width: 8),
-        ] else if (leadingIcon != null) ...[
+          )
+        else if (leadingIcon != null)
           DivineIcon(
             icon: leadingIcon!,
             color: _foregroundColor,
           ),
-          if (!_noLabel) const SizedBox(width: 8),
-        ],
         if (!_noLabel)
           Flexible(
             child: Text(
@@ -290,13 +290,11 @@ class _DivineButtonContent extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-        if (trailingIcon != null) ...[
-          if (!_noLabel) const SizedBox(width: 8),
+        if (trailingIcon != null)
           DivineIcon(
             icon: trailingIcon!,
             color: _foregroundColor,
           ),
-        ],
       ],
     );
 
