@@ -130,6 +130,65 @@ class BookmarkSet {
   );
 }
 
+/// Result of a bookmark publish operation.
+///
+/// Carries the per-relay [PublishOutcome] and the mapped
+/// [PublishUserFeedback] so the UI can render a retry affordance for
+/// transient failures and surface rejection reasons when the relay refused
+/// the event. For replaceable bookmark events (kind 10003, 30003), local
+/// state is only committed when [success] is true (i.e. at least one relay
+/// acknowledged). On failure, any in-memory mutation has been rolled back.
+class BookmarkResult {
+  const BookmarkResult({
+    required this.success,
+    this.outcome,
+    this.feedback,
+    this.set,
+  });
+
+  /// Whether at least one relay accepted the publish and local state has been
+  /// committed. `false` when the operation was a no-op, failed pre-publish
+  /// (not authenticated), or every relay rejected/timed out.
+  final bool success;
+
+  /// Per-relay outcome. `null` when the publish never reached a relay
+  /// (e.g. auth missing, event construction failed).
+  final PublishOutcome? outcome;
+
+  /// Mapped user feedback for snackbars. `null` iff [outcome] is `null`.
+  final PublishUserFeedback? feedback;
+
+  /// Populated only by [BookmarkService.createBookmarkSet] on success — the
+  /// set as persisted locally with its assigned id.
+  final BookmarkSet? set;
+
+  static BookmarkResult successResult({
+    required PublishOutcome outcome,
+    required PublishUserFeedback feedback,
+    BookmarkSet? set,
+  }) => BookmarkResult(
+    success: true,
+    outcome: outcome,
+    feedback: feedback,
+    set: set,
+  );
+
+  static BookmarkResult failure({
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+  }) => BookmarkResult(
+    success: false,
+    outcome: outcome,
+    feedback: feedback,
+  );
+
+  /// Result when an operation short-circuits (e.g. already bookmarked, not
+  /// authenticated) without publishing an event. [success] reflects whether
+  /// the post-condition holds locally despite no publish being attempted.
+  static BookmarkResult noop({required bool success}) =>
+      BookmarkResult(success: success);
+}
+
 /// Service for managing NIP-51 bookmarks and bookmark sets
 class BookmarkService with NostrListServiceMixin {
   BookmarkService({
@@ -208,7 +267,7 @@ class BookmarkService with NostrListServiceMixin {
   // === GLOBAL BOOKMARKS (Kind 10003) ===
 
   /// Add a video event to global bookmarks
-  Future<bool> addVideoToGlobalBookmarks(
+  Future<BookmarkResult> addVideoToGlobalBookmarks(
     String videoEventId, {
     String? relay,
     String? petname,
@@ -218,79 +277,93 @@ class BookmarkService with NostrListServiceMixin {
     );
   }
 
-  /// Add an item to global bookmarks
-  Future<bool> addToGlobalBookmarks(BookmarkItem item) async {
-    try {
-      // Check if already bookmarked
-      if (_globalBookmarks.contains(item)) {
-        Log.debug(
-          'Item already in global bookmarks: ${item.id}',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return true;
-      }
-
-      _globalBookmarks.add(item);
-      await _saveBookmarks();
-
-      // Publish to Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishGlobalBookmarksToNostr();
-      }
-
-      Log.info(
-        'Added item to global bookmarks: ${item.id}',
+  /// Add an item to global bookmarks.
+  ///
+  /// For the replaceable kind 10003 event we optimistically mutate the in-
+  /// memory list, publish with retry, and roll back the mutation if no relay
+  /// accepted.
+  Future<BookmarkResult> addToGlobalBookmarks(BookmarkItem item) async {
+    // Check if already bookmarked — short-circuit without a publish.
+    if (_globalBookmarks.contains(item)) {
+      Log.debug(
+        'Item already in global bookmarks: ${item.id}',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to add to global bookmarks: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return false;
+      return BookmarkResult.noop(success: true);
     }
+
+    if (!_authService.isAuthenticated) {
+      Log.warning(
+        'Cannot bookmark - user not authenticated',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.noop(success: false);
+    }
+
+    // Optimistically mutate, persist cache so the UI reads through state.
+    _globalBookmarks.add(item);
+    await _saveBookmarks();
+
+    final result = await _publishGlobalBookmarksToNostr();
+    if (!result.success) {
+      // Rollback: addressable/replaceable kinds demand relay confirmation
+      // before we treat the bookmark as durable.
+      _globalBookmarks.remove(item);
+      await _saveBookmarks();
+      return result;
+    }
+
+    Log.info(
+      'Added item to global bookmarks: ${item.id}',
+      name: 'BookmarkService',
+      category: LogCategory.system,
+    );
+    return result;
   }
 
-  /// Remove an item from global bookmarks
-  Future<bool> removeFromGlobalBookmarks(BookmarkItem item) async {
-    try {
-      final removed = _globalBookmarks.remove(item);
-      if (!removed) {
-        Log.warning(
-          'Item not found in global bookmarks: ${item.id}',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
-
-      await _saveBookmarks();
-
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishGlobalBookmarksToNostr();
-      }
-
-      Log.info(
-        'Removed item from global bookmarks: ${item.id}',
+  /// Remove an item from global bookmarks.
+  ///
+  /// Optimistically removes the item, publishes the replacement event, and
+  /// re-inserts on failure so the UI reverts to "bookmarked".
+  Future<BookmarkResult> removeFromGlobalBookmarks(BookmarkItem item) async {
+    final originalIndex = _globalBookmarks.indexOf(item);
+    if (originalIndex == -1) {
+      Log.warning(
+        'Item not found in global bookmarks: ${item.id}',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to remove from global bookmarks: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return false;
+      return BookmarkResult.noop(success: false);
     }
+
+    if (!_authService.isAuthenticated) {
+      Log.warning(
+        'Cannot remove bookmark - user not authenticated',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.noop(success: false);
+    }
+
+    _globalBookmarks.removeAt(originalIndex);
+    await _saveBookmarks();
+
+    final result = await _publishGlobalBookmarksToNostr();
+    if (!result.success) {
+      // Rollback: re-insert at the original position so the order is stable.
+      _globalBookmarks.insert(originalIndex, item);
+      await _saveBookmarks();
+      return result;
+    }
+
+    Log.info(
+      'Removed item from global bookmarks: ${item.id}',
+      name: 'BookmarkService',
+      category: LogCategory.system,
+    );
+    return result;
   }
 
   /// Check if an item is in global bookmarks
@@ -307,197 +380,183 @@ class BookmarkService with NostrListServiceMixin {
 
   // === BOOKMARK SETS (Kind 30003) ===
 
-  /// Create a new bookmark set
-  Future<BookmarkSet?> createBookmarkSet({
+  /// Create a new bookmark set.
+  ///
+  /// Optimistically appends the set to local state, publishes, and removes it
+  /// on failure so the UI doesn't surface a ghost set.
+  Future<BookmarkResult> createBookmarkSet({
     required String name,
     String? description,
     String? imageUrl,
   }) async {
-    try {
-      final setId = 'bookmarkset_${DateTime.now().millisecondsSinceEpoch}';
-      final now = DateTime.now();
+    final setId = 'bookmarkset_${DateTime.now().millisecondsSinceEpoch}';
+    final now = DateTime.now();
 
-      final newSet = BookmarkSet(
-        id: setId,
-        name: name,
-        description: description,
-        imageUrl: imageUrl,
-        items: [],
-        createdAt: now,
-        updatedAt: now,
-      );
+    final newSet = BookmarkSet(
+      id: setId,
+      name: name,
+      description: description,
+      imageUrl: imageUrl,
+      items: [],
+      createdAt: now,
+      updatedAt: now,
+    );
 
+    if (!_authService.isAuthenticated) {
+      // Allow local-only use when not authenticated: persist but surface
+      // a failure so the UI can explain the missing sync.
       _bookmarkSets.add(newSet);
       await _saveBookmarks();
-
-      // Publish to Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishBookmarkSetToNostr(newSet);
-      }
-
-      Log.info(
-        'Created new bookmark set: $name ($setId)',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-
-      return newSet;
-    } catch (e) {
-      Log.error(
-        'Failed to create bookmark set: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return null;
+      return BookmarkResult.noop(success: false);
     }
-  }
 
-  /// Add an item to a bookmark set
-  Future<bool> addToBookmarkSet(String setId, BookmarkItem item) async {
-    try {
-      final setIndex = _bookmarkSets.indexWhere((set) => set.id == setId);
-      if (setIndex == -1) {
-        Log.warning(
-          'Bookmark set not found: $setId',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
+    _bookmarkSets.add(newSet);
+    await _saveBookmarks();
 
-      final set = _bookmarkSets[setIndex];
-
-      // Check if item is already in the set
-      if (set.items.contains(item)) {
-        Log.debug(
-          'Item already in bookmark set: ${item.id}',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return true;
-      }
-
-      final updatedItems = [...set.items, item];
-      final updatedSet = set.copyWith(
-        items: updatedItems,
-        updatedAt: DateTime.now(),
-      );
-
-      _bookmarkSets[setIndex] = updatedSet;
+    final result = await _publishBookmarkSetToNostr(newSet);
+    if (!result.success) {
+      _bookmarkSets.removeWhere((s) => s.id == newSet.id);
       await _saveBookmarks();
-
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishBookmarkSetToNostr(updatedSet);
-      }
-
-      Log.debug(
-        'Added item to bookmark set "${set.name}": ${item.id}',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to add to bookmark set: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return false;
+      return result;
     }
+
+    // Re-read the possibly-updated set (published with nostrEventId).
+    final stored = _bookmarkSets.firstWhere(
+      (s) => s.id == newSet.id,
+      orElse: () => newSet,
+    );
+    Log.info(
+      'Created new bookmark set: $name ($setId)',
+      name: 'BookmarkService',
+      category: LogCategory.system,
+    );
+    return BookmarkResult.successResult(
+      outcome: result.outcome!,
+      feedback: result.feedback!,
+      set: stored,
+    );
   }
 
-  /// Remove an item from a bookmark set
-  Future<bool> removeFromBookmarkSet(String setId, BookmarkItem item) async {
-    try {
-      final setIndex = _bookmarkSets.indexWhere((set) => set.id == setId);
-      if (setIndex == -1) {
-        Log.warning(
-          'Bookmark set not found: $setId',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
-
-      final set = _bookmarkSets[setIndex];
-      final updatedItems = set.items.where((i) => i != item).toList();
-
-      final updatedSet = set.copyWith(
-        items: updatedItems,
-        updatedAt: DateTime.now(),
+  /// Add an item to a bookmark set.
+  Future<BookmarkResult> addToBookmarkSet(
+    String setId,
+    BookmarkItem item,
+  ) async {
+    final setIndex = _bookmarkSets.indexWhere((set) => set.id == setId);
+    if (setIndex == -1) {
+      Log.warning(
+        'Bookmark set not found: $setId',
+        name: 'BookmarkService',
+        category: LogCategory.system,
       );
+      return BookmarkResult.noop(success: false);
+    }
 
-      _bookmarkSets[setIndex] = updatedSet;
+    final set = _bookmarkSets[setIndex];
+    if (set.items.contains(item)) {
+      Log.debug(
+        'Item already in bookmark set: ${item.id}',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.noop(success: true);
+    }
+
+    if (!_authService.isAuthenticated) {
+      return BookmarkResult.noop(success: false);
+    }
+
+    final updatedSet = set.copyWith(
+      items: [...set.items, item],
+      updatedAt: DateTime.now(),
+    );
+    _bookmarkSets[setIndex] = updatedSet;
+    await _saveBookmarks();
+
+    final result = await _publishBookmarkSetToNostr(updatedSet);
+    if (!result.success) {
+      // Rollback: restore previous set value at the original index.
+      _bookmarkSets[setIndex] = set;
       await _saveBookmarks();
-
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishBookmarkSetToNostr(updatedSet);
-      }
-
-      Log.debug(
-        'Removed item from bookmark set "${set.name}": ${item.id}',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to remove from bookmark set: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return false;
+      return result;
     }
+    return result;
   }
 
-  /// Update bookmark set metadata
-  Future<bool> updateBookmarkSet({
+  /// Remove an item from a bookmark set.
+  Future<BookmarkResult> removeFromBookmarkSet(
+    String setId,
+    BookmarkItem item,
+  ) async {
+    final setIndex = _bookmarkSets.indexWhere((set) => set.id == setId);
+    if (setIndex == -1) {
+      Log.warning(
+        'Bookmark set not found: $setId',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.noop(success: false);
+    }
+
+    final set = _bookmarkSets[setIndex];
+    if (!set.items.contains(item)) {
+      return BookmarkResult.noop(success: true);
+    }
+
+    if (!_authService.isAuthenticated) {
+      return BookmarkResult.noop(success: false);
+    }
+
+    final updatedSet = set.copyWith(
+      items: set.items.where((i) => i != item).toList(),
+      updatedAt: DateTime.now(),
+    );
+    _bookmarkSets[setIndex] = updatedSet;
+    await _saveBookmarks();
+
+    final result = await _publishBookmarkSetToNostr(updatedSet);
+    if (!result.success) {
+      _bookmarkSets[setIndex] = set;
+      await _saveBookmarks();
+      return result;
+    }
+    return result;
+  }
+
+  /// Update bookmark set metadata.
+  Future<BookmarkResult> updateBookmarkSet({
     required String setId,
     String? name,
     String? description,
     String? imageUrl,
   }) async {
-    try {
-      final setIndex = _bookmarkSets.indexWhere((set) => set.id == setId);
-      if (setIndex == -1) {
-        return false;
-      }
-
-      final set = _bookmarkSets[setIndex];
-      final updatedSet = set.copyWith(
-        name: name ?? set.name,
-        description: description ?? set.description,
-        imageUrl: imageUrl ?? set.imageUrl,
-        updatedAt: DateTime.now(),
-      );
-
-      _bookmarkSets[setIndex] = updatedSet;
-      await _saveBookmarks();
-
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishBookmarkSetToNostr(updatedSet);
-      }
-
-      Log.debug(
-        'Updated bookmark set: ${updatedSet.name}',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to update bookmark set: $e',
-        name: 'BookmarkService',
-        category: LogCategory.system,
-      );
-      return false;
+    final setIndex = _bookmarkSets.indexWhere((set) => set.id == setId);
+    if (setIndex == -1) {
+      return BookmarkResult.noop(success: false);
     }
+
+    if (!_authService.isAuthenticated) {
+      return BookmarkResult.noop(success: false);
+    }
+
+    final set = _bookmarkSets[setIndex];
+    final updatedSet = set.copyWith(
+      name: name ?? set.name,
+      description: description ?? set.description,
+      imageUrl: imageUrl ?? set.imageUrl,
+      updatedAt: DateTime.now(),
+    );
+
+    _bookmarkSets[setIndex] = updatedSet;
+    await _saveBookmarks();
+
+    final result = await _publishBookmarkSetToNostr(updatedSet);
+    if (!result.success) {
+      _bookmarkSets[setIndex] = set;
+      await _saveBookmarks();
+      return result;
+    }
+    return result;
   }
 
   /// Delete a bookmark set
@@ -551,143 +610,154 @@ class BookmarkService with NostrListServiceMixin {
 
   // === NOSTR PUBLISHING ===
 
-  /// Public method to publish a bookmark set to Nostr (for background sync)
-  Future<bool> publishBookmarkSetToNostr(String setId) async {
-    try {
-      final set = getBookmarkSetById(setId);
-      if (set == null) {
-        Log.warning(
-          'Cannot publish bookmark set - not found: $setId',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
-
-      await _publishBookmarkSetToNostr(set);
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to publish bookmark set $setId: $e',
+  /// Public method to publish a bookmark set to Nostr (for background sync).
+  ///
+  /// Returns [BookmarkResult.success] when at least one relay accepted.
+  Future<BookmarkResult> publishBookmarkSetToNostr(String setId) async {
+    final set = getBookmarkSetById(setId);
+    if (set == null) {
+      Log.warning(
+        'Cannot publish bookmark set - not found: $setId',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
-      return false;
+      return BookmarkResult.noop(success: false);
     }
+    return _publishBookmarkSetToNostr(set);
   }
 
-  /// Publish global bookmarks to Nostr as NIP-51 kind 10003 event
-  Future<void> _publishGlobalBookmarksToNostr() async {
-    try {
-      if (!_authService.isAuthenticated) {
-        Log.warning(
-          'Cannot publish bookmarks - user not authenticated',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Create NIP-51 kind 10003 tags
-      final tags = <List<String>>[
-        ['client', 'diVine'],
-      ];
-
-      // Add bookmark items as tags
-      for (final item in _globalBookmarks) {
-        tags.add(item.toTag());
-      }
-
-      final event = await _authService.createAndSignEvent(
-        kind: 10003, // NIP-51 global bookmarks
-        content: 'Divine global bookmarks',
-        tags: tags,
-      );
-
-      if (event != null) {
-        final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent != null) {
-          Log.debug(
-            'Published global bookmarks to Nostr: ${event.id}',
-            name: 'BookmarkService',
-            category: LogCategory.system,
-          );
-        }
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to publish global bookmarks to Nostr: $e',
+  /// Publish global bookmarks to Nostr as NIP-51 kind 10003 event.
+  ///
+  /// Uses [NostrClient.publishEventWithRetry] so transient failures
+  /// automatically retry once per relay. Returns a [BookmarkResult]; callers
+  /// gate local state commits on `result.success`.
+  Future<BookmarkResult> _publishGlobalBookmarksToNostr() async {
+    if (!_authService.isAuthenticated) {
+      Log.warning(
+        'Cannot publish bookmarks - user not authenticated',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
+      return BookmarkResult.noop(success: false);
     }
+
+    // Create NIP-51 kind 10003 tags
+    final tags = <List<String>>[
+      ['client', 'diVine'],
+    ];
+
+    // Add bookmark items as tags
+    for (final item in _globalBookmarks) {
+      tags.add(item.toTag());
+    }
+
+    final event = await _authService.createAndSignEvent(
+      kind: 10003, // NIP-51 global bookmarks
+      content: 'Divine global bookmarks',
+      tags: tags,
+    );
+
+    if (event == null) {
+      Log.error(
+        'Failed to sign kind 10003 bookmark event',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.failure();
+    }
+
+    final outcome = await _nostrService.publishEventWithRetry(event);
+    final feedback = PublishResultMapper.map(outcome);
+
+    if (!outcome.acceptedByAny) {
+      Log.warning(
+        'Global bookmark publish not accepted by any relay: $outcome',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.failure(outcome: outcome, feedback: feedback);
+    }
+
+    Log.debug(
+      'Published global bookmarks to Nostr: ${event.id}',
+      name: 'BookmarkService',
+      category: LogCategory.system,
+    );
+    return BookmarkResult.successResult(outcome: outcome, feedback: feedback);
   }
 
-  /// Publish bookmark set to Nostr as NIP-51 kind 30003 event
-  Future<void> _publishBookmarkSetToNostr(BookmarkSet set) async {
-    try {
-      if (!_authService.isAuthenticated) {
-        Log.warning(
-          'Cannot publish bookmark set - user not authenticated',
-          name: 'BookmarkService',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Create NIP-51 kind 30003 tags
-      final tags = <List<String>>[
-        ['d', set.id], // Identifier for replaceable event
-        ['title', set.name],
-        ['client', 'diVine'],
-      ];
-
-      // Add description if present
-      if (set.description != null && set.description!.isNotEmpty) {
-        tags.add(['description', set.description!]);
-      }
-
-      // Add image if present
-      if (set.imageUrl != null && set.imageUrl!.isNotEmpty) {
-        tags.add(['image', set.imageUrl!]);
-      }
-
-      // Add bookmark items as tags
-      for (final item in set.items) {
-        tags.add(item.toTag());
-      }
-
-      final content = set.description ?? 'Bookmark collection: ${set.name}';
-
-      final event = await _authService.createAndSignEvent(
-        kind: 30003, // NIP-51 bookmark set
-        content: content,
-        tags: tags,
-      );
-
-      if (event != null) {
-        final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent != null) {
-          // Update local set with Nostr event ID
-          final setIndex = _bookmarkSets.indexWhere((s) => s.id == set.id);
-          if (setIndex != -1) {
-            _bookmarkSets[setIndex] = set.copyWith(nostrEventId: event.id);
-            await _saveBookmarks();
-          }
-          Log.debug(
-            'Published bookmark set to Nostr: ${set.name} (${event.id})',
-            name: 'BookmarkService',
-            category: LogCategory.system,
-          );
-        }
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to publish bookmark set to Nostr: $e',
+  /// Publish bookmark set to Nostr as NIP-51 kind 30003 event.
+  Future<BookmarkResult> _publishBookmarkSetToNostr(BookmarkSet set) async {
+    if (!_authService.isAuthenticated) {
+      Log.warning(
+        'Cannot publish bookmark set - user not authenticated',
         name: 'BookmarkService',
         category: LogCategory.system,
       );
+      return BookmarkResult.noop(success: false);
     }
+
+    // Create NIP-51 kind 30003 tags
+    final tags = <List<String>>[
+      ['d', set.id], // Identifier for replaceable event
+      ['title', set.name],
+      ['client', 'diVine'],
+    ];
+
+    if (set.description != null && set.description!.isNotEmpty) {
+      tags.add(['description', set.description!]);
+    }
+
+    if (set.imageUrl != null && set.imageUrl!.isNotEmpty) {
+      tags.add(['image', set.imageUrl!]);
+    }
+
+    for (final item in set.items) {
+      tags.add(item.toTag());
+    }
+
+    final content = set.description ?? 'Bookmark collection: ${set.name}';
+
+    final event = await _authService.createAndSignEvent(
+      kind: 30003, // NIP-51 bookmark set
+      content: content,
+      tags: tags,
+    );
+
+    if (event == null) {
+      Log.error(
+        'Failed to sign kind 30003 bookmark-set event',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.failure();
+    }
+
+    final outcome = await _nostrService.publishEventWithRetry(event);
+    final feedback = PublishResultMapper.map(outcome);
+
+    if (!outcome.acceptedByAny) {
+      Log.warning(
+        'Bookmark-set publish not accepted by any relay: $outcome',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.failure(outcome: outcome, feedback: feedback);
+    }
+
+    // Update local set with Nostr event ID so subsequent loads/persistence
+    // can link the local set back to its latest published event.
+    final setIndex = _bookmarkSets.indexWhere((s) => s.id == set.id);
+    if (setIndex != -1) {
+      _bookmarkSets[setIndex] = set.copyWith(nostrEventId: event.id);
+      await _saveBookmarks();
+    }
+    Log.debug(
+      'Published bookmark set to Nostr: ${set.name} (${event.id})',
+      name: 'BookmarkService',
+      category: LogCategory.system,
+    );
+    return BookmarkResult.successResult(outcome: outcome, feedback: feedback);
   }
 
   // === NOSTR LOADING ===

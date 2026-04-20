@@ -762,23 +762,28 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   Future<void> _addToGlobalBookmarks() async {
     try {
       final bookmarkService = await ref.read(bookmarkServiceProvider.future);
-      final success = await bookmarkService.addVideoToGlobalBookmarks(
+      final result = await bookmarkService.addVideoToGlobalBookmarks(
         widget.video.id,
       );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? context.l10n.shareMenuAddedToBookmarks
-                  : context.l10n.shareMenuFailedToAddBookmark,
-            ),
-            duration: const Duration(seconds: 2),
+      if (!mounted) return;
+
+      final retryable = result.feedback?.retryable ?? false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.success
+                ? context.l10n.shareMenuAddedToBookmarks
+                : context.l10n.shareMenuFailedToAddBookmark,
           ),
-        );
-        _safePop(context);
-      }
+          duration: const Duration(seconds: 2),
+          action: !result.success && retryable
+              // Retry label — follow-up PR will add dedicated l10n keys.
+              ? SnackBarAction(label: 'Retry', onPressed: _addToGlobalBookmarks)
+              : null,
+        ),
+      );
+      _safePop(context);
     } catch (e) {
       Log.error(
         'Failed to add bookmark: $e',
@@ -2585,19 +2590,24 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
     bool isCurrentlyInSet,
   ) async {
     try {
-      bool success;
       final bookmarkItem = BookmarkItem(type: 'e', id: video.id);
+      final BookmarkResult result;
 
       if (isCurrentlyInSet) {
-        success = await bookmarkService.removeFromBookmarkSet(
+        result = await bookmarkService.removeFromBookmarkSet(
           set.id,
           bookmarkItem,
         );
       } else {
-        success = await bookmarkService.addToBookmarkSet(set.id, bookmarkItem);
+        result = await bookmarkService.addToBookmarkSet(
+          set.id,
+          bookmarkItem,
+        );
       }
 
-      if (success && context.mounted) {
+      if (!context.mounted) return;
+
+      if (result.success) {
         final message = isCurrentlyInSet
             ? 'Removed from "${set.name}"'
             : 'Added to "${set.name}"';
@@ -2609,6 +2619,33 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
           SnackBar(
             content: Text(message),
             duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        // Publish failed — show retryable snackbar when transient.
+        final retryable = result.feedback?.retryable ?? false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isCurrentlyInSet
+                  ? 'Failed to remove from "${set.name}"'
+                  : 'Failed to add to "${set.name}"',
+            ),
+            duration: const Duration(seconds: 2),
+            action: retryable
+                ? SnackBarAction(
+                    // Retry label — see PR 4 delete UI note.
+                    label: 'Retry',
+                    onPressed: () => _toggleVideoInBookmarkSet(
+                      context,
+                      ref,
+                      bookmarkService,
+                      set,
+                      video,
+                      isCurrentlyInSet,
+                    ),
+                  )
+                : null,
           ),
         );
       }
@@ -2693,14 +2730,17 @@ class _CreateBookmarkSetDialogState
 
     try {
       final bookmarkService = await ref.read(bookmarkServiceProvider.future);
-      final newSet = await bookmarkService.createBookmarkSet(
+      final createResult = await bookmarkService.createBookmarkSet(
         name: name,
         description: _descriptionController.text.trim().isEmpty
             ? null
             : _descriptionController.text.trim(),
       );
 
-      if (newSet != null && mounted) {
+      if (!mounted) return;
+
+      final newSet = createResult.set;
+      if (createResult.success && newSet != null) {
         // Add the video to the new set
         final bookmarkItem = BookmarkItem(type: 'e', id: widget.video.id);
         await bookmarkService.addToBookmarkSet(newSet.id, bookmarkItem);
@@ -2717,6 +2757,18 @@ class _CreateBookmarkSetDialogState
             ),
           );
         }
+      } else {
+        // Create failed — surface a retryable snackbar when transient.
+        final retryable = createResult.feedback?.retryable ?? false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to create bookmark set'),
+            duration: const Duration(seconds: 2),
+            action: retryable
+                ? SnackBarAction(label: 'Retry', onPressed: _createBookmarkSet)
+                : null,
+          ),
+        );
       }
     } catch (e) {
       Log.error(

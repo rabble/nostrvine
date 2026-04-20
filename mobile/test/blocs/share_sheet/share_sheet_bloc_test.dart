@@ -596,7 +596,9 @@ void main() {
         setUp: () {
           when(
             () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer(
+            (_) async => BookmarkResult.noop(success: true),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
@@ -618,7 +620,9 @@ void main() {
         setUp: () {
           when(
             () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer(
+            (_) async => BookmarkResult.noop(success: false),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
@@ -680,7 +684,9 @@ void main() {
         setUp: () {
           when(
             () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer(
+            (_) async => BookmarkResult.noop(success: true),
+          );
         },
         build: createBloc,
         act: (bloc) async {

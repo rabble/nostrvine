@@ -46,10 +46,17 @@ class ShareSheetSendFailure extends ShareSheetActionResult {
 
 /// Consolidates the former ShareSheetSaveSuccess and ShareSheetSaveFailure
 /// into a single class, using [succeeded] to distinguish the outcome.
+///
+/// When [succeeded] is `false`, [feedback] carries the mapped publish
+/// feedback so the UI can render a retryable snackbar for transient
+/// failures. [feedback] may be `null` on pre-publish failures (not
+/// authenticated, service unavailable) — the UI falls back to a generic
+/// failure message in that case.
 class ShareSheetSaveResult extends ShareSheetActionResult {
-  ShareSheetSaveResult({required this.succeeded});
+  ShareSheetSaveResult({required this.succeeded, this.feedback});
 
   final bool succeeded;
+  final PublishUserFeedback? feedback;
 }
 
 /// Generic failure for utility actions (copy link, share via, etc.).

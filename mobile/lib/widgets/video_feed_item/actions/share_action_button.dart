@@ -195,16 +195,35 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             error: true,
           ),
         );
-      case ShareSheetSaveResult(:final succeeded):
+      case ShareSheetSaveResult(:final succeeded, :final feedback):
         _safePop(context);
-        messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            succeeded
-                ? context.l10n.shareAddedToBookmarks
-                : context.l10n.shareFailedToAddBookmark,
-            error: !succeeded,
-          ),
-        );
+        if (succeeded) {
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              context.l10n.shareAddedToBookmarks,
+            ),
+          );
+        } else {
+          final retryable = feedback?.retryable ?? false;
+          // Capture the bloc before the async gap of snackbar dismissal so
+          // the retry action doesn't depend on context being valid later.
+          final shareSheetBloc = context.read<ShareSheetBloc>();
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              context.l10n.shareFailedToAddBookmark,
+              error: true,
+              // Retry label — a follow-up PR will add dedicated l10n keys
+              // for the retry UX shared across migrated services. For now
+              // we ship the English fallback used by PR 4 (deletion UI).
+              actionLabel: retryable ? 'Retry' : null,
+              onActionPressed: retryable
+                  ? () => shareSheetBloc.add(
+                      const ShareSheetSaveRequested(),
+                    )
+                  : null,
+            ),
+          );
+        }
       case ShareSheetCopiedToClipboard(:final label, :final text):
         Clipboard.setData(ClipboardData(text: text));
         _safePop(context);

@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart' show PublishUserFeedback;
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
@@ -312,12 +313,15 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     }
 
     try {
-      final succeeded = await bookmarkService.addVideoToGlobalBookmarks(
+      final result = await bookmarkService.addVideoToGlobalBookmarks(
         _video.id,
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetSaveResult(succeeded: succeeded),
+          actionResult: ShareSheetSaveResult(
+            succeeded: result.success,
+            feedback: result.feedback,
+          ),
         ),
       );
     } catch (e) {
