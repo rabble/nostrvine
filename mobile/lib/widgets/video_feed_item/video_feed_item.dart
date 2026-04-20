@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -193,6 +194,46 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         _pauseButtonOpacity = 1.0; // Reset for next use
       });
     });
+  }
+
+  /// Shows a snackbar describing the most recent like/repost failure and
+  /// offers a retry affordance when the feedback is retryable. Invoked by
+  /// the [BlocListener] around [VideoOverlayActions] so every visible feed
+  /// item participates, not just the active one.
+  void _onInteractionFeedback(
+    BuildContext context,
+    VideoInteractionsState state,
+  ) {
+    final feedback = state.lastActionFeedback;
+    if (feedback == null || feedback.severity != PublishSeverity.error) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+
+    // Keep the message terse — the relay reason is useful in logs but the
+    // user primarily needs to know "we couldn't send that; try again?".
+    final messageKey = feedback.messageKey;
+    final reason = feedback.firstRejectionReason;
+    final baseMessage = messageKey == 'publish_rejected_permanent'
+        ? (reason != null && reason.isNotEmpty
+              ? "Couldn't send: $reason"
+              : "Couldn't send.")
+        : "Couldn't reach the relays — check your connection.";
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(baseMessage),
+        action: feedback.retryable
+            ? SnackBarAction(
+                label: 'Retry',
+                onPressed: () {
+                  _interactionsBloc.add(
+                    const VideoInteractionsLikeToggled(),
+                  );
+                },
+              )
+            : null,
+      ),
+    );
   }
 
   /// Handles double-tap to like. Only likes (never unlikes) per Instagram
@@ -1228,17 +1269,25 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
             // Wrap with VideoInteractionsBloc if available
             BlocProvider<VideoInteractionsBloc>.value(
               value: _interactionsBloc,
-              child: VideoOverlayActions(
-                video: video,
-                isVisible: overlayVisible,
-                isActive: isActive,
-                hasBottomNavigation: widget.hasBottomNavigation,
-                contextTitle: widget.contextTitle,
-                isFullscreen: widget.isFullscreen,
-                listSources: widget.listSources,
-                showListAttribution: widget.showListAttribution,
-                hideFollowButtonIfFollowing: widget.hideFollowButtonIfFollowing,
-              ),
+              child:
+                  BlocListener<VideoInteractionsBloc, VideoInteractionsState>(
+                    listenWhen: (prev, curr) =>
+                        prev.lastActionFeedback != curr.lastActionFeedback &&
+                        curr.lastActionFeedback != null,
+                    listener: _onInteractionFeedback,
+                    child: VideoOverlayActions(
+                      video: video,
+                      isVisible: overlayVisible,
+                      isActive: isActive,
+                      hasBottomNavigation: widget.hasBottomNavigation,
+                      contextTitle: widget.contextTitle,
+                      isFullscreen: widget.isFullscreen,
+                      listSources: widget.listSources,
+                      showListAttribution: widget.showListAttribution,
+                      hideFollowButtonIfFollowing:
+                          widget.hideFollowButtonIfFollowing,
+                    ),
+                  ),
             ),
 
             Positioned.fill(

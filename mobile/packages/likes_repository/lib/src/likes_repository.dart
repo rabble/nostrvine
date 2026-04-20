@@ -229,23 +229,30 @@ class LikesRepository {
       return placeholderId;
     }
 
-    // Publish Kind 7 reaction event via NostrClient
-    final reactionEvent = await _nostrClient.sendLike(
-      eventId,
-      content: _likeContent,
+    // Publish Kind 7 reaction event via NostrClient with retry on transient
+    // relay failures. Surface a typed failure on outcome.failed so the UI
+    // can decide retryability via PublishResultMapper.
+    final outcome = await _nostrClient.sendLikeAwaitOk(
+      eventId: eventId,
+      authorPubkey: authorPubkey,
       addressableId: addressableId,
-      targetAuthorPubkey: authorPubkey,
       targetKind: targetKind,
+      content: _likeContent,
+      policy: const RetryPolicy(),
     );
 
-    if (reactionEvent == null) {
-      throw const LikeFailedException('Failed to publish like reaction');
+    if (!outcome.acceptedByAny) {
+      throw LikeFailedException(
+        'Failed to publish like reaction',
+        outcome: outcome,
+        feedback: PublishResultMapper.map(outcome),
+      );
     }
 
     // Create and store the like record
     final record = LikeRecord(
       targetEventId: eventId,
-      reactionEventId: reactionEvent.id,
+      reactionEventId: outcome.eventId,
       createdAt: DateTime.now(),
     );
 
@@ -256,7 +263,7 @@ class LikesRepository {
     final cached = _likeCountCache[eventId];
     if (cached != null) _likeCountCache[eventId] = cached + 1;
 
-    return reactionEvent.id;
+    return outcome.eventId;
   }
 
   /// Execute a like action directly (for use by sync service).
@@ -269,17 +276,22 @@ class LikesRepository {
     String? addressableId,
     int? targetKind,
   }) async {
-    // Publish Kind 7 reaction event via NostrClient
-    final reactionEvent = await _nostrClient.sendLike(
-      eventId,
-      content: _likeContent,
+    // Publish Kind 7 reaction event via NostrClient with retry.
+    final outcome = await _nostrClient.sendLikeAwaitOk(
+      eventId: eventId,
+      authorPubkey: authorPubkey,
       addressableId: addressableId,
-      targetAuthorPubkey: authorPubkey,
       targetKind: targetKind,
+      content: _likeContent,
+      policy: const RetryPolicy(),
     );
 
-    if (reactionEvent == null) {
-      throw const LikeFailedException('Failed to publish like reaction');
+    if (!outcome.acceptedByAny) {
+      throw LikeFailedException(
+        'Failed to publish like reaction',
+        outcome: outcome,
+        feedback: PublishResultMapper.map(outcome),
+      );
     }
 
     // Update local record with real event ID if we have a placeholder
@@ -288,14 +300,14 @@ class LikesRepository {
         existingRecord.reactionEventId.startsWith('pending_')) {
       final record = LikeRecord(
         targetEventId: eventId,
-        reactionEventId: reactionEvent.id,
+        reactionEventId: outcome.eventId,
         createdAt: existingRecord.createdAt,
       );
       _likeRecords[eventId] = record;
       await _localStorage?.saveLikeRecord(record);
     }
 
-    return reactionEvent.id;
+    return outcome.eventId;
   }
 
   /// Unlike an event.
@@ -341,13 +353,18 @@ class LikesRepository {
 
     // Skip publishing deletion if this was a pending like that never synced
     if (!record.reactionEventId.startsWith('pending_')) {
-      // Publish Kind 5 deletion event via NostrClient
-      final deletionEvent = await _nostrClient.deleteEvent(
+      // Publish Kind 5 deletion event via NostrClient with retry.
+      final outcome = await _nostrClient.deleteEventAwaitOk(
         record.reactionEventId,
+        policy: const RetryPolicy(),
       );
 
-      if (deletionEvent == null) {
-        throw const UnlikeFailedException('Failed to publish unlike deletion');
+      if (!outcome.acceptedByAny) {
+        throw UnlikeFailedException(
+          'Failed to publish unlike deletion',
+          outcome: outcome,
+          feedback: PublishResultMapper.map(outcome),
+        );
       }
     }
 
@@ -384,13 +401,18 @@ class LikesRepository {
       return;
     }
 
-    // Publish Kind 5 deletion event via NostrClient
-    final deletionEvent = await _nostrClient.deleteEvent(
+    // Publish Kind 5 deletion event via NostrClient with retry.
+    final outcome = await _nostrClient.deleteEventAwaitOk(
       record.reactionEventId,
+      policy: const RetryPolicy(),
     );
 
-    if (deletionEvent == null) {
-      throw const UnlikeFailedException('Failed to publish unlike deletion');
+    if (!outcome.acceptedByAny) {
+      throw UnlikeFailedException(
+        'Failed to publish unlike deletion',
+        outcome: outcome,
+        feedback: PublishResultMapper.map(outcome),
+      );
     }
 
     // Remove from cache and storage
@@ -711,27 +733,39 @@ class LikesRepository {
     required String authorPubkey,
     int? targetKind,
   }) async {
-    final reactionEvent = await _nostrClient.sendLike(
-      eventId,
-      content: _downvoteContent,
-      targetAuthorPubkey: authorPubkey,
+    final outcome = await _nostrClient.sendLikeAwaitOk(
+      eventId: eventId,
+      authorPubkey: authorPubkey,
       targetKind: targetKind,
+      content: _downvoteContent,
+      policy: const RetryPolicy(),
     );
 
-    if (reactionEvent == null) {
-      throw const LikeFailedException('Failed to publish downvote reaction');
+    if (!outcome.acceptedByAny) {
+      throw LikeFailedException(
+        'Failed to publish downvote reaction',
+        outcome: outcome,
+        feedback: PublishResultMapper.map(outcome),
+      );
     }
 
-    return reactionEvent.id;
+    return outcome.eventId;
   }
 
   /// Delete a reaction event by its ID (Kind 5 deletion).
   ///
   /// Used for vote switching (removing old vote before publishing new one).
   Future<void> deleteReaction(String reactionEventId) async {
-    final deletionEvent = await _nostrClient.deleteEvent(reactionEventId);
-    if (deletionEvent == null) {
-      throw const UnlikeFailedException('Failed to delete reaction');
+    final outcome = await _nostrClient.deleteEventAwaitOk(
+      reactionEventId,
+      policy: const RetryPolicy(),
+    );
+    if (!outcome.acceptedByAny) {
+      throw UnlikeFailedException(
+        'Failed to delete reaction',
+        outcome: outcome,
+        feedback: PublishResultMapper.map(outcome),
+      );
     }
   }
 

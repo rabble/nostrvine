@@ -29,6 +29,9 @@ enum VideoInteractionsStatus {
 /// - [isLikeInProgress]: Whether a like/unlike operation is in progress
 /// - [isRepostInProgress]: Whether a repost/unrepost operation is in progress
 /// - [isCommentsInProgress]: Whether a comments operation is in progress
+/// - [lastActionFeedback]: Publish feedback from the most recent like/repost
+///   toggle, surfaced so the UI can render a retry-aware snackbar. Cleared
+///   when the user begins a new action.
 class VideoInteractionsState extends Equatable {
   const VideoInteractionsState({
     this.status = VideoInteractionsStatus.initial,
@@ -41,6 +44,7 @@ class VideoInteractionsState extends Equatable {
     this.isRepostInProgress = false,
     this.isCommentsInProgress = false,
     this.error,
+    this.lastActionFeedback,
   });
 
   /// Current status of the bloc.
@@ -76,6 +80,11 @@ class VideoInteractionsState extends Equatable {
   /// Error that occurred, if any.
   final VideoInteractionsError? error;
 
+  /// User-facing feedback describing the most recent failed like/repost
+  /// action, derived from [PublishResultMapper]. The UI reads this to show
+  /// a retry-aware snackbar and clears it on the next action.
+  final PublishUserFeedback? lastActionFeedback;
+
   /// Whether interaction counts are still loading.
   bool get isLoading =>
       status == VideoInteractionsStatus.initial ||
@@ -96,7 +105,9 @@ class VideoInteractionsState extends Equatable {
     bool? isRepostInProgress,
     bool? isCommentsInProgress,
     VideoInteractionsError? error,
+    PublishUserFeedback? lastActionFeedback,
     bool clearError = false,
+    bool clearFeedback = false,
   }) {
     return VideoInteractionsState(
       status: status ?? this.status,
@@ -109,6 +120,9 @@ class VideoInteractionsState extends Equatable {
       isRepostInProgress: isRepostInProgress ?? this.isRepostInProgress,
       isCommentsInProgress: isCommentsInProgress ?? this.isCommentsInProgress,
       error: clearError ? null : (error ?? this.error),
+      lastActionFeedback: clearFeedback
+          ? null
+          : (lastActionFeedback ?? this.lastActionFeedback),
     );
   }
 
@@ -124,6 +138,7 @@ class VideoInteractionsState extends Equatable {
     isRepostInProgress,
     isCommentsInProgress,
     error,
+    lastActionFeedback,
   ];
 }
 

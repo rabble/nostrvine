@@ -78,11 +78,32 @@ void main() {
       );
     }
 
+    // Build a PublishOutcome that signals acceptance by one relay. We
+    // centralize this so individual tests can stub sendLikeAwaitOk /
+    // deleteEventAwaitOk consistently without repeating the constructor.
+    PublishOutcome acceptedOutcome({String id = testReactionEventId}) =>
+        PublishOutcome(
+          eventId: id,
+          acceptedBy: const {'wss://relay.example.com'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        );
+
+    /// A transient outcome — no acceptance. Maps to a retryable failure.
+    PublishOutcome transientOutcome({String id = testReactionEventId}) =>
+        PublishOutcome(
+          eventId: id,
+          acceptedBy: const {},
+          rejectedBy: const {},
+          noResponseFrom: const {'wss://relay.example.com'},
+        );
+
     setUpAll(() {
       registerFallbackValue(MockEvent());
       registerFallbackValue(<Filter>[]);
       registerFallbackValue(createLikeRecord());
       registerFallbackValue('');
+      registerFallbackValue(const RetryPolicy());
     });
 
     setUp(() {
@@ -213,14 +234,16 @@ void main() {
         final mockEvent = MockEvent();
         when(() => mockEvent.id).thenReturn(testReactionEventId);
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => mockEvent);
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -233,10 +256,14 @@ void main() {
 
         expect(result, equals(testReactionEventId));
         verify(
-          () => mockNostrClient.sendLike(
-            testEventId,
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+            addressableId: any(named: 'addressableId'),
+            targetKind: any(named: 'targetKind'),
             content: '+',
-            targetAuthorPubkey: testAuthorPubkey,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
         verify(() => mockLocalStorage.saveLikeRecord(any())).called(1);
@@ -247,14 +274,16 @@ void main() {
         final mockEvent = MockEvent();
         when(() => mockEvent.id).thenReturn(testReactionEventId);
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => mockEvent);
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -269,26 +298,30 @@ void main() {
 
         expect(result, equals(testReactionEventId));
         verify(
-          () => mockNostrClient.sendLike(
-            testEventId,
-            content: '+',
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
             addressableId: testAddressableId,
-            targetAuthorPubkey: testAuthorPubkey,
             targetKind: 34236,
+            content: '+',
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
       });
 
       test('throws LikeFailedException when publish fails', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => transientOutcome());
 
         repository = createRepository();
 
@@ -325,8 +358,12 @@ void main() {
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [createLikeRecord()]);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
-        ).thenAnswer((_) async => MockEvent());
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
         ).thenAnswer((_) async => true);
@@ -336,7 +373,11 @@ void main() {
         await repository.unlikeEvent(testEventId);
 
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).called(1);
         verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
       });
@@ -354,8 +395,12 @@ void main() {
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [createLikeRecord()]);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
-        ).thenAnswer((_) async => null);
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => transientOutcome());
 
         repository = createRepository();
         await repository.isLiked(testEventId); // Initialize
@@ -371,8 +416,12 @@ void main() {
           () => mockLocalStorage.getLikeRecord(testEventId),
         ).thenAnswer((_) async => createLikeRecord());
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
-        ).thenAnswer((_) async => MockEvent());
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
         ).thenAnswer((_) async => true);
@@ -382,7 +431,11 @@ void main() {
 
         verify(() => mockLocalStorage.getLikeRecord(testEventId)).called(1);
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).called(1);
       });
     });
@@ -392,14 +445,16 @@ void main() {
         final mockEvent = MockEvent();
         when(() => mockEvent.id).thenReturn(testReactionEventId);
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => mockEvent);
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -419,14 +474,16 @@ void main() {
         final mockEvent = MockEvent();
         when(() => mockEvent.id).thenReturn(testReactionEventId);
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => mockEvent);
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -440,12 +497,14 @@ void main() {
         );
 
         verify(
-          () => mockNostrClient.sendLike(
-            testEventId,
-            content: '+',
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
             addressableId: testAddressableId,
-            targetAuthorPubkey: testAuthorPubkey,
             targetKind: 34236,
+            content: '+',
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
       });
@@ -458,8 +517,12 @@ void main() {
           () => mockLocalStorage.isLiked(testEventId),
         ).thenAnswer((_) async => true);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
-        ).thenAnswer((_) async => MockEvent());
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
         ).thenAnswer((_) async => true);
@@ -480,17 +543,23 @@ void main() {
         final mockEvent = MockEvent();
         when(() => mockEvent.id).thenReturn(testReactionEventId);
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => mockEvent);
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
-        ).thenAnswer((_) async => MockEvent());
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => acceptedOutcome());
 
         repository = createRepository(withLocalStorage: false);
         await repository.likeEvent(
@@ -608,14 +677,16 @@ void main() {
         final reactionEvent = MockEvent();
         when(() => reactionEvent.id).thenReturn('reaction_1');
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => reactionEvent);
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -694,8 +765,12 @@ void main() {
           () => mockLocalStorage.deleteLikeRecord(any()),
         ).thenAnswer((_) async => true);
         when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer((_) async => MockEvent());
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => acceptedOutcome());
 
         repository = createRepository();
         await repository.initialize();
@@ -1615,19 +1690,16 @@ void main() {
     group('executeLikeAction', () {
       test('publishes like directly to relays', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-          ),
-        );
+        ).thenAnswer((_) async => acceptedOutcome(id: testReactionEventId));
 
         repository = createRepository();
 
@@ -1639,31 +1711,30 @@ void main() {
         expect(eventId, equals(testReactionEventId));
 
         verify(
-          () => mockNostrClient.sendLike(
-            testEventId,
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: testAuthorPubkey,
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
       });
 
       test('updates placeholder record with real event ID', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-          ),
-        );
+        ).thenAnswer((_) async => acceptedOutcome(id: testReactionEventId));
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -1704,14 +1775,16 @@ void main() {
 
       test('throws LikeFailedException when publish fails', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => transientOutcome());
 
         repository = createRepository();
 
@@ -1728,22 +1801,23 @@ void main() {
     group('executeUnlikeAction', () {
       test('publishes deletion directly to relays', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-          ),
-        );
+        ).thenAnswer((_) async => acceptedOutcome(id: testReactionEventId));
         when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer((_) async => createMockDeletion([testReactionEventId]));
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -1762,7 +1836,11 @@ void main() {
         await repository.executeUnlikeAction(testEventId);
 
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).called(1);
         verify(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
@@ -1800,7 +1878,13 @@ void main() {
         // Execute unlike - should not call deleteEvent since never synced
         await repository.executeUnlikeAction(testEventId);
 
-        verifyNever(() => mockNostrClient.deleteEvent(any()));
+        verifyNever(
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
         verify(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
         ).called(1);
@@ -1816,7 +1900,13 @@ void main() {
         // Should not throw, just return
         await repository.executeUnlikeAction(testEventId);
 
-        verifyNever(() => mockNostrClient.deleteEvent(any()));
+        verifyNever(
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
         verifyNever(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
         );
@@ -1824,22 +1914,23 @@ void main() {
 
       test('throws UnlikeFailedException when deletion fails', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-          ),
-        );
+        ).thenAnswer((_) async => acceptedOutcome(id: testReactionEventId));
         when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer((_) async => null);
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => transientOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -1864,8 +1955,12 @@ void main() {
           () => mockLocalStorage.getLikeRecord(testEventId),
         ).thenAnswer((_) async => record);
         when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer((_) async => createMockDeletion([testReactionEventId]));
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.deleteLikeRecord(any()),
         ).thenAnswer((_) async => true);
@@ -1878,7 +1973,11 @@ void main() {
           () => mockLocalStorage.getLikeRecord(testEventId),
         ).called(1);
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).called(1);
       });
 
@@ -1887,22 +1986,23 @@ void main() {
           () => mockNostrClient.countEvents(any()),
         ).thenAnswer((_) async => const CountResult(count: 10));
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-          ),
-        );
+        ).thenAnswer((_) async => acceptedOutcome(id: testReactionEventId));
         when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer((_) async => createMockDeletion([testReactionEventId]));
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});

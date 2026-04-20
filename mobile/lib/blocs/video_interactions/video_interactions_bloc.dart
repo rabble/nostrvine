@@ -8,6 +8,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' show NIP71VideoKinds;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -177,7 +178,13 @@ class VideoInteractionsBloc
     // Prevent double-taps
     if (state.isLikeInProgress) return;
 
-    emit(state.copyWith(isLikeInProgress: true, clearError: true));
+    emit(
+      state.copyWith(
+        isLikeInProgress: true,
+        clearError: true,
+        clearFeedback: true,
+      ),
+    );
 
     try {
       // Pass addressable ID and target kind for proper a-tag tagging
@@ -207,7 +214,28 @@ class VideoInteractionsBloc
     } on NotLikedException {
       // Not liked - just update state to reflect reality
       emit(state.copyWith(isLiked: false, isLikeInProgress: false));
-    } catch (e) {
+    } on LikeFailedException catch (e, stackTrace) {
+      // Preserve optimistic state rollback (repo never committed) and
+      // surface feedback so the UI can render a retry-aware snackbar.
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          isLikeInProgress: false,
+          error: VideoInteractionsError.likeFailed,
+          lastActionFeedback: e.feedback,
+        ),
+      );
+    } on UnlikeFailedException catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          isLikeInProgress: false,
+          error: VideoInteractionsError.likeFailed,
+          lastActionFeedback: e.feedback,
+        ),
+      );
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
       Log.error(
         'VideoInteractionsBloc: Like toggle failed for $_eventId - $e',
         name: 'VideoInteractionsBloc',

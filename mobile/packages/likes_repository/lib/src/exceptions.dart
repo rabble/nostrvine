@@ -1,6 +1,8 @@
 // ABOUTME: Exception classes for the likes repository.
 // ABOUTME: Provides typed exceptions for like/unlike operations.
 
+import 'package:nostr_client/nostr_client.dart';
+
 /// Base exception for all likes repository errors.
 class LikesRepositoryException implements Exception {
   /// Creates a new likes repository exception.
@@ -19,9 +21,20 @@ class LikesRepositoryException implements Exception {
 /// - The Nostr client fails to publish the reaction event
 /// - The relay rejects the event
 /// - Network connectivity issues
+///
+/// When the failure came from `publishEventWithRetry`, [outcome] and
+/// [feedback] are populated so the UI can render a retry affordance via
+/// [PublishResultMapper].
 class LikeFailedException extends LikesRepositoryException {
   /// Creates a new like failed exception.
-  const LikeFailedException(super.message);
+  const LikeFailedException(super.message, {this.outcome, this.feedback});
+
+  /// Per-relay OK/rejection state from the failed publish attempt, when
+  /// available. Null when the failure is from a legacy code path.
+  final PublishOutcome? outcome;
+
+  /// User-facing feedback derived from [outcome] via [PublishResultMapper].
+  final PublishUserFeedback? feedback;
 
   @override
   String toString() => 'LikeFailedException: $message';
@@ -34,9 +47,20 @@ class LikeFailedException extends LikesRepositoryException {
 /// - The Nostr client fails to publish the deletion event
 /// - The relay rejects the deletion
 /// - Network connectivity issues
+///
+/// When the failure came from `publishEventWithRetry`, [outcome] and
+/// [feedback] are populated so the UI can render a retry affordance via
+/// [PublishResultMapper].
 class UnlikeFailedException extends LikesRepositoryException {
   /// Creates a new unlike failed exception.
-  const UnlikeFailedException(super.message);
+  const UnlikeFailedException(super.message, {this.outcome, this.feedback});
+
+  /// Per-relay OK/rejection state from the failed publish attempt, when
+  /// available. Null when the failure is from a legacy code path.
+  final PublishOutcome? outcome;
+
+  /// User-facing feedback derived from [outcome] via [PublishResultMapper].
+  final PublishUserFeedback? feedback;
 
   @override
   String toString() => 'UnlikeFailedException: $message';
