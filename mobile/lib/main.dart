@@ -1586,6 +1586,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
+            lazy: false,
             create: (_) => VideoVolumeCubit(
               sharedPreferences: ref.read(sharedPreferencesProvider),
             ),

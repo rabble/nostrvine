@@ -1,34 +1,43 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// Fake [SystemVolumeListener] that exposes a [StreamController] so tests
+/// can push system volume values and drive the real cubit path end-to-end.
+class _FakeSystemVolumeListener implements SystemVolumeListener {
+  final StreamController<double> controller = StreamController<double>();
+
+  @override
+  StreamSubscription<double> listen(void Function(double volume) onData) {
+    return controller.stream.listen(onData);
+  }
+
+  @override
+  void hideSystemUI() {
+    // No-op in tests.
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoVolumeCubit, () {
     late SharedPreferences prefs;
+    late _FakeSystemVolumeListener fakeVolumeListener;
 
     setUp(() async {
-      // Stub the volume_controller platform channel to suppress
-      // MissingPluginException during tests.
-      const volumeEventChannel = EventChannel(
-        'com.kurenai7968.volume_controller.volume_listener_event',
-      );
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockStreamHandler(
-            volumeEventChannel,
-            MockStreamHandler.inline(
-              onListen: (_, events) => events.endOfStream(),
-            ),
-          );
-
       SharedPreferences.setMockInitialValues(<String, Object>{});
       prefs = await SharedPreferences.getInstance();
+      fakeVolumeListener = _FakeSystemVolumeListener();
     });
 
-    VideoVolumeCubit buildCubit() => VideoVolumeCubit(sharedPreferences: prefs);
+    VideoVolumeCubit buildCubit() => VideoVolumeCubit(
+      sharedPreferences: prefs,
+      systemVolumeListener: fakeVolumeListener,
+    );
 
     group('initial state', () {
       test('defaults volume to 1.0', () {
@@ -81,11 +90,11 @@ void main() {
       });
     });
 
-    group('simulateSystemVolumeChange', () {
+    group('system volume bridge', () {
       blocTest<VideoVolumeCubit, VideoVolumeState>(
         'mutes when system volume drops to zero',
         build: buildCubit,
-        act: (cubit) => cubit.simulateSystemVolumeChange(0),
+        act: (cubit) => fakeVolumeListener.controller.add(0),
         expect: () => const [VideoVolumeState(volume: 0)],
       );
 
@@ -93,14 +102,14 @@ void main() {
         'unmutes when system volume rises above zero',
         build: buildCubit,
         seed: () => const VideoVolumeState(volume: 0),
-        act: (cubit) => cubit.simulateSystemVolumeChange(0.5),
+        act: (cubit) => fakeVolumeListener.controller.add(0.5),
         expect: () => const [VideoVolumeState()],
       );
 
       blocTest<VideoVolumeCubit, VideoVolumeState>(
         'no-ops when system volume changes but state unchanged',
         build: buildCubit,
-        act: (cubit) => cubit.simulateSystemVolumeChange(0.5),
+        act: (cubit) => fakeVolumeListener.controller.add(0.5),
         expect: () => const <VideoVolumeState>[],
       );
 
@@ -108,7 +117,7 @@ void main() {
         'no-ops when already muted and system is zero',
         build: buildCubit,
         seed: () => const VideoVolumeState(volume: 0),
-        act: (cubit) => cubit.simulateSystemVolumeChange(0),
+        act: (cubit) => fakeVolumeListener.controller.add(0),
         expect: () => const <VideoVolumeState>[],
       );
 
@@ -116,8 +125,7 @@ void main() {
         final cubit = buildCubit();
         addTearDown(cubit.close);
 
-        cubit.simulateSystemVolumeChange(0);
-
+        fakeVolumeListener.controller.add(0);
         await Future<void>.delayed(Duration.zero);
 
         expect(prefs.getDouble('video_playback_volume'), equals(0.0));
@@ -130,7 +138,7 @@ void main() {
         cubit.onPlaybackVolumeChanged(0);
         await Future<void>.delayed(Duration.zero);
 
-        cubit.simulateSystemVolumeChange(0.7);
+        fakeVolumeListener.controller.add(0.7);
         await Future<void>.delayed(Duration.zero);
 
         expect(prefs.getDouble('video_playback_volume'), equals(1.0));

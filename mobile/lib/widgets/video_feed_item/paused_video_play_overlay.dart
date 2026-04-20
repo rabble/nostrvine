@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
@@ -99,6 +100,11 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
               stream: widget.player.stream.volume,
               initialData: widget.player.state.volume,
               builder: (context, volumeSnapshot) {
+                // Icon state is driven by the player's volume stream
+                // (not VideoVolumeCubit) deliberately: the player is the
+                // source of truth for what the user is hearing right now.
+                // Using context.select on the cubit would lag by a few
+                // frames while setVolume propagates to the player.
                 final isMuted = volumeSnapshot.data == 0;
 
                 return StreamBuilder<bool>(
@@ -141,7 +147,16 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
                                       semanticLabel: isMuted
                                           ? context.l10n.videoPlayerUnmute
                                           : context.l10n.videoPlayerMute,
-                                      onPressed: widget.onToggleMuteState,
+                                      onPressed: () {
+                                        widget.onToggleMuteState();
+                                        SemanticsService.sendAnnouncement(
+                                          View.of(context),
+                                          isMuted
+                                              ? context.l10n.videoPlayerUnmute
+                                              : context.l10n.videoPlayerMute,
+                                          Directionality.of(context),
+                                        );
+                                      },
                                     ),
                                   IgnorePointer(
                                     child: CenterPlaybackControl(
