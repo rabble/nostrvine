@@ -73,11 +73,25 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
   bool isBlocked(String pubkey) => _blocklistService.isBlocked(pubkey);
 
   /// Block a user from a DM conversation.
+  ///
+  /// Emits [ConversationActionsStatus.failure] for both relay-level
+  /// failure (e.g. all relays rejected the kind 30000 event) and thrown
+  /// exceptions. [BlocklistResult.success] is `false` for the former, so
+  /// we inspect the result before emitting success.
   Future<void> blockUser(String pubkey) async {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
     try {
-      await _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
-      emit(state.copyWith(status: ConversationActionsStatus.success));
+      final result = await _blocklistService.blockUser(
+        pubkey,
+        ourPubkey: _currentUserPubkey,
+      );
+      emit(
+        state.copyWith(
+          status: result.success
+              ? ConversationActionsStatus.success
+              : ConversationActionsStatus.failure,
+        ),
+      );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(state.copyWith(status: ConversationActionsStatus.failure));
@@ -88,8 +102,14 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
   Future<void> unblockUser(String pubkey) async {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
     try {
-      await _blocklistService.unblockUser(pubkey);
-      emit(state.copyWith(status: ConversationActionsStatus.success));
+      final result = await _blocklistService.unblockUser(pubkey);
+      emit(
+        state.copyWith(
+          status: result.success
+              ? ConversationActionsStatus.success
+              : ConversationActionsStatus.failure,
+        ),
+      );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(state.copyWith(status: ConversationActionsStatus.failure));
