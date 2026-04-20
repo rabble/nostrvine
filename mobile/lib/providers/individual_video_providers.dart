@@ -24,14 +24,10 @@ part 'individual_video_providers.g.dart';
 
 /// Maximum playback duration before looping (6.3 seconds).
 ///
-/// Videos materially longer than this will loop back to beginning at this
-/// mark. See [FeedPlaybackConstants] for the shared source of truth used
-/// by both the legacy `video_player` path and the pooled player.
+/// Videos longer than this will loop back to beginning at this mark. See
+/// [FeedPlaybackConstants] for the shared source of truth used by both
+/// the legacy `video_player` path and the pooled player.
 const Duration maxPlaybackDuration = FeedPlaybackConstants.maxLoopDuration;
-
-/// Tail grace period near the natural end of a video during which the
-/// forced seek to zero is skipped, letting the native loop wrap cleanly.
-const Duration loopTolerance = FeedPlaybackConstants.loopTolerance;
 
 /// Interval for checking playback position (200ms = 5 checks/sec).
 /// Balances responsiveness with performance (vs 60 checks/sec for per-frame).
@@ -653,15 +649,10 @@ VideoPlayerController individualVideoController(
         // Set looping for Vine-like behavior
         controller.setLooping(true);
 
-        // Start loop enforcement timer for videos materially longer than
-        // the cap. Videos inside (maxPlaybackDuration + loopTolerance) fall
-        // back to native looping so the final frames aren't clipped
-        // (divinevideo/divine-mobile#1845). Duration is known here because
-        // we just awaited controller.initialize(); an unknown value means
-        // the native player can't loop either, so skipping enforcement is
-        // the safe default.
+        // Start loop enforcement timer for videos longer than 6.3s
+        // Short videos use native looping; long videos get enforced loop at 6.3s
         final videoDuration = controller.value.duration;
-        if (videoDuration > maxPlaybackDuration + loopTolerance) {
+        if (videoDuration > maxPlaybackDuration) {
           loopEnforcementTimer = Timer.periodic(loopCheckInterval, (timer) {
             // Skip check if video is paused
             if (!controller.value.isPlaying) return;
@@ -672,7 +663,7 @@ VideoPlayerController individualVideoController(
             }
           });
           Log.info(
-            '⏱️ Started loop enforcement timer for ${params.videoId} (duration: ${videoDuration.inMilliseconds}ms > ${maxPlaybackDuration.inMilliseconds}ms + ${loopTolerance.inMilliseconds}ms tolerance)',
+            '⏱️ Started loop enforcement timer for ${params.videoId} (duration: ${videoDuration.inMilliseconds}ms > ${maxPlaybackDuration.inMilliseconds}ms)',
             name: 'LoopEnforcement',
             category: LogCategory.video,
           );

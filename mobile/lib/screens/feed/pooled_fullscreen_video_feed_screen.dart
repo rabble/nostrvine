@@ -554,7 +554,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         );
       },
       maxLoopDuration: FeedPlaybackConstants.maxLoopDuration,
-      loopTolerance: FeedPlaybackConstants.loopTolerance,
       onLog: pooledPlayerLogCallback(),
     );
   }
@@ -779,7 +778,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       onScrollOffsetChanged: (page) =>
                           _pagePosition.value = page,
                       maxLoopDuration: FeedPlaybackConstants.maxLoopDuration,
-                      loopTolerance: FeedPlaybackConstants.loopTolerance,
                       itemBuilder:
                           (context, video, index, {required isActive}) {
                             if (state.videos.isEmpty) {

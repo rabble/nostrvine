@@ -24,10 +24,6 @@ void main() {
       expect(maxPlaybackDuration, FeedPlaybackConstants.maxLoopDuration);
     });
 
-    test('loopTolerance matches shared FeedPlaybackConstants source', () {
-      expect(loopTolerance, FeedPlaybackConstants.loopTolerance);
-    });
-
     test('loopCheckInterval is 200ms', () {
       expect(loopCheckInterval, const Duration(milliseconds: 200));
     });
@@ -59,33 +55,16 @@ void main() {
       // Arrange - video is exactly 6.3 seconds
       const videoDuration = Duration(milliseconds: 6300);
 
-      // Assert - the timer guard requires duration > cap + tolerance,
-      // so videos at or near the cap do not spin up a timer.
-      expect(videoDuration > maxPlaybackDuration + loopTolerance, isFalse);
+      // Assert - duration should NOT be greater than maxPlaybackDuration
+      expect(videoDuration > maxPlaybackDuration, isFalse);
     });
 
-    test(
-      'videos within loopTolerance of the cap do not spin up a timer (#1845)',
-      () {
-        // Encoder drift: captured 6.3s becomes a 6.4s file.
-        const videoDuration = Duration(milliseconds: 6400);
-
-        expect(
-          videoDuration > maxPlaybackDuration + loopTolerance,
-          isFalse,
-          reason:
-              'Videos inside the tolerance band must let native looping '
-              'wrap cleanly instead of getting clipped at 6.3s.',
-        );
-      },
-    );
-
     test('videos over 6.3s should trigger loop enforcement', () {
-      // Arrange - video is 10 seconds (well beyond tolerance)
+      // Arrange - video is 10 seconds (over limit)
       const videoDuration = Duration(seconds: 10);
 
-      // Assert - duration exceeds cap + tolerance, timer is created.
-      expect(videoDuration > maxPlaybackDuration + loopTolerance, isTrue);
+      // Assert - duration should be greater than maxPlaybackDuration
+      expect(videoDuration > maxPlaybackDuration, isTrue);
     });
 
     test('position at 6.3s or above triggers seek to zero', () {

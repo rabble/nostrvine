@@ -333,7 +333,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       videos: pooledVideos,
       pool: PlayerPool.instance,
       maxLoopDuration: FeedPlaybackConstants.maxLoopDuration,
-      loopTolerance: FeedPlaybackConstants.loopTolerance,
       onVideoReady: (index, player) {
         if (!_hasMarkedVideoReady && index == 0) {
           _hasMarkedVideoReady = true;
@@ -671,7 +670,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                         key: _feedKey,
                         videos: pooledVideos,
                         maxLoopDuration: FeedPlaybackConstants.maxLoopDuration,
-                        loopTolerance: FeedPlaybackConstants.loopTolerance,
                         controller: controller,
                         onScrollOffsetChanged: (page) =>
                             _pagePosition.value = page,
