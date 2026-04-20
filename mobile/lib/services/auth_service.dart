@@ -133,6 +133,19 @@ typedef PreFetchFollowingCallback = Future<void> Function(String pubkeyHex);
 /// blocking app startup.
 typedef UserRelaysDiscoveredCallback = void Function(List<String> relayUrls);
 
+/// Callback invoked when AuthService wants to publish a bootstrap kind:10002
+/// relay list on behalf of the user (because indexer discovery returned empty).
+///
+/// The event is already signed. The implementer publishes it through the
+/// active [NostrClient] to [targetRelays] and reports success/failure via the
+/// returned future.
+typedef BootstrapRelayListCallback =
+    Future<bool> Function(Event event, List<String> targetRelays);
+
+/// SharedPreferences key prefix for the per-pubkey one-shot flag that records
+/// whether we have already published a bootstrap kind:10002 on this device.
+const _kBootstrapKind10002Prefix = 'bootstrap_kind10002_published_';
+
 /// Main authentication service for the Divine app
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via
 /// Riverpod
@@ -205,6 +218,12 @@ class AuthService implements BackgroundAwareService {
   /// Callback registered by NostrService to add discovered relays to the client
   /// when discovery completes (avoids race where client is built before discovery).
   UserRelaysDiscoveredCallback? _onUserRelaysDiscovered;
+
+  /// Callback registered by NostrService to publish a bootstrap kind:10002
+  /// event when indexer discovery returns empty for the signed-in user.
+  ///
+  /// See [registerBootstrapRelayListCallback].
+  BootstrapRelayListCallback? _onBootstrapRelayListRequested;
 
   /// The current user's atomic signing identity, or null if not authenticated.
   ///
@@ -650,6 +669,19 @@ class AuthService implements BackgroundAwareService {
     UserRelaysDiscoveredCallback? callback,
   ) {
     _onUserRelaysDiscovered = callback;
+  }
+
+  /// Register a callback to publish a bootstrap kind:10002 on behalf of the
+  /// signed-in user when indexer discovery returns empty. Pass [null] to
+  /// unregister.
+  ///
+  /// AuthService builds + signs the event; the callback owner is expected to
+  /// broadcast it via the current [NostrClient]. See
+  /// [_publishBootstrapRelayList] and #3174.
+  void registerBootstrapRelayListCallback(
+    BootstrapRelayListCallback? callback,
+  ) {
+    _onBootstrapRelayListRequested = callback;
   }
 
   /// Check if user has an existing profile (kind 0)
@@ -2999,6 +3031,7 @@ class AuthService implements BackgroundAwareService {
       // Unregister relay-discovery callback so we don't hold a client
       // reference
       _onUserRelaysDiscovered = null;
+      _onBootstrapRelayListRequested = null;
       _userRelays = [];
 
       // Clean up bunker signer if active
@@ -3966,6 +3999,7 @@ class AuthService implements BackgroundAwareService {
           category: LogCategory.auth,
         );
         _connectToFallbackRelays();
+        await _publishBootstrapRelayList();
       }
     } catch (e) {
       _userRelays = [];
@@ -3977,6 +4011,100 @@ class AuthService implements BackgroundAwareService {
         category: LogCategory.auth,
       );
       _connectToFallbackRelays();
+      await _publishBootstrapRelayList();
+    }
+  }
+
+  /// Publish a bootstrap kind:10002 relay list for the signed-in user when
+  /// indexer discovery returned empty.
+  ///
+  /// Divine/Keycast-provisioned accounts are created without a published
+  /// NIP-65 relay list, which leaves them invisible to the indexers the
+  /// mobile client queries (`purplepag.es`, `user.kindpag.es`,
+  /// `relay.nos.social`). That in turn degrades reachability for every
+  /// downstream publish operation (profile save, likes, comments) because
+  /// the client can only connect to the fallback relay set. This method
+  /// self-publishes a minimal kind:10002 pointing at `wss://relay.divine.video`
+  /// so subsequent logins on this or any other client can discover it.
+  ///
+  /// Guards:
+  /// - fires at most once per (device, pubkey): tracked via
+  ///   [SharedPreferences] flag `bootstrap_kind10002_published_<hexpubkey>`.
+  /// - no-op if no [currentIdentity] (read-only / unauthenticated sessions).
+  /// - no-op if no bootstrap callback has been registered.
+  /// - flag is set ONLY on callback success, so failures (signer unreachable,
+  ///   publish rejected) remain retriable on next login.
+  ///
+  /// The proper server-side fix lives in divinevideo/keycast#94; this is a
+  /// client-side safety net + backfill for pre-existing accounts. See
+  /// divinevideo/divine-mobile#3174.
+  Future<void> _publishBootstrapRelayList() async {
+    final identity = _currentIdentity;
+    if (identity == null) {
+      return;
+    }
+    final callback = _onBootstrapRelayListRequested;
+    if (callback == null) {
+      return;
+    }
+    final pubkeyHex = identity.pubkey;
+    final flagKey = '$_kBootstrapKind10002Prefix$pubkeyHex';
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(flagKey) ?? false) {
+        return;
+      }
+
+      final unsigned = Event(
+        pubkeyHex,
+        EventKind.relayListMetadata,
+        <List<String>>[
+          <String>['r', 'wss://relay.divine.video'],
+        ],
+        '',
+      );
+
+      final signed = await identity.signEvent(unsigned);
+      if (signed == null || signed.sig.isEmpty) {
+        Log.warning(
+          'Bootstrap kind:10002: signer returned null / unsigned — will retry '
+          'on next login',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return;
+      }
+
+      final targetRelays = <String>[
+        'wss://relay.divine.video',
+        ...IndexerRelayConfig.defaultIndexers,
+      ];
+
+      final published = await callback(signed, targetRelays);
+      if (!published) {
+        Log.warning(
+          'Bootstrap kind:10002: NostrClient reported no relay accepted the '
+          'event — will retry on next login',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return;
+      }
+
+      await prefs.setBool(flagKey, true);
+      Log.info(
+        '✅ Published bootstrap kind:10002 for $pubkeyHex to '
+        '${targetRelays.length} relays',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.error(
+        'Bootstrap kind:10002 publish failed: $e — will retry on next login',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
     }
   }
 
@@ -4008,6 +4136,15 @@ class AuthService implements BackgroundAwareService {
   @visibleForTesting
   Future<void> debugDiscoverUserRelays(String npub) =>
       _discoverUserRelays(npub);
+
+  /// Test seam that lets unit tests install a [NostrIdentity] without
+  /// going through the full sign-in pipeline. Used by tests that exercise
+  /// code paths (e.g. [_publishBootstrapRelayList]) which depend on
+  /// [currentIdentity] being set.
+  @visibleForTesting
+  void debugSetIdentity(NostrIdentity? identity) {
+    _currentIdentity = identity;
+  }
 
   /// Check if user has an existing profile (kind 0) on indexer relays.
   ///
