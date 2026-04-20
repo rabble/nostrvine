@@ -6,7 +6,6 @@ import 'dart:io';
 
 import 'package:hive_ce/hive_ce.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
@@ -635,14 +634,14 @@ void main() {
         });
         final repository = buildRepository(nostrClient: client);
 
-        final emissions = <List<UserList>>[];
-        final sub = repository
+        // Take the first two emissions: the initial empty snapshot on
+        // subscribe, and the post-createList snapshot driven by the cache's
+        // box watch. Using `take(2).toList()` lets the stream drive timing
+        // instead of timed waits.
+        final emissionsFuture = repository
             .watchLists(ownerPubkey: _ownerPubkey)
-            .listen(emissions.add);
-
-        // Wait for first emission.
-        await Future<void>.microtask(() {});
-        await Future<void>.delayed(Duration.zero);
+            .take(2)
+            .toList();
 
         await repository.createList(
           ownerPubkey: _ownerPubkey,
@@ -650,11 +649,10 @@ void main() {
           initialPubkeys: const [_memberA],
         );
 
-        // Allow the box watch event to flow.
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        await sub.cancel();
+        final emissions = await emissionsFuture;
 
-        expect(emissions, isNotEmpty);
+        expect(emissions, hasLength(2));
+        expect(emissions.first, isEmpty);
         expect(emissions.last, hasLength(1));
         expect(emissions.last.single.pubkeys, equals(const [_memberA]));
       });
