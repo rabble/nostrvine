@@ -37,6 +37,9 @@ import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/people_lists/people_lists.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
@@ -1574,6 +1577,15 @@ class _DivineAppState extends ConsumerState<DivineApp> {
 
     const forceOpenOnboarding = AppConfig.isGhActionsPrPreviewBuild;
 
+    // Gate the global PeopleListsBloc on the curated-lists feature flag.
+    // When enabled we provision it above MaterialApp.router so every route
+    // (including ones outside AppShell) sees the same lists state. The
+    // bloc only depends on the repository and a pubkey stream; we derive
+    // the latter from AuthService.
+    final peopleListsEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.curatedLists),
+    );
+
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(
       providers: [
@@ -1670,6 +1682,20 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               ),
             )..add(const AppUpdateCheckRequested()),
           ),
+          if (peopleListsEnabled)
+            BlocProvider(
+              create: (_) {
+                final authService = ref.read(authServiceProvider);
+                final ownerPubkeyStream = authService.authStateStream.map(
+                  (_) => authService.currentPublicKeyHex,
+                );
+                return PeopleListsBloc(
+                  repository: ref.read(peopleListsRepositoryProvider),
+                  ownerPubkeyStream: ownerPubkeyStream,
+                  initialOwnerPubkey: authService.currentPublicKeyHex,
+                )..add(const PeopleListsStarted());
+              },
+            ),
         ],
         // Global listener for email verification failures - shows snackbar
         // when verification times out or fails while user is elsewhere in app
