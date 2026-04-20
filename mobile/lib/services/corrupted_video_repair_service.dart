@@ -123,6 +123,11 @@ class CorruptedVideoRepairService {
         continue;
       }
 
+      // Fire-and-forget by design: video repair is best-effort background
+      // cleanup. A failed repair re-runs on the next cycle; going through
+      // publishEventWithRetry would amplify relay load without any user
+      // benefit (the user never sees this path run). See
+      // docs/superpowers/plans/2026-04-20-reliable-nostr-publish-pr8-cleanup.md.
       final sent = await _nostrClient.publishEvent(signedEvent);
       if (sent != null) {
         repairedCount++;

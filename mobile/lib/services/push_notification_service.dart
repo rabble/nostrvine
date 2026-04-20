@@ -117,6 +117,11 @@ class PushNotificationService {
       return;
     }
 
+    // Push service events are ephemeral hand-offs to the divine push relay.
+    // Delivery retry is managed by the push relay's own retry queue, not
+    // the client; using publishEventWithRetry here would duplicate that
+    // retry logic. See
+    // docs/superpowers/plans/2026-04-20-reliable-nostr-publish-pr8-cleanup.md.
     final published = await _nostrClient.publishEvent(event);
     if (published == null) {
       Log.error(
@@ -179,6 +184,11 @@ class PushNotificationService {
       return;
     }
 
+    // Push service events are ephemeral hand-offs to the divine push relay.
+    // Delivery retry is managed by the push relay's own retry queue, not
+    // the client; using publishEventWithRetry here would duplicate that
+    // retry logic. See
+    // docs/superpowers/plans/2026-04-20-reliable-nostr-publish-pr8-cleanup.md.
     final published = await _nostrClient.publishEvent(event);
     if (published == null) {
       Log.error(
@@ -273,6 +283,11 @@ class PushNotificationService {
       return;
     }
 
+    // Push service events are ephemeral hand-offs to the divine push relay.
+    // Delivery retry is managed by the push relay's own retry queue, not
+    // the client; using publishEventWithRetry here would duplicate that
+    // retry logic. See
+    // docs/superpowers/plans/2026-04-20-reliable-nostr-publish-pr8-cleanup.md.
     final published = await _nostrClient.publishEvent(event);
     if (published == null) {
       Log.error(

@@ -176,7 +176,11 @@ class ViewEventPublisher {
         return false;
       }
 
-      // Publish to relays (fire-and-forget for ephemeral events)
+      // Kind 22236 view analytics are NIP-01 ephemeral events. Relays are
+      // not required to OK them, and client-side retry would skew
+      // analytics by publishing duplicates. Fire-and-forget is the
+      // contract. See
+      // docs/superpowers/plans/2026-04-20-reliable-nostr-publish-pr8-cleanup.md.
       final sentEvent = await _nostrService.publishEvent(event);
 
       if (sentEvent != null) {
@@ -281,6 +285,11 @@ class ViewEventPublisher {
         return false;
       }
 
+      // Kind 22236 view analytics are NIP-01 ephemeral events. Relays are
+      // not required to OK them, and client-side retry would skew
+      // analytics by publishing duplicates. Fire-and-forget is the
+      // contract. See
+      // docs/superpowers/plans/2026-04-20-reliable-nostr-publish-pr8-cleanup.md.
       final sentEvent = await _nostrService.publishEvent(event);
 
       if (sentEvent != null) {
