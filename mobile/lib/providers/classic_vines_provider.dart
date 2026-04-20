@@ -83,10 +83,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
           limit: _pageSize,
           offset: _randomOffset,
         );
-        final videos = stats
-            .map((v) => v.toVideoEvent())
-            .whereNotExpired()
-            .toList();
+        final videos = stats.toVideoEvents();
 
         // Filter for platform compatibility, content preferences,
         // blocked users, and shuffle
@@ -176,10 +173,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         limit: _pageSize,
         offset: _randomOffset,
       );
-      final videos = stats
-          .map((v) => v.toVideoEvent())
-          .whereNotExpired()
-          .toList();
+      final videos = stats.toVideoEvents();
 
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistService = ref.read(contentBlocklistServiceProvider);
@@ -230,10 +224,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         limit: _pageSize,
         offset: nextOffset,
       );
-      final videos = stats
-          .map((v) => v.toVideoEvent())
-          .whereNotExpired()
-          .toList();
+      final videos = stats.toVideoEvents();
 
       final videoEventService = ref.read(videoEventServiceProvider);
       final blocklistService = ref.read(contentBlocklistServiceProvider);

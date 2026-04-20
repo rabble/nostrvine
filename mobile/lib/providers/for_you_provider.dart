@@ -108,10 +108,7 @@ class ForYouFeed extends _$ForYouFeed {
         pubkey: currentUserPubkey,
         limit: limit,
       );
-      final resultVideos = response.videos
-          .map((v) => v.toVideoEvent())
-          .whereNotExpired()
-          .toList();
+      final resultVideos = response.videos.toVideoEvents();
 
       Log.info(
         '✅ ForYouFeed: Got ${resultVideos.length} recommendations, source: ${response.source}',
@@ -180,10 +177,7 @@ class ForYouFeed extends _$ForYouFeed {
         pubkey: currentUserPubkey,
         limit: newLimit,
       );
-      final resultVideos = response.videos
-          .map((v) => v.toVideoEvent())
-          .whereNotExpired()
-          .toList();
+      final resultVideos = response.videos.toVideoEvents();
 
       if (!ref.mounted) return;
 

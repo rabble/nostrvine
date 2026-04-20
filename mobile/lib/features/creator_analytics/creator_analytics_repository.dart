@@ -150,10 +150,7 @@ class FunnelcakeCreatorAnalyticsRepository
       final videos = result.videos;
 
       if (videos.isEmpty) break;
-      final batch = videos
-          .map((stats) => stats.toVideoEvent())
-          .whereNotExpired()
-          .toList();
+      final batch = videos.toVideoEvents();
       collected.addAll(batch);
 
       if (batch.length < pageSize) break;

@@ -114,14 +114,8 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
       final trendingStats = results[0];
       final classicStats = results[1];
-      final trendingVideos = trendingStats
-          .map((v) => v.toVideoEvent())
-          .whereNotExpired()
-          .toList();
-      final classicVideos = classicStats
-          .map((v) => v.toVideoEvent())
-          .whereNotExpired()
-          .toList();
+      final trendingVideos = trendingStats.toVideoEvents();
+      final classicVideos = classicStats.toVideoEvents();
 
       Log.info(
         '🏷️ HashtagFeedScreen: Got ${trendingVideos.length} trending + '
