@@ -18,11 +18,11 @@ void main() {
       );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockStreamHandler(
-        volumeEventChannel,
-        MockStreamHandler.inline(
-          onListen: (_, events) => events.endOfStream(),
-        ),
-      );
+            volumeEventChannel,
+            MockStreamHandler.inline(
+              onListen: (_, events) => events.endOfStream(),
+            ),
+          );
 
       SharedPreferences.setMockInitialValues(<String, Object>{});
       prefs = await SharedPreferences.getInstance();
