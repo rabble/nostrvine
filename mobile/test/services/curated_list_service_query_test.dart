@@ -36,6 +36,7 @@ void main() {
         }),
       );
       registerFallbackValue(<Filter>[]);
+      registerFallbackValue(const RetryPolicy());
     });
 
     setUp(() async {
@@ -56,6 +57,20 @@ void main() {
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
+      when(
+        () => mockNostr.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: 'a' * 64,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
 
       // Mock subscribeToEvents for relay sync
       when(

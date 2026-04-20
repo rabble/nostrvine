@@ -608,7 +608,7 @@ void main() {
           ).thenReturn(false);
           when(
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer((_) async => BookmarkResult.noop(success: true));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
@@ -636,7 +636,7 @@ void main() {
           ).thenReturn(true);
           when(
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer((_) async => BookmarkResult.noop(success: true));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
@@ -664,7 +664,7 @@ void main() {
           ).thenReturn(false);
           when(
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer((_) async => BookmarkResult.noop(success: false));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
@@ -693,7 +693,7 @@ void main() {
           ).thenReturn(true);
           when(
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer((_) async => BookmarkResult.noop(success: false));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
@@ -802,7 +802,7 @@ void main() {
             () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer((_) async {
             inGlobalBookmarks = !inGlobalBookmarks;
-            return true;
+            return BookmarkResult.noop(success: true);
           });
         },
         build: createBloc,

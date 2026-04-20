@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart' show PublishUserFeedback;
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/classic_vine_clip_import_service.dart';
@@ -306,27 +307,24 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         category: LogCategory.ui,
       );
       emit(
-        state.copyWith(
-          actionResult: ShareSheetSaveResult(succeeded: false),
-        ),
+        state.copyWith(actionResult: ShareSheetSaveResult(succeeded: false)),
       );
       return;
     }
 
     var wasBookmarked = false;
     try {
-      wasBookmarked = bookmarkService.isVideoBookmarkedGlobally(
-        _video.id,
-      );
-      final succeeded = await bookmarkService.toggleVideoInGlobalBookmarks(
+      wasBookmarked = bookmarkService.isVideoBookmarkedGlobally(_video.id);
+      final result = await bookmarkService.toggleVideoInGlobalBookmarks(
         _video.id,
       );
       emit(
         state.copyWith(
           actionResult: ShareSheetSaveResult(
-            succeeded: succeeded,
-            removed: succeeded && wasBookmarked,
+            succeeded: result.success,
+            removed: result.success && wasBookmarked,
             wasBookmarkedBeforeToggle: wasBookmarked,
+            feedback: result.feedback,
           ),
         ),
       );
@@ -364,9 +362,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetClassicVineClipImportResult(
-            succeeded: false,
-          ),
+          actionResult: ShareSheetClassicVineClipImportResult(succeeded: false),
         ),
       );
       return;
@@ -389,9 +385,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetClassicVineClipImportResult(
-            succeeded: false,
-          ),
+          actionResult: ShareSheetClassicVineClipImportResult(succeeded: false),
         ),
       );
     }

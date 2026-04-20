@@ -35,6 +35,7 @@ void main() {
         }),
       );
       registerFallbackValue(<Filter>[]);
+      registerFallbackValue(const RetryPolicy());
     });
 
     // Helper to stub publishEvent - call after reset(mockNostr)
@@ -42,6 +43,20 @@ void main() {
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
+      when(
+        () => mockNostr.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: 'a' * 64,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
     }
 
     setUp(() async {
@@ -176,7 +191,13 @@ void main() {
 
         await service.addCollaborator(list.id, 'collaborator_1');
 
-        verify(() => mockNostr.publishEvent(any())).called(1);
+        verify(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
       });
 
       test('updates updatedAt timestamp', () async {
@@ -256,7 +277,13 @@ void main() {
 
         await service.removeCollaborator(list.id, 'collaborator_1');
 
-        verify(() => mockNostr.publishEvent(any())).called(1);
+        verify(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
       });
 
       test('handles removing last collaborator', () async {

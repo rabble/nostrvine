@@ -49,11 +49,17 @@ class ShareSheetSendFailure extends ShareSheetActionResult {
 ///
 /// [wasBookmarkedBeforeToggle] is set for every attempt. When [succeeded]
 /// is false, the UI uses it to show an add-specific vs remove-specific error.
+/// When [succeeded] is `false`, [feedback] carries the mapped publish
+/// feedback so the UI can render a retryable snackbar for transient
+/// failures. [feedback] may be `null` on pre-publish failures (not
+/// authenticated, service unavailable) — the UI falls back to a generic
+/// failure message in that case.
 class ShareSheetSaveResult extends ShareSheetActionResult {
   ShareSheetSaveResult({
     required this.succeeded,
     this.removed = false,
     this.wasBookmarkedBeforeToggle = false,
+    this.feedback,
   });
 
   final bool succeeded;
@@ -63,6 +69,8 @@ class ShareSheetSaveResult extends ShareSheetActionResult {
 
   /// Whether the video was already globally bookmarked before this toggle.
   final bool wasBookmarkedBeforeToggle;
+
+  final PublishUserFeedback? feedback;
 }
 
 class ShareSheetClassicVineClipImportResult extends ShareSheetActionResult {

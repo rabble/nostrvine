@@ -34,6 +34,62 @@ typedef OnListSubscribedCallback =
 /// Called with listId when a list is unsubscribed
 typedef OnListUnsubscribedCallback = void Function(String listId);
 
+/// Result of a curated-list mutation that can trigger a Nostr publish.
+///
+/// Mirrors the bookmark/deletion result shapes: on success, [outcome] and
+/// [feedback] are populated and callers can render a success confirmation;
+/// on failure, [feedback.retryable] drives whether the UI exposes a retry
+/// affordance.
+///
+/// Operations that can skip the publish (unauthenticated user, private
+/// list, empty list) return a "noop" result where [outcome] and [feedback]
+/// are both null and [success] reflects whether the local state mutation
+/// is durable.
+class CuratedListResult {
+  const CuratedListResult({
+    required this.success,
+    this.outcome,
+    this.feedback,
+    this.list,
+  });
+
+  /// Whether the requested mutation is durable — either because a relay
+  /// accepted the publish, or because the operation did not require a
+  /// publish in the first place (private list, unauthenticated user).
+  final bool success;
+
+  /// Per-relay publish outcome. `null` when the mutation skipped publishing.
+  final PublishOutcome? outcome;
+
+  /// Mapped user feedback. `null` iff [outcome] is `null`.
+  final PublishUserFeedback? feedback;
+
+  /// Populated by mutators that return a new/updated list (e.g. [create]).
+  final CuratedList? list;
+
+  static CuratedListResult successResult({
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+    CuratedList? list,
+  }) => CuratedListResult(
+    success: true,
+    outcome: outcome,
+    feedback: feedback,
+    list: list,
+  );
+
+  static CuratedListResult failure({
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+    CuratedList? list,
+  }) => CuratedListResult(
+    success: false,
+    outcome: outcome,
+    feedback: feedback,
+    list: list,
+  );
+}
+
 /// Service for managing NIP-51 curated lists
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class CuratedListService extends ChangeNotifier {
@@ -196,7 +252,11 @@ class CuratedListService extends ChangeNotifier {
     );
   }
 
-  /// Internal method to create a list with optional explicit ID
+  /// Internal method to create a list with optional explicit ID.
+  ///
+  /// Returns the created list on success, or `null` if publish failed and
+  /// local state was rolled back. For the default (empty, private) list
+  /// creation, publishing is skipped and the list is always persisted.
   Future<CuratedList?> _createList({
     required String name,
     String? id,
@@ -209,154 +269,185 @@ class CuratedListService extends ChangeNotifier {
     String? thumbnailEventId,
     PlayOrder playOrder = PlayOrder.chronological,
   }) async {
-    try {
-      final now = DateTime.now();
-      final listId = id ?? 'list_${now.millisecondsSinceEpoch}';
+    final now = DateTime.now();
+    final listId = id ?? 'list_${now.millisecondsSinceEpoch}';
 
-      final newList = CuratedList(
-        id: listId,
-        name: name,
-        description: description,
-        imageUrl: imageUrl,
-        videoEventIds: const [],
-        createdAt: now,
-        updatedAt: now,
-        isPublic: isPublic,
-        tags: tags,
-        isCollaborative: isCollaborative,
-        allowedCollaborators: allowedCollaborators,
-        thumbnailEventId: thumbnailEventId,
-        playOrder: playOrder,
-      );
+    final newList = CuratedList(
+      id: listId,
+      name: name,
+      description: description,
+      imageUrl: imageUrl,
+      videoEventIds: const [],
+      createdAt: now,
+      updatedAt: now,
+      isPublic: isPublic,
+      tags: tags,
+      isCollaborative: isCollaborative,
+      allowedCollaborators: allowedCollaborators,
+      thumbnailEventId: thumbnailEventId,
+      playOrder: playOrder,
+    );
 
-      _lists.add(newList);
-      await _saveLists();
+    _lists.add(newList);
+    await _saveLists();
 
-      // Publish to Nostr if user is authenticated and list is public
-      if (_authService.isAuthenticated && isPublic) {
-        await _publishListToNostr(newList);
-      }
-
+    // Empty lists don't publish (see _publishListToNostr) and private lists
+    // never publish — both are local-only success.
+    if (!_authService.isAuthenticated ||
+        !isPublic ||
+        newList.videoEventIds.isEmpty) {
       Log.info(
         'Created new curated list: $name ($listId)',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
-
       return newList;
-    } catch (e) {
-      Log.error(
-        'Failed to create curated list: $e',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
+    }
+
+    final publish = await _publishListToNostr(newList);
+    if (!publish.success) {
+      _lists.removeWhere((l) => l.id == listId);
+      await _saveLists();
       return null;
     }
+
+    Log.info(
+      'Created new curated list: $name ($listId)',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+    // Prefer the published (nostrEventId-stamped) copy when available.
+    return publish.list ?? newList;
   }
 
-  /// Add video to a list
-  Future<bool> addVideoToList(String listId, String videoEventId) async {
-    try {
-      final listIndex = _lists.indexWhere((list) => list.id == listId);
-      if (listIndex == -1) {
-        Log.warning(
-          'List not found: $listId',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
+  /// Add video to a list.
+  ///
+  /// Returns `true` when the video is persisted locally and (for public
+  /// lists) the kind 30005 event has been accepted by at least one relay.
+  /// Returns `false` on relay-level failure — the local mutation is
+  /// rolled back in that case so local and relay state stay consistent.
+  ///
+  /// Prefer [addVideoToListResult] when the caller needs the per-relay
+  /// outcome to drive a retry affordance in the UI.
+  Future<bool> addVideoToList(String listId, String videoEventId) async =>
+      (await addVideoToListResult(listId, videoEventId)).success;
 
-      final list = _lists[listIndex];
-
-      // Check if video is already in the list
-      if (list.videoEventIds.contains(videoEventId)) {
-        Log.warning(
-          'Video already in list: $videoEventId',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return true; // Return true since it's already there
-      }
-
-      // Add video to list
-      final updatedVideoIds = [...list.videoEventIds, videoEventId];
-      final updatedList = list.copyWith(
-        videoEventIds: updatedVideoIds,
-        updatedAt: DateTime.now(),
-      );
-
-      _lists[listIndex] = updatedList;
-      await _saveLists();
-
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
-        await _publishListToNostr(updatedList);
-      }
-
-      Log.debug(
-        '➕ Added video to list "${list.name}": $videoEventId',
+  /// [addVideoToList] variant that returns the full [CuratedListResult]
+  /// so the UI can render retry-able failure snackbars.
+  Future<CuratedListResult> addVideoToListResult(
+    String listId,
+    String videoEventId,
+  ) async {
+    final listIndex = _lists.indexWhere((list) => list.id == listId);
+    if (listIndex == -1) {
+      Log.warning(
+        'List not found: $listId',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to add video to list: $e',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-      return false;
+      return CuratedListResult.failure();
     }
+
+    final originalList = _lists[listIndex];
+
+    // Already in the list — no-op (local + relay state already match).
+    if (originalList.videoEventIds.contains(videoEventId)) {
+      Log.warning(
+        'Video already in list: $videoEventId',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return CuratedListResult.successResult(list: originalList);
+    }
+
+    final updatedList = originalList.copyWith(
+      videoEventIds: [...originalList.videoEventIds, videoEventId],
+      updatedAt: DateTime.now(),
+    );
+
+    _lists[listIndex] = updatedList;
+    await _saveLists();
+
+    // Private lists never publish — the local mutation is authoritative.
+    if (!updatedList.isPublic || !_authService.isAuthenticated) {
+      Log.debug(
+        '➕ Added video to list "${originalList.name}": $videoEventId',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return CuratedListResult.successResult(list: updatedList);
+    }
+
+    final publish = await _publishListToNostr(updatedList);
+    if (!publish.success) {
+      // Rollback: restore the previous list so local state matches relay.
+      _lists[listIndex] = originalList;
+      await _saveLists();
+      return publish;
+    }
+
+    Log.debug(
+      '➕ Added video to list "${originalList.name}": $videoEventId',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+    return publish;
   }
 
-  /// Remove video from a list
-  Future<bool> removeVideoFromList(String listId, String videoEventId) async {
-    try {
-      final listIndex = _lists.indexWhere((list) => list.id == listId);
-      if (listIndex == -1) {
-        Log.warning(
-          'List not found: $listId',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
+  /// Remove video from a list. Returns `true` on durable success.
+  Future<bool> removeVideoFromList(
+    String listId,
+    String videoEventId,
+  ) async => (await removeVideoFromListResult(listId, videoEventId)).success;
 
-      final list = _lists[listIndex];
-      final updatedVideoIds = list.videoEventIds
+  /// [removeVideoFromList] variant returning the full [CuratedListResult].
+  Future<CuratedListResult> removeVideoFromListResult(
+    String listId,
+    String videoEventId,
+  ) async {
+    final listIndex = _lists.indexWhere((list) => list.id == listId);
+    if (listIndex == -1) {
+      Log.warning(
+        'List not found: $listId',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return CuratedListResult.failure();
+    }
+
+    final originalList = _lists[listIndex];
+    final updatedList = originalList.copyWith(
+      videoEventIds: originalList.videoEventIds
           .where((id) => id != videoEventId)
-          .toList();
+          .toList(),
+      updatedAt: DateTime.now(),
+    );
 
-      final updatedList = list.copyWith(
-        videoEventIds: updatedVideoIds,
-        updatedAt: DateTime.now(),
-      );
+    _lists[listIndex] = updatedList;
+    await _saveLists();
 
-      _lists[listIndex] = updatedList;
-      await _saveLists();
-
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
-        await _publishListToNostr(updatedList);
-      }
-
+    if (!updatedList.isPublic || !_authService.isAuthenticated) {
       Log.debug(
-        '➖ Removed video from list "${list.name}": $videoEventId',
+        '➖ Removed video from list "${originalList.name}": $videoEventId',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to remove video from list: $e',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-      return false;
+      return CuratedListResult.successResult(list: updatedList);
     }
+
+    final publish = await _publishListToNostr(updatedList);
+    if (!publish.success) {
+      _lists[listIndex] = originalList;
+      await _saveLists();
+      return publish;
+    }
+
+    Log.debug(
+      '➖ Removed video from list "${originalList.name}": $videoEventId',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+    return publish;
   }
 
   /// Check if video is in a specific list
@@ -378,7 +469,10 @@ class CuratedListService extends ChangeNotifier {
     }
   }
 
-  /// Update list metadata with enhanced playlist features
+  /// Update list metadata with enhanced playlist features.
+  ///
+  /// Gates local state commit on relay confirmation when the list is
+  /// public — transient failures roll back the local mutation.
   Future<bool> updateList({
     required String listId,
     String? name,
@@ -391,49 +485,51 @@ class CuratedListService extends ChangeNotifier {
     String? thumbnailEventId,
     PlayOrder? playOrder,
   }) async {
-    try {
-      final listIndex = _lists.indexWhere((list) => list.id == listId);
-      if (listIndex == -1) {
-        return false;
-      }
+    final listIndex = _lists.indexWhere((list) => list.id == listId);
+    if (listIndex == -1) {
+      return false;
+    }
 
-      final list = _lists[listIndex];
-      final updatedList = list.copyWith(
-        name: name ?? list.name,
-        description: description ?? list.description,
-        imageUrl: imageUrl ?? list.imageUrl,
-        isPublic: isPublic ?? list.isPublic,
-        tags: tags ?? list.tags,
-        isCollaborative: isCollaborative ?? list.isCollaborative,
-        allowedCollaborators: allowedCollaborators ?? list.allowedCollaborators,
-        thumbnailEventId: thumbnailEventId ?? list.thumbnailEventId,
-        playOrder: playOrder ?? list.playOrder,
-        updatedAt: DateTime.now(),
-      );
+    final originalList = _lists[listIndex];
+    final updatedList = originalList.copyWith(
+      name: name ?? originalList.name,
+      description: description ?? originalList.description,
+      imageUrl: imageUrl ?? originalList.imageUrl,
+      isPublic: isPublic ?? originalList.isPublic,
+      tags: tags ?? originalList.tags,
+      isCollaborative: isCollaborative ?? originalList.isCollaborative,
+      allowedCollaborators:
+          allowedCollaborators ?? originalList.allowedCollaborators,
+      thumbnailEventId: thumbnailEventId ?? originalList.thumbnailEventId,
+      playOrder: playOrder ?? originalList.playOrder,
+      updatedAt: DateTime.now(),
+    );
 
-      _lists[listIndex] = updatedList;
-      await _saveLists();
+    _lists[listIndex] = updatedList;
+    await _saveLists();
 
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
-        await _publishListToNostr(updatedList);
-      }
-
+    if (!updatedList.isPublic || !_authService.isAuthenticated) {
       Log.debug(
         '✏️ Updated list: ${updatedList.name}',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
-
       return true;
-    } catch (e) {
-      Log.error(
-        'Failed to update list: $e',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
+    }
+
+    final publish = await _publishListToNostr(updatedList);
+    if (!publish.success) {
+      _lists[listIndex] = originalList;
+      await _saveLists();
       return false;
     }
+
+    Log.debug(
+      '✏️ Updated list: ${updatedList.name}',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+    return true;
   }
 
   /// Delete a list
@@ -481,64 +577,68 @@ class CuratedListService extends ChangeNotifier {
 
   // === ENHANCED PLAYLIST FEATURES ===
 
-  /// Reorder videos in a playlist (manual play order)
+  /// Reorder videos in a playlist (manual play order).
+  ///
+  /// Gates local commit on relay confirmation for public lists; rolls
+  /// back on transient failure.
   Future<bool> reorderVideos(String listId, List<String> newOrder) async {
-    try {
-      final listIndex = _lists.indexWhere((list) => list.id == listId);
-      if (listIndex == -1) {
-        Log.warning(
-          'List not found: $listId',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
-
-      final list = _lists[listIndex];
-
-      // Validate that all current videos are included in the new order
-      final currentVideos = Set<String>.from(list.videoEventIds);
-      final newOrderSet = Set<String>.from(newOrder);
-
-      if (currentVideos.difference(newOrderSet).isNotEmpty ||
-          newOrderSet.difference(currentVideos).isNotEmpty) {
-        Log.warning(
-          'Invalid reorder: video lists do not match',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
-
-      final updatedList = list.copyWith(
-        videoEventIds: newOrder,
-        playOrder: PlayOrder.manual, // Set to manual when reordering
-        updatedAt: DateTime.now(),
-      );
-
-      _lists[listIndex] = updatedList;
-      await _saveLists();
-
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
-        await _publishListToNostr(updatedList);
-      }
-
-      Log.debug(
-        '📱 Reordered videos in list "${list.name}"',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to reorder videos: $e',
+    final listIndex = _lists.indexWhere((list) => list.id == listId);
+    if (listIndex == -1) {
+      Log.warning(
+        'List not found: $listId',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
       return false;
     }
+
+    final originalList = _lists[listIndex];
+
+    // Validate that all current videos are included in the new order.
+    final currentVideos = Set<String>.from(originalList.videoEventIds);
+    final newOrderSet = Set<String>.from(newOrder);
+
+    if (currentVideos.difference(newOrderSet).isNotEmpty ||
+        newOrderSet.difference(currentVideos).isNotEmpty) {
+      Log.warning(
+        'Invalid reorder: video lists do not match',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+
+    final updatedList = originalList.copyWith(
+      videoEventIds: newOrder,
+      playOrder: PlayOrder.manual, // Set to manual when reordering.
+      updatedAt: DateTime.now(),
+    );
+
+    _lists[listIndex] = updatedList;
+    await _saveLists();
+
+    if (!updatedList.isPublic || !_authService.isAuthenticated) {
+      Log.debug(
+        '📱 Reordered videos in list "${originalList.name}"',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return true;
+    }
+
+    final publish = await _publishListToNostr(updatedList);
+    if (!publish.success) {
+      _lists[listIndex] = originalList;
+      await _saveLists();
+      return false;
+    }
+
+    Log.debug(
+      '📱 Reordered videos in list "${originalList.name}"',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+    return true;
   }
 
   /// Get ordered video list based on play order setting
@@ -560,105 +660,104 @@ class CuratedListService extends ChangeNotifier {
     }
   }
 
-  /// Add collaborator to a list
+  /// Add collaborator to a list.
   Future<bool> addCollaborator(String listId, String pubkey) async {
-    try {
-      final listIndex = _lists.indexWhere((list) => list.id == listId);
-      if (listIndex == -1) {
-        return false;
-      }
+    final listIndex = _lists.indexWhere((list) => list.id == listId);
+    if (listIndex == -1) {
+      return false;
+    }
 
-      final list = _lists[listIndex];
-      if (!list.isCollaborative) {
-        Log.warning(
-          'Cannot add collaborator - list is not collaborative',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return false;
-      }
-
-      if (list.allowedCollaborators.contains(pubkey)) {
-        Log.debug(
-          'User already a collaborator: $pubkey',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return true;
-      }
-
-      final updatedCollaborators = [...list.allowedCollaborators, pubkey];
-      final updatedList = list.copyWith(
-        allowedCollaborators: updatedCollaborators,
-        updatedAt: DateTime.now(),
-      );
-
-      _lists[listIndex] = updatedList;
-      await _saveLists();
-
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
-        await _publishListToNostr(updatedList);
-      }
-
-      Log.debug(
-        '✅ Added collaborator to list "${list.name}": $pubkey',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to add collaborator: $e',
+    final originalList = _lists[listIndex];
+    if (!originalList.isCollaborative) {
+      Log.warning(
+        'Cannot add collaborator - list is not collaborative',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
       return false;
     }
+
+    if (originalList.allowedCollaborators.contains(pubkey)) {
+      Log.debug(
+        'User already a collaborator: $pubkey',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return true;
+    }
+
+    final updatedList = originalList.copyWith(
+      allowedCollaborators: [...originalList.allowedCollaborators, pubkey],
+      updatedAt: DateTime.now(),
+    );
+
+    _lists[listIndex] = updatedList;
+    await _saveLists();
+
+    if (!updatedList.isPublic || !_authService.isAuthenticated) {
+      Log.debug(
+        '✅ Added collaborator to list "${originalList.name}": $pubkey',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return true;
+    }
+
+    final publish = await _publishListToNostr(updatedList);
+    if (!publish.success) {
+      _lists[listIndex] = originalList;
+      await _saveLists();
+      return false;
+    }
+
+    Log.debug(
+      '✅ Added collaborator to list "${originalList.name}": $pubkey',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+    return true;
   }
 
-  /// Remove collaborator from a list
+  /// Remove collaborator from a list.
   Future<bool> removeCollaborator(String listId, String pubkey) async {
-    try {
-      final listIndex = _lists.indexWhere((list) => list.id == listId);
-      if (listIndex == -1) {
-        return false;
-      }
-
-      final list = _lists[listIndex];
-      final updatedCollaborators = list.allowedCollaborators
-          .where((collaborator) => collaborator != pubkey)
-          .toList();
-
-      final updatedList = list.copyWith(
-        allowedCollaborators: updatedCollaborators,
-        updatedAt: DateTime.now(),
-      );
-
-      _lists[listIndex] = updatedList;
-      await _saveLists();
-
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
-        await _publishListToNostr(updatedList);
-      }
-
-      Log.debug(
-        '➖ Removed collaborator from list "${list.name}": $pubkey',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
-
-      return true;
-    } catch (e) {
-      Log.error(
-        'Failed to remove collaborator: $e',
-        name: 'CuratedListService',
-        category: LogCategory.system,
-      );
+    final listIndex = _lists.indexWhere((list) => list.id == listId);
+    if (listIndex == -1) {
       return false;
     }
+
+    final originalList = _lists[listIndex];
+    final updatedList = originalList.copyWith(
+      allowedCollaborators: originalList.allowedCollaborators
+          .where((collaborator) => collaborator != pubkey)
+          .toList(),
+      updatedAt: DateTime.now(),
+    );
+
+    _lists[listIndex] = updatedList;
+    await _saveLists();
+
+    if (!updatedList.isPublic || !_authService.isAuthenticated) {
+      Log.debug(
+        '➖ Removed collaborator from list "${originalList.name}": $pubkey',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return true;
+    }
+
+    final publish = await _publishListToNostr(updatedList);
+    if (!publish.success) {
+      _lists[listIndex] = originalList;
+      await _saveLists();
+      return false;
+    }
+
+    Log.debug(
+      '➖ Removed collaborator from list "${originalList.name}": $pubkey',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+    return true;
   }
 
   /// Check if a user can collaborate on a list
@@ -865,60 +964,88 @@ class CuratedListService extends ChangeNotifier {
     );
   }
 
-  /// Publish list to Nostr as NIP-51 kind 30005 event
-  Future<void> _publishListToNostr(CuratedList list) async {
-    try {
-      if (!_authService.isAuthenticated) {
-        Log.warning(
-          'Cannot publish list - user not authenticated',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      // Don't spam relay with empty lists
-      if (list.videoEventIds.isEmpty) {
-        Log.debug(
-          'Skipping publish of empty list: ${list.name}',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      final content = list.description ?? 'Curated video list: ${list.name}';
-      final tags = list.getEventTags();
-
-      final event = await _authService.createAndSignEvent(
-        kind: 30005, // NIP-51 curated list
-        content: content,
-        tags: tags,
-      );
-
-      if (event != null) {
-        final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent != null) {
-          // Update local list with Nostr event ID
-          final listIndex = _lists.indexWhere((l) => l.id == list.id);
-          if (listIndex != -1) {
-            _lists[listIndex] = list.copyWith(nostrEventId: event.id);
-            await _saveLists();
-          }
-          Log.debug(
-            'Published list to Nostr: ${list.name} (${event.id})',
-            name: 'CuratedListService',
-            category: LogCategory.system,
-          );
-        }
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to publish list to Nostr: $e',
+  /// Publish list to Nostr as NIP-51 kind 30005 event.
+  ///
+  /// Uses [NostrClient.publishEventWithRetry] so transient failures retry
+  /// on a bounded schedule. Returns a [CuratedListResult]; callers are
+  /// responsible for rolling back local state when `success` is false.
+  ///
+  /// Returns a "noop success" when the publish is deliberately skipped
+  /// (unauthenticated user or empty list). Those cases do not represent
+  /// relay-level failure and don't need to trigger a rollback.
+  Future<CuratedListResult> _publishListToNostr(CuratedList list) async {
+    if (!_authService.isAuthenticated) {
+      Log.warning(
+        'Cannot publish list - user not authenticated',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
+      return CuratedListResult.successResult(list: list);
     }
+
+    // Don't spam relay with empty lists.
+    if (list.videoEventIds.isEmpty) {
+      Log.debug(
+        'Skipping publish of empty list: ${list.name}',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return CuratedListResult.successResult(list: list);
+    }
+
+    final content = list.description ?? 'Curated video list: ${list.name}';
+    final tags = list.getEventTags();
+
+    final event = await _authService.createAndSignEvent(
+      kind: 30005, // NIP-51 curated list
+      content: content,
+      tags: tags,
+    );
+
+    if (event == null) {
+      Log.error(
+        'Failed to sign kind 30005 curated-list event',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return CuratedListResult.failure(list: list);
+    }
+
+    final outcome = await _nostrService.publishEventWithRetry(event);
+    final feedback = PublishResultMapper.map(outcome);
+
+    if (!outcome.acceptedByAny) {
+      Log.warning(
+        'Curated-list publish not accepted by any relay: $outcome',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return CuratedListResult.failure(
+        outcome: outcome,
+        feedback: feedback,
+        list: list,
+      );
+    }
+
+    // Update local list with Nostr event ID so subsequent loads can link
+    // the local cache back to its latest published event.
+    final listIndex = _lists.indexWhere((l) => l.id == list.id);
+    CuratedList updatedList = list;
+    if (listIndex != -1) {
+      updatedList = list.copyWith(nostrEventId: event.id);
+      _lists[listIndex] = updatedList;
+      await _saveLists();
+    }
+    Log.debug(
+      'Published list to Nostr: ${list.name} (${event.id})',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+    return CuratedListResult.successResult(
+      outcome: outcome,
+      feedback: feedback,
+      list: updatedList,
+    );
   }
 
   /// Load lists from local storage

@@ -37,6 +37,7 @@ void main() {
         ),
       );
       registerFallbackValue(<Filter>[]);
+      registerFallbackValue(const RetryPolicy());
     });
 
     setUp(() async {
@@ -55,6 +56,20 @@ void main() {
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
+      when(
+        () => mockNostr.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: 'a' * 64,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
 
       // Mock subscribeToEvents for relay sync
       when(
@@ -160,6 +175,25 @@ void main() {
           final event = invocation.positionalArguments[0] as Event;
           lists.add(event.toCuratedList());
           return Future.value(event);
+        });
+        // Capture events via publishEventWithRetry (used by the migrated
+        // service) and return an accepted-by-any outcome so local state
+        // commits.
+        when(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          final event = invocation.positionalArguments[0] as Event;
+          lists.add(event.toCuratedList());
+          return PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const {'wss://a'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          );
         });
 
         // Mock subscription to return collected lists
@@ -344,8 +378,14 @@ void main() {
           ),
         ).called(1);
 
-        // Should publish event
-        verify(() => mockNostr.publishEvent(any())).called(1);
+        // Should publish event via the retry-backed path.
+        verify(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
       });
 
       test('does not publish empty public list to Nostr', () async {
@@ -359,7 +399,13 @@ void main() {
             tags: any(named: 'tags'),
           ),
         );
-        verifyNever(() => mockNostr.publishEvent(any()));
+        verifyNever(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
       });
 
       test('does not publish private list to Nostr', () async {
@@ -477,15 +523,30 @@ void main() {
         reset(mockNostr); // Clear previous invocations
 
         // Re-setup mocks after reset
-        when(() => mockNostr.publishEvent(any())).thenAnswer((
-          invocation,
-        ) async {
-          return invocation.positionalArguments[0] as Event;
-        });
+        when(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: 'a' * 64,
+            acceptedBy: const {'wss://a'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          ),
+        );
 
         await service.updateList(listId: list.id, name: 'Updated Name');
 
-        verify(() => mockNostr.publishEvent(any())).called(1);
+        verify(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
       });
 
       test('does not publish update for private list', () async {
@@ -497,7 +558,13 @@ void main() {
 
         await service.updateList(listId: list!.id, name: 'Updated Name');
 
-        verifyNever(() => mockNostr.publishEvent(any()));
+        verifyNever(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
       });
 
       test('returns false for non-existent list', () async {

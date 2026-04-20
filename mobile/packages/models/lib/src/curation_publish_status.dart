@@ -1,7 +1,13 @@
 // ABOUTME: Models for curation publishing status and results
-// ABOUTME: Tracks publish state, retry logic, and relay success/failure for NIP-51 curations
+// ABOUTME: Tracks publish state for NIP-51 curations (kind 30005).
 
-/// Status of a curation publish attempt
+/// Status of a curation publish attempt.
+///
+/// After the migration to [NostrClient.publishEventWithRetry], relay-level
+/// retries, timeouts, and backoff are handled inside the client — this
+/// status only needs to carry a few UI-visible fields: whether a publish
+/// is currently in flight, whether the last publish succeeded, and which
+/// relays accepted it.
 class CurationPublishStatus {
   const CurationPublishStatus({
     required this.curationId,
@@ -9,9 +15,8 @@ class CurationPublishStatus {
     required this.isPublished,
     this.lastPublishedAt,
     this.publishedEventId,
-    this.failedAttempts = 0,
     this.lastAttemptAt,
-    this.lastFailureReason,
+    this.hasFailed = false,
     this.successfulRelays = const [],
   });
 
@@ -20,18 +25,18 @@ class CurationPublishStatus {
   final bool isPublished;
   final DateTime? lastPublishedAt;
   final String? publishedEventId;
-  final int failedAttempts;
   final DateTime? lastAttemptAt;
-  final String? lastFailureReason;
+
+  /// Whether the last publish attempt finished without any relay
+  /// accepting. The root-cause reason lives on the [PublishOutcome]
+  /// returned from [CurationService.publishCuration] — callers that need
+  /// a human-readable message should read that outcome's feedback via
+  /// [PublishResultMapper], not a string stored on this status.
+  final bool hasFailed;
+
   final List<String> successfulRelays;
 
-  /// Maximum number of retry attempts
-  static const int maxRetries = 5;
-
-  /// Whether this curation should be retried
-  bool get shouldRetry => failedAttempts < maxRetries && !isPublished;
-
-  /// UI-friendly status text
+  /// UI-friendly status text.
   String get statusText {
     if (isPublishing) return 'Publishing...';
     if (isPublished) {
@@ -40,17 +45,23 @@ class CurationPublishStatus {
       }
       return 'Published';
     }
-    if (failedAttempts > 0) {
+    if (hasFailed) {
       return 'Error publishing';
     }
     return 'Not published';
   }
 
-  /// Whether this status represents an error state
-  bool get isError => !isPublished && !isPublishing && failedAttempts > 0;
+  /// Whether this status represents an error state.
+  bool get isError => !isPublished && !isPublishing && hasFailed;
 }
 
-/// Result of a curation publish operation
+/// Result of a curation publish operation.
+///
+/// Retained for backwards compatibility with callers that only need a
+/// coarse success flag. For per-relay diagnostics and retry affordances,
+/// use the richer `CurationResult` returned by
+/// `CurationService.publishCuration` (carries `PublishOutcome` +
+/// `PublishUserFeedback`).
 class CurationPublishResult {
   const CurationPublishResult({
     required this.success,

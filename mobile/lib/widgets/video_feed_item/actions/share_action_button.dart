@@ -217,24 +217,31 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         :final succeeded,
         :final removed,
         :final wasBookmarkedBeforeToggle,
+        :final feedback,
       ):
         _safePop(context);
-        final snackText = succeeded
-            ? (removed
-                  ? context.l10n.shareRemovedFromBookmarks
-                  : context.l10n.shareAddedToBookmarks)
-            : (wasBookmarkedBeforeToggle
-                  ? context.l10n.shareFailedToRemoveBookmark
-                  : context.l10n.shareFailedToAddBookmark);
-        messenger.showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            snackText,
-            error: !succeeded,
-          ),
-        );
         if (succeeded) {
+          final snackText = removed
+              ? context.l10n.shareRemovedFromBookmarks
+              : context.l10n.shareAddedToBookmarks;
+          messenger.showSnackBar(DivineSnackbarContainer.snackBar(snackText));
           requestProfileSavedVideosSyncIfAvailable(
             widget.inheritedLookupContext,
+          );
+        } else {
+          final retryable = feedback?.retryable ?? false;
+          final shareSheetBloc = context.read<ShareSheetBloc>();
+          messenger.showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              wasBookmarkedBeforeToggle
+                  ? context.l10n.shareFailedToRemoveBookmark
+                  : context.l10n.shareFailedToAddBookmark,
+              error: true,
+              actionLabel: retryable ? context.l10n.commonRetry : null,
+              onActionPressed: retryable
+                  ? () => shareSheetBloc.add(const ShareSheetSaveRequested())
+                  : null,
+            ),
           );
         }
       case ShareSheetClassicVineClipImportResult(:final succeeded):
