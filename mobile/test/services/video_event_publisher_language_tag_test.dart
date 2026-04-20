@@ -48,6 +48,7 @@ void main() {
     registerFallbackValue(_FakeFilter());
     registerFallbackValue(<Filter>[]);
     registerFallbackValue(UploadStatus.pending);
+    registerFallbackValue(const RetryPolicy());
   });
 
   setUp(() {
@@ -127,8 +128,19 @@ void main() {
       return publishedEvent;
     });
 
-    when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-      (_) async => publishedEvent,
+    when(
+      () => mockNostrClient.publishEventWithRetry(
+        any(),
+        policy: any(named: 'policy'),
+        targetRelays: any(named: 'targetRelays'),
+      ),
+    ).thenAnswer(
+      (_) async => PublishOutcome(
+        eventId: publishedEvent.id,
+        acceptedBy: const {'wss://relay.divine.video'},
+        rejectedBy: const {},
+        noResponseFrom: const {},
+      ),
     );
     when(
       () => mockNostrClient.queryEvents(

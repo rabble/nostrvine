@@ -11,6 +11,7 @@ import 'package:nostr_sdk/client_utils/keys.dart' as keys;
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/services/video_event_publisher.dart';
 
 import '../test/helpers/real_integration_test_helper.dart';
 
@@ -246,9 +247,9 @@ void main() {
         print('   Description: ${upload.description}');
         print('   Hashtags: ${upload.hashtags}');
 
-        bool publishSuccess;
+        VideoPublishResult publishResult;
         try {
-          publishSuccess = await videoEventPublisher.publishDirectUpload(
+          publishResult = await videoEventPublisher.publishDirectUpload(
             upload,
           );
         } catch (e, stackTrace) {
@@ -265,17 +266,18 @@ void main() {
           return;
         }
 
-        print('\n✅ Publish result: $publishSuccess');
+        print('\n✅ Publish result: ${publishResult.success}');
 
-        if (!publishSuccess) {
-          print('⚠️  Publishing returned false - checking reason...');
-          print('   This typically means zero relays succeeded');
-          print('   Check logs above for relay-specific errors');
+        if (!publishResult.success) {
+          print('⚠️  Publishing returned failure - checking reason...');
+          print('   outcome=${publishResult.outcome}');
+          print('   feedback=${publishResult.feedback?.messageKey}');
+          print('   error=${publishResult.error}');
         }
 
         // VERIFY PHASE 2: Publishing succeeded
         expect(
-          publishSuccess,
+          publishResult.success,
           isTrue,
           reason: 'Publishing should succeed with valid upload',
         );

@@ -41,6 +41,7 @@ void main() {
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(_FakeVideoEvent());
     registerFallbackValue(UploadStatus.pending);
+    registerFallbackValue(const RetryPolicy());
   });
 
   setUp(() {
@@ -125,8 +126,19 @@ void main() {
 
   void stubPublish(Event event) {
     when(
-      () => mockNostrClient.publishEvent(any()),
-    ).thenAnswer((_) async => event);
+      () => mockNostrClient.publishEventWithRetry(
+        any(),
+        policy: any(named: 'policy'),
+        targetRelays: any(named: 'targetRelays'),
+      ),
+    ).thenAnswer(
+      (_) async => PublishOutcome(
+        eventId: event.id,
+        acceptedBy: const {'wss://relay.divine.video'},
+        rejectedBy: const {},
+        noResponseFrom: const {},
+      ),
+    );
   }
 
   group('VideoEventPublisher direct publish', () {
@@ -139,7 +151,7 @@ void main() {
 
         final result = await publisher.publishDirectUpload(createUpload());
 
-        expect(result, isTrue);
+        expect(result.success, isTrue);
         verify(
           () => mockUploadManager.updateUploadStatus(
             'test-upload-id',
@@ -152,18 +164,31 @@ void main() {
     );
 
     test(
-      'returns false when relay rejects the event on all attempts',
+      'returns failure when relay rejects the event on all attempts',
       () async {
         final signedEvent = createSignedEvent();
         stubSigning(signedEvent);
-        // Relay rejects the event (publishEvent returns null).
+        // publishEventWithRetry now owns retry; stub a fully-failed outcome
+        // (no accepts, all no-response) to model the old "3x loop failed"
+        // case. Ad-hoc retry is gone, so the mock is called exactly once.
         when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: signedEvent.id,
+            acceptedBy: const {},
+            rejectedBy: const {},
+            noResponseFrom: const {'wss://relay.divine.video'},
+          ),
+        );
 
         final result = await publisher.publishDirectUpload(createUpload());
 
-        expect(result, isFalse);
+        expect(result.success, isFalse);
         verifyNever(
           () => mockUploadManager.updateUploadStatus(
             any(),
@@ -188,7 +213,7 @@ void main() {
 
       final result = await publisher.publishDirectUpload(retryUpload);
 
-      expect(result, isTrue);
+      expect(result.success, isTrue);
       verifyNever(
         () => mockAuthService.createAndSignEvent(
           kind: any(named: 'kind'),
@@ -196,7 +221,13 @@ void main() {
           tags: any(named: 'tags'),
         ),
       );
-      verify(() => mockNostrClient.publishEvent(signedEvent)).called(1);
+      verify(
+        () => mockNostrClient.publishEventWithRetry(
+          signedEvent,
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).called(1);
     });
   });
 }

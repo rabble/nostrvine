@@ -40,6 +40,7 @@ void main() {
     registerFallbackValue(UploadStatus.pending);
     registerFallbackValue(_FakeFilter());
     registerFallbackValue(<Filter>[]);
+    registerFallbackValue(const RetryPolicy());
   });
 
   group('VideoEventPublisher - Native ProofMode Integration', () {
@@ -124,10 +125,20 @@ void main() {
       });
 
       // Mock publish to succeed
-      when(() => mockNostrService.publishEvent(any())).thenAnswer((
-        invocation,
-      ) async {
-        return invocation.positionalArguments[0] as Event;
+      when(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments[0] as Event;
+        return PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {'wss://relay.divine.video'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        );
       });
       when(
         () => mockNostrService.queryEvents(
@@ -266,10 +277,20 @@ void main() {
         return Future.value(capturedEvent);
       });
 
-      when(() => mockNostrService.publishEvent(any())).thenAnswer((
-        invocation,
-      ) async {
-        return invocation.positionalArguments[0] as Event;
+      when(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments[0] as Event;
+        return PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {'wss://relay.divine.video'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        );
       });
 
       await publisher.publishDirectUpload(upload);
@@ -333,17 +354,27 @@ void main() {
         return Future.value(capturedEvent);
       });
 
-      when(() => mockNostrService.publishEvent(any())).thenAnswer((
-        invocation,
-      ) async {
-        return invocation.positionalArguments[0] as Event;
+      when(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments[0] as Event;
+        return PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {'wss://relay.divine.video'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        );
       });
 
       final result = await publisher.publishDirectUpload(upload);
       final publishedEvent = capturedEvent;
 
       expect(
-        result,
+        result.success,
         isTrue,
         reason: 'Should publish successfully without ProofMode',
       );
