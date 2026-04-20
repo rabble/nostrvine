@@ -78,29 +78,27 @@ class DeleteResult {
     required String deleteEventId,
     required PublishOutcome outcome,
     required PublishUserFeedback feedback,
-  }) =>
-      DeleteResult(
-        success: true,
-        deleteEventId: deleteEventId,
-        outcome: outcome,
-        feedback: feedback,
-        timestamp: DateTime.now(),
-      );
+  }) => DeleteResult(
+    success: true,
+    deleteEventId: deleteEventId,
+    outcome: outcome,
+    feedback: feedback,
+    timestamp: DateTime.now(),
+  );
 
   static DeleteResult failure({
     required String error,
     DeleteFailureKind? failureKind,
     PublishOutcome? outcome,
     PublishUserFeedback? feedback,
-  }) =>
-      DeleteResult(
-        success: false,
-        error: error,
-        failureKind: failureKind,
-        outcome: outcome,
-        feedback: feedback,
-        timestamp: DateTime.now(),
-      );
+  }) => DeleteResult(
+    success: false,
+    error: error,
+    failureKind: failureKind,
+    outcome: outcome,
+    feedback: feedback,
+    timestamp: DateTime.now(),
+  );
 }
 
 /// Content deletion record for tracking

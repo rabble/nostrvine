@@ -20,6 +20,7 @@ class _FakeEvent extends Fake implements Event {}
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
+    registerFallbackValue(const RetryPolicy());
   });
 
   group('ContentDeletionService', () {
@@ -113,8 +114,19 @@ void main() {
       ).thenAnswer((_) async => deleteEvent);
 
       when(
-        () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => deleteEvent);
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: deleteEvent.id,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
 
       // Act
       final result = await service.deleteContent(
@@ -161,8 +173,19 @@ void main() {
         ).thenAnswer((_) async => deleteEvent);
 
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => deleteEvent);
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: deleteEvent.id,
+            acceptedBy: const {'wss://a'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          ),
+        );
 
         // Act
         await service.deleteContent(video: video, reason: 'Personal choice');
@@ -214,8 +237,19 @@ void main() {
       ).thenAnswer((_) async => deleteEvent);
 
       when(
-        () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => deleteEvent);
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: deleteEvent.id,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
 
       // Act
       await service.deleteContent(video: video, reason: 'Privacy concerns');
@@ -257,7 +291,8 @@ void main() {
     );
 
     test(
-      'deleteContent should still save locally even if broadcast fails',
+      'deleteContent NOT saved locally when every relay fails (contract '
+      'change: durable deletion requires at least one accept)',
       () async {
         // Arrange
         final video = createTestVideoEvent(testPublicKey);
@@ -280,11 +315,24 @@ void main() {
           ),
         ).thenAnswer((_) async => deleteEvent);
 
-        // Even when publishEvent returns null (failure), deletion is saved
-        // locally
+        // Every relay silent → failed outcome. The previous contract
+        // ("save locally even if publish fails") was removed because it
+        // desynced the local deletion history from what was actually
+        // persisted on any relay.
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: deleteEvent.id,
+            acceptedBy: const {},
+            rejectedBy: const {},
+            noResponseFrom: const {'wss://a', 'wss://b'},
+          ),
+        );
 
         // Act
         final result = await service.deleteContent(
@@ -292,9 +340,11 @@ void main() {
           reason: 'Personal choice',
         );
 
-        // Assert - should still succeed locally (deletion saved to history)
-        expect(result.success, isTrue);
-        expect(service.hasBeenDeleted(video.id), isTrue);
+        // Assert - failure surfaced; local history NOT updated.
+        expect(result.success, isFalse);
+        expect(result.failureKind, DeleteFailureKind.publishFailed);
+        expect(result.feedback?.retryable, isTrue);
+        expect(service.hasBeenDeleted(video.id), isFalse);
       },
     );
 
@@ -321,8 +371,19 @@ void main() {
       ).thenAnswer((_) async => deleteEvent);
 
       when(
-        () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => deleteEvent);
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: deleteEvent.id,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
 
       // Act
       final result = await service.quickDelete(
