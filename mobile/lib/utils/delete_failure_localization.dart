@@ -21,6 +21,13 @@ String localizedDeleteFailureMessage(
       return l10n.shareMenuDeleteFailedNotAuthenticated;
     case DeleteFailureKind.couldNotSign:
       return l10n.shareMenuDeleteFailedCouldNotSign;
+    case DeleteFailureKind.publishFailed:
+      // Relay-level failure. A follow-up PR will add dedicated l10n keys
+      // for the three PublishResultMapper variants (no response / permanent
+      // reject / no relays available). For now, fall through to the
+      // generic failure copy — callers still get the Retry action driven
+      // by feedback.retryable when the outcome is transient.
+      return l10n.shareMenuDeleteFailedGeneric;
     case DeleteFailureKind.unknown:
       return l10n.shareMenuDeleteFailedGeneric;
   }

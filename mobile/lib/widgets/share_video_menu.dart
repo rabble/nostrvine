@@ -1833,6 +1833,8 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         reason: DeleteReason.personalChoice,
       );
 
+      if (!mounted) return;
+
       if (result.success) {
         final videoEventService = ref.read(videoEventServiceProvider);
         videoEventService.removeVideoCompletely(widget.video.id);
@@ -1843,31 +1845,34 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
           category: LogCategory.ui,
         );
 
-        if (mounted) {
-          context.pop(); // Close edit dialog
+        context.pop(); // Close edit dialog
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                context.l10n.shareMenuVideoDeletionRequested,
-              ),
-              backgroundColor: VineTheme.vineGreen,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.shareMenuVideoDeletionRequested),
+            backgroundColor: VineTheme.vineGreen,
+          ),
+        );
       } else {
-        if (mounted) {
-          setState(() => _isDeleting = false);
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                localizedDeleteFailureMessage(context, result),
-              ),
-              backgroundColor: VineTheme.error,
-            ),
-          );
-        }
+        // Publish failed — render localized copy plus a Retry action when
+        // the PublishResultMapper tags the outcome as retryable.
+        setState(() => _isDeleting = false);
+        final feedback = result.feedback;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(localizedDeleteFailureMessage(context, result)),
+            backgroundColor: VineTheme.error,
+            action: feedback?.retryable == true
+                ? SnackBarAction(
+                    // Retry label — l10n key will be introduced in a
+                    // follow-up PR that adds retry UX across all migrated
+                    // services. For PR 1 we ship an English fallback.
+                    label: 'Retry',
+                    onPressed: _deleteVideo,
+                  )
+                : null,
+          ),
+        );
       }
     } catch (e) {
       Log.error(
