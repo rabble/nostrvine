@@ -37,3 +37,23 @@ class ConversationMessageDeleted extends ConversationEvent {
   @override
   List<Object?> get props => [rumorId];
 }
+
+/// Retry a previously-failed optimistic message.
+///
+/// The pending id identifies the in-state optimistic row to resend;
+/// the bloc removes the failed entry, emits a fresh `sending` state,
+/// and re-invokes sendMessage.
+class ConversationMessageRetried extends ConversationEvent {
+  const ConversationMessageRetried({
+    required this.pendingId,
+    required this.recipientPubkeys,
+    required this.content,
+  });
+
+  final String pendingId;
+  final List<String> recipientPubkeys;
+  final String content;
+
+  @override
+  List<Object?> get props => [pendingId, recipientPubkeys, content];
+}

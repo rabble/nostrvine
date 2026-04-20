@@ -17,6 +17,24 @@ class _MockNostrSigner extends Mock implements NostrSigner {}
 
 class _FakeEvent extends Fake implements Event {}
 
+PublishOutcome _acceptedOutcome(String eventId) {
+  return PublishOutcome(
+    eventId: eventId,
+    acceptedBy: const {'wss://relay.example'},
+    rejectedBy: const {},
+    noResponseFrom: const {},
+  );
+}
+
+PublishOutcome _rejectedOutcome(String eventId) {
+  return PublishOutcome(
+    eventId: eventId,
+    acceptedBy: const {},
+    rejectedBy: const {},
+    noResponseFrom: const {'wss://relay.example'},
+  );
+}
+
 // Valid 64-character hex keys for testing.
 const _testPrivateKey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -28,11 +46,41 @@ const _recipientPubkey =
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
+    registerFallbackValue(const RetryPolicy());
+    registerFallbackValue(const Duration(seconds: 5));
   });
 
   group(NIP17MessageService, () {
     late NIP17MessageService service;
     late _MockNostrClient mockNostrClient;
+
+    /// Stubs `publishEventWithRetry` (recipient wrap) and
+    /// `publishEventAwaitOk` (self wrap). Callers may override either.
+    void stubPublish({
+      PublishOutcome Function(Event)? recipientOutcome,
+      PublishOutcome Function(Event)? selfOutcome,
+    }) {
+      when(
+        () => mockNostrClient.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments[0] as Event;
+        return recipientOutcome?.call(event) ?? _acceptedOutcome(event.id);
+      });
+      when(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments[0] as Event;
+        return selfOutcome?.call(event) ?? _acceptedOutcome(event.id);
+      });
+    }
 
     setUp(() {
       mockNostrClient = _MockNostrClient();
@@ -50,9 +98,7 @@ void main() {
 
     group('sendPrivateMessage', () {
       test('returns success with gift wrap event details', () async {
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async => invocation.positionalArguments[0] as Event,
-        );
+        stubPublish();
 
         final result = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
@@ -65,21 +111,31 @@ void main() {
         expect(result.recipientPubkey, equals(_recipientPubkey));
         expect(result.error, isNull);
 
-        // At least the recipient gift wrap is published; self-wrap may
-        // silently fail with synthetic test keys.
-        verify(() => mockNostrClient.publishEvent(any())).called(
-          greaterThanOrEqualTo(1),
-        );
+        // At least the recipient gift wrap is published via the retry
+        // path; self-wrap may silently fail (synthetic test keys fail
+        // EC point validation before publishEventAwaitOk is called).
+        verify(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
       });
 
       test('creates gift wrap with kind 1059', () async {
         Event? capturedEvent;
 
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
-          },
-        );
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedEvent = invocation.positionalArguments[0] as Event;
+          return _acceptedOutcome(capturedEvent!.id);
+        });
 
         await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
@@ -93,11 +149,16 @@ void main() {
       test('includes p tag with recipient pubkey', () async {
         Event? capturedEvent;
 
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
-          },
-        );
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedEvent = invocation.positionalArguments[0] as Event;
+          return _acceptedOutcome(capturedEvent!.id);
+        });
 
         await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
@@ -115,13 +176,17 @@ void main() {
       test('uses random ephemeral key for each gift wrap', () async {
         final capturedEvents = <Event>[];
 
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async {
-            final event = invocation.positionalArguments[0] as Event;
-            capturedEvents.add(event);
-            return event;
-          },
-        );
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          final event = invocation.positionalArguments[0] as Event;
+          capturedEvents.add(event);
+          return _acceptedOutcome(event.id);
+        });
 
         await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
@@ -132,10 +197,7 @@ void main() {
           content: 'Message 2',
         );
 
-        // At least 2 recipient gift wraps (self-wraps may silently fail
-        // with synthetic test keys that are not valid EC points).
-        expect(capturedEvents.length, greaterThanOrEqualTo(2));
-        // First two events are the recipient gift wraps for each message.
+        expect(capturedEvents.length, equals(2));
         expect(
           capturedEvents[0].pubkey,
           isNot(equals(capturedEvents[1].pubkey)),
@@ -147,11 +209,16 @@ void main() {
       test('obfuscates timestamp with random offset', () async {
         Event? capturedEvent;
 
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
-          },
-        );
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedEvent = invocation.positionalArguments[0] as Event;
+          return _acceptedOutcome(capturedEvent!.id);
+        });
 
         final beforeSend = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         await service.sendPrivateMessage(
@@ -166,10 +233,18 @@ void main() {
         expect(capturedEvent!.createdAt, lessThan(afterSend));
       });
 
-      test('returns failure when publish returns null', () async {
+      test('returns failure when recipient wrap is not accepted', () async {
         when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (invocation) async => _rejectedOutcome(
+            (invocation.positionalArguments[0] as Event).id,
+          ),
+        );
 
         final result = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
@@ -178,16 +253,23 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.error, contains('publish failed'));
+        expect(result.outcome, isNotNull);
+        expect(result.outcome!.acceptedByAny, isFalse);
       });
 
       test('includes additional tags in the gift wrap', () async {
         Event? capturedEvent;
 
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
-          },
-        );
+        when(
+          () => mockNostrClient.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedEvent = invocation.positionalArguments[0] as Event;
+          return _acceptedOutcome(capturedEvent!.id);
+        });
 
         await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
@@ -202,9 +284,7 @@ void main() {
       });
 
       test('uses provided eventKind for the rumor', () async {
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async => invocation.positionalArguments[0] as Event,
-        );
+        stubPublish();
 
         final result = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
@@ -222,18 +302,24 @@ void main() {
       test(
         'returns success even when self-wrap publish throws',
         () async {
-          var callCount = 0;
-          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-            (invocation) async {
-              callCount++;
-              if (callCount == 1) {
-                // Recipient publish succeeds.
-                return invocation.positionalArguments[0] as Event;
-              }
-              // Self-wrap publish throws — should be non-fatal.
-              throw Exception('self-wrap relay error');
-            },
+          when(
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer(
+            (invocation) async => _acceptedOutcome(
+              (invocation.positionalArguments[0] as Event).id,
+            ),
           );
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenThrow(Exception('self-wrap relay error'));
 
           final result = await service.sendPrivateMessage(
             recipientPubkey: _recipientPubkey,

@@ -120,6 +120,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
               currentPubkey: currentPubkey,
               otherPubkey: otherPubkey,
               displayName: displayName,
+              participantPubkeys: widget.participantPubkeys,
               imageUrl: profile?.picture,
               nip05: profile?.displayNip05,
               onViewProfile: () {
@@ -169,6 +170,7 @@ class _ConversationContent extends StatelessWidget {
     required this.currentPubkey,
     required this.otherPubkey,
     required this.displayName,
+    required this.participantPubkeys,
     this.imageUrl,
     this.nip05,
     this.onViewProfile,
@@ -177,6 +179,7 @@ class _ConversationContent extends StatelessWidget {
   final String currentPubkey;
   final String otherPubkey;
   final String displayName;
+  final List<String> participantPubkeys;
   final String? imageUrl;
   final String? nip05;
   final VoidCallback? onViewProfile;
@@ -186,9 +189,17 @@ class _ConversationContent extends StatelessWidget {
     return BlocSelector<
       ConversationBloc,
       ConversationState,
-      ({ConversationStatus status, List<DmMessage> messages})
+      ({
+        ConversationStatus status,
+        List<DmMessage> messages,
+        Map<String, MessageSendStatus> sendStatuses,
+      })
     >(
-      selector: (state) => (status: state.status, messages: state.messages),
+      selector: (state) => (
+        status: state.status,
+        messages: state.messages,
+        sendStatuses: state.sendStatusByMessageId,
+      ),
       builder: (context, selected) {
         return switch (selected.status) {
           ConversationStatus.initial ||
@@ -213,6 +224,8 @@ class _ConversationContent extends StatelessWidget {
                 : _MessageList(
                     messages: selected.messages,
                     currentPubkey: currentPubkey,
+                    sendStatuses: selected.sendStatuses,
+                    participantPubkeys: participantPubkeys,
                   ),
         };
       },
@@ -221,10 +234,17 @@ class _ConversationContent extends StatelessWidget {
 }
 
 class _MessageList extends StatelessWidget {
-  const _MessageList({required this.messages, required this.currentPubkey});
+  const _MessageList({
+    required this.messages,
+    required this.currentPubkey,
+    required this.sendStatuses,
+    required this.participantPubkeys,
+  });
 
   final List<DmMessage> messages;
   final String currentPubkey;
+  final Map<String, MessageSendStatus> sendStatuses;
+  final List<String> participantPubkeys;
 
   Future<void> _onMessageLongPress(
     BuildContext context,
@@ -292,6 +312,8 @@ class _MessageList extends StatelessWidget {
             index == 0 ||
             messages[index - 1].senderPubkey != message.senderPubkey;
 
+        final sendStatus = sendStatuses[message.id];
+
         return MessageBubble(
           message: message.content,
           timestamp: LocalizedTimeFormatter.formatMessageTime(
@@ -303,6 +325,16 @@ class _MessageList extends StatelessWidget {
           isSent: isSent,
           isFirstInGroup: isFirstInGroup,
           isLastInGroup: isLastInGroup,
+          sendStatus: sendStatus,
+          onRetry: sendStatus == MessageSendStatus.failed
+              ? () => context.read<ConversationBloc>().add(
+                  ConversationMessageRetried(
+                    pendingId: message.id,
+                    recipientPubkeys: participantPubkeys,
+                    content: message.content,
+                  ),
+                )
+              : null,
           onLongPress: () => _onMessageLongPress(context, message, isSent),
         );
       },
