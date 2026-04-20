@@ -6,6 +6,7 @@ import 'package:db_client/db_client.dart' hide Filter;
 import 'package:meta/meta.dart';
 import 'package:nostr_client/src/models/models.dart';
 import 'package:nostr_client/src/relay_manager.dart';
+import 'package:nostr_client/src/retry_policy.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
 
@@ -357,6 +358,42 @@ class NostrClient {
     }
 
     statisticsObserver?.onPublishOutcome(outcome);
+    return outcome;
+  }
+
+  /// Publishes with bounded retry on transient failure. Retries only
+  /// relays in [PublishOutcome.transientRelays] (no-response +
+  /// non-permanent NIP-01 rejections). Stops as soon as any relay
+  /// accepts OR all attempts are exhausted.
+  ///
+  /// The returned outcome is the **last attempt's** outcome so rejection
+  /// reasons that went permanent in a later retry surface correctly.
+  /// [statisticsObserver.onPublishOutcome] fires once per attempt so
+  /// observers can measure per-try latency as well as final result.
+  Future<PublishOutcome> publishEventWithRetry(
+    Event event, {
+    RetryPolicy policy = const RetryPolicy(),
+    List<String>? targetRelays,
+  }) async {
+    var outcome = await publishEventAwaitOk(
+      event,
+      timeout: policy.timeoutPerAttempt,
+      targetRelays: targetRelays,
+    );
+
+    for (var attempt = 1; attempt < policy.maxAttempts; attempt++) {
+      if (outcome.acceptedByAny) return outcome;
+      final retryTargets = outcome.transientRelays;
+      if (retryTargets.isEmpty) return outcome;
+
+      await Future<void>.delayed(policy.delayFor(attempt));
+
+      outcome = await publishEventAwaitOk(
+        event,
+        timeout: policy.timeoutPerAttempt,
+        targetRelays: retryTargets.toList(),
+      );
+    }
     return outcome;
   }
 
