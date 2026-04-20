@@ -16,22 +16,14 @@ void main() {
   });
 
   group('Loop Enforcement Constants', () {
-    test('maxPlaybackDuration is 6.3 seconds', () {
-      expect(maxPlaybackDuration, const Duration(milliseconds: 6300));
-    });
-
-    test('maxPlaybackDuration matches shared FeedPlaybackConstants source', () {
-      expect(maxPlaybackDuration, FeedPlaybackConstants.maxLoopDuration);
+    // Concrete 6.3s value is pinned in feed_playback_constants_test.dart;
+    // this group pins the legacy alias to that shared source.
+    test('maxLoopDuration matches shared FeedPlaybackConstants source', () {
+      expect(maxLoopDuration, FeedPlaybackConstants.maxLoopDuration);
     });
 
     test('loopCheckInterval is 200ms', () {
       expect(loopCheckInterval, const Duration(milliseconds: 200));
-    });
-
-    test('maxPlaybackDuration matches Vine-style loop length', () {
-      // Vine had 6-second loops, we allow 6.3s for slight flexibility
-      expect(maxPlaybackDuration.inSeconds, 6);
-      expect(maxPlaybackDuration.inMilliseconds, 6300);
     });
 
     test('loopCheckInterval provides 5 checks per second', () {
@@ -46,8 +38,8 @@ void main() {
       // Arrange - video is 5 seconds (under limit)
       const videoDuration = Duration(seconds: 5);
 
-      // Assert - duration should be less than maxPlaybackDuration
-      expect(videoDuration < maxPlaybackDuration, isTrue);
+      // Assert - duration should be less than maxLoopDuration
+      expect(videoDuration < maxLoopDuration, isTrue);
       expect(videoDuration.inMilliseconds, lessThan(6300));
     });
 
@@ -55,16 +47,16 @@ void main() {
       // Arrange - video is exactly 6.3 seconds
       const videoDuration = Duration(milliseconds: 6300);
 
-      // Assert - duration should NOT be greater than maxPlaybackDuration
-      expect(videoDuration > maxPlaybackDuration, isFalse);
+      // Assert - duration should NOT be greater than maxLoopDuration
+      expect(videoDuration > maxLoopDuration, isFalse);
     });
 
     test('videos over 6.3s should trigger loop enforcement', () {
       // Arrange - video is 10 seconds (over limit)
       const videoDuration = Duration(seconds: 10);
 
-      // Assert - duration should be greater than maxPlaybackDuration
-      expect(videoDuration > maxPlaybackDuration, isTrue);
+      // Assert - duration should be greater than maxLoopDuration
+      expect(videoDuration > maxLoopDuration, isTrue);
     });
 
     test('position at 6.3s or above triggers seek to zero', () {
@@ -78,7 +70,7 @@ void main() {
 
       for (final position in positionsToLoop) {
         expect(
-          position >= maxPlaybackDuration,
+          position >= maxLoopDuration,
           isTrue,
           reason: 'Position ${position.inMilliseconds}ms should trigger loop',
         );
@@ -97,7 +89,7 @@ void main() {
 
       for (final position in positionsNoLoop) {
         expect(
-          position >= maxPlaybackDuration,
+          position >= maxLoopDuration,
           isFalse,
           reason:
               'Position ${position.inMilliseconds}ms should NOT trigger loop',
@@ -182,7 +174,7 @@ void main() {
       // At 200ms intervals, worst case is video loops at 6.5s instead of 6.3s
       // This is 200ms tolerance which is acceptable for UX
       const maxOvershoot = Duration(milliseconds: 200);
-      final worstCaseLoopPoint = maxPlaybackDuration + maxOvershoot;
+      final worstCaseLoopPoint = maxLoopDuration + maxOvershoot;
 
       // Worst case: 6.5 seconds
       expect(worstCaseLoopPoint.inMilliseconds, 6500);

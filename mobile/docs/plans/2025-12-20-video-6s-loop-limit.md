@@ -29,7 +29,7 @@ Use `Timer.periodic` with 200ms interval to check video position.
 
 ```dart
 /// Maximum playback duration before looping (6.3 seconds)
-const maxPlaybackDuration = Duration(milliseconds: 6300);
+const maxLoopDuration = Duration(milliseconds: 6300);
 
 /// Interval for checking playback position (200ms = 5 checks/sec)
 const loopCheckInterval = Duration(milliseconds: 200);
@@ -48,11 +48,11 @@ controller.setLooping(true);  // Existing line 444
 
 // Start loop enforcement timer for long videos only
 final videoDuration = controller.value.duration;
-if (videoDuration > maxPlaybackDuration) {
+if (videoDuration > maxLoopDuration) {
   loopEnforcementTimer = Timer.periodic(loopCheckInterval, (timer) {
     if (!controller.value.isPlaying) return;
 
-    if (controller.value.position >= maxPlaybackDuration) {
+    if (controller.value.position >= maxLoopDuration) {
       Log.debug(
         '🔄 Loop enforcement: ${params.videoId} at ${controller.value.position.inMilliseconds}ms',
         name: 'LoopEnforcement',

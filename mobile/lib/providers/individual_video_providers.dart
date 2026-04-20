@@ -24,10 +24,10 @@ part 'individual_video_providers.g.dart';
 
 /// Maximum playback duration before looping (6.3 seconds).
 ///
-/// Videos longer than this will loop back to beginning at this mark. See
-/// [FeedPlaybackConstants] for the shared source of truth used by both
-/// the legacy `video_player` path and the pooled player.
-const Duration maxPlaybackDuration = FeedPlaybackConstants.maxLoopDuration;
+/// Videos longer than this loop back to the beginning at this mark. Aliased
+/// to [FeedPlaybackConstants.maxLoopDuration] — the shared source of truth
+/// used by both the legacy `video_player` path here and the pooled player.
+const Duration maxLoopDuration = FeedPlaybackConstants.maxLoopDuration;
 
 /// Interval for checking playback position (200ms = 5 checks/sec).
 /// Balances responsiveness with performance (vs 60 checks/sec for per-frame).
@@ -652,18 +652,18 @@ VideoPlayerController individualVideoController(
         // Start loop enforcement timer for videos longer than 6.3s
         // Short videos use native looping; long videos get enforced loop at 6.3s
         final videoDuration = controller.value.duration;
-        if (videoDuration > maxPlaybackDuration) {
+        if (videoDuration > maxLoopDuration) {
           loopEnforcementTimer = Timer.periodic(loopCheckInterval, (timer) {
             // Skip check if video is paused
             if (!controller.value.isPlaying) return;
 
             // Enforce loop at 6.3s mark
-            if (controller.value.position >= maxPlaybackDuration) {
+            if (controller.value.position >= maxLoopDuration) {
               safeSeekTo(controller, params.videoId, Duration.zero);
             }
           });
           Log.info(
-            '⏱️ Started loop enforcement timer for ${params.videoId} (duration: ${videoDuration.inMilliseconds}ms > ${maxPlaybackDuration.inMilliseconds}ms)',
+            '⏱️ Started loop enforcement timer for ${params.videoId} (duration: ${videoDuration.inMilliseconds}ms > ${maxLoopDuration.inMilliseconds}ms)',
             name: 'LoopEnforcement',
             category: LogCategory.video,
           );
