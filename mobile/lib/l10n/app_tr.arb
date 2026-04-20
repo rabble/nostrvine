@@ -2178,6 +2178,7 @@
   "commonCancel": "İptal",
   "commonDelete": "Sil",
   "commonRetry": "Tekrar dene",
+  "commonNext": "İleri",
   "discoverListsFailedToUpdateSubscription": "Abonelik güncellenemedi: {error}",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {

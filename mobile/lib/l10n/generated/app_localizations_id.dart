@@ -4398,6 +4398,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get commonRetry => 'Coba lagi';
 
   @override
+  String get commonNext => 'Berikutnya';
+
+  @override
   String get commonDelete => 'Hapus';
 
   @override

@@ -4408,6 +4408,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get commonRetry => 'Tekrar dene';
 
   @override
+  String get commonNext => 'İleri';
+
+  @override
   String get commonDelete => 'Sil';
 
   @override

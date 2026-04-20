@@ -2178,6 +2178,7 @@
   "commonCancel": "إلغاء",
   "commonDelete": "حذف",
   "commonRetry": "إعادة المحاولة",
+  "commonNext": "التالي",
   "discoverListsFailedToUpdateSubscription": "فشل تحديث الاشتراك: {error}",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {

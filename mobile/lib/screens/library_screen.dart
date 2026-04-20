@@ -446,7 +446,8 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
                       DivineIconName.caretRight.assetPath,
                     ),
                     onPressed: onNext,
-                    tooltip: 'Next',
+                    tooltip: context.l10n.commonNext,
+                    semanticLabel: context.l10n.commonNext,
                   ),
                 ]
               : const [],

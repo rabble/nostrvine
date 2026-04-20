@@ -4440,6 +4440,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonRetry => 'Opnieuw proberen';
 
   @override
+  String get commonNext => 'Volgende';
+
+  @override
   String get commonDelete => 'Verwijderen';
 
   @override

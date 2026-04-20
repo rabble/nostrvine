@@ -2178,6 +2178,7 @@
   "commonCancel": "Batal",
   "commonDelete": "Hapus",
   "commonRetry": "Coba lagi",
+  "commonNext": "Berikutnya",
   "discoverListsFailedToUpdateSubscription": "Gagal memperbarui langganan: {error}",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {

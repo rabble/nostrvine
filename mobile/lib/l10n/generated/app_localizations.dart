@@ -7880,6 +7880,12 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get commonRetry;
 
+  /// No description provided for @commonNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get commonNext;
+
   /// No description provided for @commonDelete.
   ///
   /// In en, this message translates to:

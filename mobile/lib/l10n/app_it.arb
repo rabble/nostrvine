@@ -2179,6 +2179,7 @@
   "commonCancel": "Annulla",
   "commonDelete": "Elimina",
   "commonRetry": "Riprova",
+  "commonNext": "Avanti",
   "discoverListsFailedToUpdateSubscription": "Impossibile aggiornare l'abbonamento: {error}",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {

@@ -1467,6 +1467,7 @@
   "commonCancel": "취소",
   "commonDelete": "삭제",
   "commonRetry": "다시 시도",
+  "commonNext": "다음",
   "discoverListsFailedToUpdateSubscription": "구독 업데이트에 실패했어요: {error}",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {

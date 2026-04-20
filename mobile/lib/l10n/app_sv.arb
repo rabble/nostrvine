@@ -2179,6 +2179,7 @@
   "commonCancel": "Avbryt",
   "commonDelete": "Radera",
   "commonRetry": "Försök igen",
+  "commonNext": "Nästa",
   "discoverListsFailedToUpdateSubscription": "Kunde inte uppdatera prenumerationen: {error}",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {

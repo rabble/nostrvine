@@ -4483,6 +4483,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonRetry => 'Réessayer';
 
   @override
+  String get commonNext => 'Suivant';
+
+  @override
   String get commonDelete => 'Supprimer';
 
   @override

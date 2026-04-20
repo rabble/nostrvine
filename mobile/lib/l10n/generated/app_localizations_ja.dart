@@ -4232,6 +4232,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonRetry => 'もう一回';
 
   @override
+  String get commonNext => '次へ';
+
+  @override
   String get commonDelete => '削除';
 
   @override

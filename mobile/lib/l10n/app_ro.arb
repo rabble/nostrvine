@@ -2179,6 +2179,7 @@
   "commonCancel": "Anulează",
   "commonDelete": "Șterge",
   "commonRetry": "Reîncearcă",
+  "commonNext": "Următorul",
   "discoverListsFailedToUpdateSubscription": "Nu s-a putut actualiza abonamentul: {error}",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {

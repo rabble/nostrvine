@@ -2179,6 +2179,7 @@
   "commonCancel": "Abbrechen",
   "commonDelete": "Löschen",
   "commonRetry": "Erneut versuchen",
+  "commonNext": "Weiter",
   "discoverListsFailedToUpdateSubscription": "Abo konnte nicht aktualisiert werden: {error}",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {

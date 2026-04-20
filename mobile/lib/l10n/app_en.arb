@@ -2233,6 +2233,7 @@
   },
 
   "commonRetry": "Retry",
+  "commonNext": "Next",
   "commonDelete": "Delete",
   "commonCancel": "Cancel",
 

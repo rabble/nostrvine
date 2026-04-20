@@ -4554,6 +4554,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonRetry => 'Reîncearcă';
 
   @override
+  String get commonNext => 'Următorul';
+
+  @override
   String get commonDelete => 'Șterge';
 
   @override

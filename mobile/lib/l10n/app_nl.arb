@@ -2179,6 +2179,7 @@
   "commonCancel": "Annuleren",
   "commonDelete": "Verwijderen",
   "commonRetry": "Opnieuw proberen",
+  "commonNext": "Volgende",
   "discoverListsFailedToUpdateSubscription": "Abonnement bijwerken mislukt: {error}",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {

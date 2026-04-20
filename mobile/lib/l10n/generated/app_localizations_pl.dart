@@ -4548,6 +4548,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get commonRetry => 'Ponów';
 
   @override
+  String get commonNext => 'Dalej';
+
+  @override
   String get commonDelete => 'Usuń';
 
   @override
