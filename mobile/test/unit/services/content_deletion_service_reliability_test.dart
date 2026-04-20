@@ -58,14 +58,13 @@ void main() {
     });
   });
 
-  VideoEvent _buildUserVideo() {
+  VideoEvent buildUserVideo() {
     return VideoEvent(
       id: 'b' * 64,
       pubkey: testPubkey,
       createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       content: '',
       timestamp: DateTime.now(),
-      hashtags: const [],
       title: 'user video',
     );
   }
@@ -98,7 +97,7 @@ void main() {
         await service.initialize();
 
         final result = await service.deleteContent(
-          video: _buildUserVideo(),
+          video: buildUserVideo(),
           reason: 'test',
         );
 
@@ -138,7 +137,7 @@ void main() {
         await service.initialize();
 
         final result = await service.deleteContent(
-          video: _buildUserVideo(),
+          video: buildUserVideo(),
           reason: 'test',
         );
 
@@ -178,7 +177,7 @@ void main() {
         await service.initialize();
 
         final result = await service.deleteContent(
-          video: _buildUserVideo(),
+          video: buildUserVideo(),
           reason: 'test',
         );
 
