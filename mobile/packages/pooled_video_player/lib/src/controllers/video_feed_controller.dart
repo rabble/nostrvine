@@ -208,14 +208,16 @@ class VideoFeedController extends ChangeNotifier {
   /// [PlaylistMode] controls looping).
   final Duration? maxLoopDuration;
 
-  /// Grace period near the natural end of a video during which the
-  /// [maxLoopDuration] seek is NOT forced.
+  /// Grace margin above [maxLoopDuration] in which no loop enforcement
+  /// is applied, letting the native player wrap the loop itself.
   ///
-  /// When the natural end of the video is within [loopTolerance] of the
-  /// current position, the seek-to-zero enforcement is skipped so the
-  /// player's own loop can wrap cleanly without clipping the final
-  /// frames. This matters for videos that come in just slightly over
-  /// [maxLoopDuration] due to encoder drift.
+  /// A video's natural duration is compared to
+  /// `maxLoopDuration + loopTolerance` at enforcement time. Videos at or
+  /// below that sum skip the forced seek-to-zero entirely so their
+  /// final frames are preserved; videos above it still get the hard
+  /// Vine-style cap. This matters for editor-captured clips that land
+  /// on the cap exactly, and for transcoder output that drifts a few
+  /// hundred milliseconds past it (#1845).
   ///
   /// Defaults to [Duration.zero], which preserves the original hard-cap
   /// behavior. Only takes effect when [maxLoopDuration] is also set.
@@ -1850,20 +1852,23 @@ class VideoFeedController extends ChangeNotifier {
       }
 
       // Loop enforcement: seek back to zero when position exceeds
-      // maxLoopDuration, unless the natural end is within loopTolerance.
-      // Letting the native loop wrap for near-boundary videos avoids
-      // clipping the final frames (divinevideo/divine-mobile#1845).
+      // maxLoopDuration, but only for videos whose natural duration is
+      // materially longer than the cap. Videos inside
+      // `maxLoopDuration + loopTolerance` are short enough that the
+      // native loop wraps cleanly on its own; forcing a seek for them
+      // races end-of-stream and clips the final frames
+      // (divinevideo/divine-mobile#1845).
       if (maxLoopDuration != null &&
           index == _currentIndex &&
           player.state.playing &&
           player.state.position >= maxLoopDuration!) {
         final mediaDuration = player.state.duration;
         final hasKnownDuration = mediaDuration.inMilliseconds > 0;
-        final tailWithinTolerance =
-            hasKnownDuration &&
-            (mediaDuration - player.state.position) <= loopTolerance;
+        final shouldEnforce =
+            !hasKnownDuration ||
+            mediaDuration > maxLoopDuration! + loopTolerance;
 
-        if (!tailWithinTolerance) {
+        if (shouldEnforce) {
           _logDebug(
             'loop_enforcement ${_videoDebugDetails(index)} '
             'positionMs=${player.state.position.inMilliseconds} '

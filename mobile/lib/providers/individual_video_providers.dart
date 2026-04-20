@@ -656,7 +656,10 @@ VideoPlayerController individualVideoController(
         // Start loop enforcement timer for videos materially longer than
         // the cap. Videos inside (maxPlaybackDuration + loopTolerance) fall
         // back to native looping so the final frames aren't clipped
-        // (divinevideo/divine-mobile#1845).
+        // (divinevideo/divine-mobile#1845). Duration is known here because
+        // we just awaited controller.initialize(); an unknown value means
+        // the native player can't loop either, so skipping enforcement is
+        // the safe default.
         final videoDuration = controller.value.duration;
         if (videoDuration > maxPlaybackDuration + loopTolerance) {
           loopEnforcementTimer = Timer.periodic(loopCheckInterval, (timer) {
