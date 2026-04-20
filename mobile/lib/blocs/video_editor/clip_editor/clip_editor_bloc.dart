@@ -30,6 +30,12 @@ typedef SplitExecutor =
 /// back to the provider when the editor closes.
 ///
 /// Supports undo/redo for clip mutations.
+///
+/// **Transition seam**: This BLoC receives its initial clip list from the
+/// Riverpod [ClipManagerProvider] via [ClipEditorInitialized] dispatched in
+/// the widget layer. This is an intentional migration boundary — the target
+/// architecture replaces the Riverpod provider with a [VideoEditorRepository]
+/// injected directly into this BLoC. See the follow-up migration issue.
 class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   ClipEditorBloc({required void Function() this.onFinalClipInvalidated})
     : super(const ClipEditorState()) {

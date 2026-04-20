@@ -251,11 +251,13 @@ class ClipLibraryService {
             category: LogCategory.video,
           );
         }
-      } catch (e) {
-        Log.warning(
+      } catch (e, s) {
+        Log.error(
           '📚 Failed to recover assets for clip ${clip.id}: $e',
           name: 'ClipLibraryService',
           category: LogCategory.video,
+          error: e,
+          stackTrace: s,
         );
       }
     }

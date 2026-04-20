@@ -406,7 +406,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     );
 
     result = result.copyWith(
-      id: '${result.id}-${DateTime.now()}',
+      id: '${result.id}-${DateTime.now().millisecondsSinceEpoch}',
       startTime: .zero,
       endTime: endTime,
     );

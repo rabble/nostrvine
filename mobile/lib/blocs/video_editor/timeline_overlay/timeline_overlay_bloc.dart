@@ -21,6 +21,12 @@ part 'timeline_overlay_state.dart';
 /// Each item lives in a typed strip and can be repositioned in time
 /// (horizontal) and in z-order / row (vertical). Rows are created
 /// dynamically when items are dragged beyond existing rows.
+///
+/// **Transition seam**: Waveform extraction is currently triggered from the
+/// widget layer (which calls into [ProVideoEditor] and dispatches
+/// [TimelineOverlayWaveformLoaded]). The target architecture moves this
+/// I/O behind an injected service so the BLoC owns the full lifecycle.
+/// See the follow-up migration issue.
 class TimelineOverlayBloc
     extends Bloc<TimelineOverlayEvent, TimelineOverlayState> {
   TimelineOverlayBloc() : super(const TimelineOverlayState()) {
