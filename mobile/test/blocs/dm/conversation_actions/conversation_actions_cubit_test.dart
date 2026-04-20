@@ -75,7 +75,7 @@ void main() {
               details: 'Reported from DM conversation',
             ),
           ).thenAnswer(
-            (_) async => ReportResult.createSuccess('report-id'),
+            (_) async => ReportResult.createSuccess(reportId: 'report-id'),
           );
         },
         build: createCubit,
@@ -150,7 +150,7 @@ void main() {
               pubkey,
               ourPubkey: currentUserPubkey,
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => BlocklistResult.success_());
         },
         build: createCubit,
         act: (cubit) => cubit.blockUser(pubkey),
@@ -202,7 +202,7 @@ void main() {
         setUp: () {
           when(
             () => mockBlocklistService.unblockUser(pubkey),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => BlocklistResult.success_());
         },
         build: createCubit,
         act: (cubit) => cubit.unblockUser(pubkey),

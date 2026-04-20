@@ -110,6 +110,62 @@ class MuteItem {
   int get hashCode => Object.hash(type, value);
 }
 
+/// Result of a mute/unmute/clear operation.
+///
+/// Carries the per-relay [PublishOutcome] and the mapped
+/// [PublishUserFeedback] so callers can drive localized snackbars and
+/// retry affordances. Success requires [outcome.acceptedByAny] — the
+/// service does NOT commit the in-memory mute set until at least one
+/// relay has acknowledged the updated list. This closes the
+/// silent-divergence bug where a failed publish left the device believing
+/// a pubkey was muted but no relay stored the change.
+class MuteResult {
+  const MuteResult({
+    required this.success,
+    required this.timestamp,
+    this.outcome,
+    this.feedback,
+    this.error,
+  });
+
+  final bool success;
+  final DateTime timestamp;
+
+  /// Per-relay outcome for the publish. `null` only when the request
+  /// never reached the publish stage (e.g. not authenticated, sign
+  /// failure).
+  final PublishOutcome? outcome;
+
+  /// User-facing feedback mapped via [PublishResultMapper]. `null` for
+  /// pre-publish failures; always populated when [outcome] is populated.
+  final PublishUserFeedback? feedback;
+
+  /// Human-readable error for pre-publish failures (not relay failures).
+  final String? error;
+
+  static MuteResult success_({
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+  }) => MuteResult(
+    success: true,
+    outcome: outcome,
+    feedback: feedback,
+    timestamp: DateTime.now(),
+  );
+
+  static MuteResult failure({
+    String? error,
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+  }) => MuteResult(
+    success: false,
+    error: error,
+    outcome: outcome,
+    feedback: feedback,
+    timestamp: DateTime.now(),
+  );
+}
+
 /// Service for managing NIP-51 mute lists
 class MuteService {
   MuteService({
@@ -177,7 +233,7 @@ class MuteService {
   // === MUTE MANAGEMENT ===
 
   /// Mute a user by pubkey
-  Future<bool> muteUser(
+  Future<MuteResult> muteUser(
     String pubkey, {
     String? reason,
     Duration? duration,
@@ -186,7 +242,7 @@ class MuteService {
   }
 
   /// Mute a hashtag
-  Future<bool> muteHashtag(
+  Future<MuteResult> muteHashtag(
     String hashtag, {
     String? reason,
     Duration? duration,
@@ -204,7 +260,7 @@ class MuteService {
   }
 
   /// Mute a keyword or phrase
-  Future<bool> muteKeyword(
+  Future<MuteResult> muteKeyword(
     String keyword, {
     String? reason,
     Duration? duration,
@@ -218,7 +274,7 @@ class MuteService {
   }
 
   /// Mute an entire thread by event ID
-  Future<bool> muteThread(
+  Future<MuteResult> muteThread(
     String eventId, {
     String? reason,
     Duration? duration,
@@ -231,8 +287,13 @@ class MuteService {
     );
   }
 
-  /// Generic method to mute any type of item
-  Future<bool> muteItem(
+  /// Generic method to mute any type of item.
+  ///
+  /// Contract: the in-memory mute set is NOT committed until the relay
+  /// has accepted the updated kind 10000 list. This prevents
+  /// silent-divergence where the UI thinks a pubkey is muted but on the
+  /// next device sign-in the user sees the unmuted content.
+  Future<MuteResult> muteItem(
     MuteType type,
     String value, {
     String? reason,
@@ -241,7 +302,7 @@ class MuteService {
     try {
       final expireAt = duration != null ? DateTime.now().add(duration) : null;
 
-      final muteItem = MuteItem(
+      final newItem = MuteItem(
         type: type,
         value: value,
         reason: reason,
@@ -249,66 +310,128 @@ class MuteService {
         expireAt: expireAt,
       );
 
-      // Check if already muted
-      if (_mutedItems.contains(muteItem)) {
+      // Check if already muted — no-op success.
+      if (_mutedItems.contains(newItem)) {
         Log.debug(
           'Item already muted: $value',
           name: 'MuteService',
           category: LogCategory.system,
         );
-        return true;
+        return MuteResult.success_();
       }
 
-      _mutedItems.add(muteItem);
+      // Compute the proposed mute list locally but do NOT commit until
+      // the relay accepts.
+      final proposed = List<MuteItem>.from(_mutedItems)..add(newItem);
+
+      if (!_authService.isAuthenticated) {
+        Log.warning(
+          'Cannot mute item: user not authenticated',
+          name: 'MuteService',
+          category: LogCategory.system,
+        );
+        return MuteResult.failure(error: 'Not authenticated');
+      }
+
+      final publish = await _publishMuteListToNostr(proposed);
+      if (publish.outcome == null) {
+        return MuteResult.failure(error: publish.error);
+      }
+
+      final feedback = PublishResultMapper.map(publish.outcome!);
+      if (!publish.outcome!.acceptedByAny) {
+        // Rollback — no state change since we never committed.
+        Log.warning(
+          'Mute publish rejected by every relay: ${publish.outcome}',
+          name: 'MuteService',
+          category: LogCategory.system,
+        );
+        return MuteResult.failure(
+          outcome: publish.outcome,
+          feedback: feedback,
+        );
+      }
+
+      // Commit to memory and disk only after relay acceptance.
+      _mutedItems.add(newItem);
       await _saveMutedItems();
 
-      // Publish to Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishMuteListToNostr();
-      }
-
       Log.info(
-        'Muted ${type.value}: $value${duration != null ? ' (expires in ${duration.inHours}h)' : ' (permanent)'}',
+        'Muted ${type.value}: $value'
+        '${duration != null ? ' (expires in ${duration.inHours}h)' : ' (permanent)'}',
         name: 'MuteService',
         category: LogCategory.system,
       );
 
-      return true;
+      return MuteResult.success_(
+        outcome: publish.outcome,
+        feedback: feedback,
+      );
     } catch (e) {
       Log.error(
         'Failed to mute item: $e',
         name: 'MuteService',
         category: LogCategory.system,
       );
-      return false;
+      return MuteResult.failure(error: 'Failed to mute item: $e');
     }
   }
 
-  /// Unmute an item
-  Future<bool> unmuteItem(MuteType type, String value) async {
+  /// Unmute an item.
+  ///
+  /// Contract: the in-memory mute set stays unchanged until the relay
+  /// accepts the new list. If publish fails, the item stays muted so
+  /// the user isn't silently exposed to content they thought they
+  /// unmuted.
+  Future<MuteResult> unmuteItem(MuteType type, String value) async {
     try {
-      final muteItem = MuteItem(
+      final target = MuteItem(
         type: type,
         value: value,
         createdAt: DateTime.now(), // Doesn't matter for equality check
       );
 
-      final removed = _mutedItems.remove(muteItem);
-      if (!removed) {
+      if (!_mutedItems.contains(target)) {
         Log.warning(
           'Item not found in mute list: $value',
           name: 'MuteService',
           category: LogCategory.system,
         );
-        return false;
+        return MuteResult.failure(error: 'Item not found in mute list');
       }
 
+      // Proposed list excludes the target.
+      final proposed = _mutedItems.where((i) => i != target).toList();
+
+      if (!_authService.isAuthenticated) {
+        Log.warning(
+          'Cannot unmute item: user not authenticated',
+          name: 'MuteService',
+          category: LogCategory.system,
+        );
+        return MuteResult.failure(error: 'Not authenticated');
+      }
+
+      final publish = await _publishMuteListToNostr(proposed);
+      if (publish.outcome == null) {
+        return MuteResult.failure(error: publish.error);
+      }
+
+      final feedback = PublishResultMapper.map(publish.outcome!);
+      if (!publish.outcome!.acceptedByAny) {
+        Log.warning(
+          'Unmute publish rejected by every relay: ${publish.outcome}',
+          name: 'MuteService',
+          category: LogCategory.system,
+        );
+        return MuteResult.failure(
+          outcome: publish.outcome,
+          feedback: feedback,
+        );
+      }
+
+      _mutedItems.remove(target);
       await _saveMutedItems();
-
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishMuteListToNostr();
-      }
 
       Log.info(
         'Unmuted ${type.value}: $value',
@@ -316,24 +439,27 @@ class MuteService {
         category: LogCategory.system,
       );
 
-      return true;
+      return MuteResult.success_(
+        outcome: publish.outcome,
+        feedback: feedback,
+      );
     } catch (e) {
       Log.error(
         'Failed to unmute item: $e',
         name: 'MuteService',
         category: LogCategory.system,
       );
-      return false;
+      return MuteResult.failure(error: 'Failed to unmute item: $e');
     }
   }
 
   /// Unmute a user
-  Future<bool> unmuteUser(String pubkey) async {
+  Future<MuteResult> unmuteUser(String pubkey) async {
     return unmuteItem(MuteType.user, pubkey);
   }
 
   /// Unmute a hashtag
-  Future<bool> unmuteHashtag(String hashtag) async {
+  Future<MuteResult> unmuteHashtag(String hashtag) async {
     final normalizedHashtag = hashtag.startsWith('#')
         ? hashtag.substring(1).toLowerCase()
         : hashtag.toLowerCase();
@@ -341,12 +467,12 @@ class MuteService {
   }
 
   /// Unmute a keyword
-  Future<bool> unmuteKeyword(String keyword) async {
+  Future<MuteResult> unmuteKeyword(String keyword) async {
     return unmuteItem(MuteType.keyword, keyword.toLowerCase());
   }
 
   /// Unmute a thread
-  Future<bool> unmuteThread(String eventId) async {
+  Future<MuteResult> unmuteThread(String eventId) async {
     return unmuteItem(MuteType.thread, eventId);
   }
 
@@ -425,41 +551,55 @@ class MuteService {
 
   // === BULK OPERATIONS ===
 
-  /// Import mute list from another platform or backup
-  Future<bool> importMuteList(List<MuteItem> items) async {
+  /// Import mute list from another platform or backup.
+  ///
+  /// Commits to memory only when the relay accepts the merged list.
+  Future<MuteResult> importMuteList(List<MuteItem> items) async {
     try {
-      var importedCount = 0;
-
-      for (final item in items) {
-        if (!_mutedItems.contains(item)) {
-          _mutedItems.add(item);
-          importedCount++;
-        }
+      final newItems = items.where((i) => !_mutedItems.contains(i)).toList();
+      if (newItems.isEmpty) {
+        return MuteResult.success_();
       }
 
-      if (importedCount > 0) {
-        await _saveMutedItems();
+      final proposed = List<MuteItem>.from(_mutedItems)..addAll(newItems);
 
-        // Publish to Nostr if authenticated
-        if (_authService.isAuthenticated) {
-          await _publishMuteListToNostr();
-        }
+      if (!_authService.isAuthenticated) {
+        return MuteResult.failure(error: 'Not authenticated');
       }
+
+      final publish = await _publishMuteListToNostr(proposed);
+      if (publish.outcome == null) {
+        return MuteResult.failure(error: publish.error);
+      }
+
+      final feedback = PublishResultMapper.map(publish.outcome!);
+      if (!publish.outcome!.acceptedByAny) {
+        return MuteResult.failure(
+          outcome: publish.outcome,
+          feedback: feedback,
+        );
+      }
+
+      _mutedItems.addAll(newItems);
+      await _saveMutedItems();
 
       Log.info(
-        'Imported $importedCount new muted items',
+        'Imported ${newItems.length} new muted items',
         name: 'MuteService',
         category: LogCategory.system,
       );
 
-      return true;
+      return MuteResult.success_(
+        outcome: publish.outcome,
+        feedback: feedback,
+      );
     } catch (e) {
       Log.error(
         'Failed to import mute list: $e',
         name: 'MuteService',
         category: LogCategory.system,
       );
-      return false;
+      return MuteResult.failure(error: 'Failed to import mute list: $e');
     }
   }
 
@@ -468,16 +608,34 @@ class MuteService {
     return List.from(mutedItems);
   }
 
-  /// Clear all mutes
-  Future<bool> clearAllMutes() async {
+  /// Clear all mutes.
+  ///
+  /// Commits to memory only when the relay accepts the empty list.
+  Future<MuteResult> clearAllMutes() async {
     try {
+      if (_mutedItems.isEmpty) {
+        return MuteResult.success_();
+      }
+
+      if (!_authService.isAuthenticated) {
+        return MuteResult.failure(error: 'Not authenticated');
+      }
+
+      final publish = await _publishMuteListToNostr(const <MuteItem>[]);
+      if (publish.outcome == null) {
+        return MuteResult.failure(error: publish.error);
+      }
+
+      final feedback = PublishResultMapper.map(publish.outcome!);
+      if (!publish.outcome!.acceptedByAny) {
+        return MuteResult.failure(
+          outcome: publish.outcome,
+          feedback: feedback,
+        );
+      }
+
       _mutedItems.clear();
       await _saveMutedItems();
-
-      // Update on Nostr if authenticated
-      if (_authService.isAuthenticated) {
-        await _publishMuteListToNostr();
-      }
 
       Log.info(
         'Cleared all muted items',
@@ -485,29 +643,36 @@ class MuteService {
         category: LogCategory.system,
       );
 
-      return true;
+      return MuteResult.success_(
+        outcome: publish.outcome,
+        feedback: feedback,
+      );
     } catch (e) {
       Log.error(
         'Failed to clear mute list: $e',
         name: 'MuteService',
         category: LogCategory.system,
       );
-      return false;
+      return MuteResult.failure(error: 'Failed to clear mute list: $e');
     }
   }
 
   // === NOSTR PUBLISHING ===
 
-  /// Publish mute list to Nostr as NIP-51 kind 10000 event
-  Future<void> _publishMuteListToNostr() async {
+  /// Publish the [proposed] mute list to Nostr as a NIP-51 kind 10000
+  /// event using [NostrClient.publishEventWithRetry].
+  ///
+  /// Returns a [_PublishAttempt] wrapper exposing either the
+  /// [PublishOutcome] (on a successful publish attempt) or an [error]
+  /// string (pre-publish failure — signing, not authenticated, etc.).
+  ///
+  /// Only non-expired permanent items are included in the kind 10000 tags.
+  Future<_PublishAttempt> _publishMuteListToNostr(
+    List<MuteItem> proposed,
+  ) async {
     try {
       if (!_authService.isAuthenticated) {
-        Log.warning(
-          'Cannot publish mute list - user not authenticated',
-          name: 'MuteService',
-          category: LogCategory.system,
-        );
-        return;
+        return const _PublishAttempt.error('not_authenticated');
       }
 
       // Create NIP-51 kind 10000 tags
@@ -516,7 +681,9 @@ class MuteService {
       ];
 
       // Add muted items as tags (only non-expired, permanent mutes for Nostr)
-      for (final item in mutedItems.where((item) => item.isPermanent)) {
+      for (final item in proposed.where(
+        (item) => item.isPermanent && !item.isExpired,
+      )) {
         tags.add(item.toTag());
       }
 
@@ -526,22 +693,24 @@ class MuteService {
         tags: tags,
       );
 
-      if (event != null) {
-        final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent != null) {
-          Log.debug(
-            'Published mute list to Nostr: ${event.id}',
-            name: 'MuteService',
-            category: LogCategory.system,
-          );
-        }
+      if (event == null) {
+        return const _PublishAttempt.error('sign_failed');
       }
+
+      final outcome = await _nostrService.publishEventWithRetry(event);
+      Log.debug(
+        'Mute list publish outcome: $outcome',
+        name: 'MuteService',
+        category: LogCategory.system,
+      );
+      return _PublishAttempt.outcome(outcome);
     } catch (e) {
       Log.error(
         'Failed to publish mute list to Nostr: $e',
         name: 'MuteService',
         category: LogCategory.system,
       );
+      return _PublishAttempt.error('Failed to publish mute list: $e');
     }
   }
 
@@ -625,4 +794,16 @@ class MuteService {
       );
     }
   }
+}
+
+/// Internal wrapper for the result of a mute list publish attempt.
+///
+/// Either holds a [PublishOutcome] (reached the relay round-trip) or a
+/// pre-publish [error] string (signing failed, not authenticated, etc.).
+class _PublishAttempt {
+  const _PublishAttempt.outcome(PublishOutcome this.outcome) : error = null;
+  const _PublishAttempt.error(String this.error) : outcome = null;
+
+  final PublishOutcome? outcome;
+  final String? error;
 }

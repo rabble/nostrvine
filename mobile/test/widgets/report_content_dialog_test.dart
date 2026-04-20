@@ -78,7 +78,9 @@ void main() {
         additionalContext: any(named: 'additionalContext'),
         hashtags: any(named: 'hashtags'),
       ),
-    ).thenAnswer((_) async => ReportResult.createSuccess('test_report_id'));
+    ).thenAnswer(
+      (_) async => ReportResult.createSuccess(reportId: 'test_report_id'),
+    );
 
     when(
       () => mockMuteService.muteUser(
@@ -86,7 +88,7 @@ void main() {
         reason: any(named: 'reason'),
         duration: any(named: 'duration'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => MuteResult.success_());
   });
 
   group('$ReportContentDialog rendering', () {
@@ -452,7 +454,9 @@ void main() {
         );
         expect(hasDisabledReportButton, isTrue);
 
-        completer.complete(ReportResult.createSuccess('test_report_id'));
+        completer.complete(
+          ReportResult.createSuccess(reportId: 'test_report_id'),
+        );
         await tester.pumpAndSettle();
       },
     );

@@ -2038,7 +2038,9 @@ void main() {
               reason: any(named: 'reason'),
               details: any(named: 'details'),
             ),
-          ).thenAnswer((_) async => ReportResult.createSuccess('report-id'));
+          ).thenAnswer(
+            (_) async => ReportResult.createSuccess(reportId: 'report-id'),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(
@@ -2097,7 +2099,7 @@ void main() {
         setUp: () {
           when(
             () => mockContentBlocklistService.blockUser(any()),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => BlocklistResult.success_());
           when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
         },
         build: createBloc,

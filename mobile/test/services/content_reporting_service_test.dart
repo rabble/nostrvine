@@ -18,9 +18,18 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _FakeEvent extends Fake implements Event {}
 
+/// Builds a success [PublishOutcome] for stubbing publishEventWithRetry.
+PublishOutcome _successOutcome(String eventId) => PublishOutcome(
+  eventId: eventId,
+  acceptedBy: const {'wss://relay.divine.video'},
+  rejectedBy: const {},
+  noResponseFrom: const {},
+);
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
+    registerFallbackValue(const RetryPolicy());
   });
 
   group('ContentReportingService', () {
@@ -143,11 +152,12 @@ void main() {
         ).thenAnswer((_) async => reportEvent);
 
         when(
-          () => mockNostrService.publishEvent(
+          () => mockNostrService.publishEventWithRetry(
             any(),
+            policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => reportEvent);
+        ).thenAnswer((_) async => _successOutcome(reportEvent.id));
 
         // Act
         final result = await service.reportContent(
@@ -172,8 +182,9 @@ void main() {
 
         // Verify Nostr event was published to moderation relay
         verify(
-          () => mockNostrService.publishEvent(
+          () => mockNostrService.publishEventWithRetry(
             any(),
+            policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
@@ -199,11 +210,12 @@ void main() {
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        () => mockNostrService.publishEvent(
+        () => mockNostrService.publishEventWithRetry(
           any(),
+          policy: any(named: 'policy'),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => _successOutcome(reportEvent.id));
 
       const reasons = ContentFilterReason.values;
 
@@ -253,11 +265,12 @@ void main() {
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        () => mockNostrService.publishEvent(
+        () => mockNostrService.publishEventWithRetry(
           any(),
+          policy: any(named: 'policy'),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => _successOutcome(reportEvent.id));
 
       // Act - This should not throw an exception due to missing switch case
       final result = await service.reportContent(
@@ -272,48 +285,59 @@ void main() {
       expect(result.error, isNull);
     });
 
-    test('reportContent() handles broadcast failures gracefully', () async {
-      // Arrange
-      final reportEvent = createTestEvent(
-        pubkey: testPublicKey,
-        kind: 1984,
-        tags: [],
-        content: 'Spam content',
-      );
+    test(
+      'reportContent() fails when every relay rejects (NO history commit)',
+      () async {
+        // Contract change (PR 4 moderation reliability): the legacy
+        // behavior was to save report history even if the broadcast failed.
+        // That was a silent bug — the UI showed "Report submitted" while
+        // the moderation relay never saw the kind 1984. History now
+        // commits only after the relay accepts.
+        final reportEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: [],
+          content: 'Spam content',
+        );
 
-      when(
-        () => mockAuthService.createAndSignEvent(
-          kind: any(named: 'kind'),
-          content: any(named: 'content'),
-          tags: any(named: 'tags'),
-        ),
-      ).thenAnswer((_) async => reportEvent);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => reportEvent);
 
-      // Mock failed publish - returns null on failure
-      when(
-        () => mockNostrService.publishEvent(
-          any(),
-          targetRelays: any(named: 'targetRelays'),
-        ),
-      ).thenAnswer((_) async => null);
+        when(
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: reportEvent.id,
+            acceptedBy: const {},
+            rejectedBy: const {},
+            noResponseFrom: const {'wss://relay.divine.video'},
+          ),
+        );
 
-      // Act
-      final result = await service.reportContent(
-        eventId: 'event_123',
-        authorPubkey: 'author_456',
-        reason: ContentFilterReason.spam,
-        details: 'Spam content',
-      );
+        final result = await service.reportContent(
+          eventId: 'event_123',
+          authorPubkey: 'author_456',
+          reason: ContentFilterReason.spam,
+          details: 'Spam content',
+        );
 
-      // Assert - Service is resilient: saves report locally even if broadcast
-      // fails
-      expect(result.success, true);
-      expect(result.error, isNull);
-      expect(result.reportId, isNotNull);
-
-      // Verify report was saved to local history
-      expect(service.reportHistory, isNotEmpty);
-    });
+        expect(result.success, isFalse);
+        expect(result.feedback?.retryable, isTrue);
+        // Report ID is carried even on failure so the caller can correlate
+        // retries with the original attempt.
+        expect(result.reportId, isNotNull);
+        expect(service.reportHistory, isEmpty);
+      },
+    );
 
     test('reportContent() stores report in history on success', () async {
       // Arrange
@@ -333,11 +357,12 @@ void main() {
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        () => mockNostrService.publishEvent(
+        () => mockNostrService.publishEventWithRetry(
           any(),
+          policy: any(named: 'policy'),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => _successOutcome(reportEvent.id));
 
       // Act
       await service.reportContent(
@@ -404,8 +429,9 @@ void main() {
 
         // Verify publishEvent was NOT called
         verifyNever(
-          () => mockNostrService.publishEvent(
+          () => mockNostrService.publishEventWithRetry(
             any(),
+            policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
         );
@@ -461,11 +487,12 @@ void main() {
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        () => mockNostrService.publishEvent(
+        () => mockNostrService.publishEventWithRetry(
           any(),
+          policy: any(named: 'policy'),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => _successOutcome(reportEvent.id));
 
       await service.reportContent(
         eventId: 'evt_1',
@@ -507,17 +534,18 @@ void main() {
       });
 
       when(
-        () => mockNostrService.publishEvent(
+        () => mockNostrService.publishEventWithRetry(
           any(),
+          policy: any(named: 'policy'),
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => Event(
-          testPublicKey,
-          EventKind.report,
-          [],
-          '',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        (_) async => PublishOutcome(
+          eventId:
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
         ),
       );
 
@@ -586,17 +614,18 @@ void main() {
         });
 
         when(
-          () => mockNostrService.publishEvent(
+          () => mockNostrService.publishEventWithRetry(
             any(),
+            policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer(
-          (_) async => Event(
-            testPublicKey,
-            EventKind.report,
-            [],
-            '',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          (_) async => PublishOutcome(
+            eventId:
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            acceptedBy: const {'wss://a'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
           ),
         );
 
@@ -664,11 +693,12 @@ void main() {
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        () => mockNostrService.publishEvent(
+        () => mockNostrService.publishEventWithRetry(
           any(),
+          policy: any(named: 'policy'),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => _successOutcome(reportEvent.id));
 
       // Now reportContent should work
       final result = await service.reportContent(

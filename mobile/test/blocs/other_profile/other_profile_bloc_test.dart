@@ -528,7 +528,7 @@ void main() {
             any(),
             ourPubkey: any(named: 'ourPubkey'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => BlocklistResult.success_());
       });
 
       blocTest<OtherProfileBloc, OtherProfileState>(
@@ -599,7 +599,7 @@ void main() {
       setUp(() {
         when(
           () => mockBlocklistService.unblockUser(any()),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => BlocklistResult.success_());
       });
 
       blocTest<OtherProfileBloc, OtherProfileState>(

@@ -19,6 +19,59 @@ const _blockedUsersPrefsKey = 'blocked_users_list';
 /// SharedPreferences key for severed followers (follow broken by block)
 const _severedFollowersPrefsKey = 'severed_followers_list';
 
+/// Result of a block/unblock operation.
+///
+/// Contract: [success] requires [outcome.acceptedByAny]. The service
+/// does NOT commit the runtime blocklist until at least one relay has
+/// acknowledged the updated kind 30000 event. This prevents the
+/// silent-divergence bug where the device thought a pubkey was blocked
+/// but on reinstall/account-switch the relay had no record.
+class BlocklistResult {
+  const BlocklistResult({
+    required this.success,
+    required this.timestamp,
+    this.outcome,
+    this.feedback,
+    this.error,
+  });
+
+  final bool success;
+  final DateTime timestamp;
+
+  /// Per-relay outcome. `null` for pre-publish failures (not
+  /// authenticated, self-block attempt, sign failure).
+  final PublishOutcome? outcome;
+
+  /// User-facing feedback mapped via [PublishResultMapper]. `null` for
+  /// pre-publish failures.
+  final PublishUserFeedback? feedback;
+
+  /// Human-readable error for pre-publish failures.
+  final String? error;
+
+  static BlocklistResult success_({
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+  }) => BlocklistResult(
+    success: true,
+    outcome: outcome,
+    feedback: feedback,
+    timestamp: DateTime.now(),
+  );
+
+  static BlocklistResult failure({
+    String? error,
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+  }) => BlocklistResult(
+    success: false,
+    error: error,
+    outcome: outcome,
+    feedback: feedback,
+    timestamp: DateTime.now(),
+  );
+}
+
 /// Service for managing content blocklist
 ///
 /// This service maintains an internal blocklist of npubs whose content
@@ -196,8 +249,30 @@ class ContentBlocklistService {
     }
   }
 
-  /// Publish our block list to Nostr as kind 30000 with d=block
-  Future<void> _publishBlockListToNostr() async {
+  /// Attach Nostr services without starting a subscription.
+  ///
+  /// Exposed for tests and for eager setup where the caller wants to
+  /// publish block events before kicking off [syncBlockListsInBackground].
+  /// Safe to call multiple times; the latest services win.
+  Future<void> attachNostrServices({
+    required NostrClient nostrClient,
+    required AuthService authService,
+    required String ourPubkey,
+  }) async {
+    _nostrClient = nostrClient;
+    _authService = authService;
+    _ourPubkey = ourPubkey;
+  }
+
+  /// Publish the [proposedBlocklist] to Nostr as kind 30000 with d=block.
+  ///
+  /// Uses [NostrClient.publishEventWithRetry] so a single transient relay
+  /// failure won't leave the list unsynced. Returns a [_PublishAttempt]
+  /// wrapping either the relay [PublishOutcome] or a pre-publish error
+  /// string (not authenticated, sign failure, services not attached).
+  Future<_PublishAttempt> _publishBlockListToNostr(
+    Set<String> proposedBlocklist,
+  ) async {
     final authService = _authService;
     final nostrClient = _nostrClient;
 
@@ -207,16 +282,11 @@ class ContentBlocklistService {
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
-      return;
+      return const _PublishAttempt.error('services_not_attached');
     }
 
     if (!authService.isAuthenticated) {
-      Log.warning(
-        'Cannot publish block list - user not authenticated',
-        name: 'ContentBlocklistService',
-        category: LogCategory.system,
-      );
-      return;
+      return const _PublishAttempt.error('not_authenticated');
     }
 
     try {
@@ -226,7 +296,7 @@ class ContentBlocklistService {
         ['client', 'diVine'],
       ];
 
-      for (final pubkey in _runtimeBlocklist) {
+      for (final pubkey in proposedBlocklist) {
         tags.add(['p', pubkey]);
       }
 
@@ -236,29 +306,24 @@ class ContentBlocklistService {
         tags: tags,
       );
 
-      if (event != null) {
-        final sentEvent = await nostrClient.publishEvent(event);
-
-        if (sentEvent != null) {
-          Log.info(
-            'Published block list to Nostr with ${_runtimeBlocklist.length} entries',
-            name: 'ContentBlocklistService',
-            category: LogCategory.system,
-          );
-        } else {
-          Log.warning(
-            'Failed to publish block list event to relays',
-            name: 'ContentBlocklistService',
-            category: LogCategory.system,
-          );
-        }
+      if (event == null) {
+        return const _PublishAttempt.error('sign_failed');
       }
+
+      final outcome = await nostrClient.publishEventWithRetry(event);
+      Log.debug(
+        'Block list publish outcome: $outcome',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+      return _PublishAttempt.outcome(outcome);
     } catch (e) {
       Log.error(
         'Error publishing block list to Nostr: $e',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
+      return _PublishAttempt.error('Failed to publish block list: $e');
     }
   }
 
@@ -296,13 +361,20 @@ class ContentBlocklistService {
   /// users who have blocked us, and prevent following them.
   bool hasBlockedUs(String pubkey) => _blockedByOthers.contains(pubkey);
 
-  /// Add a public key to the runtime blocklist
+  /// Add a public key to the runtime blocklist.
   ///
-  /// Persists to SharedPreferences and publishes to Nostr (kind 30000).
-  /// Awaits the local write so the block survives an immediate app kill.
-  /// If [ourPubkey] is provided, it will be used to prevent self-blocking.
-  /// Otherwise falls back to [_ourPubkey] set during [syncMuteListsInBackground].
-  Future<void> blockUser(String pubkey, {String? ourPubkey}) async {
+  /// Contract: the runtime blocklist is NOT committed until the kind 30000
+  /// event is accepted by at least one relay. This prevents the
+  /// silent-divergence bug where the device thought a pubkey was blocked
+  /// but no relay had the updated list. On failure the blocklist and
+  /// severed-follower tracking both roll back.
+  ///
+  /// If [ourPubkey] is provided, it prevents self-blocking; otherwise
+  /// falls back to [_ourPubkey] set during [syncMuteListsInBackground].
+  Future<BlocklistResult> blockUser(
+    String pubkey, {
+    String? ourPubkey,
+  }) async {
     // Guard: Prevent blocking self
     final selfPubkey = ourPubkey ?? _ourPubkey;
     if (selfPubkey != null && pubkey == selfPubkey) {
@@ -311,54 +383,143 @@ class ContentBlocklistService {
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
-      return;
+      return BlocklistResult.failure(error: 'Cannot block yourself');
     }
 
-    if (!_runtimeBlocklist.contains(pubkey)) {
-      _runtimeBlocklist.add(pubkey);
-      await _saveBlockedUsers();
-      _notifyChanged();
-      await _publishBlockListToNostr();
+    if (_runtimeBlocklist.contains(pubkey)) {
+      // Already blocked — no-op success, no relay call.
+      return BlocklistResult.success_();
+    }
 
-      Log.debug(
-        'Added user to blocklist: $pubkey',
+    // Degraded mode: Nostr services not yet attached (e.g. first launch
+    // before sign-in wiring). Persist locally so the user's block takes
+    // effect in-session; the relay sync will reconcile when services
+    // attach. This preserves the pre-PR-4 behavior only for this
+    // unauthenticated path — once Nostr is available we gate strictly on
+    // relay acceptance.
+    if (_authService == null || _nostrClient == null) {
+      return _commitLocalBlock(pubkey);
+    }
+
+    final proposed = {..._runtimeBlocklist, pubkey};
+    final publish = await _publishBlockListToNostr(proposed);
+    if (publish.outcome == null) {
+      return BlocklistResult.failure(error: publish.error);
+    }
+
+    final feedback = PublishResultMapper.map(publish.outcome!);
+    if (!publish.outcome!.acceptedByAny) {
+      Log.warning(
+        'Block publish rejected by every relay: ${publish.outcome}',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
+      return BlocklistResult.failure(
+        outcome: publish.outcome,
+        feedback: feedback,
+      );
     }
 
-    // Track as severed follower so they stay hidden from our followers
-    // list even after unblocking (until they explicitly re-follow).
+    // Commit locally only after relay acceptance.
+    await _commitLocalBlock(pubkey);
+    return BlocklistResult.success_(
+      outcome: publish.outcome,
+      feedback: feedback,
+    );
+  }
+
+  /// Persist a block locally and notify listeners.
+  ///
+  /// Shared between the relay-accepted path and the degraded pre-attach
+  /// mode. Returns a bare [BlocklistResult.success_] with no outcome —
+  /// the relay-accepted path layers its own feedback on top.
+  Future<BlocklistResult> _commitLocalBlock(String pubkey) async {
+    _runtimeBlocklist.add(pubkey);
+    await _saveBlockedUsers();
+
     if (!_severedFollowers.contains(pubkey)) {
       _severedFollowers.add(pubkey);
       await _saveSeveredFollowers();
     }
+    _notifyChanged();
+
+    Log.debug(
+      'Added user to blocklist: $pubkey',
+      name: 'ContentBlocklistService',
+      category: LogCategory.system,
+    );
+
+    return BlocklistResult.success_();
   }
 
-  /// Remove a public key from the runtime blocklist
+  /// Remove a public key from the runtime blocklist.
   ///
-  /// Persists to SharedPreferences and publishes updated list to Nostr.
-  /// Awaits the local write so the change survives an immediate app kill.
+  /// Contract mirrors [blockUser]: the runtime blocklist stays unchanged
+  /// until the updated kind 30000 event is accepted. On relay failure the
+  /// pubkey stays blocked so the user isn't silently exposed to content
+  /// they thought they unblocked.
+  ///
   /// Note: Cannot remove users from internal blocklist.
-  Future<void> unblockUser(String pubkey) async {
-    if (_runtimeBlocklist.contains(pubkey)) {
-      _runtimeBlocklist.remove(pubkey);
-      await _saveBlockedUsers();
-      _notifyChanged();
-      await _publishBlockListToNostr();
+  Future<BlocklistResult> unblockUser(String pubkey) async {
+    if (!_runtimeBlocklist.contains(pubkey)) {
+      if (_internalBlocklist.contains(pubkey)) {
+        Log.warning(
+          'Cannot unblock user from internal blocklist: $pubkey',
+          name: 'ContentBlocklistService',
+          category: LogCategory.system,
+        );
+        return BlocklistResult.failure(
+          error: 'Cannot unblock user from internal blocklist',
+        );
+      }
+      // Already unblocked — no-op success.
+      return BlocklistResult.success_();
+    }
 
-      Log.info(
-        'Removed user from blocklist: $pubkey',
+    // Degraded mode: see [blockUser] — mirror the unauthenticated path.
+    if (_authService == null || _nostrClient == null) {
+      return _commitLocalUnblock(pubkey);
+    }
+
+    final proposed = _runtimeBlocklist.where((p) => p != pubkey).toSet();
+    final publish = await _publishBlockListToNostr(proposed);
+    if (publish.outcome == null) {
+      return BlocklistResult.failure(error: publish.error);
+    }
+
+    final feedback = PublishResultMapper.map(publish.outcome!);
+    if (!publish.outcome!.acceptedByAny) {
+      Log.warning(
+        'Unblock publish rejected by every relay: ${publish.outcome}',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
-    } else if (_internalBlocklist.contains(pubkey)) {
-      Log.warning(
-        'Cannot unblock user from internal blocklist: $pubkey',
-        name: 'ContentBlocklistService',
-        category: LogCategory.system,
+      return BlocklistResult.failure(
+        outcome: publish.outcome,
+        feedback: feedback,
       );
     }
+
+    await _commitLocalUnblock(pubkey);
+    return BlocklistResult.success_(
+      outcome: publish.outcome,
+      feedback: feedback,
+    );
+  }
+
+  /// Mirror of [_commitLocalBlock] for unblocks.
+  Future<BlocklistResult> _commitLocalUnblock(String pubkey) async {
+    _runtimeBlocklist.remove(pubkey);
+    await _saveBlockedUsers();
+    _notifyChanged();
+
+    Log.info(
+      'Removed user from blocklist: $pubkey',
+      name: 'ContentBlocklistService',
+      category: LogCategory.system,
+    );
+
+    return BlocklistResult.success_();
   }
 
   /// Get all blocked public keys (for debugging)
@@ -710,4 +871,17 @@ class ContentBlocklistService {
     _mutualMuteSubscriptionId = null;
     _blockListSyncStarted = false;
   }
+}
+
+/// Internal wrapper for the result of a block list publish attempt.
+///
+/// Either holds a [PublishOutcome] (reached the relay round-trip) or a
+/// pre-publish [error] string (services not attached, not authenticated,
+/// sign failure).
+class _PublishAttempt {
+  const _PublishAttempt.outcome(PublishOutcome this.outcome) : error = null;
+  const _PublishAttempt.error(String this.error) : outcome = null;
+
+  final PublishOutcome? outcome;
+  final String? error;
 }

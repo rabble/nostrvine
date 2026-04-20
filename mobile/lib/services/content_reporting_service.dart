@@ -12,28 +12,66 @@ import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Report submission result
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+/// Report submission result.
+///
+/// Carries the per-relay [PublishOutcome] and mapped [PublishUserFeedback]
+/// so the UI can drive retry affordances for transient failures and show
+/// accurate confirmation only when the moderation relay actually accepted
+/// the kind 1984 event. Contract: [success] requires
+/// [PublishOutcome.acceptedByAny].
 class ReportResult {
   const ReportResult({
     required this.success,
     required this.timestamp,
     this.error,
     this.reportId,
+    this.outcome,
+    this.feedback,
   });
   final bool success;
+
+  /// Pre-publish failure reason. `null` for relay-level failures —
+  /// consult [feedback] instead.
   final String? error;
+
+  /// Stable report ID populated on success; may also be present on relay
+  /// failures to let the UI correlate retries with the original attempt.
   final String? reportId;
   final DateTime timestamp;
 
-  static ReportResult createSuccess(String reportId) => ReportResult(
+  /// Per-relay outcome. `null` for pre-publish failures (not initialized,
+  /// not authenticated, sign failure).
+  final PublishOutcome? outcome;
+
+  /// User-facing feedback mapped via [PublishResultMapper]. `null` for
+  /// pre-publish failures.
+  final PublishUserFeedback? feedback;
+
+  static ReportResult createSuccess({
+    required String reportId,
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+  }) => ReportResult(
     success: true,
     reportId: reportId,
+    outcome: outcome,
+    feedback: feedback,
     timestamp: DateTime.now(),
   );
 
-  static ReportResult failure(String error) =>
-      ReportResult(success: false, error: error, timestamp: DateTime.now());
+  static ReportResult failure(
+    String error, {
+    String? reportId,
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+  }) => ReportResult(
+    success: false,
+    error: error,
+    reportId: reportId,
+    outcome: outcome,
+    feedback: feedback,
+    timestamp: DateTime.now(),
+  );
 }
 
 /// Content report data
@@ -140,7 +178,19 @@ class ContentReportingService {
     }
   }
 
-  /// Report content for violation
+  /// Report content for violation.
+  ///
+  /// Publishes a NIP-56 kind 1984 event to the moderation relay using
+  /// [NostrClient.publishEventWithRetry]. Contract: local report history
+  /// is committed only after at least one relay has accepted the event.
+  /// The old behavior "save locally even if publish fails" was a silent
+  /// bug: the UI showed "Report submitted" while the moderation pipeline
+  /// never saw the event.
+  ///
+  /// On relay-level failure the returned [ReportResult] carries both the
+  /// [PublishOutcome] and mapped [PublishUserFeedback] so the UI can
+  /// render a localized message plus a retry affordance for transient
+  /// failures.
   Future<ReportResult> reportContent({
     required String eventId,
     required String authorPubkey,
@@ -176,26 +226,40 @@ class ContentReportingService {
         return ReportResult.failure('Failed to create report event');
       }
 
-      final sentEvent = await _nostrService.publishEvent(
+      // Reports target the moderation relay only — preserve through retry.
+      // 10 s per attempt trims the default 15 s: reports are user-facing so
+      // we want feedback sooner when the moderation relay is unreachable.
+      final outcome = await _nostrService.publishEventWithRetry(
         reportEvent,
-        targetRelays: [moderationRelayUrl],
+        policy: const RetryPolicy(
+          timeoutPerAttempt: Duration(seconds: 10),
+        ),
+        targetRelays: const [moderationRelayUrl],
       );
-      if (sentEvent == null) {
+      final feedback = PublishResultMapper.map(outcome);
+
+      if (!outcome.acceptedByAny) {
         Log.error(
-          'Failed to publish report to relays',
+          'Report rejected by every relay: $outcome',
           name: 'ContentReportingService',
           category: LogCategory.system,
         );
-        // Still save locally even if publish fails
-      } else {
-        Log.info(
-          'Report published to relays',
-          name: 'ContentReportingService',
-          category: LogCategory.system,
+        return ReportResult.failure(
+          'Failed to publish report',
+          reportId: reportId,
+          outcome: outcome,
+          feedback: feedback,
         );
       }
 
-      // Create Zendesk ticket silently for moderation tracking
+      Log.info(
+        'Report accepted by ${outcome.acceptedBy.length} relay(s)',
+        name: 'ContentReportingService',
+        category: LogCategory.system,
+      );
+
+      // Create Zendesk ticket silently for moderation tracking. This is
+      // a supplementary channel — failure does not affect the outcome.
       await _createZendeskTicket(
         reportId: reportId,
         eventId: eventId,
@@ -205,7 +269,7 @@ class ContentReportingService {
         additionalContext: additionalContext,
       );
 
-      // Save report to local history
+      // Commit to local history only after relay acceptance.
       final report = ContentReport(
         reportId: reportId,
         eventId: eventId,
@@ -225,7 +289,11 @@ class ContentReportingService {
         name: 'ContentReportingService',
         category: LogCategory.system,
       );
-      return ReportResult.createSuccess(reportId);
+      return ReportResult.createSuccess(
+        reportId: reportId,
+        outcome: outcome,
+        feedback: feedback,
+      );
     } catch (e) {
       Log.error(
         'Failed to submit content report: $e',
