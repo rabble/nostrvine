@@ -23,6 +23,9 @@ const String _memberAlice =
 const String _memberBob =
     'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
+final DateTime _frozenNow = DateTime.utc(2026, 4, 20, 12);
+DateTime _fixedClock() => _frozenNow;
+
 UserList _buildList({
   required String id,
   required String name,
@@ -30,13 +33,12 @@ UserList _buildList({
   DateTime? createdAt,
   DateTime? updatedAt,
 }) {
-  final now = DateTime.utc(2026, 4, 20, 12);
   return UserList(
     id: id,
     name: name,
     pubkeys: pubkeys,
-    createdAt: createdAt ?? now,
-    updatedAt: updatedAt ?? now,
+    createdAt: createdAt ?? _frozenNow,
+    updatedAt: updatedAt ?? _frozenNow,
   );
 }
 
@@ -85,6 +87,7 @@ void main() {
         repository: repository,
         ownerPubkeyStream: ownerPubkeyController.stream,
         initialOwnerPubkey: initialOwnerPubkey,
+        clock: _fixedClock,
       );
     }
 
@@ -160,6 +163,37 @@ void main() {
         expect(bloc.state.listIdsByPubkey, isEmpty);
         expect(bloc.state.pendingMutations, isEmpty);
         verify(() => repository.syncOwner(ownerPubkey: _ownerB)).called(1);
+      },
+    );
+
+    blocTest<PeopleListsBloc, PeopleListsState>(
+      'resets to empty state when owner pubkey becomes null',
+      build: buildBloc,
+      seed: () => PeopleListsState(
+        status: PeopleListsStatus.ready,
+        ownerPubkey: _ownerA,
+        lists: [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice],
+          ),
+        ],
+        listIdsByPubkey: const {
+          _memberAlice: {'list-1'},
+        },
+      ),
+      act: (bloc) async {
+        bloc.add(const PeopleListsStarted());
+        await _flush();
+        ownerPubkeyController.add(null);
+        await _flush();
+      },
+      verify: (bloc) {
+        expect(bloc.state, equals(const PeopleListsState()));
+        verifyNever(
+          () => repository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
+        );
       },
     );
 
@@ -505,5 +539,200 @@ void main() {
       },
       expect: () => const <PeopleListsState>[],
     );
+
+    blocTest<PeopleListsBloc, PeopleListsState>(
+      'toggle adds when member is absent and removes when present',
+      build: buildBloc,
+      setUp: () {
+        when(
+          () => repository.addPubkey(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+            pubkey: _memberBob,
+          ),
+        ).thenAnswer(
+          (_) async => const PeopleListPublishResult.submitted(
+            eventId:
+                '6666666666666666666666666666666666666666666666666666666666666666',
+          ),
+        );
+        when(
+          () => repository.removePubkey(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+            pubkey: _memberBob,
+          ),
+        ).thenAnswer(
+          (_) async => const PeopleListPublishResult.submitted(
+            eventId:
+                '7777777777777777777777777777777777777777777777777777777777777777',
+          ),
+        );
+      },
+      seed: () => PeopleListsState(
+        status: PeopleListsStatus.ready,
+        ownerPubkey: _ownerA,
+        lists: [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice],
+          ),
+        ],
+        listIdsByPubkey: const {
+          _memberAlice: {'list-1'},
+        },
+      ),
+      act: (bloc) async {
+        // First toggle: Bob is absent → should add.
+        bloc.add(
+          const PeopleListsPubkeyToggleRequested(
+            listId: 'list-1',
+            pubkey: _memberBob,
+          ),
+        );
+        await _flush();
+        // Second toggle: Bob is now present → should remove.
+        bloc.add(
+          const PeopleListsPubkeyToggleRequested(
+            listId: 'list-1',
+            pubkey: _memberBob,
+          ),
+        );
+        await _flush();
+      },
+      verify: (bloc) {
+        verify(
+          () => repository.addPubkey(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+            pubkey: _memberBob,
+          ),
+        ).called(1);
+        verify(
+          () => repository.removePubkey(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+            pubkey: _memberBob,
+          ),
+        ).called(1);
+        // Net result: Bob is absent again.
+        expect(
+          bloc.state.listIdsByPubkey.containsKey(_memberBob),
+          isFalse,
+        );
+      },
+    );
+
+    blocTest<PeopleListsBloc, PeopleListsState>(
+      'recovers from sticky failure once pending mutations drain',
+      build: buildBloc,
+      setUp: () {
+        when(
+          () => repository.addPubkey(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+            pubkey: _memberBob,
+          ),
+        ).thenThrow(StateError('relay down'));
+        when(
+          () => repository.removePubkey(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+            pubkey: _memberAlice,
+          ),
+        ).thenAnswer(
+          (_) async => const PeopleListPublishResult.submitted(
+            eventId:
+                '8888888888888888888888888888888888888888888888888888888888888888',
+          ),
+        );
+      },
+      seed: () => PeopleListsState(
+        status: PeopleListsStatus.ready,
+        ownerPubkey: _ownerA,
+        lists: [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice],
+          ),
+        ],
+        listIdsByPubkey: const {
+          _memberAlice: {'list-1'},
+        },
+      ),
+      errors: () => [isA<StateError>()],
+      act: (bloc) async {
+        // First mutation fails → failure status.
+        bloc.add(
+          const PeopleListsPubkeyAddRequested(
+            listId: 'list-1',
+            pubkey: _memberBob,
+          ),
+        );
+        await _flush();
+        // Subsequent successful mutation should reset status back to ready.
+        bloc.add(
+          const PeopleListsPubkeyRemoveRequested(
+            listId: 'list-1',
+            pubkey: _memberAlice,
+          ),
+        );
+        await _flush();
+      },
+      verify: (bloc) {
+        expect(bloc.state.status, equals(PeopleListsStatus.ready));
+        expect(bloc.state.pendingMutations, isEmpty);
+      },
+    );
+
+    blocTest<PeopleListsBloc, PeopleListsState>(
+      'close cancels owner and repository subscriptions',
+      build: buildBloc,
+      act: (bloc) async {
+        bloc.add(const PeopleListsStarted());
+        await _flush();
+        ownerPubkeyController.add(_ownerA);
+        await _flush();
+        await bloc.close();
+        // Post-close events must not be observed by the closed bloc; if
+        // subscriptions leaked, adding events here would throw because
+        // the bloc's internal event controller is closed.
+        ownerPubkeyController.add(_ownerB);
+        ownerAListsController.add(const []);
+        await _flush();
+      },
+      verify: (bloc) {
+        expect(ownerPubkeyController.hasListener, isFalse);
+        expect(ownerAListsController.hasListener, isFalse);
+      },
+    );
+
+    test('owner change cancels previous repository subscription', () async {
+      final bloc = buildBloc();
+      addTearDown(bloc.close);
+
+      bloc.add(const PeopleListsStarted());
+      await _flush();
+
+      ownerPubkeyController.add(_ownerA);
+      for (var i = 0; i < 5; i++) {
+        await _flush();
+      }
+      expect(
+        ownerAListsController.hasListener,
+        isTrue,
+        reason: 'owner A stream should have been subscribed',
+      );
+
+      ownerPubkeyController.add(_ownerB);
+      for (var i = 0; i < 5; i++) {
+        await _flush();
+      }
+
+      expect(ownerAListsController.hasListener, isFalse);
+      expect(ownerBListsController.hasListener, isTrue);
+    });
   });
 }

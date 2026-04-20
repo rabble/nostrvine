@@ -17,7 +17,8 @@ enum PeopleListsStatus {
   /// A mutation is in flight.
   submitting,
 
-  /// A recent operation failed.
+  /// A recent operation failed. The bloc recovers to [ready] once all
+  /// pending mutations drain.
   failure,
 }
 
@@ -27,9 +28,9 @@ enum PeopleListsStatus {
 /// from pubkey → list IDs for O(1) membership checks, and in-flight
 /// [PeopleListsMutation] records so the UI can render optimistic changes.
 ///
-/// The [errorMessage] field is intentionally an opaque code, never a
-/// user-facing string — actual error reporting flows through `addError`
-/// per the project's state-management rules.
+/// Per `rules/state_management.md`, no error text or exception objects are
+/// stored here. Errors are reported via `addError` on the bloc and surfaced
+/// through [PeopleListsStatus.failure]; translated strings live in the UI.
 class PeopleListsState extends Equatable {
   /// Creates a new state value.
   const PeopleListsState({
@@ -39,7 +40,6 @@ class PeopleListsState extends Equatable {
     this.listIdsByPubkey = const {},
     this.pendingMutations = const {},
     this.lastSubmittedEventId,
-    this.errorMessage,
   });
 
   /// Current status of the bloc.
@@ -64,10 +64,6 @@ class PeopleListsState extends Equatable {
   /// relay socket — not relay `OK` confirmation.
   final String? lastSubmittedEventId;
 
-  /// Opaque error code for the most recent failure. Not a user-facing
-  /// string — see [addError] in [PeopleListsBloc] for error reporting.
-  final String? errorMessage;
-
   /// Creates a copy with updated fields.
   PeopleListsState copyWith({
     PeopleListsStatus? status,
@@ -78,8 +74,6 @@ class PeopleListsState extends Equatable {
     Map<String, PeopleListsMutation>? pendingMutations,
     String? lastSubmittedEventId,
     bool clearLastSubmittedEventId = false,
-    String? errorMessage,
-    bool clearErrorMessage = false,
   }) {
     return PeopleListsState(
       status: status ?? this.status,
@@ -90,9 +84,6 @@ class PeopleListsState extends Equatable {
       lastSubmittedEventId: clearLastSubmittedEventId
           ? null
           : (lastSubmittedEventId ?? this.lastSubmittedEventId),
-      errorMessage: clearErrorMessage
-          ? null
-          : (errorMessage ?? this.errorMessage),
     );
   }
 
@@ -104,6 +95,5 @@ class PeopleListsState extends Equatable {
     listIdsByPubkey,
     pendingMutations,
     lastSubmittedEventId,
-    errorMessage,
   ];
 }

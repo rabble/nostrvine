@@ -1686,9 +1686,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             BlocProvider(
               create: (_) {
                 final authService = ref.read(authServiceProvider);
-                final ownerPubkeyStream = authService.authStateStream.map(
-                  (_) => authService.currentPublicKeyHex,
-                );
+                final ownerPubkeyStream = authService.authStateStream
+                    .map((_) => authService.currentPublicKeyHex)
+                    .distinct();
                 return PeopleListsBloc(
                   repository: ref.read(peopleListsRepositoryProvider),
                   ownerPubkeyStream: ownerPubkeyStream,

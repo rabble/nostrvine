@@ -13,18 +13,33 @@ part 'people_lists_event.dart';
 part 'people_lists_mutation.dart';
 part 'people_lists_state.dart';
 
+/// Signature for a clock used by [PeopleListsBloc] to stamp optimistic
+/// `updatedAt` values and mutation ids. Injected via the constructor so
+/// tests can supply a deterministic clock.
+typedef PeopleListsClock = DateTime Function();
+
 /// Global, auth-scoped BLoC that owns the authenticated user's people
 /// lists.
 ///
 /// The bloc subscribes to [PeopleListsRepository.watchLists] for the
-/// currently authenticated owner, rebuilds the [PeopleListsState.listIdsByPubkey]
-/// reverse index whenever the snapshot changes, and applies optimistic
-/// updates for user-initiated mutations before the repository returns.
+/// currently authenticated owner, rebuilds the
+/// [PeopleListsState.listIdsByPubkey] reverse index whenever the snapshot
+/// changes, and applies optimistic updates for user-initiated mutations
+/// before the repository returns.
 ///
 /// It depends only on the repository and an owner-pubkey stream — it does
 /// not import other BLoCs. Owner transitions cancel the prior
 /// subscription, clear pending mutations, and start a new subscription
 /// plus an out-of-band sync.
+///
+/// ## Failure recovery contract
+///
+/// A mutation that throws transitions [PeopleListsState.status] to
+/// [PeopleListsStatus.failure] and reports the error via `addError`. The
+/// status automatically recovers to [PeopleListsStatus.ready] once all
+/// pending mutations drain without a fresh failure, so the UI does not
+/// stay stuck on `failure` when subsequent mutations succeed or the
+/// repository stream never re-emits.
 class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   /// Creates a new bloc instance.
   ///
@@ -32,12 +47,18 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   /// full hex pubkey of the current owner when authenticated. The caller
   /// typically adapts an auth service's state stream into this shape so
   /// the bloc has no Flutter or Riverpod dependency.
+  ///
+  /// [clock] stamps optimistic `updatedAt` values and mutation ids.
+  /// Defaults to [DateTime.now] in UTC. Tests inject a fixed clock for
+  /// determinism.
   PeopleListsBloc({
     required PeopleListsRepository repository,
     required Stream<String?> ownerPubkeyStream,
     String? initialOwnerPubkey,
+    PeopleListsClock? clock,
   }) : _repository = repository,
        _ownerPubkeyStream = ownerPubkeyStream,
+       _clock = clock ?? _defaultClock,
        super(
          PeopleListsState(ownerPubkey: initialOwnerPubkey),
        ) {
@@ -66,13 +87,14 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     );
   }
 
+  static DateTime _defaultClock() => DateTime.now().toUtc();
+
   final PeopleListsRepository _repository;
   final Stream<String?> _ownerPubkeyStream;
+  final PeopleListsClock _clock;
 
   StreamSubscription<String?>? _ownerSubscription;
   StreamSubscription<List<UserList>>? _listsSubscription;
-
-  int _mutationCounter = 0;
 
   @override
   Future<void> close() async {
@@ -178,7 +200,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       return;
     }
 
-    final mutation = _registerMutation(
+    final mutation = _buildMutation(
       PeopleListsMutationKind.createList,
     );
     emit(_withMutation(state, mutation, status: PeopleListsStatus.submitting));
@@ -196,13 +218,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(
-        _withoutMutation(
-          state,
-          mutation.id,
-          failed: true,
-        ),
-      );
+      emit(_withoutMutation(state, mutation.id, failed: true));
     }
   }
 
@@ -215,7 +231,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       return;
     }
 
-    final mutation = _registerMutation(
+    final mutation = _buildMutation(
       PeopleListsMutationKind.deleteList,
       listId: event.listId,
     );
@@ -253,28 +269,82 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     PeopleListsPubkeyAddRequested event,
     Emitter<PeopleListsState> emit,
   ) async {
+    await _performAdd(
+      listId: event.listId,
+      pubkey: event.pubkey,
+      emit: emit,
+    );
+  }
+
+  Future<void> _onPubkeyRemoveRequested(
+    PeopleListsPubkeyRemoveRequested event,
+    Emitter<PeopleListsState> emit,
+  ) async {
+    await _performRemove(
+      listId: event.listId,
+      pubkey: event.pubkey,
+      emit: emit,
+    );
+  }
+
+  Future<void> _onPubkeyToggleRequested(
+    PeopleListsPubkeyToggleRequested event,
+    Emitter<PeopleListsState> emit,
+  ) async {
+    final currentMembers =
+        state.listIdsByPubkey[event.pubkey] ?? const <String>{};
+    final alreadyMember = currentMembers.contains(event.listId);
+
+    // Run the shared add/remove helpers inline. The handler is
+    // registered with `sequential()`, so a rapid double-tap is serialized
+    // and each invocation reads the up-to-date state instead of
+    // re-dispatching a stale action.
+    if (alreadyMember) {
+      await _performRemove(
+        listId: event.listId,
+        pubkey: event.pubkey,
+        emit: emit,
+      );
+    } else {
+      await _performAdd(
+        listId: event.listId,
+        pubkey: event.pubkey,
+        emit: emit,
+      );
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Shared add/remove implementation
+  // --------------------------------------------------------------------------
+
+  Future<void> _performAdd({
+    required String listId,
+    required String pubkey,
+    required Emitter<PeopleListsState> emit,
+  }) async {
     final owner = state.ownerPubkey;
     if (owner == null || owner.isEmpty) {
       return;
     }
 
     // No-op when the pubkey is already a member.
-    final currentMembers =
-        state.listIdsByPubkey[event.pubkey] ?? const <String>{};
-    if (currentMembers.contains(event.listId)) {
+    final currentMembers = state.listIdsByPubkey[pubkey] ?? const <String>{};
+    if (currentMembers.contains(listId)) {
       return;
     }
 
-    final mutation = _registerMutation(
+    final mutation = _buildMutation(
       PeopleListsMutationKind.addPubkey,
-      listId: event.listId,
-      pubkey: event.pubkey,
+      listId: listId,
+      pubkey: pubkey,
     );
 
     final optimisticLists = _applyOptimisticAdd(
       state.lists,
-      listId: event.listId,
-      pubkey: event.pubkey,
+      listId: listId,
+      pubkey: pubkey,
+      now: _clock(),
     );
     emit(
       _withMutation(
@@ -290,8 +360,8 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     try {
       final result = await _repository.addPubkey(
         ownerPubkey: owner,
-        listId: event.listId,
-        pubkey: event.pubkey,
+        listId: listId,
+        pubkey: pubkey,
       );
       emit(
         _withoutMutation(state, mutation.id, resultEventId: result.eventId),
@@ -302,32 +372,33 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     }
   }
 
-  Future<void> _onPubkeyRemoveRequested(
-    PeopleListsPubkeyRemoveRequested event,
-    Emitter<PeopleListsState> emit,
-  ) async {
+  Future<void> _performRemove({
+    required String listId,
+    required String pubkey,
+    required Emitter<PeopleListsState> emit,
+  }) async {
     final owner = state.ownerPubkey;
     if (owner == null || owner.isEmpty) {
       return;
     }
 
     // No-op when the pubkey is not a member.
-    final currentMembers =
-        state.listIdsByPubkey[event.pubkey] ?? const <String>{};
-    if (!currentMembers.contains(event.listId)) {
+    final currentMembers = state.listIdsByPubkey[pubkey] ?? const <String>{};
+    if (!currentMembers.contains(listId)) {
       return;
     }
 
-    final mutation = _registerMutation(
+    final mutation = _buildMutation(
       PeopleListsMutationKind.removePubkey,
-      listId: event.listId,
-      pubkey: event.pubkey,
+      listId: listId,
+      pubkey: pubkey,
     );
 
     final optimisticLists = _applyOptimisticRemove(
       state.lists,
-      listId: event.listId,
-      pubkey: event.pubkey,
+      listId: listId,
+      pubkey: pubkey,
+      now: _clock(),
     );
     emit(
       _withMutation(
@@ -343,8 +414,8 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     try {
       final result = await _repository.removePubkey(
         ownerPubkey: owner,
-        listId: event.listId,
-        pubkey: event.pubkey,
+        listId: listId,
+        pubkey: pubkey,
       );
       emit(
         _withoutMutation(state, mutation.id, resultEventId: result.eventId),
@@ -355,41 +426,27 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     }
   }
 
-  Future<void> _onPubkeyToggleRequested(
-    PeopleListsPubkeyToggleRequested event,
-    Emitter<PeopleListsState> emit,
-  ) async {
-    final currentMembers =
-        state.listIdsByPubkey[event.pubkey] ?? const <String>{};
-    if (currentMembers.contains(event.listId)) {
-      add(
-        PeopleListsPubkeyRemoveRequested(
-          listId: event.listId,
-          pubkey: event.pubkey,
-        ),
-      );
-    } else {
-      add(
-        PeopleListsPubkeyAddRequested(
-          listId: event.listId,
-          pubkey: event.pubkey,
-        ),
-      );
-    }
-  }
-
   // --------------------------------------------------------------------------
   // Helpers
   // --------------------------------------------------------------------------
 
-  PeopleListsMutation _registerMutation(
+  /// Builds a mutation record with a unique id.
+  ///
+  /// The id combines the clock's microsecond epoch with the mutation
+  /// kind and target — unique without needing a mutable counter on the
+  /// bloc instance (forbidden by `rules/state_management.md`). The clock
+  /// is injected so tests can feed a monotonically increasing sequence.
+  PeopleListsMutation _buildMutation(
     PeopleListsMutationKind kind, {
     String? listId,
     String? pubkey,
   }) {
-    _mutationCounter += 1;
+    final stamp = _clock().microsecondsSinceEpoch;
+    final suffix = listId != null
+        ? '-$listId'
+        : (pubkey != null ? '-$pubkey' : '');
     return PeopleListsMutation(
-      id: 'mut-$_mutationCounter-${kind.name}',
+      id: 'mut-$stamp-${kind.name}$suffix',
       kind: kind,
       listId: listId,
       pubkey: pubkey,
@@ -419,9 +476,17 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     final next = Map<String, PeopleListsMutation>.from(
       current.pendingMutations,
     )..remove(mutationId);
-    final nextStatus = failed
-        ? PeopleListsStatus.failure
-        : (next.isEmpty ? PeopleListsStatus.ready : current.status);
+    // Recovery contract: a fresh failure pins `failure`; otherwise, once
+    // the last pending mutation drains, reset any sticky `failure` back
+    // to `ready` so the UI isn't stuck if the repository never re-emits.
+    final PeopleListsStatus nextStatus;
+    if (failed) {
+      nextStatus = PeopleListsStatus.failure;
+    } else if (next.isEmpty) {
+      nextStatus = PeopleListsStatus.ready;
+    } else {
+      nextStatus = current.status;
+    }
     return current.copyWith(
       status: nextStatus,
       pendingMutations: next,
@@ -444,6 +509,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     List<UserList> lists, {
     required String listId,
     required String pubkey,
+    required DateTime now,
   }) {
     return lists
         .map((list) {
@@ -451,7 +517,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
           if (list.pubkeys.contains(pubkey)) return list;
           return list.copyWith(
             pubkeys: [...list.pubkeys, pubkey],
-            updatedAt: DateTime.now().toUtc(),
+            updatedAt: now,
           );
         })
         .toList(growable: false);
@@ -461,6 +527,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     List<UserList> lists, {
     required String listId,
     required String pubkey,
+    required DateTime now,
   }) {
     return lists
         .map((list) {
@@ -468,7 +535,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
           if (!list.pubkeys.contains(pubkey)) return list;
           return list.copyWith(
             pubkeys: list.pubkeys.where((p) => p != pubkey).toList(),
-            updatedAt: DateTime.now().toUtc(),
+            updatedAt: now,
           );
         })
         .toList(growable: false);
