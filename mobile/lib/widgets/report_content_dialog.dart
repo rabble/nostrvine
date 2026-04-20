@@ -181,9 +181,14 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       );
 
       if (mounted) {
-        context.pop(); // Close report dialog
-        if (widget.isFromShareMenu) {
-          context.pop(); // Close share menu (only if opened from share menu)
+        if (result.success) {
+          // Close dialog only on success so retry can re-submit without
+          // re-opening the dialog from scratch.
+          context.pop(); // Close report dialog
+          if (widget.isFromShareMenu) {
+            // Close share menu (only if opened from share menu)
+            context.pop();
+          }
         }
 
         if (result.success) {
@@ -191,24 +196,31 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // The Kind 1984 published by reportContent() already includes the
           // author pubkey in the `p` tag, so no second Kind 1984 is needed.
           if (_blockUser) {
-            // 1. Add to mute list (publishes kind 10000 NIP-51 mute list)
+            // 1. Add to mute list (publishes kind 10000 NIP-51 mute list).
+            // 2. Also add to local blocklist for immediate filtering
+            //    (publishes kind 30000 addressable block list).
+            // Both results are logged but not surfaced — the primary
+            // report already succeeded. Secondary block failures will
+            // reconcile on the next relay sync; the user can retry from
+            // the safety settings screen if needed.
             final muteService = await ref.read(muteServiceProvider.future);
-            await muteService.muteUser(
+            final muteResult = await muteService.muteUser(
               widget.video.pubkey,
               reason:
-                  'Reported and blocked for ${_getReasonDisplayName(_selectedReason!)}',
+                  'Reported and blocked for '
+                  '${_getReasonDisplayName(_selectedReason!)}',
             );
 
-            // 2. Also add to local blocklist for immediate filtering
             final blocklistService = ref.read(contentBlocklistServiceProvider);
             final nostrClient = ref.read(nostrServiceProvider);
-            blocklistService.blockUser(
+            final blockResult = await blocklistService.blockUser(
               widget.video.pubkey,
               ourPubkey: nostrClient.publicKey,
             );
 
             Log.info(
-              'User blocked: kind 10000 mute list published for ${widget.video.pubkey}',
+              'User blocked for ${widget.video.pubkey} — '
+              'mute=${muteResult.success}, block=${blockResult.success}',
               name: 'ReportContentDialog',
               category: LogCategory.ui,
             );
@@ -244,13 +256,27 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             );
           }
         } else {
-          // Show error snackbar
+          // Show error snackbar. When the publish reached the relay but
+          // was not accepted, expose a Retry affordance driven by
+          // feedback.retryable. The raw error string is still useful
+          // for pre-publish failures (not authenticated, etc.).
+          final feedback = result.feedback;
+          final retryable = feedback?.retryable ?? false;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 context.l10n.reportFailed(result.error ?? ''),
               ),
               backgroundColor: VineTheme.error,
+              action: retryable
+                  ? SnackBarAction(
+                      // Reused English fallback — PR 8 introduces
+                      // dedicated l10n keys for the retry affordance
+                      // across all migrated services.
+                      label: 'Retry',
+                      onPressed: _submitReport,
+                    )
+                  : null,
             ),
           );
         }

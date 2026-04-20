@@ -163,12 +163,16 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
       );
 
       if (mounted) {
-        context.pop();
+        // Only close the dialog on success — otherwise leave it open so
+        // the Retry affordance can re-submit without re-opening.
+        if (result.success) {
+          context.pop();
+        }
 
         if (result.success) {
           if (_blockUser) {
             final muteService = await ref.read(muteServiceProvider.future);
-            await muteService.muteUser(
+            final muteResult = await muteService.muteUser(
               widget.senderPubkey,
               reason:
                   'Reported and blocked for '
@@ -177,14 +181,14 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
 
             final blocklistService = ref.read(contentBlocklistServiceProvider);
             final nostrClient = ref.read(nostrServiceProvider);
-            blocklistService.blockUser(
+            final blockResult = await blocklistService.blockUser(
               widget.senderPubkey,
               ourPubkey: nostrClient.publicKey,
             );
 
             Log.info(
-              'User blocked: kind 10000 mute list published for '
-              '${widget.senderPubkey}',
+              'User blocked for ${widget.senderPubkey} — '
+              'mute=${muteResult.success}, block=${blockResult.success}',
               name: 'ReportMessageDialog',
               category: LogCategory.ui,
             );
@@ -217,10 +221,24 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
             );
           }
         } else {
+          // Retry affordance for transient relay failures — drives off
+          // feedback.retryable per PublishResultMapper.
+          final feedback = result.feedback;
+          final retryable = feedback?.retryable ?? false;
+          final errorText =
+              result.error ??
+              feedback?.firstRejectionReason ??
+              'please try again';
           ScaffoldMessenger.of(context).showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              'Failed to report message: ${result.error}',
-              error: true,
+            SnackBar(
+              backgroundColor: VineTheme.error,
+              content: Text('Failed to report message: $errorText'),
+              action: retryable
+                  ? SnackBarAction(
+                      label: 'Retry',
+                      onPressed: _submitReport,
+                    )
+                  : null,
             ),
           );
         }
