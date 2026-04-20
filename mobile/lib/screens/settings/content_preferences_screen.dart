@@ -321,10 +321,33 @@ class _AccountContentLabelsTileState
 
     if (result != null && mounted) {
       final service = ref.read(accountLabelServiceProvider);
-      await service.setAccountLabels(result);
-      setState(() {
-        _accountLabels = result;
-      });
+      final publishResult = await service.setAccountLabels(result);
+      if (!mounted) return;
+
+      if (publishResult.success) {
+        setState(() {
+          _accountLabels = result;
+        });
+      } else {
+        // Rollback already happened inside the service — surface the
+        // failure so the user can retry. The retry affordance is only
+        // shown when the feedback is classified as transient.
+        final retryable = publishResult.feedback?.retryable ?? false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to update account labels'),
+            duration: const Duration(seconds: 3),
+            action: retryable
+                ? SnackBarAction(
+                    // Retry label — follow-up PR will introduce dedicated
+                    // l10n keys for the migrated reliability errors.
+                    label: 'Retry',
+                    onPressed: _selectLabels,
+                  )
+                : null,
+          ),
+        );
+      }
     }
   }
 
