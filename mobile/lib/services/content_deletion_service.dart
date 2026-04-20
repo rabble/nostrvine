@@ -12,6 +12,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Machine-readable reason when [DeleteResult.success] is false.
+///
+/// Distinguishes **pre-publish** failure causes — these arise before the
+/// deletion event has been offered to any relay. Post-publish failures
+/// (rejected by relays, transient no-response) are represented via
+/// [DeleteResult.outcome] and [DeleteResult.feedback] instead.
 enum DeleteFailureKind {
   /// [ContentDeletionService] was not initialized.
   notInitialized,
@@ -25,17 +30,21 @@ enum DeleteFailureKind {
   /// Signing or constructing the kind 5 delete event failed.
   couldNotSign,
 
-  /// Every relay rejected the delete event or no relay responded before the
-  /// publish timeout. The delete is NOT persisted locally so the user can
-  /// retry.
-  relayRejected,
+  /// Relay-side publish failure — see [DeleteResult.outcome] and
+  /// [DeleteResult.feedback] for details (transient, rejected, etc.).
+  publishFailed,
 
   /// Unexpected error (including outer [deleteContent] catch).
   unknown,
 }
 
-/// Delete request result
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+/// Delete request result.
+///
+/// Carries both the pre-publish failure classification ([failureKind]) and
+/// the post-publish per-relay outcome ([outcome]) with its mapped user
+/// feedback ([feedback]). UI layers pick whichever is populated:
+/// [failureKind] for pre-publish errors, [feedback] for relay-level
+/// failures.
 class DeleteResult {
   const DeleteResult({
     required this.success,
@@ -43,26 +52,53 @@ class DeleteResult {
     this.error,
     this.deleteEventId,
     this.failureKind,
+    this.outcome,
+    this.feedback,
   });
+
   final bool success;
   final String? error;
   final String? deleteEventId;
   final DateTime timestamp;
 
-  /// Set when [success] is false; use for localized UI messages.
+  /// Set when [success] is false; use for localized UI messages driven by
+  /// the pre-publish failure cause. `null` when the failure occurred at
+  /// the relay round-trip — consult [feedback] in that case.
   final DeleteFailureKind? failureKind;
 
-  static DeleteResult createSuccess(String deleteEventId) => DeleteResult(
-    success: true,
-    deleteEventId: deleteEventId,
-    timestamp: DateTime.now(),
-  );
+  /// Per-relay outcome for the deletion publish. `null` when the failure
+  /// occurred before the relay round-trip (e.g. event creation failed).
+  final PublishOutcome? outcome;
 
-  static DeleteResult failure(String error, DeleteFailureKind kind) =>
+  /// User-facing feedback mapped via [PublishResultMapper]. `null` for
+  /// pre-publish failures; populated whenever [outcome] is populated.
+  final PublishUserFeedback? feedback;
+
+  static DeleteResult createSuccess({
+    required String deleteEventId,
+    required PublishOutcome outcome,
+    required PublishUserFeedback feedback,
+  }) =>
+      DeleteResult(
+        success: true,
+        deleteEventId: deleteEventId,
+        outcome: outcome,
+        feedback: feedback,
+        timestamp: DateTime.now(),
+      );
+
+  static DeleteResult failure({
+    required String error,
+    DeleteFailureKind? failureKind,
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+  }) =>
       DeleteResult(
         success: false,
         error: error,
-        failureKind: kind,
+        failureKind: failureKind,
+        outcome: outcome,
+        feedback: feedback,
         timestamp: DateTime.now(),
       );
 }
@@ -153,13 +189,7 @@ class ContentDeletionService {
     }
   }
 
-  /// Delete user's own content using NIP-09.
-  ///
-  /// The deletion is only considered successful when at least one relay
-  /// returns an `OK true` acknowledgement (NIP-20). If every relay rejects
-  /// the event or none respond before the publish timeout, the operation
-  /// fails with [DeleteFailureKind.relayRejected] and is NOT added to local
-  /// deletion history — the caller can retry.
+  /// Delete user's own content using NIP-09
   Future<DeleteResult> deleteContent({
     required VideoEvent video,
     required String reason,
@@ -168,58 +198,65 @@ class ContentDeletionService {
     try {
       if (!_isInitialized) {
         return DeleteResult.failure(
-          'Deletion service not initialized',
-          DeleteFailureKind.notInitialized,
+          error: 'Deletion service not initialized',
+          failureKind: DeleteFailureKind.notInitialized,
         );
       }
 
       // Verify this is the user's own content
       if (!_isUserOwnContent(video)) {
         return DeleteResult.failure(
-          'Can only delete your own content',
-          DeleteFailureKind.notOwner,
+          error: 'Can only delete your own content',
+          failureKind: DeleteFailureKind.notOwner,
         );
       }
 
       // Create NIP-09 delete event (kind 5)
       // OpenVine only uses kind 34236 (addressable short videos)
-      final deleteOutcome = await _createDeleteEvent(
+      final createResult = await _createDeleteEvent(
         originalEventId: video.id,
         originalEventKind: NIP71VideoKinds.getPreferredKind(),
         reason: reason,
         additionalContext: additionalContext,
       );
 
-      final deleteEvent = deleteOutcome.event;
+      final deleteEvent = createResult.event;
       if (deleteEvent == null) {
-        final kind = deleteOutcome.failureKind!;
-        return DeleteResult.failure(_failureMessageForKind(kind), kind);
+        final kind = createResult.failureKind ?? DeleteFailureKind.unknown;
+        return DeleteResult.failure(
+          error: _failureMessageForKind(kind),
+          failureKind: kind,
+        );
       }
 
-      final publishOutcome = await _nostrService.publishEventAwaitOk(
-        deleteEvent,
-      );
+      final outcome = await _nostrService.publishEventWithRetry(deleteEvent);
+      final feedback = PublishResultMapper.map(outcome);
 
-      if (publishOutcome.failed) {
+      if (!outcome.acceptedByAny) {
         Log.error(
-          'Delete publish not confirmed by any relay: '
-          '${publishOutcome.summary}',
+          'Delete request rejected by every relay: $outcome',
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
+        // Durable deletion requires at least one relay accept. We do NOT
+        // persist to local history on failure — the previous "save
+        // locally even on failure" behavior left the UI believing
+        // content was deleted while every other client could still see
+        // it. The user must retry.
         return DeleteResult.failure(
-          'Relay did not confirm deletion: ${publishOutcome.summary}',
-          DeleteFailureKind.relayRejected,
+          error: 'Failed to publish delete request',
+          failureKind: DeleteFailureKind.publishFailed,
+          outcome: outcome,
+          feedback: feedback,
         );
       }
 
       Log.info(
-        'Delete request confirmed by relay(s): ${publishOutcome.acceptedBy}',
+        'Delete request accepted by ${outcome.acceptedBy.length} relay(s)',
         name: 'ContentDeletionService',
         category: LogCategory.system,
       );
 
-      // Relay accepted — now it is safe to persist the deletion locally.
       final deletion = ContentDeletion(
         deleteEventId: deleteEvent.id,
         originalEventId: video.id,
@@ -231,12 +268,11 @@ class ContentDeletionService {
       _deletionHistory.add(deletion);
       await _saveDeletionHistory();
 
-      Log.debug(
-        '📱️ Content deletion confirmed: ${deleteEvent.id}',
-        name: 'ContentDeletionService',
-        category: LogCategory.system,
+      return DeleteResult.createSuccess(
+        deleteEventId: deleteEvent.id,
+        outcome: outcome,
+        feedback: feedback,
       );
-      return DeleteResult.createSuccess(deleteEvent.id);
     } catch (e) {
       Log.error(
         'Failed to delete content: $e',
@@ -244,8 +280,8 @@ class ContentDeletionService {
         category: LogCategory.system,
       );
       return DeleteResult.failure(
-        'Failed to delete content: $e',
-        DeleteFailureKind.unknown,
+        error: 'Failed to delete content: $e',
+        failureKind: DeleteFailureKind.unknown,
       );
     }
   }
@@ -260,8 +296,8 @@ class ContentDeletionService {
         return 'Cannot create delete event: not authenticated';
       case DeleteFailureKind.couldNotSign:
         return 'Failed to create delete event';
-      case DeleteFailureKind.relayRejected:
-        return 'Relay did not confirm deletion';
+      case DeleteFailureKind.publishFailed:
+        return 'Failed to publish delete request';
       case DeleteFailureKind.unknown:
         return 'Failed to delete content';
     }
@@ -426,52 +462,47 @@ class ContentDeletionService {
       case DeleteReason.personalChoice:
         return 'Personal choice - no longer wish to share this content';
       case DeleteReason.privacy:
-        return 'Privacy concerns - content contains personal information';
+        return 'Privacy concerns';
+      case DeleteReason.inaccurate:
+        return 'Content is inaccurate or outdated';
+      case DeleteReason.appStoreCompliance:
+        return 'Apple App Store compliance - content removal request';
       case DeleteReason.inappropriate:
-        return 'Content inappropriate - does not meet community standards';
-      case DeleteReason.copyrightViolation:
-        return 'Copyright violation - content may infringe on intellectual property';
-      case DeleteReason.technicalIssues:
-        return 'Technical issues - content has quality or playback problems';
+        return 'Content no longer appropriate';
       case DeleteReason.other:
-        return 'Other reasons - user requested content removal';
+        return 'Other reason';
     }
   }
 
-  /// Load deletion history from storage
-  void _loadDeletionHistory() {
-    final historyJson = _prefs.getString(deletionsStorageKey);
-    if (historyJson != null) {
-      try {
-        final List<dynamic> deletionsJson = jsonDecode(historyJson);
+  /// Load deletion history from persistent storage
+  Future<void> _loadDeletionHistory() async {
+    try {
+      final historyJson = _prefs.getString(deletionsStorageKey);
+      if (historyJson != null) {
+        final List<dynamic> historyList = json.decode(historyJson);
         _deletionHistory.clear();
         _deletionHistory.addAll(
-          deletionsJson.map(
+          historyList.map(
             (json) => ContentDeletion.fromJson(json as Map<String, dynamic>),
           ),
         );
-        Log.debug(
-          '📱 Loaded ${_deletionHistory.length} deletions from history',
-          name: 'ContentDeletionService',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.error(
-          'Failed to load deletion history: $e',
-          name: 'ContentDeletionService',
-          category: LogCategory.system,
-        );
       }
+    } catch (e) {
+      Log.error(
+        'Failed to load deletion history: $e',
+        name: 'ContentDeletionService',
+        category: LogCategory.system,
+      );
     }
   }
 
-  /// Save deletion history to storage
+  /// Save deletion history to persistent storage
   Future<void> _saveDeletionHistory() async {
     try {
-      final deletionsJson = _deletionHistory
-          .map((deletion) => deletion.toJson())
-          .toList();
-      await _prefs.setString(deletionsStorageKey, jsonEncode(deletionsJson));
+      final historyJson = json.encode(
+        _deletionHistory.map((d) => d.toJson()).toList(),
+      );
+      await _prefs.setString(deletionsStorageKey, historyJson);
     } catch (e) {
       Log.error(
         'Failed to save deletion history: $e',
@@ -480,18 +511,14 @@ class ContentDeletionService {
       );
     }
   }
-
-  void dispose() {
-    // Clean up any active operations
-  }
 }
 
-/// Common delete reasons for user content
+/// Reasons for content deletion
 enum DeleteReason {
   personalChoice,
   privacy,
+  inaccurate,
+  appStoreCompliance,
   inappropriate,
-  copyrightViolation,
-  technicalIssues,
   other,
 }
