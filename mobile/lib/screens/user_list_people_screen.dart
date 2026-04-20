@@ -113,6 +113,12 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
     with ScrollToHideMixin {
   int? _activeVideoIndex;
 
+  void _navigateToAddPeople(String listId) {
+    context.push(
+      '/people-lists/${Uri.encodeComponent(listId)}/add-people',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userList = widget.userList;
@@ -124,6 +130,15 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
               subtitle: userList.description,
               showBackButton: true,
               onBackPressed: context.pop,
+              actions: [
+                if (userList.isEditable)
+                  DiVineAppBarAction(
+                    icon: const MaterialIconSource(Icons.person_add_alt_1),
+                    tooltip: 'Add people',
+                    semanticLabel: 'Add people to list',
+                    onPressed: () => _navigateToAddPeople(userList.id),
+                  ),
+              ],
             )
           : null,
       body: userList.pubkeys.isEmpty

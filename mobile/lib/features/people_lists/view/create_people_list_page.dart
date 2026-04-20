@@ -1,0 +1,135 @@
+// ABOUTME: Full-screen create-list page for people lists.
+// ABOUTME: Dispatches PeopleListsCreateRequested and pops on submit.
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
+
+/// Full-screen page that creates a new NIP-51 kind 30000 people list.
+///
+/// Consumers navigate here via the `/people-lists/new` route. The page owns
+/// a single [TextFormField] for the list's display name plus an optional
+/// description, and a "Create" [DivineButton] that dispatches
+/// [PeopleListsCreateRequested] to the ambient [PeopleListsBloc].
+///
+/// The page intentionally stays thin: no local form bloc, no async wait on
+/// the repository. It relies on [PeopleListsBloc]'s optimistic update so the
+/// rest of the UI reflects the new list immediately after dispatch.
+class CreatePeopleListPage extends StatefulWidget {
+  /// Creates the create-list page.
+  const CreatePeopleListPage({super.key});
+
+  /// GoRouter name for this route.
+  static const routeName = 'people-list-create';
+
+  /// GoRouter path template for this route.
+  static const path = '/people-lists/new';
+
+  @override
+  State<CreatePeopleListPage> createState() => _CreatePeopleListPageState();
+}
+
+class _CreatePeopleListPageState extends State<CreatePeopleListPage> {
+  late final TextEditingController _nameController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    // Rebuild the Create button enable-state as the text changes.
+    _nameController.addListener(_onNameChanged);
+  }
+
+  @override
+  void dispose() {
+    _nameController
+      ..removeListener(_onNameChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onNameChanged() {
+    // setState forces _CreateButton to re-read `canSubmit`.
+    setState(() {});
+  }
+
+  bool get _canSubmit => _nameController.text.trim().isNotEmpty;
+
+  void _submit() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      return;
+    }
+    context.read<PeopleListsBloc>().add(
+      PeopleListsCreateRequested(name: name),
+    );
+    // Use Navigator.maybePop so the page works even when no GoRouter is
+    // present (e.g., simple widget-test harnesses without MaterialApp.router).
+    Navigator.of(context).maybePop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: VineTheme.backgroundColor,
+      appBar: DiVineAppBar(
+        title: 'New list',
+        showBackButton: true,
+        onBackPressed: context.pop,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _NameField(controller: _nameController),
+              const Spacer(),
+              _CreateButton(
+                onPressed: _canSubmit ? _submit : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NameField extends StatelessWidget {
+  const _NameField({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      autofocus: true,
+      textCapitalization: TextCapitalization.sentences,
+      textInputAction: TextInputAction.done,
+      style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+      decoration: const InputDecoration(
+        labelText: 'List name',
+        hintText: 'Close friends',
+      ),
+    );
+  }
+}
+
+class _CreateButton extends StatelessWidget {
+  const _CreateButton({required this.onPressed});
+
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return DivineButton(
+      label: 'Create',
+      expanded: true,
+      onPressed: onPressed,
+    );
+  }
+}

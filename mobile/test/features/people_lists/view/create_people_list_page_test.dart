@@ -1,0 +1,171 @@
+// ABOUTME: Widget tests for CreatePeopleListPage full-screen form.
+// ABOUTME: Covers name-entry, disabled-create guard, and create dispatching.
+
+import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
+import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
+
+class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
+    implements PeopleListsBloc {}
+
+const String _ownerPubkey =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+void main() {
+  setUpAll(() {
+    registerFallbackValue(
+      const PeopleListsCreateRequested(name: 'fallback'),
+    );
+  });
+
+  group(CreatePeopleListPage, () {
+    late _MockPeopleListsBloc bloc;
+
+    setUp(() {
+      bloc = _MockPeopleListsBloc();
+      when(() => bloc.state).thenReturn(
+        const PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerPubkey,
+        ),
+      );
+    });
+
+    tearDown(() async {
+      await bloc.close();
+    });
+
+    Widget buildSubject() {
+      return MaterialApp(
+        home: BlocProvider<PeopleListsBloc>.value(
+          value: bloc,
+          child: const CreatePeopleListPage(),
+        ),
+      );
+    }
+
+    test('exposes route name and path constants', () {
+      expect(
+        CreatePeopleListPage.routeName,
+        equals('people-list-create'),
+      );
+      expect(CreatePeopleListPage.path, equals('/people-lists/new'));
+    });
+
+    testWidgets('renders name field and create button', (tester) async {
+      await tester.pumpWidget(buildSubject());
+
+      expect(find.byType(TextFormField), findsOneWidget);
+      expect(find.widgetWithText(DivineButton, 'Create'), findsOneWidget);
+    });
+
+    testWidgets(
+      'Create button is disabled while the name field is empty',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+
+        final button = tester.widget<DivineButton>(
+          find.widgetWithText(DivineButton, 'Create'),
+        );
+        expect(button.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
+      'Create button is disabled when the name is only whitespace',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+
+        await tester.enterText(find.byType(TextFormField), '    ');
+        await tester.pump();
+
+        final button = tester.widget<DivineButton>(
+          find.widgetWithText(DivineButton, 'Create'),
+        );
+        expect(button.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
+      'entering a name enables the Create button',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+
+        await tester.enterText(find.byType(TextFormField), 'Film Club');
+        await tester.pump();
+
+        final button = tester.widget<DivineButton>(
+          find.widgetWithText(DivineButton, 'Create'),
+        );
+        expect(button.onPressed, isNotNull);
+      },
+    );
+
+    testWidgets(
+      'tapping Create dispatches $PeopleListsCreateRequested with the '
+      'trimmed name',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+
+        await tester.enterText(
+          find.byType(TextFormField),
+          '  Close Friends  ',
+        );
+        await tester.pump();
+
+        await tester.tap(find.widgetWithText(DivineButton, 'Create'));
+        await tester.pump();
+
+        verify(
+          () => bloc.add(
+            const PeopleListsCreateRequested(name: 'Close Friends'),
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  group('GoRouter /people-lists/new', () {
+    testWidgets(
+      'route opens the create page using handwritten $GoRoute',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        addTearDown(() async => bloc.close());
+        when(() => bloc.state).thenReturn(
+          const PeopleListsState(
+            status: PeopleListsStatus.ready,
+            ownerPubkey: _ownerPubkey,
+          ),
+        );
+
+        final router = GoRouter(
+          initialLocation: CreatePeopleListPage.path,
+          routes: [
+            GoRoute(
+              path: CreatePeopleListPage.path,
+              name: CreatePeopleListPage.routeName,
+              builder: (context, state) => const CreatePeopleListPage(),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          BlocProvider<PeopleListsBloc>.value(
+            value: bloc,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+
+        await tester.pump();
+
+        expect(find.byType(CreatePeopleListPage), findsOneWidget);
+      },
+    );
+  });
+}

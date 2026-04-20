@@ -4,8 +4,10 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
+import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
 import 'package:openvine/features/people_lists/view/widgets/widgets.dart';
 
 /// Bottom sheet that displays the authenticated user's editable people
@@ -107,10 +109,13 @@ class _EmptyState extends StatelessWidget {
             label: 'Create list',
             expanded: true,
             leadingIcon: DivineIconName.listPlus,
-            // TODO(people-lists): Task 9 wires this to /people-lists/new.
-            // For now the button only dismisses the sheet so reviewers can
-            // see the affordance without introducing dead navigation.
-            onPressed: () => Navigator.of(context).maybePop(),
+            // Pop the sheet first so the push navigates the root Navigator,
+            // then push the full-screen create page. The sheet and the new
+            // page both rely on the ambient PeopleListsBloc.
+            onPressed: () {
+              Navigator.of(context).pop();
+              context.push(CreatePeopleListPage.path);
+            },
           ),
         ],
       ),

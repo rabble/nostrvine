@@ -11,6 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent, VideoCategory, VideoEvent;
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/features/people_lists/view/add_people_to_list_screen.dart';
+import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -527,6 +529,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) => const DiscoverListsScreen(),
       ),
 
+      // CREATE PEOPLE LIST route. Must come before /people-lists/:listId so
+      // the literal `new` segment is not captured as a list id.
+      GoRoute(
+        path: CreatePeopleListPage.path,
+        name: CreatePeopleListPage.routeName,
+        builder: (context, state) => const CreatePeopleListPage(),
+      ),
+
       // PEOPLE LIST MEMBERS route (NIP-51 kind 30000 people lists).
       // Addressed by list id so the screen can select the current list
       // from PeopleListsBloc and react to repository updates without a
@@ -547,6 +557,27 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             );
           }
           return UserListPeopleScreen(listId: listId);
+        },
+      ),
+
+      // ADD PEOPLE TO LIST route. Full-screen picker that batches add
+      // requests for the list identified by [listId].
+      GoRoute(
+        path: AddPeopleToListScreen.path,
+        name: AddPeopleToListScreen.routeName,
+        builder: (context, state) {
+          final listId = state.pathParameters['listId'];
+          if (listId == null || listId.isEmpty) {
+            return Scaffold(
+              appBar: DiVineAppBar(
+                title: 'Add people',
+                showBackButton: true,
+                onBackPressed: context.pop,
+              ),
+              body: const Center(child: Text('Invalid list')),
+            );
+          }
+          return AddPeopleToListScreen(listId: listId);
         },
       ),
       GoRoute(
@@ -1129,6 +1160,9 @@ int tabIndexFromLocation(String loc) {
     case 'list':
     case 'discover-lists':
     case 'people-lists':
+    case 'people-list-members':
+    case 'people-list-add-people':
+    case 'people-list-create':
     case 'creator-analytics':
     case 'hashtag':
     case 'categories':
