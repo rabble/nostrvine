@@ -36,6 +36,7 @@ void main() {
         }),
       );
       registerFallbackValue(<Filter>[]);
+      registerFallbackValue(const RetryPolicy());
     });
 
     setUp(() async {
@@ -52,6 +53,20 @@ void main() {
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
+      when(
+        () => mockNostr.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: 'a' * 64,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
 
       when(
         () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
@@ -159,15 +174,30 @@ void main() {
         await service.addVideoToList(list.id, 'video_2');
         reset(mockNostr);
 
-        when(() => mockNostr.publishEvent(any())).thenAnswer((
-          invocation,
-        ) async {
-          return invocation.positionalArguments[0] as Event;
-        });
+        when(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: 'a' * 64,
+            acceptedBy: const {'wss://a'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          ),
+        );
 
         await service.reorderVideos(list.id, ['video_2', 'video_1']);
 
-        verify(() => mockNostr.publishEvent(any())).called(1);
+        verify(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
       });
 
       test('updates updatedAt timestamp', () async {

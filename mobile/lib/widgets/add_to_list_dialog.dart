@@ -117,14 +117,19 @@ class SelectListDialog extends StatelessWidget {
     bool isCurrentlyInList,
   ) async {
     try {
-      bool success;
+      final CuratedListResult result;
       if (isCurrentlyInList) {
-        success = await listService.removeVideoFromList(list.id, video.id);
+        result = await listService.removeVideoFromListResult(
+          list.id,
+          video.id,
+        );
       } else {
-        success = await listService.addVideoToList(list.id, video.id);
+        result = await listService.addVideoToListResult(list.id, video.id);
       }
 
-      if (success && context.mounted) {
+      if (!context.mounted) return;
+
+      if (result.success) {
         final message = isCurrentlyInList
             ? context.l10n.listRemovedFrom(list.name)
             : context.l10n.listAddedTo(list.name);
@@ -132,6 +137,31 @@ class SelectListDialog extends StatelessWidget {
           SnackBar(
             content: Text(message),
             duration: const Duration(seconds: 1),
+          ),
+        );
+      } else {
+        final retryable = result.feedback?.retryable ?? false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            // Failure copy — follow-up PR will add dedicated l10n keys for
+            // the migrated list-reliability errors.
+            content: Text(
+              isCurrentlyInList
+                  ? 'Failed to remove from "${list.name}"'
+                  : 'Failed to add to "${list.name}"',
+            ),
+            duration: const Duration(seconds: 2),
+            action: retryable
+                ? SnackBarAction(
+                    label: 'Retry',
+                    onPressed: () => _toggleVideoInList(
+                      context,
+                      listService,
+                      list,
+                      isCurrentlyInList,
+                    ),
+                  )
+                : null,
           ),
         );
       }
