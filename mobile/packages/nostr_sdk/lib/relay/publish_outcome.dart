@@ -41,7 +41,8 @@ class PublishOutcome {
   }) {
     assert(() {
       final rejectedKeys = rejectedBy.keys.toSet();
-      final overlap = acceptedBy.intersection(rejectedKeys)
+      final overlap = acceptedBy
+          .intersection(rejectedKeys)
           .union(acceptedBy.intersection(noResponseFrom))
           .union(rejectedKeys.intersection(noResponseFrom));
       return overlap.isEmpty;

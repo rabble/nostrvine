@@ -49,7 +49,6 @@ export 'relay/publish_outcome.dart';
 export 'relay/relay_mode.dart';
 export 'relay/relay.dart';
 export 'relay/relay_base.dart';
-export 'relay/publish_outcome.dart';
 export 'relay/relay_pool.dart';
 export 'relay/relay_status.dart';
 export 'relay/relay_type.dart';

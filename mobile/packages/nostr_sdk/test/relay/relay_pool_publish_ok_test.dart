@@ -1,8 +1,6 @@
 // ABOUTME: Tests for RelayPool.sendAwaitOk — resolves when all targeted relays
 // ABOUTME: have responded OK, sent a reject, or the timeout elapses.
 
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';

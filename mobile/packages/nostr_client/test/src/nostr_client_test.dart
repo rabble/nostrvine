@@ -377,16 +377,16 @@ void main() {
     group('publishEventAwaitOk', () {
       PublishOutcome accepted(String eventId) => PublishOutcome(
         eventId: eventId,
-        acceptedBy: const ['wss://relay.test'],
+        acceptedBy: const {'wss://relay.test'},
         rejectedBy: const {},
-        noResponseFrom: const [],
+        noResponseFrom: const {},
       );
 
       PublishOutcome rejected(String eventId) => PublishOutcome(
         eventId: eventId,
-        acceptedBy: const [],
+        acceptedBy: const {},
         rejectedBy: const {'wss://relay.test': 'blocked: policy'},
-        noResponseFrom: const [],
+        noResponseFrom: const {},
       );
 
       test('returns confirmed outcome when relay accepts the event', () async {

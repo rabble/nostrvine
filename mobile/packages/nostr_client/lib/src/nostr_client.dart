@@ -338,14 +338,22 @@ class NostrClient {
       }
     }
 
-    final outcome = await _nostr.sendEventAwaitOk(
-      event,
-      timeout: timeout,
-      targetRelays: targetRelays,
-      // Mirror publishEvent: pass as tempRelays so the SDK creates
-      // temporary connections to target relays not already in the pool.
-      tempRelays: targetRelays,
-    );
+    final outcome =
+        await _nostr.sendEventAwaitOk(
+          event,
+          timeout: timeout,
+          targetRelays: targetRelays,
+          // Mirror publishEvent: pass as tempRelays so the SDK creates
+          // temporary connections to target relays not already in the
+          // pool.
+          tempRelays: targetRelays,
+        ) ??
+        PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        );
 
     if (outcome.failed) {
       if (useOptimisticCache) _rollbackCachedEvent(event.id);
