@@ -46,11 +46,25 @@ class NIP17MessageService {
   /// - [content]: Message content (text for kind 14, file URL for kind 15)
   /// - [eventKind]: The rumor event kind (14 = text, 15 = file)
   /// - [additionalTags]: Optional tags to include in the rumor event
+  /// - [recipientDmRelays]: Optional recipient DM-relay list (NIP-17
+  ///   kind-10050). When non-null/non-empty, the recipient gift wrap is
+  ///   targeted to these relays via `publishEventWithRetry`'s
+  ///   `targetRelays` argument. The self-wrap always goes to the
+  ///   sender's own default relays — never to the recipient's DM list.
+  ///
+  /// Reliability contract:
+  /// - Recipient gift wrap uses `publishEventWithRetry` and the overall
+  ///   send succeeds only when at least one relay accepts it
+  ///   ([PublishOutcome.acceptedByAny]).
+  /// - Self-wrap is best-effort — uses `publishEventAwaitOk` with a
+  ///   short 5s timeout for telemetry, but any failure (outcome or
+  ///   exception) is logged and does NOT fail the overall send.
   Future<NIP17SendResult> sendPrivateMessage({
     required String recipientPubkey,
     required String content,
     int eventKind = EventKind.privateDirectMessage,
     List<List<String>> additionalTags = const [],
+    List<String>? recipientDmRelays,
   }) async {
     try {
       Log.info(
@@ -102,19 +116,38 @@ class NIP17MessageService {
         category: LogCategory.system,
       );
 
-      // Publish the recipient's gift wrap
-      final sentEvent = await _nostrService.publishEvent(giftWrapEvent);
+      // Route the recipient gift wrap to their kind-10050 DM relays
+      // when provided. Empty list means "use defaults" (no routing).
+      final targetRelays =
+          (recipientDmRelays != null && recipientDmRelays.isNotEmpty)
+          ? recipientDmRelays
+          : null;
 
-      if (sentEvent == null) {
-        const errorMsg = 'Message publish failed to relays';
-        Log.error(errorMsg, category: LogCategory.system);
-        return NIP17SendResult.failure(errorMsg);
+      // Publish the recipient's gift wrap via the reliable retry path.
+      // This is the message the recipient actually decrypts — it MUST
+      // land on at least one relay.
+      final recipientOutcome = await _nostrService.publishEventWithRetry(
+        giftWrapEvent,
+        targetRelays: targetRelays,
+      );
+
+      if (!recipientOutcome.acceptedByAny) {
+        Log.error(
+          'Recipient gift wrap rejected by every relay: $recipientOutcome',
+          category: LogCategory.system,
+        );
+        return NIP17SendResult.failure(
+          'Message publish failed to relays',
+          outcome: recipientOutcome,
+        );
       }
 
-      // NIP-17: publish a self-addressed gift wrap so our own sent messages
-      // are recoverable from relays after reinstall or data loss.
-      // Wrapped in its own try-catch because the message was already
-      // delivered to the recipient — self-wrap failure is non-fatal.
+      // NIP-17: publish a self-addressed gift wrap so our own sent
+      // messages are recoverable from relays after reinstall or data
+      // loss. Best-effort — uses `publishEventAwaitOk` with a short
+      // timeout for telemetry, but doesn't retry and doesn't fail the
+      // overall send. Losing self-sync is a smaller penalty than making
+      // the sender wait or see a false "failed" state.
       try {
         final selfWrapEvent = await GiftWrapUtil.getGiftWrapEvent(
           nostr,
@@ -122,7 +155,17 @@ class NIP17MessageService {
           _senderPublicKey,
         );
         if (selfWrapEvent != null) {
-          await _nostrService.publishEvent(selfWrapEvent);
+          final selfOutcome = await _nostrService.publishEventAwaitOk(
+            selfWrapEvent,
+            timeout: const Duration(seconds: 5),
+          );
+          if (!selfOutcome.acceptedByAny) {
+            Log.warning(
+              'Self-wrap not accepted by any relay (non-fatal): '
+              '$selfOutcome',
+              category: LogCategory.system,
+            );
+          }
         }
       } on Object catch (e) {
         Log.error(
@@ -139,6 +182,7 @@ class NIP17MessageService {
         rumorEventId: rumorEvent.id,
         messageEventId: giftWrapEvent.id,
         recipientPubkey: recipientPubkey,
+        outcome: recipientOutcome,
       );
     } on Object catch (e, stackTrace) {
       Log.error(
