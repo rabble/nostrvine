@@ -1,10 +1,13 @@
+// ABOUTME: Tests for Nip51PeopleListCodec encoding and decoding.
+// ABOUTME: Covers kind 30000 follow-set tags, block-list filtering, pubkeys.
+
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:people_lists_repository/src/nip51_people_list_codec.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Nip51PeopleListCodec', () {
+  group(Nip51PeopleListCodec, () {
     const ownerPubkey =
         'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
     const memberPubkeyA =

@@ -1,6 +1,7 @@
 // ABOUTME: Encodes and decodes NIP-51 kind 30000 people (follow set) events.
 // ABOUTME: Preserves full Nostr pubkeys and skips the app block-list d=block.
 
+import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
@@ -8,7 +9,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 ///
 /// The publisher owns signing and relay selection, so the codec only returns
 /// the kind, tags, and content fields required to build the final [Event].
-class PeopleListEventPayload {
+class PeopleListEventPayload extends Equatable {
   /// Creates a new payload.
   const PeopleListEventPayload({
     required this.kind,
@@ -25,6 +26,9 @@ class PeopleListEventPayload {
 
   /// Event content. Always an empty string for NIP-51 follow sets.
   final String content;
+
+  @override
+  List<Object?> get props => [kind, tags, content];
 }
 
 /// Codec for NIP-51 kind 30000 people (follow set) events.
