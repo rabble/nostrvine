@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' show VideoEvent;
+import 'package:openvine/constants/feed_playback_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
@@ -21,12 +22,19 @@ import 'package:video_player/video_player.dart';
 
 part 'individual_video_providers.g.dart';
 
-/// Maximum playback duration before looping (6.3 seconds)
-/// Videos longer than this will loop back to beginning at this mark
-const maxPlaybackDuration = Duration(milliseconds: 6300);
+/// Maximum playback duration before looping (6.3 seconds).
+///
+/// Videos materially longer than this will loop back to beginning at this
+/// mark. See [FeedPlaybackConstants] for the shared source of truth used
+/// by both the legacy `video_player` path and the pooled player.
+const Duration maxPlaybackDuration = FeedPlaybackConstants.maxLoopDuration;
 
-/// Interval for checking playback position (200ms = 5 checks/sec)
-/// Balances responsiveness with performance (vs 60 checks/sec for per-frame)
+/// Tail grace period near the natural end of a video during which the
+/// forced seek to zero is skipped, letting the native loop wrap cleanly.
+const Duration loopTolerance = FeedPlaybackConstants.loopTolerance;
+
+/// Interval for checking playback position (200ms = 5 checks/sec).
+/// Balances responsiveness with performance (vs 60 checks/sec for per-frame).
 const loopCheckInterval = Duration(milliseconds: 200);
 
 /// Cache for pre-generated auth headers by video ID
@@ -645,10 +653,12 @@ VideoPlayerController individualVideoController(
         // Set looping for Vine-like behavior
         controller.setLooping(true);
 
-        // Start loop enforcement timer for videos longer than 6.3s
-        // Short videos use native looping; long videos get enforced loop at 6.3s
+        // Start loop enforcement timer for videos materially longer than
+        // the cap. Videos inside (maxPlaybackDuration + loopTolerance) fall
+        // back to native looping so the final frames aren't clipped
+        // (divinevideo/divine-mobile#1845).
         final videoDuration = controller.value.duration;
-        if (videoDuration > maxPlaybackDuration) {
+        if (videoDuration > maxPlaybackDuration + loopTolerance) {
           loopEnforcementTimer = Timer.periodic(loopCheckInterval, (timer) {
             // Skip check if video is paused
             if (!controller.value.isPlaying) return;
@@ -659,7 +669,7 @@ VideoPlayerController individualVideoController(
             }
           });
           Log.info(
-            '⏱️ Started loop enforcement timer for ${params.videoId} (duration: ${videoDuration.inMilliseconds}ms > ${maxPlaybackDuration.inMilliseconds}ms)',
+            '⏱️ Started loop enforcement timer for ${params.videoId} (duration: ${videoDuration.inMilliseconds}ms > ${maxPlaybackDuration.inMilliseconds}ms + ${loopTolerance.inMilliseconds}ms tolerance)',
             name: 'LoopEnforcement',
             category: LogCategory.video,
           );

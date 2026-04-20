@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/constants/feed_playback_constants.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:video_player/video_player.dart';
 
@@ -17,6 +18,14 @@ void main() {
   group('Loop Enforcement Constants', () {
     test('maxPlaybackDuration is 6.3 seconds', () {
       expect(maxPlaybackDuration, const Duration(milliseconds: 6300));
+    });
+
+    test('maxPlaybackDuration matches shared FeedPlaybackConstants source', () {
+      expect(maxPlaybackDuration, FeedPlaybackConstants.maxLoopDuration);
+    });
+
+    test('loopTolerance matches shared FeedPlaybackConstants source', () {
+      expect(loopTolerance, FeedPlaybackConstants.loopTolerance);
     });
 
     test('loopCheckInterval is 200ms', () {
@@ -50,16 +59,33 @@ void main() {
       // Arrange - video is exactly 6.3 seconds
       const videoDuration = Duration(milliseconds: 6300);
 
-      // Assert - duration should NOT be greater than maxPlaybackDuration
-      expect(videoDuration > maxPlaybackDuration, isFalse);
+      // Assert - the timer guard requires duration > cap + tolerance,
+      // so videos at or near the cap do not spin up a timer.
+      expect(videoDuration > maxPlaybackDuration + loopTolerance, isFalse);
     });
 
+    test(
+      'videos within loopTolerance of the cap do not spin up a timer (#1845)',
+      () {
+        // Encoder drift: captured 6.3s becomes a 6.4s file.
+        const videoDuration = Duration(milliseconds: 6400);
+
+        expect(
+          videoDuration > maxPlaybackDuration + loopTolerance,
+          isFalse,
+          reason:
+              'Videos inside the tolerance band must let native looping '
+              'wrap cleanly instead of getting clipped at 6.3s.',
+        );
+      },
+    );
+
     test('videos over 6.3s should trigger loop enforcement', () {
-      // Arrange - video is 10 seconds (over limit)
+      // Arrange - video is 10 seconds (well beyond tolerance)
       const videoDuration = Duration(seconds: 10);
 
-      // Assert - duration should be greater than maxPlaybackDuration
-      expect(videoDuration > maxPlaybackDuration, isTrue);
+      // Assert - duration exceeds cap + tolerance, timer is created.
+      expect(videoDuration > maxPlaybackDuration + loopTolerance, isTrue);
     });
 
     test('position at 6.3s or above triggers seek to zero', () {

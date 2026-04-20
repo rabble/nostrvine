@@ -142,6 +142,7 @@ class VideoFeedController extends ChangeNotifier {
     this.slowLoadThreshold = const Duration(seconds: 8),
     this.preloadGracePeriod = const Duration(seconds: 3),
     this.maxLoopDuration,
+    this.loopTolerance = Duration.zero,
     this.onLog,
   }) : pool = pool ?? PlayerPool.instance,
        _videos = List.from(videos),
@@ -206,6 +207,19 @@ class VideoFeedController extends ChangeNotifier {
   /// When `null`, no loop enforcement is applied (the player's own
   /// [PlaylistMode] controls looping).
   final Duration? maxLoopDuration;
+
+  /// Grace period near the natural end of a video during which the
+  /// [maxLoopDuration] seek is NOT forced.
+  ///
+  /// When the natural end of the video is within [loopTolerance] of the
+  /// current position, the seek-to-zero enforcement is skipped so the
+  /// player's own loop can wrap cleanly without clipping the final
+  /// frames. This matters for videos that come in just slightly over
+  /// [maxLoopDuration] due to encoder drift.
+  ///
+  /// Defaults to [Duration.zero], which preserves the original hard-cap
+  /// behavior. Only takes effect when [maxLoopDuration] is also set.
+  final Duration loopTolerance;
 
   /// Optional structured logging callback.
   ///
@@ -612,11 +626,7 @@ class VideoFeedController extends ChangeNotifier {
         final nextSource = playbackSources[nextAttempt];
 
         if (kPlaybackDiagnosticsEnabled) {
-          _diagLoadFailovers.update(
-            index,
-            (v) => v + 1,
-            ifAbsent: () => 1,
-          );
+          _diagLoadFailovers.update(index, (v) => v + 1, ifAbsent: () => 1);
           _logDebug(
             '$retryLogLabel ${_videoDebugDetails(index)} '
             'reason=$diagnosticsReason '
@@ -732,11 +742,7 @@ class VideoFeedController extends ChangeNotifier {
     final failedSource = _openedSources[index];
     final retrySource = playbackSources[nextSourceIndex];
     if (kPlaybackDiagnosticsEnabled) {
-      _diagStuckFailovers.update(
-        index,
-        (v) => v + 1,
-        ifAbsent: () => 1,
-      );
+      _diagStuckFailovers.update(index, (v) => v + 1, ifAbsent: () => 1);
       _logWarning(
         'stuck_failover ${_videoDebugDetails(index)} '
         'reason=stuck_playback '
@@ -1844,17 +1850,29 @@ class VideoFeedController extends ChangeNotifier {
       }
 
       // Loop enforcement: seek back to zero when position exceeds
-      // maxLoopDuration.
+      // maxLoopDuration, unless the natural end is within loopTolerance.
+      // Letting the native loop wrap for near-boundary videos avoids
+      // clipping the final frames (divinevideo/divine-mobile#1845).
       if (maxLoopDuration != null &&
           index == _currentIndex &&
           player.state.playing &&
           player.state.position >= maxLoopDuration!) {
-        _logDebug(
-          'loop_enforcement ${_videoDebugDetails(index)} '
-          'positionMs=${player.state.position.inMilliseconds} '
-          'maxMs=${maxLoopDuration!.inMilliseconds}',
-        );
-        unawaited(player.seek(Duration.zero));
+        final mediaDuration = player.state.duration;
+        final hasKnownDuration = mediaDuration.inMilliseconds > 0;
+        final tailWithinTolerance =
+            hasKnownDuration &&
+            (mediaDuration - player.state.position) <= loopTolerance;
+
+        if (!tailWithinTolerance) {
+          _logDebug(
+            'loop_enforcement ${_videoDebugDetails(index)} '
+            'positionMs=${player.state.position.inMilliseconds} '
+            'maxMs=${maxLoopDuration!.inMilliseconds} '
+            'durationMs=${mediaDuration.inMilliseconds} '
+            'toleranceMs=${loopTolerance.inMilliseconds}',
+          );
+          unawaited(player.seek(Duration.zero));
+        }
       }
 
       if (positionCallback != null && player.state.playing) {
@@ -2041,11 +2059,7 @@ class VideoFeedController extends ChangeNotifier {
       // (e.g. missing h264 PPS headers). Give up so the user can swipe past.
       if (_staleRecoveryAttempts > _maxStaleRecoveryAttempts) {
         if (kPlaybackDiagnosticsEnabled) {
-          _diagStaleEscalations.update(
-            index,
-            (v) => v + 1,
-            ifAbsent: () => 1,
-          );
+          _diagStaleEscalations.update(index, (v) => v + 1, ifAbsent: () => 1);
         }
         _logError(
           'stale_gave_up index=$index '
@@ -2064,11 +2078,7 @@ class VideoFeedController extends ChangeNotifier {
       }
 
       if (kPlaybackDiagnosticsEnabled) {
-        _diagStaleRecoveries.update(
-          index,
-          (v) => v + 1,
-          ifAbsent: () => 1,
-        );
+        _diagStaleRecoveries.update(index, (v) => v + 1, ifAbsent: () => 1);
       }
       _logDebug(
         'stale_position_detected index=$index '

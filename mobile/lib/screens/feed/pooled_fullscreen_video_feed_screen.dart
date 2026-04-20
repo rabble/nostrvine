@@ -16,7 +16,7 @@ import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/constants/feed_playback_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -553,7 +553,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
           FullscreenFeedVideoCacheStarted(index: index),
         );
       },
-      maxLoopDuration: VideoEditorConstants.maxDuration,
+      maxLoopDuration: FeedPlaybackConstants.maxLoopDuration,
+      loopTolerance: FeedPlaybackConstants.loopTolerance,
       onLog: pooledPlayerLogCallback(),
     );
   }
@@ -777,7 +778,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       nearEndThreshold: 0,
                       onScrollOffsetChanged: (page) =>
                           _pagePosition.value = page,
-                      maxLoopDuration: VideoEditorConstants.maxDuration,
+                      maxLoopDuration: FeedPlaybackConstants.maxLoopDuration,
+                      loopTolerance: FeedPlaybackConstants.loopTolerance,
                       itemBuilder:
                           (context, video, index, {required isActive}) {
                             if (state.videos.isEmpty) {

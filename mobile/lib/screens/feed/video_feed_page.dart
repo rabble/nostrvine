@@ -11,7 +11,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/constants/feed_playback_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -332,7 +332,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     controller = VideoFeedController(
       videos: pooledVideos,
       pool: PlayerPool.instance,
-      maxLoopDuration: VideoEditorConstants.maxDuration,
+      maxLoopDuration: FeedPlaybackConstants.maxLoopDuration,
+      loopTolerance: FeedPlaybackConstants.loopTolerance,
       onVideoReady: (index, player) {
         if (!_hasMarkedVideoReady && index == 0) {
           _hasMarkedVideoReady = true;
@@ -669,7 +670,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       child: PooledVideoFeed(
                         key: _feedKey,
                         videos: pooledVideos,
-                        maxLoopDuration: VideoEditorConstants.maxDuration,
+                        maxLoopDuration: FeedPlaybackConstants.maxLoopDuration,
+                        loopTolerance: FeedPlaybackConstants.loopTolerance,
                         controller: controller,
                         onScrollOffsetChanged: (page) =>
                             _pagePosition.value = page,
