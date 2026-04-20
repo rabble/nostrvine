@@ -160,8 +160,8 @@ void main() {
       ];
 
       when(
-        () => mockListService.addVideoToList(any(), any()),
-      ).thenAnswer((_) async => true);
+        () => mockListService.addVideoToListResult(any(), any()),
+      ).thenAnswer((_) async => CuratedListResult.successResult());
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -170,7 +170,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        () => mockListService.addVideoToList(listId, testVideo.id),
+        () => mockListService.addVideoToListResult(listId, testVideo.id),
       ).called(1);
       expect(find.text('Added to My List'), findsOneWidget);
     });
@@ -193,8 +193,8 @@ void main() {
       ];
 
       when(
-        () => mockListService.removeVideoFromList(any(), any()),
-      ).thenAnswer((_) async => true);
+        () => mockListService.removeVideoFromListResult(any(), any()),
+      ).thenAnswer((_) async => CuratedListResult.successResult());
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -203,7 +203,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        () => mockListService.removeVideoFromList(listId, testVideo.id),
+        () => mockListService.removeVideoFromListResult(listId, testVideo.id),
       ).called(1);
       expect(find.text('Removed from My List'), findsOneWidget);
     });
