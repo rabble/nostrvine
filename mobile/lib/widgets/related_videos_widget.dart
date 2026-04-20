@@ -68,7 +68,7 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
           hashtag: hashtags.first,
           limit: 20,
         );
-        videos = stats.map((v) => v.toVideoEvent()).toList();
+        videos = stats.toVideoEvents();
 
         // Filter out the current video
         videos = videos

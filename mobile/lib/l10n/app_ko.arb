@@ -874,6 +874,7 @@
     "shareMenuDeleteFailedNotOwner": "내가 올린 영상만 삭제할 수 있어요.",
     "shareMenuDeleteFailedNotAuthenticated": "다시 로그인한 뒤 삭제를 시도해요.",
     "shareMenuDeleteFailedCouldNotSign": "삭제 요청에 서명하지 못했어요. 다시 시도해요.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "이 영상을 삭제하지 못했어요. 다시 시도해요.",
     "shareMenuFollowSetName": "팔로우 세트 이름",
     "shareMenuFollowSetNameHint": "예: 크리에이터, 뮤지션 등",

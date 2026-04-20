@@ -2981,6 +2981,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak bisa menandatangani permintaan hapus. Coba lagi.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Tidak bisa menghapus video ini. Coba lagi.';
 

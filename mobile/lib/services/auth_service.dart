@@ -482,9 +482,7 @@ class AuthService implements BackgroundAwareService {
   /// On success: rebuilds identity to [KeycastNostrIdentity] and sets
   /// [AuthRpcCapability.rpcReady]. On failure: preserves the local identity
   /// and sets capability back to [AuthRpcCapability.unavailable].
-  Future<void> _upgradeDivineRpcInBackground(
-    KeycastSession? session,
-  ) async {
+  Future<void> _upgradeDivineRpcInBackground(KeycastSession? session) async {
     Log.info(
       'initialize: starting background RPC refresh...',
       name: 'AuthService',
@@ -558,9 +556,7 @@ class AuthService implements BackgroundAwareService {
       category: LogCategory.auth,
     );
     if (_oauthClient != null) {
-      final refreshed = await _tryRefreshOAuthSession(
-        caller: 'initialize',
-      );
+      final refreshed = await _tryRefreshOAuthSession(caller: 'initialize');
       if (refreshed) return;
     }
 
@@ -2894,9 +2890,14 @@ class AuthService implements BackgroundAwareService {
       await prefs.remove('age_verified_16_plus');
       await prefs.remove('terms_accepted_at');
 
-      // Clear user-specific cached data on explicit logout
+      // Clear user-specific cached data on explicit logout.
+      // Per-user DAO rows (drafts, clips, uploads, etc.) are only deleted
+      // on destructive sign-out (deleteKeys=true). Non-destructive sign-out
+      // (account switch) preserves them since they're scoped by ownerPubkey.
       await _userDataCleanupService.clearUserSpecificData(
         reason: 'explicit_logout',
+        userPubkey: _currentKeyContainer?.publicKeyHex,
+        deleteUserData: deleteKeys,
       );
 
       // Clear configured relays so next login re-discovers from NIP-65
@@ -2904,9 +2905,7 @@ class AuthService implements BackgroundAwareService {
 
       // Clear relay discovery cache so next login re-queries indexers
       // (even for same-user re-login, relays may have changed)
-      await _relayDiscoveryService.clearCache(
-        _currentKeyContainer?.npub ?? '',
-      );
+      await _relayDiscoveryService.clearCache(_currentKeyContainer?.npub ?? '');
 
       // Clear the stored pubkey tracking so next login is treated as new
       await prefs.remove('current_user_pubkey_hex');
@@ -3259,10 +3258,7 @@ class AuthService implements BackgroundAwareService {
 
       // 3. Post-Signing Validation
       if (signedEvent == null) {
-        Log.error(
-          'Signing failed: Signer returned null',
-          name: 'AuthService',
-        );
+        Log.error('Signing failed: Signer returned null', name: 'AuthService');
         return null;
       }
 
@@ -3385,9 +3381,7 @@ class AuthService implements BackgroundAwareService {
   /// key containers; for OAuth/bunker/amber it delegates to [signInForAccount]
   /// which restores archived signer info and triggers the appropriate flow.
   /// Returns true if an account was restored, false otherwise.
-  Future<bool> _tryRestoreFromKnownAccounts(
-    AuthenticationSource source,
-  ) async {
+  Future<bool> _tryRestoreFromKnownAccounts(AuthenticationSource source) async {
     try {
       final accounts = await getKnownAccounts();
       if (accounts.isEmpty) return false;
@@ -3742,15 +3736,19 @@ class AuthService implements BackgroundAwareService {
       );
 
       if (shouldClean) {
+        final oldPubkey = prefs.getString('current_user_pubkey_hex');
         Log.info(
           '_setupUserSession: identity change detected — '
-          'clearing user-specific data',
+          'clearing user-specific data for old pubkey '
+          '${oldPubkey ?? "unknown"}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
         await _userDataCleanupService.clearUserSpecificData(
           reason: 'identity_change',
           isIdentityChange: true,
+          userPubkey: oldPubkey,
+          deleteUserData: true,
         );
         // restore the TOS acceptance since we wouldn't be here otherwise
         await acceptTerms();
@@ -3765,6 +3763,11 @@ class AuthService implements BackgroundAwareService {
         'current_user_pubkey_hex',
         keyContainer.publicKeyHex,
       );
+
+      // Claim legacy database rows (NULL ownerPubkey) for this user so
+      // pre-multi-account drafts/clips are attributed and no longer
+      // visible to other accounts.
+      await _userDataCleanupService.claimLegacyRows(keyContainer.publicKeyHex);
 
       await prefs.setString(_kAuthSourceKey, source.code);
 

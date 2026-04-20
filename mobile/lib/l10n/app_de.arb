@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Du kannst nur deine eigenen Videos löschen.",
     "shareMenuDeleteFailedNotAuthenticated": "Melde dich erneut an und versuch es nochmal.",
     "shareMenuDeleteFailedCouldNotSign": "Die Löschanfrage konnte nicht signiert werden. Versuch es nochmal.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "Dieses Video konnte nicht gelöscht werden. Versuch es nochmal.",
     "shareMenuFollowSetName": "Follow-Set-Name",
     "shareMenuFollowSetNameHint": "z.B. Content-Creator, Musiker usw.",

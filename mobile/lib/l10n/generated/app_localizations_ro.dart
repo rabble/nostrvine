@@ -3101,6 +3101,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu am putut semna cererea de ștergere. Încearcă din nou.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Nu am putut șterge acest videoclip. Încearcă din nou.';
 

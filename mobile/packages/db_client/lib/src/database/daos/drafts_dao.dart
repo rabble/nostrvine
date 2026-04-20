@@ -78,17 +78,12 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
   /// Get all drafts sorted by last modified (newest first).
   /// When [ownerPubkey] is provided, returns only drafts owned by that
   /// account **plus** legacy drafts with no owner.
-  Future<List<DraftRow>> getAllDrafts({
-    int? limit,
-    String? ownerPubkey,
-  }) {
+  Future<List<DraftRow>> getAllDrafts({int? limit, String? ownerPubkey}) {
     final query = select(drafts)
       ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.lastModified,
-          mode: OrderingMode.desc,
-        ),
+        (t) =>
+            OrderingTerm(expression: t.lastModified, mode: OrderingMode.desc),
       ]);
     if (limit != null) {
       query.limit(limit);
@@ -116,10 +111,8 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
             _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
       )
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.lastModified,
-          mode: OrderingMode.desc,
-        ),
+        (t) =>
+            OrderingTerm(expression: t.lastModified, mode: OrderingMode.desc),
       ]);
     if (limit != null) {
       query.limit(limit);
@@ -163,17 +156,12 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
   /// Watch all drafts (reactive stream).
   /// When [ownerPubkey] is provided, returns only drafts owned by that
   /// account **plus** legacy drafts with no owner.
-  Stream<List<DraftRow>> watchAllDrafts({
-    int? limit,
-    String? ownerPubkey,
-  }) {
+  Stream<List<DraftRow>> watchAllDrafts({int? limit, String? ownerPubkey}) {
     final query = select(drafts)
       ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.lastModified,
-          mode: OrderingMode.desc,
-        ),
+        (t) =>
+            OrderingTerm(expression: t.lastModified, mode: OrderingMode.desc),
       ]);
     if (limit != null) {
       query.limit(limit);
@@ -201,10 +189,8 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
             _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
       )
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.lastModified,
-          mode: OrderingMode.desc,
-        ),
+        (t) =>
+            OrderingTerm(expression: t.lastModified, mode: OrderingMode.desc),
       ]);
     if (limit != null) {
       query.limit(limit);
@@ -215,10 +201,7 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
   /// Get count of drafts by publish status.
   /// When [ownerPubkey] is provided, counts only drafts owned by that
   /// account **plus** legacy drafts with no owner.
-  Future<int> getCountByStatus(
-    String status, {
-    String? ownerPubkey,
-  }) async {
+  Future<int> getCountByStatus(String status, {String? ownerPubkey}) async {
     final query = selectOnly(drafts)
       ..where(
         drafts.publishStatus.equals(status) &
@@ -243,6 +226,28 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
   /// Clear all drafts
   Future<int> clearAll() {
     return delete(drafts).go();
+  }
+
+  /// Delete all drafts owned by [userPubkey].
+  ///
+  /// Legacy drafts with NULL ownerPubkey are preserved because they
+  /// cannot be attributed to any specific account.
+  /// Used on destructive sign-out to prevent cross-account data leaks.
+  Future<int> deleteAllForUser(String userPubkey) {
+    return (delete(
+      drafts,
+    )..where((t) => t.ownerPubkey.equals(userPubkey))).go();
+  }
+
+  /// Claim legacy drafts (NULL ownerPubkey) for [ownerPubkey].
+  ///
+  /// Called during session setup so that pre-multi-account drafts are
+  /// attributed to the user who created them and stop being visible
+  /// to other accounts via the `_ownedOrLegacy` filter.
+  Future<int> claimLegacyRows(String ownerPubkey) {
+    return (update(drafts)..where((t) => t.ownerPubkey.isNull())).write(
+      DraftsCompanion(ownerPubkey: Value(ownerPubkey)),
+    );
   }
 
   /// Check if a filename is referenced by any draft's

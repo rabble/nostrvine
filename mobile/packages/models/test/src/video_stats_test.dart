@@ -1178,6 +1178,73 @@ void main() {
         expect(videoEvent.content, equals(''));
       });
 
+      test(
+        'propagates NIP-40 expiration tag from REST event data into VideoEvent',
+        () {
+          final futureExpiry =
+              (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600;
+          final json = {
+            'event': {
+              'id': 'test-id',
+              'pubkey': 'test-pubkey',
+              'created_at': 1700000000,
+              'kind': 34236,
+              'content': 'Test',
+              'tags': [
+                ['d', 'video-1'],
+                ['url', 'https://example.com/video.mp4'],
+                ['expiration', futureExpiry.toString()],
+              ],
+            },
+            'stats': {
+              'reactions': 0,
+              'comments': 0,
+              'reposts': 0,
+              'engagement_score': 0,
+            },
+          };
+
+          final stats = VideoStats.fromJson(json);
+          final event = stats.toVideoEvent();
+
+          expect(event.expirationTimestamp, equals(futureExpiry));
+          expect(event.isExpired, isFalse);
+        },
+      );
+
+      test(
+        'sets isExpired to true when the expiration timestamp is in the past',
+        () {
+          final pastExpiry =
+              (DateTime.now().millisecondsSinceEpoch ~/ 1000) - 3600;
+          final json = {
+            'event': {
+              'id': 'test-id',
+              'pubkey': 'test-pubkey',
+              'created_at': 1700000000,
+              'kind': 34236,
+              'content': 'Test',
+              'tags': [
+                ['d', 'video-1'],
+                ['url', 'https://example.com/video.mp4'],
+                ['expiration', pastExpiry.toString()],
+              ],
+            },
+            'stats': {
+              'reactions': 0,
+              'comments': 0,
+              'reposts': 0,
+              'engagement_score': 0,
+            },
+          };
+
+          final event = VideoStats.fromJson(json).toVideoEvent();
+
+          expect(event.expirationTimestamp, equals(pastExpiry));
+          expect(event.isExpired, isTrue);
+        },
+      );
+
       test('maps API reactions count to originalLikes as fallback', () {
         final stats = VideoStats(
           id: 'test-id',

@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Solo podés borrar tus propios videos.",
     "shareMenuDeleteFailedNotAuthenticated": "Volvé a iniciar sesión y probá borrar de nuevo.",
     "shareMenuDeleteFailedCouldNotSign": "No pudimos firmar el pedido de borrado. Probá de nuevo.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "No pudimos borrar este video. Probá de nuevo.",
     "shareMenuFollowSetName": "Nombre del set de seguidos",
     "shareMenuFollowSetNameHint": "ej: Creadores de contenido, Músicos, etc.",

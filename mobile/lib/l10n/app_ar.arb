@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "يمكنك حذف مقاطع الفيديو الخاصة بك فقط.",
     "shareMenuDeleteFailedNotAuthenticated": "سجّل الدخول مرة أخرى، ثم حاول الحذف.",
     "shareMenuDeleteFailedCouldNotSign": "لم نتمكن من توقيع طلب الحذف. حاول مرة أخرى.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "تعذّر حذف هذا الفيديو. حاول مرة أخرى.",
     "shareMenuFollowSetName": "اسم مجموعة المتابعة",
     "shareMenuFollowSetNameHint": "مثل: صناع المحتوى، موسيقيون، إلخ.",

@@ -226,7 +226,7 @@ class ProfileFeed extends _$ProfileFeed {
       final result = await client
           .getVideosByAuthor(pubkey: userId)
           .timeout(_restApiTimeout);
-      final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
+      final apiVideos = result.videos.toVideoEvents();
 
       if (!ref.mounted) return;
 
@@ -366,7 +366,7 @@ class ProfileFeed extends _$ProfileFeed {
               offset: offset,
             )
             .timeout(_restApiTimeout);
-        final apiVideos = result.videos.map((v) => v.toVideoEvent()).toList();
+        final apiVideos = result.videos.toVideoEvents();
 
         if (!ref.mounted) return;
         _totalVideoCount = result.totalCount ?? _totalVideoCount;

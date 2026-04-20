@@ -1522,6 +1522,7 @@
     "shareMenuDeleteFailedNotOwner": "Yalnızca kendi videolarını silebilirsin.",
     "shareMenuDeleteFailedNotAuthenticated": "Tekrar giriş yap, sonra silmeyi dene.",
     "shareMenuDeleteFailedCouldNotSign": "Silme isteği imzalanamadı. Tekrar dene.",
+  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
     "shareMenuDeleteFailedGeneric": "Bu video silinemedi. Tekrar dene.",
     "shareMenuFollowSetName": "Takip Seti Adı",
     "shareMenuFollowSetNameHint": "örn. İçerik Üreticileri, Müzisyenler vb.",

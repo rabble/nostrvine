@@ -458,10 +458,15 @@ class VideoStats {
   ///
   /// Uses [publishedAt] as the effective timestamp when available,
   /// falling back to [createdAt].
+  ///
+  /// Propagates the NIP-40 `expiration` tag (if present in [rawTags]) so the
+  /// client can honour server-side expiration on REST-loaded videos the same
+  /// way it does for relay-loaded videos.
   VideoEvent toVideoEvent() {
     final effectiveTimestamp =
         publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
     final normalizedDTag = dTag.isNotEmpty ? dTag : id;
+    final expirationTimestamp = int.tryParse(rawTags['expiration'] ?? '');
     return VideoEvent(
       id: id,
       pubkey: pubkey,
@@ -502,6 +507,7 @@ class VideoStats {
         // The engagement loop count is stored in `originalLoops` instead.
         if (views != null) 'views': views.toString(),
       },
+      expirationTimestamp: expirationTimestamp,
     );
   }
 
