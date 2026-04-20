@@ -15,6 +15,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
@@ -110,6 +111,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     // Refresh router when auth state changes
     refreshListenable: authListenable,
     redirect: (context, state) {
+      // Rewrite divine.video universal-link URLs to internal paths before the
+      // auth/match logic runs. Android delivers the full intent URL (scheme +
+      // host + path) to GoRouter, which only matches on path. Without this
+      // step, paths that differ between the public URL contract and the
+      // internal route table (notably `/search/*` → `/search-results/:query`)
+      // would fall through to GoRouter's "Page Not Found" page.
+      final universalRedirect = universalLinkToRouterPath(state.uri);
+      if (universalRedirect != null) {
+        Log.info(
+          'Router redirect: universal link ${state.uri} → $universalRedirect',
+          name: 'AppRouter',
+          category: LogCategory.ui,
+        );
+        return universalRedirect;
+      }
+
       final location = state.matchedLocation;
       final authService = ref.read(authServiceProvider);
       final authState = authService.authState;

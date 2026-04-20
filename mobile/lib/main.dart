@@ -1178,6 +1178,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                 final index = deepLink.index ?? 0;
                 final targetPath =
                     '${ProfileScreenRouter.pathForNpub(deepLink.npub!)}/$index';
+                // GoRouter's universal-link redirect already navigated.
+                // Skip the duplicate `router.go` to avoid a second
+                // navigation frame on the same target.
+                if (currentLocation == targetPath) break;
                 Log.info(
                   '📱 Navigating to profile: $targetPath',
                   name: 'DeepLinkHandler',
@@ -1209,6 +1213,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                 final targetPath = HashtagScreenRouter.pathForTag(
                   deepLink.hashtag!,
                 );
+                if (currentLocation == targetPath) break;
                 Log.info(
                   '📱 Navigating to hashtag: $targetPath',
                   name: 'DeepLinkHandler',
@@ -1235,13 +1240,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
-            // TODO(#3032): Currently unreachable — GoRouter intercepts
-            // deep links before DeepLinkService can parse them.
             case DeepLinkType.search:
               if (deepLink.searchTerm != null) {
                 final targetPath = SearchResultsPage.pathForQuery(
                   deepLink.searchTerm!,
                 );
+                if (currentLocation == targetPath) break;
                 Log.info(
                   '📱 Navigating to search: $targetPath',
                   name: 'DeepLinkHandler',
