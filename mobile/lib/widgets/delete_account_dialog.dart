@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -292,6 +293,11 @@ Future<void> executeAccountDeletion({
     );
 
     if (result.success) {
+      // Keep a copy of the per-event batch outcome so Retry-failed can
+      // re-run on just the failed subset.
+      final batch = result.batch;
+      final fetchedEvents = result.fetchedEvents;
+
       // Step 2: Delete Keycast account if one exists (invalidates signer)
       final (keycastSuccess, keycastError) = await authService
           .deleteKeycastAccount();
@@ -350,20 +356,42 @@ Future<void> executeAccountDeletion({
       // Router will automatically redirect to /welcome after sign out
       dismissDialog();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            keyDeletionWarning ?? 'Your account has been deleted',
-            error: keyDeletionWarning != null,
-          ),
-        );
+        // Prefer the per-event summary when the batch ran with failures;
+        // the user can tap Retry to re-publish only the failed subset.
+        if (keyDeletionWarning != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              keyDeletionWarning,
+              error: true,
+            ),
+          );
+        } else if (batch != null && batch.failedEventIds.isNotEmpty) {
+          _showBatchSummarySnackBar(
+            context: context,
+            batch: batch,
+            deletionService: deletionService,
+            originalEvents: fetchedEvents,
+            screenName: screenName,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              'Your account has been deleted',
+            ),
+          );
+        }
       }
     } else {
       // Close loading indicator and show error
       dismissDialog();
       if (context.mounted) {
+        final feedback = result.nip62Feedback;
+        final errorText = feedback?.firstRejectionReason != null
+            ? 'Account deletion failed: ${feedback!.firstRejectionReason}'
+            : (result.error ?? 'Failed to delete content from relays');
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            result.error ?? 'Failed to delete content from relays',
+            errorText,
             error: true,
           ),
         );
@@ -375,6 +403,60 @@ Future<void> executeAccountDeletion({
     // Ensure dialog is dismissed even if an exception occurred
     dismissDialog();
   }
+}
+
+/// Render the N-of-M summary snack bar with a Retry action that re-invokes
+/// only the failed subset via [AccountDeletionService.retryFailedDeletions].
+void _showBatchSummarySnackBar({
+  required BuildContext context,
+  required BatchDeletionResult batch,
+  required AccountDeletionService deletionService,
+  required List<Event> originalEvents,
+  required String screenName,
+}) {
+  final succeeded = batch.succeededEventIds.length;
+  final failed = batch.failedEventIds.length;
+  final total = batch.total;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: VineTheme.warning,
+      duration: const Duration(seconds: 8),
+      content: Text(
+        'Account deleted. $succeeded of $total events published successfully; '
+        '$failed can be retried.',
+        style: const TextStyle(color: VineTheme.whiteText),
+      ),
+      action: SnackBarAction(
+        label: 'Retry failed',
+        textColor: VineTheme.whiteText,
+        onPressed: () async {
+          final retry = await deletionService.retryFailedDeletions(
+            originalEvents: originalEvents,
+            failedEventIds: batch.failedEventIds,
+          );
+          if (!context.mounted) return;
+          final retrySucceeded = retry.succeededEventIds.length;
+          final retryFailed = retry.failedEventIds.length;
+          final message = retryFailed == 0
+              ? 'All $retrySucceeded remaining events deleted.'
+              : '$retrySucceeded published, $retryFailed still failed.';
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              message,
+              error: retryFailed > 0,
+            ),
+          );
+          Log.info(
+            'Retry failed deletions: '
+            '$retrySucceeded succeeded, $retryFailed still failed',
+            name: screenName,
+            category: LogCategory.system,
+          );
+        },
+      ),
+    ),
+  );
 }
 
 /// Cubit for managing account deletion progress state.
