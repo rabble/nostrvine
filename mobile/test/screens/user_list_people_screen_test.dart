@@ -23,6 +23,7 @@ UserList _buildList({
   String id = 'list-1',
   String name = 'Close Friends',
   List<String> pubkeys = const [],
+  bool isEditable = true,
 }) {
   final now = DateTime.utc(2025);
   return UserList(
@@ -31,6 +32,7 @@ UserList _buildList({
     pubkeys: pubkeys,
     createdAt: now,
     updatedAt: now,
+    isEditable: isEditable,
   );
 }
 
@@ -156,6 +158,81 @@ void main() {
         await tester.pump();
 
         expect(find.textContaining('List not found'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'shows the add-people action when current list is editable',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        final list = _buildList(
+          id: 'punk-friends',
+          name: 'Punk Friends',
+        );
+        whenListen(
+          bloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: PeopleListsState(
+            status: PeopleListsStatus.ready,
+            ownerPubkey:
+                'f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0',
+            lists: [list],
+          ),
+        );
+
+        await tester.pumpWidget(
+          testProviderScope(
+            child: MaterialApp(
+              home: BlocProvider<PeopleListsBloc>.value(
+                value: bloc,
+                child: UserListPeopleScreen(listId: list.id),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        expect(find.byIcon(Icons.person_add_alt_1), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'hides the add-people action when current list is read-only',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        // Read-only lists (e.g. Divine Team) carry isEditable: false and must
+        // not expose the add-people action — editing them is forbidden.
+        final list = _buildList(
+          id: 'divine-team',
+          name: 'Divine Team',
+          isEditable: false,
+        );
+        whenListen(
+          bloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: PeopleListsState(
+            status: PeopleListsStatus.ready,
+            ownerPubkey:
+                'f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0',
+            lists: [list],
+          ),
+        );
+
+        await tester.pumpWidget(
+          testProviderScope(
+            child: MaterialApp(
+              home: BlocProvider<PeopleListsBloc>.value(
+                value: bloc,
+                child: UserListPeopleScreen(listId: list.id),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        expect(find.byIcon(Icons.person_add_alt_1), findsNothing);
       },
     );
   });
