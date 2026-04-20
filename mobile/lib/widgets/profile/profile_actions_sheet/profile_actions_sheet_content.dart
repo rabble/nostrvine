@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_action_type.dart';
@@ -100,18 +101,19 @@ class _ActionPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final (sticker, title, subtitle, primaryLabel) = switch (action) {
       ProfileActionType.secureAccount => (
         DivineStickerName.skeletonKey,
-        'Secure Your Account',
-        'Add email & password to recover your account on any device.',
-        'Add Email & Password',
+        l10n.profileSecureYourAccount,
+        l10n.profileSecureSubtitle,
+        l10n.profileSecurePrimaryButton,
       ),
       ProfileActionType.completeProfile => (
         DivineStickerName.profile,
-        'Complete Your Profile',
-        'Add your name, bio, and picture to get started.',
-        'Update Your Profile',
+        l10n.profileCompleteYourProfile,
+        l10n.profileCompleteSubtitle,
+        l10n.profileCompletePrimaryButton,
       ),
     };
 
@@ -148,7 +150,7 @@ class _ActionPrompt extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           DivineButton(
-            label: 'Maybe Later',
+            label: l10n.profileMaybeLaterLabel,
             onPressed: onSecondaryTap,
             type: DivineButtonType.secondary,
             expanded: true,

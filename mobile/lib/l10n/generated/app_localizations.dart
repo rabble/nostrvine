@@ -1048,6 +1048,54 @@ abstract class AppLocalizations {
   /// **'Sign in'**
   String get profileSignInButton;
 
+  /// No description provided for @profileMaybeLaterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe Later'**
+  String get profileMaybeLaterLabel;
+
+  /// No description provided for @profileSecurePrimaryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Email & Password'**
+  String get profileSecurePrimaryButton;
+
+  /// No description provided for @profileCompletePrimaryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Your Profile'**
+  String get profileCompletePrimaryButton;
+
+  /// No description provided for @profileLoopsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loops'**
+  String get profileLoopsLabel;
+
+  /// No description provided for @profileLikesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Likes'**
+  String get profileLikesLabel;
+
+  /// No description provided for @profileMyLibraryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'My Library'**
+  String get profileMyLibraryLabel;
+
+  /// No description provided for @profileMessageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get profileMessageLabel;
+
+  /// Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'.
+  ///
+  /// In en, this message translates to:
+  /// **'user'**
+  String get profileUserFallback;
+
   /// No description provided for @profileDismissTooltip.
   ///
   /// In en, this message translates to:

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
@@ -48,7 +49,7 @@ class ProfileActionButtons extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (isOwnProfile) {
-      return _ActionButtonsRow(children: _buildOwnProfileButtons());
+      return _ActionButtonsRow(children: _buildOwnProfileButtons(context));
     }
 
     final followRepository = ref.watch(followRepositoryProvider);
@@ -81,7 +82,7 @@ class ProfileActionButtons extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildOwnProfileButtons() {
+  List<Widget> _buildOwnProfileButtons(BuildContext context) {
     return [
       Expanded(
         child: DivineButton(
@@ -90,7 +91,7 @@ class ProfileActionButtons extends ConsumerWidget {
           leadingIcon: .filmSlate,
           type: .secondary,
           size: .small,
-          label: 'My Library',
+          label: context.l10n.profileMyLibraryLabel,
           onPressed: onOpenClips,
         ),
       ),
@@ -152,12 +153,13 @@ class _OtherProfileButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
       selector: (state) => state.isFollowing(userIdHex),
       builder: (context, isFollowing) {
         final followButton = FollowFromProfileButtonView(
           pubkey: userIdHex,
-          displayName: displayName ?? 'user',
+          displayName: displayName ?? l10n.profileUserFallback,
           currentUserPubkey: currentUserPubkey,
           isBlocked: isBlocked,
           isBlockedByThem: isBlockedByThem,
@@ -182,7 +184,7 @@ class _OtherProfileButtons extends StatelessWidget {
                 leadingIcon: .envelopeSimple,
                 type: .secondary,
                 size: .small,
-                label: 'Message',
+                label: l10n.profileMessageLabel,
                 onPressed: onMessageUser,
               ),
             ),

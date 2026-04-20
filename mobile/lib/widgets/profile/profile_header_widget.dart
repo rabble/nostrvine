@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -235,12 +236,13 @@ class ProfileHeaderWidget extends ConsumerWidget {
     WidgetRef ref,
     String userIdHex,
   ) {
+    final l10n = context.l10n;
     VineBottomSheetPrompt.show(
       context: context,
       sticker: DivineStickerName.skeletonKey,
-      title: 'Session Expired',
-      subtitle: 'Sign in again to restore full access to your account.',
-      primaryButtonText: 'Sign In',
+      title: l10n.profileSessionExpired,
+      subtitle: l10n.profileSignInToRestore,
+      primaryButtonText: l10n.profileSignInButton,
       onPrimaryPressed: () async {
         Navigator.of(context).pop();
         final authService = ref.read(authServiceProvider);
@@ -249,7 +251,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
           GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
         }
       },
-      secondaryButtonText: 'Maybe Later',
+      secondaryButtonText: l10n.profileMaybeLaterLabel,
       onSecondaryPressed: () async {
         final prefs = ref.read(sharedPreferencesProvider);
         await dismissDivineLoginBanner(prefs, userIdHex);
@@ -600,23 +602,24 @@ class _ProfileStatsRow extends StatelessWidget {
     final hasLikes = profileStats?.totalLikes != null;
     final hasLoops = profileStats?.totalViews != null;
 
+    final l10n = context.l10n;
     final columns = <Widget>[
       if (hasLoops)
         ProfileStatColumn(
           count: profileStats!.totalViews,
-          label: 'Loops',
+          label: l10n.profileLoopsLabel,
           isLoading: false,
         ),
       if (hasLikes)
         ProfileStatColumn(
           count: profileStats!.totalLikes,
-          label: 'Likes',
+          label: l10n.profileLikesLabel,
           isLoading: false,
         ),
       if (hasFollowing)
         ProfileStatColumn(
           count: profileStats!.following,
-          label: 'Following',
+          label: l10n.profileFollowingLabel,
           isLoading: false,
           onTap: () => context.push(
             FollowingScreenRouter.pathForPubkey(userIdHex),
@@ -625,7 +628,7 @@ class _ProfileStatsRow extends StatelessWidget {
       if (hasFollowers)
         ProfileStatColumn(
           count: profileStats!.followers,
-          label: 'Followers',
+          label: l10n.profileFollowersLabel,
           isLoading: false,
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(userIdHex),

@@ -4,12 +4,15 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 
 void main() {
   group(ProfileActionsSheetContent, () {
     Widget buildApp({required List<ProfileActionType> actions}) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Builder(
             builder: (context) {
@@ -43,7 +46,7 @@ void main() {
         expect(find.text('Maybe Later'), findsOneWidget);
         expect(
           find.text(
-            'Add email & password to recover your account on any device.',
+            'Add email & password to recover your account on any device',
           ),
           findsOneWidget,
         );
@@ -78,7 +81,7 @@ void main() {
         expect(find.text('Update Your Profile'), findsOneWidget);
         expect(find.text('Maybe Later'), findsOneWidget);
         expect(
-          find.text('Add your name, bio, and picture to get started.'),
+          find.text('Add your name, bio, and picture to get started'),
           findsOneWidget,
         );
       });

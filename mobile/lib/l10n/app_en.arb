@@ -307,6 +307,17 @@
   "profileSessionExpired": "Session Expired",
   "profileSignInToRestore": "Sign in again to restore full access",
   "profileSignInButton": "Sign in",
+  "profileMaybeLaterLabel": "Maybe Later",
+  "profileSecurePrimaryButton": "Add Email & Password",
+  "profileCompletePrimaryButton": "Update Your Profile",
+  "profileLoopsLabel": "Loops",
+  "profileLikesLabel": "Likes",
+  "profileMyLibraryLabel": "My Library",
+  "profileMessageLabel": "Message",
+  "profileUserFallback": "user",
+  "@profileUserFallback": {
+    "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+  },
   "profileDismissTooltip": "Dismiss",
   "profileLinkCopied": "Profile link copied",
   "profileSetupEditProfileTitle": "Edit Profile",
