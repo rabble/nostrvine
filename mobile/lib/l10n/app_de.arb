@@ -2928,5 +2928,7 @@
     "shareMenuDeleteFailedNotOwner": "Du kannst nur deine eigenen Videos löschen.",
     "videoEditorLayers": "Ebenen",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{Loop} other{Loops}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "Wähle den Audiobereich für dein Video aus",
+  "videoEditorClipGalleryInstruction": "Tippen zum Bearbeiten. Halten und ziehen zum Neuordnen."
 }

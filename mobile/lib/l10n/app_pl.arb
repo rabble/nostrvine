@@ -2928,5 +2928,7 @@
     "shareMenuDeleteFailedNotOwner": "Możesz usuwać tylko własne filmy.",
     "videoEditorLayers": "Warstwy",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{pętla} few{pętle} many{pętli} other{pętli}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "Wybierz fragment audio dla swojego filmu",
+  "videoEditorClipGalleryInstruction": "Dotknij, aby edytować. Przytrzymaj i przeciągnij, aby zmienić kolejność."
 }

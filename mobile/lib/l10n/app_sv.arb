@@ -2928,5 +2928,7 @@
     "shareMenuDeleteFailedNotOwner": "Du kan bara ta bort dina egna videor.",
     "videoEditorLayers": "Lager",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loopar}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "Välj ljudsegmentet för din video",
+  "videoEditorClipGalleryInstruction": "Tryck för att redigera. Håll ned och dra för att ändra ordning."
 }

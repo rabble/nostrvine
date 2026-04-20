@@ -148,7 +148,7 @@ void main() {
       ProVideoEditor.instance = mockEditor;
     });
 
-    Widget buildWidget({AudioEvent? sound}) {
+    Widget buildWidget({AudioEvent? sound, Locale? locale}) {
       final testSound =
           sound ??
           _createTestAudioEvent(
@@ -158,6 +158,7 @@ void main() {
 
       return ProviderScope(
         child: MaterialApp(
+          locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: VideoAudioEditorTimingScreen(sound: testSound),
@@ -182,6 +183,20 @@ void main() {
       expect(
         find.text('Select the audio segment for your video'),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('renders localized instruction text', (tester) async {
+      await tester.pumpWidget(buildWidget(locale: const Locale('de')));
+      await tester.pump();
+
+      expect(
+        find.text('Wähle den Audiobereich für dein Video aus'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Select the audio segment for your video'),
+        findsNothing,
       );
     });
 
