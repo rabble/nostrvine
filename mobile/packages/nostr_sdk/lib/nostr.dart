@@ -201,19 +201,23 @@ class Nostr {
     return null;
   }
 
-  /// Sends an event and awaits `OK` confirmation from at least one relay.
+  /// Signs (if needed) and publishes [event], returning a [PublishOutcome]
+  /// that reflects each target relay's NIP-20 OK response.
   ///
-  /// Signs the event if needed, dispatches to relays, and returns a
-  /// [PublishOutcome] describing per-relay acceptance and rejection. The
-  /// future completes early once one relay confirms, but no later than
-  /// [timeout].
+  /// If signing fails, returns `null` — this preserves the original
+  /// delete-reliability contract. Callers that prefer an always-non-null
+  /// outcome can coalesce with an empty [PublishOutcome].
   ///
-  /// Returns `null` if signing failed.
+  /// Uses [RelayPool.sendAwaitOk] under the hood, which collects every
+  /// target relay's ack before completing (or times out). Callers can
+  /// inspect [PublishOutcome.acceptedByAny] / [PublishOutcome.confirmed]
+  /// for the first-accept-wins signal, or [PublishOutcome.transientRelays]
+  /// to drive retry-policy decisions.
   Future<PublishOutcome?> sendEventAwaitOk(
     Event event, {
+    Duration timeout = const Duration(seconds: 15),
     List<String>? tempRelays,
     List<String>? targetRelays,
-    Duration timeout = const Duration(seconds: 15),
   }) async {
     if (StringUtil.isBlank(event.sig)) {
       await signEvent(event);
@@ -222,12 +226,11 @@ class Nostr {
       }
     }
 
-    return _pool.sendEventAwaitOk(
-      ["EVENT", event.toJson()],
-      eventId: event.id,
+    return _pool.sendAwaitOk(
+      event,
+      timeout: timeout,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
-      timeout: timeout,
     );
   }
 
