@@ -25,6 +25,12 @@ abstract class NostrClientStatisticsObserver {
 
   /// Called when an event is sent to relays
   void onEventSent();
+
+  /// Called after a publish attempt via [NostrClient.publishEventAwaitOk] or
+  /// [NostrClient.publishEventWithRetry] resolves. Retry wrappers invoke
+  /// this once per attempt so observers can measure per-try latency and
+  /// final outcome. Default impl is a no-op.
+  void onPublishOutcome(PublishOutcome outcome) {}
 }
 
 /// {@template nostr_client}
@@ -292,6 +298,66 @@ class NostrClient {
     statisticsObserver?.onEventSent();
 
     return sentEvent;
+  }
+
+  /// Publishes [event] and returns a [PublishOutcome] reflecting per-relay
+  /// NIP-20 OK acknowledgements. Unlike [publishEvent], resolves only when
+  /// every targeted relay has accepted/rejected or [timeout] elapses.
+  ///
+  /// Cache semantics match [publishEvent]:
+  /// - Regular events: optimistically cached before send; rolled back on
+  ///   [PublishOutcome.failed] (zero accepts).
+  /// - Replaceable and addressable events: cached on success (any accept)
+  ///   only.
+  /// - Deletion events: target events removed from cache on any accept.
+  ///
+  /// Every attempt invokes [NostrClientStatisticsObserver.onPublishOutcome]
+  /// with the resolved outcome so telemetry can track per-relay reliability.
+  Future<PublishOutcome> publishEventAwaitOk(
+    Event event, {
+    Duration timeout = const Duration(seconds: 15),
+    List<String>? targetRelays,
+  }) async {
+    final useOptimisticCache = _canOptimisticallyCache(event.kind);
+    if (useOptimisticCache) _cacheEvent(event);
+
+    if (_relayManager.connectedRelays.isEmpty) {
+      await retryDisconnectedRelays();
+      if (_relayManager.connectedRelays.isEmpty) {
+        if (useOptimisticCache) _rollbackCachedEvent(event.id);
+        final outcome = PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        );
+        statisticsObserver?.onPublishOutcome(outcome);
+        return outcome;
+      }
+    }
+
+    final outcome = await _nostr.sendEventAwaitOk(
+      event,
+      timeout: timeout,
+      targetRelays: targetRelays,
+      // Mirror publishEvent: pass as tempRelays so the SDK creates
+      // temporary connections to target relays not already in the pool.
+      tempRelays: targetRelays,
+    );
+
+    if (outcome.failed) {
+      if (useOptimisticCache) _rollbackCachedEvent(event.id);
+    } else {
+      if (event.kind == EventKind.eventDeletion) {
+        _handleDeletionEvent(event);
+      } else if (!useOptimisticCache) {
+        _cacheEvent(event);
+      }
+      statisticsObserver?.onEventSent();
+    }
+
+    statisticsObserver?.onPublishOutcome(outcome);
+    return outcome;
   }
 
   /// Queries events with given filters

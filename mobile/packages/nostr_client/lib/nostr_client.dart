@@ -5,6 +5,8 @@
 /// and connection handling. Integrates SDK, gateway, and caching.
 library;
 
+export 'package:nostr_sdk/relay/publish_outcome.dart' show PublishOutcome;
+
 export 'src/models/models.dart';
 export 'src/nostr_client.dart';
 export 'src/relay_manager.dart';
