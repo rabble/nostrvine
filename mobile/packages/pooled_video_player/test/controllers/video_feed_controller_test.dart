@@ -1705,77 +1705,15 @@ void main() {
       });
 
       group('maxLoopDuration', () {
-        // Effective enforcement window is maxLoopDuration + 500 ms grace.
-        // The grace lets mpv's native PlaylistMode.single loop win the race
-        // on well-behaved content — see #1845 and the _loopEnforcementGraceMs
-        // constant on VideoFeedController.
+        // Enforcement is gated on the video's **natural container duration**,
+        // not live position. Videos whose container EOS lands within
+        // _loopEnforcementGraceMs (200 ms) of maxLoopDuration let mpv's native
+        // PlaylistMode.single loop fire at EOS so the last-frame hold isn't
+        // clipped (#1845). Videos whose natural duration is materially longer
+        // — or whose duration is unknown (PR #2384's deferred-duration case)
+        // — still get the hard Vine-style cap.
         test(
-          'seeks to zero when position exceeds maxLoopDuration plus grace',
-          () async {
-            final controller = VideoFeedController(
-              videos: createTestVideos(count: 1),
-              pool: pool,
-              maxLoopDuration: const Duration(milliseconds: 6_300),
-            );
-
-            await Future<void>.delayed(const Duration(milliseconds: 50));
-
-            final url = createTestVideos(count: 1)[0].url;
-            final setup = playerSetups[url]!;
-
-            // Past the grace boundary (6300 + 500 = 6800; 6900 > 6800).
-            when(() => setup.state.playing).thenReturn(true);
-            when(
-              () => setup.state.position,
-            ).thenReturn(const Duration(milliseconds: 6900));
-
-            // Simulate buffer ready (starts playback + position timer)
-            setup.bufferingController.add(false);
-            await Future<void>.delayed(const Duration(milliseconds: 50));
-
-            // Wait for position timer to fire
-            await Future<void>.delayed(const Duration(milliseconds: 150));
-
-            // Verify fallback force-seek fired.
-            verify(() => setup.player.seek(Duration.zero)).called(
-              greaterThanOrEqualTo(1),
-            );
-
-            controller.dispose();
-          },
-        );
-
-        test('seeks to zero at the exact grace boundary', () async {
-          final controller = VideoFeedController(
-            videos: createTestVideos(count: 1),
-            pool: pool,
-            maxLoopDuration: const Duration(milliseconds: 6300),
-          );
-
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-
-          final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
-
-          // Exactly at the `>=` boundary — 6300 + 500 = 6800.
-          when(() => setup.state.playing).thenReturn(true);
-          when(
-            () => setup.state.position,
-          ).thenReturn(const Duration(milliseconds: 6800));
-
-          setup.bufferingController.add(false);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-          await Future<void>.delayed(const Duration(milliseconds: 150));
-
-          verify(() => setup.player.seek(Duration.zero)).called(
-            greaterThanOrEqualTo(1),
-          );
-
-          controller.dispose();
-        });
-
-        test(
-          'does not seek at one millisecond below the grace boundary',
+          'seeks to zero when content is materially longer than the cap',
           () async {
             final controller = VideoFeedController(
               videos: createTestVideos(count: 1),
@@ -1788,22 +1726,132 @@ void main() {
             final url = createTestVideos(count: 1)[0].url;
             final setup = playerSetups[url]!;
 
-            // 6799 ms — 1 ms below the 6800 ms boundary. The `>=` comparison
-            // must NOT fire here.
+            // External 10s video at position 6301 ms — just past the cap.
+            // Natural duration exceeds cap + grace (6500) → strict enforce.
             when(() => setup.state.playing).thenReturn(true);
             when(
               () => setup.state.position,
-            ).thenReturn(const Duration(milliseconds: 6799));
+            ).thenReturn(const Duration(milliseconds: 6301));
+            when(
+              () => setup.state.duration,
+            ).thenReturn(const Duration(milliseconds: 10_000));
 
             setup.bufferingController.add(false);
             await Future<void>.delayed(const Duration(milliseconds: 50));
 
-            // Reset interactions from the play()-on-buffer-ready path.
+            await Future<void>.delayed(const Duration(milliseconds: 150));
+
+            verify(() => setup.player.seek(Duration.zero)).called(
+              greaterThanOrEqualTo(1),
+            );
+
+            controller.dispose();
+          },
+        );
+
+        test(
+          'seeks to zero at the exact cap when duration exceeds grace',
+          () async {
+            final controller = VideoFeedController(
+              videos: createTestVideos(count: 1),
+              pool: pool,
+              maxLoopDuration: const Duration(milliseconds: 6300),
+            );
+
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            final url = createTestVideos(count: 1)[0].url;
+            final setup = playerSetups[url]!;
+
+            // Position hits the `>=` cap boundary exactly; natural duration
+            // (6.7s — hm21's Scenario 3) is beyond the 200 ms grace, so the
+            // hard cap applies.
+            when(() => setup.state.playing).thenReturn(true);
+            when(
+              () => setup.state.position,
+            ).thenReturn(const Duration(milliseconds: 6300));
+            when(
+              () => setup.state.duration,
+            ).thenReturn(const Duration(milliseconds: 6700));
+
+            setup.bufferingController.add(false);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await Future<void>.delayed(const Duration(milliseconds: 150));
+
+            verify(() => setup.player.seek(Duration.zero)).called(
+              greaterThanOrEqualTo(1),
+            );
+
+            controller.dispose();
+          },
+        );
+
+        test(
+          'seeks to zero when duration is unknown (deferred-duration case)',
+          () async {
+            // PR #2384 scenario 1: external server without moov-at-front MP4
+            // leaves state.duration == Duration.zero. The fallback must still
+            // enforce the cap.
+            final controller = VideoFeedController(
+              videos: createTestVideos(count: 1),
+              pool: pool,
+              maxLoopDuration: const Duration(milliseconds: 6300),
+            );
+
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            final url = createTestVideos(count: 1)[0].url;
+            final setup = playerSetups[url]!;
+
+            when(() => setup.state.playing).thenReturn(true);
+            when(
+              () => setup.state.position,
+            ).thenReturn(const Duration(milliseconds: 6400));
+            when(() => setup.state.duration).thenReturn(Duration.zero);
+
+            setup.bufferingController.add(false);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await Future<void>.delayed(const Duration(milliseconds: 150));
+
+            verify(() => setup.player.seek(Duration.zero)).called(
+              greaterThanOrEqualTo(1),
+            );
+
+            controller.dispose();
+          },
+        );
+
+        test(
+          'does not seek when content is within the cap',
+          () async {
+            final controller = VideoFeedController(
+              videos: createTestVideos(count: 1),
+              pool: pool,
+              maxLoopDuration: const Duration(milliseconds: 6300),
+            );
+
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            final url = createTestVideos(count: 1)[0].url;
+            final setup = playerSetups[url]!;
+
+            // Mid-playback, well within the cap.
+            when(() => setup.state.playing).thenReturn(true);
+            when(
+              () => setup.state.position,
+            ).thenReturn(const Duration(milliseconds: 3000));
+            when(
+              () => setup.state.duration,
+            ).thenReturn(const Duration(milliseconds: 6339));
+
+            setup.bufferingController.add(false);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
             clearInteractions(setup.player);
             when(() => setup.player.seek(any())).thenAnswer((_) async {});
             when(
               () => setup.state.position,
-            ).thenReturn(const Duration(milliseconds: 6799));
+            ).thenReturn(const Duration(milliseconds: 3000));
 
             await Future<void>.delayed(const Duration(milliseconds: 150));
 
@@ -1813,47 +1861,15 @@ void main() {
           },
         );
 
-        test('does not seek when position is within maxLoopDuration', () async {
-          final controller = VideoFeedController(
-            videos: createTestVideos(count: 1),
-            pool: pool,
-            maxLoopDuration: const Duration(milliseconds: 6300),
-          );
-
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-
-          final url = createTestVideos(count: 1)[0].url;
-          final setup = playerSetups[url]!;
-
-          // Mid-playback, well within the cap.
-          when(() => setup.state.playing).thenReturn(true);
-          when(
-            () => setup.state.position,
-          ).thenReturn(const Duration(milliseconds: 3000));
-
-          setup.bufferingController.add(false);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-
-          clearInteractions(setup.player);
-          when(() => setup.player.seek(any())).thenAnswer((_) async {});
-          when(
-            () => setup.state.position,
-          ).thenReturn(const Duration(milliseconds: 3000));
-
-          await Future<void>.delayed(const Duration(milliseconds: 150));
-
-          verifyNever(() => setup.player.seek(Duration.zero));
-
-          controller.dispose();
-        });
-
         test(
-          'does not seek within the grace window past maxLoopDuration',
+          'does not seek for AAC-padding content within grace',
           () async {
-            // Positions between maxLoopDuration (6300) and the grace boundary
-            // (6800) must NOT fire the fallback. mpv's native
-            // PlaylistMode.single loop is expected to handle these.
-            for (final positionMs in [6300, 6400, 6500, 6700, 6799]) {
+            // Divine 720p derivative: v=6.300, a=6.339 — 39 ms of AAC audio
+            // padding extends container EOS past the last video frame. mpv's
+            // native PlaylistMode.single loop is expected to fire at the
+            // 6.339 s container EOS, preserving the last-frame hold (#1845).
+            // The force-seek must not beat it.
+            for (final positionMs in [6300, 6330, 6339]) {
               final controller = VideoFeedController(
                 videos: createTestVideos(count: 1),
                 pool: pool,
@@ -1869,6 +1885,9 @@ void main() {
               when(
                 () => setup.state.position,
               ).thenReturn(Duration(milliseconds: positionMs));
+              when(
+                () => setup.state.duration,
+              ).thenReturn(const Duration(milliseconds: 6339));
 
               setup.bufferingController.add(false);
               await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -1890,12 +1909,10 @@ void main() {
         );
 
         test(
-          'does not seek when native loop resets position mid-cycle',
+          'does not seek at the exact grace boundary (duration = max + grace)',
           () async {
-            // Simulates mpv's PlaylistMode.single firing a native loop:
-            // position climbs toward EOS, then resets to 0 between timer ticks.
-            // The fallback must not fire — position never reaches the 6800 ms
-            // grace boundary.
+            // Duration exactly at the `>` boundary (6300 + 200 = 6500) must
+            // NOT trigger enforcement — the check is `duration > max + grace`.
             final controller = VideoFeedController(
               videos: createTestVideos(count: 1),
               pool: pool,
@@ -1906,6 +1923,89 @@ void main() {
 
             final url = createTestVideos(count: 1)[0].url;
             final setup = playerSetups[url]!;
+
+            when(() => setup.state.playing).thenReturn(true);
+            when(
+              () => setup.state.position,
+            ).thenReturn(const Duration(milliseconds: 6400));
+            when(
+              () => setup.state.duration,
+            ).thenReturn(const Duration(milliseconds: 6500));
+
+            setup.bufferingController.add(false);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            clearInteractions(setup.player);
+            when(() => setup.player.seek(any())).thenAnswer((_) async {});
+            when(
+              () => setup.state.position,
+            ).thenReturn(const Duration(milliseconds: 6400));
+
+            await Future<void>.delayed(const Duration(milliseconds: 150));
+
+            verifyNever(() => setup.player.seek(Duration.zero));
+
+            controller.dispose();
+          },
+        );
+
+        test(
+          'seeks when duration just crosses the grace boundary',
+          () async {
+            // Duration = 6501 (1 ms over max + grace) must trigger
+            // enforcement — the check is strict `>`.
+            final controller = VideoFeedController(
+              videos: createTestVideos(count: 1),
+              pool: pool,
+              maxLoopDuration: const Duration(milliseconds: 6300),
+            );
+
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            final url = createTestVideos(count: 1)[0].url;
+            final setup = playerSetups[url]!;
+
+            when(() => setup.state.playing).thenReturn(true);
+            when(
+              () => setup.state.position,
+            ).thenReturn(const Duration(milliseconds: 6300));
+            when(
+              () => setup.state.duration,
+            ).thenReturn(const Duration(milliseconds: 6501));
+
+            setup.bufferingController.add(false);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            await Future<void>.delayed(const Duration(milliseconds: 150));
+
+            verify(() => setup.player.seek(Duration.zero)).called(
+              greaterThanOrEqualTo(1),
+            );
+
+            controller.dispose();
+          },
+        );
+
+        test(
+          'does not seek when native loop resets position mid-cycle',
+          () async {
+            // Simulates mpv's PlaylistMode.single firing a native loop on
+            // AAC-padded 720p content: position climbs toward EOS, then
+            // resets to 0 between timer ticks. The fallback must not fire.
+            final controller = VideoFeedController(
+              videos: createTestVideos(count: 1),
+              pool: pool,
+              maxLoopDuration: const Duration(milliseconds: 6300),
+            );
+
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            final url = createTestVideos(count: 1)[0].url;
+            final setup = playerSetups[url]!;
+
+            // Duration stays constant across ticks — AAC-padded 720p.
+            when(
+              () => setup.state.duration,
+            ).thenReturn(const Duration(milliseconds: 6339));
 
             // Tick 1: mid-playback.
             when(() => setup.state.playing).thenReturn(true);
@@ -1918,15 +2018,13 @@ void main() {
             clearInteractions(setup.player);
             when(() => setup.player.seek(any())).thenAnswer((_) async {});
 
-            // Tick 2: past maxLoopDuration but within grace (mpv holding
-            // last frame while container EOS approaches).
+            // Tick 2: just past maxLoopDuration, still within container EOS.
             when(
               () => setup.state.position,
-            ).thenReturn(const Duration(milliseconds: 6350));
+            ).thenReturn(const Duration(milliseconds: 6320));
             await Future<void>.delayed(const Duration(milliseconds: 110));
 
-            // Tick 3: mpv's native PlaylistMode.single loop just fired —
-            // position reset to 0 between ticks.
+            // Tick 3: mpv's native loop just fired — position reset to 0.
             when(() => setup.state.position).thenReturn(Duration.zero);
             await Future<void>.delayed(const Duration(milliseconds: 110));
 
@@ -1936,7 +2034,6 @@ void main() {
             ).thenReturn(const Duration(milliseconds: 150));
             await Future<void>.delayed(const Duration(milliseconds: 110));
 
-            // No fallback seek should have fired during any tick.
             verifyNever(() => setup.player.seek(Duration.zero));
 
             controller.dispose();
@@ -1954,28 +2051,27 @@ void main() {
           final url = createTestVideos(count: 1)[0].url;
           final setup = playerSetups[url]!;
 
-          // Configure player as playing past 6.3s
+          // Configure player as playing past 6.3s with known long duration —
+          // would normally trigger enforcement, but maxLoopDuration is null.
           when(() => setup.state.playing).thenReturn(true);
           when(
             () => setup.state.position,
           ).thenReturn(const Duration(milliseconds: 7000));
+          when(
+            () => setup.state.duration,
+          ).thenReturn(const Duration(milliseconds: 10_000));
 
-          // Simulate buffer ready
           setup.bufferingController.add(false);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          // Clear any seek calls from initial playback
           clearInteractions(setup.player);
           when(() => setup.player.seek(any())).thenAnswer((_) async {});
           when(
             () => setup.state.position,
           ).thenReturn(const Duration(milliseconds: 7000));
 
-          // Wait for position timer
           await Future<void>.delayed(const Duration(milliseconds: 150));
 
-          // With no maxLoopDuration, seek(Duration.zero) from loop
-          // enforcement should NOT be called
           verifyNever(() => setup.player.seek(Duration.zero));
 
           controller.dispose();
