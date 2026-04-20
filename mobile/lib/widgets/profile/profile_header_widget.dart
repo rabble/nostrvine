@@ -850,7 +850,11 @@ class _AvatarLightbox extends StatelessWidget {
             child: Stack(
               children: [
                 Center(
-                  child: UserAvatar(imageUrl: imageUrl, size: 288),
+                  child: UserAvatar(
+                    imageUrl: imageUrl,
+                    size: 288,
+                    cornerRadius: 112,
+                  ),
                 ),
                 Positioned(
                   top: safeAreaTop + 12,
