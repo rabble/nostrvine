@@ -55,6 +55,7 @@ workspace:
   - packages/nostr_client
   - packages/nostr_key_manager
   - packages/nostr_apps
+  - packages/people_lists_repository
   - packages/permissions_service
   - packages/pooled_video_player
   - packages/profile_repository
