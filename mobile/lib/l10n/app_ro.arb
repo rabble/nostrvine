@@ -403,22 +403,14 @@
     "videoGridEditVideo": "Editează videoclipul",
     "videoGridEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
     "videoGridDeleteVideo": "Șterge videoclipul",
-    "videoGridDeleteVideoSubtitle": "Elimină definitiv acest conținut",
+    "videoGridDeleteVideoSubtitle": "Elimină acest videoclip din Divine. Alți clienți Nostr îl pot afișa în continuare.",
     "videoGridDeleteConfirmTitle": "Șterge videoclipul",
-    "videoGridDeleteConfirmMessage": "Sigur vrei să ștergi acest videoclip?",
-    "videoGridDeleteConfirmNote": "Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.",
+    "videoGridDeleteConfirmMessage": "Acest videoclip va fi șters definitiv din Divine. Poate să apară în continuare în alți clienți Nostr care folosesc alte relay-uri.",
+    "videoGridDeleteConfirmNote": "Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.",
     "videoGridDeleteCancel": "Anulează",
     "videoGridDeleteConfirm": "Șterge",
     "videoGridDeletingContent": "Se șterge conținutul...",
     "videoGridDeleteSuccess": "Cererea de ștergere a fost trimisă cu succes",
-    "videoGridDeleteFailure": "N-am putut șterge conținutul: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Clasice",
     "exploreTabNew": "Noi",
     "exploreTabPopular": "Populare",
@@ -594,6 +586,9 @@
     "shareMessageHint": "Adaugă un mesaj opțional...",
     "videoActionUnlike": "Retrage aprecierea",
     "videoActionLike": "Apreciază videoclipul",
+    "videoActionAutoLabel": "Auto",
+    "videoActionEnableAutoAdvance": "Activează avansarea automată",
+    "videoActionDisableAutoAdvance": "Dezactivează avansarea automată",
     "videoActionRemoveRepost": "Elimină redistribuirea",
     "videoActionRepost": "Redistribuie videoclipul",
     "videoActionViewComments": "Vezi comentariile",
@@ -608,6 +603,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{buclă} other{bucle}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Nu e Divine",
     "metadataBadgeHumanMade": "Făcut de om",
     "metadataSoundsLabel": "Sunete",
@@ -619,7 +625,14 @@
     "metadataCollaboratorsLabel": "Colaboratori",
     "metadataInspiredByLabel": "Inspirat de",
     "metadataRepostedByLabel": "Redistribuit de",
-    "metadataLoopsLabel": "Bucle",
+    "metadataLoopsLabel": "{count, plural, =1{Buclă} other{Bucle}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "Aprecieri",
     "metadataCommentsLabel": "Comentarii",
     "metadataRepostsLabel": "Redistribuiri",
@@ -1489,7 +1502,7 @@
     "shareMenuEditVideo": "Editează videoclipul",
     "shareMenuEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
     "shareMenuDeleteVideo": "Șterge videoclipul",
-    "shareMenuDeleteVideoSubtitle": "Elimină definitiv acest conținut",
+    "shareMenuDeleteVideoSubtitle": "Elimină acest videoclip din Divine. Alți clienți Nostr îl pot afișa în continuare.",
     "shareMenuVideoInTheseLists": "Videoclipul e în aceste liste:",
     "shareMenuVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
     "@shareMenuVideoCount": {
@@ -1500,20 +1513,16 @@
         }
     },
     "shareMenuClose": "Închide",
-    "shareMenuDeleteConfirmation": "Sigur vrei să ștergi acest videoclip?",
-    "shareMenuDeleteWarning": "Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.",
+    "shareMenuDeleteConfirmation": "Acest videoclip va fi șters definitiv din Divine. Poate să apară în continuare în alți clienți Nostr care folosesc alte relay-uri.",
     "shareMenuCancel": "Anulează",
     "shareMenuDelete": "Șterge",
     "shareMenuDeletingContent": "Se șterge conținutul...",
-    "shareMenuDeleteRequestSent": "Cererea de ștergere a fost trimisă cu succes",
-    "shareMenuFailedToDeleteContent": "N-am putut șterge conținutul: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuDeleteRequestSent": "Videoclip șters",
+    "shareMenuDeleteFailedNotInitialized": "Ștergerea nu e încă gata. Încearcă din nou peste un moment.",
+    "shareMenuDeleteFailedNotOwner": "Poți șterge doar propriile videoclipuri.",
+    "shareMenuDeleteFailedNotAuthenticated": "Autentifică-te din nou, apoi încearcă să ștergi.",
+    "shareMenuDeleteFailedCouldNotSign": "Nu am putut semna cererea de ștergere. Încearcă din nou.",
+    "shareMenuDeleteFailedGeneric": "Nu am putut șterge acest videoclip. Încearcă din nou.",
     "shareMenuFollowSetName": "Numele setului de urmărire",
     "shareMenuFollowSetNameHint": "ex. Creatori de conținut, Muzicieni etc.",
     "shareMenuDescriptionOptional": "Descriere (opțional)",
@@ -1547,15 +1556,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Ștergi videoclipul?",
     "shareMenuDeleteRelayWarning": "Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.",
-    "shareMenuVideoDeletionRequested": "Cerere de ștergere a videoclipului trimisă",
-    "shareMenuFailedToDeleteVideo": "N-am putut șterge videoclipul: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuVideoDeletionRequested": "Videoclip șters",
     "shareMenuContentLabels": "Etichete de conținut",
     "shareMenuAddContentLabels": "Adaugă etichete de conținut",
     "shareMenuClearAll": "Șterge tot",
@@ -1725,6 +1726,9 @@
     "feedFailedToLoadVideos": "N-am putut încărca videoclipurile",
     "feedRetry": "Reîncearcă",
     "feedNoFollowedUsers": "Niciun utilizator urmărit.\nUrmărește pe cineva ca să-i vezi videoclipurile aici.",
+    "feedForYouEmpty": "Feedul tău Pentru tine este gol.\nExplorează videoclipuri și urmărește creatori pentru a-l modela.",
+    "feedFollowingEmpty": "Încă nu există videoclipuri de la persoanele pe care le urmărești.\nGăsește creatori care îți plac și urmărește-i.",
+    "feedLatestEmpty": "Încă nu există videoclipuri noi.\nRevino curând.",
     "feedExploreVideos": "Explorează videoclipuri",
     "feedExternalVideoSlow": "Videoclipul extern se încarcă încet",
     "feedSkip": "Sari peste",
@@ -1793,9 +1797,7 @@
     "navInbox": "Mesaje",
     "navProfile": "Profil",
     "navMyProfile": "Profilul meu",
-    "navSearch": "Caută",
     "navNotifications": "Notificări",
-    "navSearchTooltip": "Caută",
     "navOpenCamera": "Deschide camera",
     "navUnknown": "Necunoscut",
     "navExploreClassics": "Clasice",

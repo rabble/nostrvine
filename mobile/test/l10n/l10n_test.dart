@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 
 void main() {
   group('AppLocalizations', () {
@@ -11,6 +12,7 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          localeListResolutionCallback: resolveAppUiLocale,
           home: Builder(
             builder: (context) {
               l10n = context.l10n;
@@ -57,7 +59,7 @@ void main() {
           locale: const Locale('zh'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          localeListResolutionCallback: (_, __) => const Locale('en'),
+          localeListResolutionCallback: resolveAppUiLocale,
           home: Builder(
             builder: (context) {
               l10n = context.l10n;
@@ -77,6 +79,7 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          localeListResolutionCallback: resolveAppUiLocale,
           home: Builder(
             builder: (context) {
               l10n = context.l10n;
@@ -96,6 +99,7 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          localeListResolutionCallback: resolveAppUiLocale,
           home: Builder(
             builder: (context) {
               l10n = context.l10n;
@@ -123,6 +127,7 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          localeListResolutionCallback: resolveAppUiLocale,
           home: Builder(
             builder: (context) {
               l10n = context.l10n;
@@ -145,6 +150,7 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          localeListResolutionCallback: resolveAppUiLocale,
           home: Builder(
             builder: (context) {
               l10n = context.l10n;

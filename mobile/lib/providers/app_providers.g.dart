@@ -3268,7 +3268,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'6e187aec8d40ff7f2de997c131d89d808e410a39';
+String _$profileRepositoryHash() => r'3bfe6e383fd841b79ea445f95fef8f89da9bb19c';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -3479,7 +3479,7 @@ final class MediaAuthInterceptorProvider
 }
 
 String _$mediaAuthInterceptorHash() =>
-    r'adae18db875674843f6ced55608bb65a5ef7f445';
+    r'214d6a37de9072814c52d22cf97a2c8c643664a8';
 
 /// Blossom upload service (uses user-configured Blossom server)
 
@@ -4637,7 +4637,7 @@ final class CommentsRepositoryProvider
 }
 
 String _$commentsRepositoryHash() =>
-    r'1c3dd068215ea906fc969029178752b2f04ba846';
+    r'bc4e74db3003bcf6884e467471892a1d8f01a194';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///

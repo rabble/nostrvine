@@ -564,7 +564,6 @@ class ProfileViewSwitcher extends StatelessWidget {
         ? ProfileVideoFeedView(
             npub: npub,
             userIdHex: userIdHex,
-            isOwnProfile: isOwnProfile,
             videos: videos,
             videoIndex: videoIndex!,
             onPageChanged: (newIndex) {

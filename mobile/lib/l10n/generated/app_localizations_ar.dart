@@ -794,18 +794,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoGridDeleteVideo => 'حذف الفيديو';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'إزالة هذا المحتوى نهائيًا';
+  String get videoGridDeleteVideoSubtitle =>
+      'أزِل هذا الفيديو من Divine. قد يظل ظاهرًا في عملاء Nostr آخرين.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'حذف الفيديو';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      'هل أنت متأكد من رغبتك في حذف هذا الفيديو؟';
+      'سيتم حذف هذا الفيديو نهائيًا من Divine. قد يظل ظاهرًا في عملاء Nostr الآخرين الذين يستخدمون محولات مختلفة.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.';
+      'سيرسل هذا طلب حذف إلى المحولات. ملاحظة: قد تحتفظ بعض المحولات بنسخ مخزّنة.';
 
   @override
   String get videoGridDeleteCancel => 'إلغاء';
@@ -818,11 +819,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoGridDeleteSuccess => 'تم إرسال طلب الحذف بنجاح';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'فشل حذف المحتوى: $error';
-  }
 
   @override
   String get exploreTabClassics => 'الكلاسيكيات';
@@ -1191,6 +1187,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionLike => 'الإعجاب بالفيديو';
 
   @override
+  String get videoActionAutoLabel => 'تلقائي';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'تفعيل التقدّم التلقائي';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'إيقاف التقدّم التلقائي';
+
+  @override
   String get videoActionRemoveRepost => 'إزالة إعادة النشر';
 
   @override
@@ -1211,6 +1216,17 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String videoDescriptionLoops(String count) {
     return '$count تكرار';
+  }
+
+  @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تكرارات',
+      one: 'تكرار',
+    );
+    return '$compactCount $_temp0';
   }
 
   @override
@@ -1247,7 +1263,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get metadataRepostedByLabel => 'أعاد نشره';
 
   @override
-  String get metadataLoopsLabel => 'التكرارات';
+  String metadataLoopsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'التكرارات',
+      one: 'تكرار',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get metadataLikesLabel => 'الإعجابات';
@@ -2903,7 +2927,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteVideo => 'حذف الفيديو';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => 'إزالة هذا المحتوى نهائيًا';
+  String get shareMenuDeleteVideoSubtitle =>
+      'أزِل هذا الفيديو من Divine. قد يظل ظاهرًا في عملاء Nostr آخرين.';
 
   @override
   String get shareMenuVideoInTheseLists => 'الفيديو في هذه القوائم:';
@@ -2918,11 +2943,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'هل أنت متأكد من رغبتك في حذف هذا الفيديو؟';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.';
+      'سيتم حذف هذا الفيديو نهائيًا من Divine. قد يظل ظاهرًا في عملاء Nostr الآخرين الذين يستخدمون محولات مختلفة.';
 
   @override
   String get shareMenuCancel => 'إلغاء';
@@ -2934,12 +2955,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeletingContent => 'جاري حذف المحتوى...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'تم إرسال طلب الحذف بنجاح';
+  String get shareMenuDeleteRequestSent => 'تم حذف الفيديو';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'فشل حذف المحتوى: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'الحذف غير جاهز بعد. حاول مرة أخرى بعد لحظة.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'يمكنك حذف مقاطع الفيديو الخاصة بك فقط.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'سجّل الدخول مرة أخرى، ثم حاول الحذف.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'لم نتمكن من توقيع طلب الحذف. حاول مرة أخرى.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'تعذّر حذف هذا الفيديو. حاول مرة أخرى.';
 
   @override
   String get shareMenuFollowSetName => 'اسم مجموعة المتابعة';
@@ -3005,12 +3041,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'سيرسل هذا طلب حذف إلى المحولات. ملاحظة: قد تحتفظ بعض المحولات بنسخ مخزّنة.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'تم طلب حذف الفيديو';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'فشل حذف الفيديو: $error';
-  }
+  String get shareMenuVideoDeletionRequested => 'تم حذف الفيديو';
 
   @override
   String get shareMenuContentLabels => 'وسوم المحتوى';
@@ -3301,14 +3332,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'خلاصة \"لك\" فارغة.\nاستكشف مقاطع الفيديو وتابع المبدعين لتشكيلها.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'لا توجد مقاطع فيديو من الأشخاص الذين تتابعهم بعد.\nاعثر على مبدعين تحبهم وتابعهم.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty =>
+      'لا توجد مقاطع فيديو جديدة بعد.\nعد قريبًا للاطلاع.';
 
   @override
   String get feedExploreVideos => 'استكشاف مقاطع الفيديو';
@@ -3482,13 +3514,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navMyProfile => 'ملفي الشخصي';
 
   @override
-  String get navSearch => 'بحث';
-
-  @override
   String get navNotifications => 'الإشعارات';
-
-  @override
-  String get navSearchTooltip => 'بحث';
 
   @override
   String get navOpenCamera => 'فتح الكاميرا';
@@ -4770,4 +4796,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'الذهاب إلى الإعدادات';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

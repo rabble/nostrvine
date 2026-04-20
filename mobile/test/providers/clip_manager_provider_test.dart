@@ -1,6 +1,7 @@
 // ABOUTME: Tests for ClipManagerProvider - Riverpod state management
 // ABOUTME: Validates state updates and provider lifecycle
 
+@Tags(['skip_very_good_optimization'])
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

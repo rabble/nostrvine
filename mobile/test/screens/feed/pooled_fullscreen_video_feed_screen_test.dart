@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for PooledFullscreenVideoFeedScreen
 // ABOUTME: Tests state rendering and BLoC event dispatching
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -8,15 +9,27 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/services/build_configuration.dart';
+import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/media_auth_interceptor.dart';
+import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 import '../../test_data/video_test_data.dart';
@@ -28,6 +41,80 @@ class MockFullscreenFeedBloc
 class MockVideoFeedController extends Mock implements VideoFeedController {}
 
 class MockPlayer extends Mock implements Player {}
+
+class MockPlayerStream extends Mock implements PlayerStream {}
+
+class MockPlayerState extends Mock implements PlayerState {}
+
+class MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
+
+class _MockMediaViewerAuthService extends Mock
+    implements MediaViewerAuthService {}
+
+class _MockSharedPreferences implements SharedPreferences {
+  @override
+  bool? getBool(String key) => null;
+
+  @override
+  Future<bool> setBool(String key, bool value) async => true;
+
+  @override
+  Future<bool> remove(String key) async => true;
+
+  @override
+  Object? get(String key) => null;
+
+  @override
+  double? getDouble(String key) => null;
+
+  @override
+  int? getInt(String key) => null;
+
+  @override
+  Set<String> getKeys() => const <String>{};
+
+  @override
+  String? getString(String key) => null;
+
+  @override
+  List<String>? getStringList(String key) => null;
+
+  @override
+  bool containsKey(String key) => false;
+
+  @override
+  Future<bool> setDouble(String key, double value) async => true;
+
+  @override
+  Future<bool> setInt(String key, int value) async => true;
+
+  @override
+  Future<bool> setString(String key, String value) async => true;
+
+  @override
+  Future<bool> setStringList(String key, List<String> value) async => true;
+
+  @override
+  Future<bool> clear() async => true;
+
+  @override
+  Future<void> reload() async {}
+
+  @override
+  Future<bool> commit() async => true;
+}
+
+class _FlagOverrideFeatureFlagService extends FeatureFlagService {
+  _FlagOverrideFeatureFlagService(this._enabled)
+    : super(_MockSharedPreferences(), const BuildConfiguration());
+
+  final Set<FeatureFlag> _enabled;
+
+  @override
+  bool isEnabled(FeatureFlag flag) => _enabled.contains(flag);
+}
+
+class _FakeBuildContext extends Fake implements BuildContext {}
 
 // Full 64-character test IDs
 const testVideoId1 =
@@ -63,6 +150,15 @@ void stubVideoFeedController(
     () => controller.setActive(active: any(named: 'active')),
   ).thenReturn(null);
   when(() => controller.addVideos(any())).thenReturn(null);
+  when(
+    () => controller.replaceVideos(
+      any(),
+      currentIndex: any(named: 'currentIndex'),
+    ),
+  ).thenReturn(null);
+  when(
+    () => controller.updateRequestHeadersAndRetry(any(), any()),
+  ).thenReturn(null);
   when(() => controller.addListener(any())).thenReturn(null);
   when(() => controller.removeListener(any())).thenReturn(null);
   when(controller.dispose).thenReturn(null);
@@ -74,6 +170,27 @@ void stubVideoFeedController(
       () => ValueNotifier(const VideoIndexState()),
     );
   });
+}
+
+MockPlayer stubPlayer(
+  Stream<Duration> positionStream, {
+  Duration duration = const Duration(seconds: 5),
+}) {
+  final player = MockPlayer();
+  final stream = MockPlayerStream();
+  final state = MockPlayerState();
+
+  when(() => player.stream).thenReturn(stream);
+  when(() => player.state).thenReturn(state);
+  when(() => stream.position).thenAnswer((_) => positionStream);
+  when(() => stream.playing).thenAnswer((_) => const Stream<bool>.empty());
+  when(() => stream.buffering).thenAnswer((_) => const Stream<bool>.empty());
+  when(() => state.duration).thenReturn(duration);
+  when(() => state.position).thenReturn(Duration.zero);
+  when(() => state.playing).thenReturn(true);
+  when(() => state.buffering).thenReturn(false);
+
+  return player;
 }
 
 void main() {
@@ -90,8 +207,13 @@ void main() {
       registerFallbackValue(const FullscreenFeedIndexChanged(0));
       registerFallbackValue(const FullscreenFeedLoadMoreRequested());
       registerFallbackValue(const FullscreenFeedVideoCacheStarted(index: 0));
+      registerFallbackValue(const FullscreenFeedVideoUnavailable('fallback'));
+      registerFallbackValue(const FullscreenFeedSkipAcknowledged());
       registerFallbackValue(Duration.zero);
       registerFallbackValue(LoadState.none);
+      registerFallbackValue(_FakeBuildContext());
+      registerFallbackValue(<String, String>{});
+      registerFallbackValue(<VideoItem>[]);
     });
 
     setUp(() async {
@@ -246,9 +368,7 @@ void main() {
 
       testWidgets(
         'shows the category title in the fullscreen app bar when provided',
-        (
-          tester,
-        ) async {
+        (tester) async {
           final videos = createTestVideos();
 
           await tester.pumpWidget(
@@ -281,6 +401,116 @@ void main() {
         expect(find.byType(WebVideoFeed), findsOneWidget);
         expect(find.byType(VideoOverlayActions), findsOneWidget);
       }, skip: !kIsWeb);
+
+      testWidgets(
+        'threads NIP-98 auth header provider into WebVideoFeed when the '
+        'hlsAuthWebPlayer flag is on',
+        (tester) async {
+          final mockAuthService = _MockMediaViewerAuthService();
+          when(
+            () => mockAuthService.createAuthHeaders(
+              sha256Hash: any(named: 'sha256Hash'),
+              url: any(named: 'url'),
+              serverUrl: any(named: 'serverUrl'),
+            ),
+          ).thenAnswer(
+            (_) async => const {'Authorization': 'Nostr threaded-token'},
+          );
+
+          final videos = createTestVideos(count: 1);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              additionalOverrides: [
+                featureFlagServiceProvider.overrideWith(
+                  (ref) => _FlagOverrideFeatureFlagService(const {
+                    FeatureFlag.hlsAuthWebPlayer,
+                  }),
+                ),
+                mediaViewerAuthServiceProvider.overrideWithValue(
+                  mockAuthService,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          final feed = tester.widget<WebVideoFeed>(find.byType(WebVideoFeed));
+          expect(feed.authHeaderProvider, isNotNull);
+
+          final header = await feed.authHeaderProvider!(
+            'https://media.divine.video/'
+                'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+            'GET',
+          );
+          expect(header, equals('Nostr threaded-token'));
+        },
+        skip: !kIsWeb,
+      );
+
+      testWidgets(
+        'does not thread an auth header provider when the flag is off',
+        (tester) async {
+          final videos = createTestVideos(count: 1);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              additionalOverrides: [
+                featureFlagServiceProvider.overrideWith(
+                  (ref) =>
+                      _FlagOverrideFeatureFlagService(const <FeatureFlag>{}),
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          final feed = tester.widget<WebVideoFeed>(find.byType(WebVideoFeed));
+          expect(feed.authHeaderProvider, isNull);
+        },
+        skip: !kIsWeb,
+      );
+
+      testWidgets(
+        'maps web auth-required status to age-restricted without removal',
+        (tester) async {
+          final videos = createTestVideos(count: 1);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final feed = tester.widget<WebVideoFeed>(find.byType(WebVideoFeed));
+          feed.onRequiresAuth?.call(videos.first, 0);
+          await tester.pump();
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+          expect(
+            cubit.state.statusFor(videos.first.id),
+            PlaybackStatus.ageRestricted,
+          );
+          verifyNever(
+            () => mockBloc.add(FullscreenFeedVideoUnavailable(videos.first.id)),
+          );
+        },
+        skip: !kIsWeb,
+      );
     });
 
     group('BLoC event dispatching', () {
@@ -477,6 +707,473 @@ void main() {
           expect(find.byType(PooledVideoFeed), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'dispatches FullscreenFeedVideoUnavailable when playback status becomes notFound',
+        (tester) async {
+          final videos = createTestVideos();
+          final pooledVideos = videos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
+
+          when(() => mockBloc.state).thenReturn(
+            FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          );
+          when(() => mockController.videos).thenReturn(pooledVideos);
+          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
+          when(() => mockController.currentIndex).thenReturn(0);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              controllerFactory: (videos, initialIndex) => mockController,
+            ),
+          );
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+
+          cubit.report(videos.first.id, PlaybackStatus.notFound);
+          await tester.pump();
+
+          verify(
+            () => mockBloc.add(FullscreenFeedVideoUnavailable(videos.first.id)),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'does not dispatch unavailable event when video is already in removedVideoIds',
+        (tester) async {
+          final videos = createTestVideos();
+          final pooledVideos = videos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
+
+          when(() => mockBloc.state).thenReturn(
+            FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+              removedVideoIds: {videos.first.id},
+            ),
+          );
+          when(() => mockController.videos).thenReturn(pooledVideos);
+          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
+          when(() => mockController.currentIndex).thenReturn(0);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+                removedVideoIds: {videos.first.id},
+              ),
+              controllerFactory: (videos, initialIndex) => mockController,
+            ),
+          );
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+
+          cubit.report(videos.first.id, PlaybackStatus.notFound);
+          await tester.pump();
+
+          verifyNever(
+            () =>
+                mockBloc.add(any(that: isA<FullscreenFeedVideoUnavailable>())),
+          );
+        },
+      );
+
+      testWidgets(
+        'does not dispatch unavailable event for non-notFound playback statuses',
+        (tester) async {
+          final videos = createTestVideos();
+          final pooledVideos = videos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
+
+          when(() => mockBloc.state).thenReturn(
+            FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          );
+          when(() => mockController.videos).thenReturn(pooledVideos);
+          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
+          when(() => mockController.currentIndex).thenReturn(0);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              controllerFactory: (videos, initialIndex) => mockController,
+            ),
+          );
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+
+          cubit.report(videos.first.id, PlaybackStatus.forbidden);
+          await tester.pump();
+
+          verifyNever(
+            () =>
+                mockBloc.add(any(that: isA<FullscreenFeedVideoUnavailable>())),
+          );
+        },
+      );
+
+      testWidgets(
+        'acknowledges pendingSkipTarget when the BLoC signals a skip',
+        (tester) async {
+          final videos = createTestVideos();
+          final pooledVideos = videos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
+
+          when(() => mockController.videos).thenReturn(pooledVideos);
+          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
+          when(() => mockController.currentIndex).thenReturn(0);
+
+          whenListen(
+            mockBloc,
+            Stream.fromIterable([
+              FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+                removedVideoIds: {videos.first.id},
+                pendingSkipTarget: 1,
+              ),
+            ]),
+            initialState: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              controllerFactory: (videos, initialIndex) => mockController,
+            ),
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          verify(
+            () => mockBloc.add(const FullscreenFeedSkipAcknowledged()),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'reconciles native controller when a confirmed missing video is removed',
+        (tester) async {
+          final videos = createTestVideos(count: 2);
+          final remainingVideos = [videos.last];
+          final initialPooledVideos = videos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
+          final remainingPooledVideos = remainingVideos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
+
+          when(() => mockController.videos).thenReturn(initialPooledVideos);
+          when(
+            () => mockController.videoCount,
+          ).thenReturn(initialPooledVideos.length);
+          when(() => mockController.currentIndex).thenReturn(0);
+
+          final initialState = FullscreenFeedState(
+            status: FullscreenFeedStatus.ready,
+            videos: videos,
+          );
+          final removedState = FullscreenFeedState(
+            status: FullscreenFeedStatus.ready,
+            videos: remainingVideos,
+            removedVideoIds: {videos.first.id},
+            pendingSkipTarget: 0,
+          );
+
+          whenListen(
+            mockBloc,
+            Stream.fromIterable([initialState, removedState]),
+            initialState: initialState,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: initialState,
+              controllerFactory: (videos, initialIndex) => mockController,
+            ),
+          );
+
+          await tester.pump();
+
+          verify(
+            () => mockController.replaceVideos(
+              remainingPooledVideos,
+              currentIndex: 0,
+            ),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'verify age retries pooled playback with viewer auth headers',
+        (tester) async {
+          const sha256 =
+              'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+          const videoUrl = 'https://media.divine.video/$sha256/720p.mp4';
+          const headers = {'Authorization': 'Nostr fullscreen-token'};
+          final mockMediaAuthInterceptor = MockMediaAuthInterceptor();
+          final video = createTestVideoEvent(
+            id: testVideoId1,
+            pubkey: testPubkey,
+            videoUrl: videoUrl,
+            sha256: sha256,
+          );
+
+          when(
+            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+              context: any(named: 'context'),
+              sha256Hash: sha256,
+              url: videoUrl,
+              serverUrl: 'https://media.divine.video',
+              category: 'video',
+            ),
+          ).thenAnswer((_) async => headers);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: [video],
+              ),
+              additionalOverrides: [
+                mediaAuthInterceptorProvider.overrideWithValue(
+                  mockMediaAuthInterceptor,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+          cubit.report(video.id, PlaybackStatus.ageRestricted);
+          await tester.pump();
+
+          expect(find.byType(ModeratedContentOverlay), findsOneWidget);
+          expect(
+            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+            findsOneWidget,
+          );
+
+          await tester.tap(
+            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+          );
+          await tester.pump();
+
+          verify(
+            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+              context: any(named: 'context'),
+              sha256Hash: sha256,
+              url: videoUrl,
+              serverUrl: 'https://media.divine.video',
+              category: 'video',
+            ),
+          ).called(1);
+          verify(
+            () => defaultController.updateRequestHeadersAndRetry(0, headers),
+          ).called(1);
+          expect(cubit.state.statusFor(video.id), PlaybackStatus.ready);
+        },
+      );
+    });
+
+    group('auto advance', () {
+      late StreamController<Duration> positionController;
+      late MockPlayer mockPlayer;
+
+      setUp(() {
+        positionController = StreamController<Duration>.broadcast();
+        mockPlayer = stubPlayer(positionController.stream);
+      });
+
+      tearDown(() async {
+        await positionController.close();
+      });
+
+      testWidgets('shows Auto action in the fullscreen overlay', (
+        tester,
+      ) async {
+        final videos = createTestVideos();
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(AutoActionButton), findsWidgets);
+      });
+
+      testWidgets('advances to the next video after one completed play', (
+        tester,
+      ) async {
+        final videos = createTestVideos();
+        defaultIndexNotifiers[0] = ValueNotifier(
+          VideoIndexState(player: mockPlayer, loadState: LoadState.ready),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byType(AutoActionButton).first);
+        await tester.pump();
+
+        positionController.add(const Duration(seconds: 4, milliseconds: 500));
+        await tester.pump();
+        positionController.add(const Duration(milliseconds: 100));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 700));
+
+        verify(
+          () => mockBloc.add(const FullscreenFeedIndexChanged(1)),
+        ).called(1);
+      });
+
+      testWidgets('requests pagination at the end when more content exists', (
+        tester,
+      ) async {
+        final videos = createTestVideos();
+        defaultIndexNotifiers[2] = ValueNotifier(
+          VideoIndexState(player: mockPlayer, loadState: LoadState.ready),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+              currentIndex: 2,
+              canLoadMore: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byType(AutoActionButton).first);
+        await tester.pump();
+
+        positionController.add(const Duration(seconds: 4, milliseconds: 500));
+        await tester.pump();
+        positionController.add(const Duration(milliseconds: 100));
+        await tester.pump();
+
+        verify(
+          () => mockBloc.add(const FullscreenFeedLoadMoreRequested()),
+        ).called(1);
+      });
+
+      testWidgets('wraps to the first video when the feed is exhausted', (
+        tester,
+      ) async {
+        final videos = createTestVideos();
+        defaultIndexNotifiers[2] = ValueNotifier(
+          VideoIndexState(player: mockPlayer, loadState: LoadState.ready),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+              currentIndex: 2,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byType(AutoActionButton).first);
+        await tester.pump();
+
+        positionController.add(const Duration(seconds: 4, milliseconds: 500));
+        await tester.pump();
+        positionController.add(const Duration(milliseconds: 100));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 700));
+
+        verify(
+          () => mockBloc.add(const FullscreenFeedIndexChanged(0)),
+        ).called(1);
+      });
+
+      testWidgets('non-swipe interactions suppress auto advance', (
+        tester,
+      ) async {
+        final videos = createTestVideos();
+        defaultIndexNotifiers[0] = ValueNotifier(
+          VideoIndexState(player: mockPlayer, loadState: LoadState.ready),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byType(AutoActionButton).first);
+        await tester.pump();
+
+        await tester.tap(find.byType(LikeActionButton).first);
+        await tester.pump();
+
+        positionController.add(const Duration(seconds: 4, milliseconds: 500));
+        await tester.pump();
+        positionController.add(const Duration(milliseconds: 100));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        verifyNever(() => mockBloc.add(const FullscreenFeedIndexChanged(1)));
+      });
     });
   });
 }

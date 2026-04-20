@@ -23,6 +23,8 @@ final class FullscreenFeedState extends Equatable {
     this.currentIndex = 0,
     this.isLoadingMore = false,
     this.canLoadMore = false,
+    this.removedVideoIds = const <String>{},
+    this.pendingSkipTarget,
   });
 
   /// The current status.
@@ -39,6 +41,18 @@ final class FullscreenFeedState extends Equatable {
 
   /// Whether this feed supports pagination.
   final bool canLoadMore;
+
+  /// Event IDs confirmed missing for this session. Owned by the BLoC — the
+  /// UI must never mutate this set directly. Once an ID is added it stays
+  /// removed for the lifetime of this BLoC so repeated player errors for
+  /// the same asset don't trigger duplicate HEAD checks or skip animations.
+  final Set<String> removedVideoIds;
+
+  /// When non-null, signals the UI to animate the feed to this index after
+  /// a confirmed removal. The UI must dispatch
+  /// [FullscreenFeedSkipAcknowledged] once it has consumed the signal so a
+  /// subsequent removal can produce a new skip.
+  final int? pendingSkipTarget;
 
   /// The current video, if available.
   VideoEvent? get currentVideo =>
@@ -58,13 +72,18 @@ final class FullscreenFeedState extends Equatable {
   /// Whether we have pooled videos ready for playback.
   bool get hasPooledVideos => pooledVideos.isNotEmpty;
 
-  /// Create a copy with updated values.
+  /// Create a copy with updated values. [pendingSkipTarget] accepts
+  /// `null` explicitly via [clearPendingSkipTarget] — the default
+  /// copy-on-null-preserves behavior would otherwise prevent clearing it.
   FullscreenFeedState copyWith({
     FullscreenFeedStatus? status,
     List<VideoEvent>? videos,
     int? currentIndex,
     bool? isLoadingMore,
     bool? canLoadMore,
+    Set<String>? removedVideoIds,
+    int? pendingSkipTarget,
+    bool clearPendingSkipTarget = false,
   }) {
     return FullscreenFeedState(
       status: status ?? this.status,
@@ -72,6 +91,10 @@ final class FullscreenFeedState extends Equatable {
       currentIndex: currentIndex ?? this.currentIndex,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       canLoadMore: canLoadMore ?? this.canLoadMore,
+      removedVideoIds: removedVideoIds ?? this.removedVideoIds,
+      pendingSkipTarget: clearPendingSkipTarget
+          ? null
+          : (pendingSkipTarget ?? this.pendingSkipTarget),
     );
   }
 
@@ -82,5 +105,7 @@ final class FullscreenFeedState extends Equatable {
     currentIndex,
     isLoadingMore,
     canLoadMore,
+    removedVideoIds,
+    pendingSkipTarget,
   ];
 }

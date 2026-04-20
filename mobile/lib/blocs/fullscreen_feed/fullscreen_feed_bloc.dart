@@ -6,17 +6,26 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:ui' show VoidCallback;
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/services/media_availability_checker.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'fullscreen_feed_event.dart';
 part 'fullscreen_feed_state.dart';
+
+/// Callback invoked by [FullscreenFeedBloc] to purge a confirmed-missing
+/// video from the shared VideoEventService caches.
+///
+/// A callback keeps the BLoC free of direct dependencies on concrete
+/// services (matches the existing [FullscreenFeedBloc.onLoadMore] pattern).
+typedef OnRemoveVideo = void Function(String videoId);
 
 /// Maximum number of concurrent background cache downloads.
 ///
@@ -50,29 +59,44 @@ class FullscreenFeedBloc
   FullscreenFeedBloc({
     required Stream<List<VideoEvent>> videosStream,
     required int initialIndex,
+    Stream<bool>? hasMoreStream,
     MediaCacheManager? mediaCache,
     VoidCallback? onLoadMore,
     BlossomAuthService? blossomAuthService,
+    OnRemoveVideo? onRemoveVideo,
+    MediaAvailabilityChecker? availabilityChecker,
   }) : _videosStream = videosStream,
+       _hasMoreStream = hasMoreStream,
        _onLoadMore = onLoadMore,
        _mediaCache = mediaCache,
        _blossomAuthService = blossomAuthService,
-       super(
-         FullscreenFeedState(
-           currentIndex: initialIndex,
-           canLoadMore: onLoadMore != null,
-         ),
-       ) {
+       _onRemoveVideo = onRemoveVideo,
+       _availabilityChecker =
+           availabilityChecker ?? const MediaAvailabilityChecker(),
+       super(FullscreenFeedState(currentIndex: initialIndex)) {
     on<FullscreenFeedStarted>(_onStarted);
+    on<FullscreenFeedHasMoreChanged>(_onHasMoreChanged);
     on<FullscreenFeedLoadMoreRequested>(_onLoadMoreRequested);
     on<FullscreenFeedIndexChanged>(_onIndexChanged);
     on<FullscreenFeedVideoCacheStarted>(_onVideoCacheStarted);
+    // Sequential: the HEAD check is async and the dedupe decision depends
+    // on previously-removed ids, so two concurrent unavailable events for
+    // different videos must not overlap.
+    on<FullscreenFeedVideoUnavailable>(
+      _onVideoUnavailable,
+      transformer: sequential(),
+    );
+    on<FullscreenFeedSkipAcknowledged>(_onSkipAcknowledged);
   }
 
   final Stream<List<VideoEvent>> _videosStream;
+  final Stream<bool>? _hasMoreStream;
   final VoidCallback? _onLoadMore;
   final MediaCacheManager? _mediaCache;
   final BlossomAuthService? _blossomAuthService;
+  final OnRemoveVideo? _onRemoveVideo;
+  final MediaAvailabilityChecker _availabilityChecker;
+  StreamSubscription<bool>? _hasMoreSubscription;
 
   /// Queue of video IDs waiting to be cached in the background.
   final Queue<_CacheRequest> _cacheQueue = Queue<_CacheRequest>();
@@ -93,6 +117,21 @@ class FullscreenFeedBloc
     FullscreenFeedStarted event,
     Emitter<FullscreenFeedState> emit,
   ) async {
+    _hasMoreSubscription ??= _hasMoreStream?.listen(
+      (hasMore) {
+        if (!isClosed) add(FullscreenFeedHasMoreChanged(hasMore));
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        Log.error(
+          'FullscreenFeedBloc: hasMore stream error - $error',
+          name: 'FullscreenFeedBloc',
+          category: LogCategory.video,
+          error: error,
+          stackTrace: stackTrace,
+        );
+      },
+    );
+
     await emit.forEach<List<VideoEvent>>(
       _videosStream,
       onData: (videos) {
@@ -123,6 +162,18 @@ class FullscreenFeedBloc
         // Return current state to keep showing existing videos
         return state;
       },
+    );
+  }
+
+  void _onHasMoreChanged(
+    FullscreenFeedHasMoreChanged event,
+    Emitter<FullscreenFeedState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        canLoadMore: event.hasMore,
+        isLoadingMore: state.isLoadingMore && event.hasMore,
+      ),
     );
   }
 
@@ -298,8 +349,69 @@ class FullscreenFeedBloc
     }
   }
 
+  /// Handle a player-reported unavailable video.
+  ///
+  /// Confirms the asset really is missing via a HEAD request before
+  /// permanently removing it. Transient player errors (network flake, slow
+  /// TLS, etc.) must not trigger removal — only a hard 404 counts.
+  ///
+  /// Uses `sequential()` to serialize concurrent unavailable events so the
+  /// dedupe set in [FullscreenFeedState.removedVideoIds] is authoritative
+  /// even when multiple error callbacks race.
+  Future<void> _onVideoUnavailable(
+    FullscreenFeedVideoUnavailable event,
+    Emitter<FullscreenFeedState> emit,
+  ) async {
+    final videoId = event.videoId;
+    if (state.removedVideoIds.contains(videoId)) return;
+
+    // Find the video in the current list (may have been pruned already).
+    final index = state.videos.indexWhere((v) => v.id == videoId);
+    if (index < 0) return;
+
+    final videoUrl = state.videos[index].videoUrl;
+    if (videoUrl == null || videoUrl.isEmpty) return;
+
+    final isMissing = await _availabilityChecker.isConfirmedMissing(videoUrl);
+    if (!isMissing) {
+      Log.warning(
+        'FullscreenFeedBloc: Player reported notFound for $videoId but HEAD '
+        'did not confirm 404 — treating as transient error, video stays.',
+        name: 'FullscreenFeedBloc',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    // Re-check dedupe in case another handler inserted the same id while
+    // our HEAD was in flight.
+    if (state.removedVideoIds.contains(videoId)) return;
+
+    _onRemoveVideo?.call(videoId);
+
+    final updatedRemoved = {...state.removedVideoIds, videoId};
+    final nextIndex = index + 1;
+
+    emit(
+      state.copyWith(
+        removedVideoIds: updatedRemoved,
+        pendingSkipTarget: nextIndex,
+      ),
+    );
+  }
+
+  /// Handle UI acknowledgement of a pending skip signal.
+  void _onSkipAcknowledged(
+    FullscreenFeedSkipAcknowledged event,
+    Emitter<FullscreenFeedState> emit,
+  ) {
+    if (state.pendingSkipTarget == null) return;
+    emit(state.copyWith(clearPendingSkipTarget: true));
+  }
+
   @override
-  Future<void> close() {
+  Future<void> close() async {
+    await _hasMoreSubscription?.cancel();
     _cacheQueue.clear();
     return super.close();
   }

@@ -30,6 +30,7 @@ class VideoActionButton extends StatelessWidget {
     this.iconColor = VineTheme.whiteText,
     this.count = 0,
     this.isLoading = false,
+    this.caption,
     super.key,
   });
 
@@ -53,6 +54,9 @@ class VideoActionButton extends StatelessWidget {
 
   /// When true, shows a loading spinner instead of the icon.
   final bool isLoading;
+
+  /// Optional fixed caption shown beneath the icon instead of a count.
+  final String? caption;
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +105,19 @@ class VideoActionButton extends StatelessWidget {
                   ),
           ),
         ),
-        if (!isLoading && count > 0)
+        if (!isLoading && caption != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SizedBox(
+              width: 48,
+              child: Text(
+                caption!,
+                style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+        else if (!isLoading && count > 0)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: SizedBox(

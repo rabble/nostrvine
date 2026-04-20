@@ -803,18 +803,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoGridDeleteVideo => 'Videoyu Sil';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
+  String get videoGridDeleteVideoSubtitle =>
+      'Bu videoyu Divine uygulamasından kaldırır. Diğer Nostr istemcilerinde görünmeye devam edebilir.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Videoyu Sil';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      'Bu videoyu silmek istediğinden emin misin?';
+      'Bu video Divine uygulamasından kalıcı olarak silinir. Başka röleler kullanan üçüncü taraf Nostr istemcilerinde görünmeye devam edebilir.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
+      'Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.';
 
   @override
   String get videoGridDeleteCancel => 'İptal';
@@ -827,11 +828,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoGridDeleteSuccess => 'Silme isteği başarıyla gönderildi';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'İçerik silinemedi: $error';
-  }
 
   @override
   String get exploreTabClassics => 'Klasikler';
@@ -1189,6 +1185,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionLike => 'Videoyu beğen';
 
   @override
+  String get videoActionAutoLabel => 'Otomatik';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Otomatik ilerlemeyi aç';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Otomatik ilerlemeyi kapat';
+
+  @override
   String get videoActionRemoveRepost => 'Yeniden paylaşımı kaldır';
 
   @override
@@ -1209,6 +1214,17 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String videoDescriptionLoops(String count) {
     return '$count döngü';
+  }
+
+  @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'döngüler',
+      one: 'döngü',
+    );
+    return '$compactCount $_temp0';
   }
 
   @override
@@ -1245,7 +1261,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get metadataRepostedByLabel => 'Yeniden paylaşan';
 
   @override
-  String get metadataLoopsLabel => 'Döngüler';
+  String metadataLoopsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Döngüler',
+      one: 'Döngü',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get metadataLikesLabel => 'Beğeniler';
@@ -2918,7 +2942,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Videoyu Sil';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
+  String get shareMenuDeleteVideoSubtitle =>
+      'Bu videoyu Divine uygulamasından kaldırır. Diğer Nostr istemcilerinde görünmeye devam edebilir.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Video şu listelerde:';
@@ -2933,11 +2958,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Bu videoyu silmek istediğinden emin misin?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
+      'Bu video Divine uygulamasından kalıcı olarak silinir. Başka röleler kullanan üçüncü taraf Nostr istemcilerinde görünmeye devam edebilir.';
 
   @override
   String get shareMenuCancel => 'İptal';
@@ -2949,12 +2970,27 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeletingContent => 'İçerik siliniyor...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'Silme isteği başarıyla gönderildi';
+  String get shareMenuDeleteRequestSent => 'Video silindi';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'İçerik silinemedi: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Silme henüz hazır değil. Birazdan tekrar dene.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Yalnızca kendi videolarını silebilirsin.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Tekrar giriş yap, sonra silmeyi dene.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Silme isteği imzalanamadı. Tekrar dene.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Bu video silinemedi. Tekrar dene.';
 
   @override
   String get shareMenuFollowSetName => 'Takip Seti Adı';
@@ -3021,12 +3057,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video silme isteği alındı';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Video silinemedi: $error';
-  }
+  String get shareMenuVideoDeletionRequested => 'Video silindi';
 
   @override
   String get shareMenuContentLabels => 'İçerik etiketleri';
@@ -3320,14 +3351,15 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Senin İçin akışın boş.\nVideoları keşfet ve içerik üreticilerini takip ederek akışını şekillendir.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bul ve takip et.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty =>
+      'Henüz yeni video yok.\nBiraz sonra tekrar bak.';
 
   @override
   String get feedExploreVideos => 'Videoları Keşfet';
@@ -3504,13 +3536,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get navMyProfile => 'Profilim';
 
   @override
-  String get navSearch => 'Ara';
-
-  @override
   String get navNotifications => 'Bildirimler';
-
-  @override
-  String get navSearchTooltip => 'Ara';
 
   @override
   String get navOpenCamera => 'Kamerayı aç';
@@ -4797,4 +4823,15 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Ayarlara git';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

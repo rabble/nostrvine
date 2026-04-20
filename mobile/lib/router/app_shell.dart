@@ -11,8 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/active_video_provider.dart';
@@ -28,7 +26,6 @@ import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -98,8 +95,6 @@ class _AppShellState extends ConsumerState<AppShell> {
           }
         }
         return l10n.navProfile;
-      case RouteType.search:
-        return l10n.navSearch;
       default:
         return '';
     }
@@ -338,29 +333,15 @@ class _AppShellState extends ConsumerState<AppShell> {
       orElse: () => false,
     );
 
-    final isSearchRoute = pageCtxAsync.maybeWhen(
-      data: (ctx) => ctx.type == RouteType.search,
-      orElse: () => false,
+    // Explore grid mode manages its own header (search bar + tabs).
+    final isExploreGrid = pageCtxAsync.maybeWhen(
+      data: (ctx) => ctx.type == RouteType.explore
+          ? ctx.videoIndex == null
+          : currentIndex == 1,
+      orElse: () => currentIndex == 1,
     );
-
-    // Watch the newSearch feature flag
-    final isNewSearchEnabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.newSearch),
-    );
-
-    // Explore grid mode manages its own header (search bar + tabs)
-    // when the newSearch feature flag is enabled.
-    final isExploreGrid =
-        isNewSearchEnabled &&
-        pageCtxAsync.maybeWhen(
-          data: (ctx) => ctx.type == RouteType.explore
-              ? ctx.videoIndex == null
-              : currentIndex == 1,
-          orElse: () => currentIndex == 1,
-        );
     final showBackButton = pageCtxAsync.maybeWhen(
       data: (ctx) {
-        final isSubRoute = ctx.type == RouteType.search;
         final isExploreVideo =
             ctx.type == RouteType.explore && ctx.videoIndex != null;
         // Notifications base state is index 0, not null
@@ -374,8 +355,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         final isProfileVideo =
             ctx.type == RouteType.profile && ctx.videoIndex != null;
 
-        return isSubRoute ||
-            isExploreVideo ||
+        return isExploreVideo ||
             isNotificationVideo ||
             isOtherUserProfile ||
             isProfileVideo;
@@ -421,32 +401,6 @@ class _AppShellState extends ConsumerState<AppShell> {
                       // Get current route context
                       final ctx = ref.read(pageContextProvider).asData?.value;
                       if (ctx == null) return;
-
-                      // Check if we're in a sub-route (search, etc.)
-                      // If so, navigate back appropriately
-                      switch (ctx.type) {
-                        // TODO(#2470): Remove search case when unified
-                        // search/explore replaces the old search path.
-                        case RouteType.search:
-                          if (ctx.videoIndex != null) {
-                            // Feed mode → go back to search grid
-                            return context.go(
-                              SearchScreenPure.pathForTerm(
-                                term: ctx.searchTerm,
-                              ),
-                            );
-                          }
-                          // Grid mode → return to the originating tab
-                          final lastTab =
-                              ref
-                                  .read(tabHistoryProvider.notifier)
-                                  .getCurrentTab() ??
-                              0;
-                          _navigateToTab(context, ref, lastTab);
-                          return;
-                        default:
-                          break;
-                      }
 
                       // For routes with videoIndex (feed mode), go to grid mode first
                       // This handles page-internal navigation before tab switching
@@ -497,22 +451,6 @@ class _AppShellState extends ConsumerState<AppShell> {
                       // Already at home with no history - let system handle exit
                     }
                   : null,
-              actions: isSearchRoute || isNewSearchEnabled
-                  ? const []
-                  : [
-                      DiVineAppBarAction(
-                        icon: SvgIconSource(DivineIconName.search.assetPath),
-                        tooltip: context.l10n.navSearchTooltip,
-                        onPressed: () {
-                          Log.info(
-                            '👆 User tapped search button',
-                            name: 'Navigation',
-                            category: LogCategory.ui,
-                          );
-                          context.go(SearchScreenPure.path);
-                        },
-                      ),
-                    ],
             ),
       body: currentIndex == 0
           ? Column(

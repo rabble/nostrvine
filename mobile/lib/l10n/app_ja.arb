@@ -403,22 +403,14 @@
     "videoGridEditVideo": "動画を編集",
     "videoGridEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
     "videoGridDeleteVideo": "動画を削除",
-    "videoGridDeleteVideoSubtitle": "このコンテンツを完全に削除する",
+    "videoGridDeleteVideoSubtitle": "この動画を Divine から削除します。他の Nostr クライアントでは表示されることがあります。",
     "videoGridDeleteConfirmTitle": "動画を削除",
-    "videoGridDeleteConfirmMessage": "この動画を本当に削除する?",
-    "videoGridDeleteConfirmNote": "すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではコンテンツが残ることもあるよ。",
+    "videoGridDeleteConfirmMessage": "この動画は Divine から完全に削除されます。別のリレーを使うほかの Nostr クライアントでは表示されることがあります。",
+    "videoGridDeleteConfirmNote": "リレーに削除リクエストを送るよ。注意: 一部のリレーにはキャッシュが残ることもあるよ。",
     "videoGridDeleteCancel": "キャンセル",
     "videoGridDeleteConfirm": "削除",
     "videoGridDeletingContent": "コンテンツを削除中...",
     "videoGridDeleteSuccess": "削除リクエストを送ったよ",
-    "videoGridDeleteFailure": "コンテンツの削除がうまくいかなかった: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "クラシック",
     "exploreTabNew": "新着",
     "exploreTabPopular": "人気",
@@ -594,6 +586,9 @@
     "shareMessageHint": "メッセージを追加 (任意)...",
     "videoActionUnlike": "いいねを取り消す",
     "videoActionLike": "いいね",
+    "videoActionAutoLabel": "自動",
+    "videoActionEnableAutoAdvance": "自動送りをオンにする",
+    "videoActionDisableAutoAdvance": "自動送りをオフにする",
     "videoActionRemoveRepost": "リポストを取り消す",
     "videoActionRepost": "リポスト",
     "videoActionViewComments": "コメントを見る",
@@ -608,6 +603,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount}{count, plural, other{ループ}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Divine 以外",
     "metadataBadgeHumanMade": "人間が制作",
     "metadataSoundsLabel": "サウンド",
@@ -619,7 +625,14 @@
     "metadataCollaboratorsLabel": "コラボレーター",
     "metadataInspiredByLabel": "インスパイア元",
     "metadataRepostedByLabel": "リポスト元",
-    "metadataLoopsLabel": "ループ",
+    "metadataLoopsLabel": "{count, plural, other{ループ}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "いいね",
     "metadataCommentsLabel": "コメント",
     "metadataRepostsLabel": "リポスト",
@@ -1489,7 +1502,7 @@
     "shareMenuEditVideo": "動画を編集",
     "shareMenuEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
     "shareMenuDeleteVideo": "動画を削除",
-    "shareMenuDeleteVideoSubtitle": "このコンテンツを完全に削除",
+    "shareMenuDeleteVideoSubtitle": "この動画を Divine から削除します。他の Nostr クライアントでは表示されることがあります。",
     "shareMenuVideoInTheseLists": "この動画が入ってるリスト:",
     "shareMenuVideoCount": "{count}本の動画",
     "@shareMenuVideoCount": {
@@ -1500,20 +1513,16 @@
         }
     },
     "shareMenuClose": "閉じる",
-    "shareMenuDeleteConfirmation": "この動画を本当に削除する?",
-    "shareMenuDeleteWarning": "すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではキャッシュが残ることもあるよ。",
+    "shareMenuDeleteConfirmation": "この動画は Divine から完全に削除されます。別のリレーを使うほかの Nostr クライアントでは表示されることがあります。",
     "shareMenuCancel": "キャンセル",
     "shareMenuDelete": "削除",
     "shareMenuDeletingContent": "コンテンツを削除中...",
-    "shareMenuDeleteRequestSent": "削除リクエストを送ったよ",
-    "shareMenuFailedToDeleteContent": "コンテンツの削除がうまくいかなかった: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuDeleteRequestSent": "動画を削除したよ",
+    "shareMenuDeleteFailedNotInitialized": "削除の準備がまだだよ。少し待ってからもう一度試してね。",
+    "shareMenuDeleteFailedNotOwner": "自分の動画だけ削除できるよ。",
+    "shareMenuDeleteFailedNotAuthenticated": "もう一度ログインしてから削除してね。",
+    "shareMenuDeleteFailedCouldNotSign": "削除リクエストに署名できなかったよ。もう一度試してね。",
+    "shareMenuDeleteFailedGeneric": "この動画を削除できなかったよ。もう一度試してね。",
     "shareMenuFollowSetName": "フォローセット名",
     "shareMenuFollowSetNameHint": "例: クリエイター、ミュージシャンなど",
     "shareMenuDescriptionOptional": "説明 (任意)",
@@ -1547,15 +1556,7 @@
     },
     "shareMenuDeleteVideoQuestion": "動画を削除する?",
     "shareMenuDeleteRelayWarning": "リレーに削除リクエストを送るよ。注意: 一部のリレーにはキャッシュが残ることもあるよ。",
-    "shareMenuVideoDeletionRequested": "動画の削除をリクエストしたよ",
-    "shareMenuFailedToDeleteVideo": "動画の削除がうまくいかなかった: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuVideoDeletionRequested": "動画を削除したよ",
     "shareMenuContentLabels": "コンテンツラベル",
     "shareMenuAddContentLabels": "コンテンツラベルを追加",
     "shareMenuClearAll": "すべてクリア",
@@ -1725,6 +1726,9 @@
     "feedFailedToLoadVideos": "動画の読み込みがうまくいかなかった",
     "feedRetry": "もう一回",
     "feedNoFollowedUsers": "まだ誰もフォローしてないよ。\n誰かをフォローすると、ここに動画が出るよ。",
+    "feedForYouEmpty": "おすすめフィードはまだ空っぽ。\n動画を見たりクリエイターをフォローしてカスタマイズしよう。",
+    "feedFollowingEmpty": "フォロー中の人の動画はまだないよ。\n好きなクリエイターを見つけてフォローしよう。",
+    "feedLatestEmpty": "新しい動画はまだないよ。\nまた後でチェックしてね。",
     "feedExploreVideos": "動画を探しに行こう",
     "feedExternalVideoSlow": "外部動画の読み込みに時間がかかってる",
     "feedSkip": "スキップ",
@@ -1793,9 +1797,7 @@
     "navInbox": "受信箱",
     "navProfile": "プロフィール",
     "navMyProfile": "マイプロフィール",
-    "navSearch": "検索",
     "navNotifications": "通知",
-    "navSearchTooltip": "検索",
     "navOpenCamera": "カメラを開く",
     "navUnknown": "不明",
     "navExploreClassics": "クラシック",

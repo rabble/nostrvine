@@ -1,4 +1,5 @@
 // Test for BackgroundActivityManager functionality
+@Tags(['skip_very_good_optimization'])
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/background_activity_manager.dart';
@@ -38,12 +39,17 @@ void main() {
     late BackgroundActivityManager manager;
     late TestBackgroundService testService;
 
-    setUp(() {
+    setUp(() async {
       manager = BackgroundActivityManager();
       testService = TestBackgroundService();
 
-      // Clear any previously registered services for clean test state
-      // In a real implementation, we might want a reset method for testing
+      // BackgroundActivityManager is a process-wide singleton. Tests in this
+      // file share the same instance and run in random order, so reset its
+      // state to foreground + drain any pending lifecycle notifications before
+      // each test. Otherwise a prior test that transitioned to background can
+      // cause "should provide status information" to observe stale state.
+      manager.onAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await pumpEventQueue();
     });
 
     test('should start in foreground state', () {

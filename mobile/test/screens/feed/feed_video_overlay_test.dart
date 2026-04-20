@@ -13,14 +13,21 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
+import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../../helpers/test_provider_overrides.dart';
+import '../../test_data/video_test_data.dart';
 
 class _MockVideoInteractionsBloc
     extends MockBloc<VideoInteractionsEvent, VideoInteractionsState>
@@ -37,11 +44,21 @@ class _MockCuratedListRepository extends Mock
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
+class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
+
+class _MockVideoFeedController extends Mock implements VideoFeedController {}
+
+class _FakeBuildContext extends Fake implements BuildContext {}
+
 // Full 64-character test IDs (never truncate Nostr IDs)
 const _testVideoId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
 const _testPubkey =
     'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
+
+AppLocalizations _l10n(WidgetTester tester) => AppLocalizations.of(
+  tester.element(find.byType(Scaffold).first),
+);
 
 void main() {
   group(FeedVideoOverlay, () {
@@ -60,6 +77,8 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(const VideoInteractionsSubscriptionRequested());
+      registerFallbackValue(_FakeBuildContext());
+      registerFallbackValue(<String, String>{});
     });
 
     setUp(() {
@@ -122,13 +141,32 @@ void main() {
       bool includePlayer = true,
       ValueNotifier<double>? pagePositionOverride,
       int index = 0,
+      bool showAutoButton = false,
+      bool isAutoEnabled = false,
+      VoidCallback? onAutoPressed,
+      VideoFeedController? feedController,
+      List<dynamic>? additionalOverrides,
     }) {
+      final overlay = FeedVideoOverlay(
+        video: testVideo,
+        isActive: isActive,
+        pagePosition: pagePositionOverride ?? pagePosition,
+        index: index,
+        player: includePlayer ? (player ?? mockPlayer) : null,
+        firstFrameFuture: firstFrameFuture,
+        listSources: listSources,
+        showAutoButton: showAutoButton,
+        isAutoEnabled: isAutoEnabled,
+        onAutoPressed: onAutoPressed,
+      );
+
       return testMaterialApp(
         additionalOverrides: [
           curatedListRepositoryProvider.overrideWithValue(
             mockCuratedListRepository,
           ),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          ...?additionalOverrides,
         ],
         mockProfileRepository: mockProfileRepository,
         mockNip05VerificationService: mockNip05VerificationService,
@@ -142,15 +180,12 @@ void main() {
                 create: (_) => VideoPlaybackStatusCubit(),
               ),
             ],
-            child: FeedVideoOverlay(
-              video: testVideo,
-              isActive: isActive,
-              pagePosition: pagePositionOverride ?? pagePosition,
-              index: index,
-              player: includePlayer ? (player ?? mockPlayer) : null,
-              firstFrameFuture: firstFrameFuture,
-              listSources: listSources,
-            ),
+            child: feedController == null
+                ? overlay
+                : VideoPoolProvider(
+                    feedController: feedController,
+                    child: overlay,
+                  ),
           ),
         ),
       );
@@ -236,6 +271,81 @@ void main() {
 
         expect(find.byType(ProofModeBadgeRow), findsOneWidget);
       });
+
+      testWidgets(
+        'verify age retries pooled playback with viewer auth headers',
+        (tester) async {
+          const sha256 =
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          const videoUrl = 'https://media.divine.video/$sha256/720p.mp4';
+          const headers = {'Authorization': 'Nostr viewer-token'};
+          final mockMediaAuthInterceptor = _MockMediaAuthInterceptor();
+          final mockFeedController = _MockVideoFeedController();
+
+          testVideo = createTestVideoEvent(
+            id: _testVideoId,
+            pubkey: _testPubkey,
+            videoUrl: videoUrl,
+            sha256: sha256,
+          );
+
+          when(
+            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+              context: any(named: 'context'),
+              sha256Hash: sha256,
+              url: videoUrl,
+              serverUrl: 'https://media.divine.video',
+              category: 'video',
+            ),
+          ).thenAnswer((_) async => headers);
+          when(
+            () => mockFeedController.updateRequestHeadersAndRetry(0, headers),
+          ).thenReturn(null);
+
+          await tester.pumpWidget(
+            buildSubject(
+              feedController: mockFeedController,
+              additionalOverrides: [
+                mediaAuthInterceptorProvider.overrideWithValue(
+                  mockMediaAuthInterceptor,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FeedVideoOverlay)),
+          );
+          cubit.report(testVideo.id, PlaybackStatus.ageRestricted);
+          await tester.pump();
+
+          expect(find.byType(ModeratedContentOverlay), findsOneWidget);
+          expect(
+            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+            findsOneWidget,
+          );
+
+          await tester.tap(
+            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+          );
+          await tester.pump();
+
+          verify(
+            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+              context: any(named: 'context'),
+              sha256Hash: sha256,
+              url: videoUrl,
+              serverUrl: 'https://media.divine.video',
+              category: 'video',
+            ),
+          ).called(1);
+          verify(
+            () => mockFeedController.updateRequestHeadersAndRetry(0, headers),
+          ).called(1);
+          expect(cubit.state.statusFor(testVideo.id), PlaybackStatus.ready);
+        },
+      );
 
       testWidgets('renders $ListAttributionChip when listSources is provided', (
         tester,
@@ -323,8 +433,83 @@ void main() {
         await tester.tap(find.text('Test video content'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Loops'), findsOneWidget);
+        final l10n = _l10n(tester);
+        expect(
+          find.text(l10n.metadataLoopsLabel(testVideo.totalLoops)),
+          findsOneWidget,
+        );
         expect(find.text('Likes'), findsOneWidget);
+      });
+
+      testWidgets('renders Auto action when enabled for the current feed', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            showAutoButton: true,
+            isAutoEnabled: true,
+            onAutoPressed: () {},
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Auto'), findsNothing);
+        expect(find.bySemanticsLabel('Disable auto advance'), findsOneWidget);
+      });
+    });
+
+    group('loop count labels (l10n)', () {
+      testWidgets('shows plural English loops for zero totalLoops', (
+        tester,
+      ) async {
+        testVideo = testVideo.copyWith();
+        expect(testVideo.totalLoops, 0);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(
+            l10n.videoFeedLoopCountLine(StringUtils.formatCompactNumber(0), 0),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows singular English loop when totalLoops is 1', (
+        tester,
+      ) async {
+        testVideo = testVideo.copyWith(originalLoops: 1);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(
+            l10n.videoFeedLoopCountLine(StringUtils.formatCompactNumber(1), 1),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows compact plural for large loop counts', (tester) async {
+        testVideo = testVideo.copyWith(originalLoops: 1200);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(
+            l10n.videoFeedLoopCountLine(
+              StringUtils.formatCompactNumber(1200),
+              1200,
+            ),
+          ),
+          findsOneWidget,
+        );
       });
     });
 
@@ -353,31 +538,29 @@ void main() {
         throw StateError('Scroll-faded Opacity widget not found in tree');
       }
 
-      testWidgets(
-        'overlay is fully opaque when pagePosition matches index',
-        (tester) async {
-          // index=0, pagePosition=0.0 → distance=0 → opacity=1.0
-          await tester.pumpWidget(buildSubject());
-          await tester.pump();
-          pagePosition.value = 0.0;
-          await tester.pump();
+      testWidgets('overlay is fully opaque when pagePosition matches index', (
+        tester,
+      ) async {
+        // index=0, pagePosition=0.0 → distance=0 → opacity=1.0
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        pagePosition.value = 0.0;
+        await tester.pump();
 
-          expect(overlayOpacity(tester), equals(1.0));
-        },
-      );
+        expect(overlayOpacity(tester), equals(1.0));
+      });
 
-      testWidgets(
-        'overlay is fully hidden when scrolled a full page away',
-        (tester) async {
-          // index=0, pagePosition=1.0 → distance=1.0 → opacity=0.0
-          await tester.pumpWidget(buildSubject());
-          await tester.pump();
-          pagePosition.value = 1.0;
-          await tester.pump();
+      testWidgets('overlay is fully hidden when scrolled a full page away', (
+        tester,
+      ) async {
+        // index=0, pagePosition=1.0 → distance=1.0 → opacity=0.0
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        pagePosition.value = 1.0;
+        await tester.pump();
 
-          expect(overlayOpacity(tester), equals(0.0));
-        },
-      );
+        expect(overlayOpacity(tester), equals(0.0));
+      });
 
       testWidgets(
         'overlay uses dimmed opacity in the middle of the scroll band',
@@ -389,28 +572,24 @@ void main() {
           pagePosition.value = 0.3;
           await tester.pump();
 
-          expect(
-            overlayOpacity(tester),
-            closeTo(kOverlayDimmedOpacity, 1e-9),
-          );
+          expect(overlayOpacity(tester), closeTo(kOverlayDimmedOpacity, 1e-9));
         },
       );
 
-      testWidgets(
-        'overlay opacity updates when pagePosition changes',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
-          await tester.pump();
+      testWidgets('overlay opacity updates when pagePosition changes', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
 
-          pagePosition.value = 0.0;
-          await tester.pump();
-          expect(overlayOpacity(tester), equals(1.0));
+        pagePosition.value = 0.0;
+        await tester.pump();
+        expect(overlayOpacity(tester), equals(1.0));
 
-          pagePosition.value = 1.0;
-          await tester.pump();
-          expect(overlayOpacity(tester), equals(0.0));
-        },
-      );
+        pagePosition.value = 1.0;
+        await tester.pump();
+        expect(overlayOpacity(tester), equals(0.0));
+      });
 
       testWidgets(
         'overlay is fully opaque for a non-zero index when pagePosition matches',

@@ -71,6 +71,7 @@ import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
+import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
@@ -1595,6 +1596,7 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final env = ref.watch(currentEnvironmentProvider);
 
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
@@ -1604,6 +1606,7 @@ ProfileRepository? profileRepository(Ref ref) {
     indexerRelays: env.indexerRelays,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
+    blockFilter: blocklistService.shouldFilterFromFeeds,
   );
 
   // Pre-load known cached pubkeys and wire into SubscriptionManager
@@ -1719,14 +1722,26 @@ BlossomAuthService blossomAuthService(Ref ref) {
   );
 }
 
+/// Shared viewer auth service for media GET requests.
+final mediaViewerAuthServiceProvider = Provider<MediaViewerAuthService>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  final blossomAuthService = ref.watch(blossomAuthServiceProvider);
+  final nip98AuthService = ref.watch(nip98AuthServiceProvider);
+  return MediaViewerAuthService(
+    authService: authService,
+    blossomAuthService: blossomAuthService,
+    nip98AuthService: nip98AuthService,
+  );
+});
+
 /// Media authentication interceptor for handling 401 unauthorized responses
 @riverpod
 MediaAuthInterceptor mediaAuthInterceptor(Ref ref) {
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
-  final blossomAuthService = ref.watch(blossomAuthServiceProvider);
+  final mediaViewerAuthService = ref.watch(mediaViewerAuthServiceProvider);
   return MediaAuthInterceptor(
     ageVerificationService: ageVerificationService,
-    blossomAuthService: blossomAuthService,
+    mediaViewerAuthService: mediaViewerAuthService,
   );
 }
 
@@ -2169,9 +2184,11 @@ DmRepository dmRepository(Ref ref) {
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final repository = CommentsRepository(
     nostrClient: nostrClient,
     funnelcakeApiClient: funnelcakeClient,
+    blockFilter: blocklistService.shouldFilterFromFeeds,
   );
   ref.onDispose(repository.clearCommentCountCache);
   return repository;

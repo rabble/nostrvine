@@ -1,48 +1,46 @@
 // ABOUTME: Fullscreen video feed view for profile screens
-// ABOUTME: Reusable between own profile and others' profile screens
+// ABOUTME: Wraps PooledFullscreenVideoFeedScreen with profile-feed streams
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/mixins/page_controller_sync_mixin.dart';
-import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
-import 'package:unified_logger/unified_logger.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Fullscreen video feed view for profile screens.
 ///
-/// Displays videos in a vertical PageView with URL sync, prefetching,
-/// and pagination support.
+/// Streams [profileFeedProvider] updates into [PooledFullscreenVideoFeedScreen]
+/// so the profile fullscreen feed benefits from the pooled player, auto-advance
+/// and prefetching machinery shared with the main feed. Keeps the URL in sync
+/// via [onPageChanged].
 class ProfileVideoFeedView extends ConsumerStatefulWidget {
   const ProfileVideoFeedView({
     required this.npub,
     required this.userIdHex,
-    required this.isOwnProfile,
     required this.videos,
     required this.videoIndex,
     required this.onPageChanged,
     super.key,
   });
 
-  /// The npub of the profile (for URL updates).
+  /// The npub of the profile (carried for URL updates at the callsite).
   final String npub;
 
   /// The hex public key of the profile.
   final String userIdHex;
 
-  /// Whether this is the current user's own profile.
-  final bool isOwnProfile;
-
-  /// List of videos to display.
+  /// Initial list of videos to seed the feed with.
   final List<VideoEvent> videos;
 
-  /// Current video index from URL.
+  /// Current video index from the URL.
   final int videoIndex;
 
-  /// Callback when page changes (for URL updates).
+  /// Callback when the page changes (for URL updates).
   final void Function(int newIndex) onPageChanged;
 
   @override
@@ -50,161 +48,83 @@ class ProfileVideoFeedView extends ConsumerStatefulWidget {
       _ProfileVideoFeedViewState();
 }
 
-class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView>
-    with VideoPrefetchMixin, PageControllerSyncMixin {
-  PageController? _pageController;
-  int? _lastVideoUrlIndex;
+class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
+  late final StreamController<List<VideoEvent>> _videosController;
+  late final StreamController<bool> _hasMoreController;
+  List<VideoEvent>? _lastVideos;
+  bool? _lastHasMore;
 
   @override
   void initState() {
     super.initState();
-    _initializeController();
+    _videosController = StreamController<List<VideoEvent>>.broadcast();
+    _hasMoreController = StreamController<bool>.broadcast();
+    // Seed with initial videos so the BLoC receives them on first subscription.
+    _pushVideos(widget.videos);
   }
 
   @override
   void didUpdateWidget(ProfileVideoFeedView oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    // Handle video index changes from URL
-    if (widget.videoIndex != oldWidget.videoIndex) {
-      _syncControllerToUrl();
+    if (!identical(widget.videos, oldWidget.videos)) {
+      _pushVideos(widget.videos);
     }
-  }
-
-  void _initializeController() {
-    final safeIndex = widget.videoIndex.clamp(0, widget.videos.length - 1);
-
-    Log.debug(
-      '🎬 ProfileVideoFeedView init: videoIndex=${widget.videoIndex}, '
-      'safeIndex=$safeIndex, videos.length=${widget.videos.length}',
-      name: 'ProfileVideoFeedView',
-      category: LogCategory.video,
-    );
-
-    _pageController = PageController(initialPage: safeIndex);
-    _lastVideoUrlIndex = widget.videoIndex;
-
-    // Pre-initialize controllers for adjacent videos
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      preInitializeControllers(
-        ref: ref,
-        currentIndex: safeIndex,
-        videos: widget.videos,
-      );
-    });
-  }
-
-  void _syncControllerToUrl() {
-    if (_pageController == null) return;
-
-    final listIndex = widget.videoIndex;
-    final targetIndex = listIndex.clamp(0, widget.videos.length - 1);
-    final currentPage = _pageController!.hasClients
-        ? _pageController!.page?.round()
-        : null;
-
-    Log.debug(
-      '🔄 Checking sync: urlIndex=$listIndex, lastUrlIndex=$_lastVideoUrlIndex, '
-      'hasClients=${_pageController!.hasClients}, currentPage=$currentPage, '
-      'targetIndex=$targetIndex',
-      name: 'ProfileVideoFeedView',
-      category: LogCategory.video,
-    );
-
-    if (shouldSync(
-      urlIndex: listIndex,
-      lastUrlIndex: _lastVideoUrlIndex,
-      controller: _pageController,
-      targetIndex: targetIndex,
-    )) {
-      Log.info(
-        '📍 Syncing PageController: $currentPage → $targetIndex',
-        name: 'ProfileVideoFeedView',
-        category: LogCategory.video,
-      );
-      _lastVideoUrlIndex = listIndex;
-      syncPageController(
-        controller: _pageController!,
-        targetIndex: listIndex,
-        itemCount: widget.videos.length,
-      );
-    }
-  }
-
-  void _handlePageChanged(int newIndex, {required bool hasMoreContent}) {
-    // Update URL when swiping
-    if (newIndex != widget.videoIndex) {
-      widget.onPageChanged(newIndex);
-    }
-
-    final isAtEnd = newIndex >= widget.videos.length - 1;
-    if (hasMoreContent && isAtEnd) {
-      ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore();
-    }
-
-    // Prefetch videos around current index
-    checkForPrefetch(currentIndex: newIndex, videos: widget.videos);
-
-    // Pre-initialize controllers for adjacent videos
-    preInitializeControllers(
-      ref: ref,
-      currentIndex: newIndex,
-      videos: widget.videos,
-    );
-
-    // Dispose controllers outside the keep range to free memory
-    disposeControllersOutsideRange(
-      ref: ref,
-      currentIndex: newIndex,
-      videos: widget.videos,
-    );
   }
 
   @override
   void dispose() {
-    _pageController?.dispose();
+    _videosController.close();
+    _hasMoreController.close();
     super.dispose();
+  }
+
+  void _pushVideos(List<VideoEvent> videos) {
+    if (videos.isEmpty) return;
+    if (identical(videos, _lastVideos)) return;
+    _lastVideos = videos;
+    if (!_videosController.isClosed) _videosController.add(videos);
+  }
+
+  void _pushHasMore(bool hasMore) {
+    if (_lastHasMore == hasMore) return;
+    _lastHasMore = hasMore;
+    if (!_hasMoreController.isClosed) _hasMoreController.add(hasMore);
   }
 
   @override
   Widget build(BuildContext context) {
-    final profileFeedState = ref
+    // Watch feed state only for the hasMoreContent flag; pushing videos into
+    // the stream is handled in initState / didUpdateWidget so each rebuild
+    // doesn't trigger a redundant stream event.
+    final feedState = ref
         .watch(profileFeedProvider(widget.userIdHex))
         .asData
         ?.value;
-    final hasMoreContent = profileFeedState?.hasMoreContent ?? false;
-    final itemCount = widget.videos.length;
+    final hasMoreContent = feedState?.hasMoreContent ?? false;
+    _pushHasMore(hasMoreContent);
 
-    return PageView.builder(
-      key: const Key('profile-video-page-view'),
-      controller: _pageController,
-      scrollDirection: Axis.vertical,
-      itemCount: itemCount,
-      onPageChanged: (index) =>
-          _handlePageChanged(index, hasMoreContent: hasMoreContent),
-      itemBuilder: (context, index) {
-        // Use PageController as source of truth for active video
-        final currentPage = _pageController?.page?.round() ?? widget.videoIndex;
-        final isActive = index == currentPage;
+    final safeIndex = widget.videos.isEmpty
+        ? 0
+        : widget.videoIndex.clamp(0, widget.videos.length - 1);
 
-        final video = widget.videos[index];
-        return VideoFeedItem(
-          key: ValueKey('video-${video.stableId}'),
-          video: video,
-          index: index,
-          hasBottomNavigation: false,
-          forceShowOverlay: widget.isOwnProfile,
-          isActiveOverride: isActive,
-          contextTitle: ref
-              .read(fetchUserProfileProvider(widget.userIdHex))
-              .value
-              ?.betterDisplayName('Profile'),
-          hideFollowButtonIfFollowing:
-              true, // Hide if already following this profile's user
-          trafficSource: ViewTrafficSource.profile,
-        );
-      },
+    final contextTitle = ref
+        .watch(fetchUserProfileProvider(widget.userIdHex))
+        .value
+        ?.betterDisplayName('Profile');
+
+    return PooledFullscreenVideoFeedScreen(
+      // Pass the raw broadcast stream — seeding happened in initState.
+      videosStream: _videosController.stream,
+      initialIndex: safeIndex,
+      trafficSource: ViewTrafficSource.profile,
+      contextTitle: contextTitle,
+      onLoadMore: hasMoreContent
+          ? () => ref
+                .read(profileFeedProvider(widget.userIdHex).notifier)
+                .loadMore()
+          : null,
+      hasMoreStream: _hasMoreController.stream.startWith(hasMoreContent),
+      onPageChanged: widget.onPageChanged,
     );
   }
 }

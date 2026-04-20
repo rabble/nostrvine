@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for video thumbnail extraction service
 // ABOUTME: Tests thumbnail generation, error handling, and edge cases
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -15,36 +16,35 @@ void main() {
     late String testVideoPath;
     late Directory tempDir;
 
-    // Mock the pro_video_editor platform channel
     const channel = MethodChannel('pro_video_editor');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-          if (methodCall.method == 'getThumbnails') {
-            // Return empty list to simulate no thumbnails generated
-            return <Uint8List>[];
-          }
-          return null;
-        });
 
     setUpAll(() async {
-      // Create a temporary directory for test files
       tempDir = await Directory.systemTemp.createTemp('video_thumbnail_test');
     });
 
     tearDownAll(() async {
-      // Clean up temporary directory
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
-
-      // Clean up the mock method call handler
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null);
     });
 
     setUp(() {
-      // Create a mock video file path
       testVideoPath = '${tempDir.path}/test_video.mp4';
+
+      // Mock the pro_video_editor platform channel per-test so it does not
+      // leak into other test files when running in a shared isolate.
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+            if (methodCall.method == 'getThumbnails') {
+              return <Uint8List>[];
+            }
+            return null;
+          });
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
     });
 
     group('extractThumbnail', () {
@@ -289,8 +289,6 @@ void main() {
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null);
     });
 
     setUp(() {
@@ -326,6 +324,11 @@ void main() {
             }
             return null;
           });
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
     });
 
     test('returns path when getSingleThumbnail succeeds', () async {

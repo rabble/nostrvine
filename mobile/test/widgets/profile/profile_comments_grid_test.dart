@@ -1,3 +1,4 @@
+@Tags(['skip_very_good_optimization'])
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:divine_ui/divine_ui.dart';

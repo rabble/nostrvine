@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for UploadManager.getUploadByFilePath method
 // ABOUTME: Tests file path lookup functionality using the public API
 
+@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';

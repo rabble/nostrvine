@@ -758,17 +758,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteVideo => '영상 삭제';
 
   @override
-  String get videoGridDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
+  String get videoGridDeleteVideoSubtitle =>
+      '이 영상을 Divine에서 지워요. 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
 
   @override
   String get videoGridDeleteConfirmTitle => '영상 삭제';
 
   @override
-  String get videoGridDeleteConfirmMessage => '이 영상을 정말 삭제할까요?';
+  String get videoGridDeleteConfirmMessage =>
+      '이 영상은 Divine에서 영구적으로 삭제돼요. 다른 릴레이를 쓰는 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
+      '릴레이에 삭제 요청을 보내요. 참고: 일부 릴레이에는 캐시된 사본이 남아 있을 수 있어요.';
 
   @override
   String get videoGridDeleteCancel => '취소';
@@ -781,11 +783,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoGridDeleteSuccess => '삭제 요청을 보냈어요';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return '콘텐츠를 삭제하지 못했어요: $error';
-  }
 
   @override
   String get exploreTabClassics => '클래식';
@@ -1131,6 +1128,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionLike => '좋아요';
 
   @override
+  String get videoActionAutoLabel => '자동';
+
+  @override
+  String get videoActionEnableAutoAdvance => '자동 넘김 켜기';
+
+  @override
+  String get videoActionDisableAutoAdvance => '자동 넘김 끄기';
+
+  @override
   String get videoActionRemoveRepost => '리포스트 취소';
 
   @override
@@ -1151,6 +1157,16 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String videoDescriptionLoops(String count) {
     return '루프 $count회';
+  }
+
+  @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '루프',
+    );
+    return '$compactCount $_temp0';
   }
 
   @override
@@ -1187,7 +1203,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get metadataRepostedByLabel => '리포스트';
 
   @override
-  String get metadataLoopsLabel => '루프';
+  String metadataLoopsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '루프',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get metadataLikesLabel => '좋아요';
@@ -2793,7 +2816,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideo => '영상 삭제';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
+  String get shareMenuDeleteVideoSubtitle =>
+      '이 영상을 Divine에서 지워요. 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
 
   @override
   String get shareMenuVideoInTheseLists => '영상이 다음 리스트에 있어요:';
@@ -2807,11 +2831,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuClose => '닫기';
 
   @override
-  String get shareMenuDeleteConfirmation => '이 영상을 정말 삭제할까요?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
+  String get shareMenuDeleteConfirmation =>
+      '이 영상은 Divine에서 영구적으로 삭제돼요. 다른 릴레이를 쓰는 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
 
   @override
   String get shareMenuCancel => '취소';
@@ -2823,12 +2844,23 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeletingContent => '콘텐츠 삭제 중...';
 
   @override
-  String get shareMenuDeleteRequestSent => '삭제 요청을 보냈어요';
+  String get shareMenuDeleteRequestSent => '영상을 삭제했어요';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return '콘텐츠 삭제에 실패했어요: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      '삭제 준비가 아직 안 됐어요. 잠시 뒤에 다시 시도해요.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner => '내가 올린 영상만 삭제할 수 있어요.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated => '다시 로그인한 뒤 삭제를 시도해요.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign => '삭제 요청에 서명하지 못했어요. 다시 시도해요.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric => '이 영상을 삭제하지 못했어요. 다시 시도해요.';
 
   @override
   String get shareMenuFollowSetName => '팔로우 세트 이름';
@@ -2894,12 +2926,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '릴레이에 삭제 요청을 보내요. 참고: 일부 릴레이에는 캐시된 사본이 남아 있을 수 있어요.';
 
   @override
-  String get shareMenuVideoDeletionRequested => '영상 삭제를 요청했어요';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return '영상 삭제에 실패했어요: $error';
-  }
+  String get shareMenuVideoDeletionRequested => '영상을 삭제했어요';
 
   @override
   String get shareMenuContentLabels => '콘텐츠 라벨';
@@ -3184,14 +3211,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      '추천 피드가 비어 있어요.\n영상을 둘러보고 크리에이터를 팔로우해 피드를 채워보세요.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      '팔로우한 사용자의 영상이 아직 없어요.\n마음에 드는 크리에이터를 찾아 팔로우해 보세요.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => '아직 새로운 영상이 없어요.\n잠시 후 다시 확인해 주세요.';
 
   @override
   String get feedExploreVideos => '영상 둘러보기';
@@ -3362,13 +3389,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get navMyProfile => '내 프로필';
 
   @override
-  String get navSearch => '검색';
-
-  @override
   String get navNotifications => '알림';
-
-  @override
-  String get navSearchTooltip => '검색';
 
   @override
   String get navOpenCamera => '카메라 열기';
@@ -4636,4 +4657,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => '설정으로 이동';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

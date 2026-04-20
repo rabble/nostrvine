@@ -403,22 +403,14 @@
     "videoGridEditVideo": "تعديل الفيديو",
     "videoGridEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "videoGridDeleteVideo": "حذف الفيديو",
-    "videoGridDeleteVideoSubtitle": "إزالة هذا المحتوى نهائيًا",
+    "videoGridDeleteVideoSubtitle": "أزِل هذا الفيديو من Divine. قد يظل ظاهرًا في عملاء Nostr آخرين.",
     "videoGridDeleteConfirmTitle": "حذف الفيديو",
-    "videoGridDeleteConfirmMessage": "هل أنت متأكد من رغبتك في حذف هذا الفيديو؟",
-    "videoGridDeleteConfirmNote": "سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.",
+    "videoGridDeleteConfirmMessage": "سيتم حذف هذا الفيديو نهائيًا من Divine. قد يظل ظاهرًا في عملاء Nostr الآخرين الذين يستخدمون محولات مختلفة.",
+    "videoGridDeleteConfirmNote": "سيرسل هذا طلب حذف إلى المحولات. ملاحظة: قد تحتفظ بعض المحولات بنسخ مخزّنة.",
     "videoGridDeleteCancel": "إلغاء",
     "videoGridDeleteConfirm": "حذف",
     "videoGridDeletingContent": "جاري حذف المحتوى...",
     "videoGridDeleteSuccess": "تم إرسال طلب الحذف بنجاح",
-    "videoGridDeleteFailure": "فشل حذف المحتوى: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "الكلاسيكيات",
     "exploreTabNew": "جديد",
     "exploreTabPopular": "الرائج",
@@ -594,6 +586,9 @@
     "shareMessageHint": "أضف رسالة اختيارية...",
     "videoActionUnlike": "إلغاء الإعجاب بالفيديو",
     "videoActionLike": "الإعجاب بالفيديو",
+    "videoActionAutoLabel": "تلقائي",
+    "videoActionEnableAutoAdvance": "تفعيل التقدّم التلقائي",
+    "videoActionDisableAutoAdvance": "إيقاف التقدّم التلقائي",
     "videoActionRemoveRepost": "إزالة إعادة النشر",
     "videoActionRepost": "إعادة نشر الفيديو",
     "videoActionViewComments": "عرض التعليقات",
@@ -608,6 +603,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{تكرار} other{تكرارات}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "ليس Divine",
     "metadataBadgeHumanMade": "من صنع البشر",
     "metadataSoundsLabel": "أصوات",
@@ -619,7 +625,14 @@
     "metadataCollaboratorsLabel": "المتعاونون",
     "metadataInspiredByLabel": "مستوحى من",
     "metadataRepostedByLabel": "أعاد نشره",
-    "metadataLoopsLabel": "التكرارات",
+    "metadataLoopsLabel": "{count, plural, =1{تكرار} other{التكرارات}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "الإعجابات",
     "metadataCommentsLabel": "التعليقات",
     "metadataRepostsLabel": "إعادات النشر",
@@ -1489,7 +1502,7 @@
     "shareMenuEditVideo": "تعديل الفيديو",
     "shareMenuEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "shareMenuDeleteVideo": "حذف الفيديو",
-    "shareMenuDeleteVideoSubtitle": "إزالة هذا المحتوى نهائيًا",
+    "shareMenuDeleteVideoSubtitle": "أزِل هذا الفيديو من Divine. قد يظل ظاهرًا في عملاء Nostr آخرين.",
     "shareMenuVideoInTheseLists": "الفيديو في هذه القوائم:",
     "shareMenuVideoCount": "{count} فيديو",
     "@shareMenuVideoCount": {
@@ -1500,20 +1513,16 @@
         }
     },
     "shareMenuClose": "إغلاق",
-    "shareMenuDeleteConfirmation": "هل أنت متأكد من رغبتك في حذف هذا الفيديو؟",
-    "shareMenuDeleteWarning": "سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.",
+    "shareMenuDeleteConfirmation": "سيتم حذف هذا الفيديو نهائيًا من Divine. قد يظل ظاهرًا في عملاء Nostr الآخرين الذين يستخدمون محولات مختلفة.",
     "shareMenuCancel": "إلغاء",
     "shareMenuDelete": "حذف",
     "shareMenuDeletingContent": "جاري حذف المحتوى...",
-    "shareMenuDeleteRequestSent": "تم إرسال طلب الحذف بنجاح",
-    "shareMenuFailedToDeleteContent": "فشل حذف المحتوى: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuDeleteRequestSent": "تم حذف الفيديو",
+    "shareMenuDeleteFailedNotInitialized": "الحذف غير جاهز بعد. حاول مرة أخرى بعد لحظة.",
+    "shareMenuDeleteFailedNotOwner": "يمكنك حذف مقاطع الفيديو الخاصة بك فقط.",
+    "shareMenuDeleteFailedNotAuthenticated": "سجّل الدخول مرة أخرى، ثم حاول الحذف.",
+    "shareMenuDeleteFailedCouldNotSign": "لم نتمكن من توقيع طلب الحذف. حاول مرة أخرى.",
+    "shareMenuDeleteFailedGeneric": "تعذّر حذف هذا الفيديو. حاول مرة أخرى.",
     "shareMenuFollowSetName": "اسم مجموعة المتابعة",
     "shareMenuFollowSetNameHint": "مثل: صناع المحتوى، موسيقيون، إلخ.",
     "shareMenuDescriptionOptional": "الوصف (اختياري)",
@@ -1547,15 +1556,7 @@
     },
     "shareMenuDeleteVideoQuestion": "حذف الفيديو؟",
     "shareMenuDeleteRelayWarning": "سيرسل هذا طلب حذف إلى المحولات. ملاحظة: قد تحتفظ بعض المحولات بنسخ مخزّنة.",
-    "shareMenuVideoDeletionRequested": "تم طلب حذف الفيديو",
-    "shareMenuFailedToDeleteVideo": "فشل حذف الفيديو: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuVideoDeletionRequested": "تم حذف الفيديو",
     "shareMenuContentLabels": "وسوم المحتوى",
     "shareMenuAddContentLabels": "إضافة وسوم محتوى",
     "shareMenuClearAll": "مسح الكل",
@@ -1725,6 +1726,9 @@
     "feedFailedToLoadVideos": "تعذر تحميل مقاطع الفيديو",
     "feedRetry": "إعادة المحاولة",
     "feedNoFollowedUsers": "لا يوجد مستخدمون متابَعون.\nتابِع شخصًا ما لترى مقاطع الفيديو هنا.",
+    "feedForYouEmpty": "خلاصة \"لك\" فارغة.\nاستكشف مقاطع الفيديو وتابع المبدعين لتشكيلها.",
+    "feedFollowingEmpty": "لا توجد مقاطع فيديو من الأشخاص الذين تتابعهم بعد.\nاعثر على مبدعين تحبهم وتابعهم.",
+    "feedLatestEmpty": "لا توجد مقاطع فيديو جديدة بعد.\nعد قريبًا للاطلاع.",
     "feedExploreVideos": "استكشاف مقاطع الفيديو",
     "feedExternalVideoSlow": "الفيديو الخارجي يُحمَّل ببطء",
     "feedSkip": "تخطي",
@@ -1793,9 +1797,7 @@
     "navInbox": "الوارد",
     "navProfile": "الملف الشخصي",
     "navMyProfile": "ملفي الشخصي",
-    "navSearch": "بحث",
     "navNotifications": "الإشعارات",
-    "navSearchTooltip": "بحث",
     "navOpenCamera": "فتح الكاميرا",
     "navUnknown": "غير معروف",
     "navExploreClassics": "الكلاسيكيات",

@@ -4,6 +4,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -64,6 +65,7 @@ class _CreateAccountView extends StatelessWidget {
           next is DivineAuthEmailVerification || next is DivineAuthSuccess,
       listener: (context, state) {
         if (state is DivineAuthEmailVerification) {
+          TextInput.finishAutofillContext();
           final encodedEmail = Uri.encodeComponent(state.email);
           context.go(
             '${EmailVerificationScreen.path}'

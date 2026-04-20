@@ -403,22 +403,14 @@
     "videoGridEditVideo": "Videoyu Düzenle",
     "videoGridEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "videoGridDeleteVideo": "Videoyu Sil",
-    "videoGridDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
+    "videoGridDeleteVideoSubtitle": "Bu videoyu Divine uygulamasından kaldırır. Diğer Nostr istemcilerinde görünmeye devam edebilir.",
     "videoGridDeleteConfirmTitle": "Videoyu Sil",
-    "videoGridDeleteConfirmMessage": "Bu videoyu silmek istediğinden emin misin?",
-    "videoGridDeleteConfirmNote": "Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.",
+    "videoGridDeleteConfirmMessage": "Bu video Divine uygulamasından kalıcı olarak silinir. Başka röleler kullanan üçüncü taraf Nostr istemcilerinde görünmeye devam edebilir.",
+    "videoGridDeleteConfirmNote": "Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.",
     "videoGridDeleteCancel": "İptal",
     "videoGridDeleteConfirm": "Sil",
     "videoGridDeletingContent": "İçerik siliniyor...",
     "videoGridDeleteSuccess": "Silme isteği başarıyla gönderildi",
-    "videoGridDeleteFailure": "İçerik silinemedi: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Klasikler",
     "exploreTabNew": "Yeni",
     "exploreTabPopular": "Popüler",
@@ -594,6 +586,9 @@
     "shareMessageHint": "Opsiyonel mesaj ekle...",
     "videoActionUnlike": "Beğenmekten vazgeç",
     "videoActionLike": "Videoyu beğen",
+    "videoActionAutoLabel": "Otomatik",
+    "videoActionEnableAutoAdvance": "Otomatik ilerlemeyi aç",
+    "videoActionDisableAutoAdvance": "Otomatik ilerlemeyi kapat",
     "videoActionRemoveRepost": "Yeniden paylaşımı kaldır",
     "videoActionRepost": "Videoyu yeniden paylaş",
     "videoActionViewComments": "Yorumları görüntüle",
@@ -608,6 +603,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{döngü} other{döngüler}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Divine Değil",
     "metadataBadgeHumanMade": "İnsan Yapımı",
     "metadataSoundsLabel": "Sesler",
@@ -619,7 +625,14 @@
     "metadataCollaboratorsLabel": "İşbirlikçiler",
     "metadataInspiredByLabel": "İlham alındı",
     "metadataRepostedByLabel": "Yeniden paylaşan",
-    "metadataLoopsLabel": "Döngüler",
+    "metadataLoopsLabel": "{count, plural, =1{Döngü} other{Döngüler}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "Beğeniler",
     "metadataCommentsLabel": "Yorumlar",
     "metadataRepostsLabel": "Yeniden Paylaşımlar",
@@ -1489,7 +1502,7 @@
     "shareMenuEditVideo": "Videoyu Düzenle",
     "shareMenuEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "shareMenuDeleteVideo": "Videoyu Sil",
-    "shareMenuDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
+    "shareMenuDeleteVideoSubtitle": "Bu videoyu Divine uygulamasından kaldırır. Diğer Nostr istemcilerinde görünmeye devam edebilir.",
     "shareMenuVideoInTheseLists": "Video şu listelerde:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {
@@ -1500,20 +1513,16 @@
         }
     },
     "shareMenuClose": "Kapat",
-    "shareMenuDeleteConfirmation": "Bu videoyu silmek istediğinden emin misin?",
-    "shareMenuDeleteWarning": "Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.",
+    "shareMenuDeleteConfirmation": "Bu video Divine uygulamasından kalıcı olarak silinir. Başka röleler kullanan üçüncü taraf Nostr istemcilerinde görünmeye devam edebilir.",
     "shareMenuCancel": "İptal",
     "shareMenuDelete": "Sil",
     "shareMenuDeletingContent": "İçerik siliniyor...",
-    "shareMenuDeleteRequestSent": "Silme isteği başarıyla gönderildi",
-    "shareMenuFailedToDeleteContent": "İçerik silinemedi: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuDeleteRequestSent": "Video silindi",
+    "shareMenuDeleteFailedNotInitialized": "Silme henüz hazır değil. Birazdan tekrar dene.",
+    "shareMenuDeleteFailedNotOwner": "Yalnızca kendi videolarını silebilirsin.",
+    "shareMenuDeleteFailedNotAuthenticated": "Tekrar giriş yap, sonra silmeyi dene.",
+    "shareMenuDeleteFailedCouldNotSign": "Silme isteği imzalanamadı. Tekrar dene.",
+    "shareMenuDeleteFailedGeneric": "Bu video silinemedi. Tekrar dene.",
     "shareMenuFollowSetName": "Takip Seti Adı",
     "shareMenuFollowSetNameHint": "örn. İçerik Üreticileri, Müzisyenler vb.",
     "shareMenuDescriptionOptional": "Açıklama (opsiyonel)",
@@ -1547,15 +1556,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
     "shareMenuDeleteRelayWarning": "Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.",
-    "shareMenuVideoDeletionRequested": "Video silme isteği alındı",
-    "shareMenuFailedToDeleteVideo": "Video silinemedi: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuVideoDeletionRequested": "Video silindi",
     "shareMenuContentLabels": "İçerik etiketleri",
     "shareMenuAddContentLabels": "İçerik etiketleri ekle",
     "shareMenuClearAll": "Tümünü temizle",
@@ -1725,6 +1726,9 @@
     "feedFailedToLoadVideos": "Videolar yüklenemedi",
     "feedRetry": "Tekrar Dene",
     "feedNoFollowedUsers": "Takip edilen kullanıcı yok.\nVideolarını burada görmek için birini takip et.",
+    "feedForYouEmpty": "Senin İçin akışın boş.\nVideoları keşfet ve içerik üreticilerini takip ederek akışını şekillendir.",
+    "feedFollowingEmpty": "Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bul ve takip et.",
+    "feedLatestEmpty": "Henüz yeni video yok.\nBiraz sonra tekrar bak.",
     "feedExploreVideos": "Videoları Keşfet",
     "feedExternalVideoSlow": "Harici video yavaş yükleniyor",
     "feedSkip": "Atla",
@@ -1793,9 +1797,7 @@
     "navInbox": "Gelen Kutusu",
     "navProfile": "Profil",
     "navMyProfile": "Profilim",
-    "navSearch": "Ara",
     "navNotifications": "Bildirimler",
-    "navSearchTooltip": "Ara",
     "navOpenCamera": "Kamerayı aç",
     "navUnknown": "Bilinmeyen",
     "navExploreClassics": "Klasikler",

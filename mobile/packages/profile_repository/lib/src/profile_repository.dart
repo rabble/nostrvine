@@ -51,6 +51,7 @@ class ProfileRepository {
     ProfileStatsDao? profileStatsDao,
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileSearchFilter? profileSearchFilter,
+    BlockedProfileFilter? blockFilter,
     List<String> indexerRelays = defaultProfileIndexerRelays,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
@@ -58,6 +59,7 @@ class ProfileRepository {
        _profileStatsDao = profileStatsDao,
        _funnelcakeApiClient = funnelcakeApiClient,
        _profileSearchFilter = profileSearchFilter,
+       _blockFilter = blockFilter,
        _indexerRelays = indexerRelays;
 
   final NostrClient _nostrClient;
@@ -66,6 +68,7 @@ class ProfileRepository {
   final ProfileStatsDao? _profileStatsDao;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
+  final BlockedProfileFilter? _blockFilter;
   final List<String> _indexerRelays;
 
   /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
@@ -277,11 +280,26 @@ class ProfileRepository {
         final result = await _funnelcakeApiClient!.getUserProfile(pubkey);
         switch (result) {
           case UserProfileFound():
-            final profile = UserProfile.fromUserProfileFound(result);
-            _knownCached.add(pubkey);
-            await _userProfilesDao.upsertProfile(profile);
+            final funnelcakeProfile = UserProfile.fromUserProfileFound(result);
+            // Funnelcake profiles use DateTime.now() as a synthetic
+            // createdAt (the REST API does not expose the Nostr event
+            // timestamp), so _cacheProfileIfNewer cannot reliably guard
+            // against overwriting a freshly-saved bio. Only write to
+            // cache when no local profile exists yet; otherwise fall
+            // through to the relay/indexer path so a newer Kind 0 on
+            // relays can still upgrade the cache.
+            final existing = await _userProfilesDao.getProfile(pubkey);
+            if (existing == null) {
+              _knownCached.add(pubkey);
+              await _userProfilesDao.upsertProfile(funnelcakeProfile);
+            }
             await _cacheProfileStatsFromResult(pubkey, result);
-            return profile;
+            if (existing != null) {
+              // Local profile exists — skip the early return and let
+              // the relay/indexer path run so a newer Kind 0 can win.
+              break;
+            }
+            return funnelcakeProfile;
           case UserProfileNotPublished():
             // User exists but has no Kind 0. Cache stats and skip relay
             // fallback — the profile genuinely does not exist yet.
@@ -303,11 +321,17 @@ class ProfileRepository {
     // Step 2: Fire connected relays and indexer relays concurrently.
     // Return the first valid profile immediately, then let slower
     // sources upgrade the cache if they have a newer kind 0 event.
-    final profile = await _fetchFromRelaysParallel(pubkey);
-    if (profile != null) {
-      await _cacheProfileIfNewer(profile);
-      return profile;
+    final relayProfile = await _fetchFromRelaysParallel(pubkey);
+    if (relayProfile != null) {
+      await _cacheProfileIfNewer(relayProfile);
+      return relayProfile;
     }
+
+    // Relay/indexer found nothing. If a local profile already exists
+    // (e.g. Funnelcake had a hit but we skipped its upsert to protect
+    // a freshly-saved bio), return it as a fallback rather than null.
+    final fallback = await _userProfilesDao.getProfile(pubkey);
+    if (fallback != null) return fallback;
 
     // All sources exhausted — mark as confirmed missing.
     _confirmedMissing.add(pubkey);
@@ -396,15 +420,22 @@ class ProfileRepository {
       final events = await _nostrClient
           .queryEvents(
             [
-              Filter(kinds: [0], authors: [pubkey], limit: 1),
+              Filter(kinds: [0], authors: [pubkey], limit: 5),
             ],
             tempRelays: _indexerRelays,
             useCache: false,
           )
           .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
 
-      if (events.isNotEmpty && events.first.kind == 0) {
-        final profile = UserProfile.fromNostrEvent(events.first);
+      // Relays do not guarantee newest-first ordering, so pick the event
+      // with the highest createdAt to avoid overwriting a freshly saved
+      // profile with stale metadata.
+      final kind0Events = events.where((e) => e.kind == 0).toList();
+      if (kind0Events.isNotEmpty) {
+        final newest = kind0Events.reduce(
+          (a, b) => b.createdAt > a.createdAt ? b : a,
+        );
+        final profile = UserProfile.fromNostrEvent(newest);
         developer.log(
           'Fetched from indexer relay: ${profile.bestDisplayName}',
           name: 'ProfileRepository.fetchFreshProfile',
@@ -862,22 +893,28 @@ class ProfileRepository {
     yield _applyFilter(trimmed, enriched, useServerSort);
   }
 
-  /// Applies the configured search filter or falls back to name matching.
+  /// Applies the configured search filter or falls back to name matching,
+  /// then removes blocked/muted users.
   List<UserProfile> _applyFilter(
     String query,
     List<UserProfile> profiles,
     bool useServerSort,
   ) {
-    if (useServerSort) return profiles;
-
-    if (_profileSearchFilter != null) {
-      return _profileSearchFilter(query, profiles);
+    List<UserProfile> filtered;
+    if (useServerSort) {
+      filtered = profiles;
+    } else if (_profileSearchFilter != null) {
+      filtered = _profileSearchFilter(query, profiles);
+    } else {
+      final queryLower = query.toLowerCase();
+      filtered = profiles.where((profile) {
+        return profile.bestDisplayName.toLowerCase().contains(queryLower);
+      }).toList();
     }
 
-    final queryLower = query.toLowerCase();
-    return profiles.where((profile) {
-      return profile.bestDisplayName.toLowerCase().contains(queryLower);
-    }).toList();
+    final blockFilter = _blockFilter;
+    if (blockFilter == null) return filtered;
+    return filtered.where((p) => !blockFilter(p.pubkey)).toList();
   }
 
   /// Fetches a user profile from the Funnelcake REST API.

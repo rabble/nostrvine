@@ -14,18 +14,34 @@ import 'package:openvine/widgets/rounded_icon_button.dart';
 class AuthBackButton extends StatelessWidget {
   /// Creates an authentication flow back button.
   ///
-  /// If [onPressed] is null, the button will call `context.pop()`.
-  const AuthBackButton({super.key, this.onPressed});
+  /// If [onPressed] is null, the button will perform a guarded back action.
+  const AuthBackButton({
+    super.key,
+    this.onPressed,
+    this.enabled = true,
+  });
 
   /// Optional custom callback when the button is pressed.
   ///
   /// If null, defaults to `context.pop()`.
   final VoidCallback? onPressed;
 
+  /// Whether the back button should respond to taps.
+  final bool enabled;
+
+  void _handleBackTap(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+
+    Navigator.of(context).maybePop();
+  }
+
   @override
   Widget build(BuildContext context) {
     return RoundedIconButton(
-      onPressed: onPressed ?? () => context.pop(),
+      onPressed: !enabled ? null : onPressed ?? () => _handleBackTap(context),
       icon: const Icon(
         Icons.chevron_left,
         color: VineTheme.vineGreenLight,

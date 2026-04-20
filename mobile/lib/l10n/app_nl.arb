@@ -403,22 +403,14 @@
     "videoGridEditVideo": "Video bewerken",
     "videoGridEditVideoSubtitle": "Titel, beschrijving en hashtags bijwerken",
     "videoGridDeleteVideo": "Video verwijderen",
-    "videoGridDeleteVideoSubtitle": "Deze inhoud definitief verwijderen",
+    "videoGridDeleteVideoSubtitle": "Verwijder deze video uit Divine. Andere Nostr-clients kunnen hem nog tonen.",
     "videoGridDeleteConfirmTitle": "Video verwijderen",
-    "videoGridDeleteConfirmMessage": "Weet je zeker dat je deze video wilt verwijderen?",
-    "videoGridDeleteConfirmNote": "Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.",
+    "videoGridDeleteConfirmMessage": "Deze video wordt permanent uit Divine verwijderd. Hij kan nog zichtbaar zijn in andere Nostr-clients die andere relays gebruiken.",
+    "videoGridDeleteConfirmNote": "Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopieën.",
     "videoGridDeleteCancel": "Annuleren",
     "videoGridDeleteConfirm": "Verwijderen",
     "videoGridDeletingContent": "Inhoud verwijderen...",
     "videoGridDeleteSuccess": "Verwijderverzoek succesvol verstuurd",
-    "videoGridDeleteFailure": "Inhoud verwijderen mislukt: {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Klassiekers",
     "exploreTabNew": "Nieuw",
     "exploreTabPopular": "Populair",
@@ -594,6 +586,9 @@
     "shareMessageHint": "Voeg optioneel een bericht toe...",
     "videoActionUnlike": "Like verwijderen",
     "videoActionLike": "Video liken",
+    "videoActionAutoLabel": "Auto",
+    "videoActionEnableAutoAdvance": "Automatisch doorgaan inschakelen",
+    "videoActionDisableAutoAdvance": "Automatisch doorgaan uitschakelen",
     "videoActionRemoveRepost": "Repost verwijderen",
     "videoActionRepost": "Video reposten",
     "videoActionViewComments": "Reacties bekijken",
@@ -608,6 +603,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Niet Divine",
     "metadataBadgeHumanMade": "Door mensen gemaakt",
     "metadataSoundsLabel": "Geluiden",
@@ -619,7 +625,14 @@
     "metadataCollaboratorsLabel": "Samenwerkers",
     "metadataInspiredByLabel": "Geïnspireerd door",
     "metadataRepostedByLabel": "Gerepost door",
-    "metadataLoopsLabel": "Loops",
+    "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loops}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "Likes",
     "metadataCommentsLabel": "Reacties",
     "metadataRepostsLabel": "Reposts",
@@ -1489,7 +1502,7 @@
     "shareMenuEditVideo": "Video bewerken",
     "shareMenuEditVideoSubtitle": "Titel, beschrijving en hashtags bijwerken",
     "shareMenuDeleteVideo": "Video verwijderen",
-    "shareMenuDeleteVideoSubtitle": "Deze inhoud definitief verwijderen",
+    "shareMenuDeleteVideoSubtitle": "Verwijder deze video uit Divine. Andere Nostr-clients kunnen hem nog tonen.",
     "shareMenuVideoInTheseLists": "Video staat in deze lijsten:",
     "shareMenuVideoCount": "{count} video's",
     "@shareMenuVideoCount": {
@@ -1500,20 +1513,16 @@
         }
     },
     "shareMenuClose": "Sluiten",
-    "shareMenuDeleteConfirmation": "Weet je zeker dat je deze video wilt verwijderen?",
-    "shareMenuDeleteWarning": "Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.",
+    "shareMenuDeleteConfirmation": "Deze video wordt permanent uit Divine verwijderd. Hij kan nog zichtbaar zijn in andere Nostr-clients die andere relays gebruiken.",
     "shareMenuCancel": "Annuleren",
     "shareMenuDelete": "Verwijderen",
     "shareMenuDeletingContent": "Inhoud verwijderen...",
-    "shareMenuDeleteRequestSent": "Verwijderverzoek succesvol verstuurd",
-    "shareMenuFailedToDeleteContent": "Inhoud verwijderen mislukt: {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuDeleteRequestSent": "Video verwijderd",
+    "shareMenuDeleteFailedNotInitialized": "Verwijderen is nog niet klaar. Probeer het zo meteen opnieuw.",
+    "shareMenuDeleteFailedNotOwner": "Je kunt alleen je eigen video's verwijderen.",
+    "shareMenuDeleteFailedNotAuthenticated": "Log opnieuw in en probeer te verwijderen.",
+    "shareMenuDeleteFailedCouldNotSign": "Kon het verwijderverzoek niet ondertekenen. Probeer opnieuw.",
+    "shareMenuDeleteFailedGeneric": "Kon deze video niet verwijderen. Probeer opnieuw.",
     "shareMenuFollowSetName": "Naam volgset",
     "shareMenuFollowSetNameHint": "Bijv. content creators, muzikanten, enz.",
     "shareMenuDescriptionOptional": "Beschrijving (optioneel)",
@@ -1547,15 +1556,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Video verwijderen?",
     "shareMenuDeleteRelayWarning": "Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopieën.",
-    "shareMenuVideoDeletionRequested": "Video-verwijdering aangevraagd",
-    "shareMenuFailedToDeleteVideo": "Video verwijderen mislukt: {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuVideoDeletionRequested": "Video verwijderd",
     "shareMenuContentLabels": "Inhoudslabels",
     "shareMenuAddContentLabels": "Inhoudslabels toevoegen",
     "shareMenuClearAll": "Alles wissen",
@@ -1725,6 +1726,9 @@
     "feedFailedToLoadVideos": "Video's laden mislukt",
     "feedRetry": "Opnieuw",
     "feedNoFollowedUsers": "Geen gevolgde gebruikers.\nVolg iemand om hun video's hier te zien.",
+    "feedForYouEmpty": "Je Voor jou-feed is leeg.\nVerken video's en volg makers om hem vorm te geven.",
+    "feedFollowingEmpty": "Nog geen video's van mensen die je volgt.\nVind makers die je leuk vindt en volg ze.",
+    "feedLatestEmpty": "Nog geen nieuwe video's.\nKom binnenkort terug.",
     "feedExploreVideos": "Video's verkennen",
     "feedExternalVideoSlow": "Externe video laadt traag",
     "feedSkip": "Overslaan",
@@ -1793,9 +1797,7 @@
     "navInbox": "Inbox",
     "navProfile": "Profiel",
     "navMyProfile": "Mijn profiel",
-    "navSearch": "Zoeken",
     "navNotifications": "Meldingen",
-    "navSearchTooltip": "Zoeken",
     "navOpenCamera": "Camera openen",
     "navUnknown": "Onbekend",
     "navExploreClassics": "Klassiekers",

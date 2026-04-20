@@ -1,6 +1,7 @@
 // ABOUTME: Tests for NotificationPersistence - handles Hive storage operations
 // ABOUTME: Pure persistence logic tests without service dependencies
 
+@Tags(['skip_very_good_optimization'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart';

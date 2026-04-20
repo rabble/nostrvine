@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/string_utils.dart';
 
 /// Horizontal stats row displaying engagement counts for a video.
@@ -49,7 +50,9 @@ class MetadataStatsRow extends StatelessWidget {
                     children: [
                       _StatColumn(
                         count: video.totalLoops,
-                        label: 'Loops',
+                        label: context.l10n.metadataLoopsLabel(
+                          video.totalLoops,
+                        ),
                         isLoading: false,
                       ),
                       const _VerticalDivider(),
@@ -113,9 +116,7 @@ class _StatColumn extends StatelessWidget {
         ),
         Text(
           label,
-          style: VineTheme.bodySmallFont(
-            color: VineTheme.onSurfaceVariant,
-          ),
+          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
         ),
       ],
     );

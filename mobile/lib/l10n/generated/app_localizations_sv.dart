@@ -809,18 +809,18 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoGridDeleteVideoSubtitle =>
-      'Ta bort det här innehållet permanent';
+      'Ta bort videon från Divine. Andra Nostr-klienter kan fortfarande visa den.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Ta bort video';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      'Är du säker på att du vill ta bort den här videon?';
+      'Den här videon raderas permanent från Divine. Den kan fortfarande synas i andra Nostr-klienter som använder andra reläer.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.';
+      'Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.';
 
   @override
   String get videoGridDeleteCancel => 'Avbryt';
@@ -833,11 +833,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoGridDeleteSuccess => 'Borttagningsbegäran skickad';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Kunde inte ta bort innehåll: $error';
-  }
 
   @override
   String get exploreTabClassics => 'Klassiker';
@@ -1202,6 +1197,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoActionLike => 'Gilla videon';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Aktivera automatisk fortsättning';
+
+  @override
+  String get videoActionDisableAutoAdvance =>
+      'Inaktivera automatisk fortsättning';
+
+  @override
   String get videoActionRemoveRepost => 'Ta bort återpublicering';
 
   @override
@@ -1222,6 +1227,17 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String videoDescriptionLoops(String count) {
     return '$count loopar';
+  }
+
+  @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'loopar',
+      one: 'loop',
+    );
+    return '$compactCount $_temp0';
   }
 
   @override
@@ -1258,7 +1274,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get metadataRepostedByLabel => 'Återpublicerad av';
 
   @override
-  String get metadataLoopsLabel => 'Loopar';
+  String metadataLoopsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Loopar',
+      one: 'Loop',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get metadataLikesLabel => 'Gillamarkeringar';
@@ -2930,7 +2954,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoSubtitle =>
-      'Ta bort det här innehållet permanent';
+      'Ta bort videon från Divine. Andra Nostr-klienter kan fortfarande visa den.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Videon finns i de här listorna:';
@@ -2945,11 +2969,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Är du säker på att du vill ta bort den här videon?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.';
+      'Den här videon raderas permanent från Divine. Den kan fortfarande synas i andra Nostr-klienter som använder andra reläer.';
 
   @override
   String get shareMenuCancel => 'Avbryt';
@@ -2961,12 +2981,27 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuDeletingContent => 'Tar bort innehåll...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'Borttagningsbegäran skickad';
+  String get shareMenuDeleteRequestSent => 'Videon borttagen';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Kunde inte ta bort innehåll: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Borttagningen är inte redo än. Försök igen om en stund.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Du kan bara ta bort dina egna videor.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Logga in igen och försök ta bort.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Kunde inte signera borttagningsbegäran. Försök igen.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Kunde inte ta bort den här videon. Försök igen.';
 
   @override
   String get shareMenuFollowSetName => 'Namn på följsamling';
@@ -3032,12 +3067,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Videoborttagning begärd';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Kunde inte ta bort videon: $error';
-  }
+  String get shareMenuVideoDeletionRequested => 'Videon borttagen';
 
   @override
   String get shareMenuContentLabels => 'Innehållsetiketter';
@@ -3332,14 +3362,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Ditt För dig-flöde är tomt.\nUtforska videor och följ kreatörer för att forma det.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Inga videor från personer du följer än.\nHitta kreatörer du gillar och följ dem.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => 'Inga nya videor än.\nTitta in igen snart.';
 
   @override
   String get feedExploreVideos => 'Upptäck videor';
@@ -3514,13 +3544,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navMyProfile => 'Min profil';
 
   @override
-  String get navSearch => 'Sök';
-
-  @override
   String get navNotifications => 'Aviseringar';
-
-  @override
-  String get navSearchTooltip => 'Sök';
 
   @override
   String get navOpenCamera => 'Öppna kamera';
@@ -4808,4 +4832,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Gå till inställningar';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

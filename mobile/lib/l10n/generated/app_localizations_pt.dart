@@ -834,18 +834,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoGridDeleteVideoSubtitle =>
-      'Remover este conteúdo permanentemente';
+      'Remova este vídeo do Divine. Outros clientes Nostr ainda podem exibi-lo.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Excluir vídeo';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      'Tem certeza que quer excluir este vídeo?';
+      'Este vídeo será excluído permanentemente do Divine. Ele ainda pode aparecer em outros clientes Nostr que usam outros relays.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.';
+      'Isso vai enviar uma solicitação de exclusão para os relays. Nota: alguns relays ainda podem ter cópias em cache.';
 
   @override
   String get videoGridDeleteCancel => 'Cancelar';
@@ -859,11 +859,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get videoGridDeleteSuccess =>
       'Solicitação de exclusão enviada com sucesso';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Falha ao excluir conteúdo: $error';
-  }
 
   @override
   String get exploreTabClassics => 'Clássicos';
@@ -1225,6 +1220,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoActionLike => 'Curtir vídeo';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Ativar avanço automático';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Desativar avanço automático';
+
+  @override
   String get videoActionRemoveRepost => 'Remover repost';
 
   @override
@@ -1245,6 +1249,17 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String videoDescriptionLoops(String count) {
     return '$count loops';
+  }
+
+  @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'loops',
+      one: 'loop',
+    );
+    return '$compactCount $_temp0';
   }
 
   @override
@@ -1281,7 +1296,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get metadataRepostedByLabel => 'Repostado por';
 
   @override
-  String get metadataLoopsLabel => 'Loops';
+  String metadataLoopsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Loops',
+      one: 'Loop',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get metadataLikesLabel => 'Curtidas';
@@ -2958,7 +2981,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoSubtitle =>
-      'Remover este conteúdo permanentemente';
+      'Remova este vídeo do Divine. Outros clientes Nostr ainda podem exibi-lo.';
 
   @override
   String get shareMenuVideoInTheseLists => 'O vídeo está nestas listas:';
@@ -2973,11 +2996,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Tem certeza que quer excluir este vídeo?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.';
+      'Este vídeo será excluído permanentemente do Divine. Ele ainda pode aparecer em outros clientes Nostr que usam outros relays.';
 
   @override
   String get shareMenuCancel => 'Cancelar';
@@ -2989,13 +3008,27 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareMenuDeletingContent => 'Excluindo conteúdo...';
 
   @override
-  String get shareMenuDeleteRequestSent =>
-      'Solicitação de exclusão enviada com sucesso';
+  String get shareMenuDeleteRequestSent => 'Vídeo excluído';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Falha ao excluir conteúdo: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'A exclusão ainda não está pronta. Tenta de novo daqui a pouco.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Só podes apagar os teus próprios vídeos.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Inicia sessão outra vez e tenta apagar.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Não foi possível assinar o pedido de exclusão. Tenta de novo.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Não foi possível apagar este vídeo. Tenta de novo.';
 
   @override
   String get shareMenuFollowSetName => 'Nome da coleção de seguidos';
@@ -3062,12 +3095,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Isso vai enviar uma solicitação de exclusão para os relays. Nota: alguns relays ainda podem ter cópias em cache.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Exclusão de vídeo solicitada';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Falha ao excluir vídeo: $error';
-  }
+  String get shareMenuVideoDeletionRequested => 'Vídeo excluído';
 
   @override
   String get shareMenuContentLabels => 'Rótulos de conteúdo';
@@ -3362,14 +3390,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Seu feed Para você está vazio.\nExplore vídeos e siga criadores para personalizá-lo.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Ainda não há vídeos das pessoas que você segue.\nEncontre criadores de que goste e siga-os.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => 'Ainda não há vídeos novos.\nVolte em breve.';
 
   @override
   String get feedExploreVideos => 'Explorar vídeos';
@@ -3544,13 +3572,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get navMyProfile => 'Meu perfil';
 
   @override
-  String get navSearch => 'Buscar';
-
-  @override
   String get navNotifications => 'Notificações';
-
-  @override
-  String get navSearchTooltip => 'Buscar';
 
   @override
   String get navOpenCamera => 'Abrir câmera';
@@ -4849,4 +4871,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Ir para configurações';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

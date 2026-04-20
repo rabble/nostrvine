@@ -88,6 +88,50 @@ void main() {
       });
     });
 
+    group('copyWith', () {
+      test('preserves requestHeaders when not specified', () {
+        const headers = {'Authorization': 'Nostr token'};
+        const item = VideoItem(
+          id: 'id',
+          url: 'https://example.com/video.mp4',
+          requestHeaders: headers,
+        );
+
+        final copy = item.copyWith(url: 'https://example.com/new.mp4');
+
+        expect(copy.requestHeaders, equals(headers));
+        expect(copy.url, equals('https://example.com/new.mp4'));
+      });
+
+      test('clears requestHeaders when explicitly passed null', () {
+        const item = VideoItem(
+          id: 'id',
+          url: 'https://example.com/video.mp4',
+          requestHeaders: {'Authorization': 'Nostr token'},
+        );
+
+        final copy = item.copyWith(requestHeaders: null);
+
+        expect(copy.requestHeaders, isNull);
+        expect(copy.id, equals('id'));
+        expect(copy.url, equals('https://example.com/video.mp4'));
+      });
+
+      test('replaces requestHeaders with new map when provided', () {
+        const item = VideoItem(
+          id: 'id',
+          url: 'https://example.com/video.mp4',
+          requestHeaders: {'Authorization': 'Nostr old'},
+        );
+
+        final copy = item.copyWith(
+          requestHeaders: const {'Authorization': 'Nostr new'},
+        );
+
+        expect(copy.requestHeaders, equals({'Authorization': 'Nostr new'}));
+      });
+    });
+
     group('edge cases', () {
       test('handles empty strings', () {
         const item = VideoItem(id: '', url: '');

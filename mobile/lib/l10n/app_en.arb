@@ -403,22 +403,14 @@
   "videoGridEditVideo": "Edit Video",
   "videoGridEditVideoSubtitle": "Update title, description, and hashtags",
   "videoGridDeleteVideo": "Delete Video",
-  "videoGridDeleteVideoSubtitle": "Permanently remove this content",
+  "videoGridDeleteVideoSubtitle": "Remove this video from Divine. It may still appear on other Nostr clients.",
   "videoGridDeleteConfirmTitle": "Delete Video",
-  "videoGridDeleteConfirmMessage": "Are you sure you want to delete this video?",
-  "videoGridDeleteConfirmNote": "This will send a delete request (NIP-09) to all relays. Some relays may still retain the content.",
+  "videoGridDeleteConfirmMessage": "This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.",
+  "videoGridDeleteConfirmNote": "This will send a deletion request to relays. Note: Some relays may still have cached copies.",
   "videoGridDeleteCancel": "Cancel",
   "videoGridDeleteConfirm": "Delete",
   "videoGridDeletingContent": "Deleting content...",
   "videoGridDeleteSuccess": "Delete request sent successfully",
-  "videoGridDeleteFailure": "Failed to delete content: {error}",
-  "@videoGridDeleteFailure": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
   "exploreTabClassics": "Classics",
   "exploreTabNew": "New",
   "exploreTabPopular": "Popular",
@@ -594,6 +586,9 @@
   "shareMessageHint": "Add optional message...",
   "videoActionUnlike": "Unlike video",
   "videoActionLike": "Like video",
+  "videoActionAutoLabel": "Auto",
+  "videoActionEnableAutoAdvance": "Enable auto advance",
+  "videoActionDisableAutoAdvance": "Disable auto advance",
   "videoActionRemoveRepost": "Remove repost",
   "videoActionRepost": "Repost video",
   "videoActionViewComments": "View comments",
@@ -608,6 +603,17 @@
       }
     }
   },
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}",
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "metadataBadgeNotDivine": "Not Divine",
   "metadataBadgeHumanMade": "Human-Made",
   "metadataSoundsLabel": "Sounds",
@@ -619,7 +625,14 @@
   "metadataCollaboratorsLabel": "Collaborators",
   "metadataInspiredByLabel": "Inspired by",
   "metadataRepostedByLabel": "Reposted by",
-  "metadataLoopsLabel": "Loops",
+  "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loops}}",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "metadataLikesLabel": "Likes",
   "metadataCommentsLabel": "Comments",
   "metadataRepostsLabel": "Reposts",
@@ -1489,7 +1502,7 @@
   "shareMenuEditVideo": "Edit Video",
   "shareMenuEditVideoSubtitle": "Update title, description, and hashtags",
   "shareMenuDeleteVideo": "Delete Video",
-  "shareMenuDeleteVideoSubtitle": "Permanently remove this content",
+  "shareMenuDeleteVideoSubtitle": "Remove this video from Divine. It may still appear on other Nostr clients.",
   "shareMenuVideoInTheseLists": "Video is in these lists:",
   "shareMenuVideoCount": "{count} videos",
   "@shareMenuVideoCount": {
@@ -1500,20 +1513,16 @@
     }
   },
   "shareMenuClose": "Close",
-  "shareMenuDeleteConfirmation": "Are you sure you want to delete this video?",
-  "shareMenuDeleteWarning": "This will send a delete request (NIP-09) to all relays. Some relays may still retain the content.",
+  "shareMenuDeleteConfirmation": "This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.",
   "shareMenuCancel": "Cancel",
   "shareMenuDelete": "Delete",
   "shareMenuDeletingContent": "Deleting content...",
-  "shareMenuDeleteRequestSent": "Delete request sent successfully",
-  "shareMenuFailedToDeleteContent": "Failed to delete content: {error}",
-  "@shareMenuFailedToDeleteContent": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "shareMenuDeleteRequestSent": "Video deleted",
+  "shareMenuDeleteFailedNotInitialized": "Deletion isn't ready yet. Try again in a moment.",
+  "shareMenuDeleteFailedNotOwner": "You can only delete your own videos.",
+  "shareMenuDeleteFailedNotAuthenticated": "Sign in again, then try deleting.",
+  "shareMenuDeleteFailedCouldNotSign": "Couldn't sign the delete request. Try again.",
+  "shareMenuDeleteFailedGeneric": "Couldn't delete this video. Try again.",
   "shareMenuFollowSetName": "Follow Set Name",
   "shareMenuFollowSetNameHint": "e.g., Content Creators, Musicians, etc.",
   "shareMenuDescriptionOptional": "Description (optional)",
@@ -1547,15 +1556,7 @@
   },
   "shareMenuDeleteVideoQuestion": "Delete Video?",
   "shareMenuDeleteRelayWarning": "This will send a deletion request to relays. Note: Some relays may still have cached copies.",
-  "shareMenuVideoDeletionRequested": "Video deletion requested",
-  "shareMenuFailedToDeleteVideo": "Failed to delete video: {error}",
-  "@shareMenuFailedToDeleteVideo": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
+  "shareMenuVideoDeletionRequested": "Video deleted",
   "shareMenuContentLabels": "Content labels",
   "shareMenuAddContentLabels": "Add content labels",
   "shareMenuClearAll": "Clear all",
@@ -1796,9 +1797,7 @@
   "navInbox": "Inbox",
   "navProfile": "Profile",
   "navMyProfile": "My Profile",
-  "navSearch": "Search",
   "navNotifications": "Notifications",
-  "navSearchTooltip": "Search",
   "navOpenCamera": "Open camera",
   "navUnknown": "Unknown",
   "navExploreClassics": "Classics",
@@ -2530,5 +2529,17 @@
   "cameraPermissionAllowAccessTitle": "Allow camera & microphone access",
   "cameraPermissionAllowAccessDescription": "This allows you to capture and edit videos right here in the app, nothing more.",
   "cameraPermissionContinue": "Continue",
-  "cameraPermissionGoToSettings": "Go to settings"
+  "cameraPermissionGoToSettings": "Go to settings",
+  "metadataCaptionsLabel": "Captions",
+  "@metadataCaptionsLabel": {
+    "description": "Label for the global captions toggle in the video metadata sheet"
+  },
+  "metadataCaptionsEnabledSemantics": "Captions enabled for all videos",
+  "@metadataCaptionsEnabledSemantics": {
+    "description": "Screen reader label when the global captions toggle is on"
+  },
+  "metadataCaptionsDisabledSemantics": "Captions disabled for all videos",
+  "@metadataCaptionsDisabledSemantics": {
+    "description": "Screen reader label when the global captions toggle is off"
+  }
 }

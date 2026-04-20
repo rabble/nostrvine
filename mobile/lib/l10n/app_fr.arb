@@ -403,22 +403,14 @@
     "videoGridEditVideo": "Modifier la vidéo",
     "videoGridEditVideoSubtitle": "Mettre à jour titre, description et hashtags",
     "videoGridDeleteVideo": "Supprimer la vidéo",
-    "videoGridDeleteVideoSubtitle": "Retirer ce contenu définitivement",
+    "videoGridDeleteVideoSubtitle": "Retire cette vidéo de Divine. Elle peut encore apparaître sur d'autres clients Nostr.",
     "videoGridDeleteConfirmTitle": "Supprimer la vidéo",
-    "videoGridDeleteConfirmMessage": "Tu es sûr de vouloir supprimer cette vidéo ?",
-    "videoGridDeleteConfirmNote": "Cette action envoie une requête de suppression (NIP-09) à tous les relays. Certains relays peuvent garder le contenu.",
+    "videoGridDeleteConfirmMessage": "Cette vidéo sera supprimée définitivement de Divine. Elle peut encore apparaître sur d'autres clients Nostr qui utilisent d'autres relays.",
+    "videoGridDeleteConfirmNote": "Cette action envoie une requête de suppression aux relays. Note : certains relays peuvent encore avoir des copies en cache.",
     "videoGridDeleteCancel": "Annuler",
     "videoGridDeleteConfirm": "Supprimer",
     "videoGridDeletingContent": "Suppression du contenu...",
     "videoGridDeleteSuccess": "Demande de suppression envoyée avec succès",
-    "videoGridDeleteFailure": "Échec de la suppression : {error}",
-    "@videoGridDeleteFailure": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "exploreTabClassics": "Classiques",
     "exploreTabNew": "Nouveautés",
     "exploreTabPopular": "Populaire",
@@ -594,6 +586,9 @@
     "shareMessageHint": "Ajouter un message (facultatif)...",
     "videoActionUnlike": "Ne plus aimer la vidéo",
     "videoActionLike": "Aimer la vidéo",
+    "videoActionAutoLabel": "Auto",
+    "videoActionEnableAutoAdvance": "Activer le passage automatique",
+    "videoActionDisableAutoAdvance": "Désactiver le passage automatique",
     "videoActionRemoveRepost": "Supprimer le repost",
     "videoActionRepost": "Reposter la vidéo",
     "videoActionViewComments": "Voir les commentaires",
@@ -608,6 +603,17 @@
             }
         }
     },
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{boucle} other{boucles}}",
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataBadgeNotDivine": "Pas Divine",
     "metadataBadgeHumanMade": "Fait main",
     "metadataSoundsLabel": "Sons",
@@ -619,7 +625,14 @@
     "metadataCollaboratorsLabel": "Collaborateurs",
     "metadataInspiredByLabel": "Inspiré par",
     "metadataRepostedByLabel": "Reposté par",
-    "metadataLoopsLabel": "Loops",
+    "metadataLoopsLabel": "{count, plural, =1{Boucle} other{Boucles}}",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "metadataLikesLabel": "J'aime",
     "metadataCommentsLabel": "Commentaires",
     "metadataRepostsLabel": "Reposts",
@@ -1489,7 +1502,7 @@
     "shareMenuEditVideo": "Modifier la vidéo",
     "shareMenuEditVideoSubtitle": "Mettre à jour titre, description et hashtags",
     "shareMenuDeleteVideo": "Supprimer la vidéo",
-    "shareMenuDeleteVideoSubtitle": "Retirer ce contenu définitivement",
+    "shareMenuDeleteVideoSubtitle": "Retire cette vidéo de Divine. Elle peut encore apparaître sur d'autres clients Nostr.",
     "shareMenuVideoInTheseLists": "La vidéo est dans ces listes :",
     "shareMenuVideoCount": "{count} vidéos",
     "@shareMenuVideoCount": {
@@ -1500,20 +1513,16 @@
         }
     },
     "shareMenuClose": "Fermer",
-    "shareMenuDeleteConfirmation": "Tu es sûr de vouloir supprimer cette vidéo ?",
-    "shareMenuDeleteWarning": "Cette action envoie une requête de suppression (NIP-09) à tous les relays. Certains relays peuvent garder le contenu.",
+    "shareMenuDeleteConfirmation": "Cette vidéo sera supprimée définitivement de Divine. Elle peut encore apparaître sur d'autres clients Nostr qui utilisent d'autres relays.",
     "shareMenuCancel": "Annuler",
     "shareMenuDelete": "Supprimer",
     "shareMenuDeletingContent": "Suppression du contenu...",
-    "shareMenuDeleteRequestSent": "Demande de suppression envoyée avec succès",
-    "shareMenuFailedToDeleteContent": "Échec de la suppression du contenu : {error}",
-    "@shareMenuFailedToDeleteContent": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuDeleteRequestSent": "Vidéo supprimée",
+    "shareMenuDeleteFailedNotInitialized": "La suppression n'est pas prête. Réessaie dans un instant.",
+    "shareMenuDeleteFailedNotOwner": "Tu peux supprimer uniquement tes propres vidéos.",
+    "shareMenuDeleteFailedNotAuthenticated": "Reconnecte-toi, puis réessaie de supprimer.",
+    "shareMenuDeleteFailedCouldNotSign": "Impossible de signer la demande de suppression. Réessaie.",
+    "shareMenuDeleteFailedGeneric": "Impossible de supprimer cette vidéo. Réessaie.",
     "shareMenuFollowSetName": "Nom de l'ensemble d'abonnements",
     "shareMenuFollowSetNameHint": "ex. Créateurs de contenu, Musiciens, etc.",
     "shareMenuDescriptionOptional": "Description (facultatif)",
@@ -1547,15 +1556,7 @@
     },
     "shareMenuDeleteVideoQuestion": "Supprimer la vidéo ?",
     "shareMenuDeleteRelayWarning": "Cette action envoie une requête de suppression aux relays. Note : certains relays peuvent encore avoir des copies en cache.",
-    "shareMenuVideoDeletionRequested": "Suppression de la vidéo demandée",
-    "shareMenuFailedToDeleteVideo": "Échec de la suppression de la vidéo : {error}",
-    "@shareMenuFailedToDeleteVideo": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
+    "shareMenuVideoDeletionRequested": "Vidéo supprimée",
     "shareMenuContentLabels": "Étiquettes de contenu",
     "shareMenuAddContentLabels": "Ajouter des étiquettes de contenu",
     "shareMenuClearAll": "Tout effacer",
@@ -1725,6 +1726,9 @@
     "feedFailedToLoadVideos": "Échec du chargement des vidéos",
     "feedRetry": "Réessayer",
     "feedNoFollowedUsers": "Personne suivie.\nSuis quelqu'un pour voir ses vidéos ici.",
+    "feedForYouEmpty": "Ton fil Pour toi est vide.\nExplore des vidéos et abonne-toi à des créateurs pour le personnaliser.",
+    "feedFollowingEmpty": "Aucune vidéo des personnes que tu suis pour le moment.\nTrouve des créateurs que tu aimes et abonne-toi à eux.",
+    "feedLatestEmpty": "Aucune nouvelle vidéo pour le moment.\nReviens bientôt.",
     "feedExploreVideos": "Explorer les vidéos",
     "feedExternalVideoSlow": "Vidéo externe lente à charger",
     "feedSkip": "Passer",
@@ -1793,9 +1797,7 @@
     "navInbox": "Boîte",
     "navProfile": "Profil",
     "navMyProfile": "Mon profil",
-    "navSearch": "Recherche",
     "navNotifications": "Notifications",
-    "navSearchTooltip": "Recherche",
     "navOpenCamera": "Ouvrir la caméra",
     "navUnknown": "Inconnu",
     "navExploreClassics": "Classiques",

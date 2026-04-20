@@ -820,18 +820,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoGridDeleteVideo => 'Delete Video';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'Permanently remove this content';
+  String get videoGridDeleteVideoSubtitle =>
+      'Remove this video from Divine. It may still appear on other Nostr clients.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Delete Video';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      'Are you sure you want to delete this video?';
+      'This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'This will send a delete request (NIP-09) to all relays. Some relays may still retain the content.';
+      'This will send a deletion request to relays. Note: Some relays may still have cached copies.';
 
   @override
   String get videoGridDeleteCancel => 'Cancel';
@@ -844,11 +845,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoGridDeleteSuccess => 'Delete request sent successfully';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Failed to delete content: $error';
-  }
 
   @override
   String get exploreTabClassics => 'Classics';
@@ -1207,6 +1203,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoActionLike => 'Like video';
 
   @override
+  String get videoActionAutoLabel => 'Auto';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Enable auto advance';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Disable auto advance';
+
+  @override
   String get videoActionRemoveRepost => 'Remove repost';
 
   @override
@@ -1227,6 +1232,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String videoDescriptionLoops(String count) {
     return '$count loops';
+  }
+
+  @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'loops',
+      one: 'loop',
+    );
+    return '$compactCount $_temp0';
   }
 
   @override
@@ -1263,7 +1279,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get metadataRepostedByLabel => 'Reposted by';
 
   @override
-  String get metadataLoopsLabel => 'Loops';
+  String metadataLoopsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Loops',
+      one: 'Loop',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get metadataLikesLabel => 'Likes';
@@ -2929,7 +2953,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Delete Video';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => 'Permanently remove this content';
+  String get shareMenuDeleteVideoSubtitle =>
+      'Remove this video from Divine. It may still appear on other Nostr clients.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Video is in these lists:';
@@ -2944,11 +2969,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Are you sure you want to delete this video?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'This will send a delete request (NIP-09) to all relays. Some relays may still retain the content.';
+      'This will permanently delete this video from Divine. It may still appear on third-party Nostr clients that use other relays.';
 
   @override
   String get shareMenuCancel => 'Cancel';
@@ -2960,12 +2981,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuDeletingContent => 'Deleting content...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'Delete request sent successfully';
+  String get shareMenuDeleteRequestSent => 'Video deleted';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Failed to delete content: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Deletion isn\'t ready yet. Try again in a moment.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'You can only delete your own videos.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Sign in again, then try deleting.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Couldn\'t sign the delete request. Try again.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Couldn\'t delete this video. Try again.';
 
   @override
   String get shareMenuFollowSetName => 'Follow Set Name';
@@ -3032,12 +3068,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'This will send a deletion request to relays. Note: Some relays may still have cached copies.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Video deletion requested';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Failed to delete video: $error';
-  }
+  String get shareMenuVideoDeletionRequested => 'Video deleted';
 
   @override
   String get shareMenuContentLabels => 'Content labels';
@@ -3516,13 +3547,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navMyProfile => 'My Profile';
 
   @override
-  String get navSearch => 'Search';
-
-  @override
   String get navNotifications => 'Notifications';
-
-  @override
-  String get navSearchTooltip => 'Search';
 
   @override
   String get navOpenCamera => 'Open camera';
@@ -4814,4 +4839,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Go to settings';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }

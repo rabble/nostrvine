@@ -803,17 +803,19 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoGridDeleteVideo => 'Hapus Video';
 
   @override
-  String get videoGridDeleteVideoSubtitle => 'Hapus konten ini secara permanen';
+  String get videoGridDeleteVideoSubtitle =>
+      'Hapus video ini dari Divine. Klien Nostr lain mungkin masih menampilkannya.';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Hapus Video';
 
   @override
-  String get videoGridDeleteConfirmMessage => 'Yakin mau menghapus video ini?';
+  String get videoGridDeleteConfirmMessage =>
+      'Video ini akan dihapus permanen dari Divine. Video ini mungkin masih muncul di klien Nostr lain yang memakai relay berbeda.';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.';
+      'Ini akan mengirim permintaan hapus ke relay. Catatan: Beberapa relay mungkin masih punya salinan cache.';
 
   @override
   String get videoGridDeleteCancel => 'Batal';
@@ -826,11 +828,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoGridDeleteSuccess => 'Permintaan hapus berhasil dikirim';
-
-  @override
-  String videoGridDeleteFailure(Object error) {
-    return 'Gagal menghapus konten: $error';
-  }
 
   @override
   String get exploreTabClassics => 'Klasik';
@@ -1183,6 +1180,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoActionLike => 'Suka video';
 
   @override
+  String get videoActionAutoLabel => 'Otomatis';
+
+  @override
+  String get videoActionEnableAutoAdvance => 'Aktifkan lanjut otomatis';
+
+  @override
+  String get videoActionDisableAutoAdvance => 'Nonaktifkan lanjut otomatis';
+
+  @override
   String get videoActionRemoveRepost => 'Hapus repost';
 
   @override
@@ -1203,6 +1209,17 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String videoDescriptionLoops(String count) {
     return '$count loop';
+  }
+
+  @override
+  String videoFeedLoopCountLine(String compactCount, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'loop',
+      one: 'loop',
+    );
+    return '$compactCount $_temp0';
   }
 
   @override
@@ -1239,7 +1256,15 @@ class AppLocalizationsId extends AppLocalizations {
   String get metadataRepostedByLabel => 'Di-repost oleh';
 
   @override
-  String get metadataLoopsLabel => 'Loop';
+  String metadataLoopsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Loop',
+      one: 'Loop',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get metadataLikesLabel => 'Suka';
@@ -2909,7 +2934,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Hapus Video';
 
   @override
-  String get shareMenuDeleteVideoSubtitle => 'Hapus konten ini secara permanen';
+  String get shareMenuDeleteVideoSubtitle =>
+      'Hapus video ini dari Divine. Klien Nostr lain mungkin masih menampilkannya.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Video ada di daftar ini:';
@@ -2923,11 +2949,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuClose => 'Tutup';
 
   @override
-  String get shareMenuDeleteConfirmation => 'Yakin mau menghapus video ini?';
-
-  @override
-  String get shareMenuDeleteWarning =>
-      'Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.';
+  String get shareMenuDeleteConfirmation =>
+      'Video ini akan dihapus permanen dari Divine. Video ini mungkin masih muncul di klien Nostr lain yang memakai relay berbeda.';
 
   @override
   String get shareMenuCancel => 'Batal';
@@ -2939,12 +2962,27 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuDeletingContent => 'Menghapus konten...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'Permintaan hapus berhasil dikirim';
+  String get shareMenuDeleteRequestSent => 'Video dihapus';
 
   @override
-  String shareMenuFailedToDeleteContent(String error) {
-    return 'Gagal menghapus konten: $error';
-  }
+  String get shareMenuDeleteFailedNotInitialized =>
+      'Penghapusan belum siap. Coba lagi sebentar lagi.';
+
+  @override
+  String get shareMenuDeleteFailedNotOwner =>
+      'Kamu cuma bisa menghapus video milikmu sendiri.';
+
+  @override
+  String get shareMenuDeleteFailedNotAuthenticated =>
+      'Masuk lagi, lalu coba hapus.';
+
+  @override
+  String get shareMenuDeleteFailedCouldNotSign =>
+      'Tidak bisa menandatangani permintaan hapus. Coba lagi.';
+
+  @override
+  String get shareMenuDeleteFailedGeneric =>
+      'Tidak bisa menghapus video ini. Coba lagi.';
 
   @override
   String get shareMenuFollowSetName => 'Nama Set Ikuti';
@@ -3011,12 +3049,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Ini akan mengirim permintaan hapus ke relay. Catatan: Beberapa relay mungkin masih punya salinan cache.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Penghapusan video diminta';
-
-  @override
-  String shareMenuFailedToDeleteVideo(String error) {
-    return 'Gagal menghapus video: $error';
-  }
+  String get shareMenuVideoDeletionRequested => 'Video dihapus';
 
   @override
   String get shareMenuContentLabels => 'Label konten';
@@ -3310,14 +3343,14 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
+      'Feed Untukmu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.';
 
   @override
   String get feedFollowingEmpty =>
-      'No videos from people you follow yet.\nFind creators you like and follow them.';
+      'Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.';
 
   @override
-  String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+  String get feedLatestEmpty => 'Belum ada video baru.\nCek lagi nanti.';
 
   @override
   String get feedExploreVideos => 'Jelajahi Video';
@@ -3494,13 +3527,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get navMyProfile => 'Profilku';
 
   @override
-  String get navSearch => 'Cari';
-
-  @override
   String get navNotifications => 'Notifikasi';
-
-  @override
-  String get navSearchTooltip => 'Cari';
 
   @override
   String get navOpenCamera => 'Buka kamera';
@@ -4790,4 +4817,15 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get cameraPermissionGoToSettings => 'Buka pengaturan';
+
+  @override
+  String get metadataCaptionsLabel => 'Captions';
+
+  @override
+  String get metadataCaptionsEnabledSemantics =>
+      'Captions enabled for all videos';
+
+  @override
+  String get metadataCaptionsDisabledSemantics =>
+      'Captions disabled for all videos';
 }
