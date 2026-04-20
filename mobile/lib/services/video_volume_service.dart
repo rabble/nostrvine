@@ -52,16 +52,24 @@ class VideoVolumeService extends ChangeNotifier {
   /// Loads persisted volume and starts listening to system volume changes.
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
-    _volume = prefs.getDouble(_prefsKey) ?? 1.0;
+    final loaded = prefs.getDouble(_prefsKey) ?? 1.0;
+    if (_volume != loaded) {
+      _volume = loaded;
+      notifyListeners();
+    }
 
     // Disable the system volume UI overlay — the feed has its own mute
     // indicator and showing both is confusing.
-    VolumeController.instance.showSystemUI = false;
+    // volume_controller has no web platform — skip to avoid
+    // MissingPluginException in crash reporting.
+    if (!kIsWeb) {
+      VolumeController.instance.showSystemUI = false;
 
-    _systemVolumeSubscription = VolumeController.instance.addListener(
-      _onSystemVolumeChanged,
-      fetchInitialVolume: false,
-    );
+      _systemVolumeSubscription = VolumeController.instance.addListener(
+        _onSystemVolumeChanged,
+        fetchInitialVolume: false,
+      );
+    }
   }
 
   /// Called by [VideoFeedController.onVolumeChanged] when the user toggles
@@ -69,7 +77,7 @@ class VideoVolumeService extends ChangeNotifier {
   void onPlaybackVolumeChanged(double newVolume) {
     if (_volume == newVolume) return;
     _volume = newVolume;
-    _persist();
+    unawaited(_persist());
     // Do NOT call notifyListeners here — the controller already applied the
     // change. We only persist so the next controller picks it up.
   }
@@ -78,12 +86,12 @@ class VideoVolumeService extends ChangeNotifier {
     if (systemVolume == 0 && _volume > 0) {
       // Device muted → mute video
       _volume = 0;
-      _persist();
+      unawaited(_persist());
       notifyListeners();
     } else if (systemVolume > 0 && _volume == 0) {
       // Device unmuted → unmute video
       _volume = 1.0;
-      _persist();
+      unawaited(_persist());
       notifyListeners();
     }
   }

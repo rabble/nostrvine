@@ -960,6 +960,10 @@ class VideoFeedController extends ChangeNotifier {
   /// Uses the controller's desired playback volume as the source of truth:
   /// when [_desiredPlaybackVolume] is greater than zero, this mutes by
   /// setting the player volume to `0`; otherwise it unmutes to `1`.
+  ///
+  /// Only the current player's volume is set here. Preloaded players
+  /// intentionally buffer at volume 0 and receive [_desiredPlayerVolume]
+  /// when they become current via [_playVideo] / [play].
   void toggleMuteState() {
     final volume = _desiredPlaybackVolume > 0 ? 0.0 : 1.0;
     _desiredPlaybackVolume = volume;
@@ -972,6 +976,10 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   /// Set volume (0.0 to 1.0) for current video.
+  ///
+  /// Only the current player's volume is set here. Preloaded players
+  /// intentionally buffer at volume 0 and receive [_desiredPlayerVolume]
+  /// when they become current via [_playVideo] / [play].
   void setVolume(double volume) {
     final clamped = volume.clamp(0.0, 1.0);
     if (_desiredPlaybackVolume == clamped) return;
