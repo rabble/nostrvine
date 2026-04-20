@@ -16,6 +16,7 @@ import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -30,7 +31,6 @@ import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/services/video_volume_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -308,21 +308,15 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     super.initState();
     final initialIndex = context.read<FullscreenFeedBloc>().state.currentIndex;
     _pagePosition = ValueNotifier<double>(initialIndex.toDouble());
-    VideoVolumeService.instance.addListener(_onSystemVolumeChanged);
   }
 
   @override
   void dispose() {
-    VideoVolumeService.instance.removeListener(_onSystemVolumeChanged);
     routeObserver.unsubscribe(this);
     _controller?.dispose();
     _pagePosition.dispose();
     unawaited(_autoAdvanceCubit.close());
     super.dispose();
-  }
-
-  void _onSystemVolumeChanged() {
-    _controller?.setVolume(VideoVolumeService.instance.volume);
   }
 
   // RouteAware callbacks: pause when another route is pushed on top,
@@ -553,8 +547,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
       videos: videos,
       pool: PlayerPool.instance,
       initialIndex: initialIndex,
-      initialVolume: VideoVolumeService.instance.volume,
-      onVolumeChanged: VideoVolumeService.instance.onPlaybackVolumeChanged,
+      initialVolume: context.read<VideoVolumeCubit>().state.volume,
+      onVolumeChanged: context.read<VideoVolumeCubit>().onPlaybackVolumeChanged,
       // Hook: Dispatch event for background caching when video is ready
       onVideoReady: (index, player) {
         if (!mounted) return;
@@ -573,6 +567,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
       value: _autoAdvanceCubit,
       child: MultiBlocListener(
         listeners: [
+          // Sync volume when hardware buttons change system volume.
+          BlocListener<VideoVolumeCubit, VideoVolumeState>(
+            listener: (_, state) {
+              _controller?.setVolume(state.volume);
+            },
+          ),
           // Initialize controller when videos first become available
           BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
             listenWhen: (prev, curr) =>

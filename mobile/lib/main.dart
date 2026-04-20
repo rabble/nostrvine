@@ -30,6 +30,7 @@ import 'package:openvine/blocs/email_verification/email_verification_cubit.dart'
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
@@ -70,7 +71,6 @@ import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
-import 'package:openvine/services/video_volume_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
@@ -217,19 +217,6 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
         phaseName: 'audio_session',
         initializationStep: 'Configuring playback audio session',
         task: _configurePlaybackAudioSession,
-      );
-    },
-    optional: true,
-  );
-
-  coordinator.registerService(
-    name: 'VideoVolumeService',
-    phase: StartupPhase.essential,
-    initialize: () async {
-      await _runTimedStartupTask(
-        phaseName: 'video_volume',
-        initializationStep: 'Initializing video volume service',
-        task: VideoVolumeService.instance.init,
       );
     },
     optional: true,
@@ -1598,6 +1585,11 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       ],
       child: MultiBlocProvider(
         providers: [
+          BlocProvider(
+            create: (_) => VideoVolumeCubit(
+              sharedPreferences: ref.read(sharedPreferencesProvider),
+            ),
+          ),
           BlocProvider(
             create: (_) => LocaleCubit(
               localePreferenceService: LocalePreferenceService(
