@@ -39,8 +39,9 @@ class RetryPolicy {
     // Cap shift to avoid int overflow on pathological policies.
     final safeShift = attemptIndex > 30 ? 30 : attemptIndex - 1;
     final millis = baseDelay.inMilliseconds * (1 << safeShift);
-    final capped =
-        millis > maxDelay.inMilliseconds ? maxDelay.inMilliseconds : millis;
+    final capped = millis > maxDelay.inMilliseconds
+        ? maxDelay.inMilliseconds
+        : millis;
     return Duration(milliseconds: capped);
   }
 }
