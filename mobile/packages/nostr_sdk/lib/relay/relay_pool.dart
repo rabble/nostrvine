@@ -1520,8 +1520,7 @@ class _PendingPublish {
 
   void recordOk(String relayUrl, bool accepted, String reason) {
     if (!targetRelays.contains(relayUrl)) return;
-    if (_acceptedBy.contains(relayUrl) ||
-        _rejectedBy.containsKey(relayUrl)) {
+    if (_acceptedBy.contains(relayUrl) || _rejectedBy.containsKey(relayUrl)) {
       return; // ignore duplicate frames from the same relay
     }
     if (accepted) {

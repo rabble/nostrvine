@@ -99,10 +99,12 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       pool.handleMessageForTesting(relayA, ['OK', event.id, true, '']);
-      pool.handleMessageForTesting(
-        relayB,
-        ['OK', event.id, false, 'blocked: user'],
-      );
+      pool.handleMessageForTesting(relayB, [
+        'OK',
+        event.id,
+        false,
+        'blocked: user',
+      ]);
 
       final outcome = await future;
       expect(outcome.acceptedBy, {'wss://a'});
@@ -110,24 +112,26 @@ void main() {
       expect(outcome.noResponseFrom, isEmpty);
     });
 
-    test('relays with no response land in noResponseFrom after timeout',
-        () async {
-      final event = signedEvent('c' * 64);
+    test(
+      'relays with no response land in noResponseFrom after timeout',
+      () async {
+        final event = signedEvent('c' * 64);
 
-      final future = pool.sendAwaitOk(
-        event,
-        timeout: const Duration(milliseconds: 100),
-      );
-      await Future<void>.delayed(Duration.zero);
+        final future = pool.sendAwaitOk(
+          event,
+          timeout: const Duration(milliseconds: 100),
+        );
+        await Future<void>.delayed(Duration.zero);
 
-      pool.handleMessageForTesting(relayA, ['OK', event.id, true, '']);
-      // relayB silent.
+        pool.handleMessageForTesting(relayA, ['OK', event.id, true, '']);
+        // relayB silent.
 
-      final outcome = await future;
-      expect(outcome.acceptedBy, {'wss://a'});
-      expect(outcome.rejectedBy, isEmpty);
-      expect(outcome.noResponseFrom, {'wss://b'});
-    });
+        final outcome = await future;
+        expect(outcome.acceptedBy, {'wss://a'});
+        expect(outcome.rejectedBy, isEmpty);
+        expect(outcome.noResponseFrom, {'wss://b'});
+      },
+    );
 
     test('unrelated OK frames do not resolve the publish', () async {
       final event = signedEvent('d' * 64);
