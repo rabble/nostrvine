@@ -784,6 +784,24 @@ abstract class AppLocalizations {
   /// **'Error loading collab videos'**
   String get profileErrorLoadingCollabs;
 
+  /// No description provided for @profileNoSavedVideosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing saved yet'**
+  String get profileNoSavedVideosTitle;
+
+  /// No description provided for @profileSavedOwnEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmark videos from the share sheet and they\'ll show up here.'**
+  String get profileSavedOwnEmpty;
+
+  /// No description provided for @profileErrorLoadingSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading saved videos'**
+  String get profileErrorLoadingSaved;
+
   /// No description provided for @profileNoCommentsOwnTitle.
   ///
   /// In en, this message translates to:

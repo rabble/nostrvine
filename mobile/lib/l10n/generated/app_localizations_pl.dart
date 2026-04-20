@@ -427,6 +427,16 @@ class AppLocalizationsPl extends AppLocalizations {
       'Błąd wczytywania filmów ze współprac';
 
   @override
+  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+
+  @override
+  String get profileSavedOwnEmpty =>
+      'Bookmark videos from the share sheet and they\'ll show up here.';
+
+  @override
+  String get profileErrorLoadingSaved => 'Error loading saved videos';
+
+  @override
   String get profileNoCommentsOwnTitle => 'Brak komentarzy';
 
   @override

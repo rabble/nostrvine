@@ -13,8 +13,10 @@ import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
+import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/profile_tab_index_provider.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_banner_layer.dart';
 import 'package:openvine/widgets/profile/profile_collabs_grid.dart';
@@ -22,6 +24,7 @@ import 'package:openvine/widgets/profile/profile_comments_grid.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
+import 'package:openvine/widgets/profile/profile_saved_grid.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 
 /// Profile grid view showing header, stats, action buttons, and tabbed content.
@@ -121,6 +124,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   ProfileLikedVideosBloc? _likedVideosBloc;
   ProfileRepostedVideosBloc? _repostedVideosBloc;
   ProfileCollabVideosBloc? _collabVideosBloc;
+  ProfileSavedVideosBloc? _savedVideosBloc;
   ProfileCommentsBloc? _commentsBloc;
 
   /// Track the userIdHex the BLoCs were created for.
@@ -130,6 +134,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   bool _likedTabSynced = false;
   bool _repostsTabSynced = false;
   bool _collabsTabSynced = false;
+  bool _savedTabSynced = false;
   bool _commentsTabSynced = false;
 
   /// Key attached to the ProfileHeaderWidget so we can measure its height
@@ -157,7 +162,15 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    // Restore the previously selected tab index (if any) so navigating back
+    // from a fullscreen video doesn't drop the user on the Videos tab.
+    final restoredIndex =
+        ref.read(profileTabIndexProvider)[widget.userIdHex] ?? 0;
+    _tabController = TabController(
+      length: 5,
+      vsync: this,
+      initialIndex: restoredIndex,
+    );
     _tabController.addListener(_onTabChanged);
     widget.refreshNotifier?.addListener(_onRefreshRequested);
     widget.scrollController?.addListener(_onScroll);
@@ -212,25 +225,46 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // Trigger rebuild to update SVG icon colors
     if (mounted) setState(() {});
 
-    // Lazy load: Trigger sync only when user first views the tab
-    if (_tabController.index == 1 &&
-        !_likedTabSynced &&
-        _likedVideosBloc != null) {
+    // Persist the current index so a remount (triggered by navigation
+    // transitions that briefly take the URL off the profile route) can
+    // restore the user to the tab they were on.
+    final notifier = ref.read(profileTabIndexProvider.notifier);
+    notifier.state = {
+      ...notifier.state,
+      widget.userIdHex: _tabController.index,
+    };
+
+    _syncCurrentTabIfNeeded();
+  }
+
+  /// Dispatch the lazy-load event for the currently selected tab, unless it
+  /// has already been synced this session. Extracted so it can also be
+  /// triggered after BLoCs are created on first build — [_onTabChanged]
+  /// doesn't fire for the initial [TabController] index.
+  void _syncCurrentTabIfNeeded() {
+    final index = _tabController.index;
+    if (index == 1 && !_likedTabSynced && _likedVideosBloc != null) {
       _likedTabSynced = true;
       _likedVideosBloc!.add(const ProfileLikedVideosSyncRequested());
-    } else if (_tabController.index == 2 &&
+    } else if (index == 2 &&
         !_repostsTabSynced &&
         _repostedVideosBloc != null) {
       _repostsTabSynced = true;
       _repostedVideosBloc!.add(const ProfileRepostedVideosSyncRequested());
-    } else if (_tabController.index == 3 &&
-        !_collabsTabSynced &&
-        _collabVideosBloc != null) {
-      _collabsTabSynced = true;
-      _collabVideosBloc!.add(const ProfileCollabVideosFetchRequested());
-    } else if (_tabController.index == 4 &&
-        !_commentsTabSynced &&
-        _commentsBloc != null) {
+    } else if (index == 3) {
+      // Own profile: 4th tab is Saved (bookmarks). Other profile: Collabs.
+      if (widget.isOwnProfile) {
+        if (!_savedTabSynced && _savedVideosBloc != null) {
+          _savedTabSynced = true;
+          _savedVideosBloc!.add(const ProfileSavedVideosSyncRequested());
+        }
+      } else {
+        if (!_collabsTabSynced && _collabVideosBloc != null) {
+          _collabsTabSynced = true;
+          _collabVideosBloc!.add(const ProfileCollabVideosFetchRequested());
+        }
+      }
+    } else if (index == 4 && !_commentsTabSynced && _commentsBloc != null) {
       _commentsTabSynced = true;
       _commentsBloc!.add(const ProfileCommentsSyncRequested());
     }
@@ -248,6 +282,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     if (_collabsTabSynced) {
       _collabVideosBloc?.add(const ProfileCollabVideosFetchRequested());
     }
+    if (_savedTabSynced) {
+      _savedVideosBloc?.add(const ProfileSavedVideosSyncRequested());
+    }
     if (_commentsTabSynced) {
       _commentsBloc?.add(const ProfileCommentsSyncRequested());
     }
@@ -264,6 +301,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     _likedVideosBloc?.close();
     _repostedVideosBloc?.close();
     _collabVideosBloc?.close();
+    _savedVideosBloc?.close();
     _commentsBloc?.close();
     super.dispose();
   }
@@ -285,12 +323,14 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       _likedVideosBloc?.close();
       _repostedVideosBloc?.close();
       _collabVideosBloc?.close();
+      _savedVideosBloc?.close();
       _commentsBloc?.close();
 
       // Reset lazy load flags when switching profiles
       _likedTabSynced = false;
       _repostsTabSynced = false;
       _collabsTabSynced = false;
+      _savedTabSynced = false;
       _commentsTabSynced = false;
 
       // Create BLoCs but DON'T sync yet - lazy load when tab is viewed
@@ -311,11 +351,22 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       )..add(const ProfileRepostedVideosSubscriptionRequested());
       // Sync deferred until user views Reposts tab
 
-      _collabVideosBloc = ProfileCollabVideosBloc(
-        videosRepository: videosRepository,
-        targetUserPubkey: widget.userIdHex,
-      );
-      // Fetch deferred until user views Collabs tab
+      // 4th tab: Saved (own profile) or Collabs (other profile).
+      // Only create the bloc that will actually be used.
+      if (widget.isOwnProfile) {
+        _savedVideosBloc = ProfileSavedVideosBloc(
+          bookmarkService: ref.read(bookmarkServiceProvider.future),
+          videosRepository: videosRepository,
+        );
+        _collabVideosBloc = null;
+      } else {
+        _collabVideosBloc = ProfileCollabVideosBloc(
+          videosRepository: videosRepository,
+          targetUserPubkey: widget.userIdHex,
+        );
+        _savedVideosBloc = null;
+      }
+      // Sync deferred until user views the 4th tab
 
       _commentsBloc = ProfileCommentsBloc(
         commentsRepository: commentsRepository,
@@ -324,17 +375,33 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       // Sync deferred until user views Comments tab
 
       _blocsUserIdHex = widget.userIdHex;
+
+      // Kick off the lazy sync for the currently selected tab. On a fresh
+      // mount this will no-op for tab 0 (videos use [widget.videos] and
+      // don't need a bloc sync) and fire the correct sync event for any
+      // other restored tab. Deferred to a post-frame callback so we don't
+      // emit new BLoC states during this build.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _syncCurrentTabIfNeeded();
+      });
     }
 
-    // Build the base widget with ProfileLikedVideosBloc and
-    // ProfileRepostedVideosBloc using .value() to provide our managed instances
+    // Build the base widget with the tab BLoCs using .value() to provide
+    // our managed instances. The 4th tab's BLoC and child widget differ
+    // between own profile (Saved bookmarks) and other profile (Collabs).
     final tabContent = MultiBlocProvider(
       providers: [
         BlocProvider<ProfileLikedVideosBloc>.value(value: _likedVideosBloc!),
         BlocProvider<ProfileRepostedVideosBloc>.value(
           value: _repostedVideosBloc!,
         ),
-        BlocProvider<ProfileCollabVideosBloc>.value(value: _collabVideosBloc!),
+        if (widget.isOwnProfile)
+          BlocProvider<ProfileSavedVideosBloc>.value(value: _savedVideosBloc!)
+        else
+          BlocProvider<ProfileCollabVideosBloc>.value(
+            value: _collabVideosBloc!,
+          ),
         BlocProvider<ProfileCommentsBloc>.value(value: _commentsBloc!),
       ],
       child: ColoredBox(
@@ -350,7 +417,10 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
             ),
             ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
             ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
-            ProfileCollabsGrid(isOwnProfile: widget.isOwnProfile),
+            if (widget.isOwnProfile)
+              const ProfileSavedGrid()
+            else
+              ProfileCollabsGrid(isOwnProfile: widget.isOwnProfile),
             ProfileCommentsGrid(isOwnProfile: widget.isOwnProfile),
           ],
         ),
@@ -449,9 +519,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                   ),
                   Tab(
                     icon: Semantics(
-                      label: 'collabs_tab',
+                      label: widget.isOwnProfile ? 'saved_tab' : 'collabs_tab',
                       child: SvgPicture.asset(
-                        DivineIconName.user.assetPath,
+                        (widget.isOwnProfile
+                                ? DivineIconName.bookmarkSimple
+                                : DivineIconName.user)
+                            .assetPath,
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(

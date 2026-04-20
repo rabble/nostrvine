@@ -378,6 +378,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileErrorLoadingCollabs => 'コラボ動画の読み込みに失敗';
 
   @override
+  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+
+  @override
+  String get profileSavedOwnEmpty =>
+      'Bookmark videos from the share sheet and they\'ll show up here.';
+
+  @override
+  String get profileErrorLoadingSaved => 'Error loading saved videos';
+
+  @override
   String get profileNoCommentsOwnTitle => 'コメントはまだないよ';
 
   @override

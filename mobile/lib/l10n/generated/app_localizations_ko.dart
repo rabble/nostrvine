@@ -379,6 +379,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileErrorLoadingCollabs => '콜라보 영상을 불러오지 못했어요';
 
   @override
+  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+
+  @override
+  String get profileSavedOwnEmpty =>
+      'Bookmark videos from the share sheet and they\'ll show up here.';
+
+  @override
+  String get profileErrorLoadingSaved => 'Error loading saved videos';
+
+  @override
   String get profileNoCommentsOwnTitle => '아직 댓글 없음';
 
   @override

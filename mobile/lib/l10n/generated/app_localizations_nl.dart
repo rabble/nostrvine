@@ -418,6 +418,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Fout bij laden van samenwerkingsvideo\'s';
 
   @override
+  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+
+  @override
+  String get profileSavedOwnEmpty =>
+      'Bookmark videos from the share sheet and they\'ll show up here.';
+
+  @override
+  String get profileErrorLoadingSaved => 'Error loading saved videos';
+
+  @override
   String get profileNoCommentsOwnTitle => 'Nog geen reacties';
 
   @override

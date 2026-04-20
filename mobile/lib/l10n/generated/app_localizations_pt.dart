@@ -425,6 +425,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileErrorLoadingCollabs => 'Erro ao carregar vídeos de colab';
 
   @override
+  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+
+  @override
+  String get profileSavedOwnEmpty =>
+      'Bookmark videos from the share sheet and they\'ll show up here.';
+
+  @override
+  String get profileErrorLoadingSaved => 'Error loading saved videos';
+
+  @override
   String get profileNoCommentsOwnTitle => 'Nenhum comentário ainda';
 
   @override
