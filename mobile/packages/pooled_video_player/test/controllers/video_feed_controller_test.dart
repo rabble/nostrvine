@@ -1838,6 +1838,59 @@ void main() {
         });
 
         test(
+          'skips seek at the exact 6.339s drift observed on #1845 assets',
+          () async {
+            // Directly pins the fix to the empirically-observed drift:
+            // ffprobe on /<hash>/720p.mp4 for the #1845 assets reports a
+            // container duration of 6.339s (video stream = 6.300s, audio
+            // stream = 6.339s — aac frame-boundary padding over the video
+            // track). Pre-fix enforcement fired seek(Duration.zero) at
+            // position >= 6.300s, racing the native 6.339s EOS and
+            // clipping the final frame on every loop.
+            final controller = VideoFeedController(
+              videos: createTestVideos(count: 1),
+              pool: pool,
+              maxLoopDuration: const Duration(milliseconds: 6300),
+              loopTolerance: const Duration(milliseconds: 500),
+            );
+
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            final url = createTestVideos(count: 1)[0].url;
+            final setup = playerSetups[url]!;
+
+            when(() => setup.state.playing).thenReturn(true);
+            when(
+              () => setup.state.position,
+            ).thenReturn(const Duration(milliseconds: 6310));
+            when(
+              () => setup.state.duration,
+            ).thenReturn(const Duration(milliseconds: 6339));
+
+            setup.bufferingController.add(false);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            clearInteractions(setup.player);
+            when(() => setup.player.seek(any())).thenAnswer((_) async {});
+            when(() => setup.state.playing).thenReturn(true);
+            when(
+              () => setup.state.position,
+            ).thenReturn(const Duration(milliseconds: 6310));
+            when(
+              () => setup.state.duration,
+            ).thenReturn(const Duration(milliseconds: 6339));
+
+            await Future<void>.delayed(const Duration(milliseconds: 150));
+
+            // 39ms tail sits inside the 500ms tolerance — the forced
+            // seek must not fire, letting native EOS wrap the loop.
+            verifyNever(() => setup.player.seek(Duration.zero));
+
+            controller.dispose();
+          },
+        );
+
+        test(
           'enforces seek when natural end is beyond loopTolerance',
           () async {
             // Video is 10s, position reached 6.3s, tolerance is 500ms.

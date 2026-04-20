@@ -20,12 +20,21 @@ class FeedPlaybackConstants {
   /// Tail grace period above [maxLoopDuration] in which the natural end
   /// of the video is still honored instead of force-seeking to zero.
   ///
-  /// Why: editor-captured clips land on the 6.3s cap exactly, and
-  /// transcoder drift can push the container a few hundred milliseconds
-  /// past it (e.g. a 6.4s file produced from a 6.3s capture). Without
-  /// this margin the final ~0-300 ms gets clipped on every loop, which
-  /// users perceive as "the video restarts early"
-  /// (see divinevideo/divine-mobile#1845).
+  /// Why: editor-captured clips land on the 6.3s cap exactly on the raw
+  /// blob, but the 720p.mp4 derivative served to the feed reports a
+  /// longer container duration because the aac audio track is padded to
+  /// the next frame boundary past the video track. Measured on the
+  /// `/<hash>/720p.mp4` assets cited in #1845: container = 6.339s,
+  /// video stream = 6.300s, audio stream = 6.339s — a consistent ~39 ms
+  /// overshoot. Pre-tolerance enforcement fires `seek(Duration.zero)` at
+  /// `position >= 6.300s`, beating the native 6.339s EOS and clipping
+  /// the final frame on every loop.
+  ///
+  /// 500 ms is generous versus the ~39 ms observed. The margin absorbs
+  /// future transcoder variants (different aac frame sizes, different
+  /// sample rates) without weakening the cap for long-form imports —
+  /// anything with a natural duration > 6.8s still loops at 6.3s via
+  /// [shouldEnforceLoopForDuration].
   static const loopTolerance = Duration(milliseconds: 500);
 
   /// Returns `true` when feed loop enforcement should seek to zero on
