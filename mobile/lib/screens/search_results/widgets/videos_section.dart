@@ -7,9 +7,11 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_initial_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -153,9 +155,20 @@ class _VideosGrid extends StatelessWidget {
     final videos = context.select((VideoSearchBloc bloc) => bloc.state.videos);
     final query = context.select((VideoSearchBloc bloc) => bloc.state.query);
 
-    if ((status == VideoSearchStatus.initial ||
-            status == VideoSearchStatus.searching) &&
-        videos.isEmpty) {
+    // Idle state: no query entered yet (status `initial` always implies
+    // empty query in [VideoSearchBloc]). Show a helpful prompt on the
+    // dedicated tab; hide the section inside the All-tab preview.
+    if (status == VideoSearchStatus.initial) {
+      if (showAll) {
+        return SearchSectionInitialState(
+          title: context.l10n.searchForVideos,
+          subtitle: context.l10n.searchFindVideosByKeyword,
+        );
+      }
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    if (status == VideoSearchStatus.searching && videos.isEmpty) {
       return const _VideosSkeletonLoader();
     }
 

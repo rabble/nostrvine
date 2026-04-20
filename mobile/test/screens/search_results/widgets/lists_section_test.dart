@@ -9,6 +9,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/widgets/lists_section.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_initial_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 
 class _MockListSearchBloc extends MockBloc<ListSearchEvent, ListSearchState>
@@ -52,6 +53,22 @@ void main() {
     }
 
     group('showAll: false (All tab preview)', () {
+      testWidgets(
+        'keeps header visible but hides skeleton on empty initial query',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(const ListSearchState());
+
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(SectionHeader), findsOneWidget);
+          expect(find.byType(SearchSectionInitialState), findsNothing);
+          expect(
+            find.bySemanticsLabel('Loading list results'),
+            findsNothing,
+          );
+        },
+      );
+
       testWidgets(
         'hides entirely when success with empty results',
         (tester) async {
@@ -105,6 +122,22 @@ void main() {
     });
 
     group('showAll: true (dedicated tab)', () {
+      testWidgets(
+        'renders $SearchSectionInitialState when initial with empty query',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(const ListSearchState());
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(SearchSectionInitialState), findsOneWidget);
+          expect(find.text('Search for lists'), findsOneWidget);
+          expect(
+            find.bySemanticsLabel('Loading list results'),
+            findsNothing,
+          );
+        },
+      );
+
       testWidgets(
         'renders $SearchSectionEmptyState when success with empty results',
         (tester) async {

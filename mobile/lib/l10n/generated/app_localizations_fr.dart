@@ -4680,6 +4680,24 @@ class AppLocalizationsFr extends AppLocalizations {
       'Trouve des listes de vidéos sélectionnées';
 
   @override
+  String get searchForVideos => 'Search for videos';
+
+  @override
+  String get searchFindVideosByKeyword => 'Find vines by keyword';
+
+  @override
+  String get searchForPeople => 'Search for people';
+
+  @override
+  String get searchFindCreators => 'Find creators and friends';
+
+  @override
+  String get searchForTags => 'Search for tags';
+
+  @override
+  String get searchFindTopics => 'Find topics to explore';
+
+  @override
   String get cameraAgeRestriction =>
       'Tu dois avoir 16 ans ou plus pour créer du contenu';
 

@@ -4608,6 +4608,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get searchFindCuratedVideoLists => 'Hitta kurerade videolistor';
 
   @override
+  String get searchForVideos => 'Search for videos';
+
+  @override
+  String get searchFindVideosByKeyword => 'Find vines by keyword';
+
+  @override
+  String get searchForPeople => 'Search for people';
+
+  @override
+  String get searchFindCreators => 'Find creators and friends';
+
+  @override
+  String get searchForTags => 'Search for tags';
+
+  @override
+  String get searchFindTopics => 'Find topics to explore';
+
+  @override
   String get cameraAgeRestriction =>
       'Du måste vara 16 år eller äldre för att skapa innehåll';
 

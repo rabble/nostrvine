@@ -4,9 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
+import 'package:openvine/screens/search_results/widgets/search_section_initial_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
@@ -93,7 +95,19 @@ class _PeopleContent extends StatelessWidget {
       (UserSearchBloc bloc) => bloc.state.query,
     );
 
-    if ((status == .initial || status == .loading) && results.isEmpty) {
+    // Idle state: no query entered yet. Show a prompt on the dedicated
+    // tab; hide the section inside the All-tab preview.
+    if (status == .initial) {
+      if (showAll) {
+        return SearchSectionInitialState(
+          title: context.l10n.searchForPeople,
+          subtitle: context.l10n.searchFindCreators,
+        );
+      }
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    if (status == .loading && results.isEmpty) {
       return const _PeopleSkeletonLoader();
     }
 

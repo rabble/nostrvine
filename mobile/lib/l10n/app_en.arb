@@ -2346,6 +2346,30 @@
   "searchTryAgain": "Try again",
   "searchForLists": "Search for lists",
   "searchFindCuratedVideoLists": "Find curated video lists",
+  "searchForVideos": "Search for videos",
+  "@searchForVideos": {
+    "description": "Videos section initial-state title when the search query is empty"
+  },
+  "searchFindVideosByKeyword": "Find vines by keyword",
+  "@searchFindVideosByKeyword": {
+    "description": "Videos section initial-state subtitle when the search query is empty"
+  },
+  "searchForPeople": "Search for people",
+  "@searchForPeople": {
+    "description": "People section initial-state title when the search query is empty"
+  },
+  "searchFindCreators": "Find creators and friends",
+  "@searchFindCreators": {
+    "description": "People section initial-state subtitle when the search query is empty"
+  },
+  "searchForTags": "Search for tags",
+  "@searchForTags": {
+    "description": "Tags section initial-state title when the search query is empty"
+  },
+  "searchFindTopics": "Find topics to explore",
+  "@searchFindTopics": {
+    "description": "Tags section initial-state subtitle when the search query is empty"
+  },
 
   "contentWarningViewAnyway": "View Anyway",
 

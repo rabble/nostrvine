@@ -4593,6 +4593,24 @@ class AppLocalizationsId extends AppLocalizations {
   String get searchFindCuratedVideoLists => 'Temukan daftar video pilihan';
 
   @override
+  String get searchForVideos => 'Search for videos';
+
+  @override
+  String get searchFindVideosByKeyword => 'Find vines by keyword';
+
+  @override
+  String get searchForPeople => 'Search for people';
+
+  @override
+  String get searchFindCreators => 'Find creators and friends';
+
+  @override
+  String get searchForTags => 'Search for tags';
+
+  @override
+  String get searchFindTopics => 'Find topics to explore';
+
+  @override
   String get cameraAgeRestriction =>
       'Kamu harus berusia 16 tahun atau lebih untuk membuat konten';
 
