@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
+import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
@@ -70,6 +71,8 @@ class MessageBubble extends StatelessWidget {
     this.isFirstInGroup = true,
     this.isLastInGroup = true,
     this.onLongPress,
+    this.sendStatus,
+    this.onRetry,
     super.key,
   });
 
@@ -87,6 +90,14 @@ class MessageBubble extends StatelessWidget {
 
   /// Called when the user long-presses the bubble.
   final VoidCallback? onLongPress;
+
+  /// Per-message send lifecycle. `null` means "confirmed via relay
+  /// stream" — no status icon. When set, draws a clock (sending),
+  /// nothing (sent), or a red alert + retry action (failed).
+  final MessageSendStatus? sendStatus;
+
+  /// Invoked when the user taps the failed-state retry affordance.
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +117,82 @@ class MessageBubble extends StatelessWidget {
       textAfterUrl = null;
     }
 
+    final isPending = sendStatus == MessageSendStatus.sending;
+    final isFailed = sendStatus == MessageSendStatus.failed;
+
+    final bubble = Semantics(
+      hint: isSent ? 'Sent message' : 'Received message',
+      onLongPressHint: onLongPress != null ? 'Message actions' : null,
+      child: GestureDetector(
+        onLongPress: onLongPress,
+        child: Opacity(
+          opacity: isPending ? 0.6 : 1,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: isSent ? VineTheme.surfaceContainer : VineTheme.neutral10,
+              borderRadius: _borderRadius,
+            ),
+            child: Column(
+              crossAxisAlignment: isSent
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                if (isFirstInGroup)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      timestamp,
+                      style: VineTheme.labelSmallFont(
+                        color: VineTheme.onSurfaceMuted,
+                      ),
+                    ),
+                  ),
+                if (videoStableId != null) ...[
+                  if (textBeforeUrl != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _MessageText(message: textBeforeUrl),
+                    ),
+                  _VideoLinkPreview(videoStableId: videoStableId),
+                  if (textAfterUrl != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: _MessageText(message: textAfterUrl),
+                    ),
+                ] else
+                  _MessageText(message: message),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Indicator hangs to the left of a sent bubble (the non-tail side)
+    // and is omitted entirely for received or confirmed-success sends.
+    Widget content = bubble;
+    if (isSent && sendStatus != null) {
+      content = Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (isPending)
+            const _PendingIcon()
+          else if (isFailed)
+            _FailedIcon(onRetry: onRetry),
+          const SizedBox(width: 4),
+          Flexible(child: bubble),
+        ],
+      );
+    }
+
     return Padding(
       padding: EdgeInsets.only(
         left: 16,
@@ -117,59 +204,7 @@ class MessageBubble extends StatelessWidget {
         alignment: isSent
             ? AlignmentDirectional.centerEnd
             : AlignmentDirectional.centerStart,
-        child: Semantics(
-          hint: isSent ? 'Sent message' : 'Received message',
-          onLongPressHint: onLongPress != null ? 'Message actions' : null,
-          child: GestureDetector(
-            onLongPress: onLongPress,
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.sizeOf(context).width * 0.75,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              decoration: BoxDecoration(
-                color: isSent
-                    ? VineTheme.surfaceContainer
-                    : VineTheme.neutral10,
-                borderRadius: _borderRadius,
-              ),
-              child: Column(
-                crossAxisAlignment: isSent
-                    ? CrossAxisAlignment.end
-                    : CrossAxisAlignment.start,
-                children: [
-                  if (isFirstInGroup)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        timestamp,
-                        style: VineTheme.labelSmallFont(
-                          color: VineTheme.onSurfaceMuted,
-                        ),
-                      ),
-                    ),
-                  if (videoStableId != null) ...[
-                    if (textBeforeUrl != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _MessageText(message: textBeforeUrl),
-                      ),
-                    _VideoLinkPreview(videoStableId: videoStableId),
-                    if (textAfterUrl != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: _MessageText(message: textAfterUrl),
-                      ),
-                  ] else
-                    _MessageText(message: message),
-                ],
-              ),
-            ),
-          ),
-        ),
+        child: content,
       ),
     );
   }
@@ -426,6 +461,60 @@ class _VideoLinkPreview extends ConsumerWidget {
               strokeWidth: 2,
               color: VineTheme.vineGreen,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Grey clock rendered next to a message that is being sent. 48x48
+/// minimum touch target kept via Semantics + Container sizing (icon
+/// itself is small to read as a status indicator, not a button).
+class _PendingIcon extends StatelessWidget {
+  const _PendingIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Sending',
+      liveRegion: true,
+      child: const SizedBox(
+        width: 20,
+        height: 20,
+        child: Icon(
+          Icons.schedule,
+          size: 16,
+          color: VineTheme.onSurfaceMuted,
+        ),
+      ),
+    );
+  }
+}
+
+/// Red alert rendered next to a message that failed to send. Taps
+/// invoke [onRetry] if provided — the parent handles wiring the retry
+/// event to the bloc with the failed pending id.
+class _FailedIcon extends StatelessWidget {
+  const _FailedIcon({this.onRetry});
+
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Message failed to send. Tap to retry.',
+      button: onRetry != null,
+      child: InkResponse(
+        onTap: onRetry,
+        radius: 24,
+        child: const SizedBox(
+          width: 24,
+          height: 24,
+          child: Icon(
+            Icons.error_outline,
+            size: 18,
+            color: VineTheme.error,
           ),
         ),
       ),

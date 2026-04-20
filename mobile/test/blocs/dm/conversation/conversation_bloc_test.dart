@@ -9,6 +9,7 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
@@ -804,6 +805,8 @@ void main() {
           ConversationStatus.initial,
           <DmMessage>[],
           SendStatus.idle,
+          <String, MessageSendStatus>{},
+          <String, PublishUserFeedback>{},
         ]),
       );
     });

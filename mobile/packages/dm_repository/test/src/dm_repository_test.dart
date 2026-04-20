@@ -97,6 +97,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(_FakeEvent());
+      registerFallbackValue(const RetryPolicy());
     });
 
     setUp(() {
@@ -108,6 +109,26 @@ void main() {
       // Stub relay properties used by startListening() log.
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(3);
+
+      // Default stub so the NIP-04 fallback and kind 5 deletion don't
+      // blow up in tests that don't care about publish outcomes. The
+      // shape matches "all-accept" so acceptedByAny is true and the
+      // repository proceeds with local-state updates. Tests that need
+      // different outcomes override this stub.
+      when(
+        () => mockNostrClient.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (invocation) async => PublishOutcome(
+          eventId: (invocation.positionalArguments[0] as Event).id,
+          acceptedBy: const {'wss://default.test'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
 
       // Stub getNewestMessageTimestamp for startListening() windowing.
       when(
@@ -3793,7 +3814,9 @@ void main() {
           // Allow the unawaited NIP-04 future to complete
           await Future<void>.delayed(Duration.zero);
 
-          // Verify both NIP-17 and NIP-04 were called
+          // Verify both NIP-17 and NIP-04 were called. NIP-04 now
+          // uses the reliable retry path just like NIP-17, so we
+          // assert on publishEventWithRetry rather than publishEvent.
           verify(
             () => mockMessageService.sendPrivateMessage(
               recipientPubkey: any(named: 'recipientPubkey'),
@@ -3804,7 +3827,11 @@ void main() {
           ).called(1);
 
           verify(
-            () => mockNostrClient.publishEvent(any()),
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
           ).called(1);
         },
       );
@@ -3993,10 +4020,6 @@ void main() {
           );
 
           when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => _FakeEvent());
-
-          when(
             () => mockDirectMessagesDao.markMessageDeleted(
               _rumorEventId,
               ownerPubkey: any(named: 'ownerPubkey'),
@@ -4028,10 +4051,15 @@ void main() {
 
           await repo.deleteMessageForEveryone(_rumorEventId);
 
-          // Verify kind 5 was published
+          // Verify kind 5 was published via the reliable retry path
+          // (default stub in setUp returns an accepted outcome).
           final captured =
               verify(
-                    () => mockNostrClient.publishEvent(captureAny()),
+                    () => mockNostrClient.publishEventWithRetry(
+                      captureAny(),
+                      policy: any(named: 'policy'),
+                      targetRelays: any(named: 'targetRelays'),
+                    ),
                   ).captured.single
                   as Event;
           expect(captured.kind, equals(EventKind.eventDeletion));

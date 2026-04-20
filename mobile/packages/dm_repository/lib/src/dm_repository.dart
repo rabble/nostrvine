@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
+import 'package:dm_repository/src/dm_publish_failure.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/nip17_message_service.dart';
 import 'package:flutter/foundation.dart';
@@ -1024,8 +1025,24 @@ class DmRepository {
       throw StateError('Failed to sign kind 5 deletion event');
     }
 
-    // Publish to relays (best-effort — client-side processing is primary).
-    await _nostrClient.publishEvent(signed);
+    // Publish to relays via the reliable retry path. We MUST confirm at
+    // least one relay accepted the deletion before hiding the message
+    // locally — otherwise the UI would lie and the message would stay
+    // visible to every other client. On failure, throw DmPublishFailure
+    // so the BLoC / UI can surface a Retry affordance using the
+    // mapped PublishUserFeedback.
+    final outcome = await _nostrClient.publishEventWithRetry(signed);
+    if (!outcome.acceptedByAny) {
+      Log.error(
+        'Kind 5 deletion rejected by every relay: $outcome',
+        category: LogCategory.system,
+      );
+      throw DmPublishFailure(
+        message: 'Failed to publish deletion',
+        outcome: outcome,
+        feedback: PublishResultMapper.map(outcome),
+      );
+    }
 
     // Soft-delete locally so the UI updates immediately.
     await _directMessagesDao.markMessageDeleted(
@@ -1241,15 +1258,27 @@ class DmRepository {
       return NIP17SendResult.failure('NIP-04 sign returned null');
     }
 
-    final published = await _nostrClient.publishEvent(signed);
-    if (published == null) {
-      return NIP17SendResult.failure('NIP-04 publish returned null');
+    // Use the reliable retry path so the fallback also benefits from
+    // transient-failure backoff. The NIP-04 send is still purely an
+    // interop bridge — the NIP-17 leg (already published above) is the
+    // source of truth for the outgoing conversation.
+    final outcome = await _nostrClient.publishEventWithRetry(signed);
+    if (!outcome.acceptedByAny) {
+      Log.warning(
+        'NIP-04 fallback rejected by every relay: $outcome',
+        category: LogCategory.system,
+      );
+      return NIP17SendResult.failure(
+        'NIP-04 publish failed to relays',
+        outcome: outcome,
+      );
     }
 
     return NIP17SendResult.success(
-      rumorEventId: published.id,
-      messageEventId: published.id,
+      rumorEventId: signed.id,
+      messageEventId: signed.id,
       recipientPubkey: recipientPubkey,
+      outcome: outcome,
     );
   }
 
