@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -27,6 +28,9 @@ import '../../test_data/video_test_data.dart';
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
     implements VideoFeedBloc {}
+
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
 
 class _MockVideoFeedController extends Mock implements VideoFeedController {}
 
@@ -178,10 +182,13 @@ void main() {
   group('VideoFeedView overlay integration', () {
     late VideoFeedBloc videoFeedBloc;
     late VideoFeedController videoFeedController;
+    late _MockVideoVolumeCubit videoVolumeCubit;
 
     setUp(() {
       videoFeedBloc = _MockVideoFeedBloc();
       videoFeedController = _MockVideoFeedController();
+      videoVolumeCubit = _MockVideoVolumeCubit();
+      when(() => videoVolumeCubit.state).thenReturn(const VideoVolumeState());
 
       when(
         () => videoFeedController.setActive(
@@ -221,6 +228,7 @@ void main() {
         home: MultiBlocProvider(
           providers: [
             BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
             BlocProvider<VideoPlaybackStatusCubit>(
               create: (_) => VideoPlaybackStatusCubit(),
             ),
@@ -364,11 +372,14 @@ void main() {
     late VideoFeedBloc videoFeedBloc;
     late VideoFeedController videoFeedController;
     late StreamController<String> locationController;
+    late _MockVideoVolumeCubit videoVolumeCubit;
 
     setUp(() {
       videoFeedBloc = _MockVideoFeedBloc();
       videoFeedController = _MockVideoFeedController();
       locationController = StreamController<String>();
+      videoVolumeCubit = _MockVideoVolumeCubit();
+      when(() => videoVolumeCubit.state).thenReturn(const VideoVolumeState());
 
       when(
         () => videoFeedController.setActive(
@@ -404,6 +415,7 @@ void main() {
         home: MultiBlocProvider(
           providers: [
             BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
             BlocProvider<VideoPlaybackStatusCubit>(
               create: (_) => VideoPlaybackStatusCubit(),
             ),
@@ -425,6 +437,7 @@ void main() {
         home: MultiBlocProvider(
           providers: [
             BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
             BlocProvider<VideoPlaybackStatusCubit>(
               create: (_) => VideoPlaybackStatusCubit(),
             ),
@@ -469,6 +482,9 @@ void main() {
               home: MultiBlocProvider(
                 providers: [
                   BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+                  BlocProvider<VideoVolumeCubit>.value(
+                    value: videoVolumeCubit,
+                  ),
                   BlocProvider<VideoPlaybackStatusCubit>(
                     create: (_) => VideoPlaybackStatusCubit(),
                   ),
@@ -632,11 +648,14 @@ void main() {
   group('VideoFeedView native feed wiring', () {
     late VideoFeedBloc videoFeedBloc;
     late VideoFeedController videoFeedController;
+    late _MockVideoVolumeCubit videoVolumeCubit;
 
     setUp(() async {
       await PlayerPool.init();
       videoFeedBloc = _MockVideoFeedBloc();
       videoFeedController = _MockVideoFeedController();
+      videoVolumeCubit = _MockVideoVolumeCubit();
+      when(() => videoVolumeCubit.state).thenReturn(const VideoVolumeState());
 
       when(() => videoFeedController.videoCount).thenReturn(1);
       when(() => videoFeedController.videos).thenReturn([
@@ -673,6 +692,7 @@ void main() {
         home: MultiBlocProvider(
           providers: [
             BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
             BlocProvider<VideoPlaybackStatusCubit>(
               create: (_) => VideoPlaybackStatusCubit(),
             ),
@@ -719,6 +739,7 @@ void main() {
     late Map<int, ValueNotifier<VideoIndexState>> indexNotifiers;
     late StreamController<Duration> positionController;
     late Player mockPlayer;
+    late _MockVideoVolumeCubit videoVolumeCubit;
 
     setUp(() async {
       await PlayerPool.init();
@@ -727,6 +748,8 @@ void main() {
       indexNotifiers = <int, ValueNotifier<VideoIndexState>>{};
       positionController = StreamController<Duration>.broadcast();
       mockPlayer = _stubPlayer(positionController.stream);
+      videoVolumeCubit = _MockVideoVolumeCubit();
+      when(() => videoVolumeCubit.state).thenReturn(const VideoVolumeState());
 
       when(() => videoFeedController.addListener(any())).thenReturn(null);
       when(() => videoFeedController.removeListener(any())).thenReturn(null);
@@ -814,6 +837,7 @@ void main() {
         home: MultiBlocProvider(
           providers: [
             BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
             BlocProvider<VideoPlaybackStatusCubit>(
               create: (_) => VideoPlaybackStatusCubit(),
             ),
