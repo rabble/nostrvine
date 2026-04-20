@@ -36,7 +36,46 @@ void main() {
         Event(_testPubkey, 30005, <List<String>>[], ''),
       );
       registerFallbackValue(<Filter>[]);
+      registerFallbackValue(const RetryPolicy());
     });
+
+    // Helper: set up a publishEventWithRetry stub that returns a
+    // per-relay outcome derived from whether the signed event is
+    // non-null. Mirrors how publishEvent was previously used.
+    void stubPublishAcceptedOnSuccess() {
+      when(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments[0] as Event;
+        return PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        );
+      });
+    }
+
+    void stubPublishFailed() {
+      when(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: 'a' * 64,
+          acceptedBy: const {},
+          rejectedBy: const {},
+          noResponseFrom: const {'wss://a'},
+        ),
+      );
+    }
 
     setUp(() {
       mockNostrService = _MockNostrClient();
@@ -82,9 +121,7 @@ void main() {
         when(
           () => mockSigner.signEvent(any()),
         ).thenAnswer((_) async => signedEvent);
-        when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        stubPublishAcceptedOnSuccess();
         when(
           () => mockNostrService.connectedRelays,
         ).thenReturn(['wss://relay']);
@@ -99,7 +136,11 @@ void main() {
 
         expect(result, isTrue);
         verify(
-          () => mockNostrService.publishEvent(any()),
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).called(1);
       },
     );
@@ -117,9 +158,7 @@ void main() {
         when(
           () => mockSigner.signEvent(any()),
         ).thenAnswer((_) async => signedEvent);
-        when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        stubPublishAcceptedOnSuccess();
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
         await curationService.createCurationSet(
@@ -148,9 +187,7 @@ void main() {
       when(
         () => mockSigner.signEvent(any()),
       ).thenAnswer((_) async => signedEvent);
-      when(
-        () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => signedEvent);
+      stubPublishAcceptedOnSuccess();
       when(() => mockNostrService.connectedRelays).thenReturn([]);
 
       await curationService.createCurationSet(
@@ -208,9 +245,7 @@ void main() {
       when(
         () => mockSigner.signEvent(any()),
       ).thenAnswer((_) async => signedEvent);
-      when(
-        () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => null);
+      stubPublishFailed();
 
       final result = await curationService.createCurationSet(
         id: 'test_list',
@@ -237,7 +272,11 @@ void main() {
 
         expect(result, isFalse);
         verifyNever(
-          () => mockNostrService.publishEvent(any()),
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         );
       },
     );
@@ -256,7 +295,11 @@ void main() {
           () => mockSigner.signEvent(any()),
         ).thenAnswer((_) async => signedEvent);
         when(
-          () => mockNostrService.publishEvent(any()),
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).thenThrow(Exception('Network error'));
 
         final result = await curationService.createCurationSet(
@@ -282,9 +325,7 @@ void main() {
         when(
           () => mockSigner.signEvent(any()),
         ).thenAnswer((_) async => signedEvent);
-        when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        stubPublishAcceptedOnSuccess();
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
         final result = await curationService.createCurationSet(
@@ -319,9 +360,7 @@ void main() {
         when(
           () => mockSigner.signEvent(any()),
         ).thenAnswer((_) async => signedEvent);
-        when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        stubPublishAcceptedOnSuccess();
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
         final result = await curationService.createCurationSet(
@@ -358,9 +397,7 @@ void main() {
         when(
           () => mockSigner.signEvent(any()),
         ).thenAnswer((_) async => signedEvent);
-        when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        stubPublishAcceptedOnSuccess();
         when(
           () => mockNostrService.connectedRelays,
         ).thenReturn(['wss://relay']);
@@ -396,9 +433,7 @@ void main() {
         when(
           () => mockSigner.signEvent(any()),
         ).thenAnswer((_) async => signedEvent);
-        when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+        stubPublishFailed();
 
         await curationService.createCurationSet(
           id: 'fail_status',
@@ -411,7 +446,7 @@ void main() {
         );
         expect(status.isPublished, isFalse);
         expect(status.isPublishing, isFalse);
-        expect(status.failedAttempts, 1);
+        expect(status.hasFailed, isTrue);
       },
     );
 
@@ -428,9 +463,7 @@ void main() {
         when(
           () => mockSigner.signEvent(any()),
         ).thenAnswer((_) async => signedEvent);
-        when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        stubPublishAcceptedOnSuccess();
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
         // With description

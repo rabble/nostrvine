@@ -22,9 +22,8 @@ class _MockLikesRepository extends Mock implements LikesRepository {}
 
 class _MockNostrSigner extends Mock implements NostrSigner {}
 
-const _testPubkey =
-    'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6'
-    'e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+// Test pubkey removed — the bespoke retry tests that used it were
+// deleted along with retryUnpublishedCurations / failedAttempts.
 
 void main() {
   setUpAll(() {
@@ -33,6 +32,7 @@ void main() {
       Event('0' * 64, 1, <List<String>>[], ''),
     );
     registerFallbackValue(<String>[]);
+    registerFallbackValue(const RetryPolicy());
     registerFallbackValue(
       VideoEvent(
         id: 'fallback',
@@ -274,84 +274,9 @@ void main() {
       );
     });
 
-    group(
-      'retryUnpublishedCurations with eligible retry',
-      () {
-        test(
-          'retries a failed curation when backoff has '
-          'elapsed',
-          () async {
-            when(
-              () => mockSigner.getPublicKey(),
-            ).thenAnswer((_) async => _testPubkey);
-            when(
-              () => mockSigner.signEvent(any()),
-            ).thenAnswer((invocation) async {
-              final event = invocation.positionalArguments[0] as Event;
-              return Event(
-                event.pubkey,
-                event.kind,
-                event.tags,
-                event.content,
-              );
-            });
-            when(
-              () => mockNostrService.connectedRelays,
-            ).thenReturn(['wss://relay1.example.com']);
-
-            curationService = CurationService(
-              nostrService: mockNostrService,
-              videoEventCache: mockVideoEventCache,
-              likesRepository: mockLikesRepository,
-              signer: mockSigner,
-              divineTeamPubkeys: const [],
-            );
-
-            // First: fail a publish to create a failed
-            // status
-            when(
-              () => mockNostrService.publishEvent(any()),
-            ).thenAnswer((_) async => null);
-
-            await curationService.publishCuration(
-              id: CurationSetType.editorsPicks.id,
-              title: 'Editors Picks',
-              videoIds: ['v1'],
-            );
-
-            final status = curationService.getCurationPublishStatus(
-              CurationSetType.editorsPicks.id,
-            );
-            expect(status.failedAttempts, equals(1));
-
-            // Now make publish succeed for the retry
-            final signedEvent = Event(
-              _testPubkey,
-              30005,
-              <List<String>>[],
-              'test',
-            )..id = 'retry_event_id';
-
-            when(
-              () => mockNostrService.publishEvent(any()),
-            ).thenAnswer((_) async => signedEvent);
-
-            // The lastAttemptAt is set to DateTime.now()
-            // during the failed publish, and getRetryDelay
-            // for 1 attempt is 2 seconds. We need the
-            // backoff to have elapsed.
-            // Since we can't easily manipulate time here,
-            // and the retry delay for 1 attempt is 2s,
-            // we'd need to wait. Instead, verify the
-            // method runs without error.
-            await curationService.retryUnpublishedCurations();
-
-            // The backoff hasn't elapsed (just published),
-            // so no retry happens. This exercises the
-            // backoff-not-elapsed path.
-          },
-        );
-      },
-    );
+    // The bespoke retryUnpublishedCurations/backoff API was removed in
+    // favour of NostrClient.publishEventWithRetry (see PR 5 of the
+    // reliable-nostr-publish series). Retry semantics are now covered by
+    // curation_service_reliability_test.dart.
   });
 }

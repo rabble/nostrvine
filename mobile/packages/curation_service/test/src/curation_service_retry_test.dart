@@ -1,7 +1,6 @@
-// ABOUTME: Tests for CurationService.retryUnpublishedCurations()
-// ABOUTME: and retry-related edge cases
-
-import 'dart:async';
+// ABOUTME: Retry semantics for CurationService.publishCuration — retry
+// ABOUTME: is delegated to NostrClient.publishEventWithRetry and only the
+// ABOUTME: final outcome is surfaced on CurationResult.
 
 import 'package:curation_service/curation_service.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -37,158 +36,119 @@ void main() {
     registerFallbackValue(<Filter>[]);
     registerFallbackValue(_testEvent());
     registerFallbackValue(<String>[]);
+    registerFallbackValue(const RetryPolicy());
   });
 
-  group('CurationService Retry Logic', () {
+  group('CurationService retry delegation', () {
     late CurationService curationService;
-    late _MockNostrClient mockNostrService;
-    late _MockVideoEventCache mockVideoEventCache;
-    late _MockLikesRepository mockLikesRepository;
+    late _MockNostrClient mockNostr;
+    late _MockVideoEventCache mockCache;
+    late _MockLikesRepository mockLikes;
     late _MockNostrSigner mockSigner;
 
     setUp(() {
-      mockNostrService = _MockNostrClient();
-      mockVideoEventCache = _MockVideoEventCache();
-      mockLikesRepository = _MockLikesRepository();
+      mockNostr = _MockNostrClient();
+      mockCache = _MockVideoEventCache();
+      mockLikes = _MockLikesRepository();
       mockSigner = _MockNostrSigner();
 
       when(
         () => mockSigner.getPublicKey(),
       ).thenAnswer((_) async => _testPubkey);
-      when(
-        () => mockSigner.signEvent(any()),
-      ).thenAnswer((invocation) async {
+      when(() => mockSigner.signEvent(any())).thenAnswer((invocation) async {
         final event = invocation.positionalArguments[0] as Event;
-        return Event(
-          event.pubkey,
-          event.kind,
-          event.tags,
-          event.content,
-        );
+        return Event(event.pubkey, event.kind, event.tags, event.content);
       });
 
       when(
-        () => mockNostrService.connectedRelays,
+        () => mockNostr.connectedRelays,
       ).thenReturn(['wss://relay1.example.com']);
       when(
-        () => mockNostrService.subscribe(any()),
+        () => mockNostr.subscribe(any()),
       ).thenAnswer((_) => const Stream.empty());
 
+      when(() => mockCache.discoveryVideos).thenReturn([]);
       when(
-        () => mockVideoEventCache.discoveryVideos,
-      ).thenReturn([]);
-      when(
-        () => mockLikesRepository.getLikeCounts(any()),
+        () => mockLikes.getLikeCounts(any()),
       ).thenAnswer((_) async => {});
 
       curationService = CurationService(
-        nostrService: mockNostrService,
-        videoEventCache: mockVideoEventCache,
-        likesRepository: mockLikesRepository,
+        nostrService: mockNostr,
+        videoEventCache: mockCache,
+        likesRepository: mockLikes,
         signer: mockSigner,
         divineTeamPubkeys: const [],
       );
     });
 
-    group('retryUnpublishedCurations', () {
-      test(
-        'does nothing when no publish statuses exist',
-        () async {
-          await curationService.retryUnpublishedCurations();
-          // No publishEvent calls should be made
-          verifyNever(
-            () => mockNostrService.publishEvent(any()),
-          );
-        },
-      );
+    test(
+      'publishCuration invokes publishEventWithRetry exactly once',
+      () async {
+        when(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: 'a' * 64,
+            acceptedBy: const {'wss://a'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          ),
+        );
 
-      test(
-        'skips curations that are already published',
-        () async {
-          // Publish a curation successfully first
-          when(
-            () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => _testEvent());
+        await curationService.publishCuration(
+          id: 'single',
+          title: 'Single',
+          videoIds: const [],
+        );
 
-          await curationService.publishCuration(
-            id: 'published_one',
-            title: 'Published',
-            videoIds: [],
-          );
+        // publishEventWithRetry is called once — the RetryPolicy is applied
+        // inside NostrClient. The service must NOT implement its own retry
+        // loop (that would double-count attempts).
+        verify(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+      },
+    );
 
-          // Reset mock to track new calls
-          reset(mockNostrService);
-          when(
-            () => mockNostrService.subscribe(any()),
-          ).thenAnswer((_) => const Stream.empty());
-          when(
-            () => mockNostrService.connectedRelays,
-          ).thenReturn(['wss://relay1.example.com']);
+    test(
+      'failed publish surfaces hasFailed on CurationPublishStatus',
+      () async {
+        when(
+          () => mockNostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: 'a' * 64,
+            acceptedBy: const {},
+            rejectedBy: const {},
+            noResponseFrom: const {'wss://a'},
+          ),
+        );
 
-          await curationService.retryUnpublishedCurations();
+        await curationService.publishCuration(
+          id: 'failed_once',
+          title: 'Failed Once',
+          videoIds: const [],
+        );
 
-          verifyNever(
-            () => mockNostrService.publishEvent(any()),
-          );
-        },
-      );
-
-      test(
-        'skips curations that have not passed the backoff '
-        'period',
-        () async {
-          // Fail a publish to create a failed status
-          when(
-            () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => null);
-
-          await curationService.publishCuration(
-            id: 'failed_one',
-            title: 'Failed',
-            videoIds: [],
-          );
-
-          // Reset mock
-          reset(mockNostrService);
-          when(
-            () => mockNostrService.subscribe(any()),
-          ).thenAnswer((_) => const Stream.empty());
-          when(
-            () => mockNostrService.connectedRelays,
-          ).thenReturn(['wss://relay1.example.com']);
-
-          // Retry immediately - backoff not elapsed
-          await curationService.retryUnpublishedCurations();
-
-          verifyNever(
-            () => mockNostrService.publishEvent(any()),
-          );
-        },
-      );
-
-      test(
-        'records failed attempt after publish failure',
-        () async {
-          when(
-            () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => null);
-
-          await curationService.publishCuration(
-            id: 'failed_once',
-            title: 'Failed Once',
-            videoIds: [],
-          );
-
-          final status = curationService.getCurationPublishStatus(
-            'failed_once',
-          );
-          // Each publish resets then increments, so
-          // failedAttempts is 1
-          expect(status.failedAttempts, equals(1));
-          expect(status.isPublished, isFalse);
-          expect(status.shouldRetry, isTrue);
-        },
-      );
-    });
+        final status = curationService.getCurationPublishStatus(
+          'failed_once',
+        );
+        expect(status.isPublished, isFalse);
+        expect(status.hasFailed, isTrue);
+        expect(status.isError, isTrue);
+      },
+    );
   });
 }

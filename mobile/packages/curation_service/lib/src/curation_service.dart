@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:curation_service/src/curation_result.dart';
 import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -1059,33 +1060,37 @@ class CurationService {
     }
   }
 
-  /// Publish a curation set to Nostr
-  Future<CurationPublishResult> publishCuration({
+  /// Publish a curation set to Nostr.
+  ///
+  /// Routes through [NostrClient.publishEventWithRetry] so transient
+  /// failures retry on a bounded schedule. Returns a [CurationResult]
+  /// carrying the per-relay [PublishOutcome] and mapped
+  /// [PublishUserFeedback]; callers render a retry affordance when
+  /// `feedback.retryable` is true and a permanent-error snackbar when it
+  /// is false. The previous 5-second timeout and `failedAttempts`/
+  /// `lastFailureReason` instance state have been retired — retry logic
+  /// now lives in the shared `RetryPolicy`, and error messaging lives on
+  /// `CurationResult.feedback`.
+  Future<CurationResult> publishCuration({
     required String id,
     required String title,
     required List<String> videoIds,
     String? description,
     String? imageUrl,
   }) async {
-    // Prevent duplicate concurrent publishes
+    // Prevent duplicate concurrent publishes.
     if (_currentlyPublishing.contains(id)) {
       Log.debug(
-        'Curation $id already being published, '
-        'skipping duplicate',
+        'Curation $id already being published, skipping duplicate',
         name: 'CurationService',
         category: LogCategory.system,
       );
-      return const CurationPublishResult(
-        success: false,
-        successCount: 0,
-        totalRelays: 0,
-        errors: {'duplicate': 'Already publishing'},
-      );
+      return const CurationResult.duplicate();
     }
 
     _currentlyPublishing.add(id);
 
-    // Mark as publishing
+    // Mark as publishing.
     _publishStatuses[id] = CurationPublishStatus(
       curationId: id,
       isPublishing: true,
@@ -1094,7 +1099,6 @@ class CurationService {
     );
 
     try {
-      // Build the event
       final event = await buildCurationEvent(
         id: id,
         title: title,
@@ -1109,128 +1113,72 @@ class CurationService {
           name: 'CurationService',
           category: LogCategory.system,
         );
-
         _publishStatuses[id] = CurationPublishStatus(
           curationId: id,
           isPublishing: false,
           isPublished: false,
-          failedAttempts: (_publishStatuses[id]?.failedAttempts ?? 0) + 1,
+          hasFailed: true,
           lastAttemptAt: DateTime.now(),
-          lastFailureReason: 'Failed to create and sign event',
         );
-
-        return const CurationPublishResult(
-          success: false,
-          successCount: 0,
-          totalRelays: 0,
-          errors: {
-            'signing': 'Failed to create and sign event',
-          },
-        );
+        return const CurationResult.preFlight();
       }
 
-      // Publish with timeout
-      final publishFuture = _nostrService.publishEvent(event);
-      const timeoutDuration = Duration(seconds: 5);
+      // Retry policy: the default RetryPolicy (3 attempts, exponential
+      // backoff, 15s per-attempt timeout) is appropriate for a
+      // user-initiated kind 30005 publish. See nostr_client/RetryPolicy.
+      final outcome = await _nostrService.publishEventWithRetry(event);
+      final feedback = PublishResultMapper.map(outcome);
 
-      Event? sentEvent;
-
-      try {
-        sentEvent = await publishFuture.timeout(timeoutDuration);
-      } on TimeoutException {
-        Log.warning(
-          'Curation publish timed out after 5s: $id',
-          name: 'CurationService',
-          category: LogCategory.system,
-        );
-
-        _publishStatuses[id] = CurationPublishStatus(
-          curationId: id,
-          isPublishing: false,
-          isPublished: false,
-          failedAttempts: (_publishStatuses[id]?.failedAttempts ?? 0) + 1,
-          lastAttemptAt: DateTime.now(),
-          lastFailureReason: 'Timeout after 5 seconds',
-        );
-
-        return const CurationPublishResult(
-          success: false,
-          successCount: 0,
-          totalRelays: 0,
-          errors: {
-            'timeout': 'Publish timed out after 5 seconds',
-          },
-        );
-      }
-
-      final isSuccess = sentEvent != null;
-
-      if (isSuccess) {
-        // Mark as successfully published
+      if (outcome.acceptedByAny) {
         _publishStatuses[id] = CurationPublishStatus(
           curationId: id,
           isPublishing: false,
           isPublished: true,
           lastPublishedAt: DateTime.now(),
-          publishedEventId: sentEvent.id,
-          successfulRelays: _nostrService.connectedRelays,
+          publishedEventId: event.id,
+          successfulRelays: outcome.acceptedBy.toList(),
           lastAttemptAt: DateTime.now(),
         );
-
         Log.info(
-          '✅ Published curation "$title" to relays',
+          '✅ Published curation "$title" to '
+          '${outcome.acceptedBy.length} relay(s)',
           name: 'CurationService',
           category: LogCategory.system,
         );
       } else {
-        // Mark as failed
         _publishStatuses[id] = CurationPublishStatus(
           curationId: id,
           isPublishing: false,
           isPublished: false,
-          failedAttempts: (_publishStatuses[id]?.failedAttempts ?? 0) + 1,
+          hasFailed: true,
           lastAttemptAt: DateTime.now(),
-          lastFailureReason: 'Failed to publish to relays',
         );
-
         Log.warning(
-          '❌ Failed to publish curation "$title" '
-          'to relays',
+          '❌ Curation "$title" not accepted by any relay: $outcome',
           name: 'CurationService',
           category: LogCategory.system,
         );
       }
 
-      return CurationPublishResult(
-        success: isSuccess,
-        successCount: isSuccess ? 1 : 0,
-        totalRelays: 1,
-        eventId: isSuccess ? sentEvent.id : null,
-        errors: isSuccess ? {} : {'publish': 'Failed to publish to relays'},
-        failedRelays: isSuccess ? [] : ['relays'],
+      return CurationResult.fromOutcome(
+        outcome: outcome,
+        feedback: feedback,
+        eventId: event.id,
       );
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
       Log.error(
-        'Error publishing curation: $e',
+        'Error publishing curation: $e\n$stackTrace',
         name: 'CurationService',
         category: LogCategory.system,
       );
-
       _publishStatuses[id] = CurationPublishStatus(
         curationId: id,
         isPublishing: false,
         isPublished: false,
-        failedAttempts: (_publishStatuses[id]?.failedAttempts ?? 0) + 1,
+        hasFailed: true,
         lastAttemptAt: DateTime.now(),
-        lastFailureReason: e.toString(),
       );
-
-      return CurationPublishResult(
-        success: false,
-        successCount: 0,
-        totalRelays: 0,
-        errors: {'exception': e.toString()},
-      );
+      return const CurationResult.preFlight();
     } finally {
       _currentlyPublishing.remove(id);
     }
@@ -1248,80 +1196,11 @@ class CurationService {
         );
   }
 
-  /// Retry all unpublished curations with exponential
-  /// backoff
-  Future<void> retryUnpublishedCurations() async {
-    final now = DateTime.now();
-
-    for (final entry in _publishStatuses.entries) {
-      final curationId = entry.key;
-      final status = entry.value;
-
-      // Skip if already published or currently publishing
-      if (status.isPublished || status.isPublishing) {
-        continue;
-      }
-
-      // Skip if max retries reached
-      // coverage:ignore-start
-      if (!status.shouldRetry) {
-        Log.debug(
-          'Skipping retry for $curationId: '
-          'max attempts reached',
-          name: 'CurationService',
-          category: LogCategory.system,
-        );
-        continue;
-      }
-      // coverage:ignore-end
-
-      // Calculate next retry time with exponential backoff
-      final retryDelay = getRetryDelay(status.failedAttempts);
-      final nextRetryTime = status.lastAttemptAt?.add(retryDelay);
-
-      if (nextRetryTime == null || now.isBefore(nextRetryTime)) {
-        Log.debug(
-          'Skipping retry for $curationId: '
-          'backoff not elapsed',
-          name: 'CurationService',
-          category: LogCategory.system,
-        );
-        continue;
-      }
-
-      // coverage:ignore-start
-      Log.info(
-        '🔄 Retrying publish for curation $curationId '
-        '(attempt ${status.failedAttempts + 1})',
-        name: 'CurationService',
-        category: LogCategory.system,
-      );
-
-      // Get curation details to retry
-      final curation = _curationSets[curationId];
-      if (curation != null) {
-        await publishCuration(
-          id: curation.id,
-          title: curation.title ?? 'Untitled',
-          videoIds: curation.videoIds,
-          description: curation.description,
-          imageUrl: curation.imageUrl,
-        );
-      }
-      // coverage:ignore-end
-    }
-  }
-
-  /// Get retry delay based on attempt count (exponential
-  /// backoff)
-  Duration getRetryDelay(int attemptCount) {
-    // Exponential backoff: 2^n seconds
-    // Max ~17 minutes
-    final seconds = 1 << attemptCount.clamp(0, 10);
-    return Duration(seconds: seconds);
-  }
-
-  /// Create a new curation set and publish to Nostr
+  /// Create a new curation set and publish to Nostr.
+  ///
+  /// Returns `true` when at least one relay accepted the publish.
+  /// Prefer [publishCuration] when the caller needs the full per-relay
+  /// outcome (e.g. to render a retry-able failure snackbar).
   Future<bool> createCurationSet({
     required String id,
     required String title,
@@ -1336,7 +1215,6 @@ class CurationService {
         category: LogCategory.system,
       );
 
-      // Publish to Nostr
       final result = await publishCuration(
         id: id,
         title: title,
