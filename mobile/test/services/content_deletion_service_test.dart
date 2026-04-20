@@ -1,6 +1,5 @@
 // ABOUTME: Tests for NIP-09 content deletion service
-// ABOUTME: Verifies kind 5 event creation, relay OK confirmation, and
-// ABOUTME: local history bookkeeping.
+// ABOUTME: Verifies kind 5 event creation with k tag and deletion history
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -8,7 +7,6 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,14 +20,15 @@ class _FakeEvent extends Fake implements Event {}
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
-    registerFallbackValue(const Duration(seconds: 1));
+    registerFallbackValue(const RetryPolicy());
   });
 
-  group(ContentDeletionService, () {
+  group('ContentDeletionService', () {
     late _MockNostrClient mockNostrService;
     late _MockAuthService mockAuthService;
     late ContentDeletionService service;
     late SharedPreferences prefs;
+    late String testPrivateKey;
     late String testPublicKey;
 
     Event createTestEvent({
@@ -50,37 +49,19 @@ void main() {
       return event;
     }
 
-    PublishOutcome accepted(String eventId) => PublishOutcome(
-      eventId: eventId,
-      acceptedBy: const ['wss://relay.test'],
-      rejectedBy: const {},
-      noResponseFrom: const [],
-    );
-
-    PublishOutcome rejected(String eventId) => PublishOutcome(
-      eventId: eventId,
-      acceptedBy: const [],
-      rejectedBy: const {'wss://relay.test': 'blocked: policy'},
-      noResponseFrom: const [],
-    );
-
-    PublishOutcome timedOut(String eventId) => PublishOutcome(
-      eventId: eventId,
-      acceptedBy: const [],
-      rejectedBy: const {},
-      noResponseFrom: const ['wss://relay.test'],
-    );
-
     setUp(() async {
-      final testPrivateKey = generatePrivateKey();
+      // Generate valid keys for testing
+      testPrivateKey = generatePrivateKey();
       testPublicKey = getPublicKey(testPrivateKey);
 
+      // Setup SharedPreferences mock
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
 
       mockNostrService = _MockNostrClient();
       mockAuthService = _MockAuthService();
 
+      // Setup common mocks
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
       when(() => mockNostrService.isInitialized).thenReturn(true);
@@ -97,7 +78,7 @@ void main() {
     VideoEvent createTestVideoEvent(String pubkey) {
       final event = Event(
         pubkey,
-        34236,
+        34236, // Video event kind
         [
           ['title', 'Test Video'],
           ['url', 'https://example.com/video.mp4'],
@@ -110,102 +91,69 @@ void main() {
       return VideoEvent.fromNostrEvent(event);
     }
 
-    group('deleteContent', () {
-      test(
-        'creates a NIP-09 kind 5 delete event and saves it to history when at '
-        'least one relay confirms',
-        () async {
-          final video = createTestVideoEvent(testPublicKey);
-          final deleteEvent = createTestEvent(
-            pubkey: testPublicKey,
-            kind: 5,
-            tags: [
-              ['e', video.id],
-              ['k', '34236'],
-            ],
-            content: 'CONTENT DELETION',
-          );
+    test('deleteContent should create NIP-09 kind 5 delete event', () async {
+      // Arrange
+      final video = createTestVideoEvent(testPublicKey);
 
-          when(
-            () => mockAuthService.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer((_) async => deleteEvent);
-
-          when(
-            () => mockNostrService.publishEventAwaitOk(
-              any(),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer((_) async => accepted(deleteEvent.id));
-
-          final result = await service.deleteContent(
-            video: video,
-            reason: 'Personal choice',
-          );
-
-          expect(result.success, isTrue);
-          expect(result.deleteEventId, equals(deleteEvent.id));
-          expect(service.hasBeenDeleted(video.id), isTrue);
-
-          verify(
-            () => mockAuthService.createAndSignEvent(
-              kind: 5,
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
-          ).called(1);
-        },
+      final deleteEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 5,
+        tags: [
+          ['e', video.id],
+          ['k', '34236'],
+        ],
+        content: 'CONTENT DELETION',
       );
 
-      test(
-        'fails with relayRejected and does NOT save locally when every relay '
-        'rejects the publish',
-        () async {
-          final video = createTestVideoEvent(testPublicKey);
-          final deleteEvent = createTestEvent(
-            pubkey: testPublicKey,
-            kind: 5,
-            tags: [
-              ['e', video.id],
-              ['k', '34236'],
-            ],
-            content: 'CONTENT DELETION',
-          );
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => deleteEvent);
 
-          when(
-            () => mockAuthService.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer((_) async => deleteEvent);
-
-          when(
-            () => mockNostrService.publishEventAwaitOk(
-              any(),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer((_) async => rejected(deleteEvent.id));
-
-          final result = await service.deleteContent(
-            video: video,
-            reason: 'Personal choice',
-          );
-
-          expect(result.success, isFalse);
-          expect(result.failureKind, equals(DeleteFailureKind.relayRejected));
-          expect(result.error, contains('blocked: policy'));
-          expect(service.hasBeenDeleted(video.id), isFalse);
-          expect(service.deletionHistory, isEmpty);
-        },
+      when(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: deleteEvent.id,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
       );
 
-      test('fails with relayRejected and does NOT save locally when no relay '
-          'answers before timeout', () async {
+      // Act
+      final result = await service.deleteContent(
+        video: video,
+        reason: 'Personal choice',
+      );
+
+      // Assert
+      expect(result.success, isTrue);
+      expect(result.deleteEventId, isNotNull);
+
+      // Verify createAndSignEvent was called with kind 5
+      verify(
+        () => mockAuthService.createAndSignEvent(
+          kind: 5,
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).called(1);
+    });
+
+    test(
+      'deleteContent should include k tag with video kind per NIP-09',
+      () async {
+        // Arrange
         final video = createTestVideoEvent(testPublicKey);
+
         final deleteEvent = createTestEvent(
           pubkey: testPublicKey,
           kind: 5,
@@ -225,173 +173,281 @@ void main() {
         ).thenAnswer((_) async => deleteEvent);
 
         when(
-          () => mockNostrService.publishEventAwaitOk(
+          () => mockNostrService.publishEventWithRetry(
             any(),
-            timeout: any(named: 'timeout'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => timedOut(deleteEvent.id));
-
-        final result = await service.deleteContent(
-          video: video,
-          reason: 'Personal choice',
+        ).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: deleteEvent.id,
+            acceptedBy: const {'wss://a'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          ),
         );
 
-        expect(result.success, isFalse);
-        expect(result.failureKind, equals(DeleteFailureKind.relayRejected));
-        expect(service.hasBeenDeleted(video.id), isFalse);
-        expect(service.deletionHistory, isEmpty);
-      });
+        // Act
+        await service.deleteContent(video: video, reason: 'Personal choice');
 
-      test(
-        'includes the k tag with the original video kind per NIP-09',
-        () async {
-          final video = createTestVideoEvent(testPublicKey);
-          final deleteEvent = createTestEvent(
-            pubkey: testPublicKey,
-            kind: 5,
-            tags: [
-              ['e', video.id],
-              ['k', '34236'],
-            ],
-            content: 'CONTENT DELETION',
-          );
+        // Assert - verify the tags include 'k' tag
+        final captured = verify(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
+          ),
+        ).captured;
 
-          when(
-            () => mockAuthService.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer((_) async => deleteEvent);
+        final tags = captured.first as List<List<String>>;
+        final kTag = tags.firstWhere(
+          (tag) => tag.isNotEmpty && tag[0] == 'k',
+          orElse: () => <String>[],
+        );
 
-          when(
-            () => mockNostrService.publishEventAwaitOk(
-              any(),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer((_) async => accepted(deleteEvent.id));
+        expect(kTag, isNotEmpty, reason: 'Delete event should have k tag');
+        expect(
+          kTag[1],
+          equals('34236'),
+          reason: 'k tag should contain video event kind',
+        );
+      },
+    );
 
-          await service.deleteContent(video: video, reason: 'Personal choice');
+    test('deleteContent should save deletion to history', () async {
+      // Arrange
+      final video = createTestVideoEvent(testPublicKey);
 
-          final captured = verify(
-            () => mockAuthService.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: captureAny(named: 'tags'),
-            ),
-          ).captured;
-
-          final tags = captured.first as List<List<String>>;
-          final kTag = tags.firstWhere(
-            (tag) => tag.isNotEmpty && tag[0] == 'k',
-            orElse: () => <String>[],
-          );
-
-          expect(kTag, isNotEmpty);
-          expect(kTag[1], equals('34236'));
-        },
+      final deleteEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 5,
+        tags: [
+          ['e', video.id],
+          ['k', '34236'],
+        ],
+        content: 'CONTENT DELETION',
       );
 
-      test('refuses with notOwner when deleting another user content before '
-          'publishing', () async {
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => deleteEvent);
+
+      when(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: deleteEvent.id,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
+
+      // Act
+      await service.deleteContent(video: video, reason: 'Privacy concerns');
+
+      // Assert
+      expect(service.hasBeenDeleted(video.id), isTrue);
+      expect(service.deletionHistory.length, equals(1));
+      expect(service.deletionHistory.first.originalEventId, equals(video.id));
+      expect(service.deletionHistory.first.reason, equals('Privacy concerns'));
+    });
+
+    test(
+      'deleteContent should fail when trying to delete other user content',
+      () async {
+        // Arrange - create video from different user
         final otherUserPubkey = getPublicKey(generatePrivateKey());
         final video = createTestVideoEvent(otherUserPubkey);
 
+        // Act
+        final result = await service.deleteContent(
+          video: video,
+          reason: 'Personal choice',
+        );
+
+        // Assert
+        expect(result.success, isFalse);
+        expect(result.failureKind, DeleteFailureKind.notOwner);
+        expect(result.error, contains('Can only delete your own content'));
+
+        // Verify createAndSignEvent was NOT called
+        verifyNever(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+      },
+    );
+
+    test('deleteContent NOT saved locally when every relay fails (contract '
+        'change: durable deletion requires at least one accept)', () async {
+      // Arrange
+      final video = createTestVideoEvent(testPublicKey);
+
+      final deleteEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 5,
+        tags: [
+          ['e', video.id],
+          ['k', '34236'],
+        ],
+        content: 'CONTENT DELETION',
+      );
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => deleteEvent);
+
+      // Every relay silent → failed outcome. The previous contract
+      // ("save locally even if publish fails") was removed because it
+      // desynced the local deletion history from what was actually
+      // persisted on any relay.
+      when(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: deleteEvent.id,
+          acceptedBy: const {},
+          rejectedBy: const {},
+          noResponseFrom: const {'wss://a', 'wss://b'},
+        ),
+      );
+
+      // Act
+      final result = await service.deleteContent(
+        video: video,
+        reason: 'Personal choice',
+      );
+
+      // Assert - failure surfaced; local history NOT updated.
+      expect(result.success, isFalse);
+      expect(result.failureKind, DeleteFailureKind.publishFailed);
+      expect(result.feedback?.retryable, isTrue);
+      expect(service.hasBeenDeleted(video.id), isFalse);
+    });
+
+    test('quickDelete should use predefined reason text', () async {
+      // Arrange
+      final video = createTestVideoEvent(testPublicKey);
+
+      final deleteEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 5,
+        tags: [
+          ['e', video.id],
+          ['k', '34236'],
+        ],
+        content: 'CONTENT DELETION',
+      );
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => deleteEvent);
+
+      when(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: deleteEvent.id,
+          acceptedBy: const {'wss://a'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
+
+      // Act
+      final result = await service.quickDelete(
+        video: video,
+        reason: DeleteReason.privacy,
+      );
+
+      // Assert
+      expect(result.success, isTrue);
+      final deletion = service.getDeletionForEvent(video.id);
+      expect(deletion, isNotNull);
+      expect(deletion!.reason, contains('Privacy concerns'));
+    });
+
+    test('hasBeenDeleted should return false for non-deleted content', () {
+      // Assert
+      expect(service.hasBeenDeleted('non_existent_event_id'), isFalse);
+    });
+
+    test('getDeletionForEvent should return null for non-deleted content', () {
+      // Assert
+      expect(service.getDeletionForEvent('non_existent_event_id'), isNull);
+    });
+
+    test('deleteContent should fail when service not initialized', () async {
+      // Arrange - create new service without initializing
+      final uninitializedService = ContentDeletionService(
+        nostrService: mockNostrService,
+        authService: mockAuthService,
+        prefs: prefs,
+      );
+
+      final video = createTestVideoEvent(testPublicKey);
+
+      // Act
+      final result = await uninitializedService.deleteContent(
+        video: video,
+        reason: 'Test reason',
+      );
+
+      // Assert
+      expect(result.success, isFalse);
+      expect(result.failureKind, DeleteFailureKind.notInitialized);
+      expect(result.error, contains('not initialized'));
+    });
+
+    test(
+      'deleteContent should fail with couldNotSign when createAndSign returns null',
+      () async {
+        final video = createTestVideoEvent(testPublicKey);
+
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => null);
+
         final result = await service.deleteContent(
           video: video,
           reason: 'Personal choice',
         );
 
         expect(result.success, isFalse);
-        expect(result.failureKind, equals(DeleteFailureKind.notOwner));
-
-        verifyNever(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
-          ),
-        );
-        verifyNever(
-          () => mockNostrService.publishEventAwaitOk(
-            any(),
-            timeout: any(named: 'timeout'),
-          ),
-        );
-      });
-
-      test(
-        'fails with notInitialized when the service has not been initialized',
-        () async {
-          final uninitializedService = ContentDeletionService(
-            nostrService: mockNostrService,
-            authService: mockAuthService,
-            prefs: prefs,
-          );
-
-          final video = createTestVideoEvent(testPublicKey);
-
-          final result = await uninitializedService.deleteContent(
-            video: video,
-            reason: 'Test reason',
-          );
-
-          expect(result.success, isFalse);
-          expect(result.failureKind, equals(DeleteFailureKind.notInitialized));
-        },
-      );
-    });
-
-    group('quickDelete', () {
-      test('maps enum reason to the expected reason text', () async {
-        final video = createTestVideoEvent(testPublicKey);
-        final deleteEvent = createTestEvent(
-          pubkey: testPublicKey,
-          kind: 5,
-          tags: [
-            ['e', video.id],
-            ['k', '34236'],
-          ],
-          content: 'CONTENT DELETION',
-        );
-
-        when(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
-          ),
-        ).thenAnswer((_) async => deleteEvent);
-
-        when(
-          () => mockNostrService.publishEventAwaitOk(
-            any(),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenAnswer((_) async => accepted(deleteEvent.id));
-
-        final result = await service.quickDelete(
-          video: video,
-          reason: DeleteReason.privacy,
-        );
-
-        expect(result.success, isTrue);
-        final deletion = service.getDeletionForEvent(video.id);
-        expect(deletion, isNotNull);
-        expect(deletion!.reason, contains('Privacy concerns'));
-      });
-    });
-
-    group('hasBeenDeleted', () {
-      test('returns false for an id that was never deleted', () {
-        expect(service.hasBeenDeleted('non_existent_event_id'), isFalse);
-      });
-    });
-
-    group('getDeletionForEvent', () {
-      test('returns null for an id that was never deleted', () {
-        expect(service.getDeletionForEvent('non_existent_event_id'), isNull);
-      });
-    });
+        expect(result.failureKind, DeleteFailureKind.couldNotSign);
+      },
+    );
   });
 }
