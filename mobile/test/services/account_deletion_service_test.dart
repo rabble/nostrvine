@@ -17,10 +17,25 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _FakeEvent extends Fake implements Event {}
 
+PublishOutcome _accepted(String eventId) => PublishOutcome(
+  eventId: eventId,
+  acceptedBy: const {'wss://relay.a'},
+  rejectedBy: const {},
+  noResponseFrom: const {},
+);
+
+PublishOutcome _allTimedOut(String eventId) => PublishOutcome(
+  eventId: eventId,
+  acceptedBy: const {},
+  rejectedBy: const {},
+  noResponseFrom: const {'wss://relay.a'},
+);
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(<Filter>[]);
+    registerFallbackValue(const RetryPolicy());
   });
 
   group('AccountDeletionService', () {
@@ -165,14 +180,27 @@ void main() {
       ).thenAnswer((_) async => expectedEvent);
 
       when(
-        () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => expectedEvent);
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments[0] as Event;
+        return _accepted(event.id);
+      });
 
       // Act
       await expectLater(service.deleteAccount(), completes);
 
       // Assert
-      verify(() => mockNostrService.publishEvent(any())).called(1);
+      verify(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).called(1);
     });
 
     test(
@@ -197,8 +225,15 @@ void main() {
         ).thenAnswer((_) async => expectedEvent);
 
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => expectedEvent);
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          final event = invocation.positionalArguments[0] as Event;
+          return _accepted(event.id);
+        });
 
         // Act
         final result = await service.deleteAccount();
@@ -228,10 +263,17 @@ void main() {
         ),
       ).thenAnswer((_) async => expectedEvent);
 
-      // publishEvent returns null on failure
+      // No relay accepts — every attempt times out.
       when(
-        () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => null);
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments[0] as Event;
+        return _allTimedOut(event.id);
+      });
 
       // Act
       final result = await service.deleteAccount();
@@ -240,6 +282,7 @@ void main() {
       expect(result.success, isFalse);
       expect(result.error, isNotNull);
       expect(result.error, contains('Failed to publish'));
+      expect(result.failureKind, AccountDeletionFailureKind.nip62Failed);
     });
 
     test('deleteAccount should fail when not authenticated', () async {
@@ -253,8 +296,14 @@ void main() {
       expect(result.success, isFalse);
       expect(result.error, contains('Not authenticated'));
 
-      // Verify publishEvent was NOT called
-      verifyNever(() => mockNostrService.publishEvent(any()));
+      // Verify publish was NOT called
+      verifyNever(
+        () => mockNostrService.publishEventWithRetry(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      );
     });
 
     test(
@@ -275,14 +324,21 @@ void main() {
         // Assert
         expect(result.success, isFalse);
         expect(result.error, contains('Failed to create deletion event'));
+        expect(result.failureKind, AccountDeletionFailureKind.couldNotSign);
 
-        // Verify publishEvent was NOT called
-        verifyNever(() => mockNostrService.publishEvent(any()));
+        // Verify publish was NOT called
+        verifyNever(
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
       },
     );
 
     group('NIP-09 batch deletion', () {
-      test('should fetch all user events before deletion', () async {
+      test('should fetch all user events before batch deletion', () async {
         // Arrange
         final nip62Event = createTestEvent(
           pubkey: testPublicKey,
@@ -304,18 +360,25 @@ void main() {
           ),
         ).thenAnswer((_) async => nip62Event);
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => nip62Event);
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          final event = invocation.positionalArguments[0] as Event;
+          return _accepted(event.id);
+        });
 
         // Act
         await service.deleteAccount();
 
-        // Assert
+        // Assert — queryEvents runs once (fetch) after NIP-62 succeeds.
         verify(() => mockNostrService.queryEvents(any())).called(1);
       });
 
       test(
-        'should publish kind 5 events for user events before NIP-62',
+        'should publish kind 5 events for user events after NIP-62 succeeds',
         () async {
           // Arrange
           final userVideoEvent = createTestEvent(
@@ -358,20 +421,34 @@ void main() {
             ),
           ).thenAnswer((_) async {
             createCallCount++;
-            if (createCallCount == 1) return kind5Event;
-            return nip62Event;
+            // NIP-62 is signed first, then the kind-5 batch event.
+            if (createCallCount == 1) return nip62Event;
+            return kind5Event;
           });
 
           when(
-            () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => nip62Event);
+            () => mockNostrService.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((invocation) async {
+            final event = invocation.positionalArguments[0] as Event;
+            return _accepted(event.id);
+          });
 
           // Act
           final result = await service.deleteAccount();
 
           // Assert
           expect(result.success, isTrue);
-          verify(() => mockNostrService.publishEvent(any())).called(2);
+          verify(
+            () => mockNostrService.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).called(2);
         },
       );
 
@@ -399,6 +476,14 @@ void main() {
           id: 'like_1',
         );
 
+        final nip62Event = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 62,
+          tags: [
+            ['relay', 'ALL_RELAYS'],
+          ],
+          content: 'deletion',
+        );
         final kind5VideoEvent = createTestEvent(
           pubkey: testPublicKey,
           kind: 5,
@@ -418,14 +503,6 @@ void main() {
           ],
           content: 'deletion',
         );
-        final nip62Event = createTestEvent(
-          pubkey: testPublicKey,
-          kind: 62,
-          tags: [
-            ['relay', 'ALL_RELAYS'],
-          ],
-          content: 'deletion',
-        );
 
         when(
           () => mockNostrService.queryEvents(any()),
@@ -440,14 +517,21 @@ void main() {
           ),
         ).thenAnswer((_) async {
           createCallCount++;
-          if (createCallCount == 1) return kind5VideoEvent;
-          if (createCallCount == 2) return kind5LikeEvent;
-          return nip62Event;
+          if (createCallCount == 1) return nip62Event;
+          if (createCallCount == 2) return kind5VideoEvent;
+          return kind5LikeEvent;
         });
 
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => nip62Event);
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          final event = invocation.positionalArguments[0] as Event;
+          return _accepted(event.id);
+        });
 
         // Act
         final result = await service.deleteAccount();
@@ -455,7 +539,14 @@ void main() {
         // Assert
         expect(result.success, isTrue);
         expect(result.deletedEventsCount, equals(3));
-        verify(() => mockNostrService.publishEvent(any())).called(3);
+        // 1 NIP-62 + 2 grouped kind-5 (one per kind) = 3 publish calls.
+        verify(
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(3);
       });
 
       test('should return deletedEventsCount in result', () async {
@@ -499,13 +590,20 @@ void main() {
           ),
         ).thenAnswer((_) async {
           createCallCount++;
-          if (createCallCount == 1) return kind5Event;
-          return nip62Event;
+          if (createCallCount == 1) return nip62Event;
+          return kind5Event;
         });
 
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => nip62Event);
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          final event = invocation.positionalArguments[0] as Event;
+          return _accepted(event.id);
+        });
 
         // Act
         final result = await service.deleteAccount();
@@ -537,8 +635,15 @@ void main() {
           ),
         ).thenAnswer((_) async => nip62Event);
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => nip62Event);
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((invocation) async {
+          final event = invocation.positionalArguments[0] as Event;
+          return _accepted(event.id);
+        });
 
         // Act
         final result = await service.deleteAccount();
@@ -546,7 +651,13 @@ void main() {
         // Assert
         expect(result.success, isTrue);
         expect(result.deletedEventsCount, equals(0));
-        verify(() => mockNostrService.publishEvent(any())).called(1);
+        verify(
+          () => mockNostrService.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
       });
     });
   });
