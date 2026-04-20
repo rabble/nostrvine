@@ -9,5 +9,6 @@ export 'package:nostr_sdk/relay/publish_outcome.dart' show PublishOutcome;
 
 export 'src/models/models.dart';
 export 'src/nostr_client.dart';
+export 'src/publish_result_mapper.dart';
 export 'src/relay_manager.dart';
 export 'src/retry_policy.dart';
