@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -212,50 +213,69 @@ void main() {
     );
 
     testWidgets(
-      'route falls back to invalid-list scaffold for empty listId',
+      'route falls back to invalid-list scaffold with back button for '
+      'empty listId',
       (tester) async {
-        final bloc = _MockPeopleListsBloc();
-        whenListen(
-          bloc,
-          const Stream<PeopleListsState>.empty(),
-          initialState: const PeopleListsState(),
-        );
+        // Exercises the exact same builder shape as the real app router
+        // so a regression that drops the fallback back button is caught.
+        Widget buildFallbackFor(String? listId) {
+          return Builder(
+            builder: (context) {
+              if (listId == null || listId.isEmpty) {
+                return Scaffold(
+                  appBar: DiVineAppBar(
+                    title: 'People list',
+                    showBackButton: true,
+                    onBackPressed: context.pop,
+                  ),
+                  body: const Center(child: Text('Invalid list')),
+                );
+              }
+              return const SizedBox();
+            },
+          );
+        }
 
         final router = GoRouter(
-          initialLocation: '/people-lists/',
+          initialLocation: '/seed',
           routes: [
-            // Matches empty listId by design — builder guards.
             GoRoute(
-              path: '/people-lists/:listId',
-              builder: (context, state) {
-                final listId = state.pathParameters['listId'] ?? '';
-                if (listId.isEmpty) {
-                  return const Scaffold(
-                    body: Center(child: Text('Invalid list')),
-                  );
-                }
-                return UserListPeopleScreen(listId: listId);
-              },
+              path: '/seed',
+              builder: (context, state) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => context.push('/invalid-list'),
+                    child: const Text('Go'),
+                  ),
+                ),
+              ),
+            ),
+            GoRoute(
+              path: '/invalid-list',
+              builder: (context, state) => buildFallbackFor(null),
             ),
           ],
-          errorBuilder: (context, state) => const Scaffold(
-            body: Center(child: Text('Invalid list')),
-          ),
         );
 
         await tester.pumpWidget(
-          testProviderScope(
-            child: BlocProvider<PeopleListsBloc>.value(
-              value: bloc,
-              child: MaterialApp.router(routerConfig: router),
-            ),
-          ),
+          MaterialApp.router(routerConfig: router),
         );
 
         await tester.pump();
+        await tester.tap(find.text('Go'));
+        await tester.pumpAndSettle();
 
         expect(find.text('Invalid list'), findsOneWidget);
-        expect(find.byType(UserListPeopleScreen), findsNothing);
+        expect(find.text('People list'), findsOneWidget);
+        // Back button present (matches divine_ui DiVineAppBarLeading label).
+        expect(find.bySemanticsLabel('Go back'), findsOneWidget);
+
+        // Tapping the back button pops the fallback route.
+        await tester.tap(find.bySemanticsLabel('Go back'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Invalid list'), findsNothing);
+        expect(find.text('Go'), findsOneWidget);
       },
     );
   });

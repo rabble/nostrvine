@@ -534,12 +534,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: UserListPeopleScreen.path,
         name: UserListPeopleScreen.routeName,
-        builder: (ctx, st) {
-          final listId = st.pathParameters['listId'];
+        builder: (context, state) {
+          final listId = state.pathParameters['listId'];
           if (listId == null || listId.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'People list'),
-              body: Center(child: Text('Invalid list')),
+            return Scaffold(
+              appBar: DiVineAppBar(
+                title: 'People list',
+                showBackButton: true,
+                onBackPressed: context.pop,
+              ),
+              body: const Center(child: Text('Invalid list')),
             );
           }
           return UserListPeopleScreen(listId: listId);
