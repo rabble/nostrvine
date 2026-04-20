@@ -27,6 +27,66 @@ import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Result of a video publish call.
+///
+/// On success, [outcome] reports which relays accepted the event and
+/// [feedback] summarises the outcome for UI (via
+/// [PublishResultMapper.map]). On failure, [outcome]/[feedback] are
+/// populated for post-publish failures (retryable / permanent rejection);
+/// pre-publish failures (missing URL, auth, signing) leave them null and
+/// set [error].
+class VideoPublishResult {
+  const VideoPublishResult._({
+    required this.success,
+    this.eventId,
+    this.outcome,
+    this.feedback,
+    this.error,
+  });
+
+  /// Whether at least one relay accepted the event.
+  final bool success;
+
+  /// ID of the signed Nostr event (if one was created).
+  final String? eventId;
+
+  /// Per-relay outcome for the publish attempt. Null for pre-publish
+  /// failures (e.g. validation, auth, signing).
+  final PublishOutcome? outcome;
+
+  /// UI-facing feedback mapped via [PublishResultMapper]. Populated
+  /// whenever [outcome] is populated.
+  final PublishUserFeedback? feedback;
+
+  /// Pre-publish error string. Null once the event reaches the relay
+  /// round-trip — consult [feedback] / [outcome] in that case.
+  final String? error;
+
+  factory VideoPublishResult.success({
+    required String eventId,
+    required PublishOutcome outcome,
+    required PublishUserFeedback feedback,
+  }) => VideoPublishResult._(
+    success: true,
+    eventId: eventId,
+    outcome: outcome,
+    feedback: feedback,
+  );
+
+  factory VideoPublishResult.failure({
+    String? eventId,
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+    String? error,
+  }) => VideoPublishResult._(
+    success: false,
+    eventId: eventId,
+    outcome: outcome,
+    feedback: feedback,
+    error: error,
+  );
+}
+
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class VideoEventPublisher {
@@ -279,7 +339,7 @@ class VideoEventPublisher {
   };
 
   /// Publish a video event with custom metadata
-  Future<bool> publishVideoEvent({
+  Future<VideoPublishResult> publishVideoEvent({
     required PendingUpload upload,
     String? title,
     String? description,
@@ -318,7 +378,7 @@ class VideoEventPublisher {
   }
 
   /// Publish a video directly without polling (for direct upload)
-  Future<bool> publishDirectUpload(
+  Future<VideoPublishResult> publishDirectUpload(
     PendingUpload upload, {
     int? expirationTimestamp,
     bool allowAudioReuse = false,
@@ -337,7 +397,9 @@ class VideoEventPublisher {
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      return false;
+      return VideoPublishResult.failure(
+        error: 'Missing videoId or cdnUrl',
+      );
     }
 
     // Validate that at least one video URL is a proper HTTP/HTTPS URL
@@ -356,7 +418,9 @@ class VideoEventPublisher {
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      return false;
+      return VideoPublishResult.failure(
+        error: 'No valid HTTP video URLs found',
+      );
     }
 
     try {
@@ -466,7 +530,9 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return false;
+        return VideoPublishResult.failure(
+          error: 'No valid HTTP video URLs available',
+        );
       }
 
       imetaComponents.add('m video/mp4');
@@ -831,7 +897,9 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return false;
+        return VideoPublishResult.failure(
+          error: 'Auth service is not available',
+        );
       }
 
       if (!_authService.isAuthenticated) {
@@ -840,7 +908,7 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return false;
+        return VideoPublishResult.failure(error: 'User not authenticated');
       }
 
       Log.debug(
@@ -874,7 +942,9 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return false;
+        return VideoPublishResult.failure(
+          error: 'Failed to create and sign video event',
+        );
       }
 
       if (upload.nostrEventId != event.id) {
@@ -887,114 +957,105 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      // Publish to Nostr relays with retry logic
+      // Publish to Nostr relays via publishEventWithRetry. The retry
+      // policy owns bounded retry + per-attempt timeout + exponential
+      // backoff — replaces the former ad-hoc 3x loop.
+      // The resumable-signed-event cache above is a different concern
+      // (app-kill-during-publish) and is preserved.
       Log.info(
         '🚀 Starting relay publication for event ${event.id}',
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
 
-      // Retry up to 3 times with exponential backoff.
-      // A successful send (relay accepted the event) is treated as success.
-      // We intentionally skip read-back verification because relay indexing
-      // lag can cause timeouts even though the event was accepted and is
-      // already being delivered via subscriptions.
-      const maxRetries = 3;
-      var publishResult = false;
+      // Default RetryPolicy: 3 attempts (initial + 2 retries), 2s→4s→30s
+      // exponential backoff, 15s per-attempt OK timeout. These defaults
+      // match the old ad-hoc 3x loop's 2s/4s backoff schedule.
+      final outcome = await _nostrService.publishEventWithRetry(event);
+      final feedback = PublishResultMapper.map(outcome);
 
-      for (var attempt = 1; attempt <= maxRetries; attempt++) {
-        if (await _publishEventToNostr(event)) {
-          publishResult = true;
-          if (attempt > 1) {
-            Log.info(
-              '✅ Publish succeeded on attempt $attempt',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          }
-          break;
-        }
-
-        if (attempt < maxRetries) {
-          final delaySeconds = attempt * 2; // 2s, 4s backoff
-          Log.warning(
-            '⚠️ Publish attempt $attempt failed, retrying in ${delaySeconds}s...',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-          await Future<void>.delayed(Duration(seconds: delaySeconds));
-        } else {
-          Log.error(
-            '❌ All $maxRetries publish attempts failed',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-        }
-      }
-
-      if (publishResult) {
-        if (_videoEventService != null) {
-          try {
-            final videoEvent = VideoEvent.fromNostrEvent(event);
-            _videoEventService.addVideoEvent(videoEvent);
-            Log.info(
-              'Added confirmed video to discovery cache: ${event.id}',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          } catch (e) {
-            Log.warning(
-              'Failed to add confirmed video to discovery cache: $e',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          }
-        }
-
-        // Update upload status
-        await _uploadManager.updateUploadStatus(
-          upload.id,
-          UploadStatus.published,
-          nostrEventId: event.id,
-        );
-
-        _totalEventsPublished++;
-        _lastPublishTime = DateTime.now();
-
-        // Note: Discovery cache was already updated immediately after event
-        // creation (before relay publish) for instant local UI feedback.
-
-        // Invalidate profile stats cache so video count updates immediately
-        final currentPubkey = _nostrService.publicKey;
-        if (currentPubkey.isNotEmpty) {
-          unawaited(_profileStatsDao?.deleteStats(currentPubkey));
-          Log.debug(
-            'Invalidated profile stats cache for new video',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-        }
-
-        Log.info(
-          'Successfully published direct upload: ${event.id}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-        Log.debug(
-          'Video URL: ${upload.cdnUrl}',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-
-        return true;
-      } else {
+      if (!outcome.acceptedByAny) {
         Log.error(
-          'Failed to publish to Nostr relays',
+          'Failed to publish to Nostr relays: $outcome',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        return false;
+        _totalEventsFailed++;
+        // KEEP the resumable signed-event cache in place so the user
+        // can resume the publish after an app restart. Only the upload
+        // status is left un-published.
+        return VideoPublishResult.failure(
+          eventId: event.id,
+          outcome: outcome,
+          feedback: feedback,
+        );
       }
+
+      Log.info(
+        '✅ Video publish accepted by ${outcome.acceptedBy.length} '
+        'relay(s): ${outcome.acceptedBy}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      if (_videoEventService != null) {
+        try {
+          final videoEvent = VideoEvent.fromNostrEvent(event);
+          _videoEventService.addVideoEvent(videoEvent);
+          Log.info(
+            'Added confirmed video to discovery cache: ${event.id}',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        } catch (e) {
+          Log.warning(
+            'Failed to add confirmed video to discovery cache: $e',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        }
+      }
+
+      // Update upload status
+      await _uploadManager.updateUploadStatus(
+        upload.id,
+        UploadStatus.published,
+        nostrEventId: event.id,
+      );
+
+      _totalEventsPublished++;
+      _lastPublishTime = DateTime.now();
+
+      // Note: Discovery cache was already updated immediately after event
+      // creation (before relay publish) for instant local UI feedback.
+
+      // Invalidate profile stats cache so video count updates immediately
+      final currentPubkey = _nostrService.publicKey;
+      if (currentPubkey.isNotEmpty) {
+        unawaited(_profileStatsDao?.deleteStats(currentPubkey));
+        Log.debug(
+          'Invalidated profile stats cache for new video',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      }
+
+      Log.info(
+        'Successfully published direct upload: ${event.id}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      Log.debug(
+        'Video URL: ${upload.cdnUrl}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+
+      return VideoPublishResult.success(
+        eventId: event.id,
+        outcome: outcome,
+        feedback: feedback,
+      );
     } catch (e, stackTrace) {
       Log.error(
         'Error publishing direct upload: $e',
@@ -1007,7 +1068,7 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
       _totalEventsFailed++;
-      return false;
+      return VideoPublishResult.failure(error: 'Error publishing: $e');
     }
   }
 
