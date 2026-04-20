@@ -4128,18 +4128,20 @@ final class MuteServiceProvider
 
 String _$muteServiceHash() => r'a7faf00b4fe5d420db0bff450d444db5aa5d4934';
 
-/// Video sharing service
+/// Video sharing service (NIP-17 gift-wrapped DMs only).
 ///
-/// When a [DmRepository] is available the service sends videos via NIP-17
-/// encrypted DMs (NIP-17). Otherwise falls back to NIP-04 kind 4.
+/// The deprecated NIP-04 fallback was removed as part of the
+/// reliable-nostr-publish cleanup. See
+/// docs/superpowers/plans/2026-04-20-reliable-nostr-publish-pr8-cleanup.md.
 
 @ProviderFor(videoSharingService)
 const videoSharingServiceProvider = VideoSharingServiceProvider._();
 
-/// Video sharing service
+/// Video sharing service (NIP-17 gift-wrapped DMs only).
 ///
-/// When a [DmRepository] is available the service sends videos via NIP-17
-/// encrypted DMs (NIP-17). Otherwise falls back to NIP-04 kind 4.
+/// The deprecated NIP-04 fallback was removed as part of the
+/// reliable-nostr-publish cleanup. See
+/// docs/superpowers/plans/2026-04-20-reliable-nostr-publish-pr8-cleanup.md.
 
 final class VideoSharingServiceProvider
     extends
@@ -4149,10 +4151,11 @@ final class VideoSharingServiceProvider
           VideoSharingService
         >
     with $Provider<VideoSharingService> {
-  /// Video sharing service
+  /// Video sharing service (NIP-17 gift-wrapped DMs only).
   ///
-  /// When a [DmRepository] is available the service sends videos via NIP-17
-  /// encrypted DMs (NIP-17). Otherwise falls back to NIP-04 kind 4.
+  /// The deprecated NIP-04 fallback was removed as part of the
+  /// reliable-nostr-publish cleanup. See
+  /// docs/superpowers/plans/2026-04-20-reliable-nostr-publish-pr8-cleanup.md.
   const VideoSharingServiceProvider._()
     : super(
         from: null,
@@ -4188,7 +4191,7 @@ final class VideoSharingServiceProvider
 }
 
 String _$videoSharingServiceHash() =>
-    r'4c869ac60484c15c6c196f164af34d658d9f2cac';
+    r'886c91da195c5a1f8d115ca21f95e8dca64085de';
 
 /// Content deletion service for NIP-09 delete events
 

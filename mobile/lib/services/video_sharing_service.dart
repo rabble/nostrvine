@@ -1,11 +1,10 @@
-// ABOUTME: Service for sharing videos with other users via Nostr DMs and social features
+// ABOUTME: Service for sharing videos with other users via Nostr NIP-17 DMs
 // ABOUTME: Handles sending videos to specific users and managing sharing options
 
 import 'dart:async';
 
 import 'package:dm_repository/dm_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -65,22 +64,24 @@ class ShareResult {
       ShareResult(success: false, error: error);
 }
 
-/// Service for sharing videos with other users
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+/// Service for sharing videos with other users via NIP-17 gift-wrapped DMs.
+///
+/// This service is NIP-17-only. The deprecated NIP-04 fallback (kind 4)
+/// was removed as part of the reliable-nostr-publish cleanup — see
+/// docs/superpowers/plans/2026-04-20-reliable-nostr-publish-pr8-cleanup.md.
+/// All publishing now flows through [DmRepository.sendMessage], which builds
+/// the NIP-17 gift-wrap envelope and delegates to the shared publish path.
 class VideoSharingService {
   VideoSharingService({
-    required NostrClient nostrService,
     required AuthService authService,
     required ProfileRepository profileRepository,
-    DmRepository? dmRepository,
-  }) : _nostrService = nostrService,
-       _authService = authService,
+    required DmRepository dmRepository,
+  }) : _authService = authService,
        _profileRepository = profileRepository,
        _dmRepository = dmRepository;
-  final NostrClient _nostrService;
   final AuthService _authService;
   final ProfileRepository _profileRepository;
-  final DmRepository? _dmRepository;
+  final DmRepository _dmRepository;
 
   final List<ShareableUser> _recentlySharedWith = [];
   final Map<String, DateTime> _shareHistory = {};
@@ -89,11 +90,7 @@ class VideoSharingService {
   List<ShareableUser> get recentlySharedWith =>
       List.unmodifiable(_recentlySharedWith);
 
-  /// Share a video with a specific user via Nostr DM.
-  ///
-  /// When a [DmRepository] is available (user is authenticated with NIP-17),
-  /// uses gift-wrapped encrypted DMs (kind 14/13/1059). Otherwise falls back
-  /// to legacy NIP-04 encrypted DMs (kind 4).
+  /// Share a video with a specific user via Nostr NIP-17 gift-wrapped DM.
   Future<ShareResult> shareVideoWithUser({
     required VideoEvent video,
     required String recipientPubkey,
@@ -112,17 +109,7 @@ class VideoSharingService {
 
       final dmContent = _createShareMessage(video, personalMessage);
 
-      // Prefer NIP-17 when DmRepository is available
-      if (_dmRepository != null) {
-        return _shareViaNip17(
-          recipientPubkey: recipientPubkey,
-          content: dmContent,
-        );
-      }
-
-      // Fallback to NIP-04 (legacy)
-      return _shareViaNip04(
-        video: video,
+      return _shareViaNip17(
         recipientPubkey: recipientPubkey,
         content: dmContent,
       );
@@ -140,8 +127,7 @@ class VideoSharingService {
     required String recipientPubkey,
     required String content,
   }) async {
-    final dmRepo = _dmRepository!;
-    final result = await dmRepo.sendMessage(
+    final result = await _dmRepository.sendMessage(
       recipientPubkey: recipientPubkey,
       content: content,
     );
@@ -150,7 +136,7 @@ class VideoSharingService {
       _shareHistory[recipientPubkey] = DateTime.now();
       await _updateRecentlySharedWith(recipientPubkey);
 
-      final participants = [dmRepo.userPubkey, recipientPubkey]..sort();
+      final participants = [_dmRepository.userPubkey, recipientPubkey]..sort();
       final conversationId = DmRepository.computeConversationId(participants);
 
       Log.info(
@@ -168,45 +154,6 @@ class VideoSharingService {
     return ShareResult.failure(
       result.error ?? 'Failed to send NIP-17 message',
     );
-  }
-
-  Future<ShareResult> _shareViaNip04({
-    required VideoEvent video,
-    required String recipientPubkey,
-    required String content,
-  }) async {
-    final tags = <List<String>>[
-      ['p', recipientPubkey],
-      ['client', 'diVine'],
-      ['e', video.id],
-    ];
-
-    final event = await _authService.createAndSignEvent(
-      kind: 4,
-      content: content,
-      tags: tags,
-    );
-
-    if (event == null) {
-      return ShareResult.failure('Failed to create share message');
-    }
-
-    final sentEvent = await _nostrService.publishEvent(event);
-
-    if (sentEvent != null) {
-      _shareHistory[recipientPubkey] = DateTime.now();
-      await _updateRecentlySharedWith(recipientPubkey);
-
-      Log.info(
-        'Video shared via NIP-04: ${event.id}',
-        name: 'VideoSharingService',
-        category: LogCategory.video,
-      );
-
-      return ShareResult.createSuccess(event.id);
-    }
-
-    return ShareResult.failure('Failed to publish share message');
   }
 
   /// Share video to multiple users at once
