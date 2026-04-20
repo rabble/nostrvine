@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
-import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 
 /// A tappable row representing a single people list inside the
 /// [AddToPeopleListsSheet]. Shows a checkbox on the left that reflects
@@ -13,17 +12,13 @@ import 'package:openvine/features/people_lists/models/people_list_entry_point.da
 /// [listId], and the list's display name on the right.
 ///
 /// Tapping the row dispatches [PeopleListsPubkeyToggleRequested] to the
-/// ambient [PeopleListsBloc]. The [entryPoint] is retained on the widget
-/// so analytics and downstream flows (T9) can attribute the toggle; it is
-/// not yet forwarded to the bloc because [PeopleListsPubkeyToggleRequested]
-/// does not currently carry it.
+/// ambient [PeopleListsBloc].
 class PeopleListRow extends StatelessWidget {
   /// Creates a row widget for a single people list.
   const PeopleListRow({
     required this.listId,
     required this.listName,
     required this.pubkey,
-    required this.entryPoint,
     super.key,
   });
 
@@ -35,9 +30,6 @@ class PeopleListRow extends StatelessWidget {
 
   /// The full hex pubkey being added/removed. Never truncated.
   final String pubkey;
-
-  /// Where the caller launched the add-to-list flow from.
-  final PeopleListEntryPoint entryPoint;
 
   @override
   Widget build(BuildContext context) {

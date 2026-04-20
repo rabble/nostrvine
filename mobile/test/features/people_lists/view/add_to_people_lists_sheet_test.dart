@@ -9,7 +9,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
-import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/features/people_lists/view/widgets/people_list_row.dart';
 
@@ -77,18 +76,12 @@ void main() {
       await bloc.close();
     });
 
-    Widget buildSubject({
-      required String pubkey,
-      PeopleListEntryPoint entryPoint = PeopleListEntryPoint.profile,
-    }) {
+    Widget buildSubject({required String pubkey}) {
       return MaterialApp(
         home: Scaffold(
           body: BlocProvider<PeopleListsBloc>.value(
             value: bloc,
-            child: AddToPeopleListsSheet(
-              pubkey: pubkey,
-              entryPoint: entryPoint,
-            ),
+            child: AddToPeopleListsSheet(pubkey: pubkey),
           ),
         ),
       );
@@ -164,10 +157,7 @@ void main() {
           when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
           await tester.pumpWidget(
-            buildSubject(
-              pubkey: _targetPubkey,
-              entryPoint: PeopleListEntryPoint.shareMenu,
-            ),
+            buildSubject(pubkey: _targetPubkey),
           );
 
           await tester.tap(find.byType(PeopleListRow));
@@ -247,7 +237,6 @@ void main() {
                       onPressed: () => AddToPeopleListsSheet.show(
                         context,
                         pubkey: _targetPubkey,
-                        entryPoint: PeopleListEntryPoint.profile,
                       ),
                       child: const Text('open'),
                     );

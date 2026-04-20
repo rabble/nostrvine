@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
-import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/widgets/widgets.dart';
 
 /// Bottom sheet that displays the authenticated user's editable people
@@ -22,7 +21,6 @@ class AddToPeopleListsSheet extends StatelessWidget {
   /// Creates the sheet widget.
   const AddToPeopleListsSheet({
     required this.pubkey,
-    required this.entryPoint,
     this.displayName,
     super.key,
   });
@@ -30,10 +28,6 @@ class AddToPeopleListsSheet extends StatelessWidget {
   /// The full hex pubkey whose list membership is being edited. The
   /// pubkey is never truncated in storage, dispatched events, or logs.
   final String pubkey;
-
-  /// Where the sheet was launched from, used by analytics and downstream
-  /// flows to attribute the toggle.
-  final PeopleListEntryPoint entryPoint;
 
   /// Optional display name for the person. Only used for layout copy;
   /// the underlying [pubkey] is always the source of truth.
@@ -45,7 +39,6 @@ class AddToPeopleListsSheet extends StatelessWidget {
   static Future<void> show(
     BuildContext context, {
     required String pubkey,
-    required PeopleListEntryPoint entryPoint,
     String? displayName,
   }) {
     return VineBottomSheet.show<void>(
@@ -53,7 +46,6 @@ class AddToPeopleListsSheet extends StatelessWidget {
       title: const Text('Add to list'),
       buildScrollBody: (scrollController) => AddToPeopleListsSheet(
         pubkey: pubkey,
-        entryPoint: entryPoint,
         displayName: displayName,
       ),
     );
@@ -68,7 +60,7 @@ class AddToPeopleListsSheet extends StatelessWidget {
     );
 
     if (editableLists.isEmpty) {
-      return _EmptyState(entryPoint: entryPoint);
+      return const _EmptyState();
     }
 
     return ListView.builder(
@@ -80,7 +72,6 @@ class AddToPeopleListsSheet extends StatelessWidget {
           listId: list.id,
           listName: list.name,
           pubkey: pubkey,
-          entryPoint: entryPoint,
         );
       },
     );
@@ -88,9 +79,7 @@ class AddToPeopleListsSheet extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.entryPoint});
-
-  final PeopleListEntryPoint entryPoint;
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {

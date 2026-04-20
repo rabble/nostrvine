@@ -9,7 +9,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
-import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/widgets/people_list_row.dart';
 
 class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
@@ -81,7 +80,6 @@ void main() {
     Widget buildSubject({
       required UserList list,
       required String pubkey,
-      PeopleListEntryPoint entryPoint = PeopleListEntryPoint.profile,
     }) {
       return MaterialApp(
         home: Scaffold(
@@ -91,7 +89,6 @@ void main() {
               listId: list.id,
               listName: list.name,
               pubkey: pubkey,
-              entryPoint: entryPoint,
             ),
           ),
         ),
@@ -158,11 +155,7 @@ void main() {
         when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
         await tester.pumpWidget(
-          buildSubject(
-            list: list,
-            pubkey: _targetPubkey,
-            entryPoint: PeopleListEntryPoint.searchResult,
-          ),
+          buildSubject(list: list, pubkey: _targetPubkey),
         );
 
         await tester.tap(find.byType(PeopleListRow));
