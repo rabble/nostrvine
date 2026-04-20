@@ -25,6 +25,11 @@ enum DeleteFailureKind {
   /// Signing or constructing the kind 5 delete event failed.
   couldNotSign,
 
+  /// Every relay rejected the delete event or no relay responded before the
+  /// publish timeout. The delete is NOT persisted locally so the user can
+  /// retry.
+  relayRejected,
+
   /// Unexpected error (including outer [deleteContent] catch).
   unknown,
 }
@@ -148,7 +153,13 @@ class ContentDeletionService {
     }
   }
 
-  /// Delete user's own content using NIP-09
+  /// Delete user's own content using NIP-09.
+  ///
+  /// The deletion is only considered successful when at least one relay
+  /// returns an `OK true` acknowledgement (NIP-20). If every relay rejects
+  /// the event or none respond before the publish timeout, the operation
+  /// fails with [DeleteFailureKind.relayRejected] and is NOT added to local
+  /// deletion history — the caller can retry.
   Future<DeleteResult> deleteContent({
     required VideoEvent video,
     required String reason,
@@ -180,48 +191,52 @@ class ContentDeletionService {
       );
 
       final deleteEvent = deleteOutcome.event;
-      if (deleteEvent != null) {
-        final sentEvent = await _nostrService.publishEvent(deleteEvent);
-        if (sentEvent == null) {
-          Log.error(
-            'Failed to publish delete request to relays',
-            name: 'ContentDeletionService',
-            category: LogCategory.system,
-          );
-          // Still save locally even if publish fails
-        } else {
-          Log.info(
-            'Delete request published to relays',
-            name: 'ContentDeletionService',
-            category: LogCategory.system,
-          );
-        }
+      if (deleteEvent == null) {
+        final kind = deleteOutcome.failureKind!;
+        return DeleteResult.failure(_failureMessageForKind(kind), kind);
+      }
 
-        // Save deletion to local history
-        final deletion = ContentDeletion(
-          deleteEventId: deleteEvent.id,
-          originalEventId: video.id,
-          reason: reason,
-          deletedAt: DateTime.now(),
-          additionalContext: additionalContext,
-        );
+      final publishOutcome = await _nostrService.publishEventAwaitOk(
+        deleteEvent,
+      );
 
-        _deletionHistory.add(deletion);
-        await _saveDeletionHistory();
-
-        Log.debug(
-          '📱️ Content deletion request submitted: ${deleteEvent.id}',
+      if (publishOutcome.failed) {
+        Log.error(
+          'Delete publish not confirmed by any relay: '
+          '${publishOutcome.summary}',
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
-        return DeleteResult.createSuccess(deleteEvent.id);
-      } else {
-        final kind = deleteOutcome.failureKind!;
         return DeleteResult.failure(
-          _failureMessageForKind(kind),
-          kind,
+          'Relay did not confirm deletion: ${publishOutcome.summary}',
+          DeleteFailureKind.relayRejected,
         );
       }
+
+      Log.info(
+        'Delete request confirmed by relay(s): ${publishOutcome.acceptedBy}',
+        name: 'ContentDeletionService',
+        category: LogCategory.system,
+      );
+
+      // Relay accepted — now it is safe to persist the deletion locally.
+      final deletion = ContentDeletion(
+        deleteEventId: deleteEvent.id,
+        originalEventId: video.id,
+        reason: reason,
+        deletedAt: DateTime.now(),
+        additionalContext: additionalContext,
+      );
+
+      _deletionHistory.add(deletion);
+      await _saveDeletionHistory();
+
+      Log.debug(
+        '📱️ Content deletion confirmed: ${deleteEvent.id}',
+        name: 'ContentDeletionService',
+        category: LogCategory.system,
+      );
+      return DeleteResult.createSuccess(deleteEvent.id);
     } catch (e) {
       Log.error(
         'Failed to delete content: $e',
@@ -245,6 +260,8 @@ class ContentDeletionService {
         return 'Cannot create delete event: not authenticated';
       case DeleteFailureKind.couldNotSign:
         return 'Failed to create delete event';
+      case DeleteFailureKind.relayRejected:
+        return 'Relay did not confirm deletion';
       case DeleteFailureKind.unknown:
         return 'Failed to delete content';
     }

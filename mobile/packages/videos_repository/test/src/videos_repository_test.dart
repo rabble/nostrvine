@@ -4139,6 +4139,46 @@ void main() {
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
+        test(
+          'preserves collaboratorPubkeys from Funnelcake REST response',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getCollabVideos(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _createVideoStats(
+                  id: 'collab-event-1',
+                  pubkey: 'author-pubkey',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/collab.mp4',
+                  collaboratorPubkeys: const ['collab-pubkey'],
+                ),
+              ],
+            );
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repositoryWithApi.getCollabVideos(
+              taggedPubkey: 'collab-pubkey',
+            );
+
+            expect(result, hasLength(1));
+            expect(
+              result.first.collaboratorPubkeys,
+              equals(['collab-pubkey']),
+            );
+            expect(result.first.hasCollaborators, isTrue);
+          },
+        );
+
         test('passes parameters to Funnelcake API', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
@@ -6330,6 +6370,7 @@ VideoStats _createVideoStats({
   String thumbnail = 'https://example.com/thumb.jpg',
   int? loops,
   List<String> moderationLabels = const [],
+  List<String> collaboratorPubkeys = const [],
 }) {
   return VideoStats(
     id: id,
@@ -6346,6 +6387,7 @@ VideoStats _createVideoStats({
     engagementScore: 0,
     loops: loops,
     moderationLabels: moderationLabels,
+    collaboratorPubkeys: collaboratorPubkeys,
   );
 }
 

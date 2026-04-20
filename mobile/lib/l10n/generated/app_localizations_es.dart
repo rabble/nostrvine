@@ -3037,6 +3037,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'No pudimos firmar el pedido de borrado. Probá de nuevo.';
 
   @override
+  String get shareMenuDeleteFailedRelayRejected =>
+      'Couldn\'t reach the relay. Check your connection and try again.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'No pudimos borrar este video. Probá de nuevo.';
 

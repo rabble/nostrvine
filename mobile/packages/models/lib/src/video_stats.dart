@@ -41,6 +41,7 @@ class VideoStats {
     this.textTrackRef,
     this.textTrackContent,
     this.categories = const [],
+    this.collaboratorPubkeys = const [],
     List<String> moderationLabels = const [],
     @Deprecated('Use moderationLabels') List<String>? contentLabels,
   }) : moderationLabels = contentLabels ?? moderationLabels;
@@ -179,6 +180,7 @@ class VideoStats {
     int? publishedAt;
     final rawTags = <String, String>{};
     final contentWarningLabels = <String>[];
+    final collaboratorPubkeys = <String>[];
 
     if (eventData['tags'] is List) {
       final tags = eventData['tags'] as List<dynamic>;
@@ -229,6 +231,13 @@ class VideoStats {
               tagValue.isNotEmpty &&
               !contentWarningLabels.contains(tagValue)) {
             contentWarningLabels.add(tagValue);
+          }
+          if (tagName == 'p' && tagValue.isNotEmpty) {
+            final normalized = tagValue.toLowerCase();
+            if (normalized != pubkey &&
+                !collaboratorPubkeys.contains(normalized)) {
+              collaboratorPubkeys.add(normalized);
+            }
           }
         }
       }
@@ -331,6 +340,7 @@ class VideoStats {
       rawTags: rawTags,
       categories: categories,
       contentWarningLabels: contentWarningLabels,
+      collaboratorPubkeys: collaboratorPubkeys,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
       moderationLabels: moderationLabels,
@@ -418,6 +428,11 @@ class VideoStats {
   /// Author-applied content warning labels parsed from NIP-32/NIP-36 tags.
   final List<String> contentWarningLabels;
 
+  /// Pubkeys of NIP-71 collaborators (`p` tags whose value differs from the
+  /// event author). Empty when the event has no collaborators or when the
+  /// REST payload did not include tag data.
+  final List<String> collaboratorPubkeys;
+
   /// Addressable coordinates for subtitle event (from `text-track` tag or
   /// API `text_track_ref` field).
   final String? textTrackRef;
@@ -443,10 +458,15 @@ class VideoStats {
   ///
   /// Uses [publishedAt] as the effective timestamp when available,
   /// falling back to [createdAt].
+  ///
+  /// Propagates the NIP-40 `expiration` tag (if present in [rawTags]) so the
+  /// client can honour server-side expiration on REST-loaded videos the same
+  /// way it does for relay-loaded videos.
   VideoEvent toVideoEvent() {
     final effectiveTimestamp =
         publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
     final normalizedDTag = dTag.isNotEmpty ? dTag : id;
+    final expirationTimestamp = int.tryParse(rawTags['expiration'] ?? '');
     return VideoEvent(
       id: id,
       pubkey: pubkey,
@@ -477,6 +497,7 @@ class VideoStats {
       textTrackContent: textTrackContent,
       categories: categories,
       contentWarningLabels: contentWarningLabels,
+      collaboratorPubkeys: collaboratorPubkeys,
       moderationLabels: moderationLabels,
       rawTags: {
         ...rawTags,
@@ -486,6 +507,7 @@ class VideoStats {
         // The engagement loop count is stored in `originalLoops` instead.
         if (views != null) 'views': views.toString(),
       },
+      expirationTimestamp: expirationTimestamp,
     );
   }
 

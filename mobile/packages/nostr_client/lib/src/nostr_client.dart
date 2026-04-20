@@ -294,6 +294,87 @@ class NostrClient {
     return sentEvent;
   }
 
+  /// Publishes an event and waits for an `OK` confirmation from at least one
+  /// relay.
+  ///
+  /// Unlike [publishEvent], this method does NOT consider the publish
+  /// successful just because the WebSocket accepted the frame. It waits for
+  /// the relay to respond with an `OK true` message (NIP-20), and treats the
+  /// publish as failed if:
+  ///  * no relay is connected, or
+  ///  * every relay rejects the event, or
+  ///  * no relay responds before [timeout].
+  ///
+  /// Cache writes follow the same rules as [publishEvent], except that the
+  /// optimistic cache is rolled back on rejection/timeout, and deletion-event
+  /// cache cleanup only runs after confirmation.
+  ///
+  /// Use this for operations where the caller needs to know the event is
+  /// actually persisted on at least one relay — deletions, critical profile
+  /// updates, etc. Ephemeral events (20000–29999) should use [publishEvent]
+  /// because relays are not required to respond with `OK` to them.
+  Future<PublishOutcome> publishEventAwaitOk(
+    Event event, {
+    List<String>? targetRelays,
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    final useOptimisticCache = _canOptimisticallyCache(event.kind);
+
+    if (useOptimisticCache) {
+      _cacheEvent(event);
+    }
+
+    PublishOutcome rollbackOnFailure(PublishOutcome outcome) {
+      if (outcome.failed && useOptimisticCache) {
+        _rollbackCachedEvent(event.id);
+      }
+      return outcome;
+    }
+
+    if (_relayManager.connectedRelays.isEmpty) {
+      await retryDisconnectedRelays();
+      if (_relayManager.connectedRelays.isEmpty) {
+        return rollbackOnFailure(
+          PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const [],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
+      }
+    }
+
+    final outcome =
+        await _nostr.sendEventAwaitOk(
+          event,
+          targetRelays: targetRelays,
+          tempRelays: targetRelays,
+          timeout: timeout,
+        ) ??
+        PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const [],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        );
+
+    if (outcome.failed) {
+      return rollbackOnFailure(outcome);
+    }
+
+    // Relay confirmed acceptance — apply post-publish cache effects.
+    if (event.kind == EventKind.eventDeletion) {
+      _handleDeletionEvent(event);
+    } else if (!useOptimisticCache) {
+      _cacheEvent(event);
+    }
+
+    statisticsObserver?.onEventSent();
+
+    return outcome;
+  }
+
   /// Queries events with given filters
   ///
   /// Query flow: **Cache + WebSocket**

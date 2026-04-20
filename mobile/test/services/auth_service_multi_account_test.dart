@@ -114,8 +114,13 @@ void main() {
       () => mockCleanupService.clearUserSpecificData(
         reason: any(named: 'reason'),
         isIdentityChange: any(named: 'isIdentityChange'),
+        userPubkey: any(named: 'userPubkey'),
+        deleteUserData: any(named: 'deleteUserData'),
       ),
     ).thenAnswer((_) async => 0);
+    when(
+      () => mockCleanupService.claimLegacyRows(any()),
+    ).thenAnswer((_) async {});
 
     // Default flutter secure storage stubs
     when(
@@ -1857,6 +1862,55 @@ void main() {
       expect(prefs.getString('last_used_npub'), isNotNull);
     });
 
+    test(
+      'destructive sign-out passes the signed-in pubkey to cleanup',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        // Capture the pubkey hex before signOut disposes the container.
+        final expectedPubkey = testKeyContainer.publicKeyHex;
+        await authService.signOut(deleteKeys: true);
+
+        verify(
+          () => mockCleanupService.clearUserSpecificData(
+            reason: 'explicit_logout',
+            userPubkey: expectedPubkey,
+            deleteUserData: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'non-destructive sign-out passes the signed-in pubkey to cleanup '
+      'with deleteUserData: false so account-local DAO rows survive '
+      'an account switch',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        // Capture the pubkey hex before signOut disposes the container.
+        final expectedPubkey = testKeyContainer.publicKeyHex;
+        await authService.signOut();
+
+        verify(
+          () => mockCleanupService.clearUserSpecificData(
+            reason: 'explicit_logout',
+            userPubkey: expectedPubkey,
+            // ignore: avoid_redundant_argument_values
+            deleteUserData: false,
+          ),
+        ).called(1);
+      },
+    );
+
     test('_setupUserSession persists last_used_npub', () async {
       await _ignoringDiscoveryErrors(authService.createNewIdentity);
 
@@ -1965,60 +2019,48 @@ void main() {
 
         // Recovery should point to A (the remaining account)
         final prefs = await SharedPreferences.getInstance();
-        expect(
-          prefs.getString('last_used_npub'),
-          equals(accountA.npub),
-        );
-        expect(
-          prefs.getString('authentication_source'),
-          equals('automatic'),
-        );
+        expect(prefs.getString('last_used_npub'), equals(accountA.npub));
+        expect(prefs.getString('authentication_source'), equals('automatic'));
       },
     );
 
-    test(
-      'initialize restores remaining account after destructive sign-out '
-      'via known accounts scan',
-      () async {
-        // Scenario: last_used_npub is absent, PRIMARY is wiped,
-        // but account A still has per-identity keys
-        final accountA = SecureKeyContainer.fromNsec(
-          'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
-        );
+    test('initialize restores remaining account after destructive sign-out '
+        'via known accounts scan', () async {
+      // Scenario: last_used_npub is absent, PRIMARY is wiped,
+      // but account A still has per-identity keys
+      final accountA = SecureKeyContainer.fromNsec(
+        'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+      );
 
-        final knownAccounts = jsonEncode([
-          KnownAccount(
-            pubkeyHex: accountA.publicKeyHex,
-            authSource: AuthenticationSource.automatic,
-            addedAt: DateTime.now().subtract(const Duration(hours: 2)),
-            lastUsedAt: DateTime.now().subtract(const Duration(hours: 1)),
-          ).toJson(),
-        ]);
+      final knownAccounts = jsonEncode([
+        KnownAccount(
+          pubkeyHex: accountA.publicKeyHex,
+          authSource: AuthenticationSource.automatic,
+          addedAt: DateTime.now().subtract(const Duration(hours: 2)),
+          lastUsedAt: DateTime.now().subtract(const Duration(hours: 1)),
+        ).toJson(),
+      ]);
 
-        // No last_used_npub, simulating edge case where pref was lost
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'automatic',
-          kKnownAccountsKey: knownAccounts,
-        });
+      // No last_used_npub, simulating edge case where pref was lost
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'automatic',
+        kKnownAccountsKey: knownAccounts,
+      });
 
-        // PRIMARY is empty (wiped by deleteKeys)
-        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
-        // But account A has per-identity keys
-        when(
-          () => mockKeyStorage.getIdentityKeyContainer(
-            accountA.npub,
-            biometricPrompt: any(named: 'biometricPrompt'),
-          ),
-        ).thenAnswer((_) async => accountA);
+      // PRIMARY is empty (wiped by deleteKeys)
+      when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+      // But account A has per-identity keys
+      when(
+        () => mockKeyStorage.getIdentityKeyContainer(
+          accountA.npub,
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => accountA);
 
-        await _ignoringDiscoveryErrors(authService.initialize);
+      await _ignoringDiscoveryErrors(authService.initialize);
 
-        expect(authService.authState, equals(AuthState.authenticated));
-        expect(
-          authService.currentPublicKeyHex,
-          equals(accountA.publicKeyHex),
-        );
-      },
-    );
+      expect(authService.authState, equals(AuthState.authenticated));
+      expect(authService.currentPublicKeyHex, equals(accountA.publicKeyHex));
+    });
   });
 }

@@ -7,6 +7,7 @@ import 'event_kind.dart';
 import 'event_mem_box.dart';
 import 'nip02/contact_list.dart';
 import 'relay/event_filter.dart';
+import 'relay/publish_outcome.dart';
 import 'relay/relay.dart';
 import 'relay/relay_pool.dart';
 import 'relay/relay_type.dart';
@@ -198,6 +199,36 @@ class Nostr {
       return event;
     }
     return null;
+  }
+
+  /// Sends an event and awaits `OK` confirmation from at least one relay.
+  ///
+  /// Signs the event if needed, dispatches to relays, and returns a
+  /// [PublishOutcome] describing per-relay acceptance and rejection. The
+  /// future completes early once one relay confirms, but no later than
+  /// [timeout].
+  ///
+  /// Returns `null` if signing failed.
+  Future<PublishOutcome?> sendEventAwaitOk(
+    Event event, {
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    if (StringUtil.isBlank(event.sig)) {
+      await signEvent(event);
+      if (StringUtil.isBlank(event.sig)) {
+        return null;
+      }
+    }
+
+    return _pool.sendEventAwaitOk(
+      ["EVENT", event.toJson()],
+      eventId: event.id,
+      tempRelays: tempRelays,
+      targetRelays: targetRelays,
+      timeout: timeout,
+    );
   }
 
   void checkEventSign(Event event) {
