@@ -2,10 +2,10 @@
 // ABOUTME: Listens to FollowRepository stream for real-time following changes
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'my_following_event.dart';

@@ -4,10 +4,10 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'others_followers_event.dart';

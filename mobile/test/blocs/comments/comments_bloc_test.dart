@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -12,7 +13,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:profile_repository/profile_repository.dart';

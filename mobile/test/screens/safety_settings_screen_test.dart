@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for SafetySettingsScreen UI and functionality
 // ABOUTME: Tests section headers, blocked users list, muted content, filters, and report history
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';

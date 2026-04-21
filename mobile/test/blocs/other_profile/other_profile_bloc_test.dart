@@ -2,12 +2,12 @@
 // ABOUTME: Tests cache+fresh pattern for viewing another user's profile
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}

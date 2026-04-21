@@ -22,6 +22,7 @@ library;
 
 import 'dart:async';
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter/widgets.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
@@ -34,7 +35,6 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';

@@ -2,11 +2,11 @@
 // ABOUTME: Tests loading from repository stream and blocklist filtering
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 

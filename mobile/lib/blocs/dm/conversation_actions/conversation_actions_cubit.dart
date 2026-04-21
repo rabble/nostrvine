@@ -2,9 +2,9 @@
 // ABOUTME: Constructor-injected services, no Riverpod at action time.
 
 import 'package:bloc/bloc.dart';
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 

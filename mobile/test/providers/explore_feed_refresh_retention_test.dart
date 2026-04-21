@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -16,7 +17,6 @@ import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:shared_preferences/shared_preferences.dart';

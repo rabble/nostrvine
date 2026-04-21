@@ -3,6 +3,7 @@
 
 import 'dart:ui';
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,7 +15,6 @@ import 'package:openvine/providers/seen_videos_notifier.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:shared_preferences/shared_preferences.dart';

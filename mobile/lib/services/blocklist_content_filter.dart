@@ -1,7 +1,7 @@
 // ABOUTME: Creates a VideoContentFilter from ContentBlocklistService.
 // ABOUTME: Bridges app-level blocklist service to repository-level filter.
 
-import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 /// Creates a [BlockedVideoFilter] that delegates to [blocklistService].

@@ -6,6 +6,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -136,7 +137,7 @@ typedef UserRelaysDiscoveredCallback = void Function(List<String> relayUrls);
 /// Main authentication service for the Divine app
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via
 /// Riverpod
-class AuthService implements BackgroundAwareService {
+class AuthService implements BackgroundAwareService, BlockListSigner {
   AuthService({
     required UserDataCleanupService userDataCleanupService,
     SecureKeyStorage? keyStorage,
@@ -275,6 +276,7 @@ class AuthService implements BackgroundAwareService {
   SecureKeyContainer? get currentKeyContainer => _currentKeyContainer;
 
   /// Check if user is authenticated
+  @override
   bool get isAuthenticated => _authState == AuthState.authenticated;
 
   /// Authentication source used for current session
@@ -3202,6 +3204,7 @@ class AuthService implements BackgroundAwareService {
 
   /// Create and sign a Nostr event
   /// Handles both local SecureKeyStorage and remote KeycastRpc signing
+  @override
   Future<Event?> createAndSignEvent({
     required int kind,
     required String content,

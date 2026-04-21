@@ -1,9 +1,9 @@
 // ABOUTME: Tests for search filtering of blocked users
 // ABOUTME: Verifies that blocked users' content doesn't appear in search results
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 
 class MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}

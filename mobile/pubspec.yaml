@@ -29,6 +29,7 @@ workspace:
   - packages/blurhash_service
   - packages/categories_repository
   - packages/comments_repository
+  - packages/content_blocklist_service
   - packages/count_formatter
   - packages/curated_list_repository
   - packages/curation_service
@@ -157,6 +158,9 @@ dependencies:
 
   # Categories Repository - Video categories from Funnelcake API
   categories_repository:
+
+  # Content Blocklist Service - Blocked users, mutual mutes, kind 30000 sync
+  content_blocklist_service:
 
   # Curation Service - NIP-51 video curation sets and content discovery
   curation_service:

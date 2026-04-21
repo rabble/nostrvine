@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,7 +14,6 @@ import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
 import 'package:openvine/blocs/others_following/others_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/following/others_following_screen.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
 import '../../helpers/test_provider_overrides.dart';

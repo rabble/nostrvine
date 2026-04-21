@@ -3,6 +3,7 @@
 // ABOUTME: and MyFollowingBloc to InboxView via MultiBlocProvider.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,7 +17,6 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 
 import '../../helpers/go_router.dart';
 import '../../helpers/test_provider_overrides.dart';

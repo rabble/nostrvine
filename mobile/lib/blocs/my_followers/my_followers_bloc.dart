@@ -1,10 +1,10 @@
 // ABOUTME: BLoC for displaying current user's followers list
 // ABOUTME: Fetches Kind 3 events that mention current user in 'p' tags
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'my_followers_event.dart';

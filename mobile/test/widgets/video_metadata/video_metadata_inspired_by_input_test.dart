@@ -1,3 +1,4 @@
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,7 +9,6 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_inspired_by_input.dart';
 import 'package:rxdart/rxdart.dart';
 

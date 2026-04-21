@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,6 @@ import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart' as nostr;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';

@@ -5,11 +5,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:content_blocklist_service/src/block_list_signer.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -74,7 +74,7 @@ class ContentBlocklistService {
   bool _blockListSyncStarted = false;
 
   // Services for Nostr publishing (injected via sync methods)
-  AuthService? _authService;
+  BlockListSigner? _signer;
   NostrClient? _nostrClient;
 
   void _notifyChanged() {
@@ -198,10 +198,10 @@ class ContentBlocklistService {
 
   /// Publish our block list to Nostr as kind 30000 with d=block
   Future<void> _publishBlockListToNostr() async {
-    final authService = _authService;
+    final signer = _signer;
     final nostrClient = _nostrClient;
 
-    if (authService == null || nostrClient == null) {
+    if (signer == null || nostrClient == null) {
       Log.debug(
         'Cannot publish block list - Nostr services not yet injected',
         name: 'ContentBlocklistService',
@@ -210,7 +210,7 @@ class ContentBlocklistService {
       return;
     }
 
-    if (!authService.isAuthenticated) {
+    if (!signer.isAuthenticated) {
       Log.warning(
         'Cannot publish block list - user not authenticated',
         name: 'ContentBlocklistService',
@@ -230,7 +230,7 @@ class ContentBlocklistService {
         tags.add(['p', pubkey]);
       }
 
-      final event = await authService.createAndSignEvent(
+      final event = await signer.createAndSignEvent(
         kind: 30000,
         content: 'Block list',
         tags: tags,
@@ -498,7 +498,7 @@ class ContentBlocklistService {
   /// method is called.
   Future<void> syncBlockListsInBackground(
     NostrClient nostrService,
-    AuthService authService,
+    BlockListSigner signer,
     String ourPubkey,
   ) async {
     // If the NostrClient changed (e.g., account switch), the old subscription
@@ -517,7 +517,7 @@ class ContentBlocklistService {
     }
 
     _ourPubkey = ourPubkey;
-    _authService = authService;
+    _signer = signer;
     _nostrClient = nostrService;
 
     Log.info(

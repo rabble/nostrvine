@@ -1,15 +1,16 @@
 import 'dart:async';
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockBlockListSigner extends Mock implements BlockListSigner {}
 
 void main() {
   setUpAll(() {
@@ -370,7 +371,7 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 50));
         expect(service.shouldFilterFromFeeds(muterPubkey), isFalse);
 
-        controller.close();
+        await controller.close();
       },
     );
 
@@ -442,7 +443,7 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 100));
 
         // Block a user ourselves
-        service.blockUser(blockedByUsPubkey);
+        await service.blockUser(blockedByUsPubkey);
 
         // hasMutedUs should return true for mutual muter
         expect(service.hasMutedUs(muterPubkey), isTrue);
@@ -461,11 +462,11 @@ void main() {
   group('ContentBlocklistService - Block List Sync', () {
     late ContentBlocklistService service;
     late _MockNostrClient mockNostrService;
-    late _MockAuthService mockAuthService;
+    late _MockBlockListSigner mockSigner;
 
     setUp(() {
       mockNostrService = _MockNostrClient();
-      mockAuthService = _MockAuthService();
+      mockSigner = _MockBlockListSigner();
     });
 
     test(
@@ -486,7 +487,7 @@ void main() {
 
         await service.syncBlockListsInBackground(
           mockNostrService,
-          mockAuthService,
+          mockSigner,
           ourPubkey,
         );
 
@@ -544,7 +545,7 @@ void main() {
 
         await service.syncBlockListsInBackground(
           mockNostrService,
-          mockAuthService,
+          mockSigner,
           ourPubkey,
         );
 
@@ -603,7 +604,7 @@ void main() {
 
         await service.syncBlockListsInBackground(
           mockNostrService,
-          mockAuthService,
+          mockSigner,
           ourPubkey,
         );
 
@@ -624,7 +625,7 @@ void main() {
   group('ContentBlocklistService - Relay Block List Restoration', () {
     late ContentBlocklistService service;
     late _MockNostrClient mockNostrService;
-    late _MockAuthService mockAuthService;
+    late _MockBlockListSigner mockSigner;
     late StreamController<Event> controller;
 
     const ourPubkey =
@@ -653,7 +654,7 @@ void main() {
 
     setUp(() {
       mockNostrService = _MockNostrClient();
-      mockAuthService = _MockAuthService();
+      mockSigner = _MockBlockListSigner();
       controller = StreamController<Event>();
 
       when(
@@ -675,7 +676,7 @@ void main() {
 
         await service.syncBlockListsInBackground(
           mockNostrService,
-          mockAuthService,
+          mockSigner,
           ourPubkey,
         );
 
@@ -702,7 +703,7 @@ void main() {
 
         await service.syncBlockListsInBackground(
           mockNostrService,
-          mockAuthService,
+          mockSigner,
           ourPubkey,
         );
 
@@ -731,7 +732,7 @@ void main() {
 
         await service.syncBlockListsInBackground(
           mockNostrService,
-          mockAuthService,
+          mockSigner,
           ourPubkey,
         );
 
@@ -752,7 +753,7 @@ void main() {
 
         await service.syncBlockListsInBackground(
           mockNostrService,
-          mockAuthService,
+          mockSigner,
           ourPubkey,
         );
 
@@ -773,7 +774,7 @@ void main() {
 
         await service.syncBlockListsInBackground(
           mockNostrService,
-          mockAuthService,
+          mockSigner,
           ourPubkey,
         );
 
@@ -807,5 +808,3 @@ void main() {
     );
   });
 }
-
-class _MockAuthService extends Mock implements AuthService {}

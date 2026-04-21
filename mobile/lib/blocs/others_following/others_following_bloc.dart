@@ -2,11 +2,11 @@
 // ABOUTME: Fetches Kind 3 contact list from Nostr relays for the target user
 // TODO(Oscar): Move Nostr query logic to repository - https://github.com/divinevideo/divine-mobile/issues/571
 
+import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'others_following_event.dart';
