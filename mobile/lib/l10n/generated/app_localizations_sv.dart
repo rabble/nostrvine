@@ -927,6 +927,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Spela upp video';
 
   @override
+  String get videoPlayerMute => 'Stäng av ljudet på videon';
+
+  @override
+  String get videoPlayerUnmute => 'Slå på ljudet för videon';
+
+  @override
   String get videoPlayerEditVideo => 'Redigera video';
 
   @override
@@ -4357,6 +4363,50 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get inboxRemovedConversation => 'Konversation borttagen';
+
+  @override
+  String get inboxEmptyTitle => 'No messages yet';
+
+  @override
+  String get inboxEmptySubtitle => 'That + button won\'t bite.';
+
+  @override
+  String get inboxActionMute => 'Mute conversation';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return 'Report $displayName';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return 'Block $displayName';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return 'Unblock $displayName';
+  }
+
+  @override
+  String get inboxActionRemove => 'Remove conversation';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'Remove conversation?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'This will delete your conversation with $displayName. This action cannot be undone.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Remove';
+
+  @override
+  String get inboxConversationMuted => 'Conversation muted';
+
+  @override
+  String get inboxConversationUnmuted => 'Conversation unmuted';
 
   @override
   String get reportDialogCancel => 'Avbryt';

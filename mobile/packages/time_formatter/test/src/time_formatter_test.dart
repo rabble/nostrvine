@@ -104,11 +104,11 @@ void main() {
     });
 
     group('formatConversationTimestamp', () {
-      test('returns "now" for less than a minute ago', () {
+      test('returns "1m" floor for less than a minute ago', () {
         final ts = unixSecondsAgo(const Duration(seconds: 30));
         expect(
           TimeFormatter.formatConversationTimestamp(ts),
-          equals('now'),
+          equals('1m'),
         );
       });
 

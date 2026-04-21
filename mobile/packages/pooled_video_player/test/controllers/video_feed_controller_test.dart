@@ -154,6 +154,16 @@ void main() {
         controller.dispose();
       });
 
+      test('uses singleton pool when explicit pool is not provided', () {
+        PlayerPool.instanceForTesting = pool;
+        final controller = VideoFeedController(videos: createTestVideos());
+
+        expect(controller.videoCount, equals(5));
+
+        controller.dispose();
+        PlayerPool.instanceForTesting = null;
+      });
+
       test('uses default initialIndex of 0', () {
         final controller = VideoFeedController(
           videos: createTestVideos(),
@@ -343,6 +353,20 @@ void main() {
             ..setActive(active: true);
 
           expect(controller.isActive, isTrue);
+        });
+      });
+
+      group('isMuted', () {
+        test('returns true when initial volume is zero', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+            initialVolume: 0,
+          );
+
+          expect(controller.isMuted, isTrue);
+
+          controller.dispose();
         });
       });
 
@@ -1212,6 +1236,9 @@ void main() {
       });
 
       test('setVolume clamps volume to 0-100 range', () async {
+        controller.setVolume(0.5);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
         clearInteractions(playerSetup.player);
 
         controller.setVolume(1.5);
@@ -1227,6 +1254,20 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 10));
 
         verify(() => playerSetup.player.setRate(1.5)).called(1);
+      });
+
+      test('toggleMuteState mutes and unmutes current player', () async {
+        clearInteractions(playerSetup.player);
+
+        controller.toggleMuteState();
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        verify(() => playerSetup.player.setVolume(0)).called(1);
+
+        clearInteractions(playerSetup.player);
+
+        controller.toggleMuteState();
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        verify(() => playerSetup.player.setVolume(100)).called(1);
       });
 
       test('pause calls player.pause when video is playing', () async {
@@ -4865,11 +4906,11 @@ void main() {
 
     group('_extractCanonicalDivineBlobHash edge cases', () {
       test('handles URLs that trigger FormatException', () async {
-        // A URL with an invalid format to trigger the FormatException catch
+        // Malformed URI (invalid IPv6 host) triggers Uri.parse FormatException.
         final videos = [
           const VideoItem(
             id: 'bad_url_video',
-            url: 'https://media.divine.video/abc/hls/master.m3u8',
+            url: 'https://[::1',
           ),
         ];
 

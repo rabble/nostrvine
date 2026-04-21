@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "Video wird geladen...",
     "videoPlayerPlayVideo": "Video abspielen",
+    "videoPlayerMute": "Video stummschalten",
+    "videoPlayerUnmute": "Video-Ton einschalten",
     "videoPlayerEditVideo": "Video bearbeiten",
     "videoPlayerEditVideoTooltip": "Video bearbeiten",
     "contentWarningLabel": "Inhaltswarnung",

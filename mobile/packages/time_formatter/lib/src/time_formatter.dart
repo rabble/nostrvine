@@ -57,7 +57,7 @@ abstract class TimeFormatter {
 
   /// Formats a Unix timestamp (seconds) for conversation list timestamps.
   ///
-  /// - Under 1 minute: "now"
+  /// - Under 1 minute: "1m" (floor — never "0m" or "now")
   /// - Under 1 hour: relative minutes — "1m", "5m", "59m"
   /// - Same calendar day: relative hours — "1h", "3h", "23h"
   /// - Yesterday: "Yesterday"
@@ -72,7 +72,7 @@ abstract class TimeFormatter {
     ).toLocal();
     final diff = now.difference(date);
 
-    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 1) return '1m';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
 
     final dayDiff = _calendarDayDiff(now, date);

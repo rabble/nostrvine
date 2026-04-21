@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "جاري تحميل الفيديو...",
     "videoPlayerPlayVideo": "تشغيل الفيديو",
+    "videoPlayerMute": "كتم الفيديو",
+    "videoPlayerUnmute": "إلغاء كتم الفيديو",
     "videoPlayerEditVideo": "تعديل الفيديو",
     "videoPlayerEditVideoTooltip": "تعديل الفيديو",
     "contentWarningLabel": "تحذير محتوى",

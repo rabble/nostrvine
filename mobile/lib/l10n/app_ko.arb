@@ -260,6 +260,8 @@
     "exploreLoadNewVideosLabel": "{count, plural, other{새 영상 {count}개 불러오기}}",
     "videoPlayerLoadingVideo": "영상 불러오는 중...",
     "videoPlayerPlayVideo": "영상 재생",
+    "videoPlayerMute": "영상 음소거",
+    "videoPlayerUnmute": "영상 음소거 해제",
     "videoPlayerEditVideo": "영상 편집",
     "videoPlayerEditVideoTooltip": "영상 편집",
     "contentWarningLabel": "콘텐츠 경고",
