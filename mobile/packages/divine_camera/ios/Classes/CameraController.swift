@@ -1381,104 +1381,104 @@ class CameraController: NSObject {
         let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
         let outputURL = outputDir.appendingPathComponent("VID_\(timestamp).mp4")
         self.currentRecordingURL = outputURL
-            
-            // Remove existing file if any
-            try? FileManager.default.removeItem(at: outputURL)
-            
-            // Setup AVAssetWriter
-            do {
-                let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
-                
-                // Get video dimensions from the current format
-                guard let device = self.videoDevice else {
-                    DispatchQueue.main.async { completion("Video device not available") }
-                    return
-                }
-                
-                let dimensions = CMVideoFormatDescriptionGetDimensions(device.activeFormat.formatDescription)
-                // The video connection is set to .portrait orientation, so frames come in portrait
-                // dimensions.width is the longer side (1920), dimensions.height is shorter (1080)
-                // After portrait orientation, the frame is 1080 wide x 1920 tall
-                let videoWidth = Int(dimensions.height)  // 1080 (portrait width)
-                let videoHeight = Int(dimensions.width)  // 1920 (portrait height)
-                
-                // Video input settings
-                let videoSettings: [String: Any] = [
-                    AVVideoCodecKey: AVVideoCodecType.h264,
-                    AVVideoWidthKey: videoWidth,
-                    AVVideoHeightKey: videoHeight,
-                    AVVideoCompressionPropertiesKey: [
-                        AVVideoAverageBitRateKey: 6000000,
-                        AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel
-                    ]
-                ]
-                
-                let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
-                videoInput.expectsMediaDataInRealTime = true
-                
-                // Create pixel buffer adaptor - use the actual frame dimensions (before portrait rotation)
-                let sourcePixelBufferAttributes: [String: Any] = [
-                    kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-                    kCVPixelBufferWidthKey as String: dimensions.height,  // Portrait width
-                    kCVPixelBufferHeightKey as String: dimensions.width   // Portrait height
-                ]
-                let adaptor = AVAssetWriterInputPixelBufferAdaptor(
-                    assetWriterInput: videoInput,
-                    sourcePixelBufferAttributes: sourcePixelBufferAttributes
-                )
-                
-                // Audio input settings
-                let audioSettings: [String: Any] = [
-                    AVFormatIDKey: kAudioFormatMPEG4AAC,
-                    AVSampleRateKey: 44100.0,
-                    AVNumberOfChannelsKey: 1,
-                    AVEncoderBitRateKey: 64000
-                ]
-                let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
-                audioInput.expectsMediaDataInRealTime = true
-                
-                if writer.canAdd(videoInput) {
-                    writer.add(videoInput)
-                }
-                if writer.canAdd(audioInput) {
-                    writer.add(audioInput)
-                }
-                
-                self.assetWriter = writer
-                self.videoWriterInput = videoInput
-                self.audioWriterInput = audioInput
-                self.pixelBufferAdaptor = adaptor
-                
-                // Start writing
-                writer.startWriting()
-                
-                self.isRecording = true
-                self.isWriterSessionStarted = false  // Will be set to true when first frame is received
-                self.recordingStartTime = Date()
-                
-                // Check and enable auto-flash if needed
-                self.checkAndEnableAutoFlash()
-                
-                print("DivineCamera: Recording started to \(outputURL.path)")
-                
-                // Schedule max duration timer if specified
-                if let maxMs = self.maxDurationMs, maxMs > 0 {
-                    DispatchQueue.main.async { [weak self] in
-                        self?.maxDurationTimer = Timer.scheduledTimer(withTimeInterval: Double(maxMs) / 1000.0, repeats: false) { [weak self] _ in
-                            self?.autoStopRecording()
-                        }
+
+        // Remove existing file if any
+        try? FileManager.default.removeItem(at: outputURL)
+
+        // Setup AVAssetWriter
+        do {
+            let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
+
+            // Get video dimensions from the current format
+            guard let device = self.videoDevice else {
+                DispatchQueue.main.async { completion("Video device not available") }
+                return
+            }
+
+            let dimensions = CMVideoFormatDescriptionGetDimensions(device.activeFormat.formatDescription)
+            // The video connection is set to .portrait orientation, so frames come in portrait
+            // dimensions.width is the longer side (1920), dimensions.height is shorter (1080)
+            // After portrait orientation, the frame is 1080 wide x 1920 tall
+            let videoWidth = Int(dimensions.height)  // 1080 (portrait width)
+            let videoHeight = Int(dimensions.width)  // 1920 (portrait height)
+
+            // Video input settings
+            let videoSettings: [String: Any] = [
+                AVVideoCodecKey: AVVideoCodecType.h264,
+                AVVideoWidthKey: videoWidth,
+                AVVideoHeightKey: videoHeight,
+                AVVideoCompressionPropertiesKey: [
+                    AVVideoAverageBitRateKey: 6000000,
+                    AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
+                ],
+            ]
+
+            let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
+            videoInput.expectsMediaDataInRealTime = true
+
+            // Create pixel buffer adaptor - use the actual frame dimensions (before portrait rotation)
+            let sourcePixelBufferAttributes: [String: Any] = [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+                kCVPixelBufferWidthKey as String: dimensions.height,  // Portrait width
+                kCVPixelBufferHeightKey as String: dimensions.width,  // Portrait height
+            ]
+            let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+                assetWriterInput: videoInput,
+                sourcePixelBufferAttributes: sourcePixelBufferAttributes
+            )
+
+            // Audio input settings
+            let audioSettings: [String: Any] = [
+                AVFormatIDKey: kAudioFormatMPEG4AAC,
+                AVSampleRateKey: 44100.0,
+                AVNumberOfChannelsKey: 1,
+                AVEncoderBitRateKey: 64000,
+            ]
+            let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
+            audioInput.expectsMediaDataInRealTime = true
+
+            if writer.canAdd(videoInput) {
+                writer.add(videoInput)
+            }
+            if writer.canAdd(audioInput) {
+                writer.add(audioInput)
+            }
+
+            self.assetWriter = writer
+            self.videoWriterInput = videoInput
+            self.audioWriterInput = audioInput
+            self.pixelBufferAdaptor = adaptor
+
+            // Start writing
+            writer.startWriting()
+
+            self.isRecording = true
+            self.isWriterSessionStarted = false  // Will be set to true when first frame is received
+            self.recordingStartTime = Date()
+
+            // Check and enable auto-flash if needed
+            self.checkAndEnableAutoFlash()
+
+            print("DivineCamera: Recording started to \(outputURL.path)")
+
+            // Schedule max duration timer if specified
+            if let maxMs = self.maxDurationMs, maxMs > 0 {
+                DispatchQueue.main.async { [weak self] in
+                    self?.maxDurationTimer = Timer.scheduledTimer(withTimeInterval: Double(maxMs) / 1000.0, repeats: false) { [weak self] _ in
+                        self?.autoStopRecording()
                     }
                 }
-                
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-                
-            } catch {
-                DispatchQueue.main.async {
-                    completion("Failed to create asset writer: \(error.localizedDescription)")
-                }
             }
+
+            DispatchQueue.main.async {
+                completion(nil)
+            }
+
+        } catch {
+            DispatchQueue.main.async {
+                completion("Failed to create asset writer: \(error.localizedDescription)")
+            }
+        }
     }
     
     /// Automatically stops recording when max duration is reached.

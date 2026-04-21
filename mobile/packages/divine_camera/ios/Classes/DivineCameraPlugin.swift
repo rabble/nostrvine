@@ -61,9 +61,9 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
                 // Do NOT call setActive(true) — that would steal audio focus
                 // from anything currently playing. setCategory alone triggers
                 // the dlopen.
-                NSLog("✅ DivineCameraPlugin: AVAudioSession category configured")
+                print("DivineCamera: AVAudioSession category configured")
             } catch {
-                NSLog("⚠️ DivineCameraPlugin: AVAudioSession config failed: \(error.localizedDescription)")
+                print("DivineCamera: AVAudioSession config failed: \(error.localizedDescription)")
             }
             _ = AVCaptureDevice.default(for: .audio)
 
@@ -88,9 +88,9 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
                 writer.startWriting()
                 writer.cancelWriting()
                 try? FileManager.default.removeItem(at: tempURL)
-                NSLog("✅ DivineCameraPlugin: VideoToolbox pre-warmed via AVAssetWriter")
+                print("DivineCamera: VideoToolbox pre-warmed via AVAssetWriter")
             } catch {
-                NSLog("⚠️ DivineCameraPlugin: VideoToolbox pre-warm failed: \(error.localizedDescription)")
+                print("DivineCamera: VideoToolbox pre-warm failed: \(error.localizedDescription)")
             }
         }
     }
