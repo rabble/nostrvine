@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:db_client/db_client.dart' hide Filter;
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -843,23 +844,25 @@ void main() {
         expect(filters.first.p, contains(testTargetPubkey));
       });
 
-      test(
-        'returns empty list on timeout',
-        () async {
+      test('returns empty list on timeout', () {
+        fakeAsync((async) {
           // Simulate a slow query that exceeds the repository's internal
-          // timeout. The delay must be longer than the repo timeout (5s) but
-          // shorter than the test timeout so cleanup completes cleanly.
+          // 8-second timeout (_fetchFollowersTimeout).
           when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
-            await Future<void>.delayed(const Duration(seconds: 7));
+            await Future<void>.delayed(const Duration(seconds: 15));
             return [];
           });
 
-          final followers = await repository.getFollowers(testTargetPubkey);
+          List<String>? followers;
+          repository.getFollowers(testTargetPubkey).then((r) => followers = r);
+
+          // Advance past the 8s _fetchFollowersTimeout.
+          async.elapse(const Duration(seconds: 9));
+          async.flushMicrotasks();
 
           expect(followers, isEmpty);
-        },
-        timeout: const Timeout(Duration(seconds: 15)),
-      );
+        });
+      });
     });
 
     group('getMyFollowers', () {
