@@ -29,7 +29,7 @@ void main() {
       expect(service.totalBlockedCount, equals(0));
     });
 
-    test('should block users at runtime', () {
+    test('should block users at runtime', () async {
       const testPubkey1 = 'pubkey_to_block_1';
       const testPubkey2 = 'pubkey_to_block_2';
 
@@ -39,47 +39,47 @@ void main() {
       expect(service.isBlocked(testPubkey2), isFalse);
 
       // Block users at runtime
-      service.blockUser(testPubkey1);
-      service.blockUser(testPubkey2);
+      await service.blockUser(testPubkey1);
+      await service.blockUser(testPubkey2);
 
       expect(service.totalBlockedCount, equals(2));
       expect(service.isBlocked(testPubkey1), isTrue);
       expect(service.isBlocked(testPubkey2), isTrue);
     });
 
-    test('should filter blocked content from feeds', () {
+    test('should filter blocked content from feeds', () async {
       const blockedPubkey = 'blocked_user_pubkey';
       const allowedPubkey = 'allowed_user_pubkey';
 
       // Block a user first
-      service.blockUser(blockedPubkey);
+      await service.blockUser(blockedPubkey);
 
       expect(service.shouldFilterFromFeeds(blockedPubkey), isTrue);
       expect(service.shouldFilterFromFeeds(allowedPubkey), isFalse);
     });
 
-    test('should allow runtime blocking and unblocking', () {
+    test('should allow runtime blocking and unblocking', () async {
       const testPubkey = 'test_pubkey_for_runtime_blocking';
 
       // Initially not blocked
       expect(service.isBlocked(testPubkey), isFalse);
 
       // Block user
-      service.blockUser(testPubkey);
+      await service.blockUser(testPubkey);
       expect(service.isBlocked(testPubkey), isTrue);
 
       // Unblock user
-      service.unblockUser(testPubkey);
+      await service.unblockUser(testPubkey);
       expect(service.isBlocked(testPubkey), isFalse);
     });
 
-    test('should filter content list correctly', () {
+    test('should filter content list correctly', () async {
       const blockedPubkey1 = 'blocked_pubkey_1';
       const blockedPubkey2 = 'blocked_pubkey_2';
 
       // Block users first
-      service.blockUser(blockedPubkey1);
-      service.blockUser(blockedPubkey2);
+      await service.blockUser(blockedPubkey1);
+      await service.blockUser(blockedPubkey2);
 
       final testItems = [
         {'pubkey': blockedPubkey1, 'content': 'blocked'},
@@ -96,12 +96,12 @@ void main() {
       expect(filtered.first['content'], equals('allowed'));
     });
 
-    test('filterBlockedConversations filters blocked participants', () {
+    test('filterBlockedConversations filters blocked participants', () async {
       const userPubkey = 'current_user';
       const blockedPubkey = 'blocked_user';
       const allowedPubkey = 'allowed_user';
 
-      service.blockUser(blockedPubkey);
+      await service.blockUser(blockedPubkey);
 
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final conversations = [
@@ -202,30 +202,33 @@ void main() {
     });
 
     group('self-block prevention', () {
-      test('blockUser() ignores when pubkey matches ourPubkey parameter', () {
-        const ourPubkey = 'test_our_pubkey';
+      test(
+        'blockUser() ignores when pubkey matches ourPubkey parameter',
+        () async {
+          const ourPubkey = 'test_our_pubkey';
 
-        service.blockUser(ourPubkey, ourPubkey: ourPubkey);
+          await service.blockUser(ourPubkey, ourPubkey: ourPubkey);
 
-        expect(service.isBlocked(ourPubkey), isFalse);
-        expect(service.totalBlockedCount, equals(0));
-      });
+          expect(service.isBlocked(ourPubkey), isFalse);
+          expect(service.totalBlockedCount, equals(0));
+        },
+      );
 
-      test('blockUser() allows blocking other users', () {
+      test('blockUser() allows blocking other users', () async {
         const ourPubkey = 'our_pubkey';
         const otherPubkey = 'other_pubkey';
 
-        service.blockUser(otherPubkey, ourPubkey: ourPubkey);
+        await service.blockUser(otherPubkey, ourPubkey: ourPubkey);
 
         expect(service.isBlocked(otherPubkey), isTrue);
         expect(service.totalBlockedCount, equals(1));
       });
 
-      test('blockUser() allows blocking when ourPubkey is null', () {
+      test('blockUser() allows blocking when ourPubkey is null', () async {
         const otherPubkey = 'other_pubkey';
 
         // No ourPubkey provided - should allow blocking
-        service.blockUser(otherPubkey);
+        await service.blockUser(otherPubkey);
 
         expect(service.isBlocked(otherPubkey), isTrue);
         expect(service.totalBlockedCount, equals(1));
@@ -261,7 +264,7 @@ void main() {
         expect(capturedFilters, isNotNull);
         expect(capturedFilters!.length, equals(1));
 
-        final filter = capturedFilters![0];
+        final filter = capturedFilters![0] as Filter;
         expect(filter.kinds, contains(10000));
         expect(filter.p, contains(ourPubkey));
       },
@@ -291,18 +294,19 @@ void main() {
             '0000000000000000000000000000000000000000000000000000000000000002';
 
         // Create a kind 10000 event with our pubkey in the 'p' tags
-        final event = Event(
-          muterPubkey,
-          10000,
-          [
-            ['p', ourPubkey],
-            ['p', 'some_other_pubkey'],
-          ],
-          '',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        );
-        event.id = 'event-id';
-        event.sig = 'signature';
+        final event =
+            Event(
+                muterPubkey,
+                10000,
+                [
+                  ['p', ourPubkey],
+                  ['p', 'some_other_pubkey'],
+                ],
+                '',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'event-id'
+              ..sig = 'signature';
 
         when(
           () => mockNostrService.subscribe(any()),
@@ -327,30 +331,32 @@ void main() {
             '0000000000000000000000000000000000000000000000000000000000000002';
 
         // First event: muter adds us to their list
-        final muteEvent = Event(
-          muterPubkey,
-          10000,
-          [
-            ['p', ourPubkey],
-          ],
-          '',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        );
-        muteEvent.id = 'event-id-1';
-        muteEvent.sig = 'signature';
+        final muteEvent =
+            Event(
+                muterPubkey,
+                10000,
+                [
+                  ['p', ourPubkey],
+                ],
+                '',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'event-id-1'
+              ..sig = 'signature';
 
         // Second event: muter removes us from their list (replaceable event)
-        final unmuteEvent = Event(
-          muterPubkey,
-          10000,
-          [
-            ['p', 'some_other_pubkey'], // Our pubkey is gone
-          ],
-          '',
-          createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
-        );
-        unmuteEvent.id = 'event-id-2';
-        unmuteEvent.sig = 'signature';
+        final unmuteEvent =
+            Event(
+                muterPubkey,
+                10000,
+                [
+                  ['p', 'some_other_pubkey'], // Our pubkey is gone
+                ],
+                '',
+                createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
+              )
+              ..id = 'event-id-2'
+              ..sig = 'signature';
 
         // Create a stream controller to manually emit events
         final controller = StreamController<Event>();
@@ -383,17 +389,18 @@ void main() {
       const randomPubkey =
           '0000000000000000000000000000000000000000000000000000000000000003';
 
-      final event = Event(
-        muterPubkey,
-        10000,
-        [
-          ['p', ourPubkey],
-        ],
-        '',
-        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      );
-      event.id = 'event-id';
-      event.sig = 'signature';
+      final event =
+          Event(
+              muterPubkey,
+              10000,
+              [
+                ['p', ourPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            )
+            ..id = 'event-id'
+            ..sig = 'signature';
 
       when(
         () => mockNostrService.subscribe(any()),
@@ -421,17 +428,18 @@ void main() {
         const blockedByUsPubkey =
             '0000000000000000000000000000000000000000000000000000000000000003';
 
-        final event = Event(
-          muterPubkey,
-          10000,
-          [
-            ['p', ourPubkey],
-          ],
-          '',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        );
-        event.id = 'event-id';
-        event.sig = 'signature';
+        final event =
+            Event(
+                muterPubkey,
+                10000,
+                [
+                  ['p', ourPubkey],
+                ],
+                '',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'event-id'
+              ..sig = 'signature';
 
         when(
           () => mockNostrService.subscribe(any()),
@@ -524,18 +532,19 @@ void main() {
         var changeCount = 0;
         service = ContentBlocklistService(onChanged: () => changeCount++);
 
-        final event = Event(
-          blockerPubkey,
-          30000,
-          [
-            ['d', 'block'],
-            ['p', ourPubkey],
-          ],
-          'Block list',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        );
-        event.id = 'block-event-id';
-        event.sig = 'signature';
+        final event =
+            Event(
+                blockerPubkey,
+                30000,
+                [
+                  ['d', 'block'],
+                  ['p', ourPubkey],
+                ],
+                'Block list',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'block-event-id'
+              ..sig = 'signature';
 
         when(
           () => mockNostrService.subscribe(
@@ -558,7 +567,8 @@ void main() {
     );
 
     test(
-      'handleBlockListEvent removes blocker when updated event no longer contains our pubkey',
+      'handleBlockListEvent removes blocker when updated event no longer '
+      'contains our pubkey',
       () async {
         const ourPubkey =
             '0000000000000000000000000000000000000000000000000000000000000001';
@@ -568,31 +578,33 @@ void main() {
         var changeCount = 0;
         service = ContentBlocklistService(onChanged: () => changeCount++);
 
-        final blockEvent = Event(
-          blockerPubkey,
-          30000,
-          [
-            ['d', 'block'],
-            ['p', ourPubkey],
-          ],
-          'Block list',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        );
-        blockEvent.id = 'block-event-id';
-        blockEvent.sig = 'signature';
+        final blockEvent =
+            Event(
+                blockerPubkey,
+                30000,
+                [
+                  ['d', 'block'],
+                  ['p', ourPubkey],
+                ],
+                'Block list',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'block-event-id'
+              ..sig = 'signature';
 
-        final unblockEvent = Event(
-          blockerPubkey,
-          30000,
-          [
-            ['d', 'block'],
-            ['p', 'some_other_pubkey'],
-          ],
-          'Block list',
-          createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
-        );
-        unblockEvent.id = 'unblock-event-id';
-        unblockEvent.sig = 'signature';
+        final unblockEvent =
+            Event(
+                blockerPubkey,
+                30000,
+                [
+                  ['d', 'block'],
+                  ['p', 'some_other_pubkey'],
+                ],
+                'Block list',
+                createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
+              )
+              ..id = 'unblock-event-id'
+              ..sig = 'signature';
 
         final controller = StreamController<Event>();
 
@@ -636,20 +648,19 @@ void main() {
         '0000000000000000000000000000000000000000000000000000000000000003';
 
     Event makeOwnBlockListEvent(List<String> blockedPubkeys) {
-      final event = Event(
-        ourPubkey,
-        30000,
-        [
-          const ['d', 'block'],
-          const ['title', 'Block List'],
-          for (final pk in blockedPubkeys) ['p', pk],
-        ],
-        'Block list',
-        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      );
-      event.id = 'own-block-event-${blockedPubkeys.length}';
-      event.sig = 'signature';
-      return event;
+      return Event(
+          ourPubkey,
+          30000,
+          [
+            const ['d', 'block'],
+            const ['title', 'Block List'],
+            for (final pk in blockedPubkeys) ['p', pk],
+          ],
+          'Block list',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        )
+        ..id = 'own-block-event-${blockedPubkeys.length}'
+        ..sig = 'signature';
     }
 
     setUp(() {
@@ -786,18 +797,19 @@ void main() {
         expect(changeCount, equals(1));
 
         // Another user blocks us
-        final othersEvent = Event(
-          blockedPubkey2,
-          30000,
-          [
-            const ['d', 'block'],
-            ['p', ourPubkey],
-          ],
-          'Block list',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        );
-        othersEvent.id = 'others-block-event';
-        othersEvent.sig = 'signature';
+        final othersEvent =
+            Event(
+                blockedPubkey2,
+                30000,
+                [
+                  const ['d', 'block'],
+                  ['p', ourPubkey],
+                ],
+                'Block list',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'others-block-event'
+              ..sig = 'signature';
 
         controller.add(othersEvent);
         await Future<void>.delayed(const Duration(milliseconds: 50));
