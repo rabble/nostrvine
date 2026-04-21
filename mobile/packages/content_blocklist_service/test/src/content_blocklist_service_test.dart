@@ -311,7 +311,7 @@ void main() {
         await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
 
         // Give the stream time to emit
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         // Verify muter is now blocked
         expect(service.shouldFilterFromFeeds(muterPubkey), isTrue);
@@ -363,12 +363,12 @@ void main() {
 
         // First event - adds to blocklist
         controller.add(muteEvent);
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         expect(service.shouldFilterFromFeeds(muterPubkey), isTrue);
 
         // Second event - removes from blocklist
         controller.add(unmuteEvent);
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         expect(service.shouldFilterFromFeeds(muterPubkey), isFalse);
 
         await controller.close();
@@ -402,7 +402,7 @@ void main() {
       await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
 
       // Give the stream time to emit
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Mutual muter should be filtered
       expect(service.shouldFilterFromFeeds(muterPubkey), isTrue);
@@ -440,7 +440,7 @@ void main() {
         await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
 
         // Give the stream time to emit
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         // Block a user ourselves
         await service.blockUser(blockedByUsPubkey);
@@ -549,7 +549,7 @@ void main() {
           ourPubkey,
         );
 
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(service.hasBlockedUs(blockerPubkey), isTrue);
         expect(service.shouldFilterFromFeeds(blockerPubkey), isTrue);
@@ -609,11 +609,11 @@ void main() {
         );
 
         controller.add(blockEvent);
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         expect(service.hasBlockedUs(blockerPubkey), isTrue);
 
         controller.add(unblockEvent);
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         expect(service.hasBlockedUs(blockerPubkey), isFalse);
         expect(changeCount, equals(2));
 
@@ -681,7 +681,7 @@ void main() {
         );
 
         controller.add(makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]));
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(service.isBlocked(blockedPubkey1), isTrue);
         expect(service.isBlocked(blockedPubkey2), isTrue);
@@ -711,7 +711,7 @@ void main() {
         controller.add(
           makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]),
         );
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(service.isBlocked(blockedPubkey1), isTrue);
         expect(service.isBlocked(blockedPubkey2), isTrue);
@@ -739,7 +739,7 @@ void main() {
         controller.add(
           makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]),
         );
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(changeCount, equals(0));
         expect(service.totalBlockedCount, equals(2));
@@ -758,7 +758,7 @@ void main() {
         );
 
         controller.add(makeOwnBlockListEvent([ourPubkey, blockedPubkey1]));
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(service.isBlocked(blockedPubkey1), isTrue);
         expect(service.isBlocked(ourPubkey), isFalse);
@@ -780,7 +780,7 @@ void main() {
 
         // Our own block list arrives (restoration)
         controller.add(makeOwnBlockListEvent([blockedPubkey1]));
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(service.isBlocked(blockedPubkey1), isTrue);
         expect(changeCount, equals(1));
@@ -800,7 +800,7 @@ void main() {
         othersEvent.sig = 'signature';
 
         controller.add(othersEvent);
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(service.hasBlockedUs(blockedPubkey2), isTrue);
         expect(changeCount, equals(2));
