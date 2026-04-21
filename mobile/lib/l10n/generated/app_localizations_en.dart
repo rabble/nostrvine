@@ -4661,6 +4661,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchFindCuratedVideoLists => 'Find curated video lists';
 
   @override
+  String get searchEnterQuery => 'Enter a search query';
+
+  @override
+  String get searchDiscoverSomethingInteresting =>
+      'Discover something interesting';
+
+  @override
   String get cameraAgeRestriction =>
       'You must be 16 or older to create content';
 

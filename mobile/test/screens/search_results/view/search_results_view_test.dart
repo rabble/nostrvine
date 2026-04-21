@@ -44,7 +44,14 @@ void main() {
       mockHashtagBloc = _MockHashtagSearchBloc();
       mockListBloc = _MockListSearchBloc();
 
-      when(() => mockVideoBloc.state).thenReturn(const VideoSearchState());
+      // Default to a non-idle video state so the filter switch is exercised.
+      // Individual idle-state tests override this to `initial`.
+      when(() => mockVideoBloc.state).thenReturn(
+        const VideoSearchState(
+          status: VideoSearchStatus.success,
+          query: 'test',
+        ),
+      );
       when(() => mockUserBloc.state).thenReturn(const UserSearchState());
       when(() => mockHashtagBloc.state).thenReturn(const HashtagSearchState());
       when(() => mockListBloc.state).thenReturn(const ListSearchState());
@@ -77,34 +84,30 @@ void main() {
       );
     }
 
+    // Each of these tests exercises filter routing only. Sections render
+    // zero-extent content for the mocked BLoC states, so the finders use
+    // `skipOffstage: false` to assert widget presence in the tree rather
+    // than visible rendering.
     testWidgets('renders all sections when filter is all', (tester) async {
       when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
       await tester.pumpWidget(buildSubject());
 
-      final scrollable = find.byType(Scrollable).first;
-
-      expect(find.byType(PeopleSection), findsOneWidget);
-
-      await tester.scrollUntilVisible(
-        find.byType(ListsSection),
-        200,
-        scrollable: scrollable,
+      expect(
+        find.byType(PeopleSection, skipOffstage: false),
+        findsOneWidget,
       );
-      expect(find.byType(ListsSection), findsOneWidget);
-
-      await tester.scrollUntilVisible(
-        find.byType(TagsSection),
-        200,
-        scrollable: scrollable,
+      expect(
+        find.byType(ListsSection, skipOffstage: false),
+        findsOneWidget,
       );
-      expect(find.byType(TagsSection), findsOneWidget);
-
-      await tester.scrollUntilVisible(
-        find.byType(VideosSection),
-        200,
-        scrollable: scrollable,
+      expect(
+        find.byType(TagsSection, skipOffstage: false),
+        findsOneWidget,
       );
-      expect(find.byType(VideosSection), findsOneWidget);
+      expect(
+        find.byType(VideosSection, skipOffstage: false),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders only $PeopleSection when filter is people', (
@@ -113,10 +116,13 @@ void main() {
       when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.people);
       await tester.pumpWidget(buildSubject());
 
-      expect(find.byType(PeopleSection), findsOneWidget);
-      expect(find.byType(TagsSection), findsNothing);
-      expect(find.byType(ListsSection), findsNothing);
-      expect(find.byType(VideosSection), findsNothing);
+      expect(
+        find.byType(PeopleSection, skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(find.byType(TagsSection, skipOffstage: false), findsNothing);
+      expect(find.byType(ListsSection, skipOffstage: false), findsNothing);
+      expect(find.byType(VideosSection, skipOffstage: false), findsNothing);
     });
 
     testWidgets('renders only $TagsSection when filter is tags', (
@@ -125,10 +131,10 @@ void main() {
       when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.tags);
       await tester.pumpWidget(buildSubject());
 
-      expect(find.byType(PeopleSection), findsNothing);
-      expect(find.byType(TagsSection), findsOneWidget);
-      expect(find.byType(ListsSection), findsNothing);
-      expect(find.byType(VideosSection), findsNothing);
+      expect(find.byType(PeopleSection, skipOffstage: false), findsNothing);
+      expect(find.byType(TagsSection, skipOffstage: false), findsOneWidget);
+      expect(find.byType(ListsSection, skipOffstage: false), findsNothing);
+      expect(find.byType(VideosSection, skipOffstage: false), findsNothing);
     });
 
     testWidgets('renders only $VideosSection when filter is videos', (
@@ -137,10 +143,13 @@ void main() {
       when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.videos);
       await tester.pumpWidget(buildSubject());
 
-      expect(find.byType(PeopleSection), findsNothing);
-      expect(find.byType(TagsSection), findsNothing);
-      expect(find.byType(ListsSection), findsNothing);
-      expect(find.byType(VideosSection), findsOneWidget);
+      expect(find.byType(PeopleSection, skipOffstage: false), findsNothing);
+      expect(find.byType(TagsSection, skipOffstage: false), findsNothing);
+      expect(find.byType(ListsSection, skipOffstage: false), findsNothing);
+      expect(
+        find.byType(VideosSection, skipOffstage: false),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders only $ListsSection when filter is lists', (
@@ -149,10 +158,13 @@ void main() {
       when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.lists);
       await tester.pumpWidget(buildSubject());
 
-      expect(find.byType(PeopleSection), findsNothing);
-      expect(find.byType(TagsSection), findsNothing);
-      expect(find.byType(ListsSection), findsOneWidget);
-      expect(find.byType(VideosSection), findsNothing);
+      expect(find.byType(PeopleSection, skipOffstage: false), findsNothing);
+      expect(find.byType(TagsSection, skipOffstage: false), findsNothing);
+      expect(
+        find.byType(ListsSection, skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(find.byType(VideosSection, skipOffstage: false), findsNothing);
     });
 
     testWidgets('renders $ColoredBox with background color', (tester) async {
@@ -164,6 +176,40 @@ void main() {
           (w) => w is ColoredBox && w.color == VineTheme.backgroundColor,
         ),
         findsOneWidget,
+      );
+    });
+
+    group('idle state', () {
+      setUp(() {
+        when(() => mockVideoBloc.state).thenReturn(const VideoSearchState());
+      });
+
+      testWidgets(
+        'renders $SearchSectionInitialState when video search is idle',
+        (tester) async {
+          when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(SearchSectionInitialState), findsOneWidget);
+          expect(find.text('Enter a search query'), findsOneWidget);
+          expect(find.text('Discover something interesting'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hides all sections when idle regardless of selected filter',
+        (tester) async {
+          when(
+            () => mockFilterCubit.state,
+          ).thenReturn(SearchResultsFilter.videos);
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(VideosSection), findsNothing);
+          expect(find.byType(PeopleSection), findsNothing);
+          expect(find.byType(TagsSection), findsNothing);
+          expect(find.byType(ListsSection), findsNothing);
+          expect(find.byType(SearchSectionInitialState), findsOneWidget);
+        },
       );
     });
   });

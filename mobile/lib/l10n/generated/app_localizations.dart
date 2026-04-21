@@ -8264,6 +8264,18 @@ abstract class AppLocalizations {
   /// **'Find curated video lists'**
   String get searchFindCuratedVideoLists;
 
+  /// Title of the empty-query placeholder shown on the search results screen before the user has entered a query.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a search query'**
+  String get searchEnterQuery;
+
+  /// Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover something interesting'**
+  String get searchDiscoverSomethingInteresting;
+
   /// No description provided for @cameraAgeRestriction.
   ///
   /// In en, this message translates to:

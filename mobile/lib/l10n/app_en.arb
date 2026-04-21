@@ -2392,6 +2392,14 @@
   "searchTryAgain": "Try again",
   "searchForLists": "Search for lists",
   "searchFindCuratedVideoLists": "Find curated video lists",
+  "searchEnterQuery": "Enter a search query",
+  "@searchEnterQuery": {
+    "description": "Title of the empty-query placeholder shown on the search results screen before the user has entered a query."
+  },
+  "searchDiscoverSomethingInteresting": "Discover something interesting",
+  "@searchDiscoverSomethingInteresting": {
+    "description": "Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query."
+  },
 
   "contentWarningViewAnyway": "View Anyway",
 
