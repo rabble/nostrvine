@@ -4643,11 +4643,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get searchFindCuratedVideoLists => 'Temukan daftar video pilihan';
 
   @override
-  String get searchEnterQuery => 'Enter a search query';
+  String get searchEnterQuery => 'Masukkan kata pencarian';
 
   @override
   String get searchDiscoverSomethingInteresting =>
-      'Discover something interesting';
+      'Temukan sesuatu yang menarik';
 
   @override
   String get cameraAgeRestriction =>

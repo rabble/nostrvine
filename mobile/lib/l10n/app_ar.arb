@@ -2365,6 +2365,8 @@
     "reportDialogReport": "إبلاغ",
     "routerInvalidCreator": "منشئ غير صالح",
     "routerInvalidHashtagRoute": "مسار هاشتاغ غير صالح",
+    "searchDiscoverSomethingInteresting": "اكتشف شيئًا مثيرًا للاهتمام",
+    "searchEnterQuery": "أدخل استعلام البحث",
     "searchFindCuratedVideoLists": "ابحث عن قوائم فيديو مختارة",
     "searchForLists": "البحث عن قوائم",
     "searchSomethingWentWrong": "حدث خطأ ما",

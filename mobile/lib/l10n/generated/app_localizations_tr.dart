@@ -4649,11 +4649,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get searchFindCuratedVideoLists => 'Küratörlü video listelerini bul';
 
   @override
-  String get searchEnterQuery => 'Enter a search query';
+  String get searchEnterQuery => 'Bir arama terimi girin';
 
   @override
-  String get searchDiscoverSomethingInteresting =>
-      'Discover something interesting';
+  String get searchDiscoverSomethingInteresting => 'İlginç bir şey keşfet';
 
   @override
   String get cameraAgeRestriction =>

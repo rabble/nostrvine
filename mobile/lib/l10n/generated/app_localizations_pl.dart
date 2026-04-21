@@ -4806,11 +4806,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Znajdź wyselekcjonowane listy filmów';
 
   @override
-  String get searchEnterQuery => 'Enter a search query';
+  String get searchEnterQuery => 'Wpisz zapytanie';
 
   @override
-  String get searchDiscoverSomethingInteresting =>
-      'Discover something interesting';
+  String get searchDiscoverSomethingInteresting => 'Odkryj coś ciekawego';
 
   @override
   String get cameraAgeRestriction =>

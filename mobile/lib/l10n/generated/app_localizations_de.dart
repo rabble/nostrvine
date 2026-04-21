@@ -4724,11 +4724,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchFindCuratedVideoLists => 'Kuratierte Videolisten finden';
 
   @override
-  String get searchEnterQuery => 'Enter a search query';
+  String get searchEnterQuery => 'Suchbegriff eingeben';
 
   @override
   String get searchDiscoverSomethingInteresting =>
-      'Discover something interesting';
+      'Entdecke etwas Interessantes';
 
   @override
   String get cameraAgeRestriction =>

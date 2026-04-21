@@ -1675,6 +1675,8 @@
     "reportDialogReport": "신고",
     "routerInvalidCreator": "유효하지 않은 크리에이터",
     "routerInvalidHashtagRoute": "유효하지 않은 해시태그 경로",
+    "searchDiscoverSomethingInteresting": "흥미로운 것을 발견해보세요",
+    "searchEnterQuery": "검색어를 입력하세요",
     "searchFindCuratedVideoLists": "큐레이션된 동영상 목록 찾기",
     "searchForLists": "목록 검색",
     "searchSomethingWentWrong": "문제가 발생했어요",

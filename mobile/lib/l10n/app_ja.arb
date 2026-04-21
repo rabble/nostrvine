@@ -2365,6 +2365,8 @@
     "reportDialogReport": "報告",
     "routerInvalidCreator": "無効なクリエイター",
     "routerInvalidHashtagRoute": "無効なハッシュタグルート",
+    "searchDiscoverSomethingInteresting": "面白いものを見つけよう",
+    "searchEnterQuery": "検索キーワードを入力",
     "searchFindCuratedVideoLists": "キュレーションされた動画リストを探そう",
     "searchForLists": "リストを検索",
     "searchSomethingWentWrong": "なんかうまくいかなかった",

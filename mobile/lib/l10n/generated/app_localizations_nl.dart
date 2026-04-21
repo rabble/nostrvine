@@ -4684,11 +4684,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get searchFindCuratedVideoLists => 'Vind samengestelde videolijsten';
 
   @override
-  String get searchEnterQuery => 'Enter a search query';
+  String get searchEnterQuery => 'Voer een zoekopdracht in';
 
   @override
-  String get searchDiscoverSomethingInteresting =>
-      'Discover something interesting';
+  String get searchDiscoverSomethingInteresting => 'Ontdek iets interessants';
 
   @override
   String get cameraAgeRestriction =>

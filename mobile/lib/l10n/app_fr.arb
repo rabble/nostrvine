@@ -2365,6 +2365,8 @@
     "reportDialogReport": "Signaler",
     "routerInvalidCreator": "Créateur non valide",
     "routerInvalidHashtagRoute": "Route de hashtag non valide",
+    "searchDiscoverSomethingInteresting": "Découvre quelque chose d'intéressant",
+    "searchEnterQuery": "Saisis une recherche",
     "searchFindCuratedVideoLists": "Trouve des listes de vidéos sélectionnées",
     "searchForLists": "Rechercher des listes",
     "searchSomethingWentWrong": "Quelque chose s'est mal passé",

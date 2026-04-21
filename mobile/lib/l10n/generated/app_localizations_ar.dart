@@ -4622,11 +4622,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get searchFindCuratedVideoLists => 'ابحث عن قوائم فيديو مختارة';
 
   @override
-  String get searchEnterQuery => 'Enter a search query';
+  String get searchEnterQuery => 'أدخل استعلام البحث';
 
   @override
   String get searchDiscoverSomethingInteresting =>
-      'Discover something interesting';
+      'اكتشف شيئًا مثيرًا للاهتمام';
 
   @override
   String get cameraAgeRestriction =>

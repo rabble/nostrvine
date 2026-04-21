@@ -4730,11 +4730,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Trouve des listes de vidéos sélectionnées';
 
   @override
-  String get searchEnterQuery => 'Enter a search query';
+  String get searchEnterQuery => 'Saisis une recherche';
 
   @override
   String get searchDiscoverSomethingInteresting =>
-      'Discover something interesting';
+      'Découvre quelque chose d\'intéressant';
 
   @override
   String get cameraAgeRestriction =>

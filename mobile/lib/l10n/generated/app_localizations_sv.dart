@@ -4658,11 +4658,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get searchFindCuratedVideoLists => 'Hitta kurerade videolistor';
 
   @override
-  String get searchEnterQuery => 'Enter a search query';
+  String get searchEnterQuery => 'Skriv en sökterm';
 
   @override
-  String get searchDiscoverSomethingInteresting =>
-      'Discover something interesting';
+  String get searchDiscoverSomethingInteresting => 'Upptäck något intressant';
 
   @override
   String get cameraAgeRestriction =>

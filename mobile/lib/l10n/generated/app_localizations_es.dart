@@ -4717,11 +4717,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get searchFindCuratedVideoLists => 'Encontrá listas de videos curadas';
 
   @override
-  String get searchEnterQuery => 'Enter a search query';
+  String get searchEnterQuery => 'Ingresá una búsqueda';
 
   @override
-  String get searchDiscoverSomethingInteresting =>
-      'Discover something interesting';
+  String get searchDiscoverSomethingInteresting => 'Descubrí algo interesante';
 
   @override
   String get cameraAgeRestriction =>
