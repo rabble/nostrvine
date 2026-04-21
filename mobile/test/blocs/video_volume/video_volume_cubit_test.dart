@@ -54,7 +54,10 @@ void main() {
         });
         final prefsWithValue = await SharedPreferences.getInstance();
 
-        final cubit = VideoVolumeCubit(sharedPreferences: prefsWithValue);
+        final cubit = VideoVolumeCubit(
+          sharedPreferences: prefsWithValue,
+          systemVolumeListener: fakeVolumeListener,
+        );
         addTearDown(cubit.close);
 
         expect(cubit.state.volume, equals(0.0));

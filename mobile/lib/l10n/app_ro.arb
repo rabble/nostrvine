@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "Anulează",
     "followersFailedToLoadList": "Nu s-a putut încărca lista de urmăritori",
     "followingFailedToLoadList": "Nu s-a putut încărca lista de urmăriți",
+    "inboxActionBlock": "Blochează {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Dezactivează sunetul conversației",
+    "inboxActionRemove": "Elimină conversația",
+    "inboxActionReport": "Raportează {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Deblochează {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} a fost blocat(ă)",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Conversație dezactivată",
+    "inboxConversationUnmuted": "Conversație reactivată",
+    "inboxEmptySubtitle": "Butonul + nu mușcă.",
+    "inboxEmptyTitle": "Încă niciun mesaj",
+    "inboxRemoveConfirmBody": "Astfel, conversația ta cu {displayName} va fi ștearsă. Această acțiune nu poate fi anulată.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Elimină",
+    "inboxRemoveConfirmTitle": "Elimini conversația?",
     "inboxRemovedConversation": "Conversație eliminată",
     "inboxReportedUser": "{displayName} a fost raportat(ă)",
     "@inboxReportedUser": {

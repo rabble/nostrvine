@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "Annuler",
     "followersFailedToLoadList": "Impossible de charger la liste des abonnés",
     "followingFailedToLoadList": "Impossible de charger la liste des abonnements",
+    "inboxActionBlock": "Bloquer {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Mettre la conversation en sourdine",
+    "inboxActionRemove": "Supprimer la conversation",
+    "inboxActionReport": "Signaler {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Débloquer {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} bloqué(e)",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Conversation mise en sourdine",
+    "inboxConversationUnmuted": "Conversation réactivée",
+    "inboxEmptySubtitle": "Le bouton + ne mord pas.",
+    "inboxEmptyTitle": "Aucun message pour le moment",
+    "inboxRemoveConfirmBody": "Cela supprimera votre conversation avec {displayName}. Cette action est irréversible.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Supprimer",
+    "inboxRemoveConfirmTitle": "Supprimer la conversation ?",
     "inboxRemovedConversation": "Conversation supprimée",
     "inboxReportedUser": "{displayName} signalé(e)",
     "@inboxReportedUser": {

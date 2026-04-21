@@ -4423,48 +4423,49 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inboxRemovedConversation => 'Unterhaltung entfernt';
 
   @override
-  String get inboxEmptyTitle => 'No messages yet';
+  String get inboxEmptyTitle => 'Noch keine Nachrichten';
 
   @override
-  String get inboxEmptySubtitle => 'That + button won\'t bite.';
+  String get inboxEmptySubtitle => 'Der + Button beißt nicht.';
 
   @override
-  String get inboxActionMute => 'Mute conversation';
+  String get inboxActionMute => 'Unterhaltung stummschalten';
 
   @override
   String inboxActionReport(String displayName) {
-    return 'Report $displayName';
+    return '$displayName melden';
   }
 
   @override
   String inboxActionBlock(String displayName) {
-    return 'Block $displayName';
+    return '$displayName blockieren';
   }
 
   @override
   String inboxActionUnblock(String displayName) {
-    return 'Unblock $displayName';
+    return '$displayName entblocken';
   }
 
   @override
-  String get inboxActionRemove => 'Remove conversation';
+  String get inboxActionRemove => 'Unterhaltung entfernen';
 
   @override
-  String get inboxRemoveConfirmTitle => 'Remove conversation?';
+  String get inboxRemoveConfirmTitle => 'Unterhaltung entfernen?';
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'This will delete your conversation with $displayName. This action cannot be undone.';
+    return 'Dadurch wird deine Unterhaltung mit $displayName gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.';
   }
 
   @override
-  String get inboxRemoveConfirmConfirm => 'Remove';
+  String get inboxRemoveConfirmConfirm => 'Entfernen';
 
   @override
-  String get inboxConversationMuted => 'Conversation muted';
+  String get inboxConversationMuted => 'Unterhaltung stummgeschaltet';
 
   @override
-  String get inboxConversationUnmuted => 'Conversation unmuted';
+  String get inboxConversationUnmuted =>
+      'Unterhaltung nicht mehr stummgeschaltet';
 
   @override
   String get reportDialogCancel => 'Abbrechen';

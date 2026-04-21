@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "Avbryt",
     "followersFailedToLoadList": "Kunde inte ladda följarlistan",
     "followingFailedToLoadList": "Kunde inte ladda följer-listan",
+    "inboxActionBlock": "Blockera {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Tysta konversation",
+    "inboxActionRemove": "Ta bort konversation",
+    "inboxActionReport": "Rapportera {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Avblockera {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} blockerad",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Konversation tystad",
+    "inboxConversationUnmuted": "Konversation inte tystad",
+    "inboxEmptySubtitle": "+-knappen bits inte.",
+    "inboxEmptyTitle": "Inga meddelanden än",
+    "inboxRemoveConfirmBody": "Detta tar bort din konversation med {displayName}. Denna åtgärd kan inte ångras.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Ta bort",
+    "inboxRemoveConfirmTitle": "Ta bort konversation?",
     "inboxRemovedConversation": "Konversation borttagen",
     "inboxReportedUser": "{displayName} rapporterad",
     "@inboxReportedUser": {

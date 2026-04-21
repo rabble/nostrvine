@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "Annulla",
     "followersFailedToLoadList": "Impossibile caricare la lista dei follower",
     "followingFailedToLoadList": "Impossibile caricare la lista dei seguiti",
+    "inboxActionBlock": "Blocca {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Silenzia conversazione",
+    "inboxActionRemove": "Rimuovi conversazione",
+    "inboxActionReport": "Segnala {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Sblocca {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} bloccato/a",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Conversazione silenziata",
+    "inboxConversationUnmuted": "Conversazione riattivata",
+    "inboxEmptySubtitle": "Il pulsante + non morde.",
+    "inboxEmptyTitle": "Ancora nessun messaggio",
+    "inboxRemoveConfirmBody": "Questo eliminerà la tua conversazione con {displayName}. Questa azione non può essere annullata.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Rimuovi",
+    "inboxRemoveConfirmTitle": "Rimuovere la conversazione?",
     "inboxRemovedConversation": "Conversazione rimossa",
     "inboxReportedUser": "{displayName} segnalato/a",
     "@inboxReportedUser": {

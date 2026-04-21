@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "Anuluj",
     "followersFailedToLoadList": "Nie udało się załadować listy obserwujących",
     "followingFailedToLoadList": "Nie udało się załadować listy obserwowanych",
+    "inboxActionBlock": "Zablokuj {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Wycisz rozmowę",
+    "inboxActionRemove": "Usuń rozmowę",
+    "inboxActionReport": "Zgłoś {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Odblokuj {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "Zablokowano {displayName}",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Wyciszono rozmowę",
+    "inboxConversationUnmuted": "Wyłączono wyciszenie rozmowy",
+    "inboxEmptySubtitle": "Ten przycisk + nie gryzie.",
+    "inboxEmptyTitle": "Brak wiadomości",
+    "inboxRemoveConfirmBody": "Spowoduje to usunięcie rozmowy z {displayName}. Tej operacji nie można cofnąć.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Usuń",
+    "inboxRemoveConfirmTitle": "Usunąć rozmowę?",
     "inboxRemovedConversation": "Usunięto rozmowę",
     "inboxReportedUser": "Zgłoszono {displayName}",
     "@inboxReportedUser": {

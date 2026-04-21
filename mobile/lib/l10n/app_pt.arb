@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "Cancelar",
     "followersFailedToLoadList": "Falha ao carregar lista de seguidores",
     "followingFailedToLoadList": "Falha ao carregar lista de seguindo",
+    "inboxActionBlock": "Bloquear {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Silenciar conversa",
+    "inboxActionRemove": "Remover conversa",
+    "inboxActionReport": "Denunciar {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Desbloquear {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} bloqueado(a)",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Conversa silenciada",
+    "inboxConversationUnmuted": "Conversa com som ativado",
+    "inboxEmptySubtitle": "O botão + não morde.",
+    "inboxEmptyTitle": "Ainda sem mensagens",
+    "inboxRemoveConfirmBody": "Isso apagará sua conversa com {displayName}. Esta ação não pode ser desfeita.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Remover",
+    "inboxRemoveConfirmTitle": "Remover conversa?",
     "inboxRemovedConversation": "Conversa removida",
     "inboxReportedUser": "{displayName} denunciado(a)",
     "@inboxReportedUser": {

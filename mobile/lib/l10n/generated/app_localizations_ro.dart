@@ -4501,48 +4501,48 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxRemovedConversation => 'Conversație eliminată';
 
   @override
-  String get inboxEmptyTitle => 'No messages yet';
+  String get inboxEmptyTitle => 'Încă niciun mesaj';
 
   @override
-  String get inboxEmptySubtitle => 'That + button won\'t bite.';
+  String get inboxEmptySubtitle => 'Butonul + nu mușcă.';
 
   @override
-  String get inboxActionMute => 'Mute conversation';
+  String get inboxActionMute => 'Dezactivează sunetul conversației';
 
   @override
   String inboxActionReport(String displayName) {
-    return 'Report $displayName';
+    return 'Raportează $displayName';
   }
 
   @override
   String inboxActionBlock(String displayName) {
-    return 'Block $displayName';
+    return 'Blochează $displayName';
   }
 
   @override
   String inboxActionUnblock(String displayName) {
-    return 'Unblock $displayName';
+    return 'Deblochează $displayName';
   }
 
   @override
-  String get inboxActionRemove => 'Remove conversation';
+  String get inboxActionRemove => 'Elimină conversația';
 
   @override
-  String get inboxRemoveConfirmTitle => 'Remove conversation?';
+  String get inboxRemoveConfirmTitle => 'Elimini conversația?';
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'This will delete your conversation with $displayName. This action cannot be undone.';
+    return 'Astfel, conversația ta cu $displayName va fi ștearsă. Această acțiune nu poate fi anulată.';
   }
 
   @override
-  String get inboxRemoveConfirmConfirm => 'Remove';
+  String get inboxRemoveConfirmConfirm => 'Elimină';
 
   @override
-  String get inboxConversationMuted => 'Conversation muted';
+  String get inboxConversationMuted => 'Conversație dezactivată';
 
   @override
-  String get inboxConversationUnmuted => 'Conversation unmuted';
+  String get inboxConversationUnmuted => 'Conversație reactivată';
 
   @override
   String get reportDialogCancel => 'Anulează';

@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "キャンセル",
     "followersFailedToLoadList": "フォロワーリストの読み込みがうまくいかなかった",
     "followingFailedToLoadList": "フォロー中リストの読み込みがうまくいかなかった",
+    "inboxActionBlock": "{displayName}をブロック",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "会話をミュート",
+    "inboxActionRemove": "会話を削除",
+    "inboxActionReport": "{displayName}を報告",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "{displayName}のブロックを解除",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName}をブロックしたよ",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "会話をミュートしたよ",
+    "inboxConversationUnmuted": "会話のミュートを解除したよ",
+    "inboxEmptySubtitle": "この+ボタン、噛まないよ。",
+    "inboxEmptyTitle": "まだメッセージはないよ",
+    "inboxRemoveConfirmBody": "{displayName}との会話が削除されます。この操作は取り消せません。",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "削除",
+    "inboxRemoveConfirmTitle": "会話を削除する？",
     "inboxRemovedConversation": "会話を削除したよ",
     "inboxReportedUser": "{displayName}を報告したよ",
     "@inboxReportedUser": {

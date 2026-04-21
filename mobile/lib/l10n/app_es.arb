@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "Cancelar",
     "followersFailedToLoadList": "No se pudo cargar la lista de seguidores",
     "followingFailedToLoadList": "No se pudo cargar la lista de seguidos",
+    "inboxActionBlock": "Bloquear a {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Silenciar conversación",
+    "inboxActionRemove": "Eliminar conversación",
+    "inboxActionReport": "Reportar a {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Desbloquear a {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "Bloqueaste a {displayName}",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Conversación silenciada",
+    "inboxConversationUnmuted": "Conversación sin silenciar",
+    "inboxEmptySubtitle": "El botón + no muerde.",
+    "inboxEmptyTitle": "Aún no hay mensajes",
+    "inboxRemoveConfirmBody": "Esto eliminará tu conversación con {displayName}. Esta acción no se puede deshacer.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Eliminar",
+    "inboxRemoveConfirmTitle": "¿Eliminar conversación?",
     "inboxRemovedConversation": "Conversación eliminada",
     "inboxReportedUser": "Reportaste a {displayName}",
     "@inboxReportedUser": {
