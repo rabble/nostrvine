@@ -18,8 +18,6 @@ class CenterPlaybackControl extends StatelessWidget {
   final CenterPlaybackControlState state;
   final String? semanticsLabel;
 
-  static const _buttonShadowColor = Color(0x1A000000);
-
   @override
   Widget build(BuildContext context) {
     final iconAsset = switch (state) {
@@ -43,42 +41,20 @@ class CenterPlaybackControl extends StatelessWidget {
         container: true,
         explicitChildNodes: true,
         label: semanticsLabel,
-        child: Center(child: icon),
+        child: icon,
       );
-    } else {
-      icon = Center(child: icon);
     }
 
     return Center(
       child: Container(
         width: 64,
         height: 64,
-        padding: const EdgeInsets.all(8),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: VineTheme.scrim65,
           borderRadius: BorderRadius.circular(24),
         ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
-              BoxShadow(
-                color: _buttonShadowColor,
-                offset: Offset(1, 1),
-                blurRadius: 1,
-              ),
-              BoxShadow(
-                color: _buttonShadowColor,
-                offset: Offset(0.4, 0.4),
-                blurRadius: 0.6,
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: icon,
-          ),
-        ),
+        child: icon,
       ),
     );
   }
