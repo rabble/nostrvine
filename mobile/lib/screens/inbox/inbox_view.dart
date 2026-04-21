@@ -430,7 +430,9 @@ class _ConversationListState extends ConsumerState<_ConversationList>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                nowMuted ? 'Conversation muted' : 'Conversation unmuted',
+                nowMuted
+                    ? context.l10n.inboxConversationMuted
+                    : context.l10n.inboxConversationUnmuted,
               ),
             ),
           );
@@ -491,26 +493,25 @@ class _ConversationListState extends ConsumerState<_ConversationList>
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         title: Text(
-          'Remove conversation?',
+          context.l10n.inboxRemoveConfirmTitle,
           style: VineTheme.titleLargeFont(),
         ),
         content: Text(
-          'This will delete your conversation with $displayName. '
-          'This action cannot be undone.',
+          context.l10n.inboxRemoveConfirmBody(displayName),
           style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
-              'Cancel',
+              context.l10n.commonCancel,
               style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              'Remove',
+              context.l10n.inboxRemoveConfirmConfirm,
               style: VineTheme.bodyMediumFont(color: VineTheme.error),
             ),
           ),

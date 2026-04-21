@@ -2167,6 +2167,50 @@
   },
   "inboxRemovedConversation": "Removed conversation",
 
+  "inboxEmptyTitle": "No messages yet",
+  "inboxEmptySubtitle": "That + button won't bite.",
+
+  "inboxActionMute": "Mute conversation",
+  "inboxActionReport": "Report {displayName}",
+  "@inboxActionReport": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionBlock": "Block {displayName}",
+  "@inboxActionBlock": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionUnblock": "Unblock {displayName}",
+  "@inboxActionUnblock": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionRemove": "Remove conversation",
+
+  "inboxRemoveConfirmTitle": "Remove conversation?",
+  "inboxRemoveConfirmBody": "This will delete your conversation with {displayName}. This action cannot be undone.",
+  "@inboxRemoveConfirmBody": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemoveConfirmConfirm": "Remove",
+
+  "inboxConversationMuted": "Conversation muted",
+  "inboxConversationUnmuted": "Conversation unmuted",
+
   "reportDialogCancel": "Cancel",
   "reportDialogReport": "Report",
 
