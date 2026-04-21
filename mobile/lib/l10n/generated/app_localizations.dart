@@ -8180,41 +8180,17 @@ abstract class AppLocalizations {
   /// **'Find curated video lists'**
   String get searchFindCuratedVideoLists;
 
-  /// Videos section initial-state title when the search query is empty
+  /// Title of the empty-query placeholder shown on the search results screen before the user has entered a query.
   ///
   /// In en, this message translates to:
-  /// **'Search for videos'**
-  String get searchForVideos;
+  /// **'Enter a search query'**
+  String get searchEnterQuery;
 
-  /// Videos section initial-state subtitle when the search query is empty
+  /// Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query.
   ///
   /// In en, this message translates to:
-  /// **'Find vines by keyword'**
-  String get searchFindVideosByKeyword;
-
-  /// People section initial-state title when the search query is empty
-  ///
-  /// In en, this message translates to:
-  /// **'Search for people'**
-  String get searchForPeople;
-
-  /// People section initial-state subtitle when the search query is empty
-  ///
-  /// In en, this message translates to:
-  /// **'Find creators and friends'**
-  String get searchFindCreators;
-
-  /// Tags section initial-state title when the search query is empty
-  ///
-  /// In en, this message translates to:
-  /// **'Search for tags'**
-  String get searchForTags;
-
-  /// Tags section initial-state subtitle when the search query is empty
-  ///
-  /// In en, this message translates to:
-  /// **'Find topics to explore'**
-  String get searchFindTopics;
+  /// **'Discover something interesting'**
+  String get searchDiscoverSomethingInteresting;
 
   /// No description provided for @cameraAgeRestriction.
   ///

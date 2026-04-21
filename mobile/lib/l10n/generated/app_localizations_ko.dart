@@ -4437,22 +4437,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get searchFindCuratedVideoLists => '큐레이션된 동영상 목록 찾기';
 
   @override
-  String get searchForVideos => 'Search for videos';
+  String get searchEnterQuery => 'Enter a search query';
 
   @override
-  String get searchFindVideosByKeyword => 'Find vines by keyword';
-
-  @override
-  String get searchForPeople => 'Search for people';
-
-  @override
-  String get searchFindCreators => 'Find creators and friends';
-
-  @override
-  String get searchForTags => 'Search for tags';
-
-  @override
-  String get searchFindTopics => 'Find topics to explore';
+  String get searchDiscoverSomethingInteresting =>
+      'Discover something interesting';
 
   @override
   String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';

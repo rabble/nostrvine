@@ -3,11 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
-import 'package:openvine/screens/search_results/widgets/search_section_initial_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -93,15 +91,9 @@ class _TagsContent extends StatelessWidget {
       (HashtagSearchBloc bloc) => bloc.state.query,
     );
 
-    // Idle state: no query entered yet. Show a prompt on the dedicated
-    // tab; hide the section inside the All-tab preview.
+    // Idle state is rendered at the [SearchResultsView] level; individual
+    // sections stay invisible until the user has entered a query.
     if (status == .initial) {
-      if (showAll) {
-        return SearchSectionInitialState(
-          title: context.l10n.searchForTags,
-          subtitle: context.l10n.searchFindTopics,
-        );
-      }
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 

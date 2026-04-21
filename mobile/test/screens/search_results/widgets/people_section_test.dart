@@ -9,7 +9,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/widgets/people_section.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
-import 'package:openvine/screens/search_results/widgets/search_section_initial_state.dart';
+import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 
 class _MockUserSearchBloc extends MockBloc<UserSearchEvent, UserSearchState>
@@ -53,18 +53,17 @@ void main() {
 
     group('showAll: false (All tab preview)', () {
       testWidgets(
-        'keeps header visible but hides skeleton on empty initial query',
+        'hides skeleton on empty initial query (parent view renders idle)',
         (tester) async {
           when(() => mockBloc.state).thenReturn(const UserSearchState());
 
           await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SectionHeader), findsOneWidget);
-          expect(find.byType(SearchSectionInitialState), findsNothing);
           expect(
             find.bySemanticsLabel('Loading people results'),
             findsNothing,
           );
+          expect(find.byType(SearchUserTile), findsNothing);
         },
       );
 
@@ -122,18 +121,18 @@ void main() {
 
     group('showAll: true (dedicated tab)', () {
       testWidgets(
-        'renders $SearchSectionInitialState when initial with empty query',
+        'hides content on empty initial query (parent view renders idle)',
         (tester) async {
           when(() => mockBloc.state).thenReturn(const UserSearchState());
 
           await tester.pumpWidget(buildSubject(showAll: true));
 
-          expect(find.byType(SearchSectionInitialState), findsOneWidget);
-          expect(find.text('Search for people'), findsOneWidget);
           expect(
             find.bySemanticsLabel('Loading people results'),
             findsNothing,
           );
+          expect(find.byType(SearchUserTile), findsNothing);
+          expect(find.byType(SearchSectionEmptyState), findsNothing);
         },
       );
 

@@ -4756,22 +4756,11 @@ class AppLocalizationsPl extends AppLocalizations {
       'Znajdź wyselekcjonowane listy filmów';
 
   @override
-  String get searchForVideos => 'Search for videos';
+  String get searchEnterQuery => 'Enter a search query';
 
   @override
-  String get searchFindVideosByKeyword => 'Find vines by keyword';
-
-  @override
-  String get searchForPeople => 'Search for people';
-
-  @override
-  String get searchFindCreators => 'Find creators and friends';
-
-  @override
-  String get searchForTags => 'Search for tags';
-
-  @override
-  String get searchFindTopics => 'Find topics to explore';
+  String get searchDiscoverSomethingInteresting =>
+      'Discover something interesting';
 
   @override
   String get cameraAgeRestriction =>

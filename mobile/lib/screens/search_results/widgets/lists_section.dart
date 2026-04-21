@@ -7,12 +7,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/list_search/list_search_bloc.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
-import 'package:openvine/screens/search_results/widgets/search_section_initial_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/widgets/list_search_card.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -68,15 +66,9 @@ class _ListsContent extends StatelessWidget {
     final results = context.select((ListSearchBloc bloc) => bloc.state.results);
     final query = context.select((ListSearchBloc bloc) => bloc.state.query);
 
-    // Idle state: no query entered yet. Show a prompt on the dedicated
-    // tab; hide the section inside the All-tab preview.
+    // Idle state is rendered at the [SearchResultsView] level; individual
+    // sections stay invisible until the user has entered a query.
     if (status == .initial) {
-      if (showAll) {
-        return SearchSectionInitialState(
-          title: context.l10n.searchForLists,
-          subtitle: context.l10n.searchFindCuratedVideoLists,
-        );
-      }
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
