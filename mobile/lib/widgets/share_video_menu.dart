@@ -7,6 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
+import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
@@ -19,7 +23,6 @@ import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
-import 'package:openvine/services/social_service.dart';
 import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
@@ -155,7 +158,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   const SizedBox(height: 24),
                   _buildBookmarkSection(),
                   const SizedBox(height: 24),
-                  _buildFollowSetSection(),
+                  _buildPeopleListsSection(),
                   if (_isUserOwnContent()) ...[
                     const SizedBox(height: 24),
                     _buildDeleteSection(),
@@ -725,45 +728,36 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     },
   );
 
-  /// Build follow set section for adding authors to follow sets
-  Widget _buildFollowSetSection() => Consumer(
+  /// Build the people-lists section that lets the user add the video's
+  /// author to any of their existing people lists. Gated on the
+  /// `curatedLists` feature flag — the whole section disappears when the
+  /// flag is off so the legacy follow-set UI does not resurface.
+  Widget _buildPeopleListsSection() => Consumer(
     builder: (context, ref, child) {
-      final socialService = ref.watch(socialServiceProvider);
-      final followSets = socialService.followSets;
-
+      final curatedListsEnabled = ref.watch(
+        isFeatureEnabledProvider(FeatureFlag.curatedLists),
+      );
+      if (!curatedListsEnabled) {
+        return const SizedBox.shrink();
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            context.l10n.shareMenuFollowSets,
-            style: const TextStyle(
+          const Text(
+            'People lists',
+            style: TextStyle(
               color: VineTheme.whiteText,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 12),
-
-          // Create new follow set with this author
           _buildActionTile(
-            icon: Icons.group_add,
-            title: context.l10n.shareMenuCreateFollowSet,
-            subtitle: context.l10n.shareMenuCreateFollowSetSubtitle,
-            onTap: _showCreateFollowSetDialog,
+            icon: Icons.playlist_add,
+            title: 'Add to list',
+            subtitle: 'Put this creator in one of your lists',
+            onTap: _showAddToPeopleListsSheet,
           ),
-
-          // Show existing follow sets if any
-          if (followSets.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _buildActionTile(
-              icon: Icons.people,
-              title: context.l10n.shareMenuAddToFollowSet,
-              subtitle: context.l10n.shareMenuFollowSetsAvailable(
-                followSets.length,
-              ),
-              onTap: _showSelectFollowSetDialog,
-            ),
-          ],
         ],
       );
     },
@@ -848,21 +842,13 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     );
   }
 
-  // === FOLLOW SET ACTIONS ===
+  // === PEOPLE LIST ACTIONS ===
 
-  void _showCreateFollowSetDialog() {
-    showDialog(
-      context: context,
-      builder: (context) =>
-          _CreateFollowSetDialog(authorPubkey: widget.video.pubkey),
-    );
-  }
-
-  void _showSelectFollowSetDialog() {
-    showDialog(
-      context: context,
-      builder: (context) =>
-          _SelectFollowSetDialog(authorPubkey: widget.video.pubkey),
+  void _showAddToPeopleListsSheet() {
+    AddToPeopleListsSheet.show(
+      context,
+      pubkey: widget.video.pubkey,
+      entryPoint: PeopleListEntryPoint.shareMenu,
     );
   }
 
@@ -1203,205 +1189,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           ),
         );
       }
-    }
-  }
-}
-
-/// Dialog for creating new follow set with this video's author
-class _CreateFollowSetDialog extends ConsumerStatefulWidget {
-  const _CreateFollowSetDialog({required this.authorPubkey});
-  final String authorPubkey;
-
-  @override
-  ConsumerState<_CreateFollowSetDialog> createState() =>
-      _CreateFollowSetDialogState();
-}
-
-class _CreateFollowSetDialogState
-    extends ConsumerState<_CreateFollowSetDialog> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: VineTheme.cardBackground,
-    title: Text(
-      context.l10n.shareMenuCreateFollowSet,
-      style: const TextStyle(color: VineTheme.whiteText),
-    ),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          controller: _nameController,
-          enableInteractiveSelection: true,
-          style: const TextStyle(color: VineTheme.whiteText),
-          decoration: InputDecoration(
-            labelText: context.l10n.shareMenuFollowSetName,
-            labelStyle: const TextStyle(color: VineTheme.secondaryText),
-            hintText: context.l10n.shareMenuFollowSetNameHint,
-            hintStyle: const TextStyle(color: VineTheme.secondaryText),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _descriptionController,
-          enableInteractiveSelection: true,
-          style: const TextStyle(color: VineTheme.whiteText),
-          decoration: InputDecoration(
-            labelText: context.l10n.shareMenuDescriptionOptional,
-            labelStyle: const TextStyle(color: VineTheme.secondaryText),
-          ),
-          maxLines: 2,
-        ),
-      ],
-    ),
-    actions: [
-      TextButton(
-        onPressed: context.pop,
-        child: Text(context.l10n.shareMenuCancel),
-      ),
-      TextButton(
-        onPressed: _createFollowSet,
-        child: Text(context.l10n.shareMenuCreate),
-      ),
-    ],
-  );
-
-  Future<void> _createFollowSet() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
-
-    try {
-      final socialService = ref.read(socialServiceProvider);
-      final newSet = await socialService.createFollowSet(
-        name: name,
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        initialPubkeys: [widget.authorPubkey],
-      );
-
-      if (newSet != null && mounted) {
-        context.pop(); // Close dialog
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.l10n.shareMenuCreatedFollowSetAndAddedCreator(name),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to create follow set: $e',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-}
-
-/// Dialog for selecting existing follow set to add author to
-class _SelectFollowSetDialog extends StatelessWidget {
-  const _SelectFollowSetDialog({required this.authorPubkey});
-  final String authorPubkey;
-
-  @override
-  Widget build(BuildContext context) => Consumer(
-    builder: (context, ref, child) {
-      final socialService = ref.watch(socialServiceProvider);
-      final followSets = socialService.followSets;
-
-      return AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: Text(
-          context.l10n.shareMenuAddToFollowSet,
-          style: const TextStyle(color: VineTheme.whiteText),
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 300,
-          child: ListView.builder(
-            itemCount: followSets.length,
-            itemBuilder: (context, index) {
-              final set = followSets[index];
-              final isInSet = socialService.isInFollowSet(set.id, authorPubkey);
-
-              return ListTile(
-                leading: Icon(
-                  isInSet ? Icons.check_circle : Icons.people,
-                  color: isInSet ? VineTheme.vineGreen : VineTheme.whiteText,
-                ),
-                title: Text(
-                  set.name,
-                  style: const TextStyle(color: VineTheme.whiteText),
-                ),
-                subtitle: Text(
-                  '${set.pubkeys.length} users${set.description != null ? ' • ${set.description}' : ''}',
-                  style: const TextStyle(color: VineTheme.secondaryText),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                onTap: () => _toggleAuthorInFollowSet(
-                  context,
-                  socialService,
-                  set,
-                  isInSet,
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: context.pop,
-            child: Text(context.l10n.shareMenuDone),
-          ),
-        ],
-      );
-    },
-  );
-
-  Future<void> _toggleAuthorInFollowSet(
-    BuildContext context,
-    SocialService socialService,
-    FollowSet set,
-    bool isCurrentlyInSet,
-  ) async {
-    try {
-      bool success;
-      if (isCurrentlyInSet) {
-        success = await socialService.removeFromFollowSet(set.id, authorPubkey);
-      } else {
-        success = await socialService.addToFollowSet(set.id, authorPubkey);
-      }
-
-      if (success && context.mounted) {
-        final message = isCurrentlyInSet
-            ? 'Removed from ${set.name}'
-            : 'Added to ${set.name}';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to toggle user in follow set: $e',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
     }
   }
 }

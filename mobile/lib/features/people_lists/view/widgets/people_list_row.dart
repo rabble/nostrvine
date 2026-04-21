@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
+import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 
 /// A tappable row representing a single people list inside the
 /// [AddToPeopleListsSheet]. Shows a checkbox on the left that reflects
@@ -19,6 +20,7 @@ class PeopleListRow extends StatelessWidget {
     required this.listId,
     required this.listName,
     required this.pubkey,
+    required this.entryPoint,
     super.key,
   });
 
@@ -30,6 +32,11 @@ class PeopleListRow extends StatelessWidget {
 
   /// The full hex pubkey being added/removed. Never truncated.
   final String pubkey;
+
+  /// Identifies which UI surface triggered the host sheet. Exposed so
+  /// future analytics wiring can attribute toggle events to the source
+  /// screen without the row needing to know about that surface directly.
+  final PeopleListEntryPoint entryPoint;
 
   @override
   Widget build(BuildContext context) {

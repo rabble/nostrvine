@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
+import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
 import 'package:openvine/features/people_lists/view/widgets/widgets.dart';
 
@@ -23,6 +24,7 @@ class AddToPeopleListsSheet extends StatelessWidget {
   /// Creates the sheet widget.
   const AddToPeopleListsSheet({
     required this.pubkey,
+    required this.entryPoint,
     this.displayName,
     super.key,
   });
@@ -30,6 +32,10 @@ class AddToPeopleListsSheet extends StatelessWidget {
   /// The full hex pubkey whose list membership is being edited. The
   /// pubkey is never truncated in storage, dispatched events, or logs.
   final String pubkey;
+
+  /// Identifies which UI surface triggered this sheet. Threaded through
+  /// to child rows so analytics and future copy can branch on source.
+  final PeopleListEntryPoint entryPoint;
 
   /// Optional display name for the person. Only used for layout copy;
   /// the underlying [pubkey] is always the source of truth.
@@ -41,6 +47,7 @@ class AddToPeopleListsSheet extends StatelessWidget {
   static Future<void> show(
     BuildContext context, {
     required String pubkey,
+    required PeopleListEntryPoint entryPoint,
     String? displayName,
   }) {
     return VineBottomSheet.show<void>(
@@ -48,6 +55,7 @@ class AddToPeopleListsSheet extends StatelessWidget {
       title: const Text('Add to list'),
       buildScrollBody: (scrollController) => AddToPeopleListsSheet(
         pubkey: pubkey,
+        entryPoint: entryPoint,
         displayName: displayName,
       ),
     );
@@ -74,6 +82,7 @@ class AddToPeopleListsSheet extends StatelessWidget {
           listId: list.id,
           listName: list.name,
           pubkey: pubkey,
+          entryPoint: entryPoint,
         );
       },
     );
