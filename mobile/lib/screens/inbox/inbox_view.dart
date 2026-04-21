@@ -265,6 +265,11 @@ class _ConversationListState extends ConsumerState<_ConversationList>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
 
+  /// ID of the conversation whose long-press action sheet is currently open.
+  /// Drives the [ConversationTile] highlight so the user can see which row
+  /// the sheet refers to. Cleared in a `finally` block after the sheet closes.
+  String? _highlightedConversationId;
+
   @override
   ScrollController get paginationScrollController => _scrollController;
 
@@ -360,6 +365,7 @@ class _ConversationListState extends ConsumerState<_ConversationList>
         return ConversationTile(
           conversation: conversation,
           currentUserPubkey: widget.currentUserPubkey,
+          highlighted: conversation.id == _highlightedConversationId,
           onTap: () => _onConversationTapped(context, conversation),
           onLongPress: () => _onConversationLongPressed(
             context,
@@ -414,73 +420,80 @@ class _ConversationListState extends ConsumerState<_ConversationList>
     final actionsCubit = context.read<ConversationActionsCubit>();
     final isBlocked = actionsCubit.isBlocked(otherPubkey);
 
-    final action = await ConversationActionsSheet.show(
-      context,
-      displayName: displayName,
-      isMuted: isMuted,
-      isBlocked: isBlocked,
-    );
+    setState(() => _highlightedConversationId = conversation.id);
+    try {
+      final action = await ConversationActionsSheet.show(
+        context,
+        displayName: displayName,
+        isMuted: isMuted,
+        isBlocked: isBlocked,
+      );
 
-    if (action == null || !context.mounted) return;
+      if (action == null || !context.mounted) return;
 
-    switch (action) {
-      case ConversationAction.toggleMute:
-        final nowMuted = await muteCubit.toggleMute(conversation.id);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                nowMuted
-                    ? context.l10n.inboxConversationMuted
-                    : context.l10n.inboxConversationUnmuted,
-              ),
-            ),
-          );
-        }
-
-      case ConversationAction.report:
-        final reported = await actionsCubit.reportUser(otherPubkey);
-        if (context.mounted && reported) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.inboxReportedUser(displayName)),
-            ),
-          );
-        }
-
-      case ConversationAction.block:
-        if (isBlocked) {
-          actionsCubit.unblockUser(otherPubkey);
-        } else {
-          actionsCubit.blockUser(otherPubkey);
-        }
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                isBlocked
-                    ? context.l10n.inboxUnblockedUser(displayName)
-                    : context.l10n.inboxBlockedUser(displayName),
-              ),
-            ),
-          );
-        }
-
-      case ConversationAction.remove:
-        if (!context.mounted) return;
-        final confirmed = await _confirmRemove(context, displayName);
-        if (confirmed && context.mounted) {
-          final removed = await actionsCubit.removeConversation(
-            conversation.id,
-          );
-          if (context.mounted && removed) {
+      switch (action) {
+        case ConversationAction.toggleMute:
+          final nowMuted = await muteCubit.toggleMute(conversation.id);
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(context.l10n.inboxRemovedConversation),
+                content: Text(
+                  nowMuted
+                      ? context.l10n.inboxConversationMuted
+                      : context.l10n.inboxConversationUnmuted,
+                ),
               ),
             );
           }
-        }
+
+        case ConversationAction.report:
+          final reported = await actionsCubit.reportUser(otherPubkey);
+          if (context.mounted && reported) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(context.l10n.inboxReportedUser(displayName)),
+              ),
+            );
+          }
+
+        case ConversationAction.block:
+          if (isBlocked) {
+            actionsCubit.unblockUser(otherPubkey);
+          } else {
+            actionsCubit.blockUser(otherPubkey);
+          }
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  isBlocked
+                      ? context.l10n.inboxUnblockedUser(displayName)
+                      : context.l10n.inboxBlockedUser(displayName),
+                ),
+              ),
+            );
+          }
+
+        case ConversationAction.remove:
+          if (!context.mounted) return;
+          final confirmed = await _confirmRemove(context, displayName);
+          if (confirmed && context.mounted) {
+            final removed = await actionsCubit.removeConversation(
+              conversation.id,
+            );
+            if (context.mounted && removed) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(context.l10n.inboxRemovedConversation),
+                ),
+              );
+            }
+          }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _highlightedConversationId = null);
+      }
     }
   }
 
