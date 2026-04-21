@@ -4199,48 +4199,48 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxRemovedConversation => '대화를 삭제했어요';
 
   @override
-  String get inboxEmptyTitle => 'No messages yet';
+  String get inboxEmptyTitle => '아직 메시지가 없어요';
 
   @override
-  String get inboxEmptySubtitle => 'That + button won\'t bite.';
+  String get inboxEmptySubtitle => '+ 버튼, 물지 않아요.';
 
   @override
-  String get inboxActionMute => 'Mute conversation';
+  String get inboxActionMute => '대화 알림 끄기';
 
   @override
   String inboxActionReport(String displayName) {
-    return 'Report $displayName';
+    return '$displayName 신고';
   }
 
   @override
   String inboxActionBlock(String displayName) {
-    return 'Block $displayName';
+    return '$displayName 차단';
   }
 
   @override
   String inboxActionUnblock(String displayName) {
-    return 'Unblock $displayName';
+    return '$displayName 차단 해제';
   }
 
   @override
-  String get inboxActionRemove => 'Remove conversation';
+  String get inboxActionRemove => '대화 삭제';
 
   @override
-  String get inboxRemoveConfirmTitle => 'Remove conversation?';
+  String get inboxRemoveConfirmTitle => '대화를 삭제할까요?';
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'This will delete your conversation with $displayName. This action cannot be undone.';
+    return '$displayName와의 대화가 삭제돼요. 이 작업은 되돌릴 수 없어요.';
   }
 
   @override
-  String get inboxRemoveConfirmConfirm => 'Remove';
+  String get inboxRemoveConfirmConfirm => '삭제';
 
   @override
-  String get inboxConversationMuted => 'Conversation muted';
+  String get inboxConversationMuted => '대화 알림을 껐어요';
 
   @override
-  String get inboxConversationUnmuted => 'Conversation unmuted';
+  String get inboxConversationUnmuted => '대화 알림을 다시 켰어요';
 
   @override
   String get reportDialogCancel => '취소';

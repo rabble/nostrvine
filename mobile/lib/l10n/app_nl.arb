@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "Annuleren",
     "followersFailedToLoadList": "Volgerlijst kon niet worden geladen",
     "followingFailedToLoadList": "Volglijst kon niet worden geladen",
+    "inboxActionBlock": "{displayName} blokkeren",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Gesprek dempen",
+    "inboxActionRemove": "Gesprek verwijderen",
+    "inboxActionReport": "{displayName} rapporteren",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "{displayName} deblokkeren",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} geblokkeerd",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Gesprek gedempt",
+    "inboxConversationUnmuted": "Gesprek niet meer gedempt",
+    "inboxEmptySubtitle": "Die +-knop bijt niet.",
+    "inboxEmptyTitle": "Nog geen berichten",
+    "inboxRemoveConfirmBody": "Dit verwijdert je gesprek met {displayName}. Deze actie kan niet ongedaan worden gemaakt.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Verwijderen",
+    "inboxRemoveConfirmTitle": "Gesprek verwijderen?",
     "inboxRemovedConversation": "Gesprek verwijderd",
     "inboxReportedUser": "{displayName} gerapporteerd",
     "@inboxReportedUser": {

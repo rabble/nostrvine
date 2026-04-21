@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "İptal",
     "followersFailedToLoadList": "Takipçi listesi yüklenemedi",
     "followingFailedToLoadList": "Takip edilen listesi yüklenemedi",
+    "inboxActionBlock": "{displayName} kullanıcısını engelle",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Sohbeti sessize al",
+    "inboxActionRemove": "Sohbeti kaldır",
+    "inboxActionReport": "{displayName} kullanıcısını bildir",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "{displayName} kullanıcısının engelini kaldır",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} engellendi",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Sohbet sessize alındı",
+    "inboxConversationUnmuted": "Sohbet sessizden çıkarıldı",
+    "inboxEmptySubtitle": "+ tuşu ısırmaz.",
+    "inboxEmptyTitle": "Henüz mesaj yok",
+    "inboxRemoveConfirmBody": "Bu işlem, {displayName} ile olan sohbetini siler. Bu işlem geri alınamaz.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Kaldır",
+    "inboxRemoveConfirmTitle": "Sohbet kaldırılsın mı?",
     "inboxRemovedConversation": "Sohbet kaldırıldı",
     "inboxReportedUser": "{displayName} bildirildi",
     "@inboxReportedUser": {

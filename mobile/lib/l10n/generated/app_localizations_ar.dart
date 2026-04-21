@@ -4329,48 +4329,48 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxRemovedConversation => 'تمت إزالة المحادثة';
 
   @override
-  String get inboxEmptyTitle => 'No messages yet';
+  String get inboxEmptyTitle => 'لا توجد رسائل بعد';
 
   @override
-  String get inboxEmptySubtitle => 'That + button won\'t bite.';
+  String get inboxEmptySubtitle => 'زر + لن يعضّك.';
 
   @override
-  String get inboxActionMute => 'Mute conversation';
+  String get inboxActionMute => 'كتم المحادثة';
 
   @override
   String inboxActionReport(String displayName) {
-    return 'Report $displayName';
+    return 'الإبلاغ عن $displayName';
   }
 
   @override
   String inboxActionBlock(String displayName) {
-    return 'Block $displayName';
+    return 'حظر $displayName';
   }
 
   @override
   String inboxActionUnblock(String displayName) {
-    return 'Unblock $displayName';
+    return 'إلغاء حظر $displayName';
   }
 
   @override
-  String get inboxActionRemove => 'Remove conversation';
+  String get inboxActionRemove => 'إزالة المحادثة';
 
   @override
-  String get inboxRemoveConfirmTitle => 'Remove conversation?';
+  String get inboxRemoveConfirmTitle => 'إزالة المحادثة؟';
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'This will delete your conversation with $displayName. This action cannot be undone.';
+    return 'سيؤدي هذا إلى حذف محادثتك مع $displayName. لا يمكن التراجع عن هذا الإجراء.';
   }
 
   @override
-  String get inboxRemoveConfirmConfirm => 'Remove';
+  String get inboxRemoveConfirmConfirm => 'إزالة';
 
   @override
-  String get inboxConversationMuted => 'Conversation muted';
+  String get inboxConversationMuted => 'تم كتم المحادثة';
 
   @override
-  String get inboxConversationUnmuted => 'Conversation unmuted';
+  String get inboxConversationUnmuted => 'تم إلغاء كتم المحادثة';
 
   @override
   String get reportDialogCancel => 'إلغاء';

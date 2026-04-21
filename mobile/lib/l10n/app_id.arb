@@ -2193,6 +2193,32 @@
     "featureRequestCancel": "Batal",
     "followersFailedToLoadList": "Gagal memuat daftar pengikut",
     "followingFailedToLoadList": "Gagal memuat daftar mengikuti",
+    "inboxActionBlock": "Blokir {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Bisukan percakapan",
+    "inboxActionRemove": "Hapus percakapan",
+    "inboxActionReport": "Laporkan {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Buka blokir {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} diblokir",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2201,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Percakapan dibisukan",
+    "inboxConversationUnmuted": "Bisu percakapan dibatalkan",
+    "inboxEmptySubtitle": "Tombol + tidak menggigit kok.",
+    "inboxEmptyTitle": "Belum ada pesan",
+    "inboxRemoveConfirmBody": "Ini akan menghapus percakapanmu dengan {displayName}. Tindakan ini tidak bisa dibatalkan.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Hapus",
+    "inboxRemoveConfirmTitle": "Hapus percakapan?",
     "inboxRemovedConversation": "Percakapan dihapus",
     "inboxReportedUser": "{displayName} dilaporkan",
     "@inboxReportedUser": {

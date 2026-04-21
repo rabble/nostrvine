@@ -4183,48 +4183,48 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxRemovedConversation => '会話を削除したよ';
 
   @override
-  String get inboxEmptyTitle => 'No messages yet';
+  String get inboxEmptyTitle => 'まだメッセージはないよ';
 
   @override
-  String get inboxEmptySubtitle => 'That + button won\'t bite.';
+  String get inboxEmptySubtitle => 'この+ボタン、噛まないよ。';
 
   @override
-  String get inboxActionMute => 'Mute conversation';
+  String get inboxActionMute => '会話をミュート';
 
   @override
   String inboxActionReport(String displayName) {
-    return 'Report $displayName';
+    return '$displayNameを報告';
   }
 
   @override
   String inboxActionBlock(String displayName) {
-    return 'Block $displayName';
+    return '$displayNameをブロック';
   }
 
   @override
   String inboxActionUnblock(String displayName) {
-    return 'Unblock $displayName';
+    return '$displayNameのブロックを解除';
   }
 
   @override
-  String get inboxActionRemove => 'Remove conversation';
+  String get inboxActionRemove => '会話を削除';
 
   @override
-  String get inboxRemoveConfirmTitle => 'Remove conversation?';
+  String get inboxRemoveConfirmTitle => '会話を削除する？';
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'This will delete your conversation with $displayName. This action cannot be undone.';
+    return '$displayNameとの会話が削除されます。この操作は取り消せません。';
   }
 
   @override
-  String get inboxRemoveConfirmConfirm => 'Remove';
+  String get inboxRemoveConfirmConfirm => '削除';
 
   @override
-  String get inboxConversationMuted => 'Conversation muted';
+  String get inboxConversationMuted => '会話をミュートしたよ';
 
   @override
-  String get inboxConversationUnmuted => 'Conversation unmuted';
+  String get inboxConversationUnmuted => '会話のミュートを解除したよ';
 
   @override
   String get reportDialogCancel => 'キャンセル';

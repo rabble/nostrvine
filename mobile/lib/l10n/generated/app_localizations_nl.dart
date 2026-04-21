@@ -4385,48 +4385,48 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxRemovedConversation => 'Gesprek verwijderd';
 
   @override
-  String get inboxEmptyTitle => 'No messages yet';
+  String get inboxEmptyTitle => 'Nog geen berichten';
 
   @override
-  String get inboxEmptySubtitle => 'That + button won\'t bite.';
+  String get inboxEmptySubtitle => 'Die +-knop bijt niet.';
 
   @override
-  String get inboxActionMute => 'Mute conversation';
+  String get inboxActionMute => 'Gesprek dempen';
 
   @override
   String inboxActionReport(String displayName) {
-    return 'Report $displayName';
+    return '$displayName rapporteren';
   }
 
   @override
   String inboxActionBlock(String displayName) {
-    return 'Block $displayName';
+    return '$displayName blokkeren';
   }
 
   @override
   String inboxActionUnblock(String displayName) {
-    return 'Unblock $displayName';
+    return '$displayName deblokkeren';
   }
 
   @override
-  String get inboxActionRemove => 'Remove conversation';
+  String get inboxActionRemove => 'Gesprek verwijderen';
 
   @override
-  String get inboxRemoveConfirmTitle => 'Remove conversation?';
+  String get inboxRemoveConfirmTitle => 'Gesprek verwijderen?';
 
   @override
   String inboxRemoveConfirmBody(String displayName) {
-    return 'This will delete your conversation with $displayName. This action cannot be undone.';
+    return 'Dit verwijdert je gesprek met $displayName. Deze actie kan niet ongedaan worden gemaakt.';
   }
 
   @override
-  String get inboxRemoveConfirmConfirm => 'Remove';
+  String get inboxRemoveConfirmConfirm => 'Verwijderen';
 
   @override
-  String get inboxConversationMuted => 'Conversation muted';
+  String get inboxConversationMuted => 'Gesprek gedempt';
 
   @override
-  String get inboxConversationUnmuted => 'Conversation unmuted';
+  String get inboxConversationUnmuted => 'Gesprek niet meer gedempt';
 
   @override
   String get reportDialogCancel => 'Annuleren';
