@@ -14,6 +14,10 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
+import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -31,6 +35,9 @@ class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
 class _MockOthersFollowersBloc
     extends MockBloc<OthersFollowersEvent, OthersFollowersState>
     implements OthersFollowersBloc {}
+
+class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
+    implements PeopleListsBloc {}
 
 // Mock classes
 class MockFollowRepository extends Mock implements FollowRepository {
@@ -169,6 +176,8 @@ void main() {
       String? displayNameHint,
       String? avatarUrlHint,
       MyProfileState? myProfileState,
+      bool curatedListsEnabled = false,
+      PeopleListsState? peopleListsState,
     }) {
       final authService = MockAuthService(
         isAnonymousValue: isAnonymous,
@@ -202,8 +211,21 @@ void main() {
         when(
           () => mockOthersFollowersBloc.state,
         ).thenReturn(const OthersFollowersState());
-        header = BlocProvider<OthersFollowersBloc>.value(
-          value: mockOthersFollowersBloc,
+        final mockPeopleListsBloc = _MockPeopleListsBloc();
+        whenListen(
+          mockPeopleListsBloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: peopleListsState ?? const PeopleListsState(),
+        );
+        header = MultiBlocProvider(
+          providers: [
+            BlocProvider<OthersFollowersBloc>.value(
+              value: mockOthersFollowersBloc,
+            ),
+            BlocProvider<PeopleListsBloc>.value(
+              value: mockPeopleListsBloc,
+            ),
+          ],
           child: header,
         );
       }
@@ -230,6 +252,9 @@ void main() {
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
           ),
+          isFeatureEnabledProvider(
+            FeatureFlag.curatedLists,
+          ).overrideWith((ref) => curatedListsEnabled),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -562,6 +587,44 @@ void main() {
 
       expect(find.text('Complete your profile'), findsNothing);
     });
+
+    testWidgets(
+      'renders PeopleListMembershipIndicator for other users',
+      (tester) async {
+        final testProfile = createTestProfile(displayName: 'Other User');
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            suppliedProfile: testProfile,
+            curatedListsEnabled: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PeopleListMembershipIndicator), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'does not render PeopleListMembershipIndicator for own profile',
+      (tester) async {
+        final testProfile = createTestProfile(displayName: 'Self');
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            curatedListsEnabled: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PeopleListMembershipIndicator), findsNothing);
+      },
+    );
 
     testWidgets(
       'renders fallback content for others profile with null profile',

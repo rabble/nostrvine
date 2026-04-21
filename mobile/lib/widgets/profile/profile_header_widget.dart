@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
@@ -274,6 +275,10 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     isOwnProfile: widget.isOwnProfile,
                   ),
                 ),
+                if (!widget.isOwnProfile) ...[
+                  PeopleListMembershipIndicator(pubkey: widget.userIdHex),
+                  const SizedBox(height: 16),
+                ],
 
                 // Stats row: Followers | Following | Likes | Loops
                 Padding(

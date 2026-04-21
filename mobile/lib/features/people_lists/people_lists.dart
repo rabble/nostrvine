@@ -3,3 +3,4 @@
 
 export 'bloc/people_lists_bloc.dart';
 export 'models/people_list_entry_point.dart';
+export 'view/people_list_membership_indicator.dart';
