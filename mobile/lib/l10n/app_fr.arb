@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "Chargement de la vidéo...",
     "videoPlayerPlayVideo": "Lire la vidéo",
+    "videoPlayerMute": "Couper le son de la vidéo",
+    "videoPlayerUnmute": "Réactiver le son de la vidéo",
     "videoPlayerEditVideo": "Modifier la vidéo",
     "videoPlayerEditVideoTooltip": "Modifier la vidéo",
     "contentWarningLabel": "Avertissement de contenu",

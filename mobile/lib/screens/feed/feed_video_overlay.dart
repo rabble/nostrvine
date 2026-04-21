@@ -56,6 +56,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
     required this.isActive,
     required this.pagePosition,
     required this.index,
+    required this.feedController,
     this.player,
     this.firstFrameFuture,
     this.listSources,
@@ -73,6 +74,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   /// Fractional page position from [PooledVideoFeed.onScrollOffsetChanged].
   /// Used to compute scroll-driven overlay opacity matching the fullscreen feed.
   final ValueNotifier<double> pagePosition;
+  final VideoFeedController? feedController;
 
   /// The index of this item in the feed, used with [pagePosition] to compute
   /// the scroll distance for opacity.
@@ -209,6 +211,7 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
         ),
         if (widget.player != null)
           PausedVideoPlayOverlay(
+            onToggleMuteState: () => widget.feedController?.toggleMuteState(),
             player: widget.player!,
             firstFrameFuture: widget.firstFrameFuture,
             isVisible: widget.isActive,

@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "Carregando vídeo...",
     "videoPlayerPlayVideo": "Reproduzir vídeo",
+    "videoPlayerMute": "Silenciar vídeo",
+    "videoPlayerUnmute": "Ativar som do vídeo",
     "videoPlayerEditVideo": "Editar vídeo",
     "videoPlayerEditVideoTooltip": "Editar vídeo",
     "contentWarningLabel": "Aviso de conteúdo",

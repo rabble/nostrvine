@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "Läser in video...",
     "videoPlayerPlayVideo": "Spela upp video",
+    "videoPlayerMute": "Stäng av ljudet på videon",
+    "videoPlayerUnmute": "Slå på ljudet för videon",
     "videoPlayerEditVideo": "Redigera video",
     "videoPlayerEditVideoTooltip": "Redigera video",
     "contentWarningLabel": "Innehållsvarning",

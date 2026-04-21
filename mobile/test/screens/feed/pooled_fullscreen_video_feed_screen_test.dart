@@ -15,6 +15,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/services/build_configuration.dart';
@@ -37,6 +38,9 @@ import '../../test_data/video_test_data.dart';
 class MockFullscreenFeedBloc
     extends MockBloc<FullscreenFeedEvent, FullscreenFeedState>
     implements FullscreenFeedBloc {}
+
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
 
 class MockVideoFeedController extends Mock implements VideoFeedController {}
 
@@ -185,10 +189,12 @@ MockPlayer stubPlayer(
   when(() => stream.position).thenAnswer((_) => positionStream);
   when(() => stream.playing).thenAnswer((_) => const Stream<bool>.empty());
   when(() => stream.buffering).thenAnswer((_) => const Stream<bool>.empty());
+  when(() => stream.volume).thenAnswer((_) => const Stream<double>.empty());
   when(() => state.duration).thenReturn(duration);
   when(() => state.position).thenReturn(Duration.zero);
   when(() => state.playing).thenReturn(true);
   when(() => state.buffering).thenReturn(false);
+  when(() => state.volume).thenReturn(1);
 
   return player;
 }
@@ -201,6 +207,7 @@ void main() {
     late MockNip05VerificationService mockNip05VerificationService;
     late Map<int, ValueNotifier<VideoIndexState>> defaultIndexNotifiers;
     late StreamController<FullscreenFeedState> stateController;
+    late _MockVideoVolumeCubit videoVolumeCubit;
 
     setUpAll(() {
       registerFallbackValue(const FullscreenFeedStarted());
@@ -225,6 +232,8 @@ void main() {
       defaultIndexNotifiers = <int, ValueNotifier<VideoIndexState>>{};
       stateController = StreamController<FullscreenFeedState>.broadcast();
       stubVideoFeedController(defaultController, defaultIndexNotifiers);
+      videoVolumeCubit = _MockVideoVolumeCubit();
+      when(() => videoVolumeCubit.state).thenReturn(const VideoVolumeState());
 
       // Default stream setup
       when(() => mockBloc.stream).thenAnswer((_) => stateController.stream);
@@ -282,6 +291,7 @@ void main() {
         home: MultiBlocProvider(
           providers: [
             BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+            BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
             BlocProvider<VideoPlaybackStatusCubit>(
               create: (_) => VideoPlaybackStatusCubit(),
             ),
@@ -612,6 +622,9 @@ void main() {
             home: MultiBlocProvider(
               providers: [
                 BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+                BlocProvider<VideoVolumeCubit>.value(
+                  value: videoVolumeCubit,
+                ),
                 BlocProvider<VideoPlaybackStatusCubit>(
                   create: (_) => VideoPlaybackStatusCubit(),
                 ),
@@ -656,6 +669,9 @@ void main() {
               home: MultiBlocProvider(
                 providers: [
                   BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+                  BlocProvider<VideoVolumeCubit>.value(
+                    value: videoVolumeCubit,
+                  ),
                   BlocProvider<VideoPlaybackStatusCubit>(
                     create: (_) => VideoPlaybackStatusCubit(),
                   ),
@@ -693,6 +709,9 @@ void main() {
               home: MultiBlocProvider(
                 providers: [
                   BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+                  BlocProvider<VideoVolumeCubit>.value(
+                    value: videoVolumeCubit,
+                  ),
                   BlocProvider<VideoPlaybackStatusCubit>(
                     create: (_) => VideoPlaybackStatusCubit(),
                   ),

@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "Memuat video...",
     "videoPlayerPlayVideo": "Putar video",
+    "videoPlayerMute": "Bisukan video",
+    "videoPlayerUnmute": "Aktifkan suara video",
     "videoPlayerEditVideo": "Ubah video",
     "videoPlayerEditVideoTooltip": "Ubah video",
     "contentWarningLabel": "Peringatan Konten",
