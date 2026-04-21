@@ -98,6 +98,30 @@ class VineBottomSheet extends StatelessWidget {
   ///
   /// Set [scrollable] to false for fixed-height sheets (e.g., action menus).
   /// The size parameters are only used when [scrollable] is true.
+  ///
+  /// When [scrollable] is true, [snap] and [snapSizes] are forwarded to the
+  /// underlying [DraggableScrollableSheet] to enable snap-to-position
+  /// behaviour between user-defined fractions of the viewport.
+  ///
+  /// [useRootNavigator] is forwarded to [showModalBottomSheet]; set it to
+  /// true when the sheet must appear above a nested navigator such as the
+  /// tab shell.
+  ///
+  /// [initialChildSizeBuilder] takes precedence over [initialChildSize]
+  /// when provided and [scrollable] is true. It is evaluated once inside
+  /// the modal's builder, giving callers access to the modal's
+  /// [BuildContext] (and therefore the current [MediaQuery]) so the
+  /// initial sheet size can depend on runtime conditions such as whether
+  /// the keyboard is open.
+  ///
+  /// [tapOutsideToDismiss], when true (the default) and [scrollable] is
+  /// true, wraps the sheet so that taps on the scrim above the sheet
+  /// dismiss the modal. This compensates for
+  /// [DraggableScrollableSheet]'s default `expand: true` behaviour, which
+  /// otherwise absorbs barrier-tap events. Set to false to keep the
+  /// original layout semantics (full-viewport draggable area, no outer
+  /// tap-catcher). Has no effect in fixed mode — the standard modal
+  /// barrier already dismisses on tap there.
   static Future<T?> show<T>({
     required BuildContext context,
     List<Widget>? children,
@@ -115,6 +139,11 @@ class VineBottomSheet extends StatelessWidget {
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
     double maxChildSize = 0.9,
+    double Function(BuildContext modalContext)? initialChildSizeBuilder,
+    bool snap = false,
+    List<double>? snapSizes,
+    bool useRootNavigator = false,
+    bool tapOutsideToDismiss = true,
     VoidCallback? onShow,
     VoidCallback? onDismiss,
     bool isDismissible = true,
@@ -131,6 +160,14 @@ class VineBottomSheet extends StatelessWidget {
       scrollable || buildScrollBody == null,
       'buildScrollBody can only be used when scrollable is true',
     );
+    assert(
+      scrollable || !snap,
+      'snap can only be used when scrollable is true',
+    );
+    assert(
+      snapSizes == null || snap,
+      'snapSizes requires snap: true',
+    );
 
     if (scrollable) {
       // Draggable/scrollable mode
@@ -138,28 +175,78 @@ class VineBottomSheet extends StatelessWidget {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
+        useRootNavigator: useRootNavigator,
         isDismissible: isDismissible,
         enableDrag: enableDrag,
         backgroundColor: VineTheme.transparent,
         elevation: 0,
-        builder: (_) => DraggableScrollableSheet(
-          initialChildSize: initialChildSize,
-          minChildSize: minChildSize,
-          maxChildSize: maxChildSize,
-          builder: (context, scrollController) => VineBottomSheet(
-            showHeader: showHeader,
-            title: title,
-            contentTitle: contentTitle,
-            scrollController: scrollController,
-            buildScrollBody: buildScrollBody,
-            trailing: trailing,
-            bottomInput: bottomInput,
-            expanded: expanded,
-            showHeaderDivider: showHeaderDivider,
-            body: body,
-            children: children,
-          ),
-        ),
+        builder: (modalContext) {
+          final resolvedInitialChildSize =
+              initialChildSizeBuilder?.call(modalContext) ?? initialChildSize;
+
+          VineBottomSheet buildSheet(ScrollController scrollController) {
+            return VineBottomSheet(
+              showHeader: showHeader,
+              title: title,
+              contentTitle: contentTitle,
+              scrollController: scrollController,
+              buildScrollBody: buildScrollBody,
+              trailing: trailing,
+              bottomInput: bottomInput,
+              expanded: expanded,
+              showHeaderDivider: showHeaderDivider,
+              body: body,
+              children: children,
+            );
+          }
+
+          // Default path preserves the original layout semantics
+          // (`expand: true`, no outer tap-catcher).
+          if (!tapOutsideToDismiss) {
+            return DraggableScrollableSheet(
+              initialChildSize: resolvedInitialChildSize,
+              minChildSize: minChildSize,
+              maxChildSize: maxChildSize,
+              snap: snap,
+              snapSizes: snapSizes,
+              builder: (context, scrollController) =>
+                  buildSheet(scrollController),
+            );
+          }
+
+          // Tap-outside-to-dismiss path.
+          //
+          // Three layers each with a specific job:
+          //   * Outer translucent GestureDetector — receives taps in the
+          //     empty area above the sheet and pops the route.
+          //   * `expand: false` on DraggableScrollableSheet — stops it from
+          //     claiming the entire modal area, so the region above the
+          //     sheet is free space the outer detector can own.
+          //   * Inner opaque GestureDetector with an empty onTap — swallows
+          //     taps on non-interactive sheet surfaces so they do not
+          //     bubble up to the outer detector. Drags still win via
+          //     gesture arena, and interactive children handle their own
+          //     taps before bubbling.
+          return GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => Navigator.of(modalContext).pop(),
+            child: DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: resolvedInitialChildSize,
+              minChildSize: minChildSize,
+              maxChildSize: maxChildSize,
+              snap: snap,
+              snapSizes: snapSizes,
+              builder: (context, scrollController) {
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {},
+                  child: buildSheet(scrollController),
+                );
+              },
+            ),
+          );
+        },
       ).whenComplete(() => onDismiss?.call());
     } else {
       // Fixed mode
@@ -167,6 +254,7 @@ class VineBottomSheet extends StatelessWidget {
         context: context,
         isScrollControlled: isScrollControlled ?? expanded,
         useSafeArea: true,
+        useRootNavigator: useRootNavigator,
         isDismissible: isDismissible,
         enableDrag: enableDrag,
         backgroundColor: VineTheme.transparent,
