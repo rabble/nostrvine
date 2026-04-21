@@ -153,13 +153,9 @@ class _VideosGrid extends StatelessWidget {
     final videos = context.select((VideoSearchBloc bloc) => bloc.state.videos);
     final query = context.select((VideoSearchBloc bloc) => bloc.state.query);
 
-    // Idle state is rendered at the [SearchResultsView] level; individual
-    // sections stay invisible until the user has entered a query.
-    if (status == VideoSearchStatus.initial) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    if (status == VideoSearchStatus.searching && videos.isEmpty) {
+    if ((status == VideoSearchStatus.initial ||
+            status == VideoSearchStatus.searching) &&
+        videos.isEmpty) {
       return const _VideosSkeletonLoader();
     }
 

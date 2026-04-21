@@ -66,13 +66,7 @@ class _ListsContent extends StatelessWidget {
     final results = context.select((ListSearchBloc bloc) => bloc.state.results);
     final query = context.select((ListSearchBloc bloc) => bloc.state.query);
 
-    // Idle state is rendered at the [SearchResultsView] level; individual
-    // sections stay invisible until the user has entered a query.
-    if (status == .initial) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    if (status == .loading && results.isEmpty) {
+    if ((status == .initial || status == .loading) && results.isEmpty) {
       return const _LoadingState();
     }
 

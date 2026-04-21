@@ -93,13 +93,7 @@ class _PeopleContent extends StatelessWidget {
       (UserSearchBloc bloc) => bloc.state.query,
     );
 
-    // Idle state is rendered at the [SearchResultsView] level; individual
-    // sections stay invisible until the user has entered a query.
-    if (status == .initial) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    if (status == .loading && results.isEmpty) {
+    if ((status == .initial || status == .loading) && results.isEmpty) {
       return const _PeopleSkeletonLoader();
     }
 

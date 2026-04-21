@@ -58,21 +58,6 @@ void main() {
 
     group('showAll: false (All tab preview)', () {
       testWidgets(
-        'hides skeleton on empty initial query (parent view renders idle)',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(const VideoSearchState());
-
-          await tester.pumpWidget(buildSubject());
-
-          expect(
-            find.bySemanticsLabel('Loading video results'),
-            findsNothing,
-          );
-          expect(find.byType(SearchVideoTile), findsNothing);
-        },
-      );
-
-      testWidgets(
         'hides entirely when success with empty results',
         (tester) async {
           when(() => mockBloc.state).thenReturn(
@@ -125,22 +110,6 @@ void main() {
     });
 
     group('showAll: true (dedicated tab)', () {
-      testWidgets(
-        'hides content on empty initial query (parent view renders idle)',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(const VideoSearchState());
-
-          await tester.pumpWidget(buildSubject(showAll: true));
-
-          expect(
-            find.bySemanticsLabel('Loading video results'),
-            findsNothing,
-          );
-          expect(find.byType(SearchVideoTile), findsNothing);
-          expect(find.byType(SearchSectionEmptyState), findsNothing);
-        },
-      );
-
       testWidgets(
         'renders $SearchSectionEmptyState when success with empty results',
         (tester) async {

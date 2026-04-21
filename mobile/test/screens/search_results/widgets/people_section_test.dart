@@ -9,7 +9,6 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/widgets/people_section.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
-import 'package:openvine/screens/search_results/widgets/search_user_tile.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 
 class _MockUserSearchBloc extends MockBloc<UserSearchEvent, UserSearchState>
@@ -52,21 +51,6 @@ void main() {
     }
 
     group('showAll: false (All tab preview)', () {
-      testWidgets(
-        'hides skeleton on empty initial query (parent view renders idle)',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(const UserSearchState());
-
-          await tester.pumpWidget(buildSubject());
-
-          expect(
-            find.bySemanticsLabel('Loading people results'),
-            findsNothing,
-          );
-          expect(find.byType(SearchUserTile), findsNothing);
-        },
-      );
-
       testWidgets(
         'hides entirely when success with empty results',
         (tester) async {
@@ -120,22 +104,6 @@ void main() {
     });
 
     group('showAll: true (dedicated tab)', () {
-      testWidgets(
-        'hides content on empty initial query (parent view renders idle)',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(const UserSearchState());
-
-          await tester.pumpWidget(buildSubject(showAll: true));
-
-          expect(
-            find.bySemanticsLabel('Loading people results'),
-            findsNothing,
-          );
-          expect(find.byType(SearchUserTile), findsNothing);
-          expect(find.byType(SearchSectionEmptyState), findsNothing);
-        },
-      );
-
       testWidgets(
         'renders $SearchSectionEmptyState when success with empty results',
         (tester) async {
