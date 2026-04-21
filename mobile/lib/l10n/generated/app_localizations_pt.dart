@@ -953,6 +953,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Reproduzir vídeo';
 
   @override
+  String get videoPlayerMute => 'Silenciar vídeo';
+
+  @override
+  String get videoPlayerUnmute => 'Ativar som do vídeo';
+
+  @override
   String get videoPlayerEditVideo => 'Editar vídeo';
 
   @override
@@ -4393,6 +4399,50 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inboxRemovedConversation => 'Conversa removida';
 
   @override
+  String get inboxEmptyTitle => 'Ainda sem mensagens';
+
+  @override
+  String get inboxEmptySubtitle => 'O botão + não morde.';
+
+  @override
+  String get inboxActionMute => 'Silenciar conversa';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return 'Denunciar $displayName';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return 'Bloquear $displayName';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return 'Desbloquear $displayName';
+  }
+
+  @override
+  String get inboxActionRemove => 'Remover conversa';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'Remover conversa?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'Isso apagará sua conversa com $displayName. Esta ação não pode ser desfeita.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Remover';
+
+  @override
+  String get inboxConversationMuted => 'Conversa silenciada';
+
+  @override
+  String get inboxConversationUnmuted => 'Conversa com som ativado';
+
+  @override
   String get reportDialogCancel => 'Cancelar';
 
   @override
@@ -4645,6 +4695,12 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get searchFindCuratedVideoLists =>
       'Encontre listas de vídeos selecionados';
+
+  @override
+  String get searchEnterQuery => 'Digite uma busca';
+
+  @override
+  String get searchDiscoverSomethingInteresting => 'Descubra algo interessante';
 
   @override
   String get cameraAgeRestriction =>

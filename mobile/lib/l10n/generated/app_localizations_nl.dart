@@ -941,6 +941,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Video afspelen';
 
   @override
+  String get videoPlayerMute => 'Video dempen';
+
+  @override
+  String get videoPlayerUnmute => 'Videogeluid inschakelen';
+
+  @override
   String get videoPlayerEditVideo => 'Video bewerken';
 
   @override
@@ -4379,6 +4385,50 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxRemovedConversation => 'Gesprek verwijderd';
 
   @override
+  String get inboxEmptyTitle => 'Nog geen berichten';
+
+  @override
+  String get inboxEmptySubtitle => 'Die +-knop bijt niet.';
+
+  @override
+  String get inboxActionMute => 'Gesprek dempen';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return '$displayName rapporteren';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return '$displayName blokkeren';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return '$displayName deblokkeren';
+  }
+
+  @override
+  String get inboxActionRemove => 'Gesprek verwijderen';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'Gesprek verwijderen?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'Dit verwijdert je gesprek met $displayName. Deze actie kan niet ongedaan worden gemaakt.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Verwijderen';
+
+  @override
+  String get inboxConversationMuted => 'Gesprek gedempt';
+
+  @override
+  String get inboxConversationUnmuted => 'Gesprek niet meer gedempt';
+
+  @override
   String get reportDialogCancel => 'Annuleren';
 
   @override
@@ -4632,6 +4682,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get searchFindCuratedVideoLists => 'Vind samengestelde videolijsten';
+
+  @override
+  String get searchEnterQuery => 'Voer een zoekopdracht in';
+
+  @override
+  String get searchDiscoverSomethingInteresting => 'Ontdek iets interessants';
 
   @override
   String get cameraAgeRestriction =>

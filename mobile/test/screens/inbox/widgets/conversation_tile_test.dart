@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for ConversationTile.
 // ABOUTME: Verifies avatar, display name, last message, unread dot, and tap.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -260,6 +261,83 @@ void main() {
 
         expect(longPressed, isTrue);
       });
+    });
+
+    group('highlight', () {
+      testWidgets(
+        'applies $VineTheme.containerLow background when highlighted',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Alice');
+          final testConversation = createTestConversation();
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(otherPubkey).overrideWith(
+                  (ref) async => testProfile,
+                ),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: testConversation,
+                  currentUserPubkey: currentPubkey,
+                  highlighted: true,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final decoratedBox = tester.widget<DecoratedBox>(
+            find
+                .descendant(
+                  of: find.byType(ConversationTile),
+                  matching: find.byType(DecoratedBox),
+                )
+                .first,
+          );
+          final decoration = decoratedBox.decoration as BoxDecoration;
+          expect(decoration.color, equals(VineTheme.containerLow));
+        },
+      );
+
+      testWidgets(
+        'has no background color when not highlighted',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Alice');
+          final testConversation = createTestConversation();
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(otherPubkey).overrideWith(
+                  (ref) async => testProfile,
+                ),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: testConversation,
+                  currentUserPubkey: currentPubkey,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final decoratedBox = tester.widget<DecoratedBox>(
+            find
+                .descendant(
+                  of: find.byType(ConversationTile),
+                  matching: find.byType(DecoratedBox),
+                )
+                .first,
+          );
+          final decoration = decoratedBox.decoration as BoxDecoration;
+          expect(decoration.color, isNull);
+        },
+      );
     });
   });
 }

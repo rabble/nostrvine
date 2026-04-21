@@ -11,6 +11,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -333,6 +334,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       videos: pooledVideos,
       pool: PlayerPool.instance,
       maxLoopDuration: VideoEditorConstants.maxDuration,
+      initialVolume: context.read<VideoVolumeCubit>().state.volume,
+      onVolumeChanged: context.read<VideoVolumeCubit>().onPlaybackVolumeChanged,
       onVideoReady: (index, player) {
         if (!_hasMarkedVideoReady && index == 0) {
           _hasMarkedVideoReady = true;
@@ -511,6 +514,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
         color: VineTheme.backgroundColor,
         child: MultiBlocListener(
           listeners: [
+            // Sync volume when hardware buttons change system volume.
+            BlocListener<VideoVolumeCubit, VideoVolumeState>(
+              listener: (_, state) {
+                controller?.setVolume(state.volume);
+              },
+            ),
             // Reset controller when mode changes so a fresh one is
             // created for the new feed.
             BlocListener<VideoFeedBloc, VideoFeedState>(
@@ -658,6 +667,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                               listSources: listSources,
                               showAutoButton: autoAdvanceAvailable,
                               isAutoEnabled: effectiveAutoEnabled,
+                              feedController: null,
                               onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                             );
@@ -934,6 +944,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
     required this.index,
     required this.isActive,
     required this.pagePosition,
+    required this.feedController,
     required this.showAutoButton,
     required this.isAutoEnabled,
     this.contextTitle,
@@ -946,6 +957,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
   final int index;
   final bool isActive;
   final ValueNotifier<double> pagePosition;
+  final VideoFeedController? feedController;
   final bool showAutoButton;
   final bool isAutoEnabled;
   final String? contextTitle;
@@ -981,6 +993,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
         index: index,
         listSources: listSources,
         showAutoButton: showAutoButton,
+        feedController: feedController,
         isAutoEnabled: isAutoEnabled,
         onAutoPressed: onAutoPressed,
         onInteracted: onInteracted,
@@ -1106,7 +1119,7 @@ class _PooledVideoFeedItemContentState
               errorType: errorType,
             );
           },
-          overlayBuilder: (context, videoController, player) =>
+          overlayBuilder: (context, videoController, player, feedController) =>
               FeedAutoAdvanceCompletionListener(
                 player: player,
                 isEnabled: widget.isActive && widget.isAutoAdvanceActive,
@@ -1121,6 +1134,7 @@ class _PooledVideoFeedItemContentState
                       player: player,
                       firstFrameFuture:
                           videoController?.waitUntilFirstFrameRendered,
+                      feedController: feedController,
                       listSources: widget.listSources,
                       showAutoButton: widget.showAutoButton,
                       isAutoEnabled: widget.isAutoEnabled,
