@@ -31,6 +31,8 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
@@ -2293,16 +2295,25 @@ VideosRepository videosRepository(Ref ref) {
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
   final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
+  final flagService = ref.watch(featureFlagServiceProvider);
+  final engine = ref.watch(contentPolicyEngineProvider);
 
   final nsfwFilter = createNsfwFilter(
     contentFilterService,
     moderationLabelService: moderationLabelService,
   );
 
+  final blockFilter = flagService.isEnabled(FeatureFlag.contentPolicyV2)
+      ? createPolicyEngineFilter(
+          engine,
+          () => blocklistRepository.currentState,
+        )
+      : createBlocklistFilter(blocklistRepository);
+
   return VideosRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    blockFilter: createBlocklistFilter(blocklistRepository),
+    blockFilter: blockFilter,
     contentFilter: (video) =>
         nsfwFilter(video) ||
         (divineHostFilterService.showDivineHostedOnly &&
