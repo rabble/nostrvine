@@ -1009,6 +1009,43 @@ class NostrClient {
     return sentEvent;
   }
 
+  /// Publishes a Kind 16 generic repost and resolves per-relay NIP-20 OK acks.
+  ///
+  /// Builds the same tag structure as [sendGenericRepost] and routes through
+  /// [publishEventAwaitOk] or [publishEventWithRetry] so callers can gate local
+  /// state on actual relay acceptance instead of only event construction.
+  Future<PublishOutcome> sendGenericRepostAwaitOk({
+    required String addressableId,
+    required int targetKind,
+    required String authorPubkey,
+    String? eventId,
+    String content = '',
+    RetryPolicy? policy,
+    List<String>? targetRelays,
+  }) async {
+    final tags = <List<String>>[
+      ['k', '$targetKind'],
+      ['a', addressableId],
+      ['p', authorPubkey],
+      if (eventId != null) ['e', eventId],
+    ];
+
+    final event = Event(
+      publicKey,
+      EventKind.genericRepost,
+      tags,
+      content,
+    );
+
+    return policy == null
+        ? publishEventAwaitOk(event, targetRelays: targetRelays)
+        : publishEventWithRetry(
+            event,
+            policy: policy,
+            targetRelays: targetRelays,
+          );
+  }
+
   /// Deletes an event
   ///
   /// Sends a NIP-09 deletion event (Kind 5) and removes the target event

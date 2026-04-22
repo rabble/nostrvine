@@ -283,22 +283,24 @@ class RepostsRepository {
       return placeholderId;
     }
 
-    // Create and publish Kind 16 generic repost event
-    final sentEvent = await _nostrClient.sendGenericRepost(
+    // Create and publish Kind 16 generic repost event, then require at least
+    // one relay OK before committing local state.
+    final outcome = await _nostrClient.sendGenericRepostAwaitOk(
       addressableId: addressableId,
       targetKind: EventKind.videoVertical,
       authorPubkey: originalAuthorPubkey,
       eventId: eventId,
+      policy: const RetryPolicy(),
     );
 
-    if (sentEvent == null) {
+    if (!outcome.acceptedByAny) {
       throw const RepostFailedException('Failed to publish repost to relays');
     }
 
     // Create and store the repost record
     final record = RepostRecord(
       addressableId: addressableId,
-      repostEventId: sentEvent.id,
+      repostEventId: outcome.eventId,
       originalAuthorPubkey: originalAuthorPubkey,
       createdAt: DateTime.now(),
     );
@@ -307,7 +309,7 @@ class RepostsRepository {
     await _localStorage?.saveRepostRecord(record);
     _emitRepostedIds();
 
-    return sentEvent.id;
+    return outcome.eventId;
   }
 
   /// Execute a repost action directly (for use by sync service).
@@ -319,15 +321,17 @@ class RepostsRepository {
     required String originalAuthorPubkey,
     String? eventId,
   }) async {
-    // Create and publish Kind 16 generic repost event
-    final sentEvent = await _nostrClient.sendGenericRepost(
+    // Create and publish Kind 16 generic repost event, then require at least
+    // one relay OK before replacing any pending local record.
+    final outcome = await _nostrClient.sendGenericRepostAwaitOk(
       addressableId: addressableId,
       targetKind: EventKind.videoVertical,
       authorPubkey: originalAuthorPubkey,
       eventId: eventId,
+      policy: const RetryPolicy(),
     );
 
-    if (sentEvent == null) {
+    if (!outcome.acceptedByAny) {
       throw const RepostFailedException('Failed to publish repost to relays');
     }
 
@@ -337,7 +341,7 @@ class RepostsRepository {
         existingRecord.repostEventId.startsWith('pending_')) {
       final record = RepostRecord(
         addressableId: addressableId,
-        repostEventId: sentEvent.id,
+        repostEventId: outcome.eventId,
         originalAuthorPubkey: originalAuthorPubkey,
         createdAt: existingRecord.createdAt,
       );
@@ -345,7 +349,7 @@ class RepostsRepository {
       await _localStorage?.saveRepostRecord(record);
     }
 
-    return sentEvent.id;
+    return outcome.eventId;
   }
 
   /// Unrepost a video.
@@ -389,12 +393,14 @@ class RepostsRepository {
 
     // Skip publishing deletion if this was a pending repost that never synced
     if (!record.repostEventId.startsWith('pending_')) {
-      // Publish Kind 5 deletion event via NostrClient
-      final deletionEvent = await _nostrClient.deleteEvent(
+      // Publish Kind 5 deletion event via NostrClient and only remove the
+      // local record after at least one relay accepts.
+      final outcome = await _nostrClient.deleteEventAwaitOk(
         record.repostEventId,
+        policy: const RetryPolicy(),
       );
 
-      if (deletionEvent == null) {
+      if (!outcome.acceptedByAny) {
         throw const UnrepostFailedException(
           'Failed to publish unrepost deletion',
         );
@@ -432,12 +438,14 @@ class RepostsRepository {
       return;
     }
 
-    // Publish Kind 5 deletion event via NostrClient
-    final deletionEvent = await _nostrClient.deleteEvent(
+    // Publish Kind 5 deletion event via NostrClient and only remove the
+    // local record after at least one relay accepts.
+    final outcome = await _nostrClient.deleteEventAwaitOk(
       record.repostEventId,
+      policy: const RetryPolicy(),
     );
 
-    if (deletionEvent == null) {
+    if (!outcome.acceptedByAny) {
       throw const UnrepostFailedException(
         'Failed to publish unrepost deletion',
       );

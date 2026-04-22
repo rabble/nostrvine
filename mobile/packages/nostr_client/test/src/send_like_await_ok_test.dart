@@ -1,6 +1,6 @@
-// ABOUTME: Tests for NostrClient.sendLikeAwaitOk, .sendRepostAwaitOk, and
-// ABOUTME: .deleteEventAwaitOk — the publishEventWithRetry-aware variants of
-// ABOUTME: the reaction/repost/deletion helpers used by repositories.
+// ABOUTME: Tests for NostrClient.sendLikeAwaitOk, .sendRepostAwaitOk,
+// ABOUTME: .sendGenericRepostAwaitOk, and .deleteEventAwaitOk — the
+// ABOUTME: publishEventWithRetry-aware variants used by repositories.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -289,6 +289,68 @@ void main() {
       expect(sentEvent!.tags, [
         ['e', _testEventId, 'wss://hint.example.com'],
       ]);
+    });
+  });
+
+  group('NostrClient.sendGenericRepostAwaitOk', () {
+    late _MockNostr mockNostr;
+    late _MockRelayManager mockRelayManager;
+    late NostrClient client;
+
+    setUp(() {
+      mockNostr = _MockNostr();
+      mockRelayManager = _MockRelayManager();
+      when(() => mockNostr.publicKey).thenReturn(_testPublicKey);
+      when(() => mockNostr.close()).thenReturn(null);
+      when(() => mockRelayManager.dispose()).thenAnswer((_) async {});
+      when(
+        () => mockRelayManager.connectedRelays,
+      ).thenReturn(['wss://relay.example.com']);
+      client = NostrClient.forTesting(
+        nostr: mockNostr,
+        relayManager: mockRelayManager,
+      );
+    });
+
+    tearDown(() {
+      reset(mockNostr);
+      reset(mockRelayManager);
+    });
+
+    test('builds kind 16 generic repost with a, k, p, and e tags', () async {
+      Event? sentEvent;
+      when(
+        () => mockNostr.sendEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+          tempRelays: any(named: 'tempRelays'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((invocation) async {
+        sentEvent = invocation.positionalArguments[0] as Event;
+        return _accepted(sentEvent!.id);
+      });
+
+      const addressableId = '34236:$_testAuthorPubkey:video-d-tag';
+      final outcome = await client.sendGenericRepostAwaitOk(
+        addressableId: addressableId,
+        targetKind: 34236,
+        authorPubkey: _testAuthorPubkey,
+        eventId: _testEventId,
+      );
+
+      expect(outcome.acceptedByAny, isTrue);
+      expect(sentEvent!.kind, EventKind.genericRepost);
+      expect(sentEvent!.content, '');
+      expect(
+        sentEvent!.tags,
+        [
+          ['k', '34236'],
+          ['a', addressableId],
+          ['p', _testAuthorPubkey],
+          ['e', _testEventId],
+        ],
+      );
     });
   });
 

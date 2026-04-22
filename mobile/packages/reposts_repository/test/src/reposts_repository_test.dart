@@ -27,6 +27,7 @@ void main() {
     );
     registerFallbackValue(<Filter>[]);
     registerFallbackValue('');
+    registerFallbackValue(const RetryPolicy());
   });
 
   group('RepostsRepository', () {
@@ -44,6 +45,8 @@ void main() {
     const testRepostEventId =
         'repost_event_id_64_chars_'
         '000000000000000000000000000000000000000';
+    const testDeletionEventId =
+        'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
     Event createMockEvent({
       required String id,
@@ -62,33 +65,48 @@ void main() {
       return event;
     }
 
+    PublishOutcome acceptedOutcome({String eventId = testRepostEventId}) =>
+        PublishOutcome(
+          eventId: eventId,
+          acceptedBy: const {'wss://relay.example'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        );
+
+    PublishOutcome transientOutcome({String eventId = testRepostEventId}) =>
+        PublishOutcome(
+          eventId: eventId,
+          acceptedBy: const {},
+          rejectedBy: const {},
+          noResponseFrom: const {'wss://relay.example'},
+        );
+
     setUp(() {
       mockNostrClient = MockNostrClient();
       mockLocalStorage = MockRepostsLocalStorage();
 
       when(() => mockNostrClient.publicKey).thenReturn(testPubkey);
 
-      // Default sendGenericRepost mock - returns a valid event
+      // Default reliable generic repost mock - returns an accepted event.
       when(
-        () => mockNostrClient.sendGenericRepost(
+        () => mockNostrClient.sendGenericRepostAwaitOk(
           addressableId: any(named: 'addressableId'),
           targetKind: any(named: 'targetKind'),
           authorPubkey: any(named: 'authorPubkey'),
           content: any(named: 'content'),
-          tempRelays: any(named: 'tempRelays'),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => acceptedOutcome());
+
+      when(
+        () => mockNostrClient.deleteEventAwaitOk(
+          any(),
+          policy: any(named: 'policy'),
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => createMockEvent(
-          id: testRepostEventId,
-          kind: EventKind.genericRepost,
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          tags: [
-            ['k', '${EventKind.videoVertical}'],
-            ['a', testAddressableId],
-            ['p', testAuthorPubkey],
-          ],
-        ),
+        (_) async => acceptedOutcome(eventId: testDeletionEventId),
       );
 
       // Default local storage mocks
@@ -285,12 +303,12 @@ void main() {
         expect(eventId, equals(testRepostEventId));
 
         verify(
-          () => mockNostrClient.sendGenericRepost(
+          () => mockNostrClient.sendGenericRepostAwaitOk(
             addressableId: testAddressableId,
             targetKind: EventKind.videoVertical,
             authorPubkey: testAuthorPubkey,
             content: any(named: 'content'),
-            tempRelays: any(named: 'tempRelays'),
+            policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
@@ -330,21 +348,22 @@ void main() {
       });
 
       test(
-        'throws RepostFailedException when sendGenericRepost fails',
+        'throws RepostFailedException when no relay accepts repost',
         () async {
           when(
-            () => mockNostrClient.sendGenericRepost(
+            () => mockNostrClient.sendGenericRepostAwaitOk(
               addressableId: any(named: 'addressableId'),
               targetKind: any(named: 'targetKind'),
               authorPubkey: any(named: 'authorPubkey'),
               content: any(named: 'content'),
-              tempRelays: any(named: 'tempRelays'),
+              policy: any(named: 'policy'),
               targetRelays: any(named: 'targetRelays'),
             ),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => transientOutcome());
 
           final repository = RepostsRepository(
             nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
           );
 
           expect(
@@ -354,20 +373,14 @@ void main() {
             ),
             throwsA(isA<RepostFailedException>()),
           );
+          verifyNever(() => mockLocalStorage.saveRepostRecord(any()));
+          expect(repository.isRepostedSync(testAddressableId), isFalse);
         },
       );
     });
 
     group('unrepostVideo', () {
       test('publishes deletion event and removes record', () async {
-        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
-          (_) async => createMockEvent(
-            id: 'deletion_event_id',
-            kind: 5,
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        );
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
@@ -383,7 +396,13 @@ void main() {
         await repository.unrepostVideo(testAddressableId);
 
         expect(repository.isRepostedSync(testAddressableId), isFalse);
-        verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
+        verify(
+          () => mockNostrClient.deleteEventAwaitOk(
+            testRepostEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
         verify(
           () => mockLocalStorage.deleteRepostRecord(testAddressableId),
         ).called(1);
@@ -411,13 +430,6 @@ void main() {
         when(
           () => mockLocalStorage.getRepostRecord(testAddressableId),
         ).thenAnswer((_) async => record);
-        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
-          (_) async => createMockEvent(
-            id: 'deletion_event_id',
-            kind: 5,
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        );
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
@@ -429,16 +441,29 @@ void main() {
         verify(
           () => mockLocalStorage.getRepostRecord(testAddressableId),
         ).called(1);
-        verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
+        verify(
+          () => mockNostrClient.deleteEventAwaitOk(
+            testRepostEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
       });
 
-      test('throws UnrepostFailedException when deletion fails', () async {
+      test('keeps repost record when deletion is not accepted', () async {
         when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer((_) async => null);
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => transientOutcome(eventId: testDeletionEventId),
+        );
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
         );
 
         await repository.repostVideo(
@@ -449,6 +474,10 @@ void main() {
         expect(
           () => repository.unrepostVideo(testAddressableId),
           throwsA(isA<UnrepostFailedException>()),
+        );
+        expect(repository.isRepostedSync(testAddressableId), isTrue);
+        verifyNever(
+          () => mockLocalStorage.deleteRepostRecord(testAddressableId),
         );
       });
     });
@@ -469,14 +498,6 @@ void main() {
       });
 
       test('unreposts when reposted and returns false', () async {
-        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
-          (_) async => createMockEvent(
-            id: 'deletion_event_id',
-            kind: 5,
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        );
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
         );
@@ -566,17 +587,6 @@ void main() {
       });
 
       test('cached count clamps to zero for negative values', () async {
-        // Set up a repost record so unrepost succeeds
-        when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer(
-          (_) async => createMockEvent(
-            id: 'deletion_event_id',
-            kind: EventKind.eventDeletion,
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        );
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
         );
@@ -1435,14 +1445,6 @@ void main() {
       test('unrepostVideo queues action when offline', () async {
         var queuedAction = <String, dynamic>{};
 
-        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
-          (_) async => createMockEvent(
-            id: 'deletion_event_id',
-            kind: 5,
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        );
-
         // First repost while online
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
@@ -1508,12 +1510,12 @@ void main() {
         expect(eventId, equals(testRepostEventId));
 
         verify(
-          () => mockNostrClient.sendGenericRepost(
+          () => mockNostrClient.sendGenericRepostAwaitOk(
             addressableId: testAddressableId,
             targetKind: EventKind.videoVertical,
             authorPubkey: testAuthorPubkey,
             content: any(named: 'content'),
-            tempRelays: any(named: 'tempRelays'),
+            policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
@@ -1555,15 +1557,15 @@ void main() {
 
       test('throws RepostFailedException when publish fails', () async {
         when(
-          () => mockNostrClient.sendGenericRepost(
+          () => mockNostrClient.sendGenericRepostAwaitOk(
             addressableId: any(named: 'addressableId'),
             targetKind: any(named: 'targetKind'),
             authorPubkey: any(named: 'authorPubkey'),
             content: any(named: 'content'),
-            tempRelays: any(named: 'tempRelays'),
+            policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => transientOutcome());
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
@@ -1581,14 +1583,6 @@ void main() {
 
     group('executeUnrepostAction', () {
       test('publishes deletion directly to relays', () async {
-        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
-          (_) async => createMockEvent(
-            id: 'deletion_event_id',
-            kind: 5,
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        );
-
         // First repost
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
@@ -1603,7 +1597,13 @@ void main() {
         // Now execute unrepost directly
         await repository.executeUnrepostAction(testAddressableId);
 
-        verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
+        verify(
+          () => mockNostrClient.deleteEventAwaitOk(
+            testRepostEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
         verify(
           () => mockLocalStorage.deleteRepostRecord(testAddressableId),
         ).called(1);
@@ -1629,10 +1629,16 @@ void main() {
           originalAuthorPubkey: testAuthorPubkey,
         );
 
-        // Execute unrepost - should not call deleteEvent since never synced
+        // Execute unrepost - should not publish since never synced
         await repository.executeUnrepostAction(testAddressableId);
 
-        verifyNever(() => mockNostrClient.deleteEvent(any()));
+        verifyNever(
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
         verify(
           () => mockLocalStorage.deleteRepostRecord(testAddressableId),
         ).called(1);
@@ -1647,7 +1653,13 @@ void main() {
         // Should not throw, just return
         await repository.executeUnrepostAction(testAddressableId);
 
-        verifyNever(() => mockNostrClient.deleteEvent(any()));
+        verifyNever(
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
         verifyNever(
           () => mockLocalStorage.deleteRepostRecord(testAddressableId),
         );
@@ -1655,8 +1667,14 @@ void main() {
 
       test('throws UnrepostFailedException when deletion fails', () async {
         when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer((_) async => null);
+          () => mockNostrClient.deleteEventAwaitOk(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => transientOutcome(eventId: testDeletionEventId),
+        );
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
@@ -1685,13 +1703,6 @@ void main() {
         when(
           () => mockLocalStorage.getRepostRecord(testAddressableId),
         ).thenAnswer((_) async => record);
-        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
-          (_) async => createMockEvent(
-            id: 'deletion_event_id',
-            kind: 5,
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        );
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
@@ -1703,7 +1714,13 @@ void main() {
         verify(
           () => mockLocalStorage.getRepostRecord(testAddressableId),
         ).called(1);
-        verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
+        verify(
+          () => mockNostrClient.deleteEventAwaitOk(
+            testRepostEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
       });
     });
   });
