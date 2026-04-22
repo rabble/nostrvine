@@ -3817,16 +3817,8 @@ void main() {
     });
 
     group('slow-load detection', () {
-      // NOTE: This test cannot use `fakeAsync` because the slow-load
-      // watchdog reads `Stopwatch.elapsedMilliseconds` (see
-      // `VideoFeedController._loadStopwatches`), which is bound to the OS
-      // clock and is not affected by `fakeAsync`'s virtual time. Converting
-      // the test would require migrating production code to `package:clock`
-      // first. Tracked alongside the startup_diagnostics deferrals in
-      // #3233 / #3237.
-      test(
-        'current video gives up with error when load exceeds threshold',
-        () async {
+      test('current video gives up with error when load exceeds threshold', () {
+        fakeAsync((async) {
           final videos = createTestVideos(count: 1);
 
           // Use isBuffering: true so the video stays in loading state
@@ -3849,17 +3841,18 @@ void main() {
           final notifier = controller.getIndexNotifier(0);
 
           // Initially loading.
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          async.elapse(const Duration(milliseconds: 100));
           expect(notifier.value.hasError, isFalse);
 
           // After threshold, watchdog gives up for stuck current video.
-          await Future<void>.delayed(const Duration(milliseconds: 1200));
+          async.elapse(const Duration(milliseconds: 1200));
           expect(notifier.value.hasError, isTrue);
 
           controller.dispose();
-          await slowPool.dispose();
-        },
-      );
+          unawaited(slowPool.dispose());
+          async.flushMicrotasks();
+        });
+      });
 
       test(
         'isSlowLoad is cleared when video becomes ready before threshold',
@@ -4965,16 +4958,8 @@ void main() {
     });
 
     group('stuck playback with no fallback sources', () {
-      // NOTE: This test cannot use `fakeAsync` because the slow-load
-      // watchdog reads `Stopwatch.elapsedMilliseconds` (see
-      // `VideoFeedController._loadStopwatches`), which is bound to the OS
-      // clock and is not affected by `fakeAsync`'s virtual time. Converting
-      // the test would require migrating production code to `package:clock`
-      // first. Tracked alongside the startup_diagnostics deferrals in
-      // #3233 follow-up.
-      test(
-        'marks error when stuck and no fallback sources available',
-        () async {
+      test('marks error when stuck and no fallback sources available', () {
+        fakeAsync((async) {
           // Create a pool where players start buffering (never become ready).
           final stuckSetups = <String, MockPlayerSetup>{};
           final stuckPool = TestablePlayerPool(
@@ -5004,11 +4989,11 @@ void main() {
             slowLoadThreshold: const Duration(milliseconds: 100),
           );
 
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-
           // Watchdog fires every 1s; after 1s elapsed exceeds 100ms
           // threshold and retries — no fallback sources → marks error.
-          await Future<void>.delayed(const Duration(seconds: 2));
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..elapse(const Duration(seconds: 2));
 
           expect(
             controller.getLoadState(0),
@@ -5017,11 +5002,12 @@ void main() {
 
           controller.dispose();
           for (final s in stuckSetups.values) {
-            await s.dispose();
+            unawaited(s.dispose());
           }
-          await stuckPool.dispose();
-        },
-      );
+          unawaited(stuckPool.dispose());
+          async.flushMicrotasks();
+        });
+      });
     });
 
     group('retryLoad', () {
@@ -5673,172 +5659,169 @@ void main() {
       await pool.dispose();
     });
 
-    // NOTE: The three tests below cannot use `fakeAsync` because the
-    // playback-rate / state-snapshot diagnostics read
-    // `DateTime.now().millisecondsSinceEpoch` directly (see
-    // `VideoFeedController._checkPlaybackRate` and
-    // `_emitStateSnapshotIfDue` at `video_feed_controller.dart:1943,1994`).
-    // Under `fakeAsync`, `DateTime.now()` returns real wall-clock time,
-    // so `wallDelta` is always ~0 and the detection logic either never
-    // fires (breaking the positive test) or passes tautologically
-    // (hiding real regressions in the negative tests). Converting these
-    // requires migrating the wall-clock reads to `package:clock`'s
-    // injectable `clock.now()`. Tracked alongside the startup_diagnostics
-    // and stuck-playback deferrals in #3233 / #3237.
     test(
       'slow_playback_detected fires when position advances at '
       'well below real-time rate',
-      () async {
-        final logs = <String>[];
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 1),
-          pool: pool,
-          onLog: (level, message) => logs.add(message),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+      () {
+        fakeAsync((async) {
+          final logs = <String>[];
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            onLog: (level, message) => logs.add(message),
+          );
+          async.elapse(const Duration(milliseconds: 100));
 
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
 
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(
-          () => setup.state.position,
-        ).thenReturn(const Duration(milliseconds: 1000));
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 1000));
 
-        // Trigger buffer ready to start the heartbeat timer. The first
-        // rate-check tick will anchor the window at positionStart=1000,
-        // wallStart=now.
-        setup.bufferingController.add(false);
+          // Trigger buffer ready to start the heartbeat timer. The first
+          // rate-check tick will anchor the window at positionStart=1000,
+          // wallStart=now.
+          setup.bufferingController.add(false);
 
-        // After ~1s of wall time with the same position (1000), nudge
-        // position forward by only 100ms. This means the 2s rate-check
-        // window that fires around T+2.2s will see:
-        //   positionDelta ≈ 100ms over wallDelta ≈ 2100ms
-        //   ratePct ≈ 4–5 (well under the 50% threshold)
-        // Simulates the iOS "position crawls at ~4% real-time" bug.
-        await Future<void>.delayed(const Duration(milliseconds: 1000));
-        when(
-          () => setup.state.position,
-        ).thenReturn(const Duration(milliseconds: 1100));
+          // After ~1s of wall time with the same position (1000), nudge
+          // position forward by only 100ms. This means the 2s rate-check
+          // window that fires around T+2.2s will see:
+          //   positionDelta ≈ 100ms over wallDelta ≈ 2100ms
+          //   ratePct ≈ 4–5 (well under the 50% threshold)
+          // Simulates the iOS "position crawls at ~4% real-time" bug.
+          async.elapse(const Duration(milliseconds: 1000));
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 1100));
 
-        // Wait past the 2s rate-check window boundary so the heartbeat
-        // tick that evaluates the window sees position=1100.
-        await Future<void>.delayed(const Duration(milliseconds: 1400));
+          // Wait past the 2s rate-check window boundary so the heartbeat
+          // tick that evaluates the window sees position=1100.
+          async.elapse(const Duration(milliseconds: 1400));
 
-        final slowLogs = logs
-            .where((m) => m.startsWith('slow_playback_detected'))
-            .toList();
+          final slowLogs = logs
+              .where((m) => m.startsWith('slow_playback_detected'))
+              .toList();
 
-        expect(
-          slowLogs,
-          isNotEmpty,
-          reason:
-              'Expected slow_playback_detected when position advanced '
-              'only ~100ms over ~2.4s of wall time (~4% real-time). '
-              'All logs: $logs',
-        );
-        // Sanity: the log line should include the rate so we can grep
-        // for it in production and filter by severity.
-        expect(slowLogs.first, contains('ratePct='));
-        expect(slowLogs.first, contains('positionDeltaMs='));
-        expect(slowLogs.first, contains('wallDeltaMs='));
+          expect(
+            slowLogs,
+            isNotEmpty,
+            reason:
+                'Expected slow_playback_detected when position advanced '
+                'only ~100ms over ~2.4s of wall time (~4% real-time). '
+                'All logs: $logs',
+          );
+          // Sanity: the log line should include the rate so we can grep
+          // for it in production and filter by severity.
+          expect(slowLogs.first, contains('ratePct='));
+          expect(slowLogs.first, contains('positionDeltaMs='));
+          expect(slowLogs.first, contains('wallDeltaMs='));
 
-        controller.dispose();
+          controller.dispose();
+          async.flushMicrotasks();
+        });
       },
     );
 
     test(
       'slow_playback_detected does NOT fire at normal real-time rate',
-      () async {
-        final logs = <String>[];
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 1),
-          pool: pool,
-          onLog: (level, message) => logs.add(message),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+      () {
+        fakeAsync((async) {
+          final logs = <String>[];
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            onLog: (level, message) => logs.add(message),
+          );
+          async.elapse(const Duration(milliseconds: 100));
 
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
 
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(
-          () => setup.state.position,
-        ).thenReturn(const Duration(milliseconds: 1000));
-        setup.bufferingController.add(false);
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 1000));
+          setup.bufferingController.add(false);
 
-        // Advance position by 2000ms in ~1.5s of wall time (~133%
-        // real-time — a bit fast but comfortably above the 50%
-        // slow-playback threshold).
-        await Future<void>.delayed(const Duration(milliseconds: 1500));
-        when(
-          () => setup.state.position,
-        ).thenReturn(const Duration(milliseconds: 3000));
+          // Advance position by 2000ms in ~1.5s of wall time (~133%
+          // real-time — a bit fast but comfortably above the 50%
+          // slow-playback threshold).
+          async.elapse(const Duration(milliseconds: 1500));
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 3000));
 
-        // Wait past the 2s rate-check window boundary so the check
-        // evaluates with positionDelta ≈ 2000, wallDelta ≈ 2100,
-        // ratePct ≈ 95.
-        await Future<void>.delayed(const Duration(milliseconds: 800));
+          // Wait past the 2s rate-check window boundary so the check
+          // evaluates with positionDelta ≈ 2000, wallDelta ≈ 2100,
+          // ratePct ≈ 95.
+          async.elapse(const Duration(milliseconds: 800));
 
-        expect(
-          logs.where((m) => m.startsWith('slow_playback_detected')),
-          isEmpty,
-          reason:
-              'slow_playback_detected should only fire when playback is '
-              'measurably slower than real-time, not for normal speed. '
-              'All logs: $logs',
-        );
+          expect(
+            logs.where((m) => m.startsWith('slow_playback_detected')),
+            isEmpty,
+            reason:
+                'slow_playback_detected should only fire when playback is '
+                'measurably slower than real-time, not for normal speed. '
+                'All logs: $logs',
+          );
 
-        controller.dispose();
+          controller.dispose();
+          async.flushMicrotasks();
+        });
       },
     );
 
     test(
       'player_state_snapshot fires periodically for current video',
-      () async {
-        final logs = <String>[];
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 1),
-          pool: pool,
-          onLog: (level, message) => logs.add(message),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+      () {
+        fakeAsync((async) {
+          final logs = <String>[];
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            onLog: (level, message) => logs.add(message),
+          );
+          async.elapse(const Duration(milliseconds: 100));
 
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
 
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(
-          () => setup.state.position,
-        ).thenReturn(const Duration(milliseconds: 500));
-        setup.bufferingController.add(false);
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(
+            () => setup.state.position,
+          ).thenReturn(const Duration(milliseconds: 500));
+          setup.bufferingController.add(false);
 
-        // Wait longer than the snapshot interval (2s) to guarantee at
-        // least one snapshot fires.
-        await Future<void>.delayed(const Duration(milliseconds: 2300));
+          // Wait longer than the snapshot interval (2s) to guarantee at
+          // least one snapshot fires.
+          async.elapse(const Duration(milliseconds: 2300));
 
-        final snapshotLogs = logs
-            .where((m) => m.startsWith('player_state_snapshot'))
-            .toList();
+          final snapshotLogs = logs
+              .where((m) => m.startsWith('player_state_snapshot'))
+              .toList();
 
-        expect(
-          snapshotLogs,
-          isNotEmpty,
-          reason:
-              'Expected player_state_snapshot to fire at least once '
-              'within ~2.3s. All logs: $logs',
-        );
-        // The snapshot should include enough fields to diagnose mpv
-        // state divergence in production logs.
-        expect(snapshotLogs.first, contains('playing='));
-        expect(snapshotLogs.first, contains('buffering='));
-        expect(snapshotLogs.first, contains('positionMs='));
-        expect(snapshotLogs.first, contains('index=0'));
+          expect(
+            snapshotLogs,
+            isNotEmpty,
+            reason:
+                'Expected player_state_snapshot to fire at least once '
+                'within ~2.3s. All logs: $logs',
+          );
+          // The snapshot should include enough fields to diagnose mpv
+          // state divergence in production logs.
+          expect(snapshotLogs.first, contains('playing='));
+          expect(snapshotLogs.first, contains('buffering='));
+          expect(snapshotLogs.first, contains('positionMs='));
+          expect(snapshotLogs.first, contains('index=0'));
 
-        controller.dispose();
+          controller.dispose();
+          async.flushMicrotasks();
+        });
       },
     );
   });
