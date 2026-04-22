@@ -1,4 +1,4 @@
-// ABOUTME: Tests for VideoClipEditorProcessingOverlay widget
+// ABOUTME: Tests for VideoEditorProcessingOverlay widget
 // ABOUTME: Verifies opacity and visibility based on clip processing state
 
 import 'dart:async';
@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 DivineVideoClip _createClip({Completer<bool>? processingCompleter}) {
@@ -25,7 +25,7 @@ DivineVideoClip _createClip({Completer<bool>? processingCompleter}) {
 }
 
 void main() {
-  group('VideoClipEditorProcessingOverlay', () {
+  group('VideoEditorProcessingOverlay', () {
     testWidgets('should be visible when clip is processing', (tester) async {
       final completer = Completer<bool>();
       final clip = _createClip(processingCompleter: completer);
@@ -35,7 +35,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+            home: Scaffold(body: VideoEditorProcessingOverlay(clip: clip)),
           ),
         ),
       );
@@ -59,7 +59,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+            home: Scaffold(body: VideoEditorProcessingOverlay(clip: clip)),
           ),
         ),
       );
@@ -84,7 +84,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: VideoClipEditorProcessingOverlay(clip: clip)),
+            home: Scaffold(body: VideoEditorProcessingOverlay(clip: clip)),
           ),
         ),
       );

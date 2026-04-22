@@ -16,7 +16,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_preview_thumbnail.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -128,7 +128,7 @@ void main() {
           );
 
           expect(
-            find.byType(VideoClipEditorProcessingOverlay),
+            find.byType(VideoEditorProcessingOverlay),
             findsOneWidget,
           );
         },
