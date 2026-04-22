@@ -5,12 +5,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/screens/search_results/widgets/people_section.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
+
+import '../../../helpers/test_provider_overrides.dart';
 
 class _MockUserSearchBloc extends MockBloc<UserSearchEvent, UserSearchState>
     implements UserSearchBloc {}
@@ -37,13 +41,22 @@ void main() {
     });
 
     Widget buildSubject({bool showAll = false}) {
-      return MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: BlocProvider<UserSearchBloc>.value(
-            value: mockBloc,
-            child: CustomScrollView(slivers: [PeopleSection(showAll: showAll)]),
+      return testProviderScope(
+        additionalOverrides: [
+          isFeatureEnabledProvider(
+            FeatureFlag.curatedLists,
+          ).overrideWithValue(false),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BlocProvider<UserSearchBloc>.value(
+              value: mockBloc,
+              child: CustomScrollView(
+                slivers: [PeopleSection(showAll: showAll)],
+              ),
+            ),
           ),
         ),
       );
