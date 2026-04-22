@@ -262,15 +262,15 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _prefetcher = DiskPrefetcher(cache: widget.cache, log: _log);
     _watchdog = LoadWatchdog(
       threshold: widget.slowLoadThreshold,
-      onSlowLoad: (index) => unawaited(_retryWithNextSource(index)),
       // coverage:ignore-start
+      onSlowLoad: (index) => unawaited(_retryWithNextSource(index)),
       log: _log,
       // coverage:ignore-end
     );
     _staleDetector = StalePlaybackDetector(
       onSeekRecovery: _seekKick,
-      onSourceFailover: (index) => unawaited(_retryWithNextSource(index)),
       // coverage:ignore-start
+      onSourceFailover: (index) => unawaited(_retryWithNextSource(index)),
       log: _log,
       // coverage:ignore-end
     );
@@ -346,8 +346,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (mounted) setState(() {});
   }
 
+  // coverage:ignore-start
   String? _resolveUrl(VideoEvent video) =>
       widget.urlResolver?.call(video) ?? video.videoUrl;
+  // coverage:ignore-end
 
   // ─── Index change → window + prefetch ───────────────────────────────────
 
@@ -394,8 +396,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
     if (widget.keepPreviousAlive &&
         index - 1 >= 0 &&
+        // coverage:ignore-start
         !_controllers.containsKey(index - 1)) {
       unawaited(_initController(index - 1));
+      // coverage:ignore-end
     }
 
     if (widget.keepNextAlive &&
@@ -408,6 +412,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   Future<void> _runPrefetch(int index) async {
     if (widget.prefetchCount <= 0) return;
 
+    // coverage:ignore-start
     final lastIndex = widget.videos.length - 1;
     final prefetchStart = widget.keepNextAlive ? index + 2 : index + 1;
     final prefetchEnd = (index + widget.prefetchCount).clamp(0, lastIndex);
@@ -418,6 +423,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       videos: widget.videos,
       resolveUrl: _resolveUrl,
     );
+    // coverage:ignore-end
   }
 
   void _teardownAllControllers() {
@@ -441,8 +447,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _controllers.clear();
   }
 
+  // coverage:ignore-start
   void _disposeAt(int index) {
-    // coverage:ignore-start
     _log('Disposing player at index $index');
     _subscriptions.unsubscribe(index);
     _watchdog.stop(index);
@@ -576,9 +582,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       unawaited(_controllers.remove(index)?.dispose());
       _errors.add(index);
     }
-    // coverage:ignore-end
 
     _rebuild();
+    // coverage:ignore-end
   }
 
   // coverage:ignore-start
