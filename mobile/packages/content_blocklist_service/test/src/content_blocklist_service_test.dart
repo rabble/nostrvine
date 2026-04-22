@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,14 +8,20 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockBlockListSigner extends Mock implements BlockListSigner {}
 
+class _MockSharedPreferences extends Mock implements SharedPreferences {}
+
+class _FakeEvent extends Fake implements Event {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(<Filter>[]);
+    registerFallbackValue(_FakeEvent());
   });
 
   group('ContentBlocklistService', () {
@@ -818,5 +825,475 @@ void main() {
         expect(changeCount, equals(2));
       },
     );
+  });
+
+  group('ContentBlocklistService - persistence', () {
+    const blockedUsersKey = 'blocked_users_list';
+    const severedFollowersKey = 'severed_followers_list';
+
+    test('loads existing blocked users from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({
+        blockedUsersKey: jsonEncode(['pubkey1', 'pubkey2']),
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      final service = ContentBlocklistService(prefs: prefs);
+
+      expect(service.isBlocked('pubkey1'), isTrue);
+      expect(service.isBlocked('pubkey2'), isTrue);
+      expect(service.totalBlockedCount, equals(2));
+    });
+
+    test('ignores corrupt blocked users JSON without throwing', () async {
+      SharedPreferences.setMockInitialValues({
+        blockedUsersKey: 'not valid json',
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      final service = ContentBlocklistService(prefs: prefs);
+
+      expect(service.totalBlockedCount, equals(0));
+    });
+
+    test('loads existing severed followers from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({
+        severedFollowersKey: jsonEncode(['severed1']),
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      final service = ContentBlocklistService(prefs: prefs);
+
+      expect(service.isFollowSevered('severed1'), isTrue);
+    });
+
+    test('ignores corrupt severed followers JSON without throwing', () async {
+      SharedPreferences.setMockInitialValues({
+        severedFollowersKey: 'not valid json',
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      final service = ContentBlocklistService(prefs: prefs);
+
+      expect(service.isFollowSevered('anything'), isFalse);
+    });
+
+    test('persists blocked user and severed follower on blockUser', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistService(prefs: prefs);
+
+      await service.blockUser('pubkey1');
+
+      final blockedJson = prefs.getString(blockedUsersKey);
+      expect(blockedJson, isNotNull);
+      expect(
+        (jsonDecode(blockedJson!) as List).cast<String>(),
+        contains('pubkey1'),
+      );
+
+      final severedJson = prefs.getString(severedFollowersKey);
+      expect(severedJson, isNotNull);
+      expect(
+        (jsonDecode(severedJson!) as List).cast<String>(),
+        contains('pubkey1'),
+      );
+    });
+
+    test('continues when SharedPreferences.setString throws', () async {
+      final mockPrefs = _MockSharedPreferences();
+      when(() => mockPrefs.getString(any())).thenReturn(null);
+      when(
+        () => mockPrefs.setString(any(), any()),
+      ).thenThrow(Exception('disk full'));
+
+      final service = ContentBlocklistService(prefs: mockPrefs);
+
+      // Should not rethrow even though setString fails for both
+      // blocked_users_list and severed_followers_list writes.
+      await service.blockUser('pubkey1');
+
+      expect(service.isBlocked('pubkey1'), isTrue);
+    });
+  });
+
+  group('ContentBlocklistService - severed followers', () {
+    test('isFollowSevered returns true after blocking', () async {
+      final service = ContentBlocklistService();
+      await service.blockUser('pubkey1');
+
+      expect(service.isFollowSevered('pubkey1'), isTrue);
+    });
+
+    test('isFollowSevered returns false for unknown pubkey', () {
+      final service = ContentBlocklistService();
+
+      expect(service.isFollowSevered('unknown'), isFalse);
+    });
+
+    test('removeSeveredFollower clears entry and persists', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistService(prefs: prefs);
+
+      await service.blockUser('pubkey1');
+      expect(service.isFollowSevered('pubkey1'), isTrue);
+
+      service.removeSeveredFollower('pubkey1');
+
+      expect(service.isFollowSevered('pubkey1'), isFalse);
+    });
+
+    test('removeSeveredFollower is a no-op for unknown pubkey', () {
+      final service = ContentBlocklistService()
+        ..removeSeveredFollower('never_severed');
+
+      expect(service.isFollowSevered('never_severed'), isFalse);
+    });
+  });
+
+  group('ContentBlocklistService - getters and utility', () {
+    test('blockedPubkeys exposes the combined runtime set', () async {
+      final service = ContentBlocklistService();
+      await service.blockUser('pubkey1');
+
+      expect(service.blockedPubkeys, contains('pubkey1'));
+    });
+
+    test('isInternallyBlocked returns false (internal list is empty)', () {
+      final service = ContentBlocklistService();
+
+      expect(service.isInternallyBlocked('any_pubkey'), isFalse);
+    });
+
+    test('runtimeBlockedUsers is unmodifiable', () async {
+      final service = ContentBlocklistService();
+      await service.blockUser('pubkey1');
+
+      expect(service.runtimeBlockedUsers, contains('pubkey1'));
+      expect(
+        () => service.runtimeBlockedUsers.add('pubkey2'),
+        throwsUnsupportedError,
+      );
+    });
+
+    test('clearRuntimeBlocks empties runtime blocks', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistService(prefs: prefs);
+
+      await service.blockUser('pubkey1');
+      expect(service.totalBlockedCount, equals(1));
+
+      service.clearRuntimeBlocks();
+
+      expect(service.totalBlockedCount, equals(0));
+    });
+
+    test('clearRuntimeBlocks is a no-op when already empty', () {
+      final service = ContentBlocklistService()..clearRuntimeBlocks();
+
+      expect(service.totalBlockedCount, equals(0));
+    });
+  });
+
+  group('ContentBlocklistService - Nostr publishing', () {
+    late _MockNostrClient mockClient;
+    late _MockBlockListSigner mockSigner;
+    const ourPubkey =
+        '0000000000000000000000000000000000000000000000000000000000000001';
+
+    setUp(() {
+      mockClient = _MockNostrClient();
+      mockSigner = _MockBlockListSigner();
+      when(
+        () => mockClient.subscribe(any()),
+      ).thenAnswer((_) => const Stream.empty());
+    });
+
+    Event buildEvent() {
+      return Event(
+          ourPubkey,
+          30000,
+          const <List<String>>[],
+          'Block list',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        )
+        ..id = 'test-event-id'
+        ..sig = 'signature';
+    }
+
+    test('does not publish when signer is not authenticated', () async {
+      when(() => mockSigner.isAuthenticated).thenReturn(false);
+
+      final service = ContentBlocklistService();
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+
+      await service.blockUser('pubkey1');
+
+      verifyNever(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      );
+    });
+
+    test('publishes block list with p tag for each blocked user', () async {
+      final event = buildEvent();
+      when(() => mockSigner.isAuthenticated).thenReturn(true);
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => event);
+      when(() => mockClient.publishEvent(any())).thenAnswer((_) async => event);
+
+      final service = ContentBlocklistService();
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+
+      await service.blockUser('pubkey1');
+
+      final tagsList =
+          verify(
+                () => mockSigner.createAndSignEvent(
+                  kind: 30000,
+                  content: 'Block list',
+                  tags: captureAny(named: 'tags'),
+                ),
+              ).captured.last
+              as List<List<String>>;
+
+      expect(tagsList, contains(equals(['d', 'block'])));
+      expect(tagsList, contains(equals(['p', 'pubkey1'])));
+      verify(() => mockClient.publishEvent(event)).called(1);
+    });
+
+    test('tolerates publishEvent returning null', () async {
+      when(() => mockSigner.isAuthenticated).thenReturn(true);
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => buildEvent());
+      when(() => mockClient.publishEvent(any())).thenAnswer((_) async => null);
+
+      final service = ContentBlocklistService();
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+
+      // Should not throw even though publish returns null.
+      await service.blockUser('pubkey1');
+
+      expect(service.isBlocked('pubkey1'), isTrue);
+    });
+
+    test('swallows exceptions raised while signing the event', () async {
+      when(() => mockSigner.isAuthenticated).thenReturn(true);
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenThrow(Exception('signing failure'));
+
+      final service = ContentBlocklistService();
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+
+      // Should not rethrow; blockUser still succeeds locally.
+      await service.blockUser('pubkey1');
+
+      expect(service.isBlocked('pubkey1'), isTrue);
+    });
+  });
+
+  group('ContentBlocklistService - sync edge cases', () {
+    late _MockNostrClient mockClient1;
+    late _MockNostrClient mockClient2;
+    late _MockBlockListSigner mockSigner;
+    const ourPubkey = 'our_pubkey';
+
+    setUp(() {
+      mockClient1 = _MockNostrClient();
+      mockClient2 = _MockNostrClient();
+      mockSigner = _MockBlockListSigner();
+      when(
+        () => mockClient1.subscribe(any()),
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockClient2.subscribe(any()),
+      ).thenAnswer((_) => const Stream.empty());
+    });
+
+    test(
+      'syncMuteListsInBackground re-subscribes when client changes',
+      () async {
+        final service = ContentBlocklistService();
+
+        await service.syncMuteListsInBackground(mockClient1, ourPubkey);
+        await service.syncMuteListsInBackground(mockClient2, ourPubkey);
+
+        verify(() => mockClient1.subscribe(any())).called(1);
+        verify(() => mockClient2.subscribe(any())).called(1);
+      },
+    );
+
+    test('syncMuteListsInBackground swallows subscribe errors', () async {
+      when(
+        () => mockClient1.subscribe(any()),
+      ).thenThrow(Exception('connection failed'));
+
+      final service = ContentBlocklistService();
+
+      await service.syncMuteListsInBackground(mockClient1, ourPubkey);
+
+      // Sync did not mark itself as started, so a second client is allowed.
+      await service.syncMuteListsInBackground(mockClient2, ourPubkey);
+      verify(() => mockClient2.subscribe(any())).called(1);
+    });
+
+    test('syncBlockListsInBackground skips when already started', () async {
+      final service = ContentBlocklistService();
+
+      await service.syncBlockListsInBackground(
+        mockClient1,
+        mockSigner,
+        ourPubkey,
+      );
+      await service.syncBlockListsInBackground(
+        mockClient1,
+        mockSigner,
+        ourPubkey,
+      );
+
+      verify(() => mockClient1.subscribe(any())).called(1);
+    });
+
+    test(
+      'syncBlockListsInBackground re-subscribes when client changes',
+      () async {
+        final service = ContentBlocklistService();
+
+        await service.syncBlockListsInBackground(
+          mockClient1,
+          mockSigner,
+          ourPubkey,
+        );
+        await service.syncBlockListsInBackground(
+          mockClient2,
+          mockSigner,
+          ourPubkey,
+        );
+
+        verify(() => mockClient1.subscribe(any())).called(1);
+        verify(() => mockClient2.subscribe(any())).called(1);
+      },
+    );
+
+    test('syncBlockListsInBackground swallows subscribe errors', () async {
+      when(
+        () => mockClient1.subscribe(any()),
+      ).thenThrow(Exception('connection failed'));
+
+      final service = ContentBlocklistService();
+
+      await service.syncBlockListsInBackground(
+        mockClient1,
+        mockSigner,
+        ourPubkey,
+      );
+
+      // Sync is not marked as started, so a second client is allowed.
+      await service.syncBlockListsInBackground(
+        mockClient2,
+        mockSigner,
+        ourPubkey,
+      );
+      verify(() => mockClient2.subscribe(any())).called(1);
+    });
+  });
+
+  group('ContentBlocklistService - event handler guards', () {
+    test('_handleMuteListEvent ignores non-10000 events', () async {
+      final mockClient = _MockNostrClient();
+      final controller = StreamController<Event>();
+      when(
+        () => mockClient.subscribe(any()),
+      ).thenAnswer((_) => controller.stream);
+
+      final service = ContentBlocklistService();
+      await service.syncMuteListsInBackground(mockClient, 'our_pubkey');
+
+      const muterPubkey =
+          '0000000000000000000000000000000000000000000000000000000000000002';
+      final wrongKind =
+          Event(
+              muterPubkey,
+              1,
+              const [],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            )
+            ..id = 'wrong-kind-event'
+            ..sig = 'signature';
+
+      controller.add(wrongKind);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(service.hasMutedUs(muterPubkey), isFalse);
+
+      await controller.close();
+    });
+  });
+
+  group('ContentBlocklistService - dispose', () {
+    test('dispose resets sync flags so a fresh sync can start', () async {
+      final mockClient = _MockNostrClient();
+      final mockSigner = _MockBlockListSigner();
+      when(
+        () => mockClient.subscribe(any()),
+      ).thenAnswer((_) => const Stream.empty());
+
+      final service = ContentBlocklistService();
+      await service.syncMuteListsInBackground(mockClient, 'our_pubkey');
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        'our_pubkey',
+      );
+
+      service.dispose();
+
+      // After dispose the flags are cleared, so another sync pair
+      // subscribes again on the same client.
+      await service.syncMuteListsInBackground(mockClient, 'our_pubkey');
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        'our_pubkey',
+      );
+
+      verify(() => mockClient.subscribe(any())).called(4);
+    });
   });
 }

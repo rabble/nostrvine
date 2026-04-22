@@ -362,12 +362,17 @@ class ContentBlocklistService {
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
+      // coverage:ignore-start
     } else if (_internalBlocklist.contains(pubkey)) {
+      // Internal blocklist is intentionally empty; this branch is
+      // unreachable in production. Retained as a guard in case hardcoded
+      // moderation blocks are re-introduced.
       Log.warning(
         'Cannot unblock user from internal blocklist: $pubkey',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
+      // coverage:ignore-end
     }
   }
 
