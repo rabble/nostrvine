@@ -26,7 +26,7 @@ class OthersFollowersBloc
     required ContentBlocklistRepository contentBlocklistRepository,
     required String currentUserPubkey,
   }) : _followRepository = followRepository,
-       _blocklistService = contentBlocklistRepository,
+       _blocklistRepository = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        super(const OthersFollowersState()) {
     on<OthersFollowersListLoadRequested>(_onLoadRequested);
@@ -37,7 +37,7 @@ class OthersFollowersBloc
   }
 
   final FollowRepository _followRepository;
-  final ContentBlocklistRepository _blocklistService;
+  final ContentBlocklistRepository _blocklistRepository;
   final String _currentUserPubkey;
 
   /// Raw unfiltered follower pubkeys for re-filtering on blocklist changes.
@@ -48,7 +48,7 @@ class OthersFollowersBloc
   List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
       .where(
         (pk) =>
-            !_blocklistService.isBlocked(pk) &&
+            !_blocklistRepository.isBlocked(pk) &&
             !(_shouldHideCurrentUser() && pk == _currentUserPubkey),
       )
       .toList();

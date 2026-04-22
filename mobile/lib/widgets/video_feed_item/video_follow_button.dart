@@ -51,7 +51,7 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
     // Use read() to get values once, not watch() which causes rebuilds
     final followRepository = ref.read(followRepositoryProvider);
     final nostrClient = ref.read(nostrServiceProvider);
-    final blocklistService = ref.read(contentBlocklistRepositoryProvider);
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
 
     // Check if this is the user's own video (read once, never changes)
     _isOwnVideo = nostrClient.publicKey == widget.pubkey;
@@ -63,7 +63,7 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
       if (!(widget.hideIfFollowing && isFollowing)) {
         _bloc = MyFollowingBloc(
           followRepository: followRepository,
-          contentBlocklistRepository: blocklistService,
+          contentBlocklistRepository: blocklistRepository,
         )..add(const MyFollowingListLoadRequested());
       }
     }

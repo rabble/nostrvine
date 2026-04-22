@@ -35,7 +35,7 @@ void main() {
 
   group('VideoEventsProvider - Blocklist Filtering', () {
     late _MockNostrClient mockNostrClient;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockVideoEventService mockVideoEventService;
     late SharedPreferences sharedPreferences;
     late ProviderContainer container;
@@ -61,7 +61,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
       mockNostrClient = _MockNostrClient();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockVideoEventService = _MockVideoEventService();
 
       // Stub NostrClient
@@ -70,10 +70,10 @@ void main() {
 
       // Stub blocklist: blockedPubkey is filtered, allowedPubkey is not
       when(
-        () => mockBlocklistService.shouldFilterFromFeeds(blockedPubkey),
+        () => mockBlocklistRepository.shouldFilterFromFeeds(blockedPubkey),
       ).thenReturn(true);
       when(
-        () => mockBlocklistService.shouldFilterFromFeeds(allowedPubkey),
+        () => mockBlocklistRepository.shouldFilterFromFeeds(allowedPubkey),
       ).thenReturn(false);
 
       // Stub VideoEventService
@@ -115,7 +115,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistRepositoryProvider.overrideWithValue(
-            mockBlocklistService,
+            mockBlocklistRepository,
           ),
           appReadyProvider.overrideWith((ref) => true),
           isDiscoveryTabActiveProvider.overrideWith((ref) => true),
@@ -133,10 +133,10 @@ void main() {
 
       // Verify shouldFilterFromFeeds was called for each video
       verify(
-        () => mockBlocklistService.shouldFilterFromFeeds(blockedPubkey),
+        () => mockBlocklistRepository.shouldFilterFromFeeds(blockedPubkey),
       ).called(greaterThanOrEqualTo(1));
       verify(
-        () => mockBlocklistService.shouldFilterFromFeeds(allowedPubkey),
+        () => mockBlocklistRepository.shouldFilterFromFeeds(allowedPubkey),
       ).called(greaterThanOrEqualTo(1));
 
       // The notifier should exist without error
@@ -158,7 +158,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistRepositoryProvider.overrideWithValue(
-            mockBlocklistService,
+            mockBlocklistRepository,
           ),
           appReadyProvider.overrideWith((ref) => true),
           isDiscoveryTabActiveProvider.overrideWith((ref) => true),
@@ -209,14 +209,14 @@ void main() {
 
       // Verify the blocklist was consulted during the change callback
       verify(
-        () => mockBlocklistService.shouldFilterFromFeeds(blockedPubkey),
+        () => mockBlocklistRepository.shouldFilterFromFeeds(blockedPubkey),
       ).called(greaterThanOrEqualTo(1));
     });
 
     test('emits all videos when no users are blocked', () async {
       // Nobody is blocked
       when(
-        () => mockBlocklistService.shouldFilterFromFeeds(any()),
+        () => mockBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
 
       final videos = [
@@ -237,7 +237,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistRepositoryProvider.overrideWithValue(
-            mockBlocklistService,
+            mockBlocklistRepository,
           ),
           appReadyProvider.overrideWith((ref) => true),
           isDiscoveryTabActiveProvider.overrideWith((ref) => true),

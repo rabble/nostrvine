@@ -21,14 +21,14 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     required FollowRepository followRepository,
     required ContentBlocklistRepository contentBlocklistRepository,
   }) : _followRepository = followRepository,
-       _blocklistService = contentBlocklistRepository,
+       _blocklistRepository = contentBlocklistRepository,
        super(const MyFollowersState()) {
     on<MyFollowersListLoadRequested>(_onLoadRequested);
     on<MyFollowersBlocklistChanged>(_onBlocklistChanged);
   }
 
   final FollowRepository _followRepository;
-  final ContentBlocklistRepository _blocklistService;
+  final ContentBlocklistRepository _blocklistRepository;
 
   /// Raw unfiltered follower pubkeys for re-filtering on blocklist changes.
   List<String> _rawFollowersPubkeys = [];
@@ -37,8 +37,8 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
       .where(
         (pk) =>
-            !_blocklistService.isBlocked(pk) &&
-            !_blocklistService.isFollowSevered(pk),
+            !_blocklistRepository.isBlocked(pk) &&
+            !_blocklistRepository.isFollowSevered(pk),
       )
       .toList();
 

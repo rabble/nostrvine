@@ -27,12 +27,12 @@ class MyFollowingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
-    final blocklistService = ref.watch(contentBlocklistRepositoryProvider);
+    final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
 
     return BlocProvider(
       create: (_) => MyFollowingBloc(
         followRepository: followRepository,
-        contentBlocklistRepository: blocklistService,
+        contentBlocklistRepository: blocklistRepository,
       )..add(const MyFollowingListLoadRequested()),
       child: _MyFollowingView(displayName: displayName),
     );

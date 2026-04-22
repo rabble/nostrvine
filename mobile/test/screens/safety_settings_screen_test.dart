@@ -82,7 +82,7 @@ class MockContentFilterService extends Mock implements ContentFilterService {
 
 void main() {
   group('SafetySettingsScreen Widget Tests', () {
-    late MockContentBlocklistRepository mockBlocklistService;
+    late MockContentBlocklistRepository mockBlocklistRepository;
     late MockContentReportingService mockReportingService;
     late MockAccountLabelService mockAccountLabelService;
     late MockModerationLabelService mockModerationLabelService;
@@ -94,7 +94,7 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      mockBlocklistService = MockContentBlocklistRepository();
+      mockBlocklistRepository = MockContentBlocklistRepository();
       mockReportingService = MockContentReportingService();
       mockAccountLabelService = MockAccountLabelService();
       mockModerationLabelService = MockModerationLabelService();
@@ -151,7 +151,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           contentBlocklistRepositoryProvider.overrideWithValue(
-            mockBlocklistService,
+            mockBlocklistRepository,
           ),
           // contentReportingServiceProvider is async, so wrap in AsyncValue
           contentReportingServiceProvider.overrideWith(

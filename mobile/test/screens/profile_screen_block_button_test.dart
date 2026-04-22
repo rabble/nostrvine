@@ -16,10 +16,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ProfileScreen Block Button - TDD', () {
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
 
     setUp(() {
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
     });
 
     // Helper to create a simple test widget with Block User button
@@ -30,13 +30,13 @@ void main() {
     }) {
       // Setup mock behavior
       when(
-        () => mockBlocklistService.isBlocked(userPubkey),
+        () => mockBlocklistRepository.isBlocked(userPubkey),
       ).thenReturn(isBlocked);
 
       return ProviderScope(
         overrides: [
           contentBlocklistRepositoryProvider.overrideWithValue(
-            mockBlocklistService,
+            mockBlocklistRepository,
           ),
         ],
         child: MaterialApp(
@@ -46,10 +46,12 @@ void main() {
             body: Center(
               child: Consumer(
                 builder: (context, ref, _) {
-                  final blocklistService = ref.watch(
+                  final blocklistRepository = ref.watch(
                     contentBlocklistRepositoryProvider,
                   );
-                  final isUserBlocked = blocklistService.isBlocked(userPubkey);
+                  final isUserBlocked = blocklistRepository.isBlocked(
+                    userPubkey,
+                  );
                   return OutlinedButton(
                     onPressed: () {
                       if (onBlock != null) {

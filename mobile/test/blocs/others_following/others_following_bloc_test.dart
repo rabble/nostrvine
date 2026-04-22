@@ -19,7 +19,7 @@ class _MockContentBlocklistRepository extends Mock
 void main() {
   group('OthersFollowingBloc', () {
     late _MockNostrClient mockNostrClient;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
 
     // Helper to create valid hex pubkeys (64 hex characters)
     String validPubkey(String suffix) {
@@ -31,18 +31,18 @@ void main() {
 
     setUp(() {
       mockNostrClient = _MockNostrClient();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
 
       // Default: nothing is blocked
-      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
+      when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
       when(
-        () => mockBlocklistService.isFollowSevered(any()),
+        () => mockBlocklistRepository.isFollowSevered(any()),
       ).thenReturn(false);
     });
 
     OthersFollowingBloc createBloc() => OthersFollowingBloc(
       nostrClient: mockNostrClient,
-      contentBlocklistRepository: mockBlocklistService,
+      contentBlocklistRepository: mockBlocklistRepository,
       currentUserPubkey: validPubkey('currentUser'),
     );
 

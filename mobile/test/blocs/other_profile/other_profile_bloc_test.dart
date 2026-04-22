@@ -20,7 +20,7 @@ class _MockFollowRepository extends Mock implements FollowRepository {}
 void main() {
   group('OtherProfileBloc', () {
     late _MockProfileRepository mockProfileRepository;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockFollowRepository mockFollowRepository;
 
     // Test data constants - using full 64-character hex pubkey as required
@@ -52,7 +52,7 @@ void main() {
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockFollowRepository = _MockFollowRepository();
 
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
@@ -65,7 +65,7 @@ void main() {
         OtherProfileBloc(
           profileRepository: mockProfileRepository,
           pubkey: pubkey,
-          contentBlocklistRepository: mockBlocklistService,
+          contentBlocklistRepository: mockBlocklistRepository,
           currentUserPubkey: testCurrentUserPubkey,
           followRepository: mockFollowRepository,
         );
@@ -524,7 +524,7 @@ void main() {
     group('OtherProfileBlockRequested', () {
       setUp(() {
         when(
-          () => mockBlocklistService.blockUser(
+          () => mockBlocklistRepository.blockUser(
             any(),
             ourPubkey: any(named: 'ourPubkey'),
           ),
@@ -537,7 +537,7 @@ void main() {
         act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
         verify: (_) {
           verify(
-            () => mockBlocklistService.blockUser(
+            () => mockBlocklistRepository.blockUser(
               testPubkey,
               ourPubkey: testCurrentUserPubkey,
             ),
@@ -586,7 +586,7 @@ void main() {
         act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
         verify: (_) {
           verify(
-            () => mockBlocklistService.blockUser(
+            () => mockBlocklistRepository.blockUser(
               testPubkey,
               ourPubkey: testCurrentUserPubkey,
             ),
@@ -598,7 +598,7 @@ void main() {
     group('OtherProfileUnblockRequested', () {
       setUp(() {
         when(
-          () => mockBlocklistService.unblockUser(any()),
+          () => mockBlocklistRepository.unblockUser(any()),
         ).thenAnswer((_) async {});
       });
 
@@ -608,7 +608,7 @@ void main() {
         act: (bloc) => bloc.add(const OtherProfileUnblockRequested()),
         verify: (_) {
           verify(
-            () => mockBlocklistService.unblockUser(testPubkey),
+            () => mockBlocklistRepository.unblockUser(testPubkey),
           ).called(1);
         },
       );

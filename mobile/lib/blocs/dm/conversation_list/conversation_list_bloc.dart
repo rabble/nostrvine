@@ -23,7 +23,7 @@ class ConversationListBloc
     ContentBlocklistRepository? contentBlocklistRepository,
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
-       _blocklistService = contentBlocklistRepository,
+       _blocklistRepository = contentBlocklistRepository,
        super(const ConversationListState()) {
     on<ConversationListStarted>(
       _onStarted,
@@ -51,7 +51,7 @@ class ConversationListBloc
 
   final DmRepository _dmRepository;
   final FollowRepository _followRepository;
-  final ContentBlocklistRepository? _blocklistService;
+  final ContentBlocklistRepository? _blocklistRepository;
 
   Future<void> _onStarted(
     ConversationListStarted event,
@@ -102,13 +102,13 @@ class ConversationListBloc
         return state.copyWith(
           status: ConversationListStatus.loaded,
           conversations:
-              _blocklistService?.filterBlockedConversations(
+              _blocklistRepository?.filterBlockedConversations(
                 merged,
                 userPubkey: userPubkey,
               ) ??
               merged,
           requestConversations:
-              _blocklistService?.filterBlockedConversations(
+              _blocklistRepository?.filterBlockedConversations(
                 split.requests,
                 userPubkey: userPubkey,
               ) ??

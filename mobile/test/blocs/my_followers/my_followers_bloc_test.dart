@@ -16,7 +16,7 @@ class _MockContentBlocklistRepository extends Mock
 void main() {
   group(MyFollowersBloc, () {
     late _MockFollowRepository mockFollowRepository;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
 
     // Helper to create valid hex pubkeys (64 hex characters)
     String validPubkey(String suffix) {
@@ -28,18 +28,18 @@ void main() {
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
 
       // Default: nothing is blocked
-      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
+      when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
       when(
-        () => mockBlocklistService.isFollowSevered(any()),
+        () => mockBlocklistRepository.isFollowSevered(any()),
       ).thenReturn(false);
     });
 
     MyFollowersBloc createBloc() => MyFollowersBloc(
       followRepository: mockFollowRepository,
-      contentBlocklistRepository: mockBlocklistService,
+      contentBlocklistRepository: mockBlocklistRepository,
     );
 
     test('initial state is initial with empty list', () {
@@ -192,7 +192,9 @@ void main() {
         'filters blocked users from stream results',
         setUp: () {
           final blocked = validPubkey('blocked');
-          when(() => mockBlocklistService.isBlocked(blocked)).thenReturn(true);
+          when(
+            () => mockBlocklistRepository.isBlocked(blocked),
+          ).thenReturn(true);
 
           when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
             (_) => Stream.value(
@@ -232,7 +234,7 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           // Now block user 'a'
           when(
-            () => mockBlocklistService.isBlocked(validPubkey('a')),
+            () => mockBlocklistRepository.isBlocked(validPubkey('a')),
           ).thenReturn(true);
           bloc.add(const MyFollowersBlocklistChanged());
         },

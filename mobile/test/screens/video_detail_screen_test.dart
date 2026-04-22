@@ -34,14 +34,14 @@ void main() {
 
   group(VideoDetailScreen, () {
     late _MockVideoEventService mockVideoEventService;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockNostrClient mockNostrClient;
     late _MockFollowRepository mockFollowRepository;
 
     setUp(() {
       mockVideoEventService = _MockVideoEventService();
       mockNostrClient = _MockNostrClient();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockFollowRepository = _MockFollowRepository();
 
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
@@ -62,7 +62,7 @@ void main() {
 
       // Default: no authors blocked
       when(
-        () => mockBlocklistService.shouldFilterFromFeeds(any()),
+        () => mockBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
       when(
         () => mockVideoEventService.shouldHideVideo(any()),
@@ -75,7 +75,7 @@ void main() {
         additionalOverrides: [
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistRepositoryProvider.overrideWithValue(
-            mockBlocklistService,
+            mockBlocklistRepository,
           ),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
         ],
@@ -172,7 +172,7 @@ void main() {
           () => mockVideoEventService.getVideoById('blocked_video_id'),
         ).thenReturn(video);
         when(
-          () => mockBlocklistService.shouldFilterFromFeeds('blocked_pubkey'),
+          () => mockBlocklistRepository.shouldFilterFromFeeds('blocked_pubkey'),
         ).thenReturn(true);
 
         await tester.pumpWidget(buildSubject(videoId: 'blocked_video_id'));
@@ -194,7 +194,7 @@ void main() {
           () => mockVideoEventService.getVideoById('blocked_video_id'),
         ).thenReturn(video);
         when(
-          () => mockBlocklistService.shouldFilterFromFeeds('blocked_pubkey'),
+          () => mockBlocklistRepository.shouldFilterFromFeeds('blocked_pubkey'),
         ).thenReturn(true);
 
         await tester.pumpWidget(buildSubject(videoId: 'blocked_video_id'));

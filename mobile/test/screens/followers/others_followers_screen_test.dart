@@ -32,15 +32,15 @@ void main() {
 
   group(OthersFollowersScreen, () {
     late _MockFollowRepository mockFollowRepository;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockNostrClient mockNostrClient;
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockNostrClient = _MockNostrClient();
 
-      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
+      when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
       when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
       when(
@@ -72,7 +72,7 @@ void main() {
             additionalOverrides: [
               followRepositoryProvider.overrideWithValue(mockFollowRepository),
               contentBlocklistRepositoryProvider.overrideWithValue(
-                mockBlocklistService,
+                mockBlocklistRepository,
               ),
             ],
           ),

@@ -344,8 +344,8 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Widget _buildBlockedUsersSection() {
     ref.watch(blocklistVersionProvider);
 
-    final blocklistService = ref.read(contentBlocklistRepositoryProvider);
-    final blockedUsers = blocklistService.runtimeBlockedUsers.toList();
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+    final blockedUsers = blocklistRepository.runtimeBlockedUsers.toList();
 
     if (blockedUsers.isEmpty) {
       return Padding(
@@ -373,8 +373,8 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   }
 
   Future<void> _unblockUser(String pubkey) async {
-    final blocklistService = ref.read(contentBlocklistRepositoryProvider);
-    blocklistService.unblockUser(pubkey);
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+    blocklistRepository.unblockUser(pubkey);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

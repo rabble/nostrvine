@@ -42,7 +42,7 @@ void main() {
 
   late VideoEvent testVideo;
   late _MockContentReportingService mockReportingService;
-  late _MockContentBlocklistRepository mockBlocklistService;
+  late _MockContentBlocklistRepository mockBlocklistRepository;
   late _MockMuteService mockMuteService;
 
   setUp(() {
@@ -65,7 +65,7 @@ void main() {
 
     testVideo = VideoEvent.fromNostrEvent(testNostrEvent);
     mockReportingService = _MockContentReportingService();
-    mockBlocklistService = _MockContentBlocklistRepository();
+    mockBlocklistRepository = _MockContentBlocklistRepository();
     mockMuteService = _MockMuteService();
 
     // Setup default mock behavior
@@ -193,7 +193,7 @@ void main() {
               (ref) async => mockReportingService,
             ),
             contentBlocklistRepositoryProvider.overrideWith(
-              (ref) => mockBlocklistService,
+              (ref) => mockBlocklistRepository,
             ),
             muteServiceProvider.overrideWith((ref) async => mockMuteService),
           ],
@@ -301,7 +301,7 @@ void main() {
             (ref) async => mockReportingService,
           ),
           contentBlocklistRepositoryProvider.overrideWith(
-            (ref) => mockBlocklistService,
+            (ref) => mockBlocklistRepository,
           ),
           muteServiceProvider.overrideWith((ref) async => mockMuteService),
         ],
@@ -658,7 +658,7 @@ void main() {
             (ref) async => mockReportingService,
           ),
           contentBlocklistRepositoryProvider.overrideWith(
-            (ref) => mockBlocklistService,
+            (ref) => mockBlocklistRepository,
           ),
           muteServiceProvider.overrideWith((ref) async => mockMuteService),
           dmRepositoryProvider.overrideWithValue(mockDmRepository),

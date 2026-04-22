@@ -4,12 +4,12 @@
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
 
-/// Creates a [BlockedVideoFilter] that delegates to [blocklistService].
+/// Creates a [BlockedVideoFilter] that delegates to [blocklistRepository].
 ///
 /// This allows the [VideosRepository] to filter blocked content without
 /// depending directly on app-level services.
 BlockedVideoFilter createBlocklistFilter(
-  ContentBlocklistRepository blocklistService,
+  ContentBlocklistRepository blocklistRepository,
 ) {
-  return blocklistService.shouldFilterFromFeeds;
+  return blocklistRepository.shouldFilterFromFeeds;
 }

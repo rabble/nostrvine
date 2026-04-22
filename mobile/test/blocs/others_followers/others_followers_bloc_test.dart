@@ -18,7 +18,7 @@ class _MockContentBlocklistRepository extends Mock
 void main() {
   group('OthersFollowersBloc', () {
     late _MockFollowRepository mockFollowRepository;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     const testCurrentUserPubkey =
         'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
@@ -32,16 +32,16 @@ void main() {
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
 
       // Default: nothing is blocked
-      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
+      when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
     });
 
     OthersFollowersBloc createBloc() => OthersFollowersBloc(
       followRepository: mockFollowRepository,
-      contentBlocklistRepository: mockBlocklistService,
+      contentBlocklistRepository: mockBlocklistRepository,
       currentUserPubkey: testCurrentUserPubkey,
     );
 

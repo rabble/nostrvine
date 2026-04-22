@@ -18,7 +18,7 @@ class _MockContentBlocklistRepository extends Mock
 void main() {
   group('MyFollowingBloc', () {
     late _MockFollowRepository mockFollowRepository;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late StreamController<List<String>> followingStreamController;
 
     // Helper to create valid hex pubkeys (64 hex characters)
@@ -31,7 +31,7 @@ void main() {
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       followingStreamController = StreamController<List<String>>.broadcast();
 
       when(
@@ -40,7 +40,7 @@ void main() {
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
 
       // Default: nothing is blocked
-      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
+      when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
     });
 
     tearDown(() {
@@ -49,7 +49,7 @@ void main() {
 
     MyFollowingBloc createBloc() => MyFollowingBloc(
       followRepository: mockFollowRepository,
-      contentBlocklistRepository: mockBlocklistService,
+      contentBlocklistRepository: mockBlocklistRepository,
     );
 
     test('initial state is success with cached data', () {

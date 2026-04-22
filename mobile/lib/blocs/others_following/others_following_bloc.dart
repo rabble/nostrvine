@@ -26,14 +26,14 @@ class OthersFollowingBloc
     required ContentBlocklistRepository contentBlocklistRepository,
     this.currentUserPubkey,
   }) : _nostrClient = nostrClient,
-       _blocklistService = contentBlocklistRepository,
+       _blocklistRepository = contentBlocklistRepository,
        super(const OthersFollowingState()) {
     on<OthersFollowingListLoadRequested>(_onLoadRequested);
     on<OthersFollowingBlocklistChanged>(_onBlocklistChanged);
   }
 
   final NostrClient _nostrClient;
-  final ContentBlocklistRepository _blocklistService;
+  final ContentBlocklistRepository _blocklistRepository;
 
   /// The current user's pubkey, used to hide ourselves from the target's
   /// following list when we have blocked the target.
@@ -48,13 +48,13 @@ class OthersFollowingBloc
     final targetPubkey = state.targetPubkey;
     final hideCurrentUser =
         targetPubkey != null &&
-        (_blocklistService.isBlocked(targetPubkey) ||
-            _blocklistService.isFollowSevered(targetPubkey));
+        (_blocklistRepository.isBlocked(targetPubkey) ||
+            _blocklistRepository.isFollowSevered(targetPubkey));
 
     return pubkeys
         .where(
           (pk) =>
-              !_blocklistService.isBlocked(pk) &&
+              !_blocklistRepository.isBlocked(pk) &&
               !(hideCurrentUser && pk == currentUserPubkey),
         )
         .toList();

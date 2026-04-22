@@ -28,12 +28,12 @@ void main() {
 
   group(ConversationActionsCubit, () {
     late _MockContentReportingService mockReportingService;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockDmRepository mockDmRepo;
 
     setUp(() {
       mockReportingService = _MockContentReportingService();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockDmRepo = _MockDmRepository();
     });
 
@@ -41,7 +41,7 @@ void main() {
       ContentReportingService? reportingService,
     }) => ConversationActionsCubit(
       contentReportingService: reportingService ?? mockReportingService,
-      contentBlocklistRepository: mockBlocklistService,
+      contentBlocklistRepository: mockBlocklistRepository,
       dmRepository: mockDmRepo,
       currentUserPubkey: currentUserPubkey,
     );
@@ -54,12 +54,12 @@ void main() {
 
     group('isBlocked', () {
       test('delegates to ContentBlocklistRepository', () {
-        when(() => mockBlocklistService.isBlocked(pubkey)).thenReturn(true);
+        when(() => mockBlocklistRepository.isBlocked(pubkey)).thenReturn(true);
 
         final cubit = createCubit();
         expect(cubit.isBlocked(pubkey), isTrue);
 
-        verify(() => mockBlocklistService.isBlocked(pubkey)).called(1);
+        verify(() => mockBlocklistRepository.isBlocked(pubkey)).called(1);
         cubit.close();
       });
     });
@@ -104,7 +104,7 @@ void main() {
         'returns false when reporting service is null',
         build: () => ConversationActionsCubit(
           contentReportingService: null,
-          contentBlocklistRepository: mockBlocklistService,
+          contentBlocklistRepository: mockBlocklistRepository,
           dmRepository: mockDmRepo,
           currentUserPubkey: currentUserPubkey,
         ),
@@ -143,10 +143,10 @@ void main() {
 
     group('blockUser', () {
       blocTest<ConversationActionsCubit, ConversationActionsState>(
-        'emits processing then success and calls blocklistService',
+        'emits processing then success and calls blocklistRepository',
         setUp: () {
           when(
-            () => mockBlocklistService.blockUser(
+            () => mockBlocklistRepository.blockUser(
               pubkey,
               ourPubkey: currentUserPubkey,
             ),
@@ -164,7 +164,7 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockBlocklistService.blockUser(
+            () => mockBlocklistRepository.blockUser(
               pubkey,
               ourPubkey: currentUserPubkey,
             ),
@@ -173,10 +173,10 @@ void main() {
       );
 
       blocTest<ConversationActionsCubit, ConversationActionsState>(
-        'emits failure and calls addError when blocklistService throws',
+        'emits failure and calls addError when blocklistRepository throws',
         setUp: () {
           when(
-            () => mockBlocklistService.blockUser(
+            () => mockBlocklistRepository.blockUser(
               pubkey,
               ourPubkey: currentUserPubkey,
             ),
@@ -201,7 +201,7 @@ void main() {
         'emits processing then success and calls unblockUser',
         setUp: () {
           when(
-            () => mockBlocklistService.unblockUser(pubkey),
+            () => mockBlocklistRepository.unblockUser(pubkey),
           ).thenAnswer((_) async {});
         },
         build: createCubit,
@@ -216,7 +216,7 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockBlocklistService.unblockUser(pubkey),
+            () => mockBlocklistRepository.unblockUser(pubkey),
           ).called(1);
         },
       );
@@ -225,7 +225,7 @@ void main() {
         'emits failure and calls addError when unblockUser throws',
         setUp: () {
           when(
-            () => mockBlocklistService.unblockUser(pubkey),
+            () => mockBlocklistRepository.unblockUser(pubkey),
           ).thenAnswer((_) async => throw Exception('unblock failed'));
         },
         build: createCubit,

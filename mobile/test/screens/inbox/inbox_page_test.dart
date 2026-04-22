@@ -65,7 +65,7 @@ void main() {
     late _MockDmRepository mockDmRepository;
     late _MockAuthService mockAuthService;
     late _MockFollowRepository mockFollowRepository;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late MockGoRouter mockGoRouter;
     late _MockInviteStatusCubit mockInviteCubit;
 
@@ -73,7 +73,7 @@ void main() {
       mockDmRepository = _MockDmRepository();
       mockAuthService = _MockAuthService();
       mockFollowRepository = _MockFollowRepository();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockGoRouter = MockGoRouter();
       mockInviteCubit = _MockInviteStatusCubit();
       when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
@@ -105,7 +105,7 @@ void main() {
       ).thenAnswer((_) => const Stream.empty());
 
       when(
-        () => mockBlocklistService.isBlocked(any()),
+        () => mockBlocklistRepository.isBlocked(any()),
       ).thenReturn(false);
 
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
@@ -136,7 +136,7 @@ void main() {
                   mockFollowRepository,
                 ),
                 contentBlocklistRepositoryProvider.overrideWithValue(
-                  mockBlocklistService,
+                  mockBlocklistRepository,
                 ),
                 goRouterProvider.overrideWithValue(mockGoRouter),
                 relayNotificationUnreadCountProvider.overrideWithValue(0),
@@ -178,7 +178,7 @@ void main() {
               dmRepositoryProvider.overrideWithValue(mockDmRepository),
               followRepositoryProvider.overrideWithValue(mockFollowRepository),
               contentBlocklistRepositoryProvider.overrideWithValue(
-                mockBlocklistService,
+                mockBlocklistRepository,
               ),
               goRouterProvider.overrideWithValue(mockGoRouter),
               relayNotificationUnreadCountProvider.overrideWithValue(0),

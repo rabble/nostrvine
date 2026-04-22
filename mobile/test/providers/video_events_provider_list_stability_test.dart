@@ -27,7 +27,7 @@ void main() {
   group('VideoEventsProvider - List Stability', () {
     late _MockNostrClient mockNostrService;
     late _MockSubscriptionManager mockSubscriptionManager;
-    late _MockContentBlocklistRepository mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late VideoEventService videoEventService;
     late ProviderContainer container;
     late SharedPreferences sharedPreferences;
@@ -37,13 +37,13 @@ void main() {
       sharedPreferences = await SharedPreferences.getInstance();
       mockNostrService = _MockNostrClient();
       mockSubscriptionManager = _MockSubscriptionManager();
-      mockBlocklistService = _MockContentBlocklistRepository();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
 
       // Stub necessary methods
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockNostrService.connectedRelayCount).thenReturn(0);
       when(
-        () => mockBlocklistService.shouldFilterFromFeeds(any()),
+        () => mockBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
 
       videoEventService = VideoEventService(
@@ -56,7 +56,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(videoEventService),
           contentBlocklistRepositoryProvider.overrideWithValue(
-            mockBlocklistService,
+            mockBlocklistRepository,
           ),
           appReadyProvider.overrideWith(
             (ref) => false,

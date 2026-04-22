@@ -206,7 +206,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   static const Duration _retryDelay = Duration(seconds: 10);
 
   // Optional services for enhanced functionality
-  ContentBlocklistRepository? _blocklistService;
+  ContentBlocklistRepository? _blocklistRepository;
   AgeVerificationService? _ageVerificationService;
   LikesRepository? _likesRepository;
   ContentFilterService? _contentFilterService;
@@ -291,8 +291,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   }
 
   /// Set the blocklist service for content filtering
-  void setBlocklistService(ContentBlocklistRepository blocklistService) {
-    _blocklistService = blocklistService;
+  void setBlocklistRepository(ContentBlocklistRepository blocklistRepository) {
+    _blocklistRepository = blocklistRepository;
     Log.debug(
       'Blocklist service attached to VideoEventService',
       name: 'VideoEventService',
@@ -2120,7 +2120,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
 
       // Check if content is blocked
-      if (_blocklistService?.shouldFilterFromFeeds(event.pubkey) == true) {
+      if (_blocklistRepository?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
           'Filtering blocked content from ${event.pubkey}...',
           name: 'VideoEventService',
@@ -2410,7 +2410,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
 
       // Check if content is blocked
-      if (_blocklistService?.shouldFilterFromFeeds(event.pubkey) == true) {
+      if (_blocklistRepository?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
           'Filtering blocked historical content from ${event.pubkey}...',
           name: 'VideoEventService',
@@ -4060,7 +4060,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
 
     // Filter blocked users (centralized check for all subscription types)
-    if (_blocklistService?.shouldFilterFromFeeds(videoEvent.pubkey) == true) {
+    if (_blocklistRepository?.shouldFilterFromFeeds(videoEvent.pubkey) ==
+        true) {
       Log.verbose(
         'Filtering blocked content from ${videoEvent.pubkey} in $subscriptionType',
         name: 'VideoEventService',

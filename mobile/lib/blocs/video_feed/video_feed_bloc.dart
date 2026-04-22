@@ -51,7 +51,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
        _followRepository = followRepository,
        _curatedListRepository = curatedListRepository,
        _profileRepository = profileRepository,
-       _blocklistService = contentBlocklistRepository,
+       _blocklistRepository = contentBlocklistRepository,
        _userPubkey = userPubkey,
        _sharedPreferences = sharedPreferences,
        _serveCachedHomeFeed = serveCachedHomeFeed,
@@ -76,7 +76,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   final FollowRepository _followRepository;
   final CuratedListRepository _curatedListRepository;
   final ProfileRepository? _profileRepository;
-  final ContentBlocklistRepository? _blocklistService;
+  final ContentBlocklistRepository? _blocklistRepository;
   final String? _userPubkey;
   final SharedPreferences? _sharedPreferences;
   final bool _serveCachedHomeFeed;
@@ -399,7 +399,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     }
 
     // General blocklist change — filter current videos in-memory.
-    final service = _blocklistService;
+    final service = _blocklistRepository;
     if (service == null) return;
 
     final filtered = service.filterContent<VideoEvent>(

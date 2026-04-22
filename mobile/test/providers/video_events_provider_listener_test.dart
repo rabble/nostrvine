@@ -50,16 +50,16 @@ class _FakeSeenVideosNotifier extends SeenVideosNotifier {
 ProviderContainer _createContainer({
   required _MockVideoEventService mockVideoEventService,
   required SharedPreferences sharedPreferences,
-  ContentBlocklistRepository? blocklistService,
+  ContentBlocklistRepository? blocklistRepository,
   bool appReady = true,
   bool tabActive = true,
   SeenVideosState seenState = SeenVideosState.initial,
 }) {
-  final effectiveBlocklistService =
-      blocklistService ?? _MockContentBlocklistRepository();
-  if (effectiveBlocklistService is _MockContentBlocklistRepository) {
+  final effectiveBlocklistRepository =
+      blocklistRepository ?? _MockContentBlocklistRepository();
+  if (effectiveBlocklistRepository is _MockContentBlocklistRepository) {
     when(
-      () => effectiveBlocklistService.shouldFilterFromFeeds(any()),
+      () => effectiveBlocklistRepository.shouldFilterFromFeeds(any()),
     ).thenReturn(false);
   }
 
@@ -72,7 +72,7 @@ ProviderContainer _createContainer({
 
       // Override blocklist service to avoid SharedPreferences dependency
       contentBlocklistRepositoryProvider.overrideWithValue(
-        effectiveBlocklistService,
+        effectiveBlocklistRepository,
       ),
 
       // Override foreground provider (used by gate listeners)

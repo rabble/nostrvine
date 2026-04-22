@@ -23,7 +23,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
     required FollowRepository followRepository,
     required ContentBlocklistRepository contentBlocklistRepository,
   }) : _followRepository = followRepository,
-       _blocklistService = contentBlocklistRepository,
+       _blocklistRepository = contentBlocklistRepository,
        super(
          MyFollowingState(
            status: MyFollowingStatus.success,
@@ -43,14 +43,14 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
   }
 
   final FollowRepository _followRepository;
-  final ContentBlocklistRepository _blocklistService;
+  final ContentBlocklistRepository _blocklistRepository;
 
   /// Raw unfiltered following pubkeys for re-filtering on blocklist changes.
   List<String> _rawFollowingPubkeys = [];
 
   /// Filter pubkeys by removing blocked users.
   List<String> _filterPubkeys(List<String> pubkeys) =>
-      pubkeys.where((pk) => !_blocklistService.isBlocked(pk)).toList();
+      pubkeys.where((pk) => !_blocklistRepository.isBlocked(pk)).toList();
 
   /// Listen to repository stream for reactive updates
   Future<void> _onLoadRequested(
