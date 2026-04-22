@@ -16,6 +16,7 @@ import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -546,6 +547,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
       videos: videos,
       pool: PlayerPool.instance,
       initialIndex: initialIndex,
+      initialVolume: context.read<VideoVolumeCubit>().state.volume,
+      onVolumeChanged: context.read<VideoVolumeCubit>().onPlaybackVolumeChanged,
       // Hook: Dispatch event for background caching when video is ready
       onVideoReady: (index, player) {
         if (!mounted) return;
@@ -564,6 +567,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
       value: _autoAdvanceCubit,
       child: MultiBlocListener(
         listeners: [
+          // Sync volume when hardware buttons change system volume.
+          BlocListener<VideoVolumeCubit, VideoVolumeState>(
+            listener: (_, state) {
+              _controller?.setVolume(state.volume);
+            },
+          ),
           // Initialize controller when videos first become available
           BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
             listenWhen: (prev, curr) =>
@@ -1144,7 +1153,7 @@ class _PooledFullscreenItemContentState
               errorType: errorType,
             );
           },
-          overlayBuilder: (context, videoController, player) {
+          overlayBuilder: (context, videoController, player, feedController) {
             final playbackStatus = context.select(
               (VideoPlaybackStatusCubit cubit) =>
                   cubit.state.statusFor(video.id),
@@ -1184,6 +1193,8 @@ class _PooledFullscreenItemContentState
                   children: [
                     if (player != null)
                       PausedVideoPlayOverlay(
+                        onToggleMuteState: () =>
+                            feedController?.toggleMuteState(),
                         player: player,
                         firstFrameFuture:
                             videoController?.waitUntilFirstFrameRendered,

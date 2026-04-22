@@ -30,6 +30,7 @@ import 'package:openvine/blocs/email_verification/email_verification_cubit.dart'
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
@@ -1584,6 +1585,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       ],
       child: MultiBlocProvider(
         providers: [
+          BlocProvider(
+            lazy: false,
+            create: (_) => VideoVolumeCubit(
+              sharedPreferences: ref.read(sharedPreferencesProvider),
+            ),
+          ),
           BlocProvider(
             create: (_) => LocaleCubit(
               localePreferenceService: LocalePreferenceService(

@@ -23,6 +23,7 @@ class ConversationTile extends ConsumerWidget {
     required this.currentUserPubkey,
     required this.onTap,
     this.onLongPress,
+    this.highlighted = false,
     super.key,
   });
 
@@ -30,6 +31,10 @@ class ConversationTile extends ConsumerWidget {
   final String currentUserPubkey;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+
+  /// When true, applies a [VineTheme.containerLow] background tint to
+  /// indicate this row is the target of an open long-press action sheet.
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -74,8 +79,9 @@ class ConversationTile extends ConsumerWidget {
         onLongPress: onLongPress,
         behavior: HitTestBehavior.opaque,
         child: DecoratedBox(
-          decoration: const BoxDecoration(
-            border: Border(
+          decoration: BoxDecoration(
+            color: highlighted ? VineTheme.containerLow : null,
+            border: const Border(
               bottom: BorderSide(color: VineTheme.outlineDisabled),
             ),
           ),

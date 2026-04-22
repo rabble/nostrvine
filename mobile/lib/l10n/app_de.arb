@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "Video wird geladen...",
     "videoPlayerPlayVideo": "Video abspielen",
+    "videoPlayerMute": "Video stummschalten",
+    "videoPlayerUnmute": "Video-Ton einschalten",
     "videoPlayerEditVideo": "Video bearbeiten",
     "videoPlayerEditVideoTooltip": "Video bearbeiten",
     "contentWarningLabel": "Inhaltswarnung",
@@ -2191,6 +2193,32 @@
     "featureRequestCancel": "Abbrechen",
     "followersFailedToLoadList": "Follower-Liste konnte nicht geladen werden",
     "followingFailedToLoadList": "Folge-ich-Liste konnte nicht geladen werden",
+    "inboxActionBlock": "{displayName} blockieren",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Unterhaltung stummschalten",
+    "inboxActionRemove": "Unterhaltung entfernen",
+    "inboxActionReport": "{displayName} melden",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "{displayName} entblocken",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} blockiert",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2199,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Unterhaltung stummgeschaltet",
+    "inboxConversationUnmuted": "Unterhaltung nicht mehr stummgeschaltet",
+    "inboxEmptySubtitle": "Der + Button beißt nicht.",
+    "inboxEmptyTitle": "Noch keine Nachrichten",
+    "inboxRemoveConfirmBody": "Dadurch wird deine Unterhaltung mit {displayName} gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Entfernen",
+    "inboxRemoveConfirmTitle": "Unterhaltung entfernen?",
     "inboxRemovedConversation": "Unterhaltung entfernt",
     "inboxReportedUser": "{displayName} gemeldet",
     "@inboxReportedUser": {
@@ -2323,6 +2365,8 @@
     "reportDialogReport": "Melden",
     "routerInvalidCreator": "Ungültiger Ersteller",
     "routerInvalidHashtagRoute": "Ungültige Hashtag-Route",
+    "searchDiscoverSomethingInteresting": "Entdecke etwas Interessantes",
+    "searchEnterQuery": "Suchbegriff eingeben",
     "searchFindCuratedVideoLists": "Kuratierte Videolisten finden",
     "searchForLists": "Nach Listen suchen",
     "searchSomethingWentWrong": "Etwas ist schiefgelaufen",
