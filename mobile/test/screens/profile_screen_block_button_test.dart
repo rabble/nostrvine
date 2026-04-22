@@ -1,7 +1,7 @@
 // ABOUTME: TDD tests for Block User button on profile screen
 // ABOUTME: Tests visibility, styling, and interaction for blocking/unblocking users
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,17 +9,17 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ProfileScreen Block Button - TDD', () {
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
 
     setUp(() {
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
     });
 
     // Helper to create a simple test widget with Block User button
@@ -30,13 +30,13 @@ void main() {
     }) {
       // Setup mock behavior
       when(
-        () => mockBlocklistService.isBlocked(userPubkey),
+        () => mockBlocklistRepository.isBlocked(userPubkey),
       ).thenReturn(isBlocked);
 
       return ProviderScope(
         overrides: [
-          contentBlocklistServiceProvider.overrideWithValue(
-            mockBlocklistService,
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            mockBlocklistRepository,
           ),
         ],
         child: MaterialApp(
@@ -46,10 +46,12 @@ void main() {
             body: Center(
               child: Consumer(
                 builder: (context, ref, _) {
-                  final blocklistService = ref.watch(
-                    contentBlocklistServiceProvider,
+                  final blocklistRepository = ref.watch(
+                    contentBlocklistRepositoryProvider,
                   );
-                  final isUserBlocked = blocklistService.isBlocked(userPubkey);
+                  final isUserBlocked = blocklistRepository.isBlocked(
+                    userPubkey,
+                  );
                   return OutlinedButton(
                     onPressed: () {
                       if (onBlock != null) {

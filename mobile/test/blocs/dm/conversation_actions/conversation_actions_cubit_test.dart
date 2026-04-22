@@ -2,7 +2,7 @@
 // ABOUTME: Verifies service delegation, return values, and error handling.
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,8 +13,8 @@ import 'package:openvine/services/content_reporting_service.dart';
 class _MockContentReportingService extends Mock
     implements ContentReportingService {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
@@ -28,12 +28,12 @@ void main() {
 
   group(ConversationActionsCubit, () {
     late _MockContentReportingService mockReportingService;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockDmRepository mockDmRepo;
 
     setUp(() {
       mockReportingService = _MockContentReportingService();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockDmRepo = _MockDmRepository();
     });
 
@@ -41,7 +41,7 @@ void main() {
       ContentReportingService? reportingService,
     }) => ConversationActionsCubit(
       contentReportingService: reportingService ?? mockReportingService,
-      contentBlocklistService: mockBlocklistService,
+      contentBlocklistRepository: mockBlocklistRepository,
       dmRepository: mockDmRepo,
       currentUserPubkey: currentUserPubkey,
     );
@@ -53,13 +53,13 @@ void main() {
     });
 
     group('isBlocked', () {
-      test('delegates to ContentBlocklistService', () {
-        when(() => mockBlocklistService.isBlocked(pubkey)).thenReturn(true);
+      test('delegates to ContentBlocklistRepository', () {
+        when(() => mockBlocklistRepository.isBlocked(pubkey)).thenReturn(true);
 
         final cubit = createCubit();
         expect(cubit.isBlocked(pubkey), isTrue);
 
-        verify(() => mockBlocklistService.isBlocked(pubkey)).called(1);
+        verify(() => mockBlocklistRepository.isBlocked(pubkey)).called(1);
         cubit.close();
       });
     });
@@ -104,7 +104,7 @@ void main() {
         'returns false when reporting service is null',
         build: () => ConversationActionsCubit(
           contentReportingService: null,
-          contentBlocklistService: mockBlocklistService,
+          contentBlocklistRepository: mockBlocklistRepository,
           dmRepository: mockDmRepo,
           currentUserPubkey: currentUserPubkey,
         ),
@@ -143,10 +143,10 @@ void main() {
 
     group('blockUser', () {
       blocTest<ConversationActionsCubit, ConversationActionsState>(
-        'emits processing then success and calls blocklistService',
+        'emits processing then success and calls blocklistRepository',
         setUp: () {
           when(
-            () => mockBlocklistService.blockUser(
+            () => mockBlocklistRepository.blockUser(
               pubkey,
               ourPubkey: currentUserPubkey,
             ),
@@ -164,7 +164,7 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockBlocklistService.blockUser(
+            () => mockBlocklistRepository.blockUser(
               pubkey,
               ourPubkey: currentUserPubkey,
             ),
@@ -173,10 +173,10 @@ void main() {
       );
 
       blocTest<ConversationActionsCubit, ConversationActionsState>(
-        'emits failure and calls addError when blocklistService throws',
+        'emits failure and calls addError when blocklistRepository throws',
         setUp: () {
           when(
-            () => mockBlocklistService.blockUser(
+            () => mockBlocklistRepository.blockUser(
               pubkey,
               ourPubkey: currentUserPubkey,
             ),
@@ -201,7 +201,7 @@ void main() {
         'emits processing then success and calls unblockUser',
         setUp: () {
           when(
-            () => mockBlocklistService.unblockUser(pubkey),
+            () => mockBlocklistRepository.unblockUser(pubkey),
           ).thenAnswer((_) async {});
         },
         build: createCubit,
@@ -216,7 +216,7 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockBlocklistService.unblockUser(pubkey),
+            () => mockBlocklistRepository.unblockUser(pubkey),
           ).called(1);
         },
       );
@@ -225,7 +225,7 @@ void main() {
         'emits failure and calls addError when unblockUser throws',
         setUp: () {
           when(
-            () => mockBlocklistService.unblockUser(pubkey),
+            () => mockBlocklistRepository.unblockUser(pubkey),
           ).thenAnswer((_) async => throw Exception('unblock failed'));
         },
         build: createCubit,

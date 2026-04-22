@@ -2,7 +2,7 @@
 // ABOUTME: Tests loading from repository stream and blocklist filtering
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,13 +10,13 @@ import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   group(MyFollowersBloc, () {
     late _MockFollowRepository mockFollowRepository;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
 
     // Helper to create valid hex pubkeys (64 hex characters)
     String validPubkey(String suffix) {
@@ -28,18 +28,18 @@ void main() {
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
 
       // Default: nothing is blocked
-      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
+      when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
       when(
-        () => mockBlocklistService.isFollowSevered(any()),
+        () => mockBlocklistRepository.isFollowSevered(any()),
       ).thenReturn(false);
     });
 
     MyFollowersBloc createBloc() => MyFollowersBloc(
       followRepository: mockFollowRepository,
-      contentBlocklistService: mockBlocklistService,
+      contentBlocklistRepository: mockBlocklistRepository,
     );
 
     test('initial state is initial with empty list', () {
@@ -192,7 +192,9 @@ void main() {
         'filters blocked users from stream results',
         setUp: () {
           final blocked = validPubkey('blocked');
-          when(() => mockBlocklistService.isBlocked(blocked)).thenReturn(true);
+          when(
+            () => mockBlocklistRepository.isBlocked(blocked),
+          ).thenReturn(true);
 
           when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
             (_) => Stream.value(
@@ -232,7 +234,7 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           // Now block user 'a'
           when(
-            () => mockBlocklistService.isBlocked(validPubkey('a')),
+            () => mockBlocklistRepository.isBlocked(validPubkey('a')),
           ).thenReturn(true);
           bloc.add(const MyFollowersBlocklistChanged());
         },

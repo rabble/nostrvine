@@ -3,7 +3,7 @@
 // ABOUTME: and MyFollowingBloc to InboxView via MultiBlocProvider.
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,8 +27,8 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
@@ -65,7 +65,7 @@ void main() {
     late _MockDmRepository mockDmRepository;
     late _MockAuthService mockAuthService;
     late _MockFollowRepository mockFollowRepository;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late MockGoRouter mockGoRouter;
     late _MockInviteStatusCubit mockInviteCubit;
 
@@ -73,7 +73,7 @@ void main() {
       mockDmRepository = _MockDmRepository();
       mockAuthService = _MockAuthService();
       mockFollowRepository = _MockFollowRepository();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockGoRouter = MockGoRouter();
       mockInviteCubit = _MockInviteStatusCubit();
       when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
@@ -105,7 +105,7 @@ void main() {
       ).thenAnswer((_) => const Stream.empty());
 
       when(
-        () => mockBlocklistService.isBlocked(any()),
+        () => mockBlocklistRepository.isBlocked(any()),
       ).thenReturn(false);
 
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
@@ -135,8 +135,8 @@ void main() {
                 followRepositoryProvider.overrideWithValue(
                   mockFollowRepository,
                 ),
-                contentBlocklistServiceProvider.overrideWithValue(
-                  mockBlocklistService,
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklistRepository,
                 ),
                 goRouterProvider.overrideWithValue(mockGoRouter),
                 relayNotificationUnreadCountProvider.overrideWithValue(0),
@@ -177,8 +177,8 @@ void main() {
             additionalOverrides: [
               dmRepositoryProvider.overrideWithValue(mockDmRepository),
               followRepositoryProvider.overrideWithValue(mockFollowRepository),
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockBlocklistRepository,
               ),
               goRouterProvider.overrideWithValue(mockGoRouter),
               relayNotificationUnreadCountProvider.overrideWithValue(0),

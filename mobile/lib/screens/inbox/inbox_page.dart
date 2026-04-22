@@ -36,7 +36,7 @@ class InboxPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dmRepository = ref.watch(dmRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
     final reportingService = ref.watch(contentReportingServiceProvider).value;
     final currentUserPubkey =
@@ -50,7 +50,7 @@ class InboxPage extends ConsumerWidget {
             create: (_) => ConversationListBloc(
               dmRepository: dmRepository,
               followRepository: followRepository,
-              contentBlocklistService: blocklistService,
+              contentBlocklistRepository: blocklistRepository,
             )..add(const ConversationListStarted()),
           ),
           BlocProvider(
@@ -59,14 +59,14 @@ class InboxPage extends ConsumerWidget {
           BlocProvider(
             create: (_) => MyFollowingBloc(
               followRepository: followRepository,
-              contentBlocklistService: blocklistService,
+              contentBlocklistRepository: blocklistRepository,
             )..add(const MyFollowingListLoadRequested()),
           ),
           BlocProvider(create: (_) => ConversationMuteCubit(prefs: prefs)),
           BlocProvider(
             create: (_) => ConversationActionsCubit(
               contentReportingService: reportingService,
-              contentBlocklistService: blocklistService,
+              contentBlocklistRepository: blocklistRepository,
               dmRepository: dmRepository,
               currentUserPubkey: currentUserPubkey,
             ),

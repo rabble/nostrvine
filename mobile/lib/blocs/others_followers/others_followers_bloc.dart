@@ -4,7 +4,7 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -23,10 +23,10 @@ class OthersFollowersBloc
     extends Bloc<OthersFollowersEvent, OthersFollowersState> {
   OthersFollowersBloc({
     required FollowRepository followRepository,
-    required ContentBlocklistService contentBlocklistService,
+    required ContentBlocklistRepository contentBlocklistRepository,
     required String currentUserPubkey,
   }) : _followRepository = followRepository,
-       _blocklistService = contentBlocklistService,
+       _blocklistRepository = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        super(const OthersFollowersState()) {
     on<OthersFollowersListLoadRequested>(_onLoadRequested);
@@ -37,7 +37,7 @@ class OthersFollowersBloc
   }
 
   final FollowRepository _followRepository;
-  final ContentBlocklistService _blocklistService;
+  final ContentBlocklistRepository _blocklistRepository;
   final String _currentUserPubkey;
 
   /// Raw unfiltered follower pubkeys for re-filtering on blocklist changes.
@@ -48,7 +48,7 @@ class OthersFollowersBloc
   List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
       .where(
         (pk) =>
-            !_blocklistService.isBlocked(pk) &&
+            !_blocklistRepository.isBlocked(pk) &&
             !(_shouldHideCurrentUser() && pk == _currentUserPubkey),
       )
       .toList();

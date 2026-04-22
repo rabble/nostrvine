@@ -74,7 +74,7 @@ class OtherProfileScreen extends ConsumerWidget {
       );
     }
 
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
     final followRepository = ref.watch(followRepositoryProvider);
 
@@ -82,7 +82,7 @@ class OtherProfileScreen extends ConsumerWidget {
       create: (context) => OtherProfileBloc(
         pubkey: pubkey,
         profileRepository: profileRepository,
-        contentBlocklistService: blocklistService,
+        contentBlocklistRepository: blocklistRepository,
         currentUserPubkey: nostrClient.publicKey,
         followRepository: followRepository,
       )..add(const OtherProfileLoadRequested()),

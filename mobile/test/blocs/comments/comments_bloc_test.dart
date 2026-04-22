@@ -5,7 +5,7 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -26,8 +26,8 @@ class _MockLikesRepository extends Mock implements LikesRepository {}
 class _MockContentReportingService extends Mock
     implements ContentReportingService {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
@@ -44,7 +44,7 @@ void main() {
     late _MockAuthService mockAuthService;
     late _MockLikesRepository mockLikesRepository;
     late _MockContentReportingService mockContentReportingService;
-    late _MockContentBlocklistService mockContentBlocklistService;
+    late _MockContentBlocklistRepository mockContentBlocklistRepository;
     late _MockProfileRepository mockProfileRepository;
     late _MockFollowRepository mockFollowRepository;
 
@@ -61,7 +61,7 @@ void main() {
       mockAuthService = _MockAuthService();
       mockLikesRepository = _MockLikesRepository();
       mockContentReportingService = _MockContentReportingService();
-      mockContentBlocklistService = _MockContentBlocklistService();
+      mockContentBlocklistRepository = _MockContentBlocklistRepository();
       mockProfileRepository = _MockProfileRepository();
       mockFollowRepository = _MockFollowRepository();
 
@@ -108,10 +108,10 @@ void main() {
 
       // Default stub for blocklist checks
       when(
-        () => mockContentBlocklistService.isBlocked(any()),
+        () => mockContentBlocklistRepository.isBlocked(any()),
       ).thenReturn(false);
       when(
-        () => mockContentBlocklistService.shouldFilterFromFeeds(any()),
+        () => mockContentBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
     });
 
@@ -129,7 +129,7 @@ void main() {
       authService: mockAuthService,
       likesRepository: mockLikesRepository,
       contentReportingServiceFuture: Future.value(mockContentReportingService),
-      contentBlocklistService: mockContentBlocklistService,
+      contentBlocklistRepository: mockContentBlocklistRepository,
       rootEventId: rootEventId ?? validId('root'),
       rootEventKind: testRootEventKind,
       rootAuthorPubkey: rootAuthorPubkey ?? validId('author'),
@@ -2096,7 +2096,7 @@ void main() {
         'blocks user and removes their comments',
         setUp: () {
           when(
-            () => mockContentBlocklistService.blockUser(any()),
+            () => mockContentBlocklistRepository.blockUser(any()),
           ).thenAnswer((_) async {});
           when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
         },
@@ -2173,7 +2173,7 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockContentBlocklistService.blockUser(validId('baduser')),
+            () => mockContentBlocklistRepository.blockUser(validId('baduser')),
           ).called(1);
         },
       );
@@ -2182,7 +2182,7 @@ void main() {
         'emits error when blocking fails',
         setUp: () {
           when(
-            () => mockContentBlocklistService.blockUser(any()),
+            () => mockContentBlocklistRepository.blockUser(any()),
           ).thenThrow(Exception('Network error'));
           // Note: thenThrow is correct here — tests the sync exception path.
         },

@@ -5,7 +5,7 @@
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -20,10 +20,10 @@ class ConversationListBloc
   ConversationListBloc({
     required DmRepository dmRepository,
     required FollowRepository followRepository,
-    ContentBlocklistService? contentBlocklistService,
+    ContentBlocklistRepository? contentBlocklistRepository,
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
-       _blocklistService = contentBlocklistService,
+       _blocklistRepository = contentBlocklistRepository,
        super(const ConversationListState()) {
     on<ConversationListStarted>(
       _onStarted,
@@ -51,7 +51,7 @@ class ConversationListBloc
 
   final DmRepository _dmRepository;
   final FollowRepository _followRepository;
-  final ContentBlocklistService? _blocklistService;
+  final ContentBlocklistRepository? _blocklistRepository;
 
   Future<void> _onStarted(
     ConversationListStarted event,
@@ -102,13 +102,13 @@ class ConversationListBloc
         return state.copyWith(
           status: ConversationListStatus.loaded,
           conversations:
-              _blocklistService?.filterBlockedConversations(
+              _blocklistRepository?.filterBlockedConversations(
                 merged,
                 userPubkey: userPubkey,
               ) ??
               merged,
           requestConversations:
-              _blocklistService?.filterBlockedConversations(
+              _blocklistRepository?.filterBlockedConversations(
                 split.requests,
                 userPubkey: userPubkey,
               ) ??

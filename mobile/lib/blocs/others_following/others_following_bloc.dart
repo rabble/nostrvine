@@ -2,7 +2,7 @@
 // ABOUTME: Fetches Kind 3 contact list from Nostr relays for the target user
 // TODO(Oscar): Move Nostr query logic to repository - https://github.com/divinevideo/divine-mobile/issues/571
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -23,17 +23,17 @@ class OthersFollowingBloc
     extends Bloc<OthersFollowingEvent, OthersFollowingState> {
   OthersFollowingBloc({
     required NostrClient nostrClient,
-    required ContentBlocklistService contentBlocklistService,
+    required ContentBlocklistRepository contentBlocklistRepository,
     this.currentUserPubkey,
   }) : _nostrClient = nostrClient,
-       _blocklistService = contentBlocklistService,
+       _blocklistRepository = contentBlocklistRepository,
        super(const OthersFollowingState()) {
     on<OthersFollowingListLoadRequested>(_onLoadRequested);
     on<OthersFollowingBlocklistChanged>(_onBlocklistChanged);
   }
 
   final NostrClient _nostrClient;
-  final ContentBlocklistService _blocklistService;
+  final ContentBlocklistRepository _blocklistRepository;
 
   /// The current user's pubkey, used to hide ourselves from the target's
   /// following list when we have blocked the target.
@@ -48,13 +48,13 @@ class OthersFollowingBloc
     final targetPubkey = state.targetPubkey;
     final hideCurrentUser =
         targetPubkey != null &&
-        (_blocklistService.isBlocked(targetPubkey) ||
-            _blocklistService.isFollowSevered(targetPubkey));
+        (_blocklistRepository.isBlocked(targetPubkey) ||
+            _blocklistRepository.isFollowSevered(targetPubkey));
 
     return pubkeys
         .where(
           (pk) =>
-              !_blocklistService.isBlocked(pk) &&
+              !_blocklistRepository.isBlocked(pk) &&
               !(hideCurrentUser && pk == currentUserPubkey),
         )
         .toList();

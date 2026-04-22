@@ -1,7 +1,7 @@
 // ABOUTME: BLoC for viewing another user's profile
 // ABOUTME: Implements cache+fresh pattern and block/unblock actions
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -28,11 +28,11 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   OtherProfileBloc({
     required ProfileRepository profileRepository,
     required this.pubkey,
-    required ContentBlocklistService contentBlocklistService,
+    required ContentBlocklistRepository contentBlocklistRepository,
     required String currentUserPubkey,
     required FollowRepository followRepository,
   }) : _profileRepository = profileRepository,
-       _blocklistService = contentBlocklistService,
+       _blocklistRepository = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        _followRepository = followRepository,
        super(const OtherProfileInitial()) {
@@ -43,7 +43,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   }
 
   final ProfileRepository _profileRepository;
-  final ContentBlocklistService _blocklistService;
+  final ContentBlocklistRepository _blocklistRepository;
   final String _currentUserPubkey;
   final FollowRepository _followRepository;
 
@@ -51,7 +51,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   final String pubkey;
 
   /// Current block status for the viewed profile.
-  bool get isBlocked => _blocklistService.isBlocked(pubkey);
+  bool get isBlocked => _blocklistRepository.isBlocked(pubkey);
 
   /// Whether the current user is following the viewed profile.
   bool get isFollowing => _followRepository.isFollowing(pubkey);
@@ -135,7 +135,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     OtherProfileBlockRequested event,
     Emitter<OtherProfileState> emit,
   ) async {
-    await _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
+    await _blocklistRepository.blockUser(pubkey, ourPubkey: _currentUserPubkey);
 
     // Unfollow the user if we're currently following them
     if (_followRepository.isFollowing(pubkey)) {
@@ -156,6 +156,6 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     OtherProfileUnblockRequested event,
     Emitter<OtherProfileState> emit,
   ) async {
-    await _blocklistService.unblockUser(pubkey);
+    await _blocklistRepository.unblockUser(pubkey);
   }
 }

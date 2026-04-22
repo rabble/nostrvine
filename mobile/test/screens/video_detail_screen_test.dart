@@ -3,7 +3,7 @@
 
 import 'dart:async';
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,8 +24,8 @@ class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   setUpAll(() {
@@ -34,14 +34,14 @@ void main() {
 
   group(VideoDetailScreen, () {
     late _MockVideoEventService mockVideoEventService;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockNostrClient mockNostrClient;
     late _MockFollowRepository mockFollowRepository;
 
     setUp(() {
       mockVideoEventService = _MockVideoEventService();
       mockNostrClient = _MockNostrClient();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockFollowRepository = _MockFollowRepository();
 
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
@@ -62,7 +62,7 @@ void main() {
 
       // Default: no authors blocked
       when(
-        () => mockBlocklistService.shouldFilterFromFeeds(any()),
+        () => mockBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
       when(
         () => mockVideoEventService.shouldHideVideo(any()),
@@ -74,8 +74,8 @@ void main() {
         mockNostrService: mockNostrClient,
         additionalOverrides: [
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistServiceProvider.overrideWithValue(
-            mockBlocklistService,
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            mockBlocklistRepository,
           ),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
         ],
@@ -172,7 +172,7 @@ void main() {
           () => mockVideoEventService.getVideoById('blocked_video_id'),
         ).thenReturn(video);
         when(
-          () => mockBlocklistService.shouldFilterFromFeeds('blocked_pubkey'),
+          () => mockBlocklistRepository.shouldFilterFromFeeds('blocked_pubkey'),
         ).thenReturn(true);
 
         await tester.pumpWidget(buildSubject(videoId: 'blocked_video_id'));
@@ -194,7 +194,7 @@ void main() {
           () => mockVideoEventService.getVideoById('blocked_video_id'),
         ).thenReturn(video);
         when(
-          () => mockBlocklistService.shouldFilterFromFeeds('blocked_pubkey'),
+          () => mockBlocklistRepository.shouldFilterFromFeeds('blocked_pubkey'),
         ).thenReturn(true);
 
         await tester.pumpWidget(buildSubject(videoId: 'blocked_video_id'));

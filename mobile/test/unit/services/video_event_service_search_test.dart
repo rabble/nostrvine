@@ -1,7 +1,7 @@
 // ABOUTME: Unit tests for VideoEventService NIP-50 search functionality
 // ABOUTME: Tests search capabilities including text queries, filters, and result processing
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -232,11 +232,11 @@ void main() {
 
       test('should filter blocked user videos from search results', () async {
         // Create a real blocklist service and block a user
-        final blocklistService = ContentBlocklistService();
-        blocklistService.blockUser(blockedPubkey);
+        final blocklistRepository = ContentBlocklistRepository();
+        blocklistRepository.blockUser(blockedPubkey);
 
         // Set the blocklist service on the video event service
-        videoEventService.setBlocklistService(blocklistService);
+        videoEventService.setBlocklistRepository(blocklistRepository);
 
         // Create a mock video event from the blocked user (NIP-71 kind 34236)
         // Event constructor: Event(pubkey, kind, tags, content, {createdAt})
@@ -270,13 +270,13 @@ void main() {
         'should include non-blocked user videos in search results',
         () async {
           // Create a real blocklist service
-          final blocklistService = ContentBlocklistService();
+          final blocklistRepository = ContentBlocklistRepository();
 
           // Block a different user (not normalPubkey)
-          blocklistService.blockUser(otherBlockedPubkey);
+          blocklistRepository.blockUser(otherBlockedPubkey);
 
           // Set the blocklist service on the video event service
-          videoEventService.setBlocklistService(blocklistService);
+          videoEventService.setBlocklistRepository(blocklistRepository);
 
           // Create a mock video event from a non-blocked user
           // Event constructor: Event(pubkey, kind, tags, content, {createdAt})

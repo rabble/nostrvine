@@ -1,7 +1,7 @@
 // ABOUTME: Widget tests for SafetySettingsScreen UI and functionality
 // ABOUTME: Tests section headers, blocked users list, muted content, filters, and report history
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,8 +20,8 @@ import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {
+class MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {
   final Set<String> _runtimeBlocklist = {};
 
   @override
@@ -82,7 +82,7 @@ class MockContentFilterService extends Mock implements ContentFilterService {
 
 void main() {
   group('SafetySettingsScreen Widget Tests', () {
-    late MockContentBlocklistService mockBlocklistService;
+    late MockContentBlocklistRepository mockBlocklistRepository;
     late MockContentReportingService mockReportingService;
     late MockAccountLabelService mockAccountLabelService;
     late MockModerationLabelService mockModerationLabelService;
@@ -94,7 +94,7 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      mockBlocklistService = MockContentBlocklistService();
+      mockBlocklistRepository = MockContentBlocklistRepository();
       mockReportingService = MockContentReportingService();
       mockAccountLabelService = MockAccountLabelService();
       mockModerationLabelService = MockModerationLabelService();
@@ -150,8 +150,8 @@ void main() {
     Widget createTestWidget() {
       final container = ProviderContainer(
         overrides: [
-          contentBlocklistServiceProvider.overrideWithValue(
-            mockBlocklistService,
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            mockBlocklistRepository,
           ),
           // contentReportingServiceProvider is async, so wrap in AsyncValue
           contentReportingServiceProvider.overrideWith(
@@ -308,7 +308,7 @@ void main() {
 
   group('SafetySettingsScreen Blocked Users Section - Unit Tests', () {
     test('runtimeBlockedUsers returns blocked users set', () {
-      final service = MockContentBlocklistService();
+      final service = MockContentBlocklistRepository();
 
       // Initially empty
       expect(service.runtimeBlockedUsers, isEmpty);
@@ -323,7 +323,7 @@ void main() {
     });
 
     test('unblockUser removes user from blocked list', () {
-      final service = MockContentBlocklistService();
+      final service = MockContentBlocklistRepository();
 
       service.blockUser('user_to_unblock');
       expect(service.runtimeBlockedUsers.contains('user_to_unblock'), isTrue);
@@ -333,7 +333,7 @@ void main() {
     });
 
     test('isBlocked returns correct status', () {
-      final service = MockContentBlocklistService();
+      final service = MockContentBlocklistRepository();
 
       expect(service.isBlocked('some_user'), isFalse);
 

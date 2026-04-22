@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -24,8 +24,8 @@ import 'package:videos_repository/videos_repository.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
@@ -44,7 +44,7 @@ void main() {
   group('Explore feed refresh retention', () {
     late SharedPreferences sharedPreferences;
     late _MockVideoEventService mockVideoEventService;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockVideosRepository mockVideosRepository;
     late _MockFunnelcakeApiClient mockFunnelcakeApiClient;
     late _MockAuthService mockAuthService;
@@ -55,7 +55,7 @@ void main() {
       sharedPreferences = await SharedPreferences.getInstance();
 
       mockVideoEventService = _MockVideoEventService();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockVideosRepository = _MockVideosRepository();
       mockFunnelcakeApiClient = _MockFunnelcakeApiClient();
       mockAuthService = _MockAuthService();
@@ -69,7 +69,7 @@ void main() {
         );
       });
       when(
-        () => mockBlocklistService.shouldFilterFromFeeds(any()),
+        () => mockBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
       when(
         () => mockAuthService.currentPublicKeyHex,
@@ -100,8 +100,8 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             appReadyProvider.overrideWithValue(true),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-            contentBlocklistServiceProvider.overrideWithValue(
-              mockBlocklistService,
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
             ),
             funnelcakeApiClientProvider.overrideWithValue(
               mockFunnelcakeApiClient,
@@ -189,8 +189,8 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           appReadyProvider.overrideWithValue(appReady),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistServiceProvider.overrideWithValue(
-            mockBlocklistService,
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            mockBlocklistRepository,
           ),
           funnelcakeApiClientProvider.overrideWithValue(
             mockFunnelcakeApiClient,
@@ -295,8 +295,8 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             appReadyProvider.overrideWithValue(true),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-            contentBlocklistServiceProvider.overrideWithValue(
-              mockBlocklistService,
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
             ),
             videosRepositoryProvider.overrideWithValue(mockVideosRepository),
             nostrServiceProvider.overrideWithValue(mockNostrClient),
@@ -370,8 +370,8 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             appReadyProvider.overrideWithValue(true),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-            contentBlocklistServiceProvider.overrideWithValue(
-              mockBlocklistService,
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
             ),
             funnelcakeApiClientProvider.overrideWithValue(
               mockFunnelcakeApiClient,

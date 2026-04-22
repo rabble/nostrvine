@@ -2,7 +2,7 @@
 // ABOUTME: Constructor-injected services, no Riverpod at action time.
 
 import 'package:bloc/bloc.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:openvine/services/content_moderation_service.dart';
@@ -32,17 +32,17 @@ class ConversationActionsState extends Equatable {
 class ConversationActionsCubit extends Cubit<ConversationActionsState> {
   ConversationActionsCubit({
     required ContentReportingService? contentReportingService,
-    required ContentBlocklistService contentBlocklistService,
+    required ContentBlocklistRepository contentBlocklistRepository,
     required DmRepository dmRepository,
     required String currentUserPubkey,
   }) : _reportingService = contentReportingService,
-       _blocklistService = contentBlocklistService,
+       _blocklistRepository = contentBlocklistRepository,
        _dmRepository = dmRepository,
        _currentUserPubkey = currentUserPubkey,
        super(const ConversationActionsState());
 
   final ContentReportingService? _reportingService;
-  final ContentBlocklistService _blocklistService;
+  final ContentBlocklistRepository _blocklistRepository;
   final DmRepository _dmRepository;
   final String _currentUserPubkey;
 
@@ -70,13 +70,16 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
   }
 
   /// Whether [pubkey] is currently on the blocklist.
-  bool isBlocked(String pubkey) => _blocklistService.isBlocked(pubkey);
+  bool isBlocked(String pubkey) => _blocklistRepository.isBlocked(pubkey);
 
   /// Block a user from a DM conversation.
   Future<void> blockUser(String pubkey) async {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
     try {
-      await _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
+      await _blocklistRepository.blockUser(
+        pubkey,
+        ourPubkey: _currentUserPubkey,
+      );
       emit(state.copyWith(status: ConversationActionsStatus.success));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
@@ -88,7 +91,7 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
   Future<void> unblockUser(String pubkey) async {
     emit(state.copyWith(status: ConversationActionsStatus.processing));
     try {
-      await _blocklistService.unblockUser(pubkey);
+      await _blocklistRepository.unblockUser(pubkey);
       emit(state.copyWith(status: ConversationActionsStatus.success));
     } catch (e, stackTrace) {
       addError(e, stackTrace);

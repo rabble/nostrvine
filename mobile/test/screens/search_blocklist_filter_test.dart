@@ -1,30 +1,30 @@
 // ABOUTME: Tests for search filtering of blocked users
 // ABOUTME: Verifies that blocked users' content doesn't appear in search results
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   group('Search Blocklist Filtering', () {
-    late ContentBlocklistService blocklistService;
+    late ContentBlocklistRepository blocklistRepository;
 
     setUp(() {
-      blocklistService = ContentBlocklistService();
+      blocklistRepository = ContentBlocklistRepository();
     });
 
     test('shouldFilterFromFeeds returns true for blocked users', () {
       const blockedPubkey = 'blocked_user_pubkey_hex';
 
       // Block the user
-      blocklistService.blockUser(blockedPubkey);
+      blocklistRepository.blockUser(blockedPubkey);
 
       // Verify they should be filtered
       expect(
-        blocklistService.shouldFilterFromFeeds(blockedPubkey),
+        blocklistRepository.shouldFilterFromFeeds(blockedPubkey),
         isTrue,
         reason: 'Blocked users should be filtered from feeds and search',
       );
@@ -35,7 +35,7 @@ void main() {
 
       // Verify non-blocked users are not filtered
       expect(
-        blocklistService.shouldFilterFromFeeds(normalPubkey),
+        blocklistRepository.shouldFilterFromFeeds(normalPubkey),
         isFalse,
         reason: 'Non-blocked users should not be filtered',
       );
@@ -47,7 +47,7 @@ void main() {
       const normalPubkey2 = 'normal_user_2_pubkey';
 
       // Block one user
-      blocklistService.blockUser(blockedPubkey);
+      blocklistRepository.blockUser(blockedPubkey);
 
       // Create mock content items
       final contentItems = [
@@ -58,7 +58,7 @@ void main() {
       ];
 
       // Filter content
-      final filteredContent = blocklistService.filterContent(
+      final filteredContent = blocklistRepository.filterContent(
         contentItems,
         (item) => item['pubkey']!,
       );
@@ -76,10 +76,10 @@ void main() {
       const pubkey1 = 'blocked_pubkey_1';
       const pubkey2 = 'blocked_pubkey_2';
 
-      blocklistService.blockUser(pubkey1);
-      blocklistService.blockUser(pubkey2);
+      blocklistRepository.blockUser(pubkey1);
+      blocklistRepository.blockUser(pubkey2);
 
-      final blockedUsers = blocklistService.runtimeBlockedUsers;
+      final blockedUsers = blocklistRepository.runtimeBlockedUsers;
 
       expect(blockedUsers.contains(pubkey1), isTrue);
       expect(blockedUsers.contains(pubkey2), isTrue);
@@ -89,14 +89,14 @@ void main() {
       const pubkey = 'user_to_unblock';
 
       // Block then unblock
-      blocklistService.blockUser(pubkey);
-      expect(blocklistService.runtimeBlockedUsers.contains(pubkey), isTrue);
+      blocklistRepository.blockUser(pubkey);
+      expect(blocklistRepository.runtimeBlockedUsers.contains(pubkey), isTrue);
 
-      blocklistService.unblockUser(pubkey);
-      expect(blocklistService.runtimeBlockedUsers.contains(pubkey), isFalse);
+      blocklistRepository.unblockUser(pubkey);
+      expect(blocklistRepository.runtimeBlockedUsers.contains(pubkey), isFalse);
 
       // Should no longer be filtered
-      expect(blocklistService.shouldFilterFromFeeds(pubkey), isFalse);
+      expect(blocklistRepository.shouldFilterFromFeeds(pubkey), isFalse);
     });
   });
 }

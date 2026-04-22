@@ -3,7 +3,7 @@
 
 import 'dart:async';
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -17,8 +17,8 @@ import '../../helpers/test_provider_overrides.dart';
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -32,15 +32,15 @@ void main() {
 
   group(OthersFollowersScreen, () {
     late _MockFollowRepository mockFollowRepository;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockNostrClient mockNostrClient;
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockNostrClient = _MockNostrClient();
 
-      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
+      when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
       when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
       when(
@@ -71,8 +71,8 @@ void main() {
             mockNostrService: mockNostrClient,
             additionalOverrides: [
               followRepositoryProvider.overrideWithValue(mockFollowRepository),
-              contentBlocklistServiceProvider.overrideWithValue(
-                mockBlocklistService,
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockBlocklistRepository,
               ),
             ],
           ),

@@ -29,10 +29,10 @@ workspace:
   - packages/blurhash_service
   - packages/categories_repository
   - packages/comments_repository
-  - packages/content_blocklist_service
+  - packages/content_blocklist_repository
   - packages/count_formatter
   - packages/curated_list_repository
-  - packages/curation_service
+  - packages/curation_repository
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
@@ -159,11 +159,11 @@ dependencies:
   # Categories Repository - Video categories from Funnelcake API
   categories_repository:
 
-  # Content Blocklist Service - Blocked users, mutual mutes, kind 30000 sync
-  content_blocklist_service:
+  # Content Blocklist Repository - Blocked users, mutual mutes, kind 30000 sync
+  content_blocklist_repository:
 
-  # Curation Service - NIP-51 video curation sets and content discovery
-  curation_service:
+  # Curation Repository - NIP-51 video curation sets and content discovery
+  curation_repository:
 
   # Video Event Cache - Abstract interface for video event caching
   video_event_cache:

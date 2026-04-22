@@ -8,9 +8,9 @@ import 'dart:core';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -797,9 +797,9 @@ SeenVideosService seenVideosService(Ref ref) {
 /// provider auto-disposes, the subscription is lost, and blocks restored
 /// from the relay are never delivered to new instances.
 @Riverpod(keepAlive: true)
-ContentBlocklistService contentBlocklistService(Ref ref) {
+ContentBlocklistRepository contentBlocklistRepository(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return ContentBlocklistService(
+  return ContentBlocklistRepository(
     prefs: prefs,
     onChanged: () {
       if (!ref.mounted) return;
@@ -832,7 +832,7 @@ class BlocklistVersion extends _$BlocklistVersion {
 void blocklistSyncBridge(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   final nostrService = ref.watch(nostrServiceProvider);
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
 
   Future<void> startSync() async {
     // Use authService.currentPublicKeyHex — it is available immediately
@@ -843,8 +843,8 @@ void blocklistSyncBridge(Ref ref) {
 
     try {
       await Future.wait([
-        blocklistService.syncMuteListsInBackground(nostrService, pubkey),
-        blocklistService.syncBlockListsInBackground(
+        blocklistRepository.syncMuteListsInBackground(nostrService, pubkey),
+        blocklistRepository.syncBlockListsInBackground(
           nostrService,
           authService,
           pubkey,
@@ -1391,7 +1391,7 @@ SubscriptionManager subscriptionManager(Ref ref) {
 VideoEventService videoEventService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final subscriptionManager = ref.watch(subscriptionManagerProvider);
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final profileRepository = ref.watch(profileRepositoryProvider);
   final videoFilterBuilder = ref.watch(videoFilterBuilderProvider);
@@ -1409,7 +1409,7 @@ VideoEventService videoEventService(Ref ref) {
     eventRouter: eventRouter,
     videoFilterBuilder: videoFilterBuilder,
   );
-  service.setBlocklistService(blocklistService);
+  service.setBlocklistRepository(blocklistRepository);
   service.setAgeVerificationService(ageVerificationService);
   service.setLikesRepository(likesRepository);
   service.setContentFilterService(ref.watch(contentFilterServiceProvider));
@@ -1652,7 +1652,7 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final env = ref.watch(currentEnvironmentProvider);
 
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
   final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
@@ -1662,7 +1662,7 @@ ProfileRepository? profileRepository(Ref ref) {
     indexerRelays: env.indexerRelays,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
-    blockFilter: blocklistService.shouldFilterFromFeeds,
+    blockFilter: blocklistRepository.shouldFilterFromFeeds,
   );
 
   // Pre-load known cached pubkeys and wire into SubscriptionManager
@@ -1883,13 +1883,13 @@ ViewEventPublisher viewEventPublisher(Ref ref) {
 
 /// Curation Service - manages NIP-51 video curation sets
 @Riverpod(keepAlive: true)
-CurationService curationService(Ref ref) {
+CurationRepository curationRepository(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final videoEventService = ref.watch(videoEventServiceProvider);
   final likesRepository = ref.watch(likesRepositoryProvider);
   final authService = ref.watch(authServiceProvider);
 
-  return CurationService(
+  return CurationRepository(
     nostrService: nostrService,
     videoEventCache: videoEventService,
     likesRepository: likesRepository,
@@ -2240,11 +2240,11 @@ DmRepository dmRepository(Ref ref) {
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
   final repository = CommentsRepository(
     nostrClient: nostrClient,
     funnelcakeApiClient: funnelcakeClient,
-    blockFilter: blocklistService.shouldFilterFromFeeds,
+    blockFilter: blocklistRepository.shouldFilterFromFeeds,
   );
   ref.onDispose(repository.clearCommentCountCache);
   return repository;
@@ -2275,14 +2275,14 @@ VideoLocalStorage videoLocalStorage(Ref ref) {
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - VideoLocalStorage for cache-first lookups and caching results
-/// - ContentBlocklistService for filtering blocked/muted users
+/// - ContentBlocklistRepository for filtering blocked/muted users
 /// - ContentFilterService for filtering NSFW content based on user preferences
 /// - FunnelcakeApiClient for trending/popular video sorting
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final localStorage = ref.watch(videoLocalStorageProvider);
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
   final contentFilterService = ref.watch(contentFilterServiceProvider);
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
@@ -2296,7 +2296,7 @@ VideosRepository videosRepository(Ref ref) {
   return VideosRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    blockFilter: createBlocklistFilter(blocklistService),
+    blockFilter: createBlocklistFilter(blocklistRepository),
     contentFilter: (video) =>
         nsfwFilter(video) ||
         (divineHostFilterService.showDivineHostedOnly &&

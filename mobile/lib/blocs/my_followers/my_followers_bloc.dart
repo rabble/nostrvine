@@ -1,7 +1,7 @@
 // ABOUTME: BLoC for displaying current user's followers list
 // ABOUTME: Fetches Kind 3 events that mention current user in 'p' tags
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -19,16 +19,16 @@ part 'my_followers_state.dart';
 class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   MyFollowersBloc({
     required FollowRepository followRepository,
-    required ContentBlocklistService contentBlocklistService,
+    required ContentBlocklistRepository contentBlocklistRepository,
   }) : _followRepository = followRepository,
-       _blocklistService = contentBlocklistService,
+       _blocklistRepository = contentBlocklistRepository,
        super(const MyFollowersState()) {
     on<MyFollowersListLoadRequested>(_onLoadRequested);
     on<MyFollowersBlocklistChanged>(_onBlocklistChanged);
   }
 
   final FollowRepository _followRepository;
-  final ContentBlocklistService _blocklistService;
+  final ContentBlocklistRepository _blocklistRepository;
 
   /// Raw unfiltered follower pubkeys for re-filtering on blocklist changes.
   List<String> _rawFollowersPubkeys = [];
@@ -37,8 +37,8 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
       .where(
         (pk) =>
-            !_blocklistService.isBlocked(pk) &&
-            !_blocklistService.isFollowSevered(pk),
+            !_blocklistRepository.isBlocked(pk) &&
+            !_blocklistRepository.isFollowSevered(pk),
       )
       .toList();
 

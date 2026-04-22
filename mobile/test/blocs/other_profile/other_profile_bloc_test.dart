@@ -2,7 +2,7 @@
 // ABOUTME: Tests cache+fresh pattern for viewing another user's profile
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -12,15 +12,15 @@ import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
 void main() {
   group('OtherProfileBloc', () {
     late _MockProfileRepository mockProfileRepository;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockFollowRepository mockFollowRepository;
 
     // Test data constants - using full 64-character hex pubkey as required
@@ -52,7 +52,7 @@ void main() {
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       mockFollowRepository = _MockFollowRepository();
 
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
@@ -65,7 +65,7 @@ void main() {
         OtherProfileBloc(
           profileRepository: mockProfileRepository,
           pubkey: pubkey,
-          contentBlocklistService: mockBlocklistService,
+          contentBlocklistRepository: mockBlocklistRepository,
           currentUserPubkey: testCurrentUserPubkey,
           followRepository: mockFollowRepository,
         );
@@ -524,7 +524,7 @@ void main() {
     group('OtherProfileBlockRequested', () {
       setUp(() {
         when(
-          () => mockBlocklistService.blockUser(
+          () => mockBlocklistRepository.blockUser(
             any(),
             ourPubkey: any(named: 'ourPubkey'),
           ),
@@ -537,7 +537,7 @@ void main() {
         act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
         verify: (_) {
           verify(
-            () => mockBlocklistService.blockUser(
+            () => mockBlocklistRepository.blockUser(
               testPubkey,
               ourPubkey: testCurrentUserPubkey,
             ),
@@ -586,7 +586,7 @@ void main() {
         act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
         verify: (_) {
           verify(
-            () => mockBlocklistService.blockUser(
+            () => mockBlocklistRepository.blockUser(
               testPubkey,
               ourPubkey: testCurrentUserPubkey,
             ),
@@ -598,7 +598,7 @@ void main() {
     group('OtherProfileUnblockRequested', () {
       setUp(() {
         when(
-          () => mockBlocklistService.unblockUser(any()),
+          () => mockBlocklistRepository.unblockUser(any()),
         ).thenAnswer((_) async {});
       });
 
@@ -608,7 +608,7 @@ void main() {
         act: (bloc) => bloc.add(const OtherProfileUnblockRequested()),
         verify: (_) {
           verify(
-            () => mockBlocklistService.unblockUser(testPubkey),
+            () => mockBlocklistRepository.unblockUser(testPubkey),
           ).called(1);
         },
       );

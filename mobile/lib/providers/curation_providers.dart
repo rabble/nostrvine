@@ -136,7 +136,7 @@ class Curation extends _$Curation {
 
   Future<void> _initializeCuration() async {
     try {
-      final service = ref.read(curationServiceProvider);
+      final service = ref.read(curationRepositoryProvider);
 
       Log.debug(
         'Curation: Initializing curation sets',
@@ -144,7 +144,7 @@ class Curation extends _$Curation {
         category: LogCategory.system,
       );
 
-      // CurationService initializes itself in constructor
+      // CurationRepository initializes itself in constructor
       // Just get the current data
       state = CurationState(
         editorsPicks: service.getVideosForSetType(CurationSetType.editorsPicks),
@@ -172,7 +172,7 @@ class Curation extends _$Curation {
   }
 
   Future<void> _refreshCurationSets() async {
-    final service = ref.read(curationServiceProvider);
+    final service = ref.read(curationRepositoryProvider);
 
     try {
       service.refreshIfNeeded();
@@ -211,7 +211,7 @@ class Curation extends _$Curation {
     state = state.copyWith(isLoading: true);
 
     try {
-      final service = ref.read(curationServiceProvider);
+      final service = ref.read(curationRepositoryProvider);
 
       // Force refresh from remote
       await service.refreshCurationSets();
