@@ -298,6 +298,23 @@ Future<void> executeAccountDeletion({
       final batch = result.batch;
       final fetchedEvents = result.fetchedEvents;
 
+      // If any kind-5 deletion failed, keep the account signed in so the
+      // Retry-failed action can still sign deletion events for that subset.
+      // Keycast deletion / local key removal invalidates the signer.
+      if (batch != null && batch.failedEventIds.isNotEmpty) {
+        dismissDialog();
+        if (context.mounted) {
+          _showBatchSummarySnackBar(
+            context: context,
+            batch: batch,
+            deletionService: deletionService,
+            originalEvents: fetchedEvents,
+            screenName: screenName,
+          );
+        }
+        return;
+      }
+
       // Step 2: Delete Keycast account if one exists (invalidates signer)
       final (keycastSuccess, keycastError) = await authService
           .deleteKeycastAccount();
@@ -365,14 +382,6 @@ Future<void> executeAccountDeletion({
               error: true,
             ),
           );
-        } else if (batch != null && batch.failedEventIds.isNotEmpty) {
-          _showBatchSummarySnackBar(
-            context: context,
-            batch: batch,
-            deletionService: deletionService,
-            originalEvents: fetchedEvents,
-            screenName: screenName,
-          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(
@@ -423,8 +432,8 @@ void _showBatchSummarySnackBar({
       backgroundColor: VineTheme.warning,
       duration: const Duration(seconds: 8),
       content: Text(
-        'Account deleted. $succeeded of $total events published successfully; '
-        '$failed can be retried.',
+        'Deletion request sent. $succeeded of $total event deletions published; '
+        '$failed can be retried before removing keys.',
         style: const TextStyle(color: VineTheme.whiteText),
       ),
       action: SnackBarAction(
