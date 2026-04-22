@@ -26,6 +26,7 @@ class TestableMediaCacheManager extends MediaCacheManager {
     this.mockDownloadFile,
     this.mockRemoveFile,
     this.mockEmptyCache,
+    this.mockGetFileStream,
   });
 
   /// Mock function for [getFileFromCache].
@@ -44,6 +45,14 @@ class TestableMediaCacheManager extends MediaCacheManager {
 
   /// Mock function for [emptyCache].
   final Future<void> Function()? mockEmptyCache;
+
+  /// Mock function for [getFileStream].
+  final Stream<FileResponse> Function(
+    String url, {
+    String? key,
+    Map<String, String>? headers,
+    bool withProgress,
+  })? mockGetFileStream;
 
   @override
   Future<FileInfo?> getFileFromCache(
@@ -83,5 +92,28 @@ class TestableMediaCacheManager extends MediaCacheManager {
       return mockEmptyCache!();
     }
     return super.emptyCache();
+  }
+
+  @override
+  Stream<FileResponse> getFileStream(
+    String url, {
+    String? key,
+    Map<String, String>? headers,
+    bool withProgress = false,
+  }) {
+    if (mockGetFileStream != null) {
+      return mockGetFileStream!(
+        url,
+        key: key,
+        headers: headers,
+        withProgress: withProgress,
+      );
+    }
+    return super.getFileStream(
+      url,
+      key: key,
+      headers: headers,
+      withProgress: withProgress,
+    );
   }
 }

@@ -100,6 +100,49 @@ void main() {
       });
     });
 
+    group('registerPrestart', () {
+      test('hasSources returns true after prestart registration', () {
+        registry.registerPrestart(0, ['a', 'b']);
+        expect(registry.hasSources(0), isTrue);
+      });
+
+      test('advance returns sources[0] from prestart state', () {
+        registry.registerPrestart(0, ['a', 'b']);
+        expect(registry.advance(0), equals('a'));
+      });
+
+      test('advance returns null when prestart list is empty', () {
+        registry.registerPrestart(0, []);
+        expect(registry.advance(0), isNull);
+      });
+    });
+
+    group('canAdvance', () {
+      test('returns false when nothing is registered', () {
+        expect(registry.canAdvance(0), isFalse);
+      });
+
+      test('returns false when an empty list is registered', () {
+        registry.register(0, [], 0);
+        expect(registry.canAdvance(0), isFalse);
+      });
+
+      test('returns true when there is a next source', () {
+        registry.register(0, ['a', 'b'], 0);
+        expect(registry.canAdvance(0), isTrue);
+      });
+
+      test('returns false when the source list is exhausted', () {
+        registry.register(0, ['a', 'b'], 1);
+        expect(registry.canAdvance(0), isFalse);
+      });
+
+      test('returns true from prestart state with non-empty list', () {
+        registry.registerPrestart(0, ['a', 'b']);
+        expect(registry.canAdvance(0), isTrue);
+      });
+    });
+
     group('clear', () {
       test('forgets every entry', () {
         registry
