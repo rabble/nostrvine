@@ -21,9 +21,15 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
   /// Path for navigation
   static const String path = '/reset-password';
 
-  const ResetPasswordScreen({required this.token, super.key});
+  const ResetPasswordScreen({required this.token, this.email, super.key});
 
   final String token;
+
+  /// Account email (optional) — when present, rendered as a read-only field
+  /// inside the form's [AutofillGroup] with [AutofillHints.username] so
+  /// password managers update the existing credential instead of creating a
+  /// new one. See issue #3156.
+  final String? email;
 
   @override
   ConsumerState<ResetPasswordScreen> createState() =>
@@ -32,13 +38,25 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
 
 class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final _passwordController = TextEditingController();
+  TextEditingController? _emailController;
 
   bool _isLoading = false;
   String? _errorMessage;
 
+  bool get _hasEmail => widget.email != null && widget.email!.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_hasEmail) {
+      _emailController = TextEditingController(text: widget.email);
+    }
+  }
+
   @override
   void dispose() {
     _passwordController.dispose();
+    _emailController?.dispose();
     super.dispose();
   }
 
@@ -110,73 +128,102 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
 
-              // Back button
-              AuthBackButton(enabled: !_isLoading),
+                      // Back button
+                      AuthBackButton(enabled: !_isLoading),
 
-              const SizedBox(height: 32),
+                      const SizedBox(height: 32),
 
-              // Title
-              Text(
-                context.l10n.authResetPasswordTitle,
-                style: const TextStyle(
-                  fontFamily: VineTheme.fontFamilyBricolage,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: VineTheme.whiteText,
-                ),
-              ),
+                      // Title
+                      Text(
+                        context.l10n.authResetPasswordTitle,
+                        style: const TextStyle(
+                          fontFamily: VineTheme.fontFamilyBricolage,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: VineTheme.whiteText,
+                        ),
+                      ),
 
-              const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-              // Subtitle
-              Text(
-                context.l10n.authResetPasswordSubtitle,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: VineTheme.secondaryText,
-                  height: 1.4,
-                ),
-              ),
+                      // Subtitle
+                      Text(
+                        context.l10n.authResetPasswordSubtitle,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: VineTheme.secondaryText,
+                          height: 1.4,
+                        ),
+                      ),
 
-              const SizedBox(height: 32),
+                      const SizedBox(height: 32),
 
-              // AutofillGroup + Form enables password manager save prompts.
-              AutofillGroup(
-                child: Form(
-                  child: DivineAuthTextField(
-                    controller: _passwordController,
-                    label: context.l10n.authNewPasswordLabel,
-                    obscureText: true,
-                    autofillHints: const [AutofillHints.newPassword],
-                    errorText: _errorMessage,
-                    enabled: !_isLoading,
-                    onChanged: (_) {
-                      if (_errorMessage != null) {
-                        setState(() => _errorMessage = null);
-                      }
-                    },
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _handleSubmit(),
+                      // AutofillGroup + Form enables password manager save
+                      // prompts. When the account email is known (passed via
+                      // the reset link), render it as a read-only field with
+                      // AutofillHints.username so iOS Keychain / Google
+                      // Password Manager update the existing credential
+                      // rather than creating a duplicate. See #3156.
+                      AutofillGroup(
+                        child: Form(
+                          child: Column(
+                            children: [
+                              if (_hasEmail) ...[
+                                DivineAuthTextField(
+                                  controller: _emailController,
+                                  label: context.l10n.authEmailLabel,
+                                  readOnly: true,
+                                  autofillHints: const [
+                                    AutofillHints.username,
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                              DivineAuthTextField(
+                                controller: _passwordController,
+                                label: context.l10n.authNewPasswordLabel,
+                                obscureText: true,
+                                autofillHints: const [
+                                  AutofillHints.newPassword,
+                                ],
+                                errorText: _errorMessage,
+                                enabled: !_isLoading,
+                                onChanged: (_) {
+                                  if (_errorMessage != null) {
+                                    setState(() => _errorMessage = null);
+                                  }
+                                },
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _handleSubmit(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Samoyed sticker
+                      const Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: DivineSticker(
+                          sticker: DivineStickerName.samoyedDog,
+                          size: 160,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 32),
-
-              // Samoyed sticker
-              const Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: DivineSticker(
-                  sticker: DivineStickerName.samoyedDog,
-                  size: 160,
-                ),
-              ),
-
-              const Spacer(),
-
-              // Update password button
+              // Update password button — pinned below the scrollable content.
               DivineButton(
                 expanded: true,
                 label: context.l10n.authUpdatePassword,

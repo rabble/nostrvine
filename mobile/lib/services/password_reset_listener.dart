@@ -44,17 +44,27 @@ class PasswordResetListener {
       return;
     }
 
+    // Log path only — query params can contain the account email (PII).
     Log.info(
-      '🔑 Password reset callback detected: $uri',
+      '🔑 Password reset callback detected for path: ${uri.path}',
       name: '$PasswordResetListener',
     );
 
     final params = uri.queryParameters;
 
     if (params.containsKey('token')) {
-      final token = params['token'];
+      final token = params['token']!;
+      final email = params['email'];
       final router = ref.read(goRouterProvider);
-      router.go('${WelcomeScreen.resetPasswordPath}?token=$token');
+      final buffer = StringBuffer(WelcomeScreen.resetPasswordPath)
+        ..write('?token=')
+        ..write(Uri.encodeQueryComponent(token));
+      if (email != null && email.isNotEmpty) {
+        buffer
+          ..write('&email=')
+          ..write(Uri.encodeQueryComponent(email));
+      }
+      router.go(buffer.toString());
     }
   }
 

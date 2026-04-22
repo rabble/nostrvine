@@ -25,16 +25,19 @@ void main() {
       mockOAuth = _MockKeycastOAuth();
     });
 
-    Widget buildTestWidget() {
+    Widget buildTestWidget({String? email}) {
       return ProviderScope(
         overrides: [
           ...getStandardTestOverrides(),
           oauthClientProvider.overrideWithValue(mockOAuth),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: ResetPasswordScreen(token: 'test-token-abc123'),
+          home: ResetPasswordScreen(
+            token: 'test-token-abc123',
+            email: email,
+          ),
         ),
       );
     }
@@ -65,6 +68,63 @@ void main() {
 
         expect(find.byType(AutofillGroup), findsOneWidget);
       });
+
+      testWidgets(
+        'renders read-only email field with AutofillHints.username when '
+        'email param present',
+        (tester) async {
+          const email = 'user@example.com';
+
+          await tester.pumpWidget(buildTestWidget(email: email));
+          await tester.pumpAndSettle();
+
+          final usernameField = find.byWidgetPredicate(
+            (widget) =>
+                widget is TextField &&
+                (widget.autofillHints?.contains(AutofillHints.username) ??
+                    false),
+          );
+
+          expect(usernameField, findsOneWidget);
+          final textField = tester.widget<TextField>(usernameField);
+          expect(textField.readOnly, isTrue);
+          expect(textField.controller?.text, equals(email));
+        },
+      );
+
+      testWidgets(
+        'omits email field when email param is null',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget());
+          await tester.pumpAndSettle();
+
+          final usernameField = find.byWidgetPredicate(
+            (widget) =>
+                widget is TextField &&
+                (widget.autofillHints?.contains(AutofillHints.username) ??
+                    false),
+          );
+
+          expect(usernameField, findsNothing);
+        },
+      );
+
+      testWidgets(
+        'omits email field when email param is empty string',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget(email: ''));
+          await tester.pumpAndSettle();
+
+          final usernameField = find.byWidgetPredicate(
+            (widget) =>
+                widget is TextField &&
+                (widget.autofillHints?.contains(AutofillHints.username) ??
+                    false),
+          );
+
+          expect(usernameField, findsNothing);
+        },
+      );
 
       testWidgets(
         'calls TextInput.finishAutofillContext on successful reset',

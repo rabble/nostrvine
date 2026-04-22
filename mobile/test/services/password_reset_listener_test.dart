@@ -73,5 +73,71 @@ void main() {
 
       verifyNever(() => mockRouter.go(any()));
     });
+
+    test(
+      'forwards email query param when present',
+      () async {
+        const token = 'test-reset-token-abc123';
+        const email = 'user@example.com';
+        when(() => mockRouter.go(any())).thenReturn(null);
+
+        await listener.handleUri(
+          Uri.parse(
+            'https://login.divine.video/reset-password'
+            '?token=$token&email=${Uri.encodeQueryComponent(email)}',
+          ),
+        );
+
+        verify(
+          () => mockRouter.go(
+            '${WelcomeScreen.resetPasswordPath}'
+            '?token=$token&email=${Uri.encodeQueryComponent(email)}',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'omits email query param when absent',
+      () async {
+        const token = 'test-reset-token-abc123';
+        when(() => mockRouter.go(any())).thenReturn(null);
+
+        await listener.handleUri(
+          Uri.parse(
+            'https://login.divine.video/reset-password?token=$token',
+          ),
+        );
+
+        verify(
+          () => mockRouter.go(
+            '${WelcomeScreen.resetPasswordPath}?token=$token',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'URL-encodes email special characters',
+      () async {
+        const token = 'T';
+        const email = 'test+alias@example.com';
+        when(() => mockRouter.go(any())).thenReturn(null);
+
+        await listener.handleUri(
+          Uri.parse(
+            'https://login.divine.video/reset-password'
+            '?token=$token&email=${Uri.encodeQueryComponent(email)}',
+          ),
+        );
+
+        verify(
+          () => mockRouter.go(
+            '${WelcomeScreen.resetPasswordPath}'
+            '?token=$token&email=test%2Balias%40example.com',
+          ),
+        ).called(1);
+      },
+    );
   });
 }

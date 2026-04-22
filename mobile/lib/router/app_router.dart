@@ -512,7 +512,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 name: ResetPasswordScreen.routeName,
                 builder: (ctx, st) {
                   final token = st.uri.queryParameters['token'];
-                  return ResetPasswordScreen(token: token ?? '');
+                  final email = st.uri.queryParameters['email'];
+                  return ResetPasswordScreen(
+                    token: token ?? '',
+                    email: email,
+                  );
                 },
               ),
             ],
