@@ -117,7 +117,7 @@ void main() {
     ).thenReturn(false);
     when(
       () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => BookmarkResult.noop(success: true));
     when(
       () => mockBookmarkService.getVideoBookmarkSummary(any()),
     ).thenReturn('Not bookmarked');
@@ -270,7 +270,7 @@ void main() {
       ).thenReturn(false);
       when(
         () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => BookmarkResult.noop(success: true));
 
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
@@ -294,7 +294,7 @@ void main() {
       ).thenReturn(false);
       when(
         () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-      ).thenAnswer((_) async => false);
+      ).thenAnswer((_) async => BookmarkResult.noop(success: false));
 
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
@@ -573,9 +573,7 @@ void main() {
 
     setUp(() {
       peopleListsBloc = _MockPeopleListsBloc();
-      when(
-        () => peopleListsBloc.state,
-      ).thenReturn(const PeopleListsState());
+      when(() => peopleListsBloc.state).thenReturn(const PeopleListsState());
       mockAuthService = createMockAuthService();
     });
 
