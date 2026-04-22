@@ -274,11 +274,30 @@ void main() {
           );
           await tester.pumpAndSettle();
 
+          await _waitForMethodCall(
+            tester: tester,
+            methodCalls: methodCalls,
+            method: 'dispose',
+          );
+
           expect(methodCalls, contains('dispose'));
         },
       );
     });
   });
+}
+
+Future<void> _waitForMethodCall({
+  required WidgetTester tester,
+  required List<String> methodCalls,
+  required String method,
+  int attempts = 20,
+}) async {
+  for (var i = 0; i < attempts; i++) {
+    if (methodCalls.contains(method)) return;
+    await tester.idle();
+    await tester.pump(const Duration(milliseconds: 10));
+  }
 }
 
 /// Registers mock platform channel handlers for divine_video_player.

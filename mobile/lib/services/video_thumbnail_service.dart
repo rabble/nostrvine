@@ -18,7 +18,7 @@ class VideoThumbnailService {
   static const int _thumbnailQuality = 75;
   static const Size _thumbnailSize = Size.square(640);
 
-  static final ProVideoEditor _proVideoEditor = ProVideoEditor.instance;
+  static ProVideoEditor get _proVideoEditor => ProVideoEditor.instance;
 
   /// Serial queue for strip thumbnail extraction batches.
   ///
