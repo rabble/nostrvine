@@ -584,6 +584,8 @@ void main() {
         child: BlocProvider<PeopleListsBloc>.value(
           value: peopleListsBloc,
           child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: ShareVideoMenu(video: testVideo)),
           ),
         ),
@@ -596,7 +598,7 @@ void main() {
         await tester.pumpWidget(buildSubject(curatedListsEnabled: false));
         await tester.pumpAndSettle();
 
-        expect(find.text('People lists'), findsNothing);
+        expect(find.text('People Lists'), findsNothing);
         expect(find.text('Add to list'), findsNothing);
       },
     );
@@ -607,7 +609,7 @@ void main() {
         await tester.pumpWidget(buildSubject(curatedListsEnabled: true));
         await tester.pumpAndSettle();
 
-        expect(find.text('People lists'), findsOneWidget);
+        expect(find.text('People Lists'), findsOneWidget);
         expect(find.text('Add to list'), findsOneWidget);
         // Legacy follow-set copy must no longer be present.
         expect(find.text('Create Follow Set'), findsNothing);

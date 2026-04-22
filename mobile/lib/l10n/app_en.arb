@@ -1544,7 +1544,7 @@
   "shareMenuAddToBookmarksSubtitle": "Save for later viewing",
   "shareMenuAddToBookmarkSet": "Add to Bookmark Set",
   "shareMenuAddToBookmarkSetSubtitle": "Organize in collections",
-  "shareMenuFollowSets": "Follow Sets",
+  "shareMenuFollowSets": "People Lists",
   "shareMenuCreateFollowSet": "Create Follow Set",
   "shareMenuCreateFollowSetSubtitle": "Start new collection with this creator",
   "shareMenuAddToFollowSet": "Add to Follow Set",
@@ -1553,6 +1553,81 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "peopleListsAddToList": "Add to list",
+  "peopleListsAddToListSubtitle": "Put this creator in one of your lists",
+  "peopleListsSheetTitle": "Add to list",
+  "peopleListsEmptyTitle": "No lists yet",
+  "peopleListsEmptySubtitle": "Create a list to start grouping people.",
+  "peopleListsCreateList": "Create list",
+  "peopleListsNewListTitle": "New list",
+  "peopleListsListNameLabel": "List name",
+  "peopleListsListNameHint": "Close friends",
+  "peopleListsCreateButton": "Create",
+  "peopleListsAddPeopleTitle": "Add people",
+  "peopleListsAddPeopleTooltip": "Add people",
+  "peopleListsAddPeopleSemanticLabel": "Add people to list",
+  "peopleListsListNotFoundSubtitle": "List not found. It may have been deleted.",
+  "peopleListsNoPeopleToAdd": "No people available to add.",
+  "peopleListsAddToListName": "Add to {name}",
+  "@peopleListsAddToListName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsAddButton": "Add",
+  "peopleListsAddButtonWithCount": "Add {count}",
+  "@peopleListsAddButtonWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peopleListsInNLists": "{count, plural, =1{In 1 list} other{In {count} lists}}",
+  "@peopleListsInNLists": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peopleListsRemoveConfirmTitle": "Remove {name}?",
+  "@peopleListsRemoveConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsRemoveConfirmBody": "They will be removed from this list.",
+  "peopleListsRemove": "Remove",
+  "peopleListsRemovedFromList": "Removed {name} from list",
+  "@peopleListsRemovedFromList": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsUndo": "Undo",
+  "peopleListsProfileLongPressHint": "Profile for {name}. Long press to remove.",
+  "@peopleListsProfileLongPressHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsViewProfileHint": "View profile for {name}",
+  "@peopleListsViewProfileHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   },

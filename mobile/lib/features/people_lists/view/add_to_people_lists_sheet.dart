@@ -10,6 +10,7 @@ import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
 import 'package:openvine/features/people_lists/view/widgets/widgets.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Bottom sheet that displays the authenticated user's editable people
 /// lists and lets them toggle membership for the given [pubkey].
@@ -52,7 +53,7 @@ class AddToPeopleListsSheet extends StatelessWidget {
   }) {
     return VineBottomSheet.show<void>(
       context: context,
-      title: const Text('Add to list'),
+      title: Text(context.l10n.peopleListsSheetTitle),
       buildScrollBody: (scrollController) => AddToPeopleListsSheet(
         pubkey: pubkey,
         entryPoint: entryPoint,
@@ -101,13 +102,13 @@ class _EmptyState extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'No lists yet',
+            context.l10n.peopleListsEmptyTitle,
             textAlign: TextAlign.center,
             style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
-            'Create a list to start grouping people.',
+            context.l10n.peopleListsEmptySubtitle,
             textAlign: TextAlign.center,
             style: VineTheme.bodyMediumFont(
               color: VineTheme.secondaryText,
@@ -115,7 +116,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           DivineButton(
-            label: 'Create list',
+            label: context.l10n.peopleListsCreateList,
             expanded: true,
             leadingIcon: DivineIconName.listPlus,
             // Pop the sheet first so the push navigates the root Navigator,

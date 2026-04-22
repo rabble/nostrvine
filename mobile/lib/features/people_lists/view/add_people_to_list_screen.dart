@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/view/widgets/person_pickable_row.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Full-screen picker that lets the authenticated user batch-add candidate
 /// pubkeys to an existing people list.
@@ -124,17 +125,17 @@ class _ListNotFoundScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Add people',
+        title: context.l10n.peopleListsAddPeopleTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      body: const Center(
+      body: Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Text(
-            'List not found. It may have been deleted.',
+            context.l10n.peopleListsListNotFoundSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(color: VineTheme.secondaryText),
+            style: const TextStyle(color: VineTheme.secondaryText),
           ),
         ),
       ),
@@ -164,7 +165,7 @@ class _AddPeopleToListView extends StatelessWidget {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Add to ${userList.name}',
+        title: context.l10n.peopleListsAddToListName(userList.name),
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -202,7 +203,7 @@ class _EmptyCandidatesState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Text(
-          'No people available to add.',
+          context.l10n.peopleListsNoPeopleToAdd,
           textAlign: TextAlign.center,
           style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
         ),
@@ -272,7 +273,10 @@ class _AddButtonBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = selectionCount == 0 ? 'Add' : 'Add $selectionCount';
+    final l10n = context.l10n;
+    final label = selectionCount == 0
+        ? l10n.peopleListsAddButton
+        : l10n.peopleListsAddButtonWithCount(selectionCount);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: DivineButton(

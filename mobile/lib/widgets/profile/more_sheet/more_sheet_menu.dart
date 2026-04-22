@@ -91,7 +91,10 @@ class MoreSheetMenu extends StatelessWidget {
                     color: VineTheme.whiteText,
                   ),
                   const SizedBox(width: 16),
-                  Text('Add to list', style: VineTheme.titleMediumFont()),
+                  Text(
+                    context.l10n.peopleListsAddToList,
+                    style: VineTheme.titleMediumFont(),
+                  ),
                 ],
               ),
             ),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Full-screen page that creates a new NIP-51 kind 30000 people list.
 ///
@@ -75,7 +76,7 @@ class _CreatePeopleListPageState extends State<CreatePeopleListPage> {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'New list',
+        title: context.l10n.peopleListsNewListTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -111,9 +112,9 @@ class _NameField extends StatelessWidget {
       textCapitalization: TextCapitalization.sentences,
       textInputAction: TextInputAction.done,
       style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
-      decoration: const InputDecoration(
-        labelText: 'List name',
-        hintText: 'Close friends',
+      decoration: InputDecoration(
+        labelText: context.l10n.peopleListsListNameLabel,
+        hintText: context.l10n.peopleListsListNameHint,
       ),
     );
   }
@@ -127,7 +128,7 @@ class _CreateButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DivineButton(
-      label: 'Create',
+      label: context.l10n.peopleListsCreateButton,
       expanded: true,
       onPressed: onPressed,
     );

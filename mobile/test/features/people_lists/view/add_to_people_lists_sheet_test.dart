@@ -12,6 +12,7 @@ import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/features/people_lists/view/widgets/people_list_row.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 
 class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
     implements PeopleListsBloc {}
@@ -82,6 +83,8 @@ void main() {
       PeopleListEntryPoint entryPoint = PeopleListEntryPoint.shareMenu,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: BlocProvider<PeopleListsBloc>.value(
             value: bloc,
@@ -237,6 +240,8 @@ void main() {
           BlocProvider<PeopleListsBloc>.value(
             value: bloc,
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: Builder(
                   builder: (context) {

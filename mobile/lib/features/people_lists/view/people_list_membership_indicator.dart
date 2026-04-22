@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Compact label that shows how many of the authenticated user's people
 /// lists currently contain [pubkey].
@@ -47,9 +48,8 @@ class PeopleListMembershipIndicator extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final label = count == 1 ? 'In 1 list' : 'In $count lists';
     return Text(
-      label,
+      context.l10n.peopleListsInNLists(count),
       style: VineTheme.labelSmallFont(color: VineTheme.secondaryText),
     );
   }

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/features/people_lists/people_lists.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -134,8 +135,9 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                 if (userList.isEditable)
                   DiVineAppBarAction(
                     icon: const MaterialIconSource(Icons.person_add_alt_1),
-                    tooltip: 'Add people',
-                    semanticLabel: 'Add people to list',
+                    tooltip: context.l10n.peopleListsAddPeopleTooltip,
+                    semanticLabel:
+                        context.l10n.peopleListsAddPeopleSemanticLabel,
                     onPressed: () => _navigateToAddPeople(userList.id),
                   ),
               ],
@@ -485,30 +487,31 @@ class _PeopleAvatarItem extends ConsumerWidget {
   final bool canRemove;
 
   Future<void> _confirmRemove(BuildContext context, String displayName) async {
+    final l10n = context.l10n;
     final shouldRemove = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: VineTheme.surfaceContainer,
         title: Text(
-          'Remove $displayName?',
+          l10n.peopleListsRemoveConfirmTitle(displayName),
           style: VineTheme.titleMediumFont(),
         ),
         content: Text(
-          'They will be removed from this list.',
+          l10n.peopleListsRemoveConfirmBody,
           style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
-              'Cancel',
+              l10n.commonCancel,
               style: VineTheme.labelMediumFont(color: VineTheme.secondaryText),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: Text(
-              'Remove',
+              l10n.peopleListsRemove,
               style: VineTheme.labelMediumFont(color: VineTheme.error),
             ),
           ),
@@ -526,9 +529,9 @@ class _PeopleAvatarItem extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
       SnackBar(
-        content: Text('Removed $displayName from list'),
+        content: Text(l10n.peopleListsRemovedFromList(displayName)),
         action: SnackBarAction(
-          label: 'Undo',
+          label: l10n.peopleListsUndo,
           onPressed: () {
             bloc.add(
               PeopleListsPubkeyAddRequested(listId: listId, pubkey: pubkey),
@@ -547,8 +550,8 @@ class _PeopleAvatarItem extends ConsumerWidget {
 
     return Semantics(
       label: canRemove
-          ? 'Profile for $displayName. Long press to remove.'
-          : 'View profile for $displayName',
+          ? context.l10n.peopleListsProfileLongPressHint(displayName)
+          : context.l10n.peopleListsViewProfileHint(displayName),
       button: true,
       child: GestureDetector(
         onTap: () {

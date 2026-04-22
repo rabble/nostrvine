@@ -12,6 +12,7 @@ import 'package:models/models.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/view/add_people_to_list_screen.dart';
 import 'package:openvine/features/people_lists/view/widgets/person_pickable_row.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 
 class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
     implements PeopleListsBloc {}
@@ -86,6 +87,8 @@ void main() {
       List<String> candidatePubkeys = const [],
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: BlocProvider<PeopleListsBloc>.value(
           value: bloc,
           child: AddPeopleToListScreen(
@@ -299,7 +302,11 @@ void main() {
         await tester.pumpWidget(
           BlocProvider<PeopleListsBloc>.value(
             value: bloc,
-            child: MaterialApp.router(routerConfig: router),
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
           ),
         );
 

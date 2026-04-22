@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/people_lists/people_lists.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -65,6 +66,8 @@ void main() {
         await tester.pumpWidget(
           testProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<PeopleListsBloc>.value(
                 value: bloc,
                 child: UserListPeopleScreen(listId: list.id),
@@ -104,6 +107,8 @@ void main() {
         await tester.pumpWidget(
           testProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<PeopleListsBloc>.value(
                 value: bloc,
                 child: UserListPeopleScreen(listId: initialList.id),
@@ -148,6 +153,8 @@ void main() {
         await tester.pumpWidget(
           testProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<PeopleListsBloc>.value(
                 value: bloc,
                 child: const UserListPeopleScreen(listId: 'missing-id'),
@@ -184,6 +191,8 @@ void main() {
         await tester.pumpWidget(
           testProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<PeopleListsBloc>.value(
                 value: bloc,
                 child: UserListPeopleScreen(listId: list.id),
@@ -223,6 +232,8 @@ void main() {
         await tester.pumpWidget(
           testProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<PeopleListsBloc>.value(
                 value: bloc,
                 child: UserListPeopleScreen(listId: list.id),
@@ -254,6 +265,8 @@ void main() {
         await tester.pumpWidget(
           testProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<PeopleListsBloc>.value(
                 value: bloc,
                 child: const Scaffold(
@@ -294,6 +307,8 @@ void main() {
         await tester.pumpWidget(
           testProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<PeopleListsBloc>.value(
                 value: bloc,
                 child: const Scaffold(
@@ -342,6 +357,8 @@ void main() {
         await tester.pumpWidget(
           testProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: BlocProvider<PeopleListsBloc>.value(
                 value: bloc,
                 child: const Scaffold(
@@ -418,7 +435,11 @@ void main() {
           testProviderScope(
             child: BlocProvider<PeopleListsBloc>.value(
               value: bloc,
-              child: MaterialApp.router(routerConfig: router),
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                routerConfig: router,
+              ),
             ),
           ),
         );
@@ -473,7 +494,11 @@ void main() {
           testProviderScope(
             child: BlocProvider<PeopleListsBloc>.value(
               value: bloc,
-              child: MaterialApp.router(routerConfig: router),
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                routerConfig: router,
+              ),
             ),
           ),
         );
@@ -531,7 +556,11 @@ void main() {
         );
 
         await tester.pumpWidget(
-          MaterialApp.router(routerConfig: router),
+          MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
         );
 
         await tester.pump();

@@ -10,6 +10,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -139,7 +140,7 @@ class UserProfileTile extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.playlist_add),
                   color: VineTheme.onSurfaceVariant,
-                  tooltip: 'Add to list',
+                  tooltip: context.l10n.peopleListsAddToList,
                   onPressed: () => AddToPeopleListsSheet.show(
                     context,
                     pubkey: pubkey,
