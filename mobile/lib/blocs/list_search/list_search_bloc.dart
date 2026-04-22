@@ -6,6 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
+import 'package:people_lists_repository/people_lists_repository.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'list_search_event.dart';
@@ -22,15 +23,15 @@ final class _VideoSearchResult extends _SearchResult {
 }
 
 final class _PeopleSearchResult extends _SearchResult {
-  const _PeopleSearchResult(this.lists);
-  final List<UserList> lists;
+  const _PeopleSearchResult(this.results);
+  final List<PeopleListSearchResult> results;
 }
 
 /// BLoC for searching curated video lists (kind 30005) and people lists
 /// (kind 30000).
 ///
 /// Merges [CuratedListRepository.searchAllLists] and
-/// [CuratedListRepository.searchAllPeopleLists] into a single stream via
+/// [PeopleListsRepository.searchPublicLists] into a single stream via
 /// [Rx.merge] and processes it with [emit.forEach] so that
 /// [debounceRestartable] correctly cancels in-flight subscriptions.
 ///
@@ -39,8 +40,10 @@ final class _PeopleSearchResult extends _SearchResult {
 class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
   ListSearchBloc({
     required CuratedListRepository curatedListRepository,
+    required PeopleListsRepository peopleListsRepository,
     bool peopleListSearchEnabled = false,
   }) : _curatedListRepository = curatedListRepository,
+       _peopleListsRepository = peopleListsRepository,
        _peopleListSearchEnabled = peopleListSearchEnabled,
        super(const ListSearchState()) {
     on<ListSearchQueryChanged>(
@@ -51,6 +54,7 @@ class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
   }
 
   final CuratedListRepository _curatedListRepository;
+  final PeopleListsRepository _peopleListsRepository;
   final bool _peopleListSearchEnabled;
 
   Future<void> _onQueryChanged(
@@ -87,8 +91,8 @@ class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
       final streams = [
         videoStream,
         if (_peopleListSearchEnabled)
-          _curatedListRepository
-              .searchAllPeopleLists(query)
+          _peopleListsRepository
+              .searchPublicLists(query)
               .map<_SearchResult>(_PeopleSearchResult.new),
       ];
 
@@ -99,9 +103,9 @@ class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
             status: ListSearchStatus.success,
             videoResults: lists,
           ),
-          _PeopleSearchResult(:final lists) => state.copyWith(
+          _PeopleSearchResult(:final results) => state.copyWith(
             status: ListSearchStatus.success,
-            peopleResults: lists,
+            peopleResults: results,
           ),
         },
       );

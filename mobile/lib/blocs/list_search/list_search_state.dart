@@ -36,15 +36,16 @@ final class ListSearchState extends Equatable {
   /// Curated video lists (kind 30005) matching the search.
   final List<CuratedList> videoResults;
 
-  /// People lists (kind 30000) matching the search.
-  final List<UserList> peopleResults;
+  /// People lists (kind 30000) matching the search, each preserving the
+  /// owner pubkey alongside the decoded [UserList].
+  final List<PeopleListSearchResult> peopleResults;
 
   /// Create a copy with updated values.
   ListSearchState copyWith({
     ListSearchStatus? status,
     String? query,
     List<CuratedList>? videoResults,
-    List<UserList>? peopleResults,
+    List<PeopleListSearchResult>? peopleResults,
   }) {
     return ListSearchState(
       status: status ?? this.status,

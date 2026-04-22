@@ -4,19 +4,36 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/list_search/list_search_bloc.dart';
+import 'package:people_lists_repository/people_lists_repository.dart';
 
 class _MockCuratedListRepository extends Mock
     implements CuratedListRepository {}
 
+class _MockPeopleListsRepository extends Mock
+    implements PeopleListsRepository {}
+
+// Full-length 64-char Nostr pubkeys — never truncate.
+const String _ownerA =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const String _ownerB =
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const String _authorOne =
+    '1111111111111111111111111111111111111111111111111111111111111111';
+const String _memberOne =
+    '2222222222222222222222222222222222222222222222222222222222222222';
+const String _memberTwo =
+    '3333333333333333333333333333333333333333333333333333333333333333';
+
 void main() {
   group(ListSearchBloc, () {
     late _MockCuratedListRepository curatedListRepository;
+    late _MockPeopleListsRepository peopleListsRepository;
 
     final now = DateTime(2024, 6, 15);
     final testCuratedList = CuratedList(
       id: 'cl1',
       name: 'Top Videos',
-      pubkey: 'author1',
+      pubkey: _authorOne,
       videoEventIds: const ['vid1'],
       createdAt: now,
       updatedAt: now,
@@ -25,25 +42,32 @@ void main() {
     final testUserList = UserList(
       id: 'ul1',
       name: 'Cool People',
-      pubkeys: const ['pk1', 'pk2'],
+      pubkeys: const [_memberOne, _memberTwo],
       createdAt: now,
       updatedAt: now,
     );
 
+    final testPeopleResult = PeopleListSearchResult(
+      ownerPubkey: _ownerA,
+      list: testUserList,
+    );
+
     setUp(() {
       curatedListRepository = _MockCuratedListRepository();
+      peopleListsRepository = _MockPeopleListsRepository();
 
       when(
         () => curatedListRepository.searchAllLists(any()),
       ).thenAnswer((_) => const Stream.empty());
 
       when(
-        () => curatedListRepository.searchAllPeopleLists(any()),
+        () => peopleListsRepository.searchPublicLists(any()),
       ).thenAnswer((_) => const Stream.empty());
     });
 
     ListSearchBloc buildBloc({bool peopleEnabled = false}) => ListSearchBloc(
       curatedListRepository: curatedListRepository,
+      peopleListsRepository: peopleListsRepository,
       peopleListSearchEnabled: peopleEnabled,
     );
 
@@ -78,8 +102,8 @@ void main() {
         'emits people results when people list search is enabled',
         setUp: () {
           when(
-            () => curatedListRepository.searchAllPeopleLists('people'),
-          ).thenAnswer((_) => Stream.value([testUserList]));
+            () => peopleListsRepository.searchPublicLists('people'),
+          ).thenAnswer((_) => Stream.value([testPeopleResult]));
         },
         build: () => buildBloc(peopleEnabled: true),
         act: (bloc) => bloc.add(const ListSearchQueryChanged('people')),
@@ -91,7 +115,11 @@ void main() {
           ),
           isA<ListSearchState>()
               .having((s) => s.status, 'status', ListSearchStatus.success)
-              .having((s) => s.peopleResults, 'peopleResults', [testUserList]),
+              .having(
+                (s) => s.peopleResults,
+                'peopleResults',
+                [testPeopleResult],
+              ),
         ],
       );
 
@@ -106,7 +134,9 @@ void main() {
         act: (bloc) => bloc.add(const ListSearchQueryChanged('mixed')),
         wait: const Duration(milliseconds: 400),
         verify: (bloc) {
-          verifyNever(() => curatedListRepository.searchAllPeopleLists(any()));
+          verifyNever(
+            () => peopleListsRepository.searchPublicLists(any()),
+          );
           expect(bloc.state.peopleResults, isEmpty);
         },
       );
@@ -118,8 +148,8 @@ void main() {
             () => curatedListRepository.searchAllLists('mixed'),
           ).thenAnswer((_) => Stream.value([testCuratedList]));
           when(
-            () => curatedListRepository.searchAllPeopleLists('mixed'),
-          ).thenAnswer((_) => Stream.value([testUserList]));
+            () => peopleListsRepository.searchPublicLists('mixed'),
+          ).thenAnswer((_) => Stream.value([testPeopleResult]));
         },
         build: () => buildBloc(peopleEnabled: true),
         act: (bloc) => bloc.add(const ListSearchQueryChanged('mixed')),
@@ -143,7 +173,7 @@ void main() {
         ],
         verify: (bloc) {
           expect(bloc.state.videoResults, contains(testCuratedList));
-          expect(bloc.state.peopleResults, contains(testUserList));
+          expect(bloc.state.peopleResults, contains(testPeopleResult));
         },
       );
 
@@ -164,7 +194,7 @@ void main() {
           status: ListSearchStatus.success,
           query: 'old',
           videoResults: [testCuratedList],
-          peopleResults: [testUserList],
+          peopleResults: [testPeopleResult],
         ),
         build: buildBloc,
         act: (bloc) => bloc.add(const ListSearchQueryChanged('')),
@@ -210,7 +240,7 @@ void main() {
             () => curatedListRepository.searchAllLists(any()),
           ).thenAnswer((_) => const Stream.empty());
           when(
-            () => curatedListRepository.searchAllPeopleLists(any()),
+            () => peopleListsRepository.searchPublicLists(any()),
           ).thenAnswer((_) => Stream.error(Exception('relay down')));
         },
         build: () => buildBloc(peopleEnabled: true),
@@ -260,7 +290,7 @@ void main() {
           final list2 = CuratedList(
             id: 'cl2',
             name: 'More Videos',
-            pubkey: 'author2',
+            pubkey: _ownerB,
             videoEventIds: const ['vid2'],
             createdAt: now,
             updatedAt: now,
@@ -298,7 +328,7 @@ void main() {
           status: ListSearchStatus.success,
           query: 'test',
           videoResults: [testCuratedList],
-          peopleResults: [testUserList],
+          peopleResults: [testPeopleResult],
         ),
         build: buildBloc,
         act: (bloc) => bloc.add(const ListSearchCleared()),
@@ -312,20 +342,20 @@ void main() {
           status: ListSearchStatus.success,
           query: 'q',
           videoResults: [testCuratedList],
-          peopleResults: [testUserList],
+          peopleResults: [testPeopleResult],
         );
         final updated = state.copyWith(query: 'q2');
-        expect(updated.peopleResults, equals([testUserList]));
+        expect(updated.peopleResults, equals([testPeopleResult]));
       });
 
       test('props includes videoResults and peopleResults', () {
         final state1 = ListSearchState(
           videoResults: [testCuratedList],
-          peopleResults: [testUserList],
+          peopleResults: [testPeopleResult],
         );
         final state2 = ListSearchState(
           videoResults: [testCuratedList],
-          peopleResults: [testUserList],
+          peopleResults: [testPeopleResult],
         );
         const state3 = ListSearchState();
         expect(state1, equals(state2));

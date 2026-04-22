@@ -18,6 +18,7 @@ import 'package:openvine/screens/search_results/widgets/search_section_error_sta
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/widgets/list_search_card.dart';
 import 'package:openvine/widgets/people_list_search_card.dart';
+import 'package:people_lists_repository/people_lists_repository.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 /// Always-visible Lists section with a "Lists" header.
@@ -124,7 +125,7 @@ class _ResultsGrid extends StatelessWidget {
   });
 
   final List<CuratedList> videoResults;
-  final List<UserList> peopleResults;
+  final List<PeopleListSearchResult> peopleResults;
   final bool showAll;
 
   @override
@@ -149,11 +150,13 @@ class _ResultsGrid extends StatelessWidget {
                 onTap: () => _navigateToCuratedList(context, list),
               );
             }
-            final peopleList = peopleResults[index - videoResults.length];
+            final peopleResult = peopleResults[index - videoResults.length];
             return _PeopleListCard(
-              userList: peopleList,
-              // TODO(#2853-view): Navigate to people list detail screen.
-              onTap: () {},
+              userList: peopleResult.list,
+              onTap: () {
+                // Intentionally disabled until public people-list routes
+                // include owner pubkey.
+              },
             );
           }, childCount: totalCount),
         ),
@@ -181,7 +184,13 @@ class _ResultsGrid extends StatelessWidget {
               ),
             if (previewPeople != null)
               Expanded(
-                child: _PeopleListCard(userList: previewPeople, onTap: () {}),
+                child: _PeopleListCard(
+                  userList: previewPeople.list,
+                  onTap: () {
+                    // Intentionally disabled until public people-list routes
+                    // include owner pubkey.
+                  },
+                ),
               ),
             // If only one item, fill the second slot with empty space.
             if (previewCount == 1) const Expanded(child: SizedBox()),
