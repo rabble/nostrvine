@@ -31,6 +31,8 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
@@ -1659,6 +1661,22 @@ ProfileRepository? profileRepository(Ref ref) {
   final env = ref.watch(currentEnvironmentProvider);
 
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+
+  final featureFlagService = ref.watch(featureFlagServiceProvider);
+  final BlockedProfileFilter blockFilter;
+  if (featureFlagService.isEnabled(FeatureFlag.contentPolicyV2)) {
+    final engine = ref.watch(contentPolicyEngineProvider);
+    blockFilter = (pubkey) {
+      final decision = engine.evaluate(
+        PolicyInput(pubkey: pubkey),
+        blocklistRepository.currentState,
+      );
+      return decision is Block;
+    };
+  } else {
+    blockFilter = blocklistRepository.shouldFilterFromFeeds;
+  }
+
   final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
@@ -1668,7 +1686,7 @@ ProfileRepository? profileRepository(Ref ref) {
     indexerRelays: env.indexerRelays,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
-    blockFilter: blocklistRepository.shouldFilterFromFeeds,
+    blockFilter: blockFilter,
   );
 
   // Pre-load known cached pubkeys and wire into SubscriptionManager
