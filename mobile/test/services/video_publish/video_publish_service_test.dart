@@ -181,6 +181,20 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
+        final savedDrafts = verify(
+          () => mockDraftService.saveDraft(captureAny()),
+        ).captured.cast<DivineVideoDraft>();
+        expect(
+          savedDrafts.map((draft) => draft.publishStatus),
+          containsAllInOrder([
+            PublishStatus.publishing,
+            PublishStatus.failed,
+          ]),
+        );
+        final failedDraft = savedDrafts.last;
+        expect(failedDraft.publishStatus, PublishStatus.failed);
+        expect(failedDraft.publishAttempts, draft.publishAttempts + 1);
+        expect(failedDraft.publishError, contains('publish_no_relay_response'));
       });
 
       test('saves draft with publishing status before starting', () async {

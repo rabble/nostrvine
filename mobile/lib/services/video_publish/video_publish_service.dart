@@ -177,13 +177,16 @@ class VideoPublishService {
 
       if (!publishOutcome.success) {
         Log.error('❌ Failed to publish Nostr event', category: .video);
+        final errorMessage =
+            publishOutcome.error ??
+            publishOutcome.feedback?.messageKey ??
+            'Failed to publish Nostr event';
+        await _saveFailedDraft(errorMessage, draft);
         // Pre-publish failures use [error]; post-publish failures carry
         // [outcome]/[feedback] so UIs can render a Retry action when
         // PublishResultMapper tags the outcome as retryable.
         return PublishError(
-          publishOutcome.error ??
-              publishOutcome.feedback?.messageKey ??
-              'Failed to publish Nostr event',
+          errorMessage,
           outcome: publishOutcome.outcome,
           feedback: publishOutcome.feedback,
         );
@@ -452,23 +455,27 @@ class VideoPublishService {
     StackTrace stackTrace,
     DivineVideoDraft draft,
   ) async {
-    _backgroundUploadId = null;
     Log.error('📝 Publish failed: $e\n$stackTrace', category: .video);
 
-    // Save failed state to draft
+    await _saveFailedDraft(e, draft);
+
+    final userMessage = await _getUserFriendlyErrorMessage(e);
+    return PublishError(userMessage);
+  }
+
+  Future<void> _saveFailedDraft(Object? error, DivineVideoDraft draft) async {
+    _backgroundUploadId = null;
+
     try {
       final failedDraft = draft.copyWith(
         publishStatus: .failed,
-        publishError: e.toString(),
+        publishError: error.toString(),
         publishAttempts: draft.publishAttempts + 1,
       );
       await draftService.saveDraft(failedDraft);
     } catch (saveError) {
       Log.error('📝 Failed to save error state: $saveError', category: .video);
     }
-
-    final userMessage = await _getUserFriendlyErrorMessage(e);
-    return PublishError(userMessage);
   }
 
   /// Converts technical error messages into user-friendly descriptions.
