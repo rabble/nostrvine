@@ -35,6 +35,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
@@ -129,6 +130,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Used to prevent overlay-close from resuming playback when the user
   /// has navigated away to another tab (e.g. Search).
   bool _isOnHomeTab = true;
+
+  /// Tracks whether the new native player feed should be active.
+  ///
+  /// Mirrors the logic that drives [VideoFeedController.setActive] so
+  /// [FeedVideos] pauses/resumes on tab switches and overlay open/close.
+  bool _isNewFeedActive = true;
 
   /// Guards so startup milestones fire only once.
   bool _hasMarkedUIReady = false;
@@ -314,6 +321,13 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void handleVideoController([VideoFeedState? state]) {
     if (kIsWeb) return; // Skip media_kit controller on web
     if (!ownsController) return;
+    if (ref
+        .read(featureFlagServiceProvider)
+        .isEnabled(
+          FeatureFlag.newVideoFeedPlayer,
+        )) {
+      return;
+    }
 
     final effectiveState = state ?? context.read<VideoFeedBloc>().state;
     if (!effectiveState.isLoaded || effectiveState.videos.isEmpty) return;
@@ -474,6 +488,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       }
 
       controller?.setActive(active: isHome);
+      setState(() => _isNewFeedActive = isHome);
     });
 
     // Refresh feed when blocklist changes (block from profile, DM, or relay).
@@ -501,9 +516,11 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
           active: false,
           retainCurrentPlayer: current.shouldRetainPlayer,
         );
+        setState(() => _isNewFeedActive = false);
       } else if (!hasOverlay && hadOverlay) {
         // All overlays closed - resume playback
         controller?.setActive(active: true);
+        setState(() => _isNewFeedActive = true);
       }
     });
 
@@ -612,6 +629,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       ref.watch(mediaViewerAuthServiceProvider),
                     )
                   : null;
+              final featureFlagService = ref.watch(featureFlagServiceProvider);
+              final isNewVideoPlayerEnabled = featureFlagService.isEnabled(
+                FeatureFlag.newVideoFeedPlayer,
+              );
 
               // Pull-to-refresh: a [RefreshIndicator] wraps the feed and
               // listens for overscroll notifications from the inner
@@ -624,7 +645,33 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 onRefresh: () => _refreshFeed(context),
                 child: Stack(
                   children: [
-                    if (kIsWeb)
+                    if (isNewVideoPlayerEnabled)
+                      FeedVideos(
+                        videos: state.videos,
+                        contextTitle: state.mode.name,
+                        isActive: _isNewFeedActive,
+                        hasMore: state.hasMore,
+                        isLoadingMore: state.isLoadingMore,
+                        onActiveVideoChanged: (video, index) {
+                          _resumeAutoAdvanceAfterSwipe();
+                          FeedPerformanceTracker().startVideoSwipeTracking(
+                            video.id,
+                          );
+                          if (!_hasMarkedVideoReady && index == 0) {
+                            _hasMarkedVideoReady = true;
+                            StartupPerformanceService.instance
+                                .markVideoReady();
+                          }
+                        },
+                        onNearEnd: () {
+                          if (state.hasMore) {
+                            context.read<VideoFeedBloc>().add(
+                              const VideoFeedLoadMoreRequested(),
+                            );
+                          }
+                        },
+                      )
+                    else if (kIsWeb)
                       WebVideoFeed(
                         key: _webFeedKey,
                         videos: state.videos

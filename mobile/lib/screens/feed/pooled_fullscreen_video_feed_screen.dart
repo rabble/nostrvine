@@ -39,6 +39,7 @@ import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
@@ -329,6 +330,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   late final ValueNotifier<double> _pagePosition;
   final _feedKey = GlobalKey<PooledVideoFeedState>();
   final _webFeedKey = GlobalKey<WebVideoFeedState>();
+  final _feedVideosKey = GlobalKey<FeedVideosState>();
 
   /// Feed-scoped Auto playback state; exposed to descendants via
   /// `BlocProvider.value` in [build].
@@ -395,6 +397,13 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   void _initializeControllerIfNeeded({bool triggerRebuild = false}) {
     if (kIsWeb) return; // Skip media_kit controller on web
     if (_controller != null) return;
+    if (ref
+        .read(featureFlagServiceProvider)
+        .isEnabled(
+          FeatureFlag.newVideoFeedPlayer,
+        )) {
+      return;
+    }
 
     final state = context.read<FullscreenFeedBloc>().state;
     if (!state.hasPooledVideos) return;
@@ -470,6 +479,13 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
       if (targetIndex == webFeedState.currentIndex) return;
 
       unawaited(webFeedState.animateToPage(targetIndex));
+      return;
+    }
+
+    // New native player path.
+    final feedVideosState = _feedVideosKey.currentState;
+    if (feedVideosState != null) {
+      unawaited(feedVideosState.animateToPage(index));
       return;
     }
 
@@ -810,6 +826,10 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   )
                 : null;
 
+            final isNewVideoPlayerEnabled = featureFlagService.isEnabled(
+              FeatureFlag.newVideoFeedPlayer,
+            );
+
             return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
               extendBodyBehindAppBar: true,
@@ -821,7 +841,32 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 forceMaterialTransparency: true,
                 actions: [?editAction],
               ),
-              body: kIsWeb
+              body: isNewVideoPlayerEnabled
+                  ? FeedVideos(
+                      key: _feedVideosKey,
+                      videos: state.videos,
+                      contextTitle: widget.contextTitle,
+                      currentIndex: state.currentIndex,
+                      shouldPortraitExpand: false,
+                      hasMore: state.canLoadMore,
+                      isLoadingMore: state.isLoadingMore,
+                      onActiveVideoChanged: (video, index) {
+                        _resumeAutoAdvanceAfterSwipe();
+                        FeedPerformanceTracker().startVideoSwipeTracking(
+                          video.id,
+                        );
+                        context.read<FullscreenFeedBloc>().add(
+                          FullscreenFeedIndexChanged(index),
+                        );
+                        widget.onPageChanged?.call(index);
+                      },
+                      onNearEnd: () {
+                        if (state.canLoadMore) {
+                          _triggerLoadMore();
+                        }
+                      },
+                    )
+                  : kIsWeb
                   ? WebVideoFeed(
                       key: _webFeedKey,
                       videos: state.videos

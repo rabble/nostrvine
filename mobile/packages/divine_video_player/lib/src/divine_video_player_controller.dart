@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:divine_video_player/src/audio_track.dart';
 import 'package:divine_video_player/src/video_clip.dart';
@@ -334,13 +333,18 @@ class DivineVideoPlayerController {
     if (_disposed) return;
     _disposed = true;
 
+    // Cancel the event subscription before disposing the native player.
+    // The native dispose tears down the EventChannel stream handler, so if
+    // dispose races ahead of the cancel message the channel is already gone
+    // and Flutter throws MissingPluginException on the cancel call.
+    await _eventSubscription?.cancel();
+    _eventSubscription = null;
+
     await Future.wait<void>([
-      if (_eventSubscription != null) _eventSubscription!.cancel(),
       if (_initialized)
         _globalChannel.invokeMethod<void>('dispose', {'id': _playerId}),
       _stateController.close(),
     ]);
-    _eventSubscription = null;
   }
 
   // -- internals --
@@ -360,18 +364,6 @@ class DivineVideoPlayerController {
     if (event is! Map) return;
     final map = event.cast<Object?, Object?>();
     _state = DivineVideoPlayerState.fromMap(map);
-
-    // Log native error details rather than storing them in state.
-    if (_state.status == PlaybackStatus.error) {
-      final nativeError = map['errorMessage'] as String?;
-      if (nativeError != null) {
-        developer.log(
-          'Native player error: $nativeError',
-          name: 'DivineVideoPlayer',
-          level: 1000,
-        );
-      }
-    }
 
     if (_state.isFirstFrameRendered && !_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter.complete(true);

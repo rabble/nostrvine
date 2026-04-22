@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/io_client.dart';
+import 'package:media_cache/src/cancellable_cache_operation.dart';
 import 'package:media_cache/src/safe_cache_info_repository.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -423,6 +424,37 @@ class MediaCacheManager extends CacheManager {
     } finally {
       unawaited(Future(() => _pendingCacheOperations.remove(key)));
     }
+  }
+
+  /// Downloads and caches a file with the ability to cancel mid-download.
+  ///
+  /// Unlike [cacheFile], this returns a [CancellableCacheOperation] whose
+  /// underlying HTTP stream can be torn down immediately via
+  /// `CancellableCacheOperation.cancel()`, freeing bandwidth for
+  /// higher-priority downloads.
+  ///
+  /// Returns a completed operation instantly if the file is already cached.
+  CancellableCacheOperation cacheFileCancellable(
+    String url, {
+    required String key,
+    Map<String, String>? authHeaders,
+  }) {
+    // Fast path: already cached on disk.
+    if (_config.enableSyncManifest) {
+      final cached = getCachedFileSync(key);
+      if (cached != null) return CancellableCacheOperation.completed(cached);
+    }
+
+    _prefetchedKeys.add(key);
+    metrics.prefetchedTotal++;
+
+    return CancellableCacheOperation.fromStream(
+      getFileStream(url, key: key, headers: authHeaders ?? {}),
+      cacheKey: key,
+      onCached: _config.enableSyncManifest
+          ? (k, path) => _cacheManifest[k] = path
+          : null,
+    );
   }
 
   /// Checks if a file is cached (async version).

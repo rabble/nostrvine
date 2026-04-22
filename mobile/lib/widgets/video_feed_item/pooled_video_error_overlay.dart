@@ -36,13 +36,14 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final type = errorType ?? VideoErrorType.generic;
+    final shouldEnrichNotFoundWithModeration = type == VideoErrorType.notFound;
     final isDivineUrl = VideoModerationStatusService.shouldCheckModeration(
       video.videoUrl,
     );
 
     // For divine URLs, check moderation status to enrich 404/notFound
     // errors with moderation context.
-    final sha256 = isDivineUrl
+    final sha256 = isDivineUrl && shouldEnrichNotFoundWithModeration
         ? VideoModerationStatusService.resolveSha256(
             explicitSha256: video.sha256,
             videoUrl: video.videoUrl,
@@ -58,20 +59,26 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
     );
     final isModerationRestricted =
         type == VideoErrorType.forbidden ||
-        (moderationStatus != null &&
+        (shouldEnrichNotFoundWithModeration &&
+            moderationStatus != null &&
             moderationStatus.isUnavailableDueToModeration);
 
-    final icon = type == VideoErrorType.ageRestricted
-        ? DivineIconName.lockSimple
-        : isModerationRestricted
-        ? DivineIconName.shieldCheck
-        : DivineIconName.warningCircle;
+    final DivineIconName icon = switch ((type, isModerationRestricted)) {
+      (VideoErrorType.ageRestricted, _) => DivineIconName.lockSimple,
+      (VideoErrorType.notFound, true) => DivineIconName.shieldCheck,
+      (VideoErrorType.notFound, false) => DivineIconName.warningCircle,
+      (_, true) => DivineIconName.shieldCheck,
+      _ => DivineIconName.warningCircle,
+    };
 
-    final message = type == VideoErrorType.ageRestricted
-        ? context.l10n.videoErrorAgeRestricted
-        : isModerationRestricted
-        ? context.l10n.videoErrorContentRestricted
-        : _userMessage(context, type);
+    final message = switch ((type, isModerationRestricted)) {
+      (VideoErrorType.ageRestricted, _) => context.l10n.videoErrorAgeRestricted,
+      (VideoErrorType.notFound, true) =>
+        context.l10n.videoErrorContentRestricted,
+      (VideoErrorType.notFound, false) => context.l10n.videoErrorNotFound,
+      (VideoErrorType.forbidden, _) => context.l10n.videoErrorContentRestricted,
+      (VideoErrorType.generic, _) => context.l10n.videoErrorPlayback,
+    };
 
     final showRetry = !isModerationRestricted;
 
@@ -106,12 +113,4 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
       ],
     );
   }
-
-  static String _userMessage(BuildContext context, VideoErrorType type) =>
-      switch (type) {
-        VideoErrorType.ageRestricted => context.l10n.videoErrorAgeRestricted,
-        VideoErrorType.forbidden => context.l10n.videoErrorContentRestricted,
-        VideoErrorType.notFound => context.l10n.videoErrorNotFound,
-        VideoErrorType.generic => context.l10n.videoErrorPlayback,
-      };
 }

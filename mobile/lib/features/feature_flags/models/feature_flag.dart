@@ -7,6 +7,10 @@ enum FeatureFlag {
     'Enhanced Video Player',
     'Improved video playback engine with better performance',
   ),
+  newVideoFeedPlayer(
+    'New video player',
+    'Improve the feed with a better video player',
+  ),
   enhancedAnalytics(
     'Enhanced Analytics',
     'Detailed usage tracking and insights',
@@ -60,8 +64,11 @@ enum FeatureFlag {
     'Show Nostr relay configuration and diagnostics in Settings. '
         'Changing relays can break publishing and discovery — only turn '
         'this on if you know what you are doing.',
-  )
-  ;
+  ),
+  feedAutoAdvance(
+    'Feed Auto-Advance',
+    'Automatically advance to the next video when the current one finishes',
+  );
 
   const FeatureFlag(this.displayName, this.description);
 

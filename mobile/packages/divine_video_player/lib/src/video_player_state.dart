@@ -1,4 +1,5 @@
-import 'package:flutter/widgets.dart';
+import 'package:divine_video_player/src/player_error_code.dart';
+import 'package:flutter/foundation.dart';
 
 /// Playback status of the video player.
 enum PlaybackStatus {
@@ -64,6 +65,8 @@ class DivineVideoPlayerState {
     this.videoWidth = 0,
     this.videoHeight = 0,
     this.rotationDegrees = 0,
+    this.errorMessage,
+    this.errorCode,
   });
 
   /// Current playback status.
@@ -118,6 +121,16 @@ class DivineVideoPlayerState {
   /// native side sends 0 and no [RotatedBox] is needed.
   final int rotationDegrees;
 
+  /// The native error message when [status] is [PlaybackStatus.error],
+  /// `null` otherwise.
+  final String? errorMessage;
+
+  /// Structured error code when [status] is [PlaybackStatus.error],
+  /// `null` otherwise.
+  ///
+  /// Prefer this over string-parsing [errorMessage] for retry/failover logic.
+  final NativePlayerErrorCode? errorCode;
+
   /// The aspect ratio of the video (width / height).
   ///
   /// Returns 0 when dimensions are not yet available.
@@ -126,6 +139,15 @@ class DivineVideoPlayerState {
 
   /// Whether the player is currently playing.
   bool get isPlaying => status.isPlaying;
+
+  /// Whether the player is currently buffering.
+  bool get isBuffering => status.isBuffering;
+
+  /// Whether the player is currently paused.
+  bool get isPaused => status.isPaused;
+
+  /// Whether the player is in the error state.
+  bool get hasError => status.hasError;
 
   /// Creates a copy with the given fields replaced.
   DivineVideoPlayerState copyWith({
@@ -142,6 +164,8 @@ class DivineVideoPlayerState {
     int? videoWidth,
     int? videoHeight,
     int? rotationDegrees,
+    String? errorMessage,
+    NativePlayerErrorCode? errorCode,
   }) {
     return DivineVideoPlayerState(
       status: status ?? this.status,
@@ -157,12 +181,15 @@ class DivineVideoPlayerState {
       videoWidth: videoWidth ?? this.videoWidth,
       videoHeight: videoHeight ?? this.videoHeight,
       rotationDegrees: rotationDegrees ?? this.rotationDegrees,
+      errorMessage: errorMessage ?? this.errorMessage,
+      errorCode: errorCode ?? this.errorCode,
     );
   }
 
   /// Deserializes a state from a platform channel map.
   // ignore: prefer_constructors_over_static_methods
   static DivineVideoPlayerState fromMap(Map<Object?, Object?> map) {
+    final rawErrorCode = map['errorCode'];
     return DivineVideoPlayerState(
       status: _parseStatus(map['status'] as String? ?? 'idle'),
       position: Duration(milliseconds: (map['positionMs'] as int?) ?? 0),
@@ -179,6 +206,10 @@ class DivineVideoPlayerState {
       videoWidth: (map['videoWidth'] as int?) ?? 0,
       videoHeight: (map['videoHeight'] as int?) ?? 0,
       rotationDegrees: (map['rotationDegrees'] as int?) ?? 0,
+      errorMessage: map['errorMessage'] as String?,
+      errorCode: rawErrorCode is String
+          ? NativePlayerErrorCode.fromString(rawErrorCode)
+          : null,
     );
   }
 
@@ -211,7 +242,9 @@ class DivineVideoPlayerState {
           isFirstFrameRendered == other.isFirstFrameRendered &&
           videoWidth == other.videoWidth &&
           videoHeight == other.videoHeight &&
-          rotationDegrees == other.rotationDegrees;
+          rotationDegrees == other.rotationDegrees &&
+          errorMessage == other.errorMessage &&
+          errorCode == other.errorCode;
 
   @override
   int get hashCode => Object.hash(
@@ -228,6 +261,8 @@ class DivineVideoPlayerState {
     videoWidth,
     videoHeight,
     rotationDegrees,
+    errorMessage,
+    errorCode,
   );
 
   @override
@@ -237,5 +272,7 @@ class DivineVideoPlayerState {
       'clipIndex: $currentClipIndex/$clipCount, '
       'size: ${videoWidth}x$videoHeight, '
       'rotation: $rotationDegrees, '
-      'firstFrame: $isFirstFrameRendered)';
+      'firstFrame: $isFirstFrameRendered'
+      '${errorCode != null ? ', errorCode: $errorCode' : ''}'
+      '${errorMessage != null ? ', error: $errorMessage' : ''})';
 }

@@ -11,6 +11,8 @@ class BuildConfiguration {
     switch (flag) {
       case FeatureFlag.newCameraUI:
         return const bool.fromEnvironment('FF_NEW_CAMERA_UI');
+      case FeatureFlag.newVideoFeedPlayer:
+        return const bool.fromEnvironment('FF_NEW_VIDEO_FEED_PLAYER');
       case FeatureFlag.enhancedVideoPlayer:
         return const bool.fromEnvironment('FF_ENHANCED_VIDEO_PLAYER');
       case FeatureFlag.enhancedAnalytics:
@@ -50,6 +52,8 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_CONTENT_POLICY_V2');
       case FeatureFlag.advancedRelaySettings:
         return const bool.fromEnvironment('FF_ADVANCED_RELAY_SETTINGS');
+      case FeatureFlag.feedAutoAdvance:
+        return const bool.fromEnvironment('FF_FEED_AUTO_ADVANCE');
     }
   }
 
@@ -64,6 +68,8 @@ class BuildConfiguration {
     switch (flag) {
       case FeatureFlag.newCameraUI:
         return 'FF_NEW_CAMERA_UI';
+      case FeatureFlag.newVideoFeedPlayer:
+        return 'FF_NEW_VIDEO_FEED_PLAYER';
       case FeatureFlag.enhancedVideoPlayer:
         return 'FF_ENHANCED_VIDEO_PLAYER';
       case FeatureFlag.enhancedAnalytics:
@@ -96,6 +102,8 @@ class BuildConfiguration {
         return 'FF_CONTENT_POLICY_V2';
       case FeatureFlag.advancedRelaySettings:
         return 'FF_ADVANCED_RELAY_SETTINGS';
+      case FeatureFlag.feedAutoAdvance:
+        return 'FF_FEED_AUTO_ADVANCE';
     }
   }
 }
