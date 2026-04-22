@@ -595,17 +595,27 @@ class VideoThumbnailService {
       final batchEnd = (batchStart + batchSize).clamp(0, allTimestamps.length);
       final batchTimestamps = allTimestamps.sublist(batchStart, batchEnd);
 
-      final bytes = await _runStripBatchExclusive(
-        () => _proVideoEditor.getThumbnails(
-          ThumbnailConfigs(
-            video: EditorVideo.file(videoPath),
-            outputSize: outputSize,
-            timestamps: batchTimestamps,
-            jpegQuality: quality,
+      List<Uint8List> bytes;
+      try {
+        bytes = await _runStripBatchExclusive(
+          () => _proVideoEditor.getThumbnails(
+            ThumbnailConfigs(
+              video: EditorVideo.file(videoPath),
+              outputSize: outputSize,
+              timestamps: batchTimestamps,
+              jpegQuality: quality,
+            ),
+            nativeLogLevel: .warning,
           ),
-          nativeLogLevel: .warning,
-        ),
-      );
+        );
+      } catch (error) {
+        Log.warning(
+          'Failed to generate strip thumbnails for clip $clipId: $error',
+          name: 'VideoThumbnailService',
+          category: LogCategory.video,
+        );
+        break;
+      }
 
       for (var i = 0; i < bytes.length && i < batchTimestamps.length; i++) {
         final file = File(
