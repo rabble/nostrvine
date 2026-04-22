@@ -289,6 +289,45 @@ void main() {
         expect(result, matches(RegExp(r'^\d{1,2}:\d{2}\s?(AM|PM)?$')));
       });
 
+      testWidgets(
+        'use24Hour: true renders 24-hour clock regardless of locale',
+        (tester) async {
+          final en = await _loadL10n(tester, const Locale('en'));
+          final now = DateTime.now();
+          final earlierToday = now.subtract(const Duration(hours: 2));
+          if (earlierToday.day != now.day) return;
+          final ts = earlierToday.millisecondsSinceEpoch ~/ 1000;
+
+          final result = LocalizedTimeFormatter.formatMessageTime(
+            en,
+            ts,
+            locale: 'en',
+            use24Hour: true,
+          );
+          expect(result, matches(RegExp(r'^\d{1,2}:\d{2}$')));
+          expect(result, isNot(contains('AM')));
+          expect(result, isNot(contains('PM')));
+        },
+      );
+
+      testWidgets(
+        'use24Hour: false keeps locale-default 12h in en',
+        (tester) async {
+          final en = await _loadL10n(tester, const Locale('en'));
+          final now = DateTime.now();
+          final earlierToday = now.subtract(const Duration(hours: 2));
+          if (earlierToday.day != now.day) return;
+          final ts = earlierToday.millisecondsSinceEpoch ~/ 1000;
+
+          final result = LocalizedTimeFormatter.formatMessageTime(
+            en,
+            ts,
+            locale: 'en',
+          );
+          expect(result, anyOf(contains('AM'), contains('PM')));
+        },
+      );
+
       testWidgets('returns "Yesterday" for previous day', (tester) async {
         final en = await _loadL10n(tester, const Locale('en'));
         final de = await _loadL10n(tester, const Locale('de'));

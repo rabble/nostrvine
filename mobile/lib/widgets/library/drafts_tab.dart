@@ -273,6 +273,16 @@ class DraftsTab extends ConsumerWidget {
   }
 }
 
+String _formatDraftSubtitle(BuildContext context, DateTime lastModified) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final date = DateFormat.yMMMEd(locale).format(lastModified);
+  final time = MaterialLocalizations.of(context).formatTimeOfDay(
+    TimeOfDay.fromDateTime(lastModified),
+    alwaysUse24HourFormat: MediaQuery.of(context).alwaysUse24HourFormat,
+  );
+  return '$date $time';
+}
+
 /// List tile widget displaying a single draft.
 class DraftListTile extends StatelessWidget {
   /// Creates a draft list tile.
@@ -342,7 +352,7 @@ class DraftListTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        DateFormat.yMMMEd().add_jm().format(draft.lastModified),
+        _formatDraftSubtitle(context, draft.lastModified),
         style: VineTheme.bodySmallFont(),
       ),
       trailing: onOpenMore == null
