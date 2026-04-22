@@ -159,7 +159,9 @@ class CommentsScreen extends ConsumerWidget {
 
     // Sync providers — watch normally
     final likesRepository = ref.watch(likesRepositoryProvider);
-    final contentBlocklistService = ref.watch(contentBlocklistServiceProvider);
+    final contentBlocklistRepository = ref.watch(
+      contentBlocklistRepositoryProvider,
+    );
 
     // Async providers — pass as Future (per Critical Review Issue 1)
     // Pattern from share_video_menu.dart:2065
@@ -180,7 +182,7 @@ class CommentsScreen extends ConsumerWidget {
         authService: authService,
         likesRepository: likesRepository,
         contentReportingServiceFuture: contentReportingServiceFuture,
-        contentBlocklistService: contentBlocklistService,
+        contentBlocklistRepository: contentBlocklistRepository,
         rootEventId: videoEvent.id,
         rootEventKind: NIP71VideoKinds.addressableShortVideo,
         rootAuthorPubkey: videoEvent.pubkey,

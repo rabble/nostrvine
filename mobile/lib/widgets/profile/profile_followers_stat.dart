@@ -37,13 +37,13 @@ class ProfileFollowersStat extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
 
     if (isOwnProfile) {
       return BlocProvider(
         create: (_) => MyFollowersBloc(
           followRepository: followRepository,
-          contentBlocklistService: blocklistService,
+          contentBlocklistRepository: blocklistRepository,
         )..add(const MyFollowersListLoadRequested()),
         child: _MyFollowersStatView(
           pubkey: pubkey,

@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
@@ -306,11 +307,15 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 
   @override
   Widget build(BuildContext context) {
+    final followRepository = ref.watch(followRepositoryProvider);
     final likesRepository = ref.watch(likesRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
     final videosRepository = ref.watch(videosRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final nostrService = ref.watch(nostrServiceProvider);
+    final contentBlocklistRepository = ref.watch(
+      contentBlocklistRepositoryProvider,
+    );
     final currentUserPubkey = nostrService.publicKey;
 
     // Create BLoCs if not already created, or recreate if userIdHex changed
@@ -624,13 +629,20 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       ),
     );
 
-    // TODO(#3120): wire real follower-list cache warming at a higher layer
-    // (screen / repository). The previous `BlocProvider<MyFollowersBloc>` /
-    // `BlocProvider<OthersFollowersBloc>` wrapping here was dead code: it
-    // only `..add(...)`-ed the load event inside the `create:` factory, but
-    // `BlocProvider(create:)` defaults to `lazy: true` and nothing in the
-    // subtree consumed either bloc (ProfileFollowersStat is not imported
-    // anywhere), so the factory — and therefore the pre-fetch — never ran.
+    // Provide OthersFollowersBloc only for other profiles so the follow
+    // button can optimistically update the followers count after a
+    // follow/unfollow action.
+    if (!widget.isOwnProfile) {
+      return BlocProvider<OthersFollowersBloc>(
+        create: (_) => OthersFollowersBloc(
+          followRepository: followRepository,
+          contentBlocklistRepository: contentBlocklistRepository,
+          currentUserPubkey: currentUserPubkey,
+        )..add(OthersFollowersListLoadRequested(widget.userIdHex)),
+        child: content,
+      );
+    }
+
     return content;
   }
 }

@@ -908,6 +908,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoPlayerPlayVideo => '영상 재생';
 
   @override
+  String get videoPlayerMute => '영상 음소거';
+
+  @override
+  String get videoPlayerUnmute => '영상 음소거 해제';
+
+  @override
   String get videoPlayerEditVideo => '영상 편집';
 
   @override
@@ -4227,6 +4233,50 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxRemovedConversation => '대화를 삭제했어요';
 
   @override
+  String get inboxEmptyTitle => '아직 메시지가 없어요';
+
+  @override
+  String get inboxEmptySubtitle => '+ 버튼, 물지 않아요.';
+
+  @override
+  String get inboxActionMute => '대화 알림 끄기';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return '$displayName 신고';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return '$displayName 차단';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return '$displayName 차단 해제';
+  }
+
+  @override
+  String get inboxActionRemove => '대화 삭제';
+
+  @override
+  String get inboxRemoveConfirmTitle => '대화를 삭제할까요?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return '$displayName와의 대화가 삭제돼요. 이 작업은 되돌릴 수 없어요.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => '삭제';
+
+  @override
+  String get inboxConversationMuted => '대화 알림을 껐어요';
+
+  @override
+  String get inboxConversationUnmuted => '대화 알림을 다시 켰어요';
+
+  @override
   String get reportDialogCancel => '취소';
 
   @override
@@ -4469,6 +4519,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get searchFindCuratedVideoLists => '큐레이션된 동영상 목록 찾기';
+
+  @override
+  String get searchEnterQuery => '검색어를 입력하세요';
+
+  @override
+  String get searchDiscoverSomethingInteresting => '흥미로운 것을 발견해보세요';
 
   @override
   String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';

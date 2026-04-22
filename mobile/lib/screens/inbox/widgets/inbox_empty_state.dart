@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Empty state shown when there are no DM conversations.
 ///
@@ -21,12 +22,12 @@ class InboxEmptyState extends StatelessWidget {
           spacing: 8,
           children: [
             Text(
-              'No messages yet',
+              context.l10n.inboxEmptyTitle,
               style: VineTheme.titleMediumFont(color: VineTheme.onSurfaceMuted),
               textAlign: TextAlign.center,
             ),
             Text(
-              "That + button won't bite.",
+              context.l10n.inboxEmptySubtitle,
               style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
               textAlign: TextAlign.center,
             ),

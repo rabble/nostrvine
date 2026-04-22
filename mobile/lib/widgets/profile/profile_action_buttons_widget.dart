@@ -53,21 +53,23 @@ class ProfileActionButtons extends ConsumerWidget {
     }
 
     final followRepository = ref.watch(followRepositoryProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final contentBlocklistRepository = ref.watch(
+      contentBlocklistRepositoryProvider,
+    );
     final nostrClient = ref.watch(nostrServiceProvider);
 
     // Watch blocklist version to trigger rebuilds when block/unblock occurs
     ref.watch(blocklistVersionProvider);
 
-    final isBlocked = blocklistService.isBlocked(userIdHex);
-    final isBlockedByThem = blocklistService.hasBlockedUs(userIdHex);
+    final isBlocked = contentBlocklistRepository.isBlocked(userIdHex);
+    final isBlockedByThem = contentBlocklistRepository.hasBlockedUs(userIdHex);
 
     // Create MyFollowingBloc at this level so both the follow button
     // and the row ordering share the same optimistic state.
     return BlocProvider(
       create: (_) => MyFollowingBloc(
         followRepository: followRepository,
-        contentBlocklistService: blocklistService,
+        contentBlocklistRepository: contentBlocklistRepository,
       )..add(const MyFollowingListLoadRequested()),
       child: _OtherProfileButtons(
         userIdHex: userIdHex,

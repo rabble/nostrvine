@@ -66,10 +66,6 @@ class _ListsContent extends StatelessWidget {
     final results = context.select((ListSearchBloc bloc) => bloc.state.results);
     final query = context.select((ListSearchBloc bloc) => bloc.state.query);
 
-    if (status == .initial && showAll) {
-      return const _InitialState();
-    }
-
     if ((status == .initial || status == .loading) && results.isEmpty) {
       return const _LoadingState();
     }
@@ -151,35 +147,6 @@ class _ResultsGrid extends StatelessWidget {
                 ),
               ),
             if (displayResults.length == 1) const Expanded(child: SizedBox()),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InitialState extends StatelessWidget {
-  const _InitialState();
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverFillRemaining(
-      hasScrollBody: false,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.search,
-              color: VineTheme.secondaryText,
-              size: 64,
-            ),
-            const SizedBox(height: 16),
-            Text('Search for lists', style: VineTheme.titleSmallFont()),
-            Text(
-              'Find curated video lists',
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
-            ),
           ],
         ),
       ),

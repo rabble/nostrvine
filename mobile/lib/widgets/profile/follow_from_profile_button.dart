@@ -42,14 +42,14 @@ class FollowFromProfileButton extends ConsumerWidget {
     ref.watch(blocklistVersionProvider);
 
     // Watch blocklist to reactively update button state
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    final isBlocked = blocklistService.isBlocked(pubkey);
-    final isBlockedByThem = blocklistService.hasBlockedUs(pubkey);
+    final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+    final isBlocked = blocklistRepository.isBlocked(pubkey);
+    final isBlockedByThem = blocklistRepository.hasBlockedUs(pubkey);
 
     return BlocProvider(
       create: (_) => MyFollowingBloc(
         followRepository: followRepository,
-        contentBlocklistService: blocklistService,
+        contentBlocklistRepository: blocklistRepository,
       )..add(const MyFollowingListLoadRequested()),
       child: FollowFromProfileButtonView(
         pubkey: pubkey,

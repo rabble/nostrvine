@@ -175,9 +175,11 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
                   '${_selectedReason!.description}',
             );
 
-            final blocklistService = ref.read(contentBlocklistServiceProvider);
+            final blocklistRepository = ref.read(
+              contentBlocklistRepositoryProvider,
+            );
             final nostrClient = ref.read(nostrServiceProvider);
-            blocklistService.blockUser(
+            blocklistRepository.blockUser(
               widget.senderPubkey,
               ourPubkey: nostrClient.publicKey,
             );

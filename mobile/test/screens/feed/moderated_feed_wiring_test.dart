@@ -83,8 +83,12 @@ void main() {
       when(
         () => mockStream.buffering,
       ).thenAnswer((_) => bufferingController.stream);
+      when(
+        () => mockStream.volume,
+      ).thenAnswer((_) => const Stream<double>.empty());
       when(() => mockPlayerState.playing).thenReturn(false);
       when(() => mockPlayerState.buffering).thenReturn(false);
+      when(() => mockPlayerState.volume).thenReturn(100.0);
 
       when(
         () => mockInteractionsBloc.state,
@@ -128,6 +132,7 @@ void main() {
               video: testVideo,
               isActive: true,
               pagePosition: pagePosition,
+              feedController: null,
               index: 0,
               player: mockPlayer,
             ),

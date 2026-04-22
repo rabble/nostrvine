@@ -949,6 +949,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Putar video';
 
   @override
+  String get videoPlayerMute => 'Bisukan video';
+
+  @override
+  String get videoPlayerUnmute => 'Aktifkan suara video';
+
+  @override
   String get videoPlayerEditVideo => 'Ubah video';
 
   @override
@@ -4377,6 +4383,50 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxRemovedConversation => 'Percakapan dihapus';
 
   @override
+  String get inboxEmptyTitle => 'Belum ada pesan';
+
+  @override
+  String get inboxEmptySubtitle => 'Tombol + tidak menggigit kok.';
+
+  @override
+  String get inboxActionMute => 'Bisukan percakapan';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return 'Laporkan $displayName';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return 'Blokir $displayName';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return 'Buka blokir $displayName';
+  }
+
+  @override
+  String get inboxActionRemove => 'Hapus percakapan';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'Hapus percakapan?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'Ini akan menghapus percakapanmu dengan $displayName. Tindakan ini tidak bisa dibatalkan.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Hapus';
+
+  @override
+  String get inboxConversationMuted => 'Percakapan dibisukan';
+
+  @override
+  String get inboxConversationUnmuted => 'Bisu percakapan dibatalkan';
+
+  @override
   String get reportDialogCancel => 'Batal';
 
   @override
@@ -4625,6 +4675,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get searchFindCuratedVideoLists => 'Temukan daftar video pilihan';
+
+  @override
+  String get searchEnterQuery => 'Masukkan kata pencarian';
+
+  @override
+  String get searchDiscoverSomethingInteresting =>
+      'Temukan sesuatu yang menarik';
 
   @override
   String get cameraAgeRestriction =>

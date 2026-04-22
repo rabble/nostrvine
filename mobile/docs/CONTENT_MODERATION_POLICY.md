@@ -12,13 +12,13 @@ Divine fully complies with Apple's requirements for user-generated content apps 
 
 **Implementation:**
 - Client-side content filtering via `ContentModerationService`
-- User-managed blocklist via `ContentBlocklistService`
+- User-managed blocklist via `ContentBlocklistRepository`
 - NIP-51 mute list support for decentralized filtering
 - Multiple filter categories: spam, harassment, violence, sexual content, copyright violations, misinformation, CSAM, and AI-generated content
 
 **Location:**
 - `lib/services/content_moderation_service.dart`
-- `lib/services/content_blocklist_service.dart`
+- `packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart`
 
 ### ✅ Mechanism to Report Offensive Content
 
@@ -40,7 +40,7 @@ Divine fully complies with Apple's requirements for user-generated content apps 
 - Users can still explicitly visit blocked profiles (maintaining Nostr decentralization principles)
 
 **Location:**
-- `lib/services/content_blocklist_service.dart`
+- `packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart`
 - `lib/widgets/share_video_menu.dart` (Block User action)
 
 ### ✅ Timely Response to Reports (24-Hour SLA)

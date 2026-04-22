@@ -13,6 +13,12 @@ At minimum, cover:
 - Error/edge cases for network or I/O operations
 - Model serialization if the package defines models
 
+### Preserving Test Behavior During Package Extraction
+
+When extracting a package, keep the branch up to date with `main` during the work — merge from `main` frequently, and again just before requesting review. This surfaces recent edits to files you're moving (e.g. test fixes added to the original location while extraction was in progress) so they aren't silently dropped when the file is relocated.
+
+Known precedent: PR #2985 (extract `follow_repository`) silently dropped a `fakeAsync` wrap added two days earlier by PR #2986; restored by PR #3210. See `tasks/lessons.md` → "CI & Chain Hygiene" → "Package extractions can silently regress sibling fixes".
+
 ---
 
 ## Test Organization

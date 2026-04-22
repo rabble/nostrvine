@@ -45,9 +45,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   ) async {
     if (otherPubkey.isEmpty) return;
 
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     final followRepository = ref.read(followRepositoryProvider);
-    final isBlocked = blocklistService.isBlocked(otherPubkey);
+    final isBlocked = blocklistRepository.isBlocked(otherPubkey);
     final isFollowing = followRepository.isFollowing(otherPubkey);
 
     final result = await VineBottomSheet.show<MoreSheetResult>(
@@ -73,13 +73,13 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       case MoreSheetResult.unfollow:
         await followRepository.toggleFollow(otherPubkey);
       case MoreSheetResult.blockConfirmed:
-        await blocklistService.blockUser(
+        await blocklistRepository.blockUser(
           otherPubkey,
           ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
         );
         if (mounted) context.pop();
       case MoreSheetResult.unblockConfirmed:
-        await blocklistService.unblockUser(otherPubkey);
+        await blocklistRepository.unblockUser(otherPubkey);
     }
   }
 

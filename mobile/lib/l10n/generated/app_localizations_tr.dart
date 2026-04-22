@@ -950,6 +950,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Videoyu oynat';
 
   @override
+  String get videoPlayerMute => 'Videoyu sessize al';
+
+  @override
+  String get videoPlayerUnmute => 'Videonun sesini aç';
+
+  @override
   String get videoPlayerEditVideo => 'Videoyu düzenle';
 
   @override
@@ -4384,6 +4390,50 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxRemovedConversation => 'Sohbet kaldırıldı';
 
   @override
+  String get inboxEmptyTitle => 'Henüz mesaj yok';
+
+  @override
+  String get inboxEmptySubtitle => '+ tuşu ısırmaz.';
+
+  @override
+  String get inboxActionMute => 'Sohbeti sessize al';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return '$displayName kullanıcısını bildir';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return '$displayName kullanıcısını engelle';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return '$displayName kullanıcısının engelini kaldır';
+  }
+
+  @override
+  String get inboxActionRemove => 'Sohbeti kaldır';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'Sohbet kaldırılsın mı?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'Bu işlem, $displayName ile olan sohbetini siler. Bu işlem geri alınamaz.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Kaldır';
+
+  @override
+  String get inboxConversationMuted => 'Sohbet sessize alındı';
+
+  @override
+  String get inboxConversationUnmuted => 'Sohbet sessizden çıkarıldı';
+
+  @override
   String get reportDialogCancel => 'İptal';
 
   @override
@@ -4631,6 +4681,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get searchFindCuratedVideoLists => 'Küratörlü video listelerini bul';
+
+  @override
+  String get searchEnterQuery => 'Bir arama terimi girin';
+
+  @override
+  String get searchDiscoverSomethingInteresting => 'İlginç bir şey keşfet';
 
   @override
   String get cameraAgeRestriction =>

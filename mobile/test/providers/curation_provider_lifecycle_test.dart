@@ -1,7 +1,7 @@
 // ABOUTME: Tests curation provider lifecycle behavior during navigation
 // ABOUTME: Verifies editor's picks persist when navigating away and back to tab
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -174,7 +174,7 @@ void main() {
       final mockSigner = _MockNostrSigner();
       final mockVideoEventCache = _MockVideoEventCache();
       when(() => mockVideoEventCache.discoveryVideos).thenReturn([]);
-      final service = CurationService(
+      final service = CurationRepository(
         nostrService: mockNostrService,
         videoEventCache: mockVideoEventCache,
         likesRepository: mockLikesRepository,

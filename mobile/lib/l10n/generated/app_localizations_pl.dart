@@ -990,6 +990,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Odtwórz film';
 
   @override
+  String get videoPlayerMute => 'Wycisz film';
+
+  @override
+  String get videoPlayerUnmute => 'Włącz dźwięk filmu';
+
+  @override
   String get videoPlayerEditVideo => 'Edytuj film';
 
   @override
@@ -4527,6 +4533,50 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxRemovedConversation => 'Usunięto rozmowę';
 
   @override
+  String get inboxEmptyTitle => 'Brak wiadomości';
+
+  @override
+  String get inboxEmptySubtitle => 'Ten przycisk + nie gryzie.';
+
+  @override
+  String get inboxActionMute => 'Wycisz rozmowę';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return 'Zgłoś $displayName';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return 'Zablokuj $displayName';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return 'Odblokuj $displayName';
+  }
+
+  @override
+  String get inboxActionRemove => 'Usuń rozmowę';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'Usunąć rozmowę?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'Spowoduje to usunięcie rozmowy z $displayName. Tej operacji nie można cofnąć.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Usuń';
+
+  @override
+  String get inboxConversationMuted => 'Wyciszono rozmowę';
+
+  @override
+  String get inboxConversationUnmuted => 'Wyłączono wyciszenie rozmowy';
+
+  @override
   String get reportDialogCancel => 'Anuluj';
 
   @override
@@ -4788,6 +4838,12 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get searchFindCuratedVideoLists =>
       'Znajdź wyselekcjonowane listy filmów';
+
+  @override
+  String get searchEnterQuery => 'Wpisz zapytanie';
+
+  @override
+  String get searchDiscoverSomethingInteresting => 'Odkryj coś ciekawego';
 
   @override
   String get cameraAgeRestriction =>

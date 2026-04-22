@@ -1132,8 +1132,8 @@ class VideoEvent {
 
   /// Get effective thumbnail URL
   ///
-  /// Returns the thumbnailUrl if set, otherwise null. For fallback thumbnail
-  /// generation, use ThumbnailApiService in the app layer.
+  /// Returns the thumbnailUrl if set, otherwise null. Callers should render a
+  /// blurhash or placeholder when this is null.
   String? get effectiveThumbnailUrl {
     if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
       return thumbnailUrl;

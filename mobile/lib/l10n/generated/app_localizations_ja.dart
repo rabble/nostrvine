@@ -901,6 +901,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoPlayerPlayVideo => '動画を再生';
 
   @override
+  String get videoPlayerMute => '動画をミュート';
+
+  @override
+  String get videoPlayerUnmute => '動画のミュートを解除';
+
+  @override
   String get videoPlayerEditVideo => '動画を編集';
 
   @override
@@ -4211,6 +4217,50 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxRemovedConversation => '会話を削除したよ';
 
   @override
+  String get inboxEmptyTitle => 'まだメッセージはないよ';
+
+  @override
+  String get inboxEmptySubtitle => 'この+ボタン、噛まないよ。';
+
+  @override
+  String get inboxActionMute => '会話をミュート';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return '$displayNameを報告';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return '$displayNameをブロック';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return '$displayNameのブロックを解除';
+  }
+
+  @override
+  String get inboxActionRemove => '会話を削除';
+
+  @override
+  String get inboxRemoveConfirmTitle => '会話を削除する？';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return '$displayNameとの会話が削除されます。この操作は取り消せません。';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => '削除';
+
+  @override
+  String get inboxConversationMuted => '会話をミュートしたよ';
+
+  @override
+  String get inboxConversationUnmuted => '会話のミュートを解除したよ';
+
+  @override
   String get reportDialogCancel => 'キャンセル';
 
   @override
@@ -4446,6 +4496,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get searchFindCuratedVideoLists => 'キュレーションされた動画リストを探そう';
+
+  @override
+  String get searchEnterQuery => '検索キーワードを入力';
+
+  @override
+  String get searchDiscoverSomethingInteresting => '面白いものを見つけよう';
 
   @override
   String get cameraAgeRestriction => 'コンテンツを作るには16歳以上である必要があるよ';

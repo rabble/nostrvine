@@ -961,6 +961,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Spela upp video';
 
   @override
+  String get videoPlayerMute => 'Stäng av ljudet på videon';
+
+  @override
+  String get videoPlayerUnmute => 'Slå på ljudet för videon';
+
+  @override
   String get videoPlayerEditVideo => 'Redigera video';
 
   @override
@@ -4393,6 +4399,50 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxRemovedConversation => 'Konversation borttagen';
 
   @override
+  String get inboxEmptyTitle => 'Inga meddelanden än';
+
+  @override
+  String get inboxEmptySubtitle => '+-knappen bits inte.';
+
+  @override
+  String get inboxActionMute => 'Tysta konversation';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return 'Rapportera $displayName';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return 'Blockera $displayName';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return 'Avblockera $displayName';
+  }
+
+  @override
+  String get inboxActionRemove => 'Ta bort konversation';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'Ta bort konversation?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'Detta tar bort din konversation med $displayName. Denna åtgärd kan inte ångras.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Ta bort';
+
+  @override
+  String get inboxConversationMuted => 'Konversation tystad';
+
+  @override
+  String get inboxConversationUnmuted => 'Konversation inte tystad';
+
+  @override
   String get reportDialogCancel => 'Avbryt';
 
   @override
@@ -4640,6 +4690,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get searchFindCuratedVideoLists => 'Hitta kurerade videolistor';
+
+  @override
+  String get searchEnterQuery => 'Skriv en sökterm';
+
+  @override
+  String get searchDiscoverSomethingInteresting => 'Upptäck något intressant';
 
   @override
   String get cameraAgeRestriction =>

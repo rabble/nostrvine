@@ -955,6 +955,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoPlayerPlayVideo => 'تشغيل الفيديو';
 
   @override
+  String get videoPlayerMute => 'كتم الفيديو';
+
+  @override
+  String get videoPlayerUnmute => 'إلغاء كتم الفيديو';
+
+  @override
   String get videoPlayerEditVideo => 'تعديل الفيديو';
 
   @override
@@ -4357,6 +4363,50 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxRemovedConversation => 'تمت إزالة المحادثة';
 
   @override
+  String get inboxEmptyTitle => 'لا توجد رسائل بعد';
+
+  @override
+  String get inboxEmptySubtitle => 'زر + لن يعضّك.';
+
+  @override
+  String get inboxActionMute => 'كتم المحادثة';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return 'الإبلاغ عن $displayName';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return 'حظر $displayName';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return 'إلغاء حظر $displayName';
+  }
+
+  @override
+  String get inboxActionRemove => 'إزالة المحادثة';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'إزالة المحادثة؟';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'سيؤدي هذا إلى حذف محادثتك مع $displayName. لا يمكن التراجع عن هذا الإجراء.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'إزالة';
+
+  @override
+  String get inboxConversationMuted => 'تم كتم المحادثة';
+
+  @override
+  String get inboxConversationUnmuted => 'تم إلغاء كتم المحادثة';
+
+  @override
   String get reportDialogCancel => 'إلغاء';
 
   @override
@@ -4604,6 +4654,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get searchFindCuratedVideoLists => 'ابحث عن قوائم فيديو مختارة';
+
+  @override
+  String get searchEnterQuery => 'أدخل استعلام البحث';
+
+  @override
+  String get searchDiscoverSomethingInteresting =>
+      'اكتشف شيئًا مثيرًا للاهتمام';
 
   @override
   String get cameraAgeRestriction =>
