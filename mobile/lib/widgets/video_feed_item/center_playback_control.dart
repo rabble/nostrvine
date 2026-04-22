@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -46,15 +48,21 @@ class CenterPlaybackControl extends StatelessWidget {
     }
 
     return Center(
-      child: Container(
-        width: 64,
-        height: 64,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: VineTheme.scrim65,
-          borderRadius: BorderRadius.circular(24),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8.4, sigmaY: 8.4),
+          child: Container(
+            width: 64,
+            height: 64,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: VineTheme.scrim65,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: icon,
+          ),
         ),
-        child: icon,
       ),
     );
   }
