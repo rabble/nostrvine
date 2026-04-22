@@ -1,7 +1,7 @@
 // ABOUTME: BLoC for viewing another user's profile
 // ABOUTME: Implements cache+fresh pattern and block/unblock actions
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -28,11 +28,11 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   OtherProfileBloc({
     required ProfileRepository profileRepository,
     required this.pubkey,
-    required ContentBlocklistService contentBlocklistService,
+    required ContentBlocklistRepository contentBlocklistRepository,
     required String currentUserPubkey,
     required FollowRepository followRepository,
   }) : _profileRepository = profileRepository,
-       _blocklistService = contentBlocklistService,
+       _blocklistService = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        _followRepository = followRepository,
        super(const OtherProfileInitial()) {
@@ -43,7 +43,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   }
 
   final ProfileRepository _profileRepository;
-  final ContentBlocklistService _blocklistService;
+  final ContentBlocklistRepository _blocklistService;
   final String _currentUserPubkey;
   final FollowRepository _followRepository;
 

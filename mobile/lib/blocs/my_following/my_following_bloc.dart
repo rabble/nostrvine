@@ -2,7 +2,7 @@
 // ABOUTME: Listens to FollowRepository stream for real-time following changes
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -21,15 +21,15 @@ part 'my_following_state.dart';
 class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
   MyFollowingBloc({
     required FollowRepository followRepository,
-    required ContentBlocklistService contentBlocklistService,
+    required ContentBlocklistRepository contentBlocklistRepository,
   }) : _followRepository = followRepository,
-       _blocklistService = contentBlocklistService,
+       _blocklistService = contentBlocklistRepository,
        super(
          MyFollowingState(
            status: MyFollowingStatus.success,
            followingPubkeys: followRepository.followingPubkeys
                .where(
-                 (pk) => !contentBlocklistService.isBlocked(pk),
+                 (pk) => !contentBlocklistRepository.isBlocked(pk),
                )
                .toList(),
          ),
@@ -43,7 +43,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
   }
 
   final FollowRepository _followRepository;
-  final ContentBlocklistService _blocklistService;
+  final ContentBlocklistRepository _blocklistService;
 
   /// Raw unfiltered following pubkeys for re-filtering on blocklist changes.
   List<String> _rawFollowingPubkeys = [];

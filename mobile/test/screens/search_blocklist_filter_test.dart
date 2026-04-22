@@ -1,19 +1,19 @@
 // ABOUTME: Tests for search filtering of blocked users
 // ABOUTME: Verifies that blocked users' content doesn't appear in search results
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   group('Search Blocklist Filtering', () {
-    late ContentBlocklistService blocklistService;
+    late ContentBlocklistRepository blocklistService;
 
     setUp(() {
-      blocklistService = ContentBlocklistService();
+      blocklistService = ContentBlocklistRepository();
     });
 
     test('shouldFilterFromFeeds returns true for blocked users', () {

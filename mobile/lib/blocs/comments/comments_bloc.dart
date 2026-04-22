@@ -6,7 +6,7 @@ import 'dart:math';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:comments_repository/comments_repository.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -38,7 +38,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     required AuthService authService,
     required LikesRepository likesRepository,
     required Future<ContentReportingService> contentReportingServiceFuture,
-    required ContentBlocklistService contentBlocklistService,
+    required ContentBlocklistRepository contentBlocklistRepository,
     required String rootEventId,
     required int rootEventKind,
     required String rootAuthorPubkey,
@@ -50,7 +50,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
        _authService = authService,
        _likesRepository = likesRepository,
        _contentReportingServiceFuture = contentReportingServiceFuture,
-       _contentBlocklistService = contentBlocklistService,
+       _contentBlocklistRepository = contentBlocklistRepository,
        _initialTotalCount = initialTotalCount,
        _profileRepository = profileRepository,
        _followRepository = followRepository,
@@ -107,7 +107,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   StreamSubscription<Comment>? _commentStreamSubscription;
   final LikesRepository _likesRepository;
   final Future<ContentReportingService> _contentReportingServiceFuture;
-  final ContentBlocklistService _contentBlocklistService;
+  final ContentBlocklistRepository _contentBlocklistRepository;
   final ProfileRepository? _profileRepository;
   final FollowRepository? _followRepository;
   bool _isInitialBackfillComplete = true;
@@ -612,8 +612,8 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     Emitter<CommentsState> emit,
   ) async {
     try {
-      // Block user via ContentBlocklistService (persists + publishes kind 30000)
-      _contentBlocklistService.blockUser(event.authorPubkey);
+      // Block user via ContentBlocklistRepository (persists + publishes kind 30000)
+      _contentBlocklistRepository.blockUser(event.authorPubkey);
 
       // Unfollow the blocked user if currently following
       final followRepo = _followRepository;

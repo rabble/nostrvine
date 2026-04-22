@@ -72,7 +72,7 @@ class VideoFeedPage extends ConsumerWidget {
         .read(divineHostFilterServiceProvider)
         .showDivineHostedOnly;
 
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final blocklistService = ref.watch(contentBlocklistRepositoryProvider);
 
     return MultiBlocProvider(
       key: ValueKey('video-feed-$showDivineHostedOnly'),
@@ -83,7 +83,7 @@ class VideoFeedPage extends ConsumerWidget {
             followRepository: followRepository,
             curatedListRepository: curatedListRepository,
             profileRepository: profileRepository,
-            contentBlocklistService: blocklistService,
+            contentBlocklistRepository: blocklistService,
             userPubkey: authService.currentPublicKeyHex,
             sharedPreferences: sharedPreferences,
             serveCachedHomeFeed: !showDivineHostedOnly,

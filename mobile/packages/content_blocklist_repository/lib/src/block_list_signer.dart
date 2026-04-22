@@ -1,6 +1,6 @@
 import 'package:nostr_sdk/event.dart';
 
-/// Minimal signer interface required by `ContentBlocklistService` for
+/// Minimal signer interface required by `ContentBlocklistRepository` for
 /// publishing block-list events to Nostr (kind 30000, d=block).
 ///
 /// In production this is implemented by the app-level `AuthService`. The

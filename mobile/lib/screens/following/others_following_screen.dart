@@ -35,21 +35,21 @@ class OthersFollowingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final blocklistService = ref.watch(contentBlocklistRepositoryProvider);
 
     return MultiBlocProvider(
       providers: [
         BlocProvider(
           create: (_) => OthersFollowingBloc(
             nostrClient: nostrClient,
-            contentBlocklistService: blocklistService,
+            contentBlocklistRepository: blocklistService,
             currentUserPubkey: nostrClient.publicKey,
           )..add(OthersFollowingListLoadRequested(pubkey)),
         ),
         BlocProvider(
           create: (_) => MyFollowingBloc(
             followRepository: followRepository,
-            contentBlocklistService: blocklistService,
+            contentBlocklistRepository: blocklistService,
           )..add(const MyFollowingListLoadRequested()),
         ),
       ],

@@ -1,7 +1,7 @@
 // ABOUTME: Unit tests for VideoEventService NIP-50 search functionality
 // ABOUTME: Tests search capabilities including text queries, filters, and result processing
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -232,7 +232,7 @@ void main() {
 
       test('should filter blocked user videos from search results', () async {
         // Create a real blocklist service and block a user
-        final blocklistService = ContentBlocklistService();
+        final blocklistService = ContentBlocklistRepository();
         blocklistService.blockUser(blockedPubkey);
 
         // Set the blocklist service on the video event service
@@ -270,7 +270,7 @@ void main() {
         'should include non-blocked user videos in search results',
         () async {
           // Create a real blocklist service
-          final blocklistService = ContentBlocklistService();
+          final blocklistService = ContentBlocklistRepository();
 
           // Block a different user (not normalPubkey)
           blocklistService.blockUser(otherBlockedPubkey);

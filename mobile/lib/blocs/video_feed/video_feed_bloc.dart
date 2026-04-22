@@ -5,7 +5,7 @@
 import 'dart:async';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -40,7 +40,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     required FollowRepository followRepository,
     required CuratedListRepository curatedListRepository,
     ProfileRepository? profileRepository,
-    ContentBlocklistService? contentBlocklistService,
+    ContentBlocklistRepository? contentBlocklistRepository,
     String? userPubkey,
     SharedPreferences? sharedPreferences,
     bool serveCachedHomeFeed = true,
@@ -51,7 +51,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
        _followRepository = followRepository,
        _curatedListRepository = curatedListRepository,
        _profileRepository = profileRepository,
-       _blocklistService = contentBlocklistService,
+       _blocklistService = contentBlocklistRepository,
        _userPubkey = userPubkey,
        _sharedPreferences = sharedPreferences,
        _serveCachedHomeFeed = serveCachedHomeFeed,
@@ -76,7 +76,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   final FollowRepository _followRepository;
   final CuratedListRepository _curatedListRepository;
   final ProfileRepository? _profileRepository;
-  final ContentBlocklistService? _blocklistService;
+  final ContentBlocklistRepository? _blocklistService;
   final String? _userPubkey;
   final SharedPreferences? _sharedPreferences;
   final bool _serveCachedHomeFeed;

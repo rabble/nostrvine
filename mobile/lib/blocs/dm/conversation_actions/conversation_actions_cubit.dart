@@ -2,7 +2,7 @@
 // ABOUTME: Constructor-injected services, no Riverpod at action time.
 
 import 'package:bloc/bloc.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:openvine/services/content_moderation_service.dart';
@@ -32,17 +32,17 @@ class ConversationActionsState extends Equatable {
 class ConversationActionsCubit extends Cubit<ConversationActionsState> {
   ConversationActionsCubit({
     required ContentReportingService? contentReportingService,
-    required ContentBlocklistService contentBlocklistService,
+    required ContentBlocklistRepository contentBlocklistRepository,
     required DmRepository dmRepository,
     required String currentUserPubkey,
   }) : _reportingService = contentReportingService,
-       _blocklistService = contentBlocklistService,
+       _blocklistService = contentBlocklistRepository,
        _dmRepository = dmRepository,
        _currentUserPubkey = currentUserPubkey,
        super(const ConversationActionsState());
 
   final ContentReportingService? _reportingService;
-  final ContentBlocklistService _blocklistService;
+  final ContentBlocklistRepository _blocklistService;
   final DmRepository _dmRepository;
   final String _currentUserPubkey;
 

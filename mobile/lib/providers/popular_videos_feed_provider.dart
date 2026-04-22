@@ -216,7 +216,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
   /// and blocked user filters.
   List<VideoEvent> _filterVideos(List<VideoEvent> videos) {
     final videoEventService = ref.read(videoEventServiceProvider);
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistService = ref.read(contentBlocklistRepositoryProvider);
     return videoEventService.filterVideoList(
       videos
           .where((v) => v.isSupportedOnCurrentPlatform)

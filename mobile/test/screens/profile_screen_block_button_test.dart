@@ -1,7 +1,7 @@
 // ABOUTME: TDD tests for Block User button on profile screen
 // ABOUTME: Tests visibility, styling, and interaction for blocking/unblocking users
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,17 +9,17 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ProfileScreen Block Button - TDD', () {
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistService;
 
     setUp(() {
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistService = _MockContentBlocklistRepository();
     });
 
     // Helper to create a simple test widget with Block User button
@@ -35,7 +35,7 @@ void main() {
 
       return ProviderScope(
         overrides: [
-          contentBlocklistServiceProvider.overrideWithValue(
+          contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistService,
           ),
         ],
@@ -47,7 +47,7 @@ void main() {
               child: Consumer(
                 builder: (context, ref, _) {
                   final blocklistService = ref.watch(
-                    contentBlocklistServiceProvider,
+                    contentBlocklistRepositoryProvider,
                   );
                   final isUserBlocked = blocklistService.isBlocked(userPubkey);
                   return OutlinedButton(

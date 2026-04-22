@@ -344,7 +344,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Widget _buildBlockedUsersSection() {
     ref.watch(blocklistVersionProvider);
 
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistService = ref.read(contentBlocklistRepositoryProvider);
     final blockedUsers = blocklistService.runtimeBlockedUsers.toList();
 
     if (blockedUsers.isEmpty) {
@@ -373,7 +373,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   }
 
   Future<void> _unblockUser(String pubkey) async {
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistService = ref.read(contentBlocklistRepositoryProvider);
     blocklistService.unblockUser(pubkey);
 
     if (mounted) {

@@ -45,7 +45,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   ) async {
     if (otherPubkey.isEmpty) return;
 
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistService = ref.read(contentBlocklistRepositoryProvider);
     final followRepository = ref.read(followRepositoryProvider);
     final isBlocked = blocklistService.isBlocked(otherPubkey);
     final isFollowing = followRepository.isFollowing(otherPubkey);

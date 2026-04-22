@@ -147,7 +147,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
     if (profile == null || !context.mounted) return;
 
     // Check if the user has muted us
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistService = ref.read(contentBlocklistRepositoryProvider);
     if (blocklistService.hasMutedUs(profile.pubkey)) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

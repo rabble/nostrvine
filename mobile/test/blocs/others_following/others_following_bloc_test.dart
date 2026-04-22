@@ -4,7 +4,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -13,13 +13,13 @@ import 'package:openvine/blocs/others_following/others_following_bloc.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   group('OthersFollowingBloc', () {
     late _MockNostrClient mockNostrClient;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistService;
 
     // Helper to create valid hex pubkeys (64 hex characters)
     String validPubkey(String suffix) {
@@ -31,7 +31,7 @@ void main() {
 
     setUp(() {
       mockNostrClient = _MockNostrClient();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistService = _MockContentBlocklistRepository();
 
       // Default: nothing is blocked
       when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
@@ -42,7 +42,7 @@ void main() {
 
     OthersFollowingBloc createBloc() => OthersFollowingBloc(
       nostrClient: mockNostrClient,
-      contentBlocklistService: mockBlocklistService,
+      contentBlocklistRepository: mockBlocklistService,
       currentUserPubkey: validPubkey('currentUser'),
     );
 

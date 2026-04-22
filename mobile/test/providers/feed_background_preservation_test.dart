@@ -1,7 +1,7 @@
 // ABOUTME: Tests that feed providers preserve cached videos during background
 // ABOUTME: Verifies fix for feeds going empty when app resumes from background
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -20,8 +20,8 @@ class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 /// Test override for FunnelcakeAvailable that always returns false
 /// (forces Nostr fallback path for simpler mocking)
@@ -39,7 +39,7 @@ void main() {
   group('Feed background state preservation', () {
     late _MockFunnelcakeApiClient mockFunnelcakeClient;
     late _MockVideoEventService mockVideoEventService;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistService;
     late SharedPreferences sharedPreferences;
 
     // Test videos with originalLoops for ClassicVines Nostr fallback
@@ -67,7 +67,7 @@ void main() {
       sharedPreferences = await SharedPreferences.getInstance();
       mockFunnelcakeClient = _MockFunnelcakeApiClient();
       mockVideoEventService = _MockVideoEventService();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistService = _MockContentBlocklistRepository();
 
       when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
       when(
@@ -102,7 +102,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistServiceProvider.overrideWithValue(
+          contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistService,
           ),
           funnelcakeAvailableProvider.overrideWith(
@@ -148,7 +148,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistServiceProvider.overrideWithValue(
+          contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistService,
           ),
           funnelcakeAvailableProvider.overrideWith(
@@ -189,7 +189,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistServiceProvider.overrideWithValue(
+          contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistService,
           ),
           funnelcakeAvailableProvider.overrideWith(
@@ -216,7 +216,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistServiceProvider.overrideWithValue(
+          contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistService,
           ),
           funnelcakeAvailableProvider.overrideWith(
@@ -274,7 +274,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           funnelcakeApiClientProvider.overrideWithValue(mockFunnelcakeClient),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistServiceProvider.overrideWithValue(
+          contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistService,
           ),
           funnelcakeAvailableProvider.overrideWith(

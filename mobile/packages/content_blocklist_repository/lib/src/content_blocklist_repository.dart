@@ -5,7 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:content_blocklist_service/src/block_list_signer.dart';
+import 'package:content_blocklist_repository/src/block_list_signer.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -28,14 +28,14 @@ const _severedFollowersPrefsKey = 'severed_followers_list';
 ///
 /// Blocks are persisted to SharedPreferences for survival across restarts,
 /// and published to Nostr as kind 30000 events (d=block) for cross-device sync.
-class ContentBlocklistService {
-  /// Creates a [ContentBlocklistService].
+class ContentBlocklistRepository {
+  /// Creates a [ContentBlocklistRepository].
   ///
   /// [prefs] is used to persist blocks across app restarts. Pass `null` for
   /// in-memory-only operation (e.g. in tests).
   /// [onChanged] is invoked whenever the blocklist changes so listeners
   /// can refresh dependent state.
-  ContentBlocklistService({
+  ContentBlocklistRepository({
     SharedPreferences? prefs,
     void Function()? onChanged,
   }) : _prefs = prefs,
@@ -45,9 +45,9 @@ class ContentBlocklistService {
     _loadBlockedUsers();
     _loadSeveredFollowers();
     Log.info(
-      'ContentBlocklistService initialized with '
+      'ContentBlocklistRepository initialized with '
       '$totalBlockedCount blocked accounts',
-      name: 'ContentBlocklistService',
+      name: 'ContentBlocklistRepository',
       category: LogCategory.system,
     );
   }
@@ -107,13 +107,13 @@ class ContentBlocklistService {
       _runtimeBlocklist.addAll(list);
       Log.info(
         'Loaded ${list.length} blocked users from persistence',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     } on Object catch (e) {
       Log.error(
         'Failed to load persisted blocked users: $e',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     }
@@ -132,7 +132,7 @@ class ContentBlocklistService {
     } on Object catch (e) {
       Log.error(
         'Failed to persist blocked users: $e',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     }
@@ -151,13 +151,13 @@ class ContentBlocklistService {
       _severedFollowers.addAll(list);
       Log.info(
         'Loaded ${list.length} severed followers from persistence',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     } on Object catch (e) {
       Log.error(
         'Failed to load persisted severed followers: $e',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     }
@@ -176,7 +176,7 @@ class ContentBlocklistService {
     } on Object catch (e) {
       Log.error(
         'Failed to persist severed followers: $e',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     }
@@ -198,7 +198,7 @@ class ContentBlocklistService {
       unawaited(_saveSeveredFollowers());
       Log.debug(
         'Removed severed follower: $pubkey',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     }
@@ -212,7 +212,7 @@ class ContentBlocklistService {
     if (signer == null || nostrClient == null) {
       Log.debug(
         'Cannot publish block list - Nostr services not yet injected',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
       return;
@@ -221,7 +221,7 @@ class ContentBlocklistService {
     if (!signer.isAuthenticated) {
       Log.warning(
         'Cannot publish block list - user not authenticated',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
       return;
@@ -251,13 +251,13 @@ class ContentBlocklistService {
           Log.info(
             'Published block list to Nostr with '
             '${_runtimeBlocklist.length} entries',
-            name: 'ContentBlocklistService',
+            name: 'ContentBlocklistRepository',
             category: LogCategory.system,
           );
         } else {
           Log.warning(
             'Failed to publish block list event to relays',
-            name: 'ContentBlocklistService',
+            name: 'ContentBlocklistRepository',
             category: LogCategory.system,
           );
         }
@@ -265,7 +265,7 @@ class ContentBlocklistService {
     } on Object catch (e) {
       Log.error(
         'Error publishing block list to Nostr: $e',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     }
@@ -318,7 +318,7 @@ class ContentBlocklistService {
     if (selfPubkey != null && pubkey == selfPubkey) {
       Log.warning(
         'Attempted to block self - ignoring',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
       return;
@@ -332,7 +332,7 @@ class ContentBlocklistService {
 
       Log.debug(
         'Added user to blocklist: $pubkey',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     }
@@ -359,7 +359,7 @@ class ContentBlocklistService {
 
       Log.info(
         'Removed user from blocklist: $pubkey',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
       // coverage:ignore-start
@@ -369,7 +369,7 @@ class ContentBlocklistService {
       // moderation blocks are re-introduced.
       Log.warning(
         'Cannot unblock user from internal blocklist: $pubkey',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
       // coverage:ignore-end
@@ -424,7 +424,7 @@ class ContentBlocklistService {
 
       Log.debug(
         'Cleared all runtime blocks',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     }
@@ -452,7 +452,7 @@ class ContentBlocklistService {
     if (_mutualMuteSyncStarted) {
       Log.debug(
         'Mutual mute sync already started, skipping',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
       return;
@@ -465,7 +465,7 @@ class ContentBlocklistService {
 
     Log.info(
       'Starting mutual mute list sync for pubkey: $ourPubkey',
-      name: 'ContentBlocklistService',
+      name: 'ContentBlocklistRepository',
       category: LogCategory.system,
     );
 
@@ -485,13 +485,13 @@ class ContentBlocklistService {
 
       Log.info(
         'Mutual mute subscription created: $_mutualMuteSubscriptionId',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     } on Object catch (e) {
       Log.error(
         'Failed to start mutual mute sync: $e',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     }
@@ -525,7 +525,7 @@ class ContentBlocklistService {
     if (_blockListSyncStarted) {
       Log.debug(
         'Block list sync already started, skipping',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
       return;
@@ -537,7 +537,7 @@ class ContentBlocklistService {
 
     Log.info(
       'Starting block list sync for pubkey: $ourPubkey',
-      name: 'ContentBlocklistService',
+      name: 'ContentBlocklistRepository',
       category: LogCategory.system,
     );
 
@@ -561,13 +561,13 @@ class ContentBlocklistService {
 
       Log.info(
         'Block list subscription created (includes own block list restore)',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     } on Object catch (e) {
       Log.error(
         'Failed to start block list sync: $e',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
     }
@@ -579,7 +579,7 @@ class ContentBlocklistService {
     if (event.kind != 10000) {
       Log.warning(
         'Received non-10000 event in mute list handler: ${event.kind}',
-        name: 'ContentBlocklistService',
+        name: 'ContentBlocklistRepository',
         category: LogCategory.system,
       );
       return;
@@ -603,7 +603,7 @@ class ContentBlocklistService {
         _notifyChanged();
         Log.info(
           'Added mutual mute: $muterPubkey',
-          name: 'ContentBlocklistService',
+          name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );
       }
@@ -614,7 +614,7 @@ class ContentBlocklistService {
         _notifyChanged();
         Log.info(
           'Removed mutual mute (unmuted): $muterPubkey',
-          name: 'ContentBlocklistService',
+          name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );
       }
@@ -671,7 +671,7 @@ class ContentBlocklistService {
     Log.info(
       'Restored ${added.length} blocks from relay '
       '(total: ${_runtimeBlocklist.length})',
-      name: 'ContentBlocklistService',
+      name: 'ContentBlocklistRepository',
       category: LogCategory.system,
     );
   }
@@ -698,7 +698,7 @@ class ContentBlocklistService {
         _notifyChanged();
         Log.info(
           'Detected block from user: $blockerPubkey',
-          name: 'ContentBlocklistService',
+          name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );
       }
@@ -708,7 +708,7 @@ class ContentBlocklistService {
         _notifyChanged();
         Log.info(
           'Detected unblock from user: $blockerPubkey',
-          name: 'ContentBlocklistService',
+          name: 'ContentBlocklistRepository',
           category: LogCategory.system,
         );
       }

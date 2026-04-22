@@ -39,7 +39,7 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
   final nip98AuthService = ref.watch(nip98AuthServiceProvider);
   final userPubkey = authService.currentPublicKeyHex ?? '';
 
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistService = ref.watch(contentBlocklistRepositoryProvider);
   return NotificationRepository(
     funnelcakeApiClient: funnelcakeApiClient,
     profileRepository: profileRepository,

@@ -2,7 +2,7 @@
 // ABOUTME: Verifies service delegation, return values, and error handling.
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,8 +13,8 @@ import 'package:openvine/services/content_reporting_service.dart';
 class _MockContentReportingService extends Mock
     implements ContentReportingService {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
@@ -28,12 +28,12 @@ void main() {
 
   group(ConversationActionsCubit, () {
     late _MockContentReportingService mockReportingService;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistService;
     late _MockDmRepository mockDmRepo;
 
     setUp(() {
       mockReportingService = _MockContentReportingService();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistService = _MockContentBlocklistRepository();
       mockDmRepo = _MockDmRepository();
     });
 
@@ -41,7 +41,7 @@ void main() {
       ContentReportingService? reportingService,
     }) => ConversationActionsCubit(
       contentReportingService: reportingService ?? mockReportingService,
-      contentBlocklistService: mockBlocklistService,
+      contentBlocklistRepository: mockBlocklistService,
       dmRepository: mockDmRepo,
       currentUserPubkey: currentUserPubkey,
     );
@@ -53,7 +53,7 @@ void main() {
     });
 
     group('isBlocked', () {
-      test('delegates to ContentBlocklistService', () {
+      test('delegates to ContentBlocklistRepository', () {
         when(() => mockBlocklistService.isBlocked(pubkey)).thenReturn(true);
 
         final cubit = createCubit();
@@ -104,7 +104,7 @@ void main() {
         'returns false when reporting service is null',
         build: () => ConversationActionsCubit(
           contentReportingService: null,
-          contentBlocklistService: mockBlocklistService,
+          contentBlocklistRepository: mockBlocklistService,
           dmRepository: mockDmRepo,
           currentUserPubkey: currentUserPubkey,
         ),

@@ -306,7 +306,7 @@ class VideoEvents extends _$VideoEvents {
 
     // Always emit current events if available (no reordering - preserve insertion order)
     // Create defensive copy, filtering blocked users and unsupported platforms
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistService = ref.read(contentBlocklistRepositoryProvider);
     final currentEvents = service.filterVideoList(
       service.discoveryVideos
           .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
@@ -403,7 +403,7 @@ class VideoEvents extends _$VideoEvents {
     // Store pending events for debounced emission (no reordering - preserve order)
     // Filter for platform support and blocked users
     // Create defensive copy ONLY when contents changed
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistService = ref.read(contentBlocklistRepositoryProvider);
     _pendingEvents = service.filterVideoList(
       newEvents
           .where((v) => v.isSupportedOnCurrentPlatform)

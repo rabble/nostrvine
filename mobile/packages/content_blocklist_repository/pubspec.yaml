@@ -1,6 +1,6 @@
-name: content_blocklist_service
+name: content_blocklist_repository
 description: >
-  Service for managing content blocklists (blocked users, mutual mutes,
+  Repository for managing content blocklists (blocked users, mutual mutes,
   block-list sync to Nostr kind 30000).
 version: 0.0.1
 publish_to: none

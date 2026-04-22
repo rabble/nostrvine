@@ -198,7 +198,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     }
 
     // Check if video author has muted us (mutual mute blocking)
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final blocklistService = ref.watch(contentBlocklistRepositoryProvider);
     if (blocklistService.shouldFilterFromFeeds(_video!.pubkey)) {
       return Scaffold(
         backgroundColor: VineTheme.backgroundColor,

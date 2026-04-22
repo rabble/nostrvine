@@ -226,7 +226,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final videosRepository = ref.watch(videosRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final nostrService = ref.watch(nostrServiceProvider);
-    final contentBlocklistService = ref.watch(contentBlocklistServiceProvider);
+    final contentBlocklistRepository = ref.watch(
+      contentBlocklistRepositoryProvider,
+    );
     final currentUserPubkey = nostrService.publicKey;
 
     // Create BLoCs if not already created, or recreate if userIdHex changed
@@ -449,7 +451,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       return BlocProvider<OthersFollowersBloc>(
         create: (_) => OthersFollowersBloc(
           followRepository: followRepository,
-          contentBlocklistService: contentBlocklistService,
+          contentBlocklistRepository: contentBlocklistRepository,
           currentUserPubkey: currentUserPubkey,
         )..add(OthersFollowersListLoadRequested(widget.userIdHex)),
         child: content,

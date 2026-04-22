@@ -8,7 +8,7 @@ import 'dart:core';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:curation_service/curation_service.dart';
 import 'package:dm_repository/dm_repository.dart';
@@ -797,9 +797,9 @@ SeenVideosService seenVideosService(Ref ref) {
 /// provider auto-disposes, the subscription is lost, and blocks restored
 /// from the relay are never delivered to new instances.
 @Riverpod(keepAlive: true)
-ContentBlocklistService contentBlocklistService(Ref ref) {
+ContentBlocklistRepository contentBlocklistRepository(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return ContentBlocklistService(
+  return ContentBlocklistRepository(
     prefs: prefs,
     onChanged: () {
       if (!ref.mounted) return;
@@ -832,7 +832,7 @@ class BlocklistVersion extends _$BlocklistVersion {
 void blocklistSyncBridge(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   final nostrService = ref.watch(nostrServiceProvider);
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistService = ref.watch(contentBlocklistRepositoryProvider);
 
   Future<void> startSync() async {
     // Use authService.currentPublicKeyHex — it is available immediately
@@ -1391,7 +1391,7 @@ SubscriptionManager subscriptionManager(Ref ref) {
 VideoEventService videoEventService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final subscriptionManager = ref.watch(subscriptionManagerProvider);
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistService = ref.watch(contentBlocklistRepositoryProvider);
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final profileRepository = ref.watch(profileRepositoryProvider);
   final videoFilterBuilder = ref.watch(videoFilterBuilderProvider);
@@ -1652,7 +1652,7 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final env = ref.watch(currentEnvironmentProvider);
 
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistService = ref.watch(contentBlocklistRepositoryProvider);
   final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
@@ -2240,7 +2240,7 @@ DmRepository dmRepository(Ref ref) {
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistService = ref.watch(contentBlocklistRepositoryProvider);
   final repository = CommentsRepository(
     nostrClient: nostrClient,
     funnelcakeApiClient: funnelcakeClient,
@@ -2275,14 +2275,14 @@ VideoLocalStorage videoLocalStorage(Ref ref) {
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - VideoLocalStorage for cache-first lookups and caching results
-/// - ContentBlocklistService for filtering blocked/muted users
+/// - ContentBlocklistRepository for filtering blocked/muted users
 /// - ContentFilterService for filtering NSFW content based on user preferences
 /// - FunnelcakeApiClient for trending/popular video sorting
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final localStorage = ref.watch(videoLocalStorageProvider);
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistService = ref.watch(contentBlocklistRepositoryProvider);
   final contentFilterService = ref.watch(contentFilterServiceProvider);
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);

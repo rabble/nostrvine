@@ -3,7 +3,7 @@
 
 import 'dart:ui';
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -21,8 +21,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -35,7 +35,7 @@ void main() {
 
   group('VideoEventsProvider - Blocklist Filtering', () {
     late _MockNostrClient mockNostrClient;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistService;
     late _MockVideoEventService mockVideoEventService;
     late SharedPreferences sharedPreferences;
     late ProviderContainer container;
@@ -61,7 +61,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
       mockNostrClient = _MockNostrClient();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistService = _MockContentBlocklistRepository();
       mockVideoEventService = _MockVideoEventService();
 
       // Stub NostrClient
@@ -114,7 +114,7 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistServiceProvider.overrideWithValue(
+          contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistService,
           ),
           appReadyProvider.overrideWith((ref) => true),
@@ -157,7 +157,7 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistServiceProvider.overrideWithValue(
+          contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistService,
           ),
           appReadyProvider.overrideWith((ref) => true),
@@ -236,7 +236,7 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          contentBlocklistServiceProvider.overrideWithValue(
+          contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistService,
           ),
           appReadyProvider.overrideWith((ref) => true),

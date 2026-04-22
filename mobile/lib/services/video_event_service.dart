@@ -22,7 +22,7 @@ library;
 
 import 'dart:async';
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
@@ -206,7 +206,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   static const Duration _retryDelay = Duration(seconds: 10);
 
   // Optional services for enhanced functionality
-  ContentBlocklistService? _blocklistService;
+  ContentBlocklistRepository? _blocklistService;
   AgeVerificationService? _ageVerificationService;
   LikesRepository? _likesRepository;
   ContentFilterService? _contentFilterService;
@@ -291,7 +291,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   }
 
   /// Set the blocklist service for content filtering
-  void setBlocklistService(ContentBlocklistService blocklistService) {
+  void setBlocklistService(ContentBlocklistRepository blocklistService) {
     _blocklistService = blocklistService;
     Log.debug(
       'Blocklist service attached to VideoEventService',

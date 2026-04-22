@@ -2,7 +2,7 @@
 // ABOUTME: Tests cache+fresh pattern for viewing another user's profile
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -12,15 +12,15 @@ import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
 void main() {
   group('OtherProfileBloc', () {
     late _MockProfileRepository mockProfileRepository;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistService;
     late _MockFollowRepository mockFollowRepository;
 
     // Test data constants - using full 64-character hex pubkey as required
@@ -52,7 +52,7 @@ void main() {
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistService = _MockContentBlocklistRepository();
       mockFollowRepository = _MockFollowRepository();
 
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
@@ -65,7 +65,7 @@ void main() {
         OtherProfileBloc(
           profileRepository: mockProfileRepository,
           pubkey: pubkey,
-          contentBlocklistService: mockBlocklistService,
+          contentBlocklistRepository: mockBlocklistService,
           currentUserPubkey: testCurrentUserPubkey,
           followRepository: mockFollowRepository,
         );

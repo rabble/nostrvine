@@ -1,7 +1,7 @@
-// ABOUTME: Creates a VideoContentFilter from ContentBlocklistService.
+// ABOUTME: Creates a VideoContentFilter from ContentBlocklistRepository.
 // ABOUTME: Bridges app-level blocklist service to repository-level filter.
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 /// Creates a [BlockedVideoFilter] that delegates to [blocklistService].
@@ -9,7 +9,7 @@ import 'package:videos_repository/videos_repository.dart';
 /// This allows the [VideosRepository] to filter blocked content without
 /// depending directly on app-level services.
 BlockedVideoFilter createBlocklistFilter(
-  ContentBlocklistService blocklistService,
+  ContentBlocklistRepository blocklistService,
 ) {
   return blocklistService.shouldFilterFromFeeds;
 }

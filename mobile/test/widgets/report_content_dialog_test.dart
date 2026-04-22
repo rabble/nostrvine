@@ -3,7 +3,7 @@
 
 import 'dart:async';
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,8 +25,8 @@ import '../helpers/test_provider_overrides.dart';
 class _MockContentReportingService extends Mock
     implements ContentReportingService {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _MockMuteService extends Mock implements MuteService {}
 
@@ -42,7 +42,7 @@ void main() {
 
   late VideoEvent testVideo;
   late _MockContentReportingService mockReportingService;
-  late _MockContentBlocklistService mockBlocklistService;
+  late _MockContentBlocklistRepository mockBlocklistService;
   late _MockMuteService mockMuteService;
 
   setUp(() {
@@ -65,7 +65,7 @@ void main() {
 
     testVideo = VideoEvent.fromNostrEvent(testNostrEvent);
     mockReportingService = _MockContentReportingService();
-    mockBlocklistService = _MockContentBlocklistService();
+    mockBlocklistService = _MockContentBlocklistRepository();
     mockMuteService = _MockMuteService();
 
     // Setup default mock behavior
@@ -192,7 +192,7 @@ void main() {
             contentReportingServiceProvider.overrideWith(
               (ref) async => mockReportingService,
             ),
-            contentBlocklistServiceProvider.overrideWith(
+            contentBlocklistRepositoryProvider.overrideWith(
               (ref) => mockBlocklistService,
             ),
             muteServiceProvider.overrideWith((ref) async => mockMuteService),
@@ -300,7 +300,7 @@ void main() {
           contentReportingServiceProvider.overrideWith(
             (ref) async => mockReportingService,
           ),
-          contentBlocklistServiceProvider.overrideWith(
+          contentBlocklistRepositoryProvider.overrideWith(
             (ref) => mockBlocklistService,
           ),
           muteServiceProvider.overrideWith((ref) async => mockMuteService),
@@ -657,7 +657,7 @@ void main() {
           contentReportingServiceProvider.overrideWith(
             (ref) async => mockReportingService,
           ),
-          contentBlocklistServiceProvider.overrideWith(
+          contentBlocklistRepositoryProvider.overrideWith(
             (ref) => mockBlocklistService,
           ),
           muteServiceProvider.overrideWith((ref) async => mockMuteService),

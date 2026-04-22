@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,8 +24,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _FakeAppForeground extends AppForeground {
   _FakeAppForeground(this._isForeground);
@@ -50,14 +50,14 @@ class _FakeSeenVideosNotifier extends SeenVideosNotifier {
 ProviderContainer _createContainer({
   required _MockVideoEventService mockVideoEventService,
   required SharedPreferences sharedPreferences,
-  ContentBlocklistService? blocklistService,
+  ContentBlocklistRepository? blocklistService,
   bool appReady = true,
   bool tabActive = true,
   SeenVideosState seenState = SeenVideosState.initial,
 }) {
   final effectiveBlocklistService =
-      blocklistService ?? _MockContentBlocklistService();
-  if (effectiveBlocklistService is _MockContentBlocklistService) {
+      blocklistService ?? _MockContentBlocklistRepository();
+  if (effectiveBlocklistService is _MockContentBlocklistRepository) {
     when(
       () => effectiveBlocklistService.shouldFilterFromFeeds(any()),
     ).thenReturn(false);
@@ -71,7 +71,7 @@ ProviderContainer _createContainer({
       sharedPreferencesProvider.overrideWithValue(sharedPreferences),
 
       // Override blocklist service to avoid SharedPreferences dependency
-      contentBlocklistServiceProvider.overrideWithValue(
+      contentBlocklistRepositoryProvider.overrideWithValue(
         effectiveBlocklistService,
       ),
 

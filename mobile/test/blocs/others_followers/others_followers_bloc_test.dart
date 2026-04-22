@@ -4,7 +4,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:content_blocklist_service/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -12,13 +12,13 @@ import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   group('OthersFollowersBloc', () {
     late _MockFollowRepository mockFollowRepository;
-    late _MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistRepository mockBlocklistService;
     const testCurrentUserPubkey =
         'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
@@ -32,7 +32,7 @@ void main() {
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
-      mockBlocklistService = _MockContentBlocklistService();
+      mockBlocklistService = _MockContentBlocklistRepository();
 
       // Default: nothing is blocked
       when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
@@ -41,7 +41,7 @@ void main() {
 
     OthersFollowersBloc createBloc() => OthersFollowersBloc(
       followRepository: mockFollowRepository,
-      contentBlocklistService: mockBlocklistService,
+      contentBlocklistRepository: mockBlocklistService,
       currentUserPubkey: testCurrentUserPubkey,
     );
 

@@ -119,7 +119,7 @@ class ForYouFeed extends _$ForYouFeed {
       // Filter for platform compatibility, content preferences,
       // and blocked users
       final videoEventService = ref.read(videoEventServiceProvider);
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
+      final blocklistService = ref.read(contentBlocklistRepositoryProvider);
       final filteredVideos = videoEventService.filterVideoList(
         resultVideos
             .where((v) => v.isSupportedOnCurrentPlatform)
@@ -182,7 +182,7 @@ class ForYouFeed extends _$ForYouFeed {
       if (!ref.mounted) return;
 
       final videoEventService = ref.read(videoEventServiceProvider);
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
+      final blocklistService = ref.read(contentBlocklistRepositoryProvider);
       final filteredVideos = videoEventService.filterVideoList(
         resultVideos
             .where((v) => v.isSupportedOnCurrentPlatform)
