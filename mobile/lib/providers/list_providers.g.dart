@@ -65,7 +65,7 @@ final class UserListsProvider
   }
 }
 
-String _$userListsHash() => r'ccf1833e87a5d7cc2895fcfa7c1f7ed94b6fd00e';
+String _$userListsHash() => r'6e9c114c2c52d95c433c3eb6c7093c446f5dc6b9';
 
 /// Provider for all curated video lists (kind 30005)
 

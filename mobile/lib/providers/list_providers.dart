@@ -30,6 +30,10 @@ Stream<List<UserList>> userLists(Ref ref) {
     return Stream.value(const <UserList>[]);
   }
 
+  // Rebuild when auth state changes so sign-in / sign-out / account
+  // switches re-scope the stream to the new owner.
+  ref.watch(currentAuthStateProvider);
+
   final ownerPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
   if (ownerPubkey == null || ownerPubkey.isEmpty) {
     return Stream.value(const <UserList>[]);
