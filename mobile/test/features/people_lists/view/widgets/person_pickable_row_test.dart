@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/features/people_lists/models/people_list_candidate.dart';
 import 'package:openvine/features/people_lists/view/widgets/person_pickable_row.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 
@@ -17,17 +18,19 @@ void main() {
       required bool isSelected,
       required bool enabled,
       VoidCallback? onTap,
-      String displayName = 'Ada Lovelace',
-      String handle = '@ada',
+      String? displayName = 'Ada Lovelace',
+      String? handle = '@ada',
     }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: PersonPickableRow(
-            pubkey: _pubkey,
-            displayName: displayName,
-            handle: handle,
+            candidate: PeopleListCandidate(
+              pubkey: _pubkey,
+              displayName: displayName,
+              handle: handle,
+            ),
             isSelected: isSelected,
             enabled: enabled,
             onTap: onTap ?? () {},
@@ -138,6 +141,24 @@ void main() {
           'person_pickable_row_$_pubkey',
         );
         expect(semantics, findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'falls back to pubkey-derived display name when candidate has none',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            isSelected: false,
+            enabled: true,
+            displayName: null,
+            handle: null,
+          ),
+        );
+
+        expect(find.byType(PersonPickableRow), findsOneWidget);
+        // The pubkey itself is rendered as the handle fallback line.
+        expect(find.text(_pubkey), findsOneWidget);
       },
     );
   });

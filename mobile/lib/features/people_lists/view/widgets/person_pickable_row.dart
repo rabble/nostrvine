@@ -3,11 +3,13 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:models/models.dart';
+import 'package:openvine/features/people_lists/models/people_list_candidate.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
-/// A presentational row representing a candidate person for inclusion in a
-/// people list. Purely display-and-callback — it holds no bloc or provider
-/// references so it can be reused from any picker variant.
+/// A presentational row representing a [PeopleListCandidate] for inclusion
+/// in a people list. Purely display-and-callback — it holds no bloc or
+/// provider references so it can be reused from any picker variant.
 ///
 /// The row renders the user avatar, their display name, a secondary handle
 /// line, and a trailing [DivineSpriteCheckbox] reflecting [isSelected]. When
@@ -15,30 +17,17 @@ import 'package:openvine/widgets/user_avatar.dart';
 /// renders in its disabled state — used to indicate a candidate that is
 /// already a member of the target list.
 class PersonPickableRow extends StatelessWidget {
-  /// Creates a pickable-person row.
+  /// Creates a pickable-person row for the given [candidate].
   const PersonPickableRow({
-    required this.pubkey,
-    required this.displayName,
-    required this.handle,
+    required this.candidate,
     required this.isSelected,
     required this.enabled,
     required this.onTap,
-    this.avatarUrl,
     super.key,
   });
 
-  /// Full hex pubkey for this person. Never truncated.
-  final String pubkey;
-
-  /// Human-readable display name for the person.
-  final String displayName;
-
-  /// Secondary handle line (e.g. `@alice` or truncated npub).
-  final String handle;
-
-  /// Optional avatar URL. When null, the placeholder tone is derived by
-  /// [UserAvatar] itself.
-  final String? avatarUrl;
+  /// Candidate whose metadata drives the row's display.
+  final PeopleListCandidate candidate;
 
   /// Whether the candidate is currently selected for batch add.
   final bool isSelected;
@@ -49,6 +38,21 @@ class PersonPickableRow extends StatelessWidget {
 
   /// Called when the row is tapped. Ignored while [enabled] is `false`.
   final VoidCallback onTap;
+
+  /// Full hex pubkey for this person. Never truncated.
+  String get pubkey => candidate.pubkey;
+
+  /// Effective display name: either the resolved Kind 0 name or a
+  /// deterministic fallback derived from the pubkey.
+  String get displayName =>
+      candidate.displayName ?? UserProfile.defaultDisplayNameFor(pubkey);
+
+  /// Effective handle line: either the resolved handle or the full pubkey
+  /// as a stable fallback.
+  String get handle => candidate.handle ?? pubkey;
+
+  /// Optional avatar URL for the candidate.
+  String? get avatarUrl => candidate.avatarUrl;
 
   DivineCheckboxState get _checkboxState {
     if (!enabled) {

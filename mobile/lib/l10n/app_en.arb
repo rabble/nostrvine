@@ -1579,6 +1579,9 @@
       }
     }
   },
+  "peopleListsAddPeopleSearchHint": "Search people",
+  "peopleListsAddPeopleError": "Couldn't load people. Please try again.",
+  "peopleListsAddPeopleRetry": "Try again",
   "peopleListsAddButton": "Add",
   "peopleListsAddButtonWithCount": "Add {count}",
   "@peopleListsAddButtonWithCount": {

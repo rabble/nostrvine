@@ -5420,6 +5420,24 @@ abstract class AppLocalizations {
   /// **'Add to {name}'**
   String peopleListsAddToListName(String name);
 
+  /// No description provided for @peopleListsAddPeopleSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search people'**
+  String get peopleListsAddPeopleSearchHint;
+
+  /// No description provided for @peopleListsAddPeopleError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load people. Please try again.'**
+  String get peopleListsAddPeopleError;
+
+  /// No description provided for @peopleListsAddPeopleRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get peopleListsAddPeopleRetry;
+
   /// No description provided for @peopleListsAddButton.
   ///
   /// In en, this message translates to:

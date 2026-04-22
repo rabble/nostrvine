@@ -3049,6 +3049,16 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get peopleListsAddPeopleSearchHint => 'Search people';
+
+  @override
+  String get peopleListsAddPeopleError =>
+      'Couldn\'t load people. Please try again.';
+
+  @override
+  String get peopleListsAddPeopleRetry => 'Try again';
+
+  @override
   String get peopleListsAddButton => 'Add';
 
   @override
