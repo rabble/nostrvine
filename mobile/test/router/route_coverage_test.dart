@@ -2,6 +2,7 @@
 // ABOUTME: Prevents route definition/parsing drift that caused the relay-settings bug
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
@@ -298,6 +299,35 @@ void main() {
       });
     });
 
+    group('People list routes parse correctly', () {
+      test(
+        '${CreatePeopleListPage.path} parses to RouteType.peopleListCreate',
+        () {
+          final context = parseRoute(CreatePeopleListPage.path);
+          expect(context.type, RouteType.peopleListCreate);
+        },
+      );
+
+      test(
+        '/people-lists/list%3A123 parses to RouteType.peopleListMembers',
+        () {
+          final context = parseRoute('/people-lists/list%3A123');
+          expect(context.type, RouteType.peopleListMembers);
+          expect(context.listId, 'list:123');
+        },
+      );
+
+      test(
+        '/people-lists/list%3A123/add-people parses to '
+        'RouteType.peopleListAddPeople',
+        () {
+          final context = parseRoute('/people-lists/list%3A123/add-people');
+          expect(context.type, RouteType.peopleListAddPeople);
+          expect(context.listId, 'list:123');
+        },
+      );
+    });
+
     group('Standalone routes parse correctly', () {
       test('${WelcomeScreen.path} parses to RouteType.welcome', () {
         final context = parseRoute(WelcomeScreen.path);
@@ -378,6 +408,9 @@ void main() {
       'settings': SettingsScreen.path,
       'relay settings': RelaySettingsScreen.path,
       'invites': InvitesScreen.path,
+      'people list create': CreatePeopleListPage.path,
+      'people list members': '/people-lists/list%3A123',
+      'people list add people': '/people-lists/list%3A123/add-people',
     };
 
     for (final entry in roundTripCases.entries) {
@@ -423,6 +456,9 @@ void main() {
         RouteType.drafts: LibraryScreen.draftsPath,
         RouteType.welcome: WelcomeScreen.path,
         RouteType.videoDetail: VideoDetailScreen.pathForId('test_id'),
+        RouteType.peopleListCreate: CreatePeopleListPage.path,
+        RouteType.peopleListMembers: '/people-lists/list%3A123',
+        RouteType.peopleListAddPeople: '/people-lists/list%3A123/add-people',
       };
 
       for (final entry in routeTypeExamples.entries) {

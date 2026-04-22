@@ -1,6 +1,7 @@
 // ABOUTME: Derived provider that parses router location into structured context
 // ABOUTME: Single source of truth for "what page are we on?" with route types and parsing
 
+import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
@@ -86,6 +87,9 @@ enum RouteType {
   profileView, // Other user's profile (fullscreen, no bottom nav)
   curatedList, // Curated video list screen (NIP-51 kind 30005)
   discoverLists, // Discover public lists screen
+  peopleListCreate, // Create NIP-51 kind 30000 people list screen
+  peopleListMembers, // People list members and videos screen
+  peopleListAddPeople, // Full-screen picker for adding people to a list
   creatorAnalytics, // Creator analytics dashboard (profile owner)
   sound, // Sound detail screen for audio reuse
   originalSound, // Original sound detail screen (creator's own audio)
@@ -376,6 +380,25 @@ RouteContext parseRoute(String path) {
     case 'discover-lists':
       return const RouteContext(type: RouteType.discoverLists);
 
+    case 'people-lists':
+      if (segments.length > 1 && segments[1] == 'new') {
+        return const RouteContext(type: RouteType.peopleListCreate);
+      }
+      if (segments.length < 2) {
+        return const RouteContext(type: RouteType.home);
+      }
+      final peopleListId = Uri.decodeComponent(segments[1]);
+      if (segments.length > 2 && segments[2] == 'add-people') {
+        return RouteContext(
+          type: RouteType.peopleListAddPeople,
+          listId: peopleListId,
+        );
+      }
+      return RouteContext(
+        type: RouteType.peopleListMembers,
+        listId: peopleListId,
+      );
+
     case 'sound':
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
@@ -594,6 +617,17 @@ String buildRoute(RouteContext context) {
 
     case RouteType.discoverLists:
       return DiscoverListsScreen.path;
+
+    case RouteType.peopleListCreate:
+      return CreatePeopleListPage.path;
+
+    case RouteType.peopleListMembers:
+      final listId = Uri.encodeComponent(context.listId ?? '');
+      return '/people-lists/$listId';
+
+    case RouteType.peopleListAddPeople:
+      final listId = Uri.encodeComponent(context.listId ?? '');
+      return '/people-lists/$listId/add-people';
 
     case RouteType.creatorAnalytics:
       return CreatorAnalyticsScreen.path;
