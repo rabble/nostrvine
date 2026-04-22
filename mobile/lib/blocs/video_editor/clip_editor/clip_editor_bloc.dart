@@ -1,7 +1,6 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
@@ -10,32 +9,17 @@ import 'package:unified_logger/unified_logger.dart';
 part 'clip_editor_event.dart';
 part 'clip_editor_state.dart';
 
-/// Callback that executes the clip split operation and post-split
-/// side effects (rendered clip invalidation, autosave).
-///
-/// The BLoC handles clip list mutations locally; this callback only
-/// performs the async rendering work and returns the two resulting clips.
-typedef SplitExecutor =
-    Future<void> Function({
-      required DivineVideoClip sourceClip,
-      required Duration splitPosition,
-      required int currentClipIndex,
-    });
-
 /// BLoC for managing video clip editor state.
 ///
 /// Owns a local copy of the clip list so that all mutations (add, remove,
-/// reorder, split) happen in-memory without touching the Riverpod
+/// trim, split) happen in-memory without touching the Riverpod
 /// [ClipManagerProvider]. The parent screen syncs the final clip list
 /// back to the provider when the editor closes.
-///
-/// Supports undo/redo for clip mutations.
-///
 /// **Transition seam**: This BLoC receives its initial clip list from the
 /// Riverpod [ClipManagerProvider] via [ClipEditorInitialized] dispatched in
 /// the widget layer. This is an intentional migration boundary — the target
 /// architecture replaces the Riverpod provider with a [VideoEditorRepository]
-/// injected directly into this BLoC. See the follow-up migration issue.
+/// injected directly into this BLoC.
 class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   ClipEditorBloc({required void Function() this.onFinalClipInvalidated})
     : super(const ClipEditorState()) {
@@ -66,23 +50,6 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
   final void Function()? onFinalClipInvalidated;
 
-  /// Pushes the current clip list onto the undo stack and clears redo.
-  ClipEditorState _pushUndo(ClipEditorState s) {
-    final newUndo = [
-      ...s.undoStack,
-      ClipSnapshot(List.unmodifiable(s.clips)),
-    ];
-
-    // Trim oldest entries beyond the limit.
-    final trimmed = newUndo.length > VideoEditorConstants.maxUndoSteps
-        ? newUndo.sublist(
-            newUndo.length - VideoEditorConstants.maxUndoSteps,
-          )
-        : newUndo;
-
-    return s.copyWith(undoStack: trimmed, redoStack: const []);
-  }
-
   // === CLIP DATA ===
 
   void _onInitialized(
@@ -104,8 +71,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final index = state.clips.indexWhere((c) => c.id == event.clipId);
     if (index == -1) return;
 
-    final withUndo = _pushUndo(state);
-    final newClips = List<DivineVideoClip>.of(withUndo.clips)..removeAt(index);
+    final newClips = List<DivineVideoClip>.of(state.clips)..removeAt(index);
 
     Log.debug(
       '🗑️ Removed clip ${event.clipId} (${newClips.length} remaining)',
@@ -113,16 +79,15 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       category: LogCategory.video,
     );
 
-    emit(withUndo.copyWith(clips: List.unmodifiable(newClips)));
+    emit(state.copyWith(clips: List.unmodifiable(newClips)));
   }
 
   void _onClipInserted(
     ClipEditorClipInserted event,
     Emitter<ClipEditorState> emit,
   ) {
-    final withUndo = _pushUndo(state);
-    final newClips = List<DivineVideoClip>.of(withUndo.clips)
-      ..insert(event.index.clamp(0, withUndo.clips.length), event.clip);
+    final newClips = List<DivineVideoClip>.of(state.clips)
+      ..insert(event.index.clamp(0, state.clips.length), event.clip);
 
     Log.debug(
       '➕ Inserted clip ${event.clip.id} at index ${event.index}',
@@ -130,7 +95,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       category: LogCategory.video,
     );
 
-    emit(withUndo.copyWith(clips: List.unmodifiable(newClips)));
+    emit(state.copyWith(clips: List.unmodifiable(newClips)));
   }
 
   void _onClipUpdated(
@@ -166,16 +131,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       name: 'ClipEditorBloc',
       category: LogCategory.video,
     );
-
-    // During reorder we only update the visual index — the video player
-    // stays on the same clip, so don't reset player readiness.
     emit(
       state.copyWith(
         currentClipIndex: event.index,
-        isPlaying: false,
-        isPlayerReady: state.isReordering ? null : false,
-        hasPlayedOnce: state.isReordering ? null : false,
-        currentPosition: offset,
         splitPosition: Duration.zero,
       ),
     );
@@ -198,7 +156,6 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     emit(
       state.copyWith(
         isEditing: true,
-        isPlaying: false,
         splitPosition: clips[state.currentClipIndex].trimmedDuration ~/ 2,
       ),
     );
@@ -213,7 +170,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       name: 'ClipEditorBloc',
       category: LogCategory.video,
     );
-    emit(state.copyWith(isEditing: false, isPlaying: false));
+    emit(state.copyWith(isEditing: false));
   }
 
   void _onEditingToggled(
@@ -231,7 +188,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     ClipEditorSplitPositionChanged event,
     Emitter<ClipEditorState> emit,
   ) {
-    emit(state.copyWith(splitPosition: event.position, isPlaying: false));
+    emit(state.copyWith(splitPosition: event.position));
   }
 
   // === SPLIT ===
@@ -245,8 +202,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     );
     if (index == -1) return;
 
-    final withUndo = _pushUndo(state);
-    final newClips = List<DivineVideoClip>.of(withUndo.clips)
+    final newClips = List<DivineVideoClip>.of(state.clips)
       ..[index] = event.startClip
       ..insert(index + 1, event.endClip);
 
@@ -257,13 +213,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       category: LogCategory.video,
     );
 
-    emit(
-      withUndo.copyWith(
-        clips: List.unmodifiable(newClips),
-        isPlayerReady: false,
-        hasPlayedOnce: false,
-      ),
-    );
+    emit(state.copyWith(clips: List.unmodifiable(newClips)));
   }
 
   Future<void> _onSplitRequested(
@@ -299,7 +249,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     );
 
     // Stop editing mode
-    emit(state.copyWith(isEditing: false, isPlaying: false));
+    emit(state.copyWith(isEditing: false));
 
     try {
       await VideoEditorSplitService.splitClip(
@@ -383,14 +333,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         ? maxTrim - clampedStart
         : event.trimEnd;
 
-    final base = event.isStart ? _pushUndo(state) : state;
-    final newClips = List<DivineVideoClip>.of(base.clips);
+    final newClips = List<DivineVideoClip>.of(state.clips);
     newClips[index] = newClips[index].copyWith(
       trimStart: clampedStart,
       trimEnd: clampedEnd,
     );
 
-    emit(base.copyWith(clips: List.unmodifiable(newClips)));
+    emit(state.copyWith(clips: List.unmodifiable(newClips)));
   }
 
   void _onTrimDragStarted(

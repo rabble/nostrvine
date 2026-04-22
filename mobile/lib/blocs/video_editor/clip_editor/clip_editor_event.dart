@@ -121,8 +121,7 @@ class ClipEditorOriginalClipReplaced extends ClipEditorEvent {
 
 /// Request to split the currently selected clip at the current split position.
 ///
-/// Validates the split position, stops editing mode, and delegates the
-/// actual split execution to the injected [SplitExecutor].
+/// Validates the split position and stops editing mode before split.
 class ClipEditorSplitRequested extends ClipEditorEvent {
   const ClipEditorSplitRequested();
 }
@@ -131,9 +130,7 @@ class ClipEditorSplitRequested extends ClipEditorEvent {
 
 /// Update the trim boundaries of a clip.
 ///
-/// Pushes an undo entry on the first change of a drag gesture
-/// (when [isStart] is true). Subsequent updates during the same
-/// gesture are applied without additional undo entries.
+/// Applies updated trim values to the target clip.
 class ClipEditorTrimUpdated extends ClipEditorEvent {
   const ClipEditorTrimUpdated({
     required this.clipId,
@@ -151,7 +148,7 @@ class ClipEditorTrimUpdated extends ClipEditorEvent {
   /// Offset from the end of the original clip.
   final Duration trimEnd;
 
-  /// `true` on the first update of a drag gesture — triggers an undo push.
+  /// `true` on the first update of a drag gesture.
   final bool isStart;
 
   @override
