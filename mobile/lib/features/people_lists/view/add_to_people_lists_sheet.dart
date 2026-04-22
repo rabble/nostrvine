@@ -20,7 +20,9 @@ import 'package:openvine/l10n/l10n.dart';
 ///
 /// The sheet filters out read-only lists (`isEditable == false`). When
 /// there are no editable lists, an empty state offers a `Create list`
-/// affordance; Task 9 wires that button into `/people-lists/new`.
+/// affordance that opens `/people-lists/new?initialPubkey=<hex>` so the
+/// single create flow both creates the list and seeds it with the
+/// selected person.
 class AddToPeopleListsSheet extends StatelessWidget {
   /// Creates the sheet widget.
   const AddToPeopleListsSheet({
@@ -71,7 +73,7 @@ class AddToPeopleListsSheet extends StatelessWidget {
     );
 
     if (editableLists.isEmpty) {
-      return const _EmptyState();
+      return _EmptyState(pubkey: pubkey);
     }
 
     return ListView.builder(
@@ -91,7 +93,12 @@ class AddToPeopleListsSheet extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({required this.pubkey});
+
+  /// The full hex pubkey of the person the user was trying to add; the
+  /// Create list button threads this through to the create page as a
+  /// query param so the new list is seeded with this person on submit.
+  final String pubkey;
 
   @override
   Widget build(BuildContext context) {
@@ -119,12 +126,15 @@ class _EmptyState extends StatelessWidget {
             label: context.l10n.peopleListsCreateList,
             expanded: true,
             leadingIcon: DivineIconName.listPlus,
-            // Pop the sheet first so the push navigates the root Navigator,
-            // then push the full-screen create page. The sheet and the new
-            // page both rely on the ambient PeopleListsBloc.
+            // Capture the router BEFORE popping so the push navigates the
+            // root Navigator — the sheet's BuildContext is invalidated by
+            // pop and cannot be used afterwards.
             onPressed: () {
+              final router = GoRouter.of(context);
               Navigator.of(context).pop();
-              context.push(CreatePeopleListPage.path);
+              router.push(
+                CreatePeopleListPage.pathWithInitialPubkey(pubkey),
+              );
             },
           ),
         ],

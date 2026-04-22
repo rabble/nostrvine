@@ -20,13 +20,27 @@ import 'package:openvine/l10n/l10n.dart';
 /// rest of the UI reflects the new list immediately after dispatch.
 class CreatePeopleListPage extends StatefulWidget {
   /// Creates the create-list page.
-  const CreatePeopleListPage({super.key});
+  const CreatePeopleListPage({this.initialPubkey, super.key});
 
   /// GoRouter name for this route.
   static const routeName = 'people-list-create';
 
   /// GoRouter path template for this route.
   static const path = '/people-lists/new';
+
+  /// Builds the path + query string that opens this page and seeds the
+  /// new list with [pubkey] on submit.
+  ///
+  /// The pubkey is URI-encoded but never truncated; consumers pass the
+  /// full hex pubkey so the create flow can add the target person in
+  /// the same request.
+  static String pathWithInitialPubkey(String pubkey) =>
+      '$path?initialPubkey=${Uri.encodeQueryComponent(pubkey)}';
+
+  /// Optional pubkey to seed into the new list on submit. Threaded
+  /// through from `/people-lists/new?initialPubkey=<hex>` so the
+  /// create flow works as a single URL-reloadable operation.
+  final String? initialPubkey;
 
   @override
   State<CreatePeopleListPage> createState() => _CreatePeopleListPageState();
@@ -63,8 +77,15 @@ class _CreatePeopleListPageState extends State<CreatePeopleListPage> {
     if (name.isEmpty) {
       return;
     }
+    final initialPubkeys = switch (widget.initialPubkey) {
+      final value? when value.isNotEmpty => [value],
+      _ => const <String>[],
+    };
     context.read<PeopleListsBloc>().add(
-      PeopleListsCreateRequested(name: name),
+      PeopleListsCreateRequested(
+        name: name,
+        initialPubkeys: initialPubkeys,
+      ),
     );
     // Use Navigator.maybePop so the page works even when no GoRouter is
     // present (e.g., simple widget-test harnesses without MaterialApp.router).

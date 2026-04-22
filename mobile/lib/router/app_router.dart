@@ -531,10 +531,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // CREATE PEOPLE LIST route. Must come before /people-lists/:listId so
       // the literal `new` segment is not captured as a list id.
+      // `initialPubkey` query param lets callers (e.g., the share-video
+      // "Add to list" sheet) seed the new list with a target person in
+      // the same submit so the URL remains reloadable.
       GoRoute(
         path: CreatePeopleListPage.path,
         name: CreatePeopleListPage.routeName,
-        builder: (context, state) => const CreatePeopleListPage(),
+        builder: (context, state) => CreatePeopleListPage(
+          initialPubkey: state.uri.queryParameters['initialPubkey'],
+        ),
       ),
 
       // PEOPLE LIST MEMBERS route (NIP-51 kind 30000 people lists).

@@ -25,6 +25,9 @@ void main() {
     );
   });
 
+  const targetPubkey =
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
   group(CreatePeopleListPage, () {
     late _MockPeopleListsBloc bloc;
 
@@ -42,13 +45,13 @@ void main() {
       await bloc.close();
     });
 
-    Widget buildSubject() {
+    Widget buildSubject({String? initialPubkey}) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BlocProvider<PeopleListsBloc>.value(
           value: bloc,
-          child: const CreatePeopleListPage(),
+          child: CreatePeopleListPage(initialPubkey: initialPubkey),
         ),
       );
     }
@@ -130,6 +133,102 @@ void main() {
             const PeopleListsCreateRequested(name: 'Close Friends'),
           ),
         ).called(1);
+      },
+    );
+
+    testWidgets(
+      'tapping Create with an initialPubkey dispatches '
+      '$PeopleListsCreateRequested with the pubkey seeded into '
+      'initialPubkeys (untruncated)',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(initialPubkey: targetPubkey));
+
+        await tester.enterText(
+          find.byType(TextFormField),
+          'Close Friends',
+        );
+        await tester.pump();
+
+        await tester.tap(find.widgetWithText(DivineButton, 'Create'));
+        await tester.pump();
+
+        verify(
+          () => bloc.add(
+            const PeopleListsCreateRequested(
+              name: 'Close Friends',
+              initialPubkeys: [targetPubkey],
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'tapping Create with a null initialPubkey dispatches '
+      '$PeopleListsCreateRequested with an empty initialPubkeys list',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+
+        await tester.enterText(
+          find.byType(TextFormField),
+          'Solo',
+        );
+        await tester.pump();
+
+        await tester.tap(find.widgetWithText(DivineButton, 'Create'));
+        await tester.pump();
+
+        verify(
+          () => bloc.add(
+            const PeopleListsCreateRequested(
+              name: 'Solo',
+              // ignore: avoid_redundant_argument_values
+              initialPubkeys: [],
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'tapping Create with an empty string initialPubkey dispatches '
+      '$PeopleListsCreateRequested with an empty initialPubkeys list '
+      '(no throw)',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(initialPubkey: ''));
+
+        await tester.enterText(
+          find.byType(TextFormField),
+          'Solo',
+        );
+        await tester.pump();
+
+        await tester.tap(find.widgetWithText(DivineButton, 'Create'));
+        await tester.pump();
+
+        verify(
+          () => bloc.add(
+            const PeopleListsCreateRequested(
+              name: 'Solo',
+              // ignore: avoid_redundant_argument_values
+              initialPubkeys: [],
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'pathWithInitialPubkey builds a URL with URI-encoded, untruncated '
+      'pubkey',
+      () {
+        expect(
+          CreatePeopleListPage.pathWithInitialPubkey(targetPubkey),
+          equals(
+            '${CreatePeopleListPage.path}'
+            '?initialPubkey=${Uri.encodeQueryComponent(targetPubkey)}',
+          ),
+        );
       },
     );
   });
