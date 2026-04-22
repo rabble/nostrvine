@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
-import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Error overlay for videos playing through the pooled video player.
@@ -26,12 +26,29 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
     required this.video,
     required this.onRetry,
     required this.errorType,
+    this.shouldPortraitExpand = true,
+    this.isSquare = false,
     super.key,
   });
 
   final VideoEvent video;
   final VoidCallback onRetry;
   final VideoErrorType? errorType;
+
+  /// Mirrors `InfiniteVideoFeed.shouldPortraitExpand`. When `false`, the
+  /// thumbnail uses [BoxFit.contain] regardless of orientation so square
+  /// or letterboxed videos are not cropped.
+  final bool shouldPortraitExpand;
+
+  /// Whether the video is square (1:1). When `true` the thumbnail uses
+  /// [BoxFit.contain] to avoid stretching it across the full feed
+  /// viewport.
+  final bool isSquare;
+
+  BoxFit _resolveBoxFit() {
+    if (!shouldPortraitExpand) return BoxFit.contain;
+    return isSquare ? BoxFit.contain : BoxFit.cover;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -85,7 +102,20 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        VideoThumbnailWidget(video: video),
+        ColoredBox(
+          color: VineTheme.backgroundColor,
+          child: video.thumbnailUrl != null && video.thumbnailUrl!.isNotEmpty
+              ? SizedBox.expand(
+                  child: VineCachedImage(
+                    imageUrl: video.thumbnailUrl!,
+                    fit: _resolveBoxFit(),
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                    errorWidget: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                )
+              : const SizedBox.expand(),
+        ),
         ColoredBox(
           color: VineTheme.scrim50,
           child: Center(

@@ -223,11 +223,18 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             cubit.report(video.id, playbackStatusFromError(errorType));
           });
-          // FIXME: thumbnail always expand to fullscreen
+          // Mirror the BoxFit logic of VideoLoadingPlaceholder /
+          // VideoItemWidget so the error thumbnail respects the same
+          // square / portrait-expand rules as the live video.
+          final width = video.width;
+          final height = video.height;
+          final isSquare = width != null && height != null && width == height;
           return PooledVideoErrorOverlay(
             video: video,
             onRetry: onRetry,
             errorType: errorType,
+            shouldPortraitExpand: widget.shouldPortraitExpand,
+            isSquare: isSquare,
           );
         },
         overlayBuilder: (context, index, controller, {required bool isActive}) {
