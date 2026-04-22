@@ -283,6 +283,7 @@ class _MessageList extends StatelessWidget {
             context.l10n,
             message.createdAt,
             locale: Localizations.localeOf(context).toLanguageTag(),
+            use24Hour: MediaQuery.of(context).alwaysUse24HourFormat,
           ),
           isSent: isSent,
           isFirstInGroup: isFirstInGroup,

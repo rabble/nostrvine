@@ -117,10 +117,17 @@ abstract class LocalizedTimeFormatter {
 
   /// Formats a Unix timestamp (seconds) for message bubble
   /// timestamps with localized labels.
+  ///
+  /// When [use24Hour] is true, same-day timestamps render with a
+  /// 24-hour clock (`DateFormat.Hm`). Otherwise they use the locale's
+  /// preferred 12h/24h style via `DateFormat.jm`. Pass
+  /// `MediaQuery.of(context).alwaysUse24HourFormat` from the callsite
+  /// so the OS-level clock override is honoured.
   static String formatMessageTime(
     AppLocalizations l10n,
     int unixSeconds, {
     String? locale,
+    bool use24Hour = false,
   }) {
     final now = DateTime.now();
     final date = DateTime.fromMillisecondsSinceEpoch(
@@ -132,7 +139,11 @@ abstract class LocalizedTimeFormatter {
     if (diff.inSeconds < 60) return l10n.timeVerboseNow;
 
     final dayDiff = _calendarDayDiff(now, date);
-    if (dayDiff == 0) return DateFormat.jm(locale).format(date);
+    if (dayDiff == 0) {
+      return use24Hour
+          ? DateFormat.Hm(locale).format(date)
+          : DateFormat.jm(locale).format(date);
+    }
     return _formatByDayDiff(l10n, dayDiff, date, now, locale: locale);
   }
 
