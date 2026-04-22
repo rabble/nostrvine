@@ -2930,5 +2930,7 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}",
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
   "videoEditorAudioSegmentInstruction": "Selecione o trecho de áudio para seu vídeo",
-  "videoEditorClipGalleryInstruction": "Toque para editar. Pressione e arraste para reordenar."
+  "videoEditorClipGalleryInstruction": "Toque para editar. Pressione e arraste para reordenar.",
+  "navSearch": "Pesquisar",
+  "navSearchTooltip": "Pesquisar"
 }

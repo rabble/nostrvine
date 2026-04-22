@@ -3659,10 +3659,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navProfile => 'Profil';
 
   @override
-  String get navSearch => 'Search';
+  String get navSearch => 'Sök';
 
   @override
-  String get navSearchTooltip => 'Search';
+  String get navSearchTooltip => 'Sök';
 
   @override
   String get navMyProfile => 'Min profil';

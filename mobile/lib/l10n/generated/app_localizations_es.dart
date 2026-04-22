@@ -3706,10 +3706,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navProfile => 'Perfil';
 
   @override
-  String get navSearch => 'Search';
+  String get navSearch => 'Buscar';
 
   @override
-  String get navSearchTooltip => 'Search';
+  String get navSearchTooltip => 'Buscar';
 
   @override
   String get navMyProfile => 'Mi perfil';

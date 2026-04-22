@@ -3678,10 +3678,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get navProfile => 'Profiel';
 
   @override
-  String get navSearch => 'Search';
+  String get navSearch => 'Zoeken';
 
   @override
-  String get navSearchTooltip => 'Search';
+  String get navSearchTooltip => 'Zoeken';
 
   @override
   String get navMyProfile => 'Mijn profiel';

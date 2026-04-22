@@ -3774,10 +3774,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navProfile => 'Profil';
 
   @override
-  String get navSearch => 'Search';
+  String get navSearch => 'Caută';
 
   @override
-  String get navSearchTooltip => 'Search';
+  String get navSearchTooltip => 'Caută';
 
   @override
   String get navMyProfile => 'Profilul meu';

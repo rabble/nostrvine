@@ -3716,10 +3716,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navProfile => 'Profil';
 
   @override
-  String get navSearch => 'Search';
+  String get navSearch => 'Recherche';
 
   @override
-  String get navSearchTooltip => 'Search';
+  String get navSearchTooltip => 'Rechercher';
 
   @override
   String get navMyProfile => 'Mon profil';
