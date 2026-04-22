@@ -1,6 +1,7 @@
 // ABOUTME: TDD tests for VideoPrefetchMixin
 // ABOUTME: Verifies video prefetching behavior in PageView-based feeds
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -310,42 +311,44 @@ void main() {
       );
     });
 
-    test('SPEC: should allow prefetch after throttle period', () async {
-      final videos = _createMockVideos(10);
+    test('SPEC: should allow prefetch after throttle period', () {
+      fakeAsync((async) {
+        final videos = _createMockVideos(10);
 
-      final mixin = TestVideoPrefetchMixin(mockCache);
+        final mixin = TestVideoPrefetchMixin(mockCache);
 
-      // First call
-      mixin.checkForPrefetch(currentIndex: 3, videos: videos);
-      verify(
-        () => mockCache.preCacheFiles(
-          any(),
-          batchSize: any(named: 'batchSize'),
-          authHeadersProvider: any(named: 'authHeadersProvider'),
-        ),
-      ).called(1);
+        // First call
+        mixin.checkForPrefetch(currentIndex: 3, videos: videos);
+        verify(
+          () => mockCache.preCacheFiles(
+            any(),
+            batchSize: any(named: 'batchSize'),
+            authHeadersProvider: any(named: 'authHeadersProvider'),
+          ),
+        ).called(1);
 
-      reset(mockCache);
-      when(
-        () => mockCache.preCacheFiles(
-          any(),
-          batchSize: any(named: 'batchSize'),
-          authHeadersProvider: any(named: 'authHeadersProvider'),
-        ),
-      ).thenAnswer((_) async {});
+        reset(mockCache);
+        when(
+          () => mockCache.preCacheFiles(
+            any(),
+            batchSize: any(named: 'batchSize'),
+            authHeadersProvider: any(named: 'authHeadersProvider'),
+          ),
+        ).thenAnswer((_) async {});
 
-      // Wait for throttle period (default 1 second in test)
-      await Future.delayed(const Duration(milliseconds: 1100));
+        // Wait for throttle period (default 1 second in test)
+        async.elapse(const Duration(milliseconds: 1100));
 
-      // Second call should work now
-      mixin.checkForPrefetch(currentIndex: 4, videos: videos);
-      verify(
-        () => mockCache.preCacheFiles(
-          any(),
-          batchSize: any(named: 'batchSize'),
-          authHeadersProvider: any(named: 'authHeadersProvider'),
-        ),
-      ).called(1);
+        // Second call should work now
+        mixin.checkForPrefetch(currentIndex: 4, videos: videos);
+        verify(
+          () => mockCache.preCacheFiles(
+            any(),
+            batchSize: any(named: 'batchSize'),
+            authHeadersProvider: any(named: 'authHeadersProvider'),
+          ),
+        ).called(1);
+      });
     });
 
     test('SPEC: should handle prefetch errors gracefully', () {
