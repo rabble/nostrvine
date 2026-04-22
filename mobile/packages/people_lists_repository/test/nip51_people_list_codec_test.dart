@@ -257,6 +257,71 @@ void main() {
         expect(decoded.nostrEventId, equals(event.id));
         expect(decoded.nostrEventId, isNotEmpty);
       });
+
+      test('sets updatedAt to a UTC DateTime derived from createdAt', () {
+        final event = Event(
+          ownerPubkey,
+          30000,
+          const [
+            ['d', 'utc-check'],
+            ['p', memberPubkeyA],
+          ],
+          '',
+          createdAt: 1710000000,
+        );
+
+        final decoded = Nip51PeopleListCodec.decode(event)!;
+
+        expect(decoded.updatedAt.isUtc, isTrue);
+        expect(
+          decoded.updatedAt,
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(
+              1710000000 * 1000,
+              isUtc: true,
+            ),
+          ),
+        );
+      });
+
+      test('sets createdAt to a UTC DateTime derived from createdAt', () {
+        final event = Event(
+          ownerPubkey,
+          30000,
+          const [
+            ['d', 'utc-created'],
+            ['p', memberPubkeyA],
+          ],
+          '',
+          createdAt: 1710000000,
+        );
+
+        final decoded = Nip51PeopleListCodec.decode(event)!;
+
+        expect(decoded.createdAt.isUtc, isTrue);
+      });
+
+      test('returns a UserList with empty pubkeys when no p tags present', () {
+        // The codec itself does not filter by membership — empty
+        // member lists decode to a `UserList` with `pubkeys: []`.
+        // Callers (e.g. public search) are responsible for rejecting
+        // these when empty lists are not a meaningful result.
+        final event = Event(
+          ownerPubkey,
+          30000,
+          const [
+            ['d', 'no-members'],
+            ['title', 'No Members'],
+          ],
+          '',
+          createdAt: 1710000000,
+        );
+
+        final decoded = Nip51PeopleListCodec.decode(event);
+
+        expect(decoded, isNotNull);
+        expect(decoded!.pubkeys, isEmpty);
+      });
     });
   });
 }

@@ -3,10 +3,7 @@
 // ABOUTME(WIP): read-only query methods, and in-memory state populated by the
 // ABOUTME(WIP): Page layer. Persistence and relay sync come in later phases.
 
-import 'dart:developer';
-
 import 'package:curated_list_repository/src/curated_list_converter.dart';
-import 'package:curated_list_repository/src/user_list_converter.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -16,9 +13,6 @@ import 'package:rxdart/rxdart.dart';
 
 /// NIP-51 kind for curated video lists.
 const _curatedListKind = 30005;
-
-/// NIP-51 kind for people/user lists.
-const _peopleListKind = 30000;
 
 /// Well-known d-tag for the user's default "My List".
 const defaultListId = 'my_vine_list';
@@ -320,61 +314,6 @@ class CuratedListRepository {
       merged[list.id] = list;
     }
     yield List.unmodifiable(merged.values.toList());
-  }
-
-  /// Searches Nostr relays for people lists (kind 30000) matching [query].
-  ///
-  /// Yields results progressively:
-  /// 1. Relay results without avatar URLs
-  /// 2. (Future: avatar resolution — deferred until profile lookup is wired)
-  ///
-  /// Deduplicates by list ID (d-tag), keeping the newest version.
-  /// Empty lists (no pubkeys) are excluded.
-  Stream<List<UserList>> searchAllPeopleLists(String query) async* {
-    if (query.trim().isEmpty) return;
-
-    final lowerQuery = query.toLowerCase();
-
-    List<Event> events;
-    try {
-      events = await _nostrClient.queryEvents(
-        [
-          Filter(kinds: [_peopleListKind], limit: 50),
-        ],
-      );
-    } on Exception catch (e, stackTrace) {
-      log(
-        'searchAllPeopleLists: relay query failed for "$query": $e',
-        name: 'CuratedListRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
-    }
-
-    final seen = <String, UserList>{};
-    for (final event in events) {
-      final list = UserListConverter.fromEvent(event);
-      if (list == null) continue;
-      if (list.pubkeys.isEmpty) continue;
-
-      // Client-side query filter
-      final matches =
-          list.name.toLowerCase().contains(lowerQuery) ||
-          (list.description?.toLowerCase().contains(lowerQuery) ?? false);
-      if (!matches) continue;
-
-      // Dedup by d-tag, keep newest
-      final existing = seen[list.id];
-      if (existing != null && existing.updatedAt.isAfter(list.updatedAt)) {
-        continue;
-      }
-      seen[list.id] = list;
-    }
-
-    if (seen.isNotEmpty) {
-      yield List.unmodifiable(seen.values.toList());
-    }
   }
 
   // ---------------------------------------------------------------------------

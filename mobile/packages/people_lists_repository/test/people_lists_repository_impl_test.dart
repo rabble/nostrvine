@@ -617,6 +617,337 @@ void main() {
       );
     });
 
+    group('searchPublicLists', () {
+      // Second owner pubkey for multi-owner deduplication tests.
+      const secondOwner =
+          '4444444444444444444444444444444444444444444444444444444444444444';
+
+      Event peopleEvent({
+        required String pubkey,
+        required String dTag,
+        required String title,
+        required List<String> pubkeys,
+        String? description,
+        int? createdAt,
+      }) {
+        return Event(
+          pubkey,
+          _peopleListKind,
+          [
+            ['d', dTag],
+            ['title', title],
+            if (description != null) ['description', description],
+            for (final pk in pubkeys) ['p', pk],
+          ],
+          '',
+          createdAt: createdAt,
+        );
+      }
+
+      test(
+        'issues a kind 30000 relay query with the given limit',
+        () async {
+          final client = _MockNostrClient();
+          when(() => client.publicKey).thenReturn(_ownerPubkey);
+          when(
+            () => client.queryEvents(
+              any(),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => const []);
+
+          final repository = buildRepository(nostrClient: client);
+
+          await repository.searchPublicLists('anything', limit: 25).toList();
+
+          final capturedFilters = verify(
+            () => client.queryEvents(
+              captureAny(),
+              useCache: any(named: 'useCache'),
+            ),
+          ).captured.cast<List<Filter>>();
+          expect(capturedFilters, hasLength(1));
+          final filter = capturedFilters.single.single;
+          expect(filter.kinds, equals(const [_peopleListKind]));
+          expect(filter.limit, equals(25));
+        },
+      );
+
+      test('emits empty stream for a blank query', () async {
+        final client = _MockNostrClient();
+        final repository = buildRepository(nostrClient: client);
+
+        final emissions = await repository.searchPublicLists('').toList();
+
+        expect(emissions, isEmpty);
+        verifyNever(
+          () => client.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+      });
+
+      test('emits empty stream for a whitespace-only query', () async {
+        final client = _MockNostrClient();
+        final repository = buildRepository(nostrClient: client);
+
+        final emissions = await repository.searchPublicLists('   ').toList();
+
+        expect(emissions, isEmpty);
+      });
+
+      test('emits a single match with the owner pubkey preserved', () async {
+        final client = _MockNostrClient();
+        when(() => client.publicKey).thenReturn(_ownerPubkey);
+
+        final event = peopleEvent(
+          pubkey: _ownerPubkey,
+          dTag: 'punk-friends',
+          title: 'Punk Friends',
+          pubkeys: const [_memberA, _memberB],
+        );
+        when(
+          () => client.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => [event]);
+
+        final repository = buildRepository(nostrClient: client);
+
+        final emissions = await repository.searchPublicLists('punk').toList();
+
+        expect(emissions, hasLength(1));
+        final results = emissions.single;
+        expect(results, hasLength(1));
+        final result = results.single;
+        expect(result.ownerPubkey, equals(_ownerPubkey));
+        expect(result.ownerPubkey, hasLength(64));
+        expect(result.list.id, equals('punk-friends'));
+        expect(result.list.name, equals('Punk Friends'));
+        expect(result.list.pubkeys, equals(const [_memberA, _memberB]));
+        expect(
+          result.addressableId,
+          equals('$_peopleListKind:$_ownerPubkey:punk-friends'),
+        );
+      });
+
+      test('filters out lists with no pubkeys', () async {
+        final client = _MockNostrClient();
+        when(() => client.publicKey).thenReturn(_ownerPubkey);
+
+        final empty = peopleEvent(
+          pubkey: _ownerPubkey,
+          dTag: 'empty',
+          title: 'Empty Crew',
+          pubkeys: const [],
+        );
+        final full = peopleEvent(
+          pubkey: _ownerPubkey,
+          dTag: 'full',
+          title: 'Crew',
+          pubkeys: const [_memberA],
+        );
+        when(
+          () => client.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => [empty, full]);
+
+        final repository = buildRepository(nostrClient: client);
+
+        final emissions = await repository.searchPublicLists('crew').toList();
+
+        expect(emissions, hasLength(1));
+        expect(emissions.single, hasLength(1));
+        expect(emissions.single.single.list.id, equals('full'));
+      });
+
+      test('filters out the app block list (d=block)', () async {
+        final client = _MockNostrClient();
+        when(() => client.publicKey).thenReturn(_ownerPubkey);
+
+        final block = peopleEvent(
+          pubkey: _ownerPubkey,
+          dTag: 'block',
+          title: 'Crew',
+          pubkeys: const [_memberA],
+        );
+        when(
+          () => client.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => [block]);
+
+        final repository = buildRepository(nostrClient: client);
+
+        final emissions = await repository.searchPublicLists('crew').toList();
+
+        expect(emissions, isEmpty);
+      });
+
+      test(
+        'matches the query case-insensitively against name and description',
+        () async {
+          final client = _MockNostrClient();
+          when(() => client.publicKey).thenReturn(_ownerPubkey);
+
+          final byName = peopleEvent(
+            pubkey: _ownerPubkey,
+            dTag: 'by-name',
+            title: 'Punk Legends',
+            pubkeys: const [_memberA],
+          );
+          final byDescription = peopleEvent(
+            pubkey: _ownerPubkey,
+            dTag: 'by-desc',
+            title: 'Crew',
+            description: 'All the PUNK heroes',
+            pubkeys: const [_memberA],
+          );
+          final nonMatching = peopleEvent(
+            pubkey: _ownerPubkey,
+            dTag: 'other',
+            title: 'Jazz Friends',
+            pubkeys: const [_memberA],
+          );
+          when(
+            () => client.queryEvents(
+              any(),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => [byName, byDescription, nonMatching]);
+
+          final repository = buildRepository(nostrClient: client);
+
+          final emissions = await repository.searchPublicLists('PuNk').toList();
+
+          expect(emissions, hasLength(1));
+          final ids = emissions.single.map((r) => r.list.id).toList();
+          expect(ids, containsAll(<String>['by-name', 'by-desc']));
+          expect(ids, isNot(contains('other')));
+        },
+      );
+
+      test(
+        'deduplicates by addressable coordinate, not d tag alone',
+        () async {
+          // Two different owners both publish `d=friends` — these are
+          // distinct addressable events and must both survive.
+          final client = _MockNostrClient();
+          when(() => client.publicKey).thenReturn(_ownerPubkey);
+
+          final fromOwner = peopleEvent(
+            pubkey: _ownerPubkey,
+            dTag: 'friends',
+            title: 'Owner Friends',
+            pubkeys: const [_memberA],
+          );
+          final fromSecondOwner = peopleEvent(
+            pubkey: secondOwner,
+            dTag: 'friends',
+            title: 'Second Friends',
+            pubkeys: const [_memberB],
+          );
+          when(
+            () => client.queryEvents(
+              any(),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => [fromOwner, fromSecondOwner]);
+
+          final repository = buildRepository(nostrClient: client);
+
+          final emissions = await repository
+              .searchPublicLists('friends')
+              .toList();
+
+          expect(emissions, hasLength(1));
+          final results = emissions.single;
+          expect(results, hasLength(2));
+          final owners = results.map((r) => r.ownerPubkey).toSet();
+          expect(owners, equals({_ownerPubkey, secondOwner}));
+          final coordinates = results.map((r) => r.addressableId).toSet();
+          expect(
+            coordinates,
+            equals({
+              '$_peopleListKind:$_ownerPubkey:friends',
+              '$_peopleListKind:$secondOwner:friends',
+            }),
+          );
+        },
+      );
+
+      test(
+        'keeps the newest event when duplicates share an addressable '
+        'coordinate',
+        () async {
+          final client = _MockNostrClient();
+          when(() => client.publicKey).thenReturn(_ownerPubkey);
+
+          final older = peopleEvent(
+            pubkey: _ownerPubkey,
+            dTag: 'crew',
+            title: 'Crew',
+            pubkeys: const [_memberA],
+            createdAt: 1710000000,
+          );
+          final newer = peopleEvent(
+            pubkey: _ownerPubkey,
+            dTag: 'crew',
+            title: 'Crew Updated',
+            pubkeys: const [_memberA, _memberB],
+            createdAt: 1710000500,
+          );
+          when(
+            () => client.queryEvents(
+              any(),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => [older, newer]);
+
+          final repository = buildRepository(nostrClient: client);
+
+          final emissions = await repository.searchPublicLists('crew').toList();
+
+          expect(emissions, hasLength(1));
+          expect(emissions.single, hasLength(1));
+          expect(emissions.single.single.list.name, equals('Crew Updated'));
+          expect(
+            emissions.single.single.list.pubkeys,
+            equals(const [_memberA, _memberB]),
+          );
+        },
+      );
+
+      test('does not yield when no events match the query', () async {
+        final client = _MockNostrClient();
+        when(() => client.publicKey).thenReturn(_ownerPubkey);
+
+        final event = peopleEvent(
+          pubkey: _ownerPubkey,
+          dTag: 'jazz',
+          title: 'Jazz',
+          pubkeys: const [_memberA],
+        );
+        when(
+          () => client.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => [event]);
+
+        final repository = buildRepository(nostrClient: client);
+
+        final emissions = await repository.searchPublicLists('polka').toList();
+
+        expect(emissions, isEmpty);
+      });
+    });
+
     group('watchLists', () {
       test('emits cached lists on subscribe and after createList', () async {
         final client = _MockNostrClient();

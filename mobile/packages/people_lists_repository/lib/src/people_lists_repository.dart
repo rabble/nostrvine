@@ -3,6 +3,7 @@
 
 import 'package:models/models.dart';
 import 'package:people_lists_repository/src/people_list_publish_result.dart';
+import 'package:people_lists_repository/src/people_list_search_result.dart';
 
 /// Repository that owns NIP-51 kind `30000` people-list state.
 ///
@@ -65,5 +66,26 @@ abstract interface class PeopleListsRepository {
   Future<PeopleListPublishResult> deleteList({
     required String ownerPubkey,
     required String listId,
+  });
+
+  /// Searches public kind `30000` people lists on connected relays whose
+  /// decoded name or description contains [query] (case-insensitive).
+  ///
+  /// The stream emits **at most one** list of [PeopleListSearchResult], after
+  /// the relay query completes. When the query is blank, when the relay
+  /// returns no events, or when no decoded list matches the filters, the
+  /// stream closes without emitting.
+  ///
+  /// Results are filtered so that:
+  /// * lists with no `p` tag members are excluded,
+  /// * the app block list (`d=block`) is excluded,
+  /// * duplicates sharing the addressable coordinate
+  ///   (`kind:ownerPubkey:d-tag`) keep the newest by `updatedAt`.
+  ///
+  /// Two owners publishing a list with the same `d` tag both survive the
+  /// dedup — [PeopleListSearchResult.ownerPubkey] preserves the distinction.
+  Stream<List<PeopleListSearchResult>> searchPublicLists(
+    String query, {
+    int limit = 50,
   });
 }

@@ -10,6 +10,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:people_lists_repository/src/local_people_lists_cache.dart';
 import 'package:people_lists_repository/src/nip51_people_list_codec.dart';
 import 'package:people_lists_repository/src/people_list_publish_result.dart';
+import 'package:people_lists_repository/src/people_list_search_result.dart';
 import 'package:people_lists_repository/src/people_lists_repository.dart';
 
 /// Logger name for repository-level diagnostics.
@@ -188,6 +189,61 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
         stackTrace: stackTrace,
       );
       return PeopleListPublishResult.failed(error: error);
+    }
+  }
+
+  @override
+  Stream<List<PeopleListSearchResult>> searchPublicLists(
+    String query, {
+    int limit = 50,
+  }) async* {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+
+    final lowerQuery = trimmed.toLowerCase();
+
+    final List<Event> events;
+    try {
+      events = await _nostrClient.queryEvents(
+        [
+          Filter(kinds: const [Nip51PeopleListCodec.kind], limit: limit),
+        ],
+      );
+    } on Object catch (error, stackTrace) {
+      developer.log(
+        'Failed to query public people lists for "$trimmed"',
+        name: _logName,
+        level: _logLevelWarning,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+
+    final seen = <String, PeopleListSearchResult>{};
+    for (final event in events) {
+      final list = Nip51PeopleListCodec.decode(event);
+      if (list == null) continue;
+      if (list.pubkeys.isEmpty) continue;
+
+      final nameMatches = list.name.toLowerCase().contains(lowerQuery);
+      final descriptionMatches =
+          list.description?.toLowerCase().contains(lowerQuery) ?? false;
+      if (!nameMatches && !descriptionMatches) continue;
+
+      final result = PeopleListSearchResult(
+        ownerPubkey: event.pubkey,
+        list: list,
+      );
+      final existing = seen[result.addressableId];
+      if (existing != null && existing.list.updatedAt.isAfter(list.updatedAt)) {
+        continue;
+      }
+      seen[result.addressableId] = result;
+    }
+
+    if (seen.isNotEmpty) {
+      yield List.unmodifiable(seen.values.toList());
     }
   }
 
