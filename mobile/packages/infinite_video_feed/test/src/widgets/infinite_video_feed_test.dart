@@ -351,6 +351,32 @@ void main() {
       });
     });
 
+    group('overlayBuilder', () {
+      testWidgets('overlay is rendered when overlayBuilder is provided', (
+        tester,
+      ) async {
+        final videos = [_makeVideo('ov1')];
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              videos: videos,
+              cache: cache,
+              prefetchCount: 0,
+              overlayBuilder:
+                  (context, index, controller, {required isActive}) =>
+                      const Text('overlay'),
+            ),
+          ),
+        );
+
+        // Allow async initState to run; overlay should appear on first build.
+        await tester.pump();
+
+        expect(find.text('overlay'), findsOneWidget);
+      });
+    });
+
     group('scroll direction', () {
       testWidgets('horizontal scrollDirection renders PageView', (
         tester,
@@ -368,6 +394,94 @@ void main() {
         final pageView = tester.widget<PageView>(find.byType(PageView));
         expect(pageView.scrollDirection, equals(Axis.horizontal));
       });
+    });
+
+    group('animateToPage', () {
+      testWidgets('executes animation for non-empty list', (tester) async {
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos = List.generate(3, (i) => _makeVideo('v$i'));
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: videos,
+              cache: cache,
+              prefetchCount: 0,
+            ),
+          ),
+        );
+
+        // animateToPage on a non-empty list should not throw even though
+        // DivineVideoPlayerController cannot be initialized in tests.
+        expect(
+          () => key.currentState!.animateToPage(0),
+          returnsNormally,
+        );
+
+        // Drain the animation.
+        await tester.pumpAndSettle();
+        expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+      });
+    });
+
+    group('prefetch', () {
+      testWidgets('prefetchCount > 0 exercises _runPrefetch body', (
+        tester,
+      ) async {
+        final videos = List.generate(3, (i) => _makeVideo('v$i'));
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              videos: videos,
+              cache: cache,
+              // Non-zero prefetchCount causes _runPrefetch to proceed past
+              // the early-return guard and call DiskPrefetcher.run.
+              prefetchCount: 2,
+            ),
+          ),
+        );
+
+        // Allow async initState + prefetch to complete.
+        await tester.pumpAndSettle();
+
+        // Widget still renders correctly — mock cache absorbs the download
+        // calls and the prefetcher does not crash.
+        expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+      });
+    });
+
+    group('keepPreviousAlive', () {
+      testWidgets(
+        'initialises previous controller when starting at index > 0',
+        (tester) async {
+          final videos = List.generate(3, (i) => _makeVideo('v$i'));
+          final key = GlobalKey<InfiniteVideoFeedState>();
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                // Starting at index 1 means the keepPreviousAlive branch
+                // tries to initialise the controller at index 0.
+                initialIndex: 1,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // The widget survives the attempt to init controller at index 0
+          // (which fails gracefully because there are no platform channels).
+          expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+          expect(key.currentState!.currentIndex, equals(1));
+        },
+      );
     });
   });
 }

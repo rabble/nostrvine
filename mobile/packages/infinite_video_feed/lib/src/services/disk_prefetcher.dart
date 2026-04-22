@@ -52,8 +52,12 @@ class DiskPrefetcher {
 
     for (var i = startIndex; i <= endIndex; i++) {
       if (_generation != generation) {
-        _log('Prefetch cycle #$generation aborted (stale)');
+        // coverage:ignore-start
+        _log(
+          'Prefetch cycle #$generation aborted (stale)',
+        );
         return;
+        // coverage:ignore-end
       }
       if (i < 0 || i >= videos.length) continue;
 

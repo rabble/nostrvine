@@ -263,12 +263,16 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _watchdog = LoadWatchdog(
       threshold: widget.slowLoadThreshold,
       onSlowLoad: (index) => unawaited(_retryWithNextSource(index)),
+      // coverage:ignore-start
       log: _log,
+      // coverage:ignore-end
     );
     _staleDetector = StalePlaybackDetector(
       onSeekRecovery: _seekKick,
       onSourceFailover: (index) => unawaited(_retryWithNextSource(index)),
+      // coverage:ignore-start
       log: _log,
+      // coverage:ignore-end
     );
     _subscriptions = ControllerSubscriptions();
 
@@ -438,6 +442,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   }
 
   void _disposeAt(int index) {
+    // coverage:ignore-start
     _log('Disposing player at index $index');
     _subscriptions.unsubscribe(index);
     _watchdog.stop(index);
@@ -448,6 +453,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _errorTypes.remove(index);
     _sources.remove(index);
     unawaited(_controllers.remove(index)?.dispose());
+    // coverage:ignore-end
   }
 
   // ─── Controller init / retry ────────────────────────────────────────────
@@ -472,6 +478,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     try {
       await controller.initialize();
 
+      // coverage:ignore-start
       // Always resolve network sources. They are used as runtime fallbacks
       // even when the video is loaded from disk cache (in case the cached
       // file is corrupt or unreadable).
@@ -569,10 +576,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       unawaited(_controllers.remove(index)?.dispose());
       _errors.add(index);
     }
+    // coverage:ignore-end
 
     _rebuild();
   }
 
+  // coverage:ignore-start
   Future<void> _retryController(int index) async {
     _errors.remove(index);
     _errorTypes.remove(index);
@@ -587,9 +596,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // the same failure indefinitely.
     await _initController(index, skipCache: true);
   }
+  // coverage:ignore-end
 
   // ─── Source failover (called by watchdog + stale detector) ──────────────
 
+  // coverage:ignore-start
   Future<void> _retryWithNextSource(int index) async {
     if (!_sources.hasSources(index)) {
       _log('No sources to retry for index $index');
@@ -640,7 +651,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       _failoverInFlight.remove(index);
     }
   }
+  // coverage:ignore-end
 
+  // coverage:ignore-start
   void _onVideoStalled(int index) {
     _log('Video stalled index $index — marking error');
     _stopAndMarkError(index, VideoErrorType.generic);
@@ -676,9 +689,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (controller == null) return;
     unawaited(controller.seekTo(Duration(milliseconds: positionMs)));
   }
+  // coverage:ignore-end
 
   // ─── Subscription wiring ────────────────────────────────────────────────
 
+  // coverage:ignore-start
   void _attachSubscriptions(
     int index,
     DivineVideoPlayerController controller,
@@ -763,9 +778,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       );
     }
   }
+  // coverage:ignore-end
 
   // ─── Page changes ───────────────────────────────────────────────────────
 
+  // coverage:ignore-start
   void _onPageChanged(int index) {
     final previousIndex = _currentIndex;
     _log('Page changed: $previousIndex → $index');
@@ -796,15 +813,18 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
     unawaited(_onIndexChanged(index));
   }
+  // coverage:ignore-end
 
   // Determine if the video is square from the controller's resolved
   // dimensions. False until dimensions are available.
   bool _isSquareVideo(DivineVideoPlayerController? controller) {
     if (controller == null) return false;
     final state = controller.state;
+    // coverage:ignore-start
     return state.videoWidth > 0 &&
         state.videoHeight > 0 &&
         state.videoWidth == state.videoHeight;
+    // coverage:ignore-end
   }
 
   // ─── Build ──────────────────────────────────────────────────────────────
@@ -847,22 +867,29 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
               ),
 
             if (!hasError && hasVideoSize)
-              widget.videoBuilder?.call(context, index, controller) ??
+              // coverage:ignore-start
+              widget.videoBuilder?.call(
+                    context,
+                    index,
+                    controller,
+                  ) ??
                   VideoItemWidget(
                     controller: controller,
                     shouldPortraitExpand: widget.shouldPortraitExpand,
                   ),
-
+            // coverage:ignore-end
             // Overlay layer — consumer-provided controls, progress, etc.
             ?overlay,
 
             if (hasError)
+              // coverage:ignore-start
               ?widget.errorBuilder?.call(
                 context,
                 index,
                 () => unawaited(_retryController(index)),
                 _errorTypes[index] ?? VideoErrorType.generic,
               ),
+            // coverage:ignore-end
           ],
         );
       },

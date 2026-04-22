@@ -404,6 +404,63 @@ void main() {
 
         expect(events, isEmpty);
       });
+
+      test('cancels all four subscription types', () async {
+        final controller = FakeController();
+        var seekCalled = false;
+        var loopFired = false;
+        var dimCalled = false;
+
+        subs
+          ..subscribeToPlaybackErrors(
+            0,
+            controller,
+            isAlreadyError: () => false,
+            onError: (_, _) {},
+          )
+          ..subscribeToLoopEnforcement(
+            0,
+            controller,
+            maxLoopDuration: const Duration(seconds: 10),
+            isCurrent: () => true,
+            isSeekInProgress: () => false,
+            onSeekStarted: () {},
+            onPositionBelowMax: () {},
+            onSeekToZero: () => seekCalled = true,
+          )
+          ..subscribeToAutoAdvance(
+            0,
+            controller,
+            maxLoopDuration: const Duration(seconds: 10),
+            endThreshold: const Duration(milliseconds: 200),
+            startThreshold: const Duration(milliseconds: 100),
+            isCurrent: () => true,
+            onLoopCompleted: () => loopFired = true,
+          )
+          ..subscribeToDimensions(
+            0,
+            controller,
+            onDimensionsReady: () => dimCalled = true,
+          )
+          ..disposeAll();
+
+        // After disposeAll none of the callbacks should fire.
+        controller
+          ..pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(seconds: 11),
+            ),
+          )
+          ..pushState(
+            const DivineVideoPlayerState(videoWidth: 1920, videoHeight: 1080),
+          );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(seekCalled, isFalse);
+        expect(loopFired, isFalse);
+        expect(dimCalled, isFalse);
+      });
     });
   });
 }
