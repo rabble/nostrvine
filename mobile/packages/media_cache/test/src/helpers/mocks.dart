@@ -52,7 +52,8 @@ class TestableMediaCacheManager extends MediaCacheManager {
     String? key,
     Map<String, String>? headers,
     bool withProgress,
-  })? mockGetFileStream;
+  })?
+  mockGetFileStream;
 
   @override
   Future<FileInfo?> getFileFromCache(
