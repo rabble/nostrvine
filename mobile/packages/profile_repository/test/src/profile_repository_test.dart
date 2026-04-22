@@ -4286,6 +4286,122 @@ void main() {
           expect(emissions.last, hasLength(2));
         },
       );
+
+      test(
+        'filters blocked users from searchUsersLocally results',
+        () async {
+          const blockedPubkey =
+              'dddddddddddddddddddddddddddddddd'
+              'dddddddddddddddddddddddddddddddd';
+          final blockedProfile = UserProfile(
+            pubkey: blockedPubkey,
+            displayName: 'Blocked User',
+            rawData: const {'display_name': 'Blocked User'},
+            createdAt: DateTime(2026),
+            eventId: 'evt_blocked_local',
+          );
+          final allowedProfile = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Allowed User',
+            rawData: const {'display_name': 'Allowed User'},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          );
+
+          when(
+            () => mockUserProfilesDao.getAllProfiles(),
+          ).thenAnswer((_) async => [blockedProfile, allowedProfile]);
+
+          final repoWithBlockFilter = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            blockFilter: (pubkey) => pubkey == blockedPubkey,
+          );
+
+          final result = await repoWithBlockFilter.searchUsersLocally(
+            query: 'user',
+          );
+
+          expect(result.map((p) => p.pubkey), isNot(contains(blockedPubkey)));
+          expect(result, hasLength(1));
+          expect(result.first.pubkey, equals(testPubkey));
+        },
+      );
+
+      test(
+        'fetchFreshProfile returns null for a blocked pubkey',
+        () async {
+          const blockedPubkey =
+              'dddddddddddddddddddddddddddddddd'
+              'dddddddddddddddddddddddddddddddd';
+
+          final repoWithBlockFilter = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            blockFilter: (pubkey) => pubkey == blockedPubkey,
+          );
+
+          final result = await repoWithBlockFilter.fetchFreshProfile(
+            pubkey: blockedPubkey,
+          );
+
+          expect(result, isNull);
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+        },
+      );
+
+      test(
+        'fetchBatchProfiles excludes blocked pubkeys from map result',
+        () async {
+          const blockedPubkey =
+              'dddddddddddddddddddddddddddddddd'
+              'dddddddddddddddddddddddddddddddd';
+
+          final blockedEvent = MockEvent();
+          when(() => blockedEvent.kind).thenReturn(0);
+          when(() => blockedEvent.pubkey).thenReturn(blockedPubkey);
+          when(() => blockedEvent.createdAt).thenReturn(1704067200);
+          when(
+            () => blockedEvent.id,
+          ).thenReturn(
+            'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+          );
+          when(() => blockedEvent.content).thenReturn(
+            '{"display_name":"Blocked Batch User"}',
+          );
+
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockNostrClient.fetchProfile(blockedPubkey),
+          ).thenAnswer((_) async => blockedEvent);
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => mockProfileEvent);
+
+          when(
+            () => mockUserProfilesDao.upsertProfiles(any()),
+          ).thenAnswer((_) async {});
+
+          final repoWithBlockFilter = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            blockFilter: (pubkey) => pubkey == blockedPubkey,
+          );
+
+          final result = await repoWithBlockFilter.fetchBatchProfiles(
+            pubkeys: [blockedPubkey, testPubkey],
+          );
+
+          expect(result.containsKey(blockedPubkey), isFalse);
+          expect(result.containsKey(testPubkey), isTrue);
+        },
+      );
     });
   });
 }

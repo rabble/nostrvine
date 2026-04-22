@@ -106,11 +106,16 @@ class ProfileRepository {
                 (profile.about?.toLowerCase().contains(queryLower) ?? false);
           }).toList();
 
-    if (limit != null && filtered.length > limit) {
-      return filtered.sublist(0, limit);
+    final blockFilter = _blockFilter;
+    final unblocked = blockFilter == null
+        ? filtered
+        : filtered.where((p) => !blockFilter(p.pubkey)).toList();
+
+    if (limit != null && unblocked.length > limit) {
+      return unblocked.sublist(0, limit);
     }
 
-    return filtered;
+    return unblocked;
   }
 
   /// Counts cached profiles matching [query] without performing remote search.
@@ -274,6 +279,8 @@ class ProfileRepository {
   }
 
   Future<UserProfile?> _doFetchFreshProfile(String pubkey) async {
+    if (_blockFilter?.call(pubkey) ?? false) return null;
+
     // Step 1: Try Funnelcake REST API (fast, broad coverage).
     if (_funnelcakeApiClient?.isAvailable ?? false) {
       try {
@@ -1115,6 +1122,11 @@ class ProfileRepository {
     // single-profile fetches skip the relay/indexer cascade.
     if (remaining.isNotEmpty) {
       _confirmedMissing.addAll(remaining);
+    }
+
+    final blockFilter = _blockFilter;
+    if (blockFilter != null) {
+      results.removeWhere((pubkey, _) => blockFilter(pubkey));
     }
 
     developer.log(

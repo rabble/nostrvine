@@ -4693,7 +4693,7 @@ final class CommentsRepositoryProvider
 }
 
 String _$commentsRepositoryHash() =>
-    r'aac5ae89576a1ec2fb282db45374990a3b253594';
+    r'eb9959a2961169b6455a809d5ff61437fee2de40';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///
