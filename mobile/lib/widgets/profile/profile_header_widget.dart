@@ -381,7 +381,7 @@ class _UniqueIdentifier extends ConsumerWidget {
         ClipboardUtils.copy(
           context,
           profileUrl,
-          message: 'Profile link copied',
+          message: context.l10n.profileLinkCopied,
         );
       },
       child: Text(
@@ -482,7 +482,9 @@ class _AboutTextState extends State<_AboutText> {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    _isExpanded ? 'Show less' : 'Show more',
+                    _isExpanded
+                        ? context.l10n.profileShowLess
+                        : context.l10n.profileShowMore,
                     style: VineTheme.bodySmallFont(color: VineTheme.vineGreen),
                   ),
                 ),

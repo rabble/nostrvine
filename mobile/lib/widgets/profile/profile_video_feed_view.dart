@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -110,7 +111,7 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
     final contextTitle = ref
         .watch(fetchUserProfileProvider(widget.userIdHex))
         .value
-        ?.betterDisplayName('Profile');
+        ?.betterDisplayName(context.l10n.profileTitle);
 
     return PooledFullscreenVideoFeedScreen(
       // Pass the raw broadcast stream — seeding happened in initState.

@@ -159,12 +159,13 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     final l10n = context.l10n;
     final shareTextFn = l10n.profileShareText;
     final shareSubjectFn = l10n.profileShareSubject;
+    final fallbackName = l10n.profileUserFallback;
 
     try {
       final profile = await ref
           .read(profileRepositoryProvider)
           ?.getCachedProfile(pubkey: widget.pubkey);
-      final displayName = profile?.bestDisplayName ?? 'User';
+      final displayName = profile?.bestDisplayName ?? fallbackName;
       final npub = NostrKeyUtils.encodePubKey(widget.pubkey);
       final shareText = shareTextFn(displayName, npub);
 
@@ -190,6 +191,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   }
 
   Future<void> _more() async {
+    final l10n = context.l10n;
+    final fallbackName = l10n.profileUserFallback;
     final otherProfileBloc = context.read<OtherProfileBloc>();
     final isBlocked = otherProfileBloc.isBlocked;
     final isFollowing = otherProfileBloc.isFollowing;
@@ -197,7 +200,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     // Get display name for actions (match pattern from build())
     final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
     final displayName =
-        profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
+        profile?.bestDisplayName ?? widget.displayNameHint ?? fallbackName;
 
     final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
@@ -232,12 +235,14 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               .read(userProfileReactiveProvider(widget.pubkey))
               .value;
           final name =
-              profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+              profile?.bestDisplayName ??
+              widget.displayNameHint ??
+              fallbackName;
           // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(
-            SnackBar(content: Text(context.l10n.profileBlockedUser(name))),
+            SnackBar(content: Text(l10n.profileBlockedUser(name))),
           );
           context.pop();
         }
@@ -250,13 +255,15 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               .read(userProfileReactiveProvider(widget.pubkey))
               .value;
           final name =
-              profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+              profile?.bestDisplayName ??
+              widget.displayNameHint ??
+              fallbackName;
           // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(
             SnackBar(
-              content: Text(context.l10n.profileUnblockedUser(name)),
+              content: Text(l10n.profileUnblockedUser(name)),
             ),
           );
         }
@@ -264,9 +271,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   }
 
   Future<void> _unfollowUser() async {
+    final fallbackName = context.l10n.profileUserFallback;
     final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
     final displayName =
-        profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
+        profile?.bestDisplayName ?? widget.displayNameHint ?? fallbackName;
 
     final followRepository = ref.read(followRepositoryProvider);
     await followRepository.toggleFollow(widget.pubkey);
@@ -283,9 +291,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   }
 
   Future<void> _showUnblockConfirmation() async {
+    final fallbackName = context.l10n.profileUserFallback;
     final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
     final displayName =
-        profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
+        profile?.bestDisplayName ?? widget.displayNameHint ?? fallbackName;
 
     final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
