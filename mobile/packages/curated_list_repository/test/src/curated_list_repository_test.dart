@@ -1296,13 +1296,15 @@ void main() {
         expect(results, isEmpty);
       });
 
-      test('returns empty stream on relay exception', () async {
+      test('propagates relay exception', () async {
         when(
           () => nostrClient.queryEvents(any()),
         ).thenThrow(Exception('relay error'));
 
-        final results = await repository.searchAllPeopleLists('vine').toList();
-        expect(results, isEmpty);
+        expect(
+          repository.searchAllPeopleLists('vine').toList(),
+          throwsA(isA<Exception>()),
+        );
       });
 
       test('returns matching people list', () async {

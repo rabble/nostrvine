@@ -220,6 +220,32 @@ void main() {
       );
 
       blocTest<ListSearchBloc, ListSearchState>(
+        'emits failure on exception from people stream',
+        setUp: () {
+          when(
+            () => curatedListRepository.searchAllLists(any()),
+          ).thenAnswer((_) => const Stream.empty());
+          when(
+            () => curatedListRepository.searchAllPeopleLists(any()),
+          ).thenAnswer((_) => Stream.error(Exception('relay down')));
+        },
+        build: () => buildBloc(peopleEnabled: true),
+        act: (bloc) => bloc.add(const ListSearchQueryChanged('test')),
+        wait: const Duration(milliseconds: 400),
+        expect: () => [
+          const ListSearchState(
+            status: ListSearchStatus.loading,
+            query: 'test',
+          ),
+          const ListSearchState(
+            status: ListSearchStatus.failure,
+            query: 'test',
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<ListSearchBloc, ListSearchState>(
         're-searches when same query is dispatched in failure state',
         setUp: () {
           when(

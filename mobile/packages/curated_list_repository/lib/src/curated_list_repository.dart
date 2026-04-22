@@ -349,7 +349,7 @@ class CuratedListRepository {
         error: e,
         stackTrace: stackTrace,
       );
-      return;
+      rethrow;
     }
 
     final seen = <String, UserList>{};
