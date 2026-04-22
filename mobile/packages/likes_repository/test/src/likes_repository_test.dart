@@ -265,7 +265,7 @@ void main() {
             authorPubkey: testAuthorPubkey,
             addressableId: any(named: 'addressableId'),
             targetKind: any(named: 'targetKind'),
-            content: '+',
+
             policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
@@ -315,7 +315,7 @@ void main() {
             authorPubkey: testAuthorPubkey,
             addressableId: testAddressableId,
             targetKind: 34236,
-            content: '+',
+
             policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
@@ -922,7 +922,7 @@ void main() {
             authorPubkey: testAuthorPubkey,
             addressableId: testAddressableId,
             targetKind: 34236,
-            content: '+',
+
             policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
@@ -2561,7 +2561,7 @@ void main() {
             policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => acceptedOutcome(id: testReactionEventId));
+        ).thenAnswer((_) async => acceptedOutcome());
 
         repository = createRepository();
 
@@ -2596,7 +2596,7 @@ void main() {
             policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => acceptedOutcome(id: testReactionEventId));
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -2672,7 +2672,7 @@ void main() {
             policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => acceptedOutcome(id: testReactionEventId));
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockNostrClient.deleteEventAwaitOk(
             any(),
@@ -2779,7 +2779,7 @@ void main() {
             policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => acceptedOutcome(id: testReactionEventId));
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockNostrClient.deleteEventAwaitOk(
             any(),
@@ -2849,7 +2849,7 @@ void main() {
             policy: any(named: 'policy'),
             targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => acceptedOutcome(id: testReactionEventId));
+        ).thenAnswer((_) async => acceptedOutcome());
         when(
           () => mockNostrClient.deleteEventAwaitOk(
             any(),

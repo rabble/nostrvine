@@ -369,7 +369,7 @@ class LikesRepository {
       authorPubkey: authorPubkey,
       addressableId: addressableId,
       targetKind: targetKind,
-      content: _likeContent,
+
       policy: const RetryPolicy(),
     );
 
@@ -888,7 +888,13 @@ class LikesRepository {
       );
 
       return outcome.eventId;
-    } catch (_) {
+    } catch (error, stackTrace) {
+      developer.log(
+        'Downvote publish failed; rolling back optimistic record',
+        name: 'LikesRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       _downvoteRecords.remove(eventId);
       _emitDownvotedIds();
       rethrow;
@@ -936,7 +942,13 @@ class LikesRepository {
           feedback: PublishResultMapper.map(outcome),
         );
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      developer.log(
+        'Downvote deletion failed; restoring optimistic record',
+        name: 'LikesRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
       _downvoteRecords[eventId] = snapshotRecord;
       _emitDownvotedIds();
       rethrow;
