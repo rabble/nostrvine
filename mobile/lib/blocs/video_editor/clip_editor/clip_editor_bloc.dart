@@ -42,35 +42,17 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     // Clip data
     on<ClipEditorInitialized>(_onInitialized);
     on<ClipEditorClipRemoved>(_onClipRemoved);
-    on<ClipEditorClipReordered>(_onClipReordered);
     on<ClipEditorClipInserted>(_onClipInserted);
     on<ClipEditorClipUpdated>(_onClipUpdated);
 
-    // Undo / Redo
-    on<ClipEditorUndoRequested>(_onUndo);
-    on<ClipEditorRedoRequested>(_onRedo);
-
     // Clip selection
     on<ClipEditorClipSelected>(_onClipSelected);
-
-    // Playback control
-    on<ClipEditorPlayPauseToggled>(_onPlayPauseToggled);
-    on<ClipEditorPlaybackPaused>(_onPlaybackPaused);
-    on<ClipEditorPlayerReadyChanged>(_onPlayerReadyChanged);
-    on<ClipEditorFirstPlaybackStarted>(_onFirstPlaybackStarted);
-    on<ClipEditorMuteToggled>(_onMuteToggled);
-    on<ClipEditorPositionUpdated>(_onPositionUpdated);
 
     // Editing mode
     on<ClipEditorEditingStarted>(_onEditingStarted);
     on<ClipEditorEditingStopped>(_onEditingStopped);
     on<ClipEditorEditingToggled>(_onEditingToggled);
     on<ClipEditorSplitPositionChanged>(_onSplitPositionChanged);
-
-    // Reordering
-    on<ClipEditorReorderingStarted>(_onReorderingStarted);
-    on<ClipEditorReorderingStopped>(_onReorderingStopped);
-    on<ClipEditorDeleteZoneChanged>(_onDeleteZoneChanged);
 
     // Split
     on<ClipEditorOriginalClipReplaced>(_onOriginalClipReplaced);
@@ -134,27 +116,6 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     emit(withUndo.copyWith(clips: List.unmodifiable(newClips)));
   }
 
-  void _onClipReordered(
-    ClipEditorClipReordered event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    if (event.oldIndex == event.newIndex) return;
-    if (event.oldIndex < 0 || event.oldIndex >= state.clips.length) return;
-
-    final withUndo = _pushUndo(state);
-    final newClips = List<DivineVideoClip>.of(withUndo.clips);
-    final clip = newClips.removeAt(event.oldIndex);
-    newClips.insert(event.newIndex.clamp(0, newClips.length), clip);
-
-    Log.debug(
-      '🔄 Reordered clip from ${event.oldIndex} to ${event.newIndex}',
-      name: 'ClipEditorBloc',
-      category: LogCategory.video,
-    );
-
-    emit(withUndo.copyWith(clips: List.unmodifiable(newClips)));
-  }
-
   void _onClipInserted(
     ClipEditorClipInserted event,
     Emitter<ClipEditorState> emit,
@@ -187,74 +148,6 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     emit(state.copyWith(clips: List.unmodifiable(newClips)));
   }
 
-  // === UNDO / REDO ===
-
-  void _onUndo(
-    ClipEditorUndoRequested event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    if (!state.canUndo) return;
-
-    final snapshot = state.undoStack.last;
-    final newUndo = List<ClipSnapshot>.of(state.undoStack)..removeLast();
-    final newRedo = [
-      ...state.redoStack,
-      ClipSnapshot(List.unmodifiable(state.clips)),
-    ];
-
-    Log.debug(
-      '↩️ Undo – restoring ${snapshot.clips.length} clip(s)',
-      name: 'ClipEditorBloc',
-      category: LogCategory.video,
-    );
-
-    final newIndex = state.currentClipIndex >= snapshot.clips.length
-        ? (snapshot.clips.length - 1).clamp(0, snapshot.clips.length)
-        : state.currentClipIndex;
-
-    emit(
-      state.copyWith(
-        clips: snapshot.clips,
-        undoStack: newUndo,
-        redoStack: newRedo,
-        currentClipIndex: newIndex,
-      ),
-    );
-  }
-
-  void _onRedo(
-    ClipEditorRedoRequested event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    if (!state.canRedo) return;
-
-    final snapshot = state.redoStack.last;
-    final newRedo = List<ClipSnapshot>.of(state.redoStack)..removeLast();
-    final newUndo = [
-      ...state.undoStack,
-      ClipSnapshot(List.unmodifiable(state.clips)),
-    ];
-
-    Log.debug(
-      '↪️ Redo – restoring ${snapshot.clips.length} clip(s)',
-      name: 'ClipEditorBloc',
-      category: LogCategory.video,
-    );
-
-    final newIndex = state.currentClipIndex >= snapshot.clips.length
-        ? (snapshot.clips.length - 1).clamp(0, snapshot.clips.length)
-        : state.currentClipIndex;
-
-    emit(
-      state.copyWith(
-        clips: snapshot.clips,
-        undoStack: newUndo,
-        redoStack: newRedo,
-        currentClipIndex: newIndex,
-      ),
-    );
-  }
-
   // === CLIP SELECTION ===
 
   void _onClipSelected(
@@ -284,102 +177,6 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         hasPlayedOnce: state.isReordering ? null : false,
         currentPosition: offset,
         splitPosition: Duration.zero,
-      ),
-    );
-  }
-
-  // === PLAYBACK CONTROL ===
-
-  void _onPlayPauseToggled(
-    ClipEditorPlayPauseToggled event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    final newState = !state.isPlaying;
-
-    // Prevent playing before player is initialized
-    if (!state.isPlayerReady && newState) return;
-
-    Log.debug(
-      newState ? '▶️ Playing video' : '⏸️ Paused video',
-      name: 'ClipEditorBloc',
-      category: LogCategory.video,
-    );
-
-    emit(state.copyWith(isPlaying: newState));
-  }
-
-  void _onPlaybackPaused(
-    ClipEditorPlaybackPaused event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    Log.debug(
-      '⏸️ Paused video',
-      name: 'ClipEditorBloc',
-      category: LogCategory.video,
-    );
-    emit(state.copyWith(isPlaying: false));
-  }
-
-  void _onPlayerReadyChanged(
-    ClipEditorPlayerReadyChanged event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    if (state.isPlayerReady == event.isReady) return;
-    Log.debug(
-      event.isReady ? '✅ Player ready' : '⏳ Player not ready',
-      name: 'ClipEditorBloc',
-      category: LogCategory.video,
-    );
-    emit(state.copyWith(isPlayerReady: event.isReady));
-  }
-
-  void _onFirstPlaybackStarted(
-    ClipEditorFirstPlaybackStarted event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    if (state.hasPlayedOnce) return;
-    emit(state.copyWith(hasPlayedOnce: true));
-  }
-
-  void _onMuteToggled(
-    ClipEditorMuteToggled event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    final newState = !state.isMuted;
-    Log.debug(
-      newState ? '🔇 Muted audio' : '🔊 Unmuted audio',
-      name: 'ClipEditorBloc',
-      category: LogCategory.video,
-    );
-    emit(state.copyWith(isMuted: newState));
-  }
-
-  void _onPositionUpdated(
-    ClipEditorPositionUpdated event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    final clips = state.clips;
-
-    // Ignore stale position updates from previous clip's controller
-    if (state.currentClipIndex >= clips.length ||
-        event.clipId != clips[state.currentClipIndex].id) {
-      return;
-    }
-
-    final offset = state.isEditing
-        ? Duration.zero
-        : clips
-              .take(state.currentClipIndex)
-              .fold(Duration.zero, (sum, clip) => sum + clip.trimmedDuration);
-
-    emit(
-      state.copyWith(
-        currentPosition: Duration(
-          milliseconds: (offset + event.position).inMilliseconds.clamp(
-            0,
-            VideoEditorConstants.maxDuration.inMilliseconds,
-          ),
-        ),
       ),
     );
   }
@@ -435,46 +232,6 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     Emitter<ClipEditorState> emit,
   ) {
     emit(state.copyWith(splitPosition: event.position, isPlaying: false));
-  }
-
-  // === REORDERING ===
-
-  void _onReorderingStarted(
-    ClipEditorReorderingStarted event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    Log.debug(
-      '🔄 Started clip reordering mode',
-      name: 'ClipEditorBloc',
-      category: LogCategory.video,
-    );
-    emit(state.copyWith(isReordering: true, isPlaying: false));
-  }
-
-  void _onReorderingStopped(
-    ClipEditorReorderingStopped event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    Log.debug(
-      '✅ Stopped clip reordering mode',
-      name: 'ClipEditorBloc',
-      category: LogCategory.video,
-    );
-    emit(state.copyWith(isReordering: false, isOverDeleteZone: false));
-  }
-
-  void _onDeleteZoneChanged(
-    ClipEditorDeleteZoneChanged event,
-    Emitter<ClipEditorState> emit,
-  ) {
-    if (state.isOverDeleteZone == event.isOver) return;
-
-    Log.debug(
-      event.isOver ? '🗑️  Clip over delete zone' : '⬅️  Clip left delete zone',
-      name: 'ClipEditorBloc',
-      category: LogCategory.video,
-    );
-    emit(state.copyWith(isOverDeleteZone: event.isOver));
   }
 
   // === SPLIT ===
