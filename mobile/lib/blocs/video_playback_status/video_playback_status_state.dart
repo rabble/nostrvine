@@ -4,7 +4,8 @@
 import 'dart:collection';
 
 import 'package:equatable/equatable.dart';
-import 'package:infinite_video_feed/infinite_video_feed.dart' show VideoErrorType;
+import 'package:infinite_video_feed/infinite_video_feed.dart'
+    show VideoErrorType;
 
 /// Per-video playback status reported by the pooled video player.
 enum PlaybackStatus {

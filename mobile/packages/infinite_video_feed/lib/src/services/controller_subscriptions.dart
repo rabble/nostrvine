@@ -26,7 +26,8 @@ class ControllerSubscriptions {
     required void Function(
       NativePlayerErrorCode? errorCode,
       String? errorMessage,
-    ) onError,
+    )
+    onError,
   }) {
     unawaited(_errors[index]?.cancel());
     _errors[index] = controller.stateStream.listen((state) {

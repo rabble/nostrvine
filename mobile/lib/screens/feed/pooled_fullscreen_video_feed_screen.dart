@@ -53,7 +53,8 @@ import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:openvine/widgets/web_video_player.dart';
 import 'package:pooled_video_player/pooled_video_player.dart'
     hide VideoErrorType;
-import 'package:pooled_video_player/pooled_video_player.dart' as pvp
+import 'package:pooled_video_player/pooled_video_player.dart'
+    as pvp
     show VideoErrorType;
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';

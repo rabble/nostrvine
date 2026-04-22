@@ -46,7 +46,8 @@ enum NativePlayerErrorCode {
   decoderError,
 
   /// Any other error that does not fit the categories above.
-  unknown;
+  unknown
+  ;
 
   /// Whether a source failover should be attempted for this error code.
   ///
