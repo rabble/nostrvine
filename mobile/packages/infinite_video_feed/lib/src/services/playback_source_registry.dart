@@ -15,6 +15,17 @@ class PlaybackSourceRegistry {
     _activeIndices[index] = activeIndex;
   }
 
+  /// Records [sources] as runtime fallbacks for a video whose first frame
+  /// is being loaded from a local cache file (i.e. no network source is
+  /// "active" yet). A subsequent [advance] call will return `sources[0]`.
+  ///
+  /// Use this so that a runtime `parseError` on a corrupt cache file can
+  /// still fail over to the network sources.
+  void registerPrestart(int index, List<String> sources) {
+    _sources[index] = sources;
+    _activeIndices[index] = -1; // advance() returns sources[0] on first call
+  }
+
   /// Returns the active source URL for [index], or `null` if none recorded.
   String? activeSourceFor(int index) {
     final list = _sources[index];
@@ -31,6 +42,7 @@ class PlaybackSourceRegistry {
   bool canAdvance(int index) {
     final list = _sources[index];
     if (list == null || list.isEmpty) return false;
+    // _activeIndices[index] == -1 means prestart (cache); next = 0 is valid.
     final next = (_activeIndices[index] ?? 0) + 1;
     return next < list.length;
   }
@@ -40,6 +52,8 @@ class PlaybackSourceRegistry {
   String? advance(int index) {
     final list = _sources[index];
     if (list == null || list.isEmpty) return null;
+    // _activeIndices[index] == -1 means prestart (cache);
+    // next = 0 is sources[0].
     final next = (_activeIndices[index] ?? 0) + 1;
     if (next >= list.length) return null;
     _activeIndices[index] = next;

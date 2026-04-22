@@ -199,6 +199,17 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   final _errors = <int>{};
   final _errorTypes = <int, VideoErrorType>{};
   final _loopSeekInProgress = <int>{};
+
+  // Indices currently performing a source failover. Stale `hasError`
+  // events from the old source can arrive between `stop()` and `setSource()`
+  // — this guard prevents them from re-triggering failover or showing
+  // the error UI on top of a successfully recovered controller.
+  final _failoverInFlight = <int>{};
+
+  // Indices whose initial source was the on-disk cache file. If a runtime
+  // error fires for one of these we evict the cached file so future loads
+  // hit the network instead of replaying the corrupt bytes.
+  final _loadedFromCache = <int>{};
   int _currentIndex = 0;
 
   // Generation counter for the player window so async neighbour-init can
@@ -416,6 +427,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _sources.clear();
 
     _loopSeekInProgress.clear();
+    _failoverInFlight.clear();
+    _loadedFromCache.clear();
     _errors.clear();
     _errorTypes.clear();
 
@@ -431,6 +444,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _watchdog.stop(index);
     _staleDetector.forget(index);
     _loopSeekInProgress.remove(index);
+    _failoverInFlight.remove(index);
+    _loadedFromCache.remove(index);
     _errorTypes.remove(index);
     _sources.remove(index);
     unawaited(_controllers.remove(index)?.dispose());
@@ -438,11 +453,13 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
   // ─── Controller init / retry ────────────────────────────────────────────
 
-  Future<void> _initController(int index) async {
+  Future<void> _initController(int index, {bool skipCache = false}) async {
     if (index < 0 || index >= widget.videos.length) return;
 
     final video = widget.videos[index];
-    final cachedFile = widget.cache.getCachedFileSync(video.id);
+    final cachedFile = skipCache
+        ? null
+        : widget.cache.getCachedFileSync(video.id);
     final fromCache = cachedFile != null;
 
     _log(
@@ -456,13 +473,58 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     try {
       await controller.initialize();
 
+      // Always resolve network sources. They are used as runtime fallbacks
+      // even when the video is loaded from disk cache (in case the cached
+      // file is corrupt or unreadable).
+      final playbackSources = resolvePlaybackSources(
+        video,
+        urlResolver: widget.urlResolver,
+      );
+
       if (fromCache) {
-        await controller.setSource(VideoClip.file(cachedFile.path));
+        try {
+          await controller.setSource(VideoClip.file(cachedFile.path));
+          _loadedFromCache.add(index);
+          // Register network sources with prestart so a runtime parseError
+          // on the cached file can still fall over to network URLs.
+          if (playbackSources.isNotEmpty) {
+            _sources.registerPrestart(index, playbackSources);
+            _log(
+              'Cache loaded index $index (${video.id}): '
+              'registered ${playbackSources.length} network fallbacks',
+            );
+          }
+        } on Object catch (cacheError, cacheStackTrace) {
+          // The cached file is unreadable at init time — evict it from the
+          // cache so future loads don't replay the corrupt bytes, then
+          // fall through to the network path.
+          _log(
+            'Cache read failed index $index (${video.id}): $cacheError '
+            '— evicting cache and falling back to network',
+          );
+          developer.log(
+            'Cache fallback to network',
+            name: _logName,
+            error: cacheError,
+            stackTrace: cacheStackTrace,
+          );
+          unawaited(_evictCachedFile(video.id));
+          if (playbackSources.isEmpty) {
+            throw StateError('No playback source for video ${video.id}');
+          }
+          final (openedSource, openedSourceIdx) = await setSourceWithFallbacks(
+            index: index,
+            controller: controller,
+            sources: playbackSources,
+            log: _log,
+          );
+          _sources.register(index, playbackSources, openedSourceIdx);
+          _log(
+            'Network fallback source selected index $index (${video.id}): '
+            'openedSource=$openedSource',
+          );
+        }
       } else {
-        final playbackSources = resolvePlaybackSources(
-          video,
-          urlResolver: widget.urlResolver,
-        );
         if (playbackSources.isEmpty) {
           throw StateError('No playback source for video ${video.id}');
         }
@@ -522,7 +584,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _subscriptions.unsubscribe(index);
     unawaited(_controllers.remove(index)?.dispose());
     _rebuild();
-    await _initController(index);
+    // Skip cache on manual retry so a corrupt cached file does not loop
+    // the same failure indefinitely.
+    await _initController(index, skipCache: true);
   }
 
   // ─── Source failover (called by watchdog + stale detector) ──────────────
@@ -544,9 +608,18 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     final attempt = _sources.attemptFor(index);
     _log('Source failover index $index: attempt=$attempt source=$nextSource');
 
+    // The first failover after a cache load means the cached file was
+    // unplayable at runtime. Evict it so future loads hit the network.
+    if (_loadedFromCache.remove(index)) {
+      final video = widget.videos[index];
+      _log('Evicting corrupt cache file for index $index (${video.id})');
+      unawaited(_evictCachedFile(video.id));
+    }
+
     final controller = _controllers[index];
     if (controller == null) return;
 
+    _failoverInFlight.add(index);
     try {
       await controller.stop();
       await controller.setSource(VideoClip.network(nextSource));
@@ -564,14 +637,38 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         stackTrace: stackTrace,
       );
       _onVideoStalled(index);
+    } finally {
+      _failoverInFlight.remove(index);
     }
   }
 
   void _onVideoStalled(int index) {
     _log('Video stalled index $index — marking error');
-    _errors.add(index);
-    _errorTypes[index] ??= VideoErrorType.generic;
+    _stopAndMarkError(index, VideoErrorType.generic);
     widget.onVideoStalled?.call(index);
+  }
+
+  /// Removes [videoId] from the on-disk media cache. Errors are logged but
+  /// not rethrown — cache eviction is best-effort cleanup.
+  Future<void> _evictCachedFile(String videoId) async {
+    try {
+      await widget.cache.removeCachedFile(videoId);
+    } on Object catch (e, stackTrace) {
+      developer.log(
+        'Failed to evict cached file for $videoId',
+        name: _logName,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Stops the controller at [index] (so audio/video cease immediately) and
+  /// marks the slot as an error, triggering a rebuild.
+  void _stopAndMarkError(int index, VideoErrorType type) {
+    unawaited(_controllers[index]?.stop());
+    _errors.add(index);
+    _errorTypes[index] ??= type;
     _rebuild();
   }
 
@@ -596,7 +693,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       ..subscribeToPlaybackErrors(
         index,
         controller,
-        isAlreadyError: () => _errors.contains(index),
+        isAlreadyError: () =>
+            _errors.contains(index) || _failoverInFlight.contains(index),
         onError: (errorCode, errorMessage) {
           _log(
             'Runtime playback error at index '
@@ -618,12 +716,13 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             return;
           }
 
-          _errorTypes[index] = classifyVideoError(
-            errorMessage: errorMessage,
-            source: _resolveUrl(widget.videos[index]),
+          _stopAndMarkError(
+            index,
+            classifyVideoError(
+              errorMessage: errorMessage,
+              source: _resolveUrl(widget.videos[index]),
+            ),
           );
-          _errors.add(index);
-          _rebuild();
         },
       );
 
@@ -739,23 +838,13 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           fit: StackFit.expand,
           children: [
             // Loading layer — visible until the video surface covers it.
-            widget.loadingBuilder?.call(
-                  context,
-                  index,
-                  isSquare: _isSquareVideo(controller),
-                ) ??
-                const SizedBox.shrink(),
+            ?widget.loadingBuilder?.call(
+              context,
+              index,
+              isSquare: _isSquareVideo(controller),
+            ),
 
-            // Error or video layer.
-            if (hasError)
-              widget.errorBuilder?.call(
-                    context,
-                    index,
-                    () => unawaited(_retryController(index)),
-                    _errorTypes[index] ?? VideoErrorType.generic,
-                  ) ??
-                  const SizedBox.shrink()
-            else if (hasVideoSize)
+            if (!hasError && hasVideoSize)
               widget.videoBuilder?.call(context, index, controller) ??
                   VideoItemWidget(
                     controller: controller,
@@ -764,6 +853,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
             // Overlay layer — consumer-provided controls, progress, etc.
             ?overlay,
+
+            if (hasError)
+              ?widget.errorBuilder?.call(
+                context,
+                index,
+                () => unawaited(_retryController(index)),
+                _errorTypes[index] ?? VideoErrorType.generic,
+              ),
           ],
         );
       },
