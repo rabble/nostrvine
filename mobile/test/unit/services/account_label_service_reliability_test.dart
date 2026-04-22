@@ -177,6 +177,41 @@ void main() {
     );
 
     test(
+      'missing pubkey failure rolls back optimistic local labels',
+      () async {
+        when(
+          () => nostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => acceptedOutcome());
+
+        final service = AccountLabelService(
+          authService: auth,
+          nostrClient: nostr,
+        );
+        await service.initialize();
+        await service.setAccountLabels({ContentLabel.violence});
+        expect(service.accountLabels, {ContentLabel.violence});
+
+        when(() => auth.currentPublicKeyHex).thenReturn(null);
+
+        final result = await service.setAccountLabels(
+          {ContentLabel.nudity},
+        );
+        final prefs = await SharedPreferences.getInstance();
+
+        expect(result.success, isFalse);
+        expect(service.accountLabels, {ContentLabel.violence});
+        expect(
+          ContentLabel.fromCsv(prefs.getString('account_content_label')),
+          {ContentLabel.violence},
+        );
+      },
+    );
+
+    test(
       'clear labels (empty set): no publish attempted, local commit wins',
       () async {
         // Starting with empty labels, clearing should be a no-op success

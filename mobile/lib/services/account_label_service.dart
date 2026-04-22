@@ -158,9 +158,8 @@ class AccountLabelService {
         name: 'AccountLabelService',
         category: LogCategory.system,
       );
-      // No relay round-trip possible, but the local state still reflects
-      // the caller's intent — report failure so the UI can surface the
-      // auth problem rather than silently claim success.
+      _accountLabels = previousLabels;
+      await _persistLabels(previousLabels);
       return AccountLabelResult.failure();
     }
 

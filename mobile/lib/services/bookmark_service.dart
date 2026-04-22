@@ -567,10 +567,16 @@ class BookmarkService with NostrListServiceMixin {
         return false;
       }
 
+      if (!_authService.isAuthenticated) {
+        return false;
+      }
+
       final set = _bookmarkSets[setIndex];
 
-      // For replaceable events (kind 30003), we don't need a deletion event
-      // The event is automatically replaced when publishing with the same d-tag
+      final result = await _publishBookmarkSetDeletionToNostr(set);
+      if (!result.success) {
+        return false;
+      }
 
       _bookmarkSets.removeAt(setIndex);
       await _saveBookmarks();
@@ -624,6 +630,71 @@ class BookmarkService with NostrListServiceMixin {
       return BookmarkResult.noop(success: false);
     }
     return _publishBookmarkSetToNostr(set);
+  }
+
+  /// Publish a NIP-09 deletion for a bookmark set's addressable kind 30003.
+  Future<BookmarkResult> _publishBookmarkSetDeletionToNostr(
+    BookmarkSet set,
+  ) async {
+    if (!_authService.isAuthenticated) {
+      Log.warning(
+        'Cannot delete bookmark set - user not authenticated',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.noop(success: false);
+    }
+
+    final pubkey = _authService.currentPublicKeyHex;
+    if (pubkey == null || pubkey.isEmpty) {
+      Log.warning(
+        'Cannot delete bookmark set - missing public key',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.noop(success: false);
+    }
+
+    final tags = <List<String>>[
+      ['a', '30003:$pubkey:${set.id}'],
+      ['k', '30003'],
+      if (set.nostrEventId != null && set.nostrEventId!.isNotEmpty)
+        ['e', set.nostrEventId!],
+    ];
+
+    final event = await _authService.createAndSignEvent(
+      kind: 5,
+      content: 'Deleted bookmark set',
+      tags: tags,
+    );
+
+    if (event == null) {
+      Log.error(
+        'Failed to sign kind 5 bookmark-set deletion event',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.failure();
+    }
+
+    final outcome = await _nostrService.publishEventWithRetry(event);
+    final feedback = PublishResultMapper.map(outcome);
+
+    if (!outcome.acceptedByAny) {
+      Log.warning(
+        'Bookmark-set deletion not accepted by any relay: $outcome',
+        name: 'BookmarkService',
+        category: LogCategory.system,
+      );
+      return BookmarkResult.failure(outcome: outcome, feedback: feedback);
+    }
+
+    Log.debug(
+      'Published bookmark set deletion to Nostr: ${set.name} (${event.id})',
+      name: 'BookmarkService',
+      category: LogCategory.system,
+    );
+    return BookmarkResult.successResult(outcome: outcome, feedback: feedback);
   }
 
   /// Publish global bookmarks to Nostr as NIP-51 kind 10003 event.

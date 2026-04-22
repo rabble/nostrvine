@@ -245,5 +245,72 @@ void main() {
         expect(service.bookmarkSets, isEmpty);
       },
     );
+
+    test(
+      'deleteBookmarkSet: transient failure keeps set locally',
+      () async {
+        when(
+          () => nostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => acceptedOutcome());
+
+        final service = buildService();
+        final createResult = await service.createBookmarkSet(
+          name: 'Favourites',
+        );
+        final set = createResult.set!;
+
+        expect(service.bookmarkSets, hasLength(1));
+        verify(
+          () => nostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+
+        when(
+          () => nostr.publishEventWithRetry(
+            any(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => transientOutcome());
+
+        final deleted = await service.deleteBookmarkSet(set.id);
+
+        expect(deleted, isFalse);
+        expect(service.bookmarkSets.single.id, set.id);
+
+        final captured = verify(
+          () => nostr.publishEventWithRetry(
+            captureAny(),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).captured;
+        final deleteEvent = captured.single as Event;
+
+        expect(deleteEvent.kind, 5);
+        expect(
+          deleteEvent.tags.any(
+            (tag) =>
+                tag.length >= 2 &&
+                tag[0] == 'a' &&
+                tag[1] == '30003:$_testPubkey:${set.id}',
+          ),
+          isTrue,
+        );
+        expect(
+          deleteEvent.tags.any(
+            (tag) => tag.length >= 2 && tag[0] == 'k' && tag[1] == '30003',
+          ),
+          isTrue,
+        );
+      },
+    );
   });
 }
