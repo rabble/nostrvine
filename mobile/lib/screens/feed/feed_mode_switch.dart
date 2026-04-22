@@ -1,6 +1,8 @@
 // ABOUTME: Feed mode picker overlay widget for video feed
 // ABOUTME: Shows current mode (For You/New/Following) with bottom sheet selection
 
+import 'dart:ui';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -79,10 +81,7 @@ class FeedModeSwitch extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            const DivineIcon(
-                              icon: DivineIconName.caretDown,
-                              color: VineTheme.whiteText,
-                            ),
+                            const _FeedModeCaret(),
                           ],
                         ),
                       ),
@@ -119,5 +118,53 @@ class FeedModeSwitch extends StatelessWidget {
       final mode = FeedMode.values.firstWhere((m) => m.name == selected);
       context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
     }
+  }
+}
+
+/// Caret icon with the same two drop shadows applied to the feed-mode label
+/// text, so the icon matches the label's legibility over video content.
+class _FeedModeCaret extends StatelessWidget {
+  const _FeedModeCaret();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Stack(
+      alignment: Alignment.center,
+      children: [
+        _FeedModeCaretShadow(offset: Offset(1, 1), blurSigma: 1),
+        _FeedModeCaretShadow(offset: Offset(0.4, 0.4), blurSigma: 0.6),
+        DivineIcon(
+          icon: DivineIconName.caretDown,
+          color: VineTheme.whiteText,
+        ),
+      ],
+    );
+  }
+}
+
+/// One of the two drop shadows stacked behind the real caret. Renders the
+/// caret glyph tinted in the shadow color, offset, and blurred — mirrors
+/// how Text `Shadow`s paint underneath glyphs.
+class _FeedModeCaretShadow extends StatelessWidget {
+  const _FeedModeCaretShadow({
+    required this.offset,
+    required this.blurSigma,
+  });
+
+  final Offset offset;
+  final double blurSigma;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: offset,
+      child: ImageFiltered(
+        imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+        child: const DivineIcon(
+          icon: DivineIconName.caretDown,
+          color: VineTheme.innerShadow,
+        ),
+      ),
+    );
   }
 }
