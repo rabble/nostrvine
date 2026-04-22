@@ -23,12 +23,13 @@ const _severedFollowersPrefsKey = 'severed_followers_list';
 
 /// Result of a block/unblock operation.
 ///
-/// Contract: [success] requires [outcome.acceptedByAny]. The service
+/// Contract: [success] requires `outcome.acceptedByAny`. The repository
 /// does NOT commit the runtime blocklist until at least one relay has
 /// acknowledged the updated kind 30000 event. This prevents the
 /// silent-divergence bug where the device thought a pubkey was blocked
 /// but on reinstall/account-switch the relay had no record.
 class BlocklistResult {
+  /// Creates a blocklist operation result.
   const BlocklistResult({
     required this.success,
     required this.timestamp,
@@ -37,7 +38,35 @@ class BlocklistResult {
     this.error,
   });
 
+  /// Accepted-by-any shorthand — see class-level contract.
+  factory BlocklistResult.success_({
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+  }) => BlocklistResult(
+    success: true,
+    outcome: outcome,
+    feedback: feedback,
+    timestamp: DateTime.now(),
+  );
+
+  /// Pre-publish or relay-rejected failure with optional per-relay context.
+  factory BlocklistResult.failure({
+    String? error,
+    PublishOutcome? outcome,
+    PublishUserFeedback? feedback,
+  }) => BlocklistResult(
+    success: false,
+    error: error,
+    outcome: outcome,
+    feedback: feedback,
+    timestamp: DateTime.now(),
+  );
+
+  /// Whether the block/unblock was committed locally (requires at least
+  /// one relay OK when a publish was attempted).
   final bool success;
+
+  /// When the result was produced.
   final DateTime timestamp;
 
   /// Per-relay outcome. `null` for pre-publish failures (not
@@ -50,28 +79,6 @@ class BlocklistResult {
 
   /// Human-readable error for pre-publish failures.
   final String? error;
-
-  static BlocklistResult success_({
-    PublishOutcome? outcome,
-    PublishUserFeedback? feedback,
-  }) => BlocklistResult(
-    success: true,
-    outcome: outcome,
-    feedback: feedback,
-    timestamp: DateTime.now(),
-  );
-
-  static BlocklistResult failure({
-    String? error,
-    PublishOutcome? outcome,
-    PublishUserFeedback? feedback,
-  }) => BlocklistResult(
-    success: false,
-    error: error,
-    outcome: outcome,
-    feedback: feedback,
-    timestamp: DateTime.now(),
-  );
 }
 
 /// Service for managing content blocklist

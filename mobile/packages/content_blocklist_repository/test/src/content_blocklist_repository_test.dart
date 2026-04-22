@@ -222,10 +222,7 @@ void main() {
         expect(
           emitted,
           equals([
-            const BlocklistChange(
-              pubkey: target,
-              op: BlocklistOp.blocked,
-            ),
+            const BlocklistChange(pubkey: target, op: BlocklistOp.blocked),
           ]),
         );
       });
@@ -244,10 +241,7 @@ void main() {
         expect(
           emitted,
           equals([
-            const BlocklistChange(
-              pubkey: target,
-              op: BlocklistOp.unblocked,
-            ),
+            const BlocklistChange(pubkey: target, op: BlocklistOp.unblocked),
           ]),
         );
       });
@@ -264,10 +258,7 @@ void main() {
 
         expect(
           emitted.map((c) => c.op),
-          equals([
-            BlocklistOp.blocked,
-            BlocklistOp.unblocked,
-          ]),
+          equals([BlocklistOp.blocked, BlocklistOp.unblocked]),
         );
         expect(emitted.every((c) => c.pubkey == target), isTrue);
       });
@@ -498,60 +489,57 @@ void main() {
       },
     );
 
-    test(
-      'ignores stale older mute event after newer unmute event',
-      () async {
-        const ourPubkey =
-            '0000000000000000000000000000000000000000000000000000000000000001';
-        const muterPubkey =
-            '0000000000000000000000000000000000000000000000000000000000000002';
+    test('ignores stale older mute event after newer unmute event', () async {
+      const ourPubkey =
+          '0000000000000000000000000000000000000000000000000000000000000001';
+      const muterPubkey =
+          '0000000000000000000000000000000000000000000000000000000000000002';
 
-        final newerUnmuteEvent =
-            Event(
-                muterPubkey,
-                10000,
-                [
-                  ['p', 'some_other_pubkey'],
-                ],
-                '',
-                createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
-              )
-              ..id = 'newer-unmute-event-id'
-              ..sig = 'signature';
+      final newerUnmuteEvent =
+          Event(
+              muterPubkey,
+              10000,
+              [
+                ['p', 'some_other_pubkey'],
+              ],
+              '',
+              createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
+            )
+            ..id = 'newer-unmute-event-id'
+            ..sig = 'signature';
 
-        final olderMuteEvent =
-            Event(
-                muterPubkey,
-                10000,
-                [
-                  ['p', ourPubkey],
-                ],
-                '',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              )
-              ..id = 'older-mute-event-id'
-              ..sig = 'signature';
+      final olderMuteEvent =
+          Event(
+              muterPubkey,
+              10000,
+              [
+                ['p', ourPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            )
+            ..id = 'older-mute-event-id'
+            ..sig = 'signature';
 
-        final controller = StreamController<Event>();
+      final controller = StreamController<Event>();
 
-        when(
-          () => mockNostrService.subscribe(any()),
-        ).thenAnswer((_) => controller.stream);
+      when(
+        () => mockNostrService.subscribe(any()),
+      ).thenAnswer((_) => controller.stream);
 
-        await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+      await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
 
-        controller.add(newerUnmuteEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        expect(service.hasMutedUs(muterPubkey), isFalse);
+      controller.add(newerUnmuteEvent);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(service.hasMutedUs(muterPubkey), isFalse);
 
-        controller.add(olderMuteEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        expect(service.hasMutedUs(muterPubkey), isFalse);
-        expect(service.shouldFilterFromFeeds(muterPubkey), isFalse);
+      controller.add(olderMuteEvent);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(service.hasMutedUs(muterPubkey), isFalse);
+      expect(service.shouldFilterFromFeeds(muterPubkey), isFalse);
 
-        await controller.close();
-      },
-    );
+      await controller.close();
+    });
 
     test('shouldFilterFromFeeds checks mutual mute blocklist', () async {
       const ourPubkey =
@@ -649,49 +637,38 @@ void main() {
       mockSigner = _MockBlockListSigner();
     });
 
-    test(
-      'syncBlockListsInBackground subscribes with two filters',
-      () async {
-        const ourPubkey = 'test_our_pubkey_hex';
-        service = ContentBlocklistRepository();
+    test('syncBlockListsInBackground subscribes with two filters', () async {
+      const ourPubkey = 'test_our_pubkey_hex';
+      service = ContentBlocklistRepository();
 
-        List<dynamic>? capturedFilters;
-        when(
-          () => mockNostrService.subscribe(
-            any(),
-          ),
-        ).thenAnswer((invocation) {
-          capturedFilters = invocation.positionalArguments[0] as List;
-          return const Stream.empty();
-        });
+      List<dynamic>? capturedFilters;
+      when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
+        capturedFilters = invocation.positionalArguments[0] as List;
+        return const Stream.empty();
+      });
 
-        await service.syncBlockListsInBackground(
-          mockNostrService,
-          mockSigner,
-          ourPubkey,
-        );
+      await service.syncBlockListsInBackground(
+        mockNostrService,
+        mockSigner,
+        ourPubkey,
+      );
 
-        verify(
-          () => mockNostrService.subscribe(
-            any(),
-          ),
-        ).called(1);
+      verify(() => mockNostrService.subscribe(any())).called(1);
 
-        expect(capturedFilters, isNotNull);
-        expect(capturedFilters!.length, equals(2));
+      expect(capturedFilters, isNotNull);
+      expect(capturedFilters!.length, equals(2));
 
-        // Filter 1: others' block lists containing our pubkey
-        final othersFilter = capturedFilters![0] as Filter;
-        expect(othersFilter.kinds, contains(30000));
-        expect(othersFilter.p, contains(ourPubkey));
+      // Filter 1: others' block lists containing our pubkey
+      final othersFilter = capturedFilters![0] as Filter;
+      expect(othersFilter.kinds, contains(30000));
+      expect(othersFilter.p, contains(ourPubkey));
 
-        // Filter 2: our own block list for relay restoration
-        // No #d constraint — handler checks d=block, avoids relay compat issues
-        final ownFilter = capturedFilters![1] as Filter;
-        expect(ownFilter.kinds, contains(30000));
-        expect(ownFilter.authors, contains(ourPubkey));
-      },
-    );
+      // Filter 2: our own block list for relay restoration
+      // No #d constraint — handler checks d=block, avoids relay compat issues
+      final ownFilter = capturedFilters![1] as Filter;
+      expect(ownFilter.kinds, contains(30000));
+      expect(ownFilter.authors, contains(ourPubkey));
+    });
 
     test(
       'handleBlockListEvent adds blocker when our pubkey is in block list',
@@ -719,9 +696,7 @@ void main() {
               ..sig = 'signature';
 
         when(
-          () => mockNostrService.subscribe(
-            any(),
-          ),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([event]));
 
         await service.syncBlockListsInBackground(
@@ -738,137 +713,127 @@ void main() {
       },
     );
 
-    test(
-      'handleBlockListEvent removes blocker when updated event no longer '
-      'contains our pubkey',
-      () async {
-        const ourPubkey =
-            '0000000000000000000000000000000000000000000000000000000000000001';
-        const blockerPubkey =
-            '0000000000000000000000000000000000000000000000000000000000000002';
+    test('handleBlockListEvent removes blocker when updated event no longer '
+        'contains our pubkey', () async {
+      const ourPubkey =
+          '0000000000000000000000000000000000000000000000000000000000000001';
+      const blockerPubkey =
+          '0000000000000000000000000000000000000000000000000000000000000002';
 
-        var changeCount = 0;
-        service = ContentBlocklistRepository(onChanged: () => changeCount++);
+      var changeCount = 0;
+      service = ContentBlocklistRepository(onChanged: () => changeCount++);
 
-        final blockEvent =
-            Event(
-                blockerPubkey,
-                30000,
-                [
-                  ['d', 'block'],
-                  ['p', ourPubkey],
-                ],
-                'Block list',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              )
-              ..id = 'block-event-id'
-              ..sig = 'signature';
+      final blockEvent =
+          Event(
+              blockerPubkey,
+              30000,
+              [
+                ['d', 'block'],
+                ['p', ourPubkey],
+              ],
+              'Block list',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            )
+            ..id = 'block-event-id'
+            ..sig = 'signature';
 
-        final unblockEvent =
-            Event(
-                blockerPubkey,
-                30000,
-                [
-                  ['d', 'block'],
-                  ['p', 'some_other_pubkey'],
-                ],
-                'Block list',
-                createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
-              )
-              ..id = 'unblock-event-id'
-              ..sig = 'signature';
+      final unblockEvent =
+          Event(
+              blockerPubkey,
+              30000,
+              [
+                ['d', 'block'],
+                ['p', 'some_other_pubkey'],
+              ],
+              'Block list',
+              createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
+            )
+            ..id = 'unblock-event-id'
+            ..sig = 'signature';
 
-        final controller = StreamController<Event>();
+      final controller = StreamController<Event>();
 
-        when(
-          () => mockNostrService.subscribe(
-            any(),
-          ),
-        ).thenAnswer((_) => controller.stream);
+      when(
+        () => mockNostrService.subscribe(any()),
+      ).thenAnswer((_) => controller.stream);
 
-        await service.syncBlockListsInBackground(
-          mockNostrService,
-          mockSigner,
-          ourPubkey,
-        );
+      await service.syncBlockListsInBackground(
+        mockNostrService,
+        mockSigner,
+        ourPubkey,
+      );
 
-        controller.add(blockEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        expect(service.hasBlockedUs(blockerPubkey), isTrue);
+      controller.add(blockEvent);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(service.hasBlockedUs(blockerPubkey), isTrue);
 
-        controller.add(unblockEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        expect(service.hasBlockedUs(blockerPubkey), isFalse);
-        expect(changeCount, equals(2));
+      controller.add(unblockEvent);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(service.hasBlockedUs(blockerPubkey), isFalse);
+      expect(changeCount, equals(2));
 
-        await controller.close();
-      },
-    );
+      await controller.close();
+    });
 
-    test(
-      'ignores stale older block event after newer unblock event',
-      () async {
-        const ourPubkey =
-            '0000000000000000000000000000000000000000000000000000000000000001';
-        const blockerPubkey =
-            '0000000000000000000000000000000000000000000000000000000000000002';
+    test('ignores stale older block event after newer unblock event', () async {
+      const ourPubkey =
+          '0000000000000000000000000000000000000000000000000000000000000001';
+      const blockerPubkey =
+          '0000000000000000000000000000000000000000000000000000000000000002';
 
-        service = ContentBlocklistRepository();
+      service = ContentBlocklistRepository();
 
-        final newerUnblockEvent =
-            Event(
-                blockerPubkey,
-                30000,
-                [
-                  ['d', 'block'],
-                  ['p', 'some_other_pubkey'],
-                ],
-                'Block list',
-                createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
-              )
-              ..id = 'newer-unblock-event-id'
-              ..sig = 'signature';
+      final newerUnblockEvent =
+          Event(
+              blockerPubkey,
+              30000,
+              [
+                ['d', 'block'],
+                ['p', 'some_other_pubkey'],
+              ],
+              'Block list',
+              createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
+            )
+            ..id = 'newer-unblock-event-id'
+            ..sig = 'signature';
 
-        final olderBlockEvent =
-            Event(
-                blockerPubkey,
-                30000,
-                [
-                  ['d', 'block'],
-                  ['p', ourPubkey],
-                ],
-                'Block list',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              )
-              ..id = 'older-block-event-id'
-              ..sig = 'signature';
+      final olderBlockEvent =
+          Event(
+              blockerPubkey,
+              30000,
+              [
+                ['d', 'block'],
+                ['p', ourPubkey],
+              ],
+              'Block list',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            )
+            ..id = 'older-block-event-id'
+            ..sig = 'signature';
 
-        final controller = StreamController<Event>();
+      final controller = StreamController<Event>();
 
-        when(
-          () => mockNostrService.subscribe(
-            any(),
-          ),
-        ).thenAnswer((_) => controller.stream);
+      when(
+        () => mockNostrService.subscribe(any()),
+      ).thenAnswer((_) => controller.stream);
 
-        await service.syncBlockListsInBackground(
-          mockNostrService,
-          mockSigner,
-          ourPubkey,
-        );
+      await service.syncBlockListsInBackground(
+        mockNostrService,
+        mockSigner,
+        ourPubkey,
+      );
 
-        controller.add(newerUnblockEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        expect(service.hasBlockedUs(blockerPubkey), isFalse);
+      controller.add(newerUnblockEvent);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(service.hasBlockedUs(blockerPubkey), isFalse);
 
-        controller.add(olderBlockEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        expect(service.hasBlockedUs(blockerPubkey), isFalse);
-        expect(service.shouldFilterFromFeeds(blockerPubkey), isFalse);
+      controller.add(olderBlockEvent);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(service.hasBlockedUs(blockerPubkey), isFalse);
+      expect(service.shouldFilterFromFeeds(blockerPubkey), isFalse);
 
-        await controller.close();
-      },
-    );
+      await controller.close();
+    });
   });
 
   group('ContentBlocklistRepository - Relay Block List Restoration', () {
@@ -906,9 +871,7 @@ void main() {
       controller = StreamController<Event>();
 
       when(
-        () => mockNostrService.subscribe(
-          any(),
-        ),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => controller.stream);
     });
 
@@ -956,9 +919,7 @@ void main() {
         );
 
         // Relay has both the already-local one and a new one
-        controller.add(
-          makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]),
-        );
+        controller.add(makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]));
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(service.isBlocked(blockedPubkey1), isTrue);
@@ -968,51 +929,43 @@ void main() {
       },
     );
 
-    test(
-      'does not notify when relay blocks already present locally',
-      () async {
-        var changeCount = 0;
-        service = ContentBlocklistRepository(onChanged: () => changeCount++);
+    test('does not notify when relay blocks already present locally', () async {
+      var changeCount = 0;
+      service = ContentBlocklistRepository(onChanged: () => changeCount++);
 
-        await service.blockUser(blockedPubkey1, ourPubkey: ourPubkey);
-        await service.blockUser(blockedPubkey2, ourPubkey: ourPubkey);
-        changeCount = 0;
+      await service.blockUser(blockedPubkey1, ourPubkey: ourPubkey);
+      await service.blockUser(blockedPubkey2, ourPubkey: ourPubkey);
+      changeCount = 0;
 
-        await service.syncBlockListsInBackground(
-          mockNostrService,
-          mockSigner,
-          ourPubkey,
-        );
+      await service.syncBlockListsInBackground(
+        mockNostrService,
+        mockSigner,
+        ourPubkey,
+      );
 
-        controller.add(
-          makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+      controller.add(makeOwnBlockListEvent([blockedPubkey1, blockedPubkey2]));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(changeCount, equals(0));
-        expect(service.totalBlockedCount, equals(2));
-      },
-    );
+      expect(changeCount, equals(0));
+      expect(service.totalBlockedCount, equals(2));
+    });
 
-    test(
-      'skips own pubkey in relay event p-tags',
-      () async {
-        service = ContentBlocklistRepository();
+    test('skips own pubkey in relay event p-tags', () async {
+      service = ContentBlocklistRepository();
 
-        await service.syncBlockListsInBackground(
-          mockNostrService,
-          mockSigner,
-          ourPubkey,
-        );
+      await service.syncBlockListsInBackground(
+        mockNostrService,
+        mockSigner,
+        ourPubkey,
+      );
 
-        controller.add(makeOwnBlockListEvent([ourPubkey, blockedPubkey1]));
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+      controller.add(makeOwnBlockListEvent([ourPubkey, blockedPubkey1]));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(service.isBlocked(blockedPubkey1), isTrue);
-        expect(service.isBlocked(ourPubkey), isFalse);
-        expect(service.totalBlockedCount, equals(1));
-      },
-    );
+      expect(service.isBlocked(blockedPubkey1), isTrue);
+      expect(service.isBlocked(ourPubkey), isFalse);
+      expect(service.totalBlockedCount, equals(1));
+    });
 
     test(
       'still detects others blocking us alongside own event restoration',
@@ -1283,7 +1236,14 @@ void main() {
           tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => event);
-      when(() => mockClient.publishEvent(any())).thenAnswer((_) async => event);
+      when(() => mockClient.publishEventWithRetry(any())).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {'wss://relay.test'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
 
       final service = ContentBlocklistRepository();
       await service.syncBlockListsInBackground(
@@ -1306,10 +1266,11 @@ void main() {
 
       expect(tagsList, contains(equals(['d', 'block'])));
       expect(tagsList, contains(equals(['p', 'pubkey1'])));
-      verify(() => mockClient.publishEvent(event)).called(1);
+      verify(() => mockClient.publishEventWithRetry(event)).called(1);
     });
 
-    test('tolerates publishEvent returning null', () async {
+    test('does NOT commit locally when publishEventWithRetry returns zero '
+        'accepts', () async {
       when(() => mockSigner.isAuthenticated).thenReturn(true);
       when(
         () => mockSigner.createAndSignEvent(
@@ -1318,7 +1279,14 @@ void main() {
           tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => buildEvent());
-      when(() => mockClient.publishEvent(any())).thenAnswer((_) async => null);
+      when(() => mockClient.publishEventWithRetry(any())).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: 'evt',
+          acceptedBy: const {},
+          rejectedBy: const {},
+          noResponseFrom: const {'wss://relay.test'},
+        ),
+      );
 
       final service = ContentBlocklistRepository();
       await service.syncBlockListsInBackground(
@@ -1327,13 +1295,13 @@ void main() {
         ourPubkey,
       );
 
-      // Should not throw even though publish returns null.
-      await service.blockUser('pubkey1');
+      final result = await service.blockUser('pubkey1');
 
-      expect(service.isBlocked('pubkey1'), isTrue);
+      expect(result.success, isFalse);
+      expect(service.isBlocked('pubkey1'), isFalse);
     });
 
-    test('swallows exceptions raised while signing the event', () async {
+    test('does NOT commit locally when signing the event throws', () async {
       when(() => mockSigner.isAuthenticated).thenReturn(true);
       when(
         () => mockSigner.createAndSignEvent(
@@ -1350,10 +1318,10 @@ void main() {
         ourPubkey,
       );
 
-      // Should not rethrow; blockUser still succeeds locally.
-      await service.blockUser('pubkey1');
+      final result = await service.blockUser('pubkey1');
 
-      expect(service.isBlocked('pubkey1'), isTrue);
+      expect(result.success, isFalse);
+      expect(service.isBlocked('pubkey1'), isFalse);
     });
   });
 
