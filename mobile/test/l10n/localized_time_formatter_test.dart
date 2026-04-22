@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 
@@ -304,6 +305,83 @@ void main() {
           equals('Gestern'),
         );
       });
+    });
+
+    group('formatNotificationTimestamp', () {
+      testWidgets('returns localized relative string for <7d', (tester) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+        final de = await _loadL10n(tester, const Locale('de'));
+        final ts = DateTime.now().subtract(const Duration(hours: 3));
+
+        expect(
+          LocalizedTimeFormatter.formatNotificationTimestamp(en, ts),
+          equals('3h ago'),
+        );
+        expect(
+          LocalizedTimeFormatter.formatNotificationTimestamp(de, ts),
+          equals('vor 3 Std'),
+        );
+      });
+
+      testWidgets(
+        'uses MaterialLocalizations.formatCompactDate when context is '
+        'supplied and the timestamp is older than 7 days',
+        (tester) async {
+          late AppLocalizations l10n;
+          late BuildContext capturedContext;
+          final ts = DateTime.now().subtract(const Duration(days: 30));
+
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: const Locale('en'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) {
+                  l10n = context.l10n;
+                  capturedContext = context;
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          final result = LocalizedTimeFormatter.formatNotificationTimestamp(
+            l10n,
+            ts,
+            context: capturedContext,
+          );
+          final expected = MaterialLocalizations.of(
+            capturedContext,
+          ).formatCompactDate(ts.toLocal());
+          expect(result, equals(expected));
+        },
+      );
+
+      testWidgets(
+        'falls back to DateFormat.yMd(locale) when no context is supplied',
+        (tester) async {
+          final en = await _loadL10n(tester, const Locale('en'));
+          final ts = DateTime(2026, 3, 9, 12);
+
+          expect(
+            LocalizedTimeFormatter.formatNotificationTimestamp(
+              en,
+              ts,
+              locale: 'en',
+            ),
+            equals(DateFormat.yMd('en').format(ts.toLocal())),
+          );
+          expect(
+            LocalizedTimeFormatter.formatNotificationTimestamp(
+              en,
+              ts,
+              locale: 'de',
+            ),
+            equals(DateFormat.yMd('de').format(ts.toLocal())),
+          );
+        },
+      );
     });
 
     group('formatDurationAgo', () {
