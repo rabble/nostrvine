@@ -259,9 +259,11 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
               top: headerOffset,
               left: 0,
               right: 0,
-              child: _PeopleCarousel(
+              child: PeopleCarousel(
                 key: headerKey,
                 pubkeys: userList.pubkeys,
+                listId: userList.id,
+                canRemove: userList.isEditable,
               ),
             ),
           ],
@@ -433,10 +435,18 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
 }
 
 /// Horizontal carousel of people avatars for a user list.
-class _PeopleCarousel extends StatelessWidget {
-  const _PeopleCarousel({required this.pubkeys, super.key});
+@visibleForTesting
+class PeopleCarousel extends StatelessWidget {
+  const PeopleCarousel({
+    required this.pubkeys,
+    required this.listId,
+    required this.canRemove,
+    super.key,
+  });
 
   final List<String> pubkeys;
+  final String listId;
+  final bool canRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -452,8 +462,11 @@ class _PeopleCarousel extends StatelessWidget {
             top: 12,
           ),
           itemCount: pubkeys.length,
-          itemBuilder: (context, index) =>
-              _PeopleAvatarItem(pubkey: pubkeys[index]),
+          itemBuilder: (context, index) => _PeopleAvatarItem(
+            pubkey: pubkeys[index],
+            listId: listId,
+            canRemove: canRemove,
+          ),
         ),
       ),
     );
@@ -461,9 +474,70 @@ class _PeopleCarousel extends StatelessWidget {
 }
 
 class _PeopleAvatarItem extends ConsumerWidget {
-  const _PeopleAvatarItem({required this.pubkey});
+  const _PeopleAvatarItem({
+    required this.pubkey,
+    required this.listId,
+    required this.canRemove,
+  });
 
   final String pubkey;
+  final String listId;
+  final bool canRemove;
+
+  Future<void> _confirmRemove(BuildContext context, String displayName) async {
+    final shouldRemove = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: VineTheme.surfaceContainer,
+        title: Text(
+          'Remove $displayName?',
+          style: VineTheme.titleMediumFont(),
+        ),
+        content: Text(
+          'They will be removed from this list.',
+          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              'Cancel',
+              style: VineTheme.labelMediumFont(color: VineTheme.secondaryText),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              'Remove',
+              style: VineTheme.labelMediumFont(color: VineTheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldRemove != true || !context.mounted) return;
+
+    final bloc = context.read<PeopleListsBloc>()
+      ..add(
+        PeopleListsPubkeyRemoveRequested(listId: listId, pubkey: pubkey),
+      );
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('Removed $displayName from list'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            bloc.add(
+              PeopleListsPubkeyAddRequested(listId: listId, pubkey: pubkey),
+            );
+          },
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -472,13 +546,18 @@ class _PeopleAvatarItem extends ConsumerWidget {
         profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
 
     return Semantics(
-      label: 'View profile for $displayName',
+      label: canRemove
+          ? 'Profile for $displayName. Long press to remove.'
+          : 'View profile for $displayName',
       button: true,
       child: GestureDetector(
         onTap: () {
           final npub = NostrKeyUtils.encodePubKey(pubkey);
           context.push(OtherProfileScreen.pathForNpub(npub));
         },
+        onLongPress: canRemove
+            ? () => _confirmRemove(context, displayName)
+            : null,
         child: Padding(
           padding: const EdgeInsetsDirectional.only(end: 12),
           child: Column(

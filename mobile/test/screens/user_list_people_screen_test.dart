@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/people_lists/people_lists.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
@@ -233,6 +234,201 @@ void main() {
         await tester.pump();
 
         expect(find.byIcon(Icons.person_add_alt_1), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'long-press on a member of an editable list shows remove confirmation',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        const memberPubkey =
+            '1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff';
+        whenListen(
+          bloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: const PeopleListsState(
+            status: PeopleListsStatus.ready,
+          ),
+        );
+
+        await tester.pumpWidget(
+          testProviderScope(
+            child: MaterialApp(
+              home: BlocProvider<PeopleListsBloc>.value(
+                value: bloc,
+                child: const Scaffold(
+                  body: PeopleCarousel(
+                    pubkeys: [memberPubkey],
+                    listId: 'list-1',
+                    canRemove: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.longPress(find.byType(UserAvatar).first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Remove'), findsOneWidget);
+        expect(find.text('Cancel'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'confirming remove dispatches PeopleListsPubkeyRemoveRequested',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        const memberPubkey =
+            '1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff';
+        whenListen(
+          bloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: const PeopleListsState(
+            status: PeopleListsStatus.ready,
+          ),
+        );
+
+        await tester.pumpWidget(
+          testProviderScope(
+            child: MaterialApp(
+              home: BlocProvider<PeopleListsBloc>.value(
+                value: bloc,
+                child: const Scaffold(
+                  body: PeopleCarousel(
+                    pubkeys: [memberPubkey],
+                    listId: 'list-1',
+                    canRemove: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.longPress(find.byType(UserAvatar).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Remove'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => bloc.add(
+            const PeopleListsPubkeyRemoveRequested(
+              listId: 'list-1',
+              pubkey: memberPubkey,
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'undo snackbar dispatches PeopleListsPubkeyAddRequested',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        const memberPubkey =
+            '1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff';
+        whenListen(
+          bloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: const PeopleListsState(
+            status: PeopleListsStatus.ready,
+          ),
+        );
+
+        await tester.pumpWidget(
+          testProviderScope(
+            child: MaterialApp(
+              home: BlocProvider<PeopleListsBloc>.value(
+                value: bloc,
+                child: const Scaffold(
+                  body: PeopleCarousel(
+                    pubkeys: [memberPubkey],
+                    listId: 'list-1',
+                    canRemove: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.longPress(find.byType(UserAvatar).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Remove'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Undo'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => bloc.add(
+            const PeopleListsPubkeyAddRequested(
+              listId: 'list-1',
+              pubkey: memberPubkey,
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'long-press on a read-only list member does NOT show remove dialog',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        const memberPubkey =
+            '1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff';
+        whenListen(
+          bloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: const PeopleListsState(
+            status: PeopleListsStatus.ready,
+          ),
+        );
+
+        // Wrap in GoRouter since long-press still triggers onTap (no-op
+        // long-press when canRemove:false); the tap handler calls
+        // context.push(profile) and needs a router.
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => const Scaffold(
+                body: PeopleCarousel(
+                  pubkeys: [memberPubkey],
+                  listId: 'divine-team',
+                  canRemove: false,
+                ),
+              ),
+            ),
+            GoRoute(
+              path: '/profile/:npub',
+              builder: (context, state) => const Scaffold(
+                body: Text('profile'),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          testProviderScope(
+            child: BlocProvider<PeopleListsBloc>.value(
+              value: bloc,
+              child: MaterialApp.router(routerConfig: router),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.longPress(find.byType(UserAvatar).first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Remove'), findsNothing);
+        expect(find.text('Cancel'), findsNothing);
       },
     );
   });
