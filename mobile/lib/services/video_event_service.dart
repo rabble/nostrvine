@@ -5054,7 +5054,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
   }
 
-  /// Add a video event to the cache (for external services like CurationService)
+  /// Add a video event to the cache (for external services like CurationRepository)
   @override
   void addVideoEvent(VideoEvent videoEvent) {
     _addVideoToSubscription(videoEvent, SubscriptionType.discovery);

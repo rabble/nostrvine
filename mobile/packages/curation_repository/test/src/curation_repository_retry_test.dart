@@ -1,9 +1,9 @@
-// ABOUTME: Tests for CurationService.retryUnpublishedCurations()
+// ABOUTME: Tests for CurationRepository.retryUnpublishedCurations()
 // ABOUTME: and retry-related edge cases
 
 import 'dart:async';
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -39,8 +39,8 @@ void main() {
     registerFallbackValue(<String>[]);
   });
 
-  group('CurationService Retry Logic', () {
-    late CurationService curationService;
+  group('CurationRepository Retry Logic', () {
+    late CurationRepository curationRepository;
     late _MockNostrClient mockNostrService;
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
@@ -81,7 +81,7 @@ void main() {
         () => mockLikesRepository.getLikeCounts(any()),
       ).thenAnswer((_) async => {});
 
-      curationService = CurationService(
+      curationRepository = CurationRepository(
         nostrService: mockNostrService,
         videoEventCache: mockVideoEventCache,
         likesRepository: mockLikesRepository,
@@ -94,7 +94,7 @@ void main() {
       test(
         'does nothing when no publish statuses exist',
         () async {
-          await curationService.retryUnpublishedCurations();
+          await curationRepository.retryUnpublishedCurations();
           // No publishEvent calls should be made
           verifyNever(
             () => mockNostrService.publishEvent(any()),
@@ -110,7 +110,7 @@ void main() {
             () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) async => _testEvent());
 
-          await curationService.publishCuration(
+          await curationRepository.publishCuration(
             id: 'published_one',
             title: 'Published',
             videoIds: [],
@@ -125,7 +125,7 @@ void main() {
             () => mockNostrService.connectedRelays,
           ).thenReturn(['wss://relay1.example.com']);
 
-          await curationService.retryUnpublishedCurations();
+          await curationRepository.retryUnpublishedCurations();
 
           verifyNever(
             () => mockNostrService.publishEvent(any()),
@@ -142,7 +142,7 @@ void main() {
             () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) async => null);
 
-          await curationService.publishCuration(
+          await curationRepository.publishCuration(
             id: 'failed_one',
             title: 'Failed',
             videoIds: [],
@@ -158,7 +158,7 @@ void main() {
           ).thenReturn(['wss://relay1.example.com']);
 
           // Retry immediately - backoff not elapsed
-          await curationService.retryUnpublishedCurations();
+          await curationRepository.retryUnpublishedCurations();
 
           verifyNever(
             () => mockNostrService.publishEvent(any()),
@@ -173,13 +173,13 @@ void main() {
             () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) async => null);
 
-          await curationService.publishCuration(
+          await curationRepository.publishCuration(
             id: 'failed_once',
             title: 'Failed Once',
             videoIds: [],
           );
 
-          final status = curationService.getCurationPublishStatus(
+          final status = curationRepository.getCurationPublishStatus(
             'failed_once',
           );
           // Each publish resets then increments, so

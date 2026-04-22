@@ -1,9 +1,9 @@
-// ABOUTME: Tests for CurationService.subscribeToCurationSets()
+// ABOUTME: Tests for CurationRepository.subscribeToCurationSets()
 // ABOUTME: error handling and edge cases
 
 import 'dart:async';
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -34,7 +34,7 @@ void main() {
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
     late _MockNostrSigner mockSigner;
-    late CurationService curationService;
+    late CurationRepository curationRepository;
 
     setUp(() {
       mockNostrService = _MockNostrClient();
@@ -54,7 +54,7 @@ void main() {
         () => mockLikesRepository.getLikeCounts(any()),
       ).thenAnswer((_) async => {});
 
-      curationService = CurationService(
+      curationRepository = CurationRepository(
         nostrService: mockNostrService,
         videoEventCache: mockVideoEventCache,
         likesRepository: mockLikesRepository,
@@ -64,7 +64,7 @@ void main() {
     });
 
     tearDown(() {
-      curationService.dispose();
+      curationRepository.dispose();
     });
 
     test(
@@ -75,9 +75,9 @@ void main() {
         ).thenThrow(Exception('Connection refused'));
 
         // Should not throw
-        await curationService.subscribeToCurationSets();
+        await curationRepository.subscribeToCurationSets();
 
-        expect(curationService.curationSets, isNotEmpty);
+        expect(curationRepository.curationSets, isNotEmpty);
       },
     );
 
@@ -90,7 +90,7 @@ void main() {
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
-        await curationService.subscribeToCurationSets();
+        await curationRepository.subscribeToCurationSets();
 
         // Emit an error on the stream
         controller.addError(Exception('Stream error'));
@@ -101,7 +101,7 @@ void main() {
         );
 
         // Should not crash
-        expect(curationService.curationSets, isNotEmpty);
+        expect(curationRepository.curationSets, isNotEmpty);
 
         await controller.close();
       },
@@ -116,7 +116,7 @@ void main() {
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
-        await curationService.subscribeToCurationSets();
+        await curationRepository.subscribeToCurationSets();
 
         // Emit a non-30005 event
         controller.add(
@@ -137,7 +137,7 @@ void main() {
 
         // The wrong kind event should not be stored
         expect(
-          curationService.getCurationSet('wrong_kind'),
+          curationRepository.getCurationSet('wrong_kind'),
           isNull,
         );
 
@@ -154,7 +154,7 @@ void main() {
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
-        await curationService.subscribeToCurationSets();
+        await curationRepository.subscribeToCurationSets();
 
         // Emit a kind 30005 event without a 'd' tag
         controller.add(
@@ -175,7 +175,7 @@ void main() {
 
         // Should not crash - the malformed event is
         // handled by the catch block
-        expect(curationService.curationSets, isNotEmpty);
+        expect(curationRepository.curationSets, isNotEmpty);
 
         await controller.close();
       },
@@ -191,7 +191,7 @@ void main() {
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
-        await curationService.subscribeToCurationSets();
+        await curationRepository.subscribeToCurationSets();
 
         // Emit a valid curation event
         controller.add(
@@ -214,7 +214,7 @@ void main() {
           const Duration(milliseconds: 100),
         );
 
-        final set = curationService.getCurationSet(
+        final set = curationRepository.getCurationSet(
           'new_curation',
         );
         expect(set, isNotNull);

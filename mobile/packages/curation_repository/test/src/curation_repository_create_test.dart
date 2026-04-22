@@ -1,8 +1,8 @@
-// ABOUTME: Tests for CurationService.createCurationSet() method
+// ABOUTME: Tests for CurationRepository.createCurationSet() method
 // ABOUTME: Validates creation and publishing of NIP-51 video curation
 // ABOUTME: sets to Nostr
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -24,12 +24,12 @@ const _testPubkey =
     'e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
 
 void main() {
-  group('CurationService.createCurationSet()', () {
+  group('CurationRepository.createCurationSet()', () {
     late _MockNostrClient mockNostrService;
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
     late _MockNostrSigner mockSigner;
-    late CurationService curationService;
+    late CurationRepository curationRepository;
 
     setUpAll(() {
       registerFallbackValue(
@@ -59,7 +59,7 @@ void main() {
         () => mockSigner.signEvent(any()),
       ).thenAnswer((_) async => null);
 
-      curationService = CurationService(
+      curationRepository = CurationRepository(
         nostrService: mockNostrService,
         videoEventCache: mockVideoEventCache,
         likesRepository: mockLikesRepository,
@@ -89,7 +89,7 @@ void main() {
           () => mockNostrService.connectedRelays,
         ).thenReturn(['wss://relay']);
 
-        final result = await curationService.createCurationSet(
+        final result = await curationRepository.createCurationSet(
           id: 'test_list',
           title: 'Test Curation List',
           videoIds: ['video1', 'video2', 'video3'],
@@ -122,7 +122,7 @@ void main() {
         ).thenAnswer((_) async => signedEvent);
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
-        await curationService.createCurationSet(
+        await curationRepository.createCurationSet(
           id: 'test',
           title: 'Test',
           videoIds: ['video1'],
@@ -153,7 +153,7 @@ void main() {
       ).thenAnswer((_) async => signedEvent);
       when(() => mockNostrService.connectedRelays).thenReturn([]);
 
-      await curationService.createCurationSet(
+      await curationRepository.createCurationSet(
         id: 'my_list',
         title: 'My List',
         videoIds: ['vid1', 'vid2'],
@@ -212,7 +212,7 @@ void main() {
         () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => null);
 
-      final result = await curationService.createCurationSet(
+      final result = await curationRepository.createCurationSet(
         id: 'test_list',
         title: 'Test List',
         videoIds: ['video1'],
@@ -229,7 +229,7 @@ void main() {
           () => mockSigner.signEvent(any()),
         ).thenAnswer((_) async => null);
 
-        final result = await curationService.createCurationSet(
+        final result = await curationRepository.createCurationSet(
           id: 'test_list',
           title: 'Test List',
           videoIds: ['video1'],
@@ -259,7 +259,7 @@ void main() {
           () => mockNostrService.publishEvent(any()),
         ).thenThrow(Exception('Network error'));
 
-        final result = await curationService.createCurationSet(
+        final result = await curationRepository.createCurationSet(
           id: 'error_list',
           title: 'Error Test',
           videoIds: ['video1'],
@@ -287,7 +287,7 @@ void main() {
         ).thenAnswer((_) async => signedEvent);
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
-        final result = await curationService.createCurationSet(
+        final result = await curationRepository.createCurationSet(
           id: 'empty_list',
           title: 'Empty List',
           videoIds: [],
@@ -324,7 +324,7 @@ void main() {
         ).thenAnswer((_) async => signedEvent);
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
-        final result = await curationService.createCurationSet(
+        final result = await curationRepository.createCurationSet(
           id: 'minimal',
           title: 'Minimal',
           videoIds: ['video1'],
@@ -365,13 +365,13 @@ void main() {
           () => mockNostrService.connectedRelays,
         ).thenReturn(['wss://relay']);
 
-        await curationService.createCurationSet(
+        await curationRepository.createCurationSet(
           id: 'status_test',
           title: 'Status Test',
           videoIds: ['video1'],
         );
 
-        final status = curationService.getCurationPublishStatus(
+        final status = curationRepository.getCurationPublishStatus(
           'status_test',
         );
         expect(status.isPublished, isTrue);
@@ -400,13 +400,13 @@ void main() {
           () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => null);
 
-        await curationService.createCurationSet(
+        await curationRepository.createCurationSet(
           id: 'fail_status',
           title: 'Fail Status Test',
           videoIds: ['video1'],
         );
 
-        final status = curationService.getCurationPublishStatus(
+        final status = curationRepository.getCurationPublishStatus(
           'fail_status',
         );
         expect(status.isPublished, isFalse);
@@ -434,7 +434,7 @@ void main() {
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
         // With description
-        await curationService.createCurationSet(
+        await curationRepository.createCurationSet(
           id: 'with_desc',
           title: 'Title',
           videoIds: ['video1'],
@@ -457,7 +457,7 @@ void main() {
           () => mockSigner.signEvent(any()),
         ).thenAnswer((_) async => signedEvent);
 
-        await curationService.createCurationSet(
+        await curationRepository.createCurationSet(
           id: 'no_desc',
           title: 'Just Title',
           videoIds: ['video1'],

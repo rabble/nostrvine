@@ -1,7 +1,7 @@
-// ABOUTME: Tests for CurationService getter methods and simple
+// ABOUTME: Tests for CurationRepository getter methods and simple
 // ABOUTME: accessors (isLoading, error, curation set lookups)
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -28,8 +28,8 @@ void main() {
     registerFallbackValue(<String>[]);
   });
 
-  group(CurationService, () {
-    late CurationService curationService;
+  group(CurationRepository, () {
+    late CurationRepository curationRepository;
     late _MockNostrClient mockNostrService;
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
@@ -49,7 +49,7 @@ void main() {
         () => mockLikesRepository.getLikeCounts(any()),
       ).thenAnswer((_) async => {});
 
-      curationService = CurationService(
+      curationRepository = CurationRepository(
         nostrService: mockNostrService,
         videoEventCache: mockVideoEventCache,
         likesRepository: mockLikesRepository,
@@ -59,25 +59,25 @@ void main() {
     });
 
     tearDown(() {
-      curationService.dispose();
+      curationRepository.dispose();
     });
 
     group('isLoading', () {
       test('returns false after initialization completes', () {
-        expect(curationService.isLoading, isFalse);
+        expect(curationRepository.isLoading, isFalse);
       });
     });
 
     group('error', () {
       test('returns null when no error has occurred', () {
-        expect(curationService.error, isNull);
+        expect(curationRepository.error, isNull);
       });
     });
 
     group('analyticsTrendingVideos', () {
       test('returns empty list initially', () {
         expect(
-          curationService.analyticsTrendingVideos,
+          curationRepository.analyticsTrendingVideos,
           isEmpty,
         );
       });
@@ -86,7 +86,7 @@ void main() {
     group('getVideosForSet', () {
       test('returns empty list for unknown set ID', () {
         expect(
-          curationService.getVideosForSet('nonexistent'),
+          curationRepository.getVideosForSet('nonexistent'),
           isEmpty,
         );
       });
@@ -95,7 +95,7 @@ void main() {
     group('getCurationSet', () {
       test('returns null for unknown set ID', () {
         expect(
-          curationService.getCurationSet('nonexistent'),
+          curationRepository.getCurationSet('nonexistent'),
           isNull,
         );
       });
@@ -103,7 +103,7 @@ void main() {
       test(
         'returns sample curation set for editors picks',
         () {
-          final set = curationService.getCurationSet(
+          final set = curationRepository.getCurationSet(
             CurationSetType.editorsPicks.id,
           );
           expect(set, isNotNull);
@@ -117,7 +117,7 @@ void main() {
 
     group('getCurationSetByType', () {
       test('returns curation set for known type', () {
-        final set = curationService.getCurationSetByType(
+        final set = curationRepository.getCurationSetByType(
           CurationSetType.trending,
         );
         expect(set, isNotNull);
@@ -133,7 +133,7 @@ void main() {
         'does nothing when missing cache is empty',
         () {
           // Should not throw
-          curationService.clearMissingVideosCache();
+          curationRepository.clearMissingVideosCache();
         },
       );
     });
@@ -142,7 +142,7 @@ void main() {
       test(
         'returns sample curation sets after initialization',
         () {
-          final sets = curationService.curationSets;
+          final sets = curationRepository.curationSets;
           expect(sets, isNotEmpty);
           expect(
             sets.any(

@@ -1,6 +1,6 @@
-name: curation_service
+name: curation_repository
 description: >-
-  Service for managing NIP-51 video curation sets and content discovery.
+  Repository for managing NIP-51 video curation sets and content discovery.
   Handles fetching, caching, and filtering videos based on curation sets.
 version: 0.1.0+1
 publish_to: none

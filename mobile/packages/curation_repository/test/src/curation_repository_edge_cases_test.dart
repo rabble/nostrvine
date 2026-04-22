@@ -1,10 +1,10 @@
-// ABOUTME: Tests for CurationService edge cases and error paths
+// ABOUTME: Tests for CurationRepository edge cases and error paths
 // ABOUTME: Covers _updateVideoCache match, refreshCurationSets
 // ABOUTME: stream errors, and createCurationSet exception
 
 import 'dart:async';
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -44,12 +44,12 @@ void main() {
     );
   });
 
-  group('CurationService edge cases', () {
+  group('CurationRepository edge cases', () {
     late _MockNostrClient mockNostrService;
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
     late _MockNostrSigner mockSigner;
-    late CurationService curationService;
+    late CurationRepository curationRepository;
 
     setUp(() {
       mockNostrService = _MockNostrClient();
@@ -97,7 +97,7 @@ void main() {
             () => mockVideoEventCache.discoveryVideos,
           ).thenReturn([video1, video2]);
 
-          curationService = CurationService(
+          curationRepository = CurationRepository(
             nostrService: mockNostrService,
             videoEventCache: mockVideoEventCache,
             likesRepository: mockLikesRepository,
@@ -112,7 +112,7 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => controller.stream);
 
-          await curationService.subscribeToCurationSets();
+          await curationRepository.subscribeToCurationSets();
 
           controller.add(
             Event.fromJson({
@@ -137,7 +137,7 @@ void main() {
 
           // The video cache should now have the matching
           // videos
-          final videos = curationService.getVideosForSet(
+          final videos = curationRepository.getVideosForSet(
             'test_set',
           );
           expect(videos, hasLength(2));
@@ -153,7 +153,7 @@ void main() {
       test(
         'handles stream error during refresh',
         () async {
-          curationService = CurationService(
+          curationRepository = CurationRepository(
             nostrService: mockNostrService,
             videoEventCache: mockVideoEventCache,
             likesRepository: mockLikesRepository,
@@ -166,7 +166,7 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => controller.stream);
 
-          final future = curationService.refreshCurationSets();
+          final future = curationRepository.refreshCurationSets();
 
           // Emit an error on the stream
           controller.addError(
@@ -183,7 +183,7 @@ void main() {
 
           // Should have fallen back to sample data
           expect(
-            curationService.curationSets,
+            curationRepository.curationSets,
             isNotEmpty,
           );
         },
@@ -193,7 +193,7 @@ void main() {
         'handles parse error in refreshCurationSets '
         'event listener',
         () async {
-          curationService = CurationService(
+          curationRepository = CurationRepository(
             nostrService: mockNostrService,
             videoEventCache: mockVideoEventCache,
             likesRepository: mockLikesRepository,
@@ -206,7 +206,7 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => controller.stream);
 
-          final future = curationService.refreshCurationSets();
+          final future = curationRepository.refreshCurationSets();
 
           // Send a kind 30005 event that will throw
           // ArgumentError during parsing (no 'd' tag).
@@ -236,7 +236,7 @@ void main() {
           unawaited(controller.close());
           await future;
 
-          final set = curationService.getCurationSet(
+          final set = curationRepository.getCurationSet(
             'good_set',
           );
           expect(set, isNotNull);
@@ -255,7 +255,7 @@ void main() {
             () => mockSigner.getPublicKey(),
           ).thenThrow(Exception('Signer unavailable'));
 
-          curationService = CurationService(
+          curationRepository = CurationRepository(
             nostrService: mockNostrService,
             videoEventCache: mockVideoEventCache,
             likesRepository: mockLikesRepository,
@@ -263,7 +263,7 @@ void main() {
             divineTeamPubkeys: const [],
           );
 
-          final result = await curationService.createCurationSet(
+          final result = await curationRepository.createCurationSet(
             id: 'error_set',
             title: 'Error Set',
             videoIds: ['v1'],
@@ -299,7 +299,7 @@ void main() {
               () => mockNostrService.connectedRelays,
             ).thenReturn(['wss://relay1.example.com']);
 
-            curationService = CurationService(
+            curationRepository = CurationRepository(
               nostrService: mockNostrService,
               videoEventCache: mockVideoEventCache,
               likesRepository: mockLikesRepository,
@@ -313,13 +313,13 @@ void main() {
               () => mockNostrService.publishEvent(any()),
             ).thenAnswer((_) async => null);
 
-            await curationService.publishCuration(
+            await curationRepository.publishCuration(
               id: CurationSetType.editorsPicks.id,
               title: 'Editors Picks',
               videoIds: ['v1'],
             );
 
-            final status = curationService.getCurationPublishStatus(
+            final status = curationRepository.getCurationPublishStatus(
               CurationSetType.editorsPicks.id,
             );
             expect(status.failedAttempts, equals(1));
@@ -344,7 +344,7 @@ void main() {
             // and the retry delay for 1 attempt is 2s,
             // we'd need to wait. Instead, verify the
             // method runs without error.
-            await curationService.retryUnpublishedCurations();
+            await curationRepository.retryUnpublishedCurations();
 
             // The backoff hasn't elapsed (just published),
             // so no retry happens. This exercises the

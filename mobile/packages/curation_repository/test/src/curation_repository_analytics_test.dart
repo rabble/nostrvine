@@ -1,10 +1,10 @@
-// ABOUTME: Tests for CurationService analytics integration
+// ABOUTME: Tests for CurationRepository analytics integration
 // ABOUTME: Verifies trending data fetch and relay fallback
 
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -40,7 +40,7 @@ void main() {
     );
   });
 
-  late CurationService curationService;
+  late CurationRepository curationRepository;
   late _MockNostrClient mockNostrService;
   late _MockVideoEventCache mockVideoEventCache;
   late _MockLikesRepository mockLikesRepository;
@@ -68,7 +68,7 @@ void main() {
       () => mockNostrService.subscribe(any()),
     ).thenAnswer((_) => const Stream<Event>.empty());
 
-    curationService = CurationService(
+    curationRepository = CurationRepository(
       nostrService: mockNostrService,
       videoEventCache: mockVideoEventCache,
       likesRepository: mockLikesRepository,
@@ -109,7 +109,7 @@ void main() {
           return streamController.stream;
         });
 
-        await curationService.refreshTrendingFromAnalytics();
+        await curationRepository.refreshTrendingFromAnalytics();
 
         // Test passes if no exceptions were thrown
         expect(true, isTrue);
@@ -119,9 +119,9 @@ void main() {
     test(
       'handles analytics API errors gracefully',
       () async {
-        await curationService.refreshTrendingFromAnalytics();
+        await curationRepository.refreshTrendingFromAnalytics();
 
-        final trendingVideos = curationService.getVideosForSetType(
+        final trendingVideos = curationRepository.getVideosForSetType(
           CurationSetType.trending,
         );
         expect(trendingVideos, isNotNull);
@@ -144,9 +144,9 @@ void main() {
           return streamController.stream;
         });
 
-        await curationService.refreshTrendingFromAnalytics();
+        await curationRepository.refreshTrendingFromAnalytics();
 
-        final trendingVideos = curationService.getVideosForSetType(
+        final trendingVideos = curationRepository.getVideosForSetType(
           CurationSetType.trending,
         );
         expect(trendingVideos, isNotNull);
@@ -182,9 +182,9 @@ void main() {
         ];
         when(() => mockVideoEventCache.discoveryVideos).thenReturn(videos);
 
-        await curationService.refreshTrendingFromAnalytics();
+        await curationRepository.refreshTrendingFromAnalytics();
 
-        final trendingVideos = curationService.getVideosForSetType(
+        final trendingVideos = curationRepository.getVideosForSetType(
           CurationSetType.trending,
         );
         expect(trendingVideos, isNotNull);

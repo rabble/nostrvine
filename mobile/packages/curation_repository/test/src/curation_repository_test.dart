@@ -1,7 +1,7 @@
-// ABOUTME: Tests for CurationService analytics integration and
+// ABOUTME: Tests for CurationRepository analytics integration and
 // ABOUTME: on-demand trending fetch
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -28,8 +28,8 @@ void main() {
     registerFallbackValue(<String>[]);
   });
 
-  group(CurationService, () {
-    late CurationService curationService;
+  group(CurationRepository, () {
+    late CurationRepository curationRepository;
     late _MockNostrClient mockNostrService;
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
@@ -42,7 +42,7 @@ void main() {
       mockSigner = _MockNostrSigner();
 
       // Mock discoveryVideos to avoid MissingStubError
-      // during CurationService initialization
+      // during CurationRepository initialization
       when(() => mockVideoEventCache.discoveryVideos).thenReturn([]);
       // Mock subscribe to avoid MissingStubError when
       // fetching Editor's Picks list
@@ -54,7 +54,7 @@ void main() {
         () => mockLikesRepository.getLikeCounts(any()),
       ).thenAnswer((_) async => {});
 
-      curationService = CurationService(
+      curationRepository = CurationRepository(
         nostrService: mockNostrService,
         videoEventCache: mockVideoEventCache,
         likesRepository: mockLikesRepository,
@@ -64,14 +64,14 @@ void main() {
     });
 
     tearDown(() {
-      curationService.dispose();
+      curationRepository.dispose();
     });
 
     test(
       'should have manual refresh method for trending',
       () {
         expect(
-          curationService.refreshTrendingFromAnalytics,
+          curationRepository.refreshTrendingFromAnalytics,
           isA<Function>(),
         );
       },
@@ -81,7 +81,7 @@ void main() {
       'should fall back to local algorithm when analytics '
       'unavailable',
       () {
-        final trendingVideos = curationService.getVideosForSetType(
+        final trendingVideos = curationRepository.getVideosForSetType(
           CurationSetType.trending,
         );
         expect(trendingVideos, isNotNull);
@@ -91,10 +91,10 @@ void main() {
     test(
       'should get videos for different curation set types',
       () {
-        final editorsPicks = curationService.getVideosForSetType(
+        final editorsPicks = curationRepository.getVideosForSetType(
           CurationSetType.editorsPicks,
         );
-        final trending = curationService.getVideosForSetType(
+        final trending = curationRepository.getVideosForSetType(
           CurationSetType.trending,
         );
         expect(editorsPicks, isA<List<VideoEvent>>());
@@ -107,7 +107,7 @@ void main() {
       () {
         when(() => mockVideoEventCache.discoveryVideos).thenReturn([]);
 
-        final service = CurationService(
+        final service = CurationRepository(
           nostrService: mockNostrService,
           videoEventCache: mockVideoEventCache,
           likesRepository: mockLikesRepository,

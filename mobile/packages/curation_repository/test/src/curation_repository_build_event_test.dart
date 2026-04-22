@@ -1,7 +1,7 @@
-// ABOUTME: Tests for CurationService.buildCurationEvent() edge cases
+// ABOUTME: Tests for CurationRepository.buildCurationEvent() edge cases
 // ABOUTME: Covers null pubkey and signing exception paths
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -31,8 +31,8 @@ void main() {
     registerFallbackValue(<String>[]);
   });
 
-  group('CurationService.buildCurationEvent()', () {
-    late CurationService curationService;
+  group('CurationRepository.buildCurationEvent()', () {
+    late CurationRepository curationRepository;
     late _MockNostrClient mockNostrService;
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
@@ -54,7 +54,7 @@ void main() {
         () => mockLikesRepository.getLikeCounts(any()),
       ).thenAnswer((_) async => {});
 
-      curationService = CurationService(
+      curationRepository = CurationRepository(
         nostrService: mockNostrService,
         videoEventCache: mockVideoEventCache,
         likesRepository: mockLikesRepository,
@@ -70,7 +70,7 @@ void main() {
           () => mockSigner.getPublicKey(),
         ).thenAnswer((_) async => null);
 
-        final event = await curationService.buildCurationEvent(
+        final event = await curationRepository.buildCurationEvent(
           id: 'test_id',
           title: 'Test',
           videoIds: ['video1'],
@@ -87,7 +87,7 @@ void main() {
           () => mockSigner.getPublicKey(),
         ).thenThrow(Exception('Signer unavailable'));
 
-        final event = await curationService.buildCurationEvent(
+        final event = await curationRepository.buildCurationEvent(
           id: 'test_id',
           title: 'Test',
           videoIds: ['video1'],
@@ -107,7 +107,7 @@ void main() {
           () => mockSigner.signEvent(any()),
         ).thenThrow(Exception('Signing failed'));
 
-        final event = await curationService.buildCurationEvent(
+        final event = await curationRepository.buildCurationEvent(
           id: 'test_id',
           title: 'Test',
           videoIds: ['video1'],

@@ -1,9 +1,9 @@
-// ABOUTME: Tests for CurationService.refreshIfNeeded() and
+// ABOUTME: Tests for CurationRepository.refreshIfNeeded() and
 // ABOUTME: _populateSampleSets() with actual video data
 
 import 'dart:async';
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -55,8 +55,8 @@ void main() {
     );
   });
 
-  group('CurationService refresh', () {
-    late CurationService curationService;
+  group('CurationRepository refresh', () {
+    late CurationRepository curationRepository;
     late _MockNostrClient mockNostrService;
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
@@ -87,8 +87,8 @@ void main() {
             () => mockVideoEventCache.discoveryVideos,
           ).thenReturn([]);
 
-          curationService =
-              CurationService(
+          curationRepository =
+              CurationRepository(
                   nostrService: mockNostrService,
                   videoEventCache: mockVideoEventCache,
                   likesRepository: mockLikesRepository,
@@ -99,7 +99,7 @@ void main() {
                 // verify no exception is thrown
                 ..refreshIfNeeded();
           expect(
-            curationService.curationSets,
+            curationRepository.curationSets,
             isNotEmpty,
           );
         },
@@ -113,7 +113,7 @@ void main() {
             () => mockVideoEventCache.discoveryVideos,
           ).thenReturn([]);
 
-          curationService = CurationService(
+          curationRepository = CurationRepository(
             nostrService: mockNostrService,
             videoEventCache: mockVideoEventCache,
             likesRepository: mockLikesRepository,
@@ -129,7 +129,7 @@ void main() {
             _video(id: 'v2', createdAt: 2000),
           ]);
 
-          curationService.refreshIfNeeded();
+          curationRepository.refreshIfNeeded();
 
           // Allow async work to settle
           await Future<void>.delayed(Duration.zero);
@@ -166,7 +166,7 @@ void main() {
             () => mockVideoEventCache.addVideoEvent(any()),
           ).thenReturn(null);
 
-          curationService = CurationService(
+          curationRepository = CurationRepository(
             nostrService: mockNostrService,
             videoEventCache: mockVideoEventCache,
             likesRepository: mockLikesRepository,
@@ -183,7 +183,7 @@ void main() {
           );
 
           // Editor picks set should exist
-          final editorsPicks = curationService.getVideosForSetType(
+          final editorsPicks = curationRepository.getVideosForSetType(
             CurationSetType.editorsPicks,
           );
           expect(editorsPicks, isA<List<VideoEvent>>());
@@ -211,7 +211,7 @@ void main() {
             },
           );
 
-          curationService = CurationService(
+          curationRepository = CurationRepository(
             nostrService: mockNostrService,
             videoEventCache: mockVideoEventCache,
             likesRepository: mockLikesRepository,

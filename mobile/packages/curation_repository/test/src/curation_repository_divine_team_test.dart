@@ -1,11 +1,11 @@
-// ABOUTME: Tests for CurationService Divine Team video fetching
+// ABOUTME: Tests for CurationRepository Divine Team video fetching
 // ABOUTME: Covers _fetchDivineTeamVideos stream handling and
 // ABOUTME: _selectEditorsPicksVideos logic
 
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -71,7 +71,7 @@ void main() {
     );
   });
 
-  group('CurationService Divine Team', () {
+  group('CurationRepository Divine Team', () {
     late _MockNostrClient mockNostrService;
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
@@ -103,7 +103,7 @@ void main() {
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
-        final service = CurationService(
+        final service = CurationRepository(
           nostrService: mockNostrService,
           videoEventCache: mockVideoEventCache,
           likesRepository: mockLikesRepository,
@@ -151,7 +151,7 @@ void main() {
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
-        final service = CurationService(
+        final service = CurationRepository(
           nostrService: mockNostrService,
           videoEventCache: mockVideoEventCache,
           likesRepository: mockLikesRepository,
@@ -184,7 +184,7 @@ void main() {
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
-        final service = CurationService(
+        final service = CurationRepository(
           nostrService: mockNostrService,
           videoEventCache: mockVideoEventCache,
           likesRepository: mockLikesRepository,
@@ -241,7 +241,7 @@ void main() {
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
-        final service = CurationService(
+        final service = CurationRepository(
           nostrService: mockNostrService,
           videoEventCache: mockVideoEventCache,
           likesRepository: mockLikesRepository,
@@ -312,7 +312,7 @@ void main() {
         });
 
         // Should not throw during construction
-        final service = CurationService(
+        final service = CurationRepository(
           nostrService: mockNostrService,
           videoEventCache: mockVideoEventCache,
           likesRepository: mockLikesRepository,

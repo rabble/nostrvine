@@ -10,7 +10,7 @@ import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_service/content_blocklist_service.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -1883,13 +1883,13 @@ ViewEventPublisher viewEventPublisher(Ref ref) {
 
 /// Curation Service - manages NIP-51 video curation sets
 @Riverpod(keepAlive: true)
-CurationService curationService(Ref ref) {
+CurationRepository curationRepository(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final videoEventService = ref.watch(videoEventServiceProvider);
   final likesRepository = ref.watch(likesRepositoryProvider);
   final authService = ref.watch(authServiceProvider);
 
-  return CurationService(
+  return CurationRepository(
     nostrService: nostrService,
     videoEventCache: videoEventService,
     likesRepository: likesRepository,

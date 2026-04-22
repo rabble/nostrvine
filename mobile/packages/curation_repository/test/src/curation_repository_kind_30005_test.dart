@@ -1,10 +1,10 @@
-// ABOUTME: Tests for CurationService kind 30005 Nostr queries
+// ABOUTME: Tests for CurationRepository kind 30005 Nostr queries
 // ABOUTME: Verifies fetching and subscribing to NIP-51 video
 // ABOUTME: curation sets
 
 import 'dart:async';
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -30,12 +30,12 @@ void main() {
     registerFallbackValue(<String>[]);
   });
 
-  group('CurationService - Kind 30005 Nostr Queries', () {
+  group('CurationRepository - Kind 30005 Nostr Queries', () {
     late _MockNostrClient mockNostrService;
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
     late _MockNostrSigner mockSigner;
-    late CurationService curationService;
+    late CurationRepository curationRepository;
 
     setUp(() {
       mockNostrService = _MockNostrClient();
@@ -55,7 +55,7 @@ void main() {
         () => mockLikesRepository.getLikeCounts(any()),
       ).thenAnswer((_) async => {});
 
-      curationService = CurationService(
+      curationRepository = CurationRepository(
         nostrService: mockNostrService,
         videoEventCache: mockVideoEventCache,
         likesRepository: mockLikesRepository,
@@ -99,7 +99,7 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => controller.stream);
 
-          final future = curationService.refreshCurationSets();
+          final future = curationRepository.refreshCurationSets();
 
           controller.add(testEvent);
           await Future<void>.delayed(
@@ -109,7 +109,7 @@ void main() {
 
           await future;
 
-          final set = curationService.getCurationSet('test_list');
+          final set = curationRepository.getCurationSet('test_list');
           expect(set, isNotNull);
           expect(set!.title, 'Test Curation List');
           expect(set.videoIds.length, 2);
@@ -161,7 +161,7 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => controller.stream);
 
-          final future = curationService.refreshCurationSets();
+          final future = curationRepository.refreshCurationSets();
 
           controller
             ..add(event1)
@@ -173,8 +173,8 @@ void main() {
 
           await future;
 
-          final set1 = curationService.getCurationSet('list1');
-          final set2 = curationService.getCurationSet('list2');
+          final set1 = curationRepository.getCurationSet('list1');
+          final set2 = curationRepository.getCurationSet('list2');
 
           expect(set1, isNotNull);
           expect(set2, isNotNull);
@@ -191,13 +191,13 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => controller.stream);
 
-          final future = curationService.refreshCurationSets();
+          final future = curationRepository.refreshCurationSets();
 
           unawaited(controller.close());
           await future;
 
           expect(
-            curationService.curationSets.isNotEmpty,
+            curationRepository.curationSets.isNotEmpty,
             isTrue,
           );
         },
@@ -211,10 +211,10 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenThrow(Exception('Connection error'));
 
-          await curationService.refreshCurationSets();
+          await curationRepository.refreshCurationSets();
 
           expect(
-            curationService.curationSets.isNotEmpty,
+            curationRepository.curationSets.isNotEmpty,
             isTrue,
           );
         },
@@ -227,7 +227,7 @@ void main() {
         ).thenAnswer((_) => controller.stream);
 
         final stopwatch = Stopwatch()..start();
-        await curationService.refreshCurationSets();
+        await curationRepository.refreshCurationSets();
         stopwatch.stop();
 
         expect(
@@ -270,7 +270,7 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => controller.stream);
 
-          final future = curationService.refreshCurationSets();
+          final future = curationRepository.refreshCurationSets();
 
           controller
             ..add(wrongKindEvent)
@@ -282,7 +282,7 @@ void main() {
 
           await future;
 
-          final validSet = curationService.getCurationSet('list');
+          final validSet = curationRepository.getCurationSet('list');
           expect(validSet, isNotNull);
         },
       );
@@ -305,7 +305,7 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => controller.stream);
 
-          final future = curationService.refreshCurationSets();
+          final future = curationRepository.refreshCurationSets();
 
           controller.add(malformedEvent);
           await Future<void>.delayed(
@@ -327,7 +327,7 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => controller.stream);
 
-          await curationService.subscribeToCurationSets();
+          await curationRepository.subscribeToCurationSets();
 
           verify(
             () => mockNostrService.subscribe(
@@ -368,14 +368,14 @@ void main() {
             () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => controller.stream);
 
-          await curationService.subscribeToCurationSets();
+          await curationRepository.subscribeToCurationSets();
 
           controller.add(testEvent);
           await Future<void>.delayed(
             const Duration(milliseconds: 100),
           );
 
-          final set = curationService.getCurationSet('streaming_list');
+          final set = curationRepository.getCurationSet('streaming_list');
           expect(set, isNotNull);
           expect(set!.title, 'Streaming List');
           expect(

@@ -3796,50 +3796,56 @@ String _$viewEventPublisherHash() =>
 
 /// Curation Service - manages NIP-51 video curation sets
 
-@ProviderFor(curationService)
-const curationServiceProvider = CurationServiceProvider._();
+@ProviderFor(curationRepository)
+const curationRepositoryProvider = CurationRepositoryProvider._();
 
 /// Curation Service - manages NIP-51 video curation sets
 
-final class CurationServiceProvider
+final class CurationRepositoryProvider
     extends
-        $FunctionalProvider<CurationService, CurationService, CurationService>
-    with $Provider<CurationService> {
+        $FunctionalProvider<
+          CurationRepository,
+          CurationRepository,
+          CurationRepository
+        >
+    with $Provider<CurationRepository> {
   /// Curation Service - manages NIP-51 video curation sets
-  const CurationServiceProvider._()
+  const CurationRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'curationServiceProvider',
+        name: r'curationRepositoryProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$curationServiceHash();
+  String debugGetCreateSourceHash() => _$curationRepositoryHash();
 
   @$internal
   @override
-  $ProviderElement<CurationService> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $ProviderElement<CurationRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
-  CurationService create(Ref ref) {
-    return curationService(ref);
+  CurationRepository create(Ref ref) {
+    return curationRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(CurationService value) {
+  Override overrideWithValue(CurationRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<CurationService>(value),
+      providerOverride: $SyncValueProvider<CurationRepository>(value),
     );
   }
 }
 
-String _$curationServiceHash() => r'c2e09557d5382b0286cedd6f09854b9537af477e';
+String _$curationRepositoryHash() =>
+    r'a1a9ce03d658dd1bf9c924270bd9dacd0d070a56';
 
 /// Content reporting service for NIP-56 compliance
 

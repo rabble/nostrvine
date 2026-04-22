@@ -1,10 +1,10 @@
-// ABOUTME: Tests for CurationService Nostr publishing functionality
+// ABOUTME: Tests for CurationRepository Nostr publishing functionality
 // ABOUTME: (kind 30005). Verifies curation sets are correctly published
 // ABOUTME: to Nostr relays with retry logic.
 
 import 'dart:async';
 
-import 'package:curation_service/curation_service.dart';
+import 'package:curation_repository/curation_repository.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -44,8 +44,8 @@ void main() {
     registerFallbackValue(<List<String>>[]);
   });
 
-  group('CurationService Publishing', () {
-    late CurationService curationService;
+  group('CurationRepository Publishing', () {
+    late CurationRepository curationRepository;
     late _MockNostrClient mockNostrService;
     late _MockVideoEventCache mockVideoEventCache;
     late _MockLikesRepository mockLikesRepository;
@@ -89,7 +89,7 @@ void main() {
         () => mockLikesRepository.getLikeCounts(any()),
       ).thenAnswer((_) async => {});
 
-      curationService = CurationService(
+      curationRepository = CurationRepository(
         nostrService: mockNostrService,
         videoEventCache: mockVideoEventCache,
         likesRepository: mockLikesRepository,
@@ -103,7 +103,7 @@ void main() {
         'should create kind 30005 event with correct '
         'structure',
         () async {
-          final event = await curationService.buildCurationEvent(
+          final event = await curationRepository.buildCurationEvent(
             id: 'test_curation_1',
             title: 'Test Curation',
             videoIds: ['video1', 'video2', 'video3'],
@@ -119,7 +119,7 @@ void main() {
       test(
         'should handle optional fields correctly',
         () async {
-          final event = await curationService.buildCurationEvent(
+          final event = await curationRepository.buildCurationEvent(
             id: 'minimal_curation',
             title: 'Minimal Curation',
             videoIds: ['video1'],
@@ -131,7 +131,7 @@ void main() {
       );
 
       test('should handle empty video list', () async {
-        final event = await curationService.buildCurationEvent(
+        final event = await curationRepository.buildCurationEvent(
           id: 'empty_curation',
           title: 'Empty Curation',
           videoIds: [],
@@ -161,7 +161,7 @@ void main() {
             ),
           );
 
-          final result = await curationService.publishCuration(
+          final result = await curationRepository.publishCuration(
             id: 'test_curation',
             title: 'Test Curation',
             videoIds: ['video1', 'video2'],
@@ -186,7 +186,7 @@ void main() {
             () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) async => null);
 
-          final result = await curationService.publishCuration(
+          final result = await curationRepository.publishCuration(
             id: 'test_curation',
             title: 'Test',
             videoIds: [],
@@ -215,7 +215,7 @@ void main() {
 
           CurationPublishResult? result;
           unawaited(
-            curationService
+            curationRepository
                 .publishCuration(
                   id: 'test_curation',
                   title: 'Test',
@@ -246,7 +246,7 @@ void main() {
             // Start first publish (will block on completer)
             CurationPublishResult? firstResult;
             unawaited(
-              curationService
+              curationRepository
                   .publishCuration(
                     id: 'rapid_curation',
                     title: 'Test',
@@ -261,7 +261,7 @@ void main() {
             // Second publish of same ID should be rejected
             CurationPublishResult? secondResult;
             unawaited(
-              curationService
+              curationRepository
                   .publishCuration(
                     id: 'rapid_curation',
                     title: 'Test',
@@ -296,13 +296,13 @@ void main() {
             () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) async => _testEvent());
 
-          await curationService.publishCuration(
+          await curationRepository.publishCuration(
             id: 'test_curation',
             title: 'Test',
             videoIds: [],
           );
 
-          final publishStatus = curationService.getCurationPublishStatus(
+          final publishStatus = curationRepository.getCurationPublishStatus(
             'test_curation',
           );
           expect(publishStatus.isPublished, isTrue);
@@ -321,13 +321,13 @@ void main() {
             () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) async => null);
 
-          await curationService.publishCuration(
+          await curationRepository.publishCuration(
             id: 'failed_curation',
             title: 'Test',
             videoIds: [],
           );
 
-          final publishStatus = curationService.getCurationPublishStatus(
+          final publishStatus = curationRepository.getCurationPublishStatus(
             'failed_curation',
           );
           expect(publishStatus.isPublished, isFalse);
@@ -345,7 +345,7 @@ void main() {
       test(
         'should return default status for unknown curation',
         () {
-          final status = curationService.getCurationPublishStatus(
+          final status = curationRepository.getCurationPublishStatus(
             'unknown_curation',
           );
           expect(status.isPublished, isFalse);
@@ -359,9 +359,9 @@ void main() {
       test(
         'should use exponential backoff timing',
         () async {
-          final delay1 = curationService.getRetryDelay(1);
-          final delay2 = curationService.getRetryDelay(2);
-          final delay3 = curationService.getRetryDelay(3);
+          final delay1 = curationRepository.getRetryDelay(1);
+          final delay2 = curationRepository.getRetryDelay(2);
+          final delay3 = curationRepository.getRetryDelay(3);
 
           expect(delay1.inSeconds, equals(2));
           expect(delay2.inSeconds, equals(4));
@@ -381,7 +381,7 @@ void main() {
       test(
         'should cap retry delay at a reasonable maximum',
         () {
-          final maxDelay = curationService.getRetryDelay(100);
+          final maxDelay = curationRepository.getRetryDelay(100);
           expect(maxDelay.inSeconds, equals(1024));
         },
       );
@@ -396,7 +396,7 @@ void main() {
           final futures = <Future<dynamic>>[];
           for (var i = 0; i < 5; i++) {
             futures.add(
-              curationService.publishCuration(
+              curationRepository.publishCuration(
                 id: 'rapid_curation',
                 title: 'Test $i',
                 videoIds: [],
@@ -424,7 +424,7 @@ void main() {
             ).thenAnswer((_) => completer.future);
 
             unawaited(
-              curationService.publishCuration(
+              curationRepository.publishCuration(
                 id: 'publishing_curation',
                 title: 'Test',
                 videoIds: [],
@@ -434,7 +434,7 @@ void main() {
             // Allow async code to start
             async.flushMicrotasks();
 
-            final status = curationService.getCurationPublishStatus(
+            final status = curationRepository.getCurationPublishStatus(
               'publishing_curation',
             );
             expect(status.isPublishing, isTrue);
@@ -447,7 +447,7 @@ void main() {
             completer.complete(_testEvent());
             async.flushMicrotasks();
 
-            final finalStatus = curationService.getCurationPublishStatus(
+            final finalStatus = curationRepository.getCurationPublishStatus(
               'publishing_curation',
             );
             expect(finalStatus.isPublishing, isFalse);
@@ -467,13 +467,13 @@ void main() {
             () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) async => null);
 
-          await curationService.publishCuration(
+          await curationRepository.publishCuration(
             id: 'error_curation',
             title: 'Test',
             videoIds: [],
           );
 
-          final status = curationService.getCurationPublishStatus(
+          final status = curationRepository.getCurationPublishStatus(
             'error_curation',
           );
           expect(
