@@ -2119,7 +2119,7 @@ final class BlocklistSyncBridgeProvider
 }
 
 String _$blocklistSyncBridgeHash() =>
-    r'be4fa1f1dfbf8bbb4da0581dd1ac84c01c748ca7';
+    r'a543fd12f75015c3e71079ff8560b873c576bbe5';
 
 /// Draft storage service for persisting vine drafts
 
@@ -2779,7 +2779,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'9e139e42b7224d373f77113b8beb8264512962cf';
+String _$videoEventServiceHash() => r'92b71b57fc8b77723a40b99cc1ac9e902bace647';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -3269,7 +3269,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'ee97de68c3bc09ccad5932aca15807e31decd5e8';
+String _$profileRepositoryHash() => r'f15391d96765ac093341600f23de69a7b5d6782e';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -4638,7 +4638,7 @@ final class CommentsRepositoryProvider
 }
 
 String _$commentsRepositoryHash() =>
-    r'9420522ee13cd9e7d588b70f5124d0e10baae6b6';
+    r'aac5ae89576a1ec2fb282db45374990a3b253594';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///
@@ -4789,7 +4789,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'c5e1ae942012b0451869aa60bd14270b3b364f97';
+String _$videosRepositoryHash() => r'c7d1b97d331002634db0433623f914ba602abd61';
 
 /// Provider for LikesRepository instance
 ///
