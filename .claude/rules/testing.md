@@ -15,16 +15,9 @@ At minimum, cover:
 
 ### Preserving Test Behavior During Package Extraction
 
-When moving a test file from `mobile/test/` (or anywhere else) into a new package's `test/src/` directory, the migrated file must behave identically to the latest `main` version. Copy-paste from a local branch can silently undo recent fixes that are not yet in the branch.
+When extracting a package, keep the branch up to date with `main` during the work — merge from `main` frequently, and again just before requesting review. This surfaces recent edits to files you're moving (e.g. test fixes added to the original location while extraction was in progress) so they aren't silently dropped when the file is relocated.
 
-Before merging an extraction PR, for each migrated test file:
-
-1. **Find recent commits.** Run `git log --all --oneline -- <original-path>` and look at commits from the last ~30 days. Any recent fix is a candidate to be silently dropped during the move.
-2. **Diff against latest main.** Run `git diff origin/main:<original-path> <new-path>`. Expect *only* path/import adjustments. Any other removal — `fakeAsync` wraps, mock overrides, `@tags`, `timeout:` parameters — is a regression.
-3. **Carry dev-deps.** If the migrated file imports `package:fake_async`, `package:bloc_test`, etc., confirm the new package's `pubspec.yaml` declares them as `dev_dependencies`. An indirect dep that worked via `mobile/pubspec.yaml` won't resolve in a leaf package.
-4. **Wall-clock smoke check.** A package test suite that suddenly takes >30s on CI when the pre-extraction file took <1s is usually a dropped `fakeAsync` wrap. Compare the new package workflow duration against the pre-extraction mobile CI time.
-
-**Known past incident:** PR #2985 (extract `follow_repository`) dropped a `fakeAsync` wrap added two days earlier by PR #2986, burning 7s per package-CI run until PR #3210 restored it. See `tasks/lessons.md` → "CI & Chain Hygiene" → "Package extractions can silently regress sibling fixes".
+Known precedent: PR #2985 (extract `follow_repository`) silently dropped a `fakeAsync` wrap added two days earlier by PR #2986; restored by PR #3210. See `tasks/lessons.md` → "CI & Chain Hygiene" → "Package extractions can silently regress sibling fixes".
 
 ---
 
