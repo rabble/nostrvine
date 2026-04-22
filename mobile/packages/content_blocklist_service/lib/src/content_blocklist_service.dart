@@ -1,6 +1,6 @@
 // ABOUTME: Content blocklist service for filtering unwanted content from feeds
 // ABOUTME: Maintains internal blocklist while allowing explicit profile visits
-// ABOUTME: Persists blocks to SharedPreferences and publishes to Nostr (kind 30000)
+// ABOUTME: Persists blocks to SharedPreferences and publishes kind 30000
 
 import 'dart:async';
 import 'dart:convert';
@@ -23,11 +23,18 @@ const _severedFollowersPrefsKey = 'severed_followers_list';
 ///
 /// This service maintains an internal blocklist of npubs whose content
 /// should be filtered from all general feeds (home, explore, hashtag feeds).
-/// Users can still explicitly visit blocked profiles if they choose to follow them.
+/// Users can still explicitly visit blocked profiles if they choose to
+/// follow them.
 ///
 /// Blocks are persisted to SharedPreferences for survival across restarts,
 /// and published to Nostr as kind 30000 events (d=block) for cross-device sync.
 class ContentBlocklistService {
+  /// Creates a [ContentBlocklistService].
+  ///
+  /// [prefs] is used to persist blocks across app restarts. Pass `null` for
+  /// in-memory-only operation (e.g. in tests).
+  /// [onChanged] is invoked whenever the blocklist changes so listeners
+  /// can refresh dependent state.
   ContentBlocklistService({
     SharedPreferences? prefs,
     void Function()? onChanged,
@@ -38,7 +45,8 @@ class ContentBlocklistService {
     _loadBlockedUsers();
     _loadSeveredFollowers();
     Log.info(
-      'ContentBlocklistService initialized with $totalBlockedCount blocked accounts',
+      'ContentBlocklistService initialized with '
+      '$totalBlockedCount blocked accounts',
       name: 'ContentBlocklistService',
       category: LogCategory.system,
     );
@@ -102,7 +110,7 @@ class ContentBlocklistService {
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to load persisted blocked users: $e',
         name: 'ContentBlocklistService',
@@ -121,7 +129,7 @@ class ContentBlocklistService {
     try {
       final json = jsonEncode(_runtimeBlocklist.toList());
       await prefs.setString(_blockedUsersPrefsKey, json);
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to persist blocked users: $e',
         name: 'ContentBlocklistService',
@@ -146,7 +154,7 @@ class ContentBlocklistService {
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to load persisted severed followers: $e',
         name: 'ContentBlocklistService',
@@ -165,7 +173,7 @@ class ContentBlocklistService {
     try {
       final json = jsonEncode(_severedFollowers.toList());
       await prefs.setString(_severedFollowersPrefsKey, json);
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to persist severed followers: $e',
         name: 'ContentBlocklistService',
@@ -187,7 +195,7 @@ class ContentBlocklistService {
   /// in the followers list.
   void removeSeveredFollower(String pubkey) {
     if (_severedFollowers.remove(pubkey)) {
-      _saveSeveredFollowers();
+      unawaited(_saveSeveredFollowers());
       Log.debug(
         'Removed severed follower: $pubkey',
         name: 'ContentBlocklistService',
@@ -241,7 +249,8 @@ class ContentBlocklistService {
 
         if (sentEvent != null) {
           Log.info(
-            'Published block list to Nostr with ${_runtimeBlocklist.length} entries',
+            'Published block list to Nostr with '
+            '${_runtimeBlocklist.length} entries',
             name: 'ContentBlocklistService',
             category: LogCategory.system,
           );
@@ -253,7 +262,7 @@ class ContentBlocklistService {
           );
         }
       }
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Error publishing block list to Nostr: $e',
         name: 'ContentBlocklistService',
@@ -301,7 +310,8 @@ class ContentBlocklistService {
   /// Persists to SharedPreferences and publishes to Nostr (kind 30000).
   /// Awaits the local write so the block survives an immediate app kill.
   /// If [ourPubkey] is provided, it will be used to prevent self-blocking.
-  /// Otherwise falls back to [_ourPubkey] set during [syncMuteListsInBackground].
+  /// Otherwise falls back to [_ourPubkey] set during
+  /// [syncMuteListsInBackground].
   Future<void> blockUser(String pubkey, {String? ourPubkey}) async {
     // Guard: Prevent blocking self
     final selfPubkey = ourPubkey ?? _ourPubkey;
@@ -405,7 +415,7 @@ class ContentBlocklistService {
   void clearRuntimeBlocks() {
     if (_runtimeBlocklist.isNotEmpty) {
       _runtimeBlocklist.clear();
-      _saveBlockedUsers();
+      unawaited(_saveBlockedUsers());
 
       Log.debug(
         'Cleared all runtime blocks',
@@ -455,9 +465,9 @@ class ContentBlocklistService {
     );
 
     try {
-      // Subscribe to kind 10000 (mute list) events WHERE our pubkey is in 'p' tags
-      final filter = Filter(kinds: const [10000]);
-      filter.p = [ourPubkey]; // Filter by 'p' tags containing our pubkey
+      // Subscribe to kind 10000 (mute list) events WHERE our pubkey is in
+      // 'p' tags
+      final filter = Filter(kinds: const [10000])..p = [ourPubkey];
 
       final subscription = nostrService.subscribe([filter]);
 
@@ -473,7 +483,7 @@ class ContentBlocklistService {
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to start mutual mute sync: $e',
         name: 'ContentBlocklistService',
@@ -528,8 +538,7 @@ class ContentBlocklistService {
 
     try {
       // Filter 1: Others' block lists that include our pubkey
-      final othersFilter = Filter(kinds: const [30000]);
-      othersFilter.p = [ourPubkey];
+      final othersFilter = Filter(kinds: const [30000])..p = [ourPubkey];
 
       // Filter 2: Our own block list (for relay-based restoration)
       // Omit the d-tag constraint here — not all relays support #d
@@ -539,11 +548,9 @@ class ContentBlocklistService {
         kinds: const [30000],
       );
 
-      final subscription = nostrService.subscribe(
-        [othersFilter, ownFilter],
-      );
-
-      subscription.listen(_handleBlockListEvent);
+      nostrService
+          .subscribe([othersFilter, ownFilter])
+          .listen(_handleBlockListEvent);
 
       _blockListSyncStarted = true;
 
@@ -552,7 +559,7 @@ class ContentBlocklistService {
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
-    } catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to start block list sync: $e',
         name: 'ContentBlocklistService',
@@ -653,7 +660,7 @@ class ContentBlocklistService {
     if (added.isEmpty) return;
 
     _runtimeBlocklist.addAll(added);
-    _saveBlockedUsers();
+    unawaited(_saveBlockedUsers());
     _notifyChanged();
 
     Log.info(
