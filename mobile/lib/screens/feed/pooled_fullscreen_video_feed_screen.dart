@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart'
+    show VideoErrorType;
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -49,7 +51,10 @@ import 'package:openvine/widgets/video_feed_item/video_player_subtitle_layer.dar
 import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:openvine/widgets/web_video_player.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:pooled_video_player/pooled_video_player.dart'
+    hide VideoErrorType;
+import 'package:pooled_video_player/pooled_video_player.dart' as pvp
+    show VideoErrorType;
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 
@@ -1296,16 +1301,20 @@ class _PooledFullscreenItemContentState
             isPortrait: isPortrait,
           ),
           errorBuilder: (context, onRetry, errorType) {
+            // Map pooled_video_player.VideoErrorType to the canonical
+            // infinite_video_feed.VideoErrorType used by playbackStatusFromError
+            // and PooledVideoErrorOverlay.
+            final feedErrorType = _toFeedErrorType(errorType);
             // Capture the cubit eagerly so the post-frame callback doesn't
             // walk the ancestor tree on a potentially-deactivated element.
             final cubit = context.read<VideoPlaybackStatusCubit>();
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              cubit.report(video.id, playbackStatusFromError(errorType));
+              cubit.report(video.id, playbackStatusFromError(feedErrorType));
             });
             return PooledVideoErrorOverlay(
               video: video,
               onRetry: onRetry,
-              errorType: errorType,
+              errorType: feedErrorType,
             );
           },
           overlayBuilder: (context, videoController, player, feedController) {
@@ -1535,3 +1544,13 @@ class _SubtitleLayer extends ConsumerWidget {
     );
   }
 }
+
+/// Converts a [pvp.VideoErrorType] from [PooledVideoPlayer]'s error callback
+/// to the canonical [VideoErrorType] from [infinite_video_feed].
+VideoErrorType? _toFeedErrorType(pvp.VideoErrorType? t) => switch (t) {
+  null => null,
+  pvp.VideoErrorType.ageRestricted => VideoErrorType.ageRestricted,
+  pvp.VideoErrorType.forbidden => VideoErrorType.forbidden,
+  pvp.VideoErrorType.notFound => VideoErrorType.notFound,
+  pvp.VideoErrorType.generic => VideoErrorType.generic,
+};

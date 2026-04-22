@@ -1,7 +1,7 @@
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/widgets.dart';
+import 'package:infinite_video_feed/src/models/video_error_type.dart';
 import 'package:models/models.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Builder for the loading state shown while a video initializes.
 ///

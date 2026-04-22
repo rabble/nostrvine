@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/widgets.dart';
 import 'package:infinite_video_feed/src/models/builders.dart';
+import 'package:infinite_video_feed/src/models/video_error_type.dart';
 import 'package:infinite_video_feed/src/services/controller_subscriptions.dart';
 import 'package:infinite_video_feed/src/services/disk_prefetcher.dart';
 import 'package:infinite_video_feed/src/services/load_watchdog.dart';
@@ -15,8 +16,6 @@ import 'package:infinite_video_feed/src/utils/source_loader.dart';
 import 'package:infinite_video_feed/src/widgets/video_item.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart';
-import 'package:pooled_video_player/pooled_video_player.dart'
-    show VideoErrorType;
 
 /// Infinite scrolling video feed using native platform video players.
 ///
@@ -837,12 +836,15 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         return Stack(
           fit: StackFit.expand,
           children: [
-            // Loading layer — visible until the video surface covers it.
-            ?widget.loadingBuilder?.call(
-              context,
-              index,
-              isSquare: _isSquareVideo(controller),
-            ),
+            // Loading layer — shown while the video surface is not yet
+            // available. Removed once the first frame is rendered so the
+            // widget (and any timers it owns) are properly disposed.
+            if (!hasError && !hasVideoSize)
+              ?widget.loadingBuilder?.call(
+                context,
+                index,
+                isSquare: _isSquareVideo(controller),
+              ),
 
             if (!hasError && hasVideoSize)
               widget.videoBuilder?.call(context, index, controller) ??

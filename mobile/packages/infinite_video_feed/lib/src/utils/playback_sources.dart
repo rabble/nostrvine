@@ -1,6 +1,6 @@
+import 'package:infinite_video_feed/src/models/video_error_type.dart';
 import 'package:infinite_video_feed/src/utils/canonical_divine_url.dart';
 import 'package:models/models.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Resolves the ordered list of playback URLs to attempt for [video].
 ///

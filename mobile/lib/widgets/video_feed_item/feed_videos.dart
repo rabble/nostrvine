@@ -22,6 +22,7 @@ import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
+import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
@@ -202,11 +203,10 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
             return const SizedBox.shrink();
           }
           final video = widget.videos[index];
-          return VideoLoadingPlaceholder(
-            videoId: video.id,
+          return _FeedLoadingOrRestrictedOverlay(
+            video: video,
             index: index,
             feedMode: widget.contextTitle,
-            thumbnailUrl: video.thumbnailUrl,
             isSquare: isSquare,
             shouldPortraitExpand: widget.shouldPortraitExpand,
           );
@@ -525,6 +525,106 @@ class _SubtitleLayer extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Shows [VideoLoadingPlaceholder] initially.
+///
+/// If the video is still loading after [_kModerationCheckDelay], the
+/// moderation API is queried. Cached videos load immediately and never
+/// reach the delay, so no unnecessary API calls are made. Once the
+/// moderation check returns a restricted status the overlay switches to
+/// [PooledVideoErrorOverlay] without waiting for the native player to
+/// time out with a 404.
+class _FeedLoadingOrRestrictedOverlay extends ConsumerStatefulWidget {
+  const _FeedLoadingOrRestrictedOverlay({
+    required this.video,
+    required this.index,
+    required this.feedMode,
+    required this.isSquare,
+    required this.shouldPortraitExpand,
+  });
+
+  final VideoEvent video;
+  final int index;
+  final String? feedMode;
+  final bool isSquare;
+  final bool shouldPortraitExpand;
+
+  @override
+  ConsumerState<_FeedLoadingOrRestrictedOverlay> createState() =>
+      _FeedLoadingOrRestrictedOverlayState();
+}
+
+class _FeedLoadingOrRestrictedOverlayState
+    extends ConsumerState<_FeedLoadingOrRestrictedOverlay> {
+  static const _kModerationCheckDelay = Duration(seconds: 2);
+
+  Timer? _timer;
+  bool _checkModeration = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final shouldCheck = VideoModerationStatusService.shouldCheckModeration(
+      widget.video.videoUrl,
+    );
+    if (shouldCheck) {
+      final sha256 = VideoModerationStatusService.resolveSha256(
+        explicitSha256: widget.video.sha256,
+        videoUrl: widget.video.videoUrl,
+      );
+      if (sha256 != null) {
+        _timer = Timer(_kModerationCheckDelay, () {
+          if (mounted) setState(() => _checkModeration = true);
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_checkModeration) {
+      final sha256 = VideoModerationStatusService.resolveSha256(
+        explicitSha256: widget.video.sha256,
+        videoUrl: widget.video.videoUrl,
+      );
+      if (sha256 != null) {
+        final isRestricted =
+            ref
+                .watch(videoModerationStatusProvider(sha256))
+                .whenOrNull(
+                  data: (status) =>
+                      status?.isUnavailableDueToModeration ?? false,
+                ) ??
+            false;
+        if (isRestricted) {
+          return PooledVideoErrorOverlay(
+            video: widget.video,
+            // Retry is hidden for moderation-restricted content.
+            onRetry: () {},
+            errorType: VideoErrorType.notFound,
+            shouldPortraitExpand: widget.shouldPortraitExpand,
+            isSquare: widget.isSquare,
+          );
+        }
+      }
+    }
+
+    return VideoLoadingPlaceholder(
+      videoId: widget.video.id,
+      index: widget.index,
+      feedMode: widget.feedMode,
+      thumbnailUrl: widget.video.thumbnailUrl,
+      isSquare: widget.isSquare,
+      shouldPortraitExpand: widget.shouldPortraitExpand,
     );
   }
 }
