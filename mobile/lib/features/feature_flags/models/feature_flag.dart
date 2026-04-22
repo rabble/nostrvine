@@ -55,6 +55,10 @@ enum FeatureFlag {
   peopleListSearch(
     'People List Search',
     'Show people list (kind 30000) results alongside video lists in search',
+  ),
+  contentPolicyV2(
+    'Content Policy v2',
+    'Parse-gated policy engine — filter blocked/muted authors at ingress',
   )
   ;
 
