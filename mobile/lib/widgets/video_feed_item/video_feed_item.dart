@@ -38,10 +38,8 @@ import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
-import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -1451,18 +1449,6 @@ class VideoOverlayActions extends ConsumerWidget {
                   ),
                 ),
               ),
-            // ProofMode and Vine badges in upper right corner (tappable)
-            if (!isPreviewMode)
-              PositionedDirectional(
-                top: safeAreaTop + topOffset,
-                end: 16,
-                child: GestureDetector(
-                  onTap: () {
-                    _showBadgeExplanationModal(context, ref, video, isActive);
-                  },
-                  child: ProofModeBadgeRow(video: video),
-                ),
-              ),
             // Author info and video description overlay at bottom left
             Positioned(
               bottom: bottomOffset,
@@ -1736,52 +1722,6 @@ class VideoOverlayActions extends ConsumerWidget {
     );
   }
 
-  Future<void> _showBadgeExplanationModal(
-    BuildContext context,
-    WidgetRef ref,
-    VideoEvent video,
-    bool isActive,
-  ) async {
-    // Pause video before showing modal
-    bool wasPaused = false;
-    try {
-      final controllerParams = videoControllerParamsFor(ref, video);
-
-      final controller = ref.read(
-        individualVideoControllerProvider(controllerParams),
-      );
-      if (controller.value.isInitialized && controller.value.isPlaying) {
-        // Use safePause to handle disposed controller gracefully
-        wasPaused = await safePause(controller, video.id);
-        if (wasPaused) {
-          Log.info(
-            '🎬 Paused video for badge modal',
-            name: 'VideoFeedItem',
-            category: LogCategory.ui,
-          );
-        }
-      }
-    } catch (e) {
-      // Ignore disposal errors
-      final errorStr = e.toString().toLowerCase();
-      if (!errorStr.contains('no active player') &&
-          !errorStr.contains('disposed')) {
-        Log.error(
-          'Failed to pause video for modal: $e',
-          name: 'VideoFeedItem',
-          category: LogCategory.ui,
-        );
-      }
-    }
-
-    if (!context.mounted) return;
-
-    await context.showVideoPausingDialog<void>(
-      builder: (context) => BadgeExplanationModal(video: video),
-    );
-
-    // Video resumes when modal closes via overlay visibility provider
-  }
 }
 
 class VideoOverlayActionColumn extends ConsumerWidget {

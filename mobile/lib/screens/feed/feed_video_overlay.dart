@@ -26,9 +26,7 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
-import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
@@ -233,17 +231,6 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
           },
           child: Stack(
             children: [
-              // ProofMode and Vine badges (top-right)
-              PositionedDirectional(
-                top: MediaQuery.viewPaddingOf(context).top + 64,
-                end: 16,
-                child: GestureDetector(
-                  onTap: () => context.showVideoPausingDialog<void>(
-                    builder: (context) => BadgeExplanationModal(video: video),
-                  ),
-                  child: ProofModeBadgeRow(video: video),
-                ),
-              ),
               // Author info and description (bottom-left)
               PositionedDirectional(
                 bottom: 14 + safeAreaBottom,

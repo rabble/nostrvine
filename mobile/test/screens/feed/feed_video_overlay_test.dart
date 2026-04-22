@@ -205,7 +205,9 @@ void main() {
           expect(find.text('Sensitive Content'), findsNothing);
           expect(find.text('View Anyway'), findsNothing);
           expect(find.text('Hide all content like this'), findsNothing);
-          expect(find.byType(ProofModeBadgeRow), findsOneWidget);
+          // ProofMode/Vine labels are no longer shown on the overlay; they
+// live in the Metadata expanded sheet.
+expect(find.byType(ProofModeBadgeRow), findsNothing);
         },
       );
 
@@ -269,7 +271,9 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(ProofModeBadgeRow), findsOneWidget);
+        // ProofMode/Vine labels are no longer shown on the overlay; they
+// live in the Metadata expanded sheet.
+expect(find.byType(ProofModeBadgeRow), findsNothing);
       });
 
       testWidgets(
