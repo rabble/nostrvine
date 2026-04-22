@@ -223,20 +223,22 @@ class DraftsTab extends ConsumerWidget {
         backgroundColor: VineTheme.cardBackground,
         title: Text(
           context.l10n.libraryDeleteDraftTitle,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.titleSmallFont(),
         ),
         content: Text(
           context.l10n.libraryDeleteDraftMessage(
             draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
           ),
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.bodyMediumFont(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               context.l10n.commonCancel,
-              style: const TextStyle(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.secondaryText,
+              ),
             ),
           ),
           ElevatedButton(

@@ -332,18 +332,13 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.videoEditorAudioNoSoundsAvailableTitle,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
+            style: VineTheme.bodyLargeFont(),
           ),
           const SizedBox(height: 8),
           Text(
             context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
-            style: const TextStyle(
+            style: VineTheme.bodyMediumFont(
               color: VineTheme.secondaryText,
-              fontSize: 14,
             ),
             textAlign: TextAlign.center,
           ),
@@ -370,18 +365,13 @@ class _NoResultsState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.videoEditorAudioNoSoundsFoundTitle,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
+            style: VineTheme.bodyLargeFont().copyWith(),
           ),
           const SizedBox(height: 8),
           Text(
             context.l10n.videoEditorAudioNoSoundsFoundSubtitle,
-            style: const TextStyle(
+            style: VineTheme.bodyMediumFont(
               color: VineTheme.secondaryText,
-              fontSize: 14,
             ),
           ),
         ],
@@ -407,18 +397,13 @@ class _ErrorState extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               context.l10n.videoEditorAudioFailedToLoadTitle,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
+              style: VineTheme.bodyLargeFont(),
             ),
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: const TextStyle(
+              style: VineTheme.bodySmallFont(
                 color: VineTheme.secondaryText,
-                fontSize: 12,
               ),
               textAlign: TextAlign.center,
               maxLines: 3,

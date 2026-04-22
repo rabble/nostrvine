@@ -47,14 +47,8 @@ class VideoTimeDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     final defaultCurrentStyle =
         currentStyle ??
-        const TextStyle(
-          color: VineTheme.whiteText,
-          fontSize: 18,
-          fontFamily: VineTheme.fontFamilyBricolage,
-          fontWeight: .w800,
-          height: 1.33,
-          letterSpacing: 0.15,
-          fontFeatures: [.tabularFigures()],
+        VineTheme.titleMediumFont().copyWith(
+          fontFeatures: const [.tabularFigures()],
         );
 
     final defaultSeparatorStyle =

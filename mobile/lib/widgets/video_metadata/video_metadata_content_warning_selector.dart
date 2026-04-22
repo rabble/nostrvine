@@ -152,9 +152,8 @@ class _ContentWarningMultiSelectState
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               context.l10n.videoMetadataContentWarningSelectAllThatApply,
-              style: const TextStyle(
+              style: VineTheme.bodySmallFont(
                 color: VineTheme.secondaryText,
-                fontSize: 13,
               ),
             ),
           ),
@@ -173,10 +172,7 @@ class _ContentWarningMultiSelectState
                       context.l10n,
                       label,
                     ),
-                    style: const TextStyle(
-                      color: VineTheme.whiteText,
-                      fontSize: 15,
-                    ),
+                    style: VineTheme.bodyLargeFont(),
                   ),
                   activeColor: VineTheme.vineGreen,
                   checkColor: VineTheme.whiteText,
