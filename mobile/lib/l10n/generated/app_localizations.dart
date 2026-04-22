@@ -1684,6 +1684,18 @@ abstract class AppLocalizations {
   /// **'Play video'**
   String get videoPlayerPlayVideo;
 
+  /// No description provided for @videoPlayerMute.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute video'**
+  String get videoPlayerMute;
+
+  /// No description provided for @videoPlayerUnmute.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute video'**
+  String get videoPlayerUnmute;
+
   /// No description provided for @videoPlayerEditVideo.
   ///
   /// In en, this message translates to:
@@ -7778,6 +7790,78 @@ abstract class AppLocalizations {
   /// **'Removed conversation'**
   String get inboxRemovedConversation;
 
+  /// No description provided for @inboxEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet'**
+  String get inboxEmptyTitle;
+
+  /// No description provided for @inboxEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'That + button won\'t bite.'**
+  String get inboxEmptySubtitle;
+
+  /// No description provided for @inboxActionMute.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute conversation'**
+  String get inboxActionMute;
+
+  /// No description provided for @inboxActionReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report {displayName}'**
+  String inboxActionReport(String displayName);
+
+  /// No description provided for @inboxActionBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Block {displayName}'**
+  String inboxActionBlock(String displayName);
+
+  /// No description provided for @inboxActionUnblock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock {displayName}'**
+  String inboxActionUnblock(String displayName);
+
+  /// No description provided for @inboxActionRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove conversation'**
+  String get inboxActionRemove;
+
+  /// No description provided for @inboxRemoveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove conversation?'**
+  String get inboxRemoveConfirmTitle;
+
+  /// No description provided for @inboxRemoveConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will delete your conversation with {displayName}. This action cannot be undone.'**
+  String inboxRemoveConfirmBody(String displayName);
+
+  /// No description provided for @inboxRemoveConfirmConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get inboxRemoveConfirmConfirm;
+
+  /// No description provided for @inboxConversationMuted.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation muted'**
+  String get inboxConversationMuted;
+
+  /// No description provided for @inboxConversationUnmuted.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation unmuted'**
+  String get inboxConversationUnmuted;
+
   /// No description provided for @reportDialogCancel.
   ///
   /// In en, this message translates to:
@@ -8179,6 +8263,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Find curated video lists'**
   String get searchFindCuratedVideoLists;
+
+  /// Title of the empty-query placeholder shown on the search results screen before the user has entered a query.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a search query'**
+  String get searchEnterQuery;
+
+  /// Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover something interesting'**
+  String get searchDiscoverSomethingInteresting;
 
   /// No description provided for @cameraAgeRestriction.
   ///

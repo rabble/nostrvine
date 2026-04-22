@@ -960,6 +960,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Lire la vidéo';
 
   @override
+  String get videoPlayerMute => 'Couper le son de la vidéo';
+
+  @override
+  String get videoPlayerUnmute => 'Réactiver le son de la vidéo';
+
+  @override
   String get videoPlayerEditVideo => 'Modifier la vidéo';
 
   @override
@@ -4422,6 +4428,50 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inboxRemovedConversation => 'Conversation supprimée';
 
   @override
+  String get inboxEmptyTitle => 'Aucun message pour le moment';
+
+  @override
+  String get inboxEmptySubtitle => 'Le bouton + ne mord pas.';
+
+  @override
+  String get inboxActionMute => 'Mettre la conversation en sourdine';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return 'Signaler $displayName';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return 'Bloquer $displayName';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return 'Débloquer $displayName';
+  }
+
+  @override
+  String get inboxActionRemove => 'Supprimer la conversation';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'Supprimer la conversation ?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'Cela supprimera votre conversation avec $displayName. Cette action est irréversible.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Supprimer';
+
+  @override
+  String get inboxConversationMuted => 'Conversation mise en sourdine';
+
+  @override
+  String get inboxConversationUnmuted => 'Conversation réactivée';
+
+  @override
   String get reportDialogCancel => 'Annuler';
 
   @override
@@ -4678,6 +4728,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get searchFindCuratedVideoLists =>
       'Trouve des listes de vidéos sélectionnées';
+
+  @override
+  String get searchEnterQuery => 'Saisis une recherche';
+
+  @override
+  String get searchDiscoverSomethingInteresting =>
+      'Découvre quelque chose d\'intéressant';
 
   @override
   String get cameraAgeRestriction =>

@@ -1,6 +1,8 @@
 // ABOUTME: Tests for PooledVideoFeed widget
 // ABOUTME: Validates PageView, page changes, callbacks, and state management
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -271,6 +273,19 @@ void main() {
         expect(state.controller, isA<VideoFeedController>());
         expect(state.controller.videoCount, equals(5));
       });
+
+      testWidgets('animateToPage scrolls to requested index', (tester) async {
+        await tester.pumpWidget(buildFeed());
+
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        );
+
+        unawaited(state.animateToPage(1));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Video 1 (active)'), findsOneWidget);
+      });
     });
 
     group('lifecycle', () {
@@ -421,6 +436,34 @@ void main() {
         await tester.pumpWidget(buildFeed(videos: videos));
         await tester.pump();
 
+        expect(state.controller.videoCount, equals(3));
+      });
+
+      testWidgets('replaces videos when list is not append-only', (
+        tester,
+      ) async {
+        final initialVideos = [
+          createTestVideo(id: 'a', url: 'https://example.com/a.mp4'),
+          createTestVideo(id: 'b', url: 'https://example.com/b.mp4'),
+          createTestVideo(id: 'c', url: 'https://example.com/c.mp4'),
+        ];
+
+        await tester.pumpWidget(buildFeed(videos: initialVideos));
+
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        );
+
+        final reorderedVideos = [
+          createTestVideo(id: 'x', url: 'https://example.com/x.mp4'),
+          createTestVideo(id: 'b', url: 'https://example.com/b.mp4'),
+          createTestVideo(id: 'c', url: 'https://example.com/c.mp4'),
+        ];
+
+        await tester.pumpWidget(buildFeed(videos: reorderedVideos));
+        await tester.pump();
+
+        expect(state.controller.videos.first.id, equals('x'));
         expect(state.controller.videoCount, equals(3));
       });
 

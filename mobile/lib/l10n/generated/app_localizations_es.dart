@@ -951,6 +951,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Reproducir video';
 
   @override
+  String get videoPlayerMute => 'Silenciar video';
+
+  @override
+  String get videoPlayerUnmute => 'Activar sonido del video';
+
+  @override
   String get videoPlayerEditVideo => 'Editar video';
 
   @override
@@ -4409,6 +4415,50 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inboxRemovedConversation => 'Conversación eliminada';
 
   @override
+  String get inboxEmptyTitle => 'Aún no hay mensajes';
+
+  @override
+  String get inboxEmptySubtitle => 'El botón + no muerde.';
+
+  @override
+  String get inboxActionMute => 'Silenciar conversación';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return 'Reportar a $displayName';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return 'Bloquear a $displayName';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return 'Desbloquear a $displayName';
+  }
+
+  @override
+  String get inboxActionRemove => 'Eliminar conversación';
+
+  @override
+  String get inboxRemoveConfirmTitle => '¿Eliminar conversación?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'Esto eliminará tu conversación con $displayName. Esta acción no se puede deshacer.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Eliminar';
+
+  @override
+  String get inboxConversationMuted => 'Conversación silenciada';
+
+  @override
+  String get inboxConversationUnmuted => 'Conversación sin silenciar';
+
+  @override
   String get reportDialogCancel => 'Cancelar';
 
   @override
@@ -4665,6 +4715,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get searchFindCuratedVideoLists => 'Encontrá listas de videos curadas';
+
+  @override
+  String get searchEnterQuery => 'Ingresá una búsqueda';
+
+  @override
+  String get searchDiscoverSomethingInteresting => 'Descubrí algo interesante';
 
   @override
   String get cameraAgeRestriction =>

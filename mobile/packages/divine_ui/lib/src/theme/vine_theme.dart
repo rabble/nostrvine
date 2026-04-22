@@ -266,6 +266,9 @@ class VineTheme {
   /// Background color for surfaces like bottom sheets.
   static const Color surfaceBackground = Color(0xFF00150D);
 
+  /// Border radius for shell-level bottom corners.
+  static const double shellCornerRadius = 30;
+
   /// Border radius for bottom sheets.
   static const double bottomSheetBorderRadius = 32;
 

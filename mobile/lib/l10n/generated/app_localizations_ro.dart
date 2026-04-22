@@ -969,6 +969,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoPlayerPlayVideo => 'Redă videoclipul';
 
   @override
+  String get videoPlayerMute => 'Dezactivează sunetul videoclipului';
+
+  @override
+  String get videoPlayerUnmute => 'Activează sunetul videoclipului';
+
+  @override
   String get videoPlayerEditVideo => 'Editează videoclipul';
 
   @override
@@ -4495,6 +4501,50 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxRemovedConversation => 'Conversație eliminată';
 
   @override
+  String get inboxEmptyTitle => 'Încă niciun mesaj';
+
+  @override
+  String get inboxEmptySubtitle => 'Butonul + nu mușcă.';
+
+  @override
+  String get inboxActionMute => 'Dezactivează sunetul conversației';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return 'Raportează $displayName';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return 'Blochează $displayName';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return 'Deblochează $displayName';
+  }
+
+  @override
+  String get inboxActionRemove => 'Elimină conversația';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'Elimini conversația?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'Astfel, conversația ta cu $displayName va fi ștearsă. Această acțiune nu poate fi anulată.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Elimină';
+
+  @override
+  String get inboxConversationMuted => 'Conversație dezactivată';
+
+  @override
+  String get inboxConversationUnmuted => 'Conversație reactivată';
+
+  @override
   String get reportDialogCancel => 'Anulează';
 
   @override
@@ -4747,6 +4797,12 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get searchFindCuratedVideoLists =>
       'Găsește liste de videoclipuri selectate';
+
+  @override
+  String get searchEnterQuery => 'Introdu un termen de căutare';
+
+  @override
+  String get searchDiscoverSomethingInteresting => 'Descoperă ceva interesant';
 
   @override
   String get cameraAgeRestriction =>

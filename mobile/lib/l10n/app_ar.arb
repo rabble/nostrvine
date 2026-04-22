@@ -462,6 +462,8 @@
     },
     "videoPlayerLoadingVideo": "جاري تحميل الفيديو...",
     "videoPlayerPlayVideo": "تشغيل الفيديو",
+    "videoPlayerMute": "كتم الفيديو",
+    "videoPlayerUnmute": "إلغاء كتم الفيديو",
     "videoPlayerEditVideo": "تعديل الفيديو",
     "videoPlayerEditVideoTooltip": "تعديل الفيديو",
     "contentWarningLabel": "تحذير محتوى",
@@ -2191,6 +2193,32 @@
     "featureRequestCancel": "إلغاء",
     "followersFailedToLoadList": "فشل تحميل قائمة المتابعين",
     "followingFailedToLoadList": "فشل تحميل قائمة المتابَعين",
+    "inboxActionBlock": "حظر {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "كتم المحادثة",
+    "inboxActionRemove": "إزالة المحادثة",
+    "inboxActionReport": "الإبلاغ عن {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "إلغاء حظر {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "تم حظر {displayName}",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2199,6 +2227,20 @@
             }
         }
     },
+    "inboxConversationMuted": "تم كتم المحادثة",
+    "inboxConversationUnmuted": "تم إلغاء كتم المحادثة",
+    "inboxEmptySubtitle": "زر + لن يعضّك.",
+    "inboxEmptyTitle": "لا توجد رسائل بعد",
+    "inboxRemoveConfirmBody": "سيؤدي هذا إلى حذف محادثتك مع {displayName}. لا يمكن التراجع عن هذا الإجراء.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "إزالة",
+    "inboxRemoveConfirmTitle": "إزالة المحادثة؟",
     "inboxRemovedConversation": "تمت إزالة المحادثة",
     "inboxReportedUser": "تم الإبلاغ عن {displayName}",
     "@inboxReportedUser": {
@@ -2323,6 +2365,8 @@
     "reportDialogReport": "إبلاغ",
     "routerInvalidCreator": "منشئ غير صالح",
     "routerInvalidHashtagRoute": "مسار هاشتاغ غير صالح",
+    "searchDiscoverSomethingInteresting": "اكتشف شيئًا مثيرًا للاهتمام",
+    "searchEnterQuery": "أدخل استعلام البحث",
     "searchFindCuratedVideoLists": "ابحث عن قوائم فيديو مختارة",
     "searchForLists": "البحث عن قوائم",
     "searchSomethingWentWrong": "حدث خطأ ما",

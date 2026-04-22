@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Actions available from the conversation long-press sheet.
 enum ConversationAction {
@@ -42,18 +43,20 @@ class ConversationActionsSheet {
             _MuteActionTile(isMuted: isMuted),
             _ActionTile(
               icon: DivineIconName.flag,
-              label: 'Report $displayName',
+              label: context.l10n.inboxActionReport(displayName),
               result: ConversationAction.report,
             ),
             _ActionTile(
               icon: DivineIconName.eyeSlash,
-              label: isBlocked ? 'Unblock $displayName' : 'Block $displayName',
+              label: isBlocked
+                  ? context.l10n.inboxActionUnblock(displayName)
+                  : context.l10n.inboxActionBlock(displayName),
               isDestructive: !isBlocked,
               result: ConversationAction.block,
             ),
-            const _ActionTile(
+            _ActionTile(
               icon: DivineIconName.trash,
-              label: 'Remove conversation',
+              label: context.l10n.inboxActionRemove,
               isDestructive: true,
               showDivider: false,
               result: ConversationAction.remove,
@@ -74,7 +77,7 @@ class _MuteActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       toggled: isMuted,
-      label: 'Mute conversation',
+      label: context.l10n.inboxActionMute,
       child: DecoratedBox(
         decoration: const BoxDecoration(
           border: Border(
@@ -90,7 +93,7 @@ class _MuteActionTile extends StatelessWidget {
           onChanged: (_) =>
               Navigator.of(context).pop(ConversationAction.toggleMute),
           title: Text(
-            'Mute conversation',
+            context.l10n.inboxActionMute,
             style: VineTheme.titleMediumFont(),
           ),
           secondary: const DivineIcon(

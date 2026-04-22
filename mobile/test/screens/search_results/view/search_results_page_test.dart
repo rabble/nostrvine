@@ -37,83 +37,41 @@ void main() {
       );
     }
 
-    group('filter round-trip', () {
-      testWidgets(
-        'shows all sections and "All" chip in default mode',
-        (tester) async {
-          await tester.pumpWidget(createTestWidget());
-          await tester.pump();
+    testWidgets(
+      'shows the empty-query idle placeholder in default mode',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pump();
 
-          final scrollable = find.descendant(
-            of: find.byType(CustomScrollView),
-            matching: find.byType(Scrollable),
-          );
+        // No query has been entered yet, so the page renders the shared
+        // idle placeholder instead of the individual result sections.
+        expect(find.byType(SearchSectionInitialState), findsOneWidget);
+        expect(
+          find.byType(PeopleSection, skipOffstage: false),
+          findsNothing,
+        );
+        expect(
+          find.byType(TagsSection, skipOffstage: false),
+          findsNothing,
+        );
+        expect(
+          find.byType(ListsSection, skipOffstage: false),
+          findsNothing,
+        );
+        expect(
+          find.byType(VideosSection, skipOffstage: false),
+          findsNothing,
+        );
 
-          expect(find.byType(PeopleSection), findsOneWidget);
-          expect(find.text('All'), findsOneWidget);
-
-          await tester.scrollUntilVisible(
-            find.byType(TagsSection),
-            200,
-            scrollable: scrollable,
-          );
-          expect(find.byType(TagsSection), findsOneWidget);
-
-          await tester.scrollUntilVisible(
-            find.byType(VideosSection),
-            200,
-            scrollable: scrollable,
-          );
-          expect(find.byType(VideosSection), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'switches to People mode when See all is tapped',
-        (tester) async {
-          await tester.pumpWidget(createTestWidget());
-          await tester.pump();
-
-          // Tap the People section header to trigger "See all".
-          await tester.tap(find.text('People'));
-          await tester.pump();
-
-          // People filter shows only PeopleSection (with header hidden).
-          expect(find.byType(PeopleSection), findsOneWidget);
-          expect(find.byType(TagsSection), findsNothing);
-          expect(find.byType(VideosSection), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'filter pill shows correct label after switching to People',
-        (tester) async {
-          await tester.pumpWidget(createTestWidget());
-          await tester.pump();
-
-          // Default label is "All".
-          expect(
-            find.descendant(
-              of: find.byType(SearchFilterPill),
-              matching: find.text('All'),
-            ),
-            findsOneWidget,
-          );
-
-          // Switch to People mode.
-          await tester.tap(find.text('People'));
-          await tester.pump();
-
-          // Pill now shows "People".
-          expect(
-            find.descendant(
-              of: find.byType(SearchFilterPill),
-              matching: find.text('People'),
-            ),
-            findsOneWidget,
-          );
-        },
-      );
-    });
+        // Filter pill defaults to "All".
+        expect(
+          find.descendant(
+            of: find.byType(SearchFilterPill),
+            matching: find.text('All'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

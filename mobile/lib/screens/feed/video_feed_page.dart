@@ -11,6 +11,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -31,6 +32,7 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
@@ -333,6 +335,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       videos: pooledVideos,
       pool: PlayerPool.instance,
       maxLoopDuration: VideoEditorConstants.maxDuration,
+      initialVolume: context.read<VideoVolumeCubit>().state.volume,
+      onVolumeChanged: context.read<VideoVolumeCubit>().onPlaybackVolumeChanged,
       onVideoReady: (index, player) {
         if (!_hasMarkedVideoReady && index == 0) {
           _hasMarkedVideoReady = true;
@@ -507,271 +511,258 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
     return BlocProvider.value(
       value: _autoAdvanceCubit,
-      // Outer `ColoredBox(navGreen)` paints the bottom-nav color behind
-      // the ClipRRect so the 30px rounded cut-outs at the bottom corners
-      // reveal the same color the bottom nav is drawn with — visually the
-      // corners look carved out of the nav bar's own surface. Same pattern
-      // used on the redesigned profile screen (see ProfileGridView in
-      // new-profile) and on ExploreScreen.
-      child: ColoredBox(
-        color: VineTheme.navGreen,
-        child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(30),
-            bottomRight: Radius.circular(30),
-          ),
-          child: ColoredBox(
-            color: VineTheme.backgroundColor,
-            child: MultiBlocListener(
-              listeners: [
-                // Reset controller when mode changes so a fresh one is
-                // created for the new feed.
-                BlocListener<VideoFeedBloc, VideoFeedState>(
-                  listenWhen: (previous, current) =>
-                      previous.mode != current.mode,
-                  listener: (_, state) {
-                    _pagePosition.value = 0;
-                    _resetVideoController();
-                    handleVideoController(state);
-                  },
-                ),
-                // Initialize controller when videos first become available
-                BlocListener<VideoFeedBloc, VideoFeedState>(
-                  listenWhen: (previous, current) =>
-                      !previous.isLoaded &&
-                      current.isLoaded &&
-                      current.videos.isNotEmpty,
-                  listener: (_, state) {
-                    handleVideoController(state);
-                    if (!_hasMarkedUIReady) {
-                      _hasMarkedUIReady = true;
-                      StartupPerformanceService.instance.markUIReady();
-                    }
-                  },
-                ),
-                // Handle new videos from pagination
-                BlocListener<VideoFeedBloc, VideoFeedState>(
-                  listenWhen: (previous, current) =>
-                      previous.videos.length != current.videos.length,
-                  listener: (_, state) => handleVideosChanged(state),
-                ),
-                BlocListener<VideoFeedBloc, VideoFeedState>(
-                  listenWhen: (previous, current) =>
-                      previous.videos.length != current.videos.length ||
-                      previous.hasMore != current.hasMore ||
-                      previous.isLoadingMore != current.isLoadingMore,
-                  listener: (_, state) => _continuePendingAutoAdvance(state),
-                ),
-              ],
-              child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
-                builder: (context, state) {
-                  // Loading state (including initial state before first load)
-                  if (state.isLoading) {
-                    return const Center(child: BrandedLoadingIndicator());
-                  }
-
-                  // Error state
-                  if (state.status == VideoFeedStatus.failure) {
-                    return _FeedErrorWidget(error: state.error);
-                  }
-
-                  // Empty state
-                  if (state.isEmpty) {
-                    return Stack(
-                      children: [
-                        FeedEmptyWidget(state: state),
-                        const FeedModeSwitch(),
-                      ],
-                    );
-                  }
-
-                  // Wrap videos for pool compatibility
-                  final pooledVideos = state.videos.toPooledVideoItems();
-                  final eventsById = {
-                    for (final event in state.videos) event.id: event,
-                  };
-
-                  // Subscribe to Auto state so the items rebuild when the rail is
-                  // toggled / suppressed / resumed.
-                  final autoState = context.watch<FeedAutoAdvanceCubit>().state;
-
-                  // Gate the rail + runtime on both the feature flag and the
-                  // user's reduced-motion preference. When Auto is unavailable,
-                  // force it "off" at the view layer regardless of cubit state.
-                  final autoAdvanceAvailable =
-                      ref.watch(
-                        isFeatureEnabledProvider(FeatureFlag.feedAutoAdvance),
-                      ) &&
-                      !MediaQuery.disableAnimationsOf(context);
-                  final effectiveAutoEnabled =
-                      autoAdvanceAvailable && autoState.enabled;
-                  final effectiveAutoActive =
-                      autoAdvanceAvailable && autoState.isEffectivelyActive;
-
-                  // Wire the NIP-98 auth header provider into the web feed only
-                  // when the HLS auth web player flag is on. When the flag is
-                  // off the provider is null and the legacy video_player path
-                  // is used, preserving current behavior.
-                  final hlsAuthWebPlayerEnabled = ref.watch(
-                    isFeatureEnabledProvider(FeatureFlag.hlsAuthWebPlayer),
-                  );
-                  final webAuthHeaderProvider =
-                      kIsWeb && hlsAuthWebPlayerEnabled
-                      ? buildWebVideoAuthHeaderProvider(
-                          ref.watch(mediaViewerAuthServiceProvider),
-                        )
-                      : null;
-
-                  // Note: RefreshIndicator removed - it conflicts with PageView
-                  // scrolling and adds memory overhead. Use the refresh button
-                  // instead.
-                  return Stack(
-                    children: [
-                      if (kIsWeb)
-                        WebVideoFeed(
-                          key: _webFeedKey,
-                          videos: state.videos
-                              .where((v) => v.videoUrl != null)
-                              .toList(),
-                          controllerFactory:
-                              widget.webControllerFactory ??
-                              defaultWebVideoPlayerControllerFactory,
-                          authHeaderProvider: webAuthHeaderProvider,
-                          onActiveVideoChanged: (video, index) {
-                            _currentWebIndex = index;
-                            _pagePosition.value = index.toDouble();
-                            _resumeAutoAdvanceAfterSwipe();
-                          },
-                          onCompleted: (_) => _handleAutoAdvanceCompleted(),
-                          onErrored: _handleWebPlayerErrored,
-                          onRequiresAuth: _handleWebPlayerRequiresAuth,
-                          onNearEnd: (index) {
-                            if (state.hasMore) {
-                              context.read<VideoFeedBloc>().add(
-                                const VideoFeedLoadMoreRequested(),
-                              );
-                            }
-                          },
-                          itemBuilder:
-                              (
-                                context,
-                                video,
-                                index, {
-                                required isActive,
-                                controller,
-                              }) {
-                                final listSources =
-                                    state.listOnlyVideoIds.contains(video.id)
-                                    ? state.videoListSources[video.id]
-                                    : null;
-                                return _WebVideoFeedItem(
-                                  video: video,
-                                  index: index,
-                                  isActive: isActive,
-                                  pagePosition: _pagePosition,
-                                  contextTitle: state.mode.name,
-                                  listSources: listSources,
-                                  showAutoButton: autoAdvanceAvailable,
-                                  isAutoEnabled: effectiveAutoEnabled,
-                                  onAutoPressed: _toggleAutoAdvance,
-                                  onInteracted: _suppressAutoAdvance,
-                                );
-                              },
-                        )
-                      else
-                        KeyedSubtree(
-                          key: ValueKey(state.mode),
-                          child: PooledVideoFeed(
-                            key: _feedKey,
-                            videos: pooledVideos,
-                            maxLoopDuration: VideoEditorConstants.maxDuration,
-                            controller: controller,
-                            onScrollOffsetChanged: (page) =>
-                                _pagePosition.value = page,
-                            itemBuilder: (context, video, index, {required isActive}) {
-                              final originalEvent = eventsById[video.id];
-                              if (originalEvent == null) {
-                                Log.debug(
-                                  'Feed item missing original event: '
-                                  'mode=${state.mode.name}, index=$index, '
-                                  'videoId=${video.id}, playbackUrl=${video.url}, '
-                                  'stateVideoCount=${state.videos.length}',
-                                  name: 'VideoFeedPage',
-                                  category: LogCategory.video,
-                                );
-                                return const ColoredBox(
-                                  color: VineTheme.backgroundColor,
-                                );
-                              }
-                              Log.debug(
-                                'Feed item build: mode=${state.mode.name}, index=$index, '
-                                'eventId=${originalEvent.id}, isActive=$isActive, '
-                                'playbackUrl=${video.url}, originalUrl=${originalEvent.videoUrl}, '
-                                'thumbnailUrl=${originalEvent.thumbnailUrl}',
-                                name: 'VideoFeedPage',
-                                category: LogCategory.video,
-                              );
-                              final listSources =
-                                  state.listOnlyVideoIds.contains(
-                                    originalEvent.id,
-                                  )
-                                  ? state.videoListSources[originalEvent.id]
-                                  : null;
-                              return _PooledVideoFeedItem(
-                                video: originalEvent,
-                                index: index,
-                                isActive: isActive,
-                                pagePosition: _pagePosition,
-                                contextTitle: state.mode.name,
-                                listSources: listSources,
-                                showAutoButton: autoAdvanceAvailable,
-                                isAutoEnabled: effectiveAutoEnabled,
-                                isAutoAdvanceActive: effectiveAutoActive,
-                                onAutoPressed: _toggleAutoAdvance,
-                                onInteracted: _suppressAutoAdvance,
-                                onAutoAdvanceCompleted:
-                                    _handleAutoAdvanceCompleted,
-                              );
-                            },
-                            onActiveVideoChanged: (video, index) {
-                              _resumeAutoAdvanceAfterSwipe();
-                              FeedPerformanceTracker().startVideoSwipeTracking(
-                                video.id,
-                              );
-                              final sourceIndex = state.videos.indexWhere(
-                                (event) => event.id == video.id,
-                              );
-                              if (sourceIndex != -1) {
-                                final event = state.videos[sourceIndex];
-                                Log.info(
-                                  '📺 Feed active video: mode=${state.mode.name}, '
-                                  'index=$index, eventId=${event.id}, pubkey=${event.pubkey}, '
-                                  'playbackUrl=${video.url}, originalUrl=${event.videoUrl}, '
-                                  'thumbnailUrl=${event.thumbnailUrl}',
-                                  name: 'VideoFeedPage',
-                                  category: LogCategory.video,
-                                );
-                              }
-                            },
-                            onNearEnd: (index) {
-                              // PooledVideoFeed fires this when the user is within
-                              // nearEndThreshold (default 3) of the end, using the
-                              // controller's actual video count (not the BlocBuilder's
-                              // list length, which may differ due to deduplication).
-                              if (state.hasMore) {
-                                context.read<VideoFeedBloc>().add(
-                                  const VideoFeedLoadMoreRequested(),
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                      const FeedModeSwitch(),
-                    ],
-                  );
-                },
-              ),
+      child: NavRoundedShell(
+        innerColor: VineTheme.backgroundColor,
+        child: MultiBlocListener(
+          listeners: [
+            // Sync volume when hardware buttons change system volume.
+            BlocListener<VideoVolumeCubit, VideoVolumeState>(
+              listener: (_, state) {
+                controller?.setVolume(state.volume);
+              },
             ),
+            // Reset controller when mode changes so a fresh one is
+            // created for the new feed.
+            BlocListener<VideoFeedBloc, VideoFeedState>(
+              listenWhen: (previous, current) => previous.mode != current.mode,
+              listener: (_, state) {
+                _pagePosition.value = 0;
+                _resetVideoController();
+                handleVideoController(state);
+              },
+            ),
+            // Initialize controller when videos first become available
+            BlocListener<VideoFeedBloc, VideoFeedState>(
+              listenWhen: (previous, current) =>
+                  !previous.isLoaded &&
+                  current.isLoaded &&
+                  current.videos.isNotEmpty,
+              listener: (_, state) {
+                handleVideoController(state);
+                if (!_hasMarkedUIReady) {
+                  _hasMarkedUIReady = true;
+                  StartupPerformanceService.instance.markUIReady();
+                }
+              },
+            ),
+            // Handle new videos from pagination
+            BlocListener<VideoFeedBloc, VideoFeedState>(
+              listenWhen: (previous, current) =>
+                  previous.videos.length != current.videos.length,
+              listener: (_, state) => handleVideosChanged(state),
+            ),
+            BlocListener<VideoFeedBloc, VideoFeedState>(
+              listenWhen: (previous, current) =>
+                  previous.videos.length != current.videos.length ||
+                  previous.hasMore != current.hasMore ||
+                  previous.isLoadingMore != current.isLoadingMore,
+              listener: (_, state) => _continuePendingAutoAdvance(state),
+            ),
+          ],
+          child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
+            builder: (context, state) {
+              // Loading state (including initial state before first load)
+              if (state.isLoading) {
+                return const Center(child: BrandedLoadingIndicator());
+              }
+
+              // Error state
+              if (state.status == VideoFeedStatus.failure) {
+                return _FeedErrorWidget(error: state.error);
+              }
+
+              // Empty state
+              if (state.isEmpty) {
+                return Stack(
+                  children: [
+                    FeedEmptyWidget(state: state),
+                    const FeedModeSwitch(),
+                  ],
+                );
+              }
+
+              // Wrap videos for pool compatibility
+              final pooledVideos = state.videos.toPooledVideoItems();
+              final eventsById = {
+                for (final event in state.videos) event.id: event,
+              };
+
+              // Subscribe to Auto state so the items rebuild when the rail is
+              // toggled / suppressed / resumed.
+              final autoState = context.watch<FeedAutoAdvanceCubit>().state;
+
+              // Gate the rail + runtime on both the feature flag and the
+              // user's reduced-motion preference. When Auto is unavailable,
+              // force it "off" at the view layer regardless of cubit state.
+              final autoAdvanceAvailable =
+                  ref.watch(
+                    isFeatureEnabledProvider(FeatureFlag.feedAutoAdvance),
+                  ) &&
+                  !MediaQuery.disableAnimationsOf(context);
+              final effectiveAutoEnabled =
+                  autoAdvanceAvailable && autoState.enabled;
+              final effectiveAutoActive =
+                  autoAdvanceAvailable && autoState.isEffectivelyActive;
+
+              // Wire the NIP-98 auth header provider into the web feed only
+              // when the HLS auth web player flag is on. When the flag is
+              // off the provider is null and the legacy video_player path
+              // is used, preserving current behavior.
+              final hlsAuthWebPlayerEnabled = ref.watch(
+                isFeatureEnabledProvider(FeatureFlag.hlsAuthWebPlayer),
+              );
+              final webAuthHeaderProvider = kIsWeb && hlsAuthWebPlayerEnabled
+                  ? buildWebVideoAuthHeaderProvider(
+                      ref.watch(mediaViewerAuthServiceProvider),
+                    )
+                  : null;
+
+              // Note: RefreshIndicator removed - it conflicts with PageView
+              // scrolling and adds memory overhead. Use the refresh button
+              // instead.
+              return Stack(
+                children: [
+                  if (kIsWeb)
+                    WebVideoFeed(
+                      key: _webFeedKey,
+                      videos: state.videos
+                          .where((v) => v.videoUrl != null)
+                          .toList(),
+                      controllerFactory:
+                          widget.webControllerFactory ??
+                          defaultWebVideoPlayerControllerFactory,
+                      authHeaderProvider: webAuthHeaderProvider,
+                      onActiveVideoChanged: (video, index) {
+                        _currentWebIndex = index;
+                        _pagePosition.value = index.toDouble();
+                        _resumeAutoAdvanceAfterSwipe();
+                      },
+                      onCompleted: (_) => _handleAutoAdvanceCompleted(),
+                      onErrored: _handleWebPlayerErrored,
+                      onRequiresAuth: _handleWebPlayerRequiresAuth,
+                      onNearEnd: (index) {
+                        if (state.hasMore) {
+                          context.read<VideoFeedBloc>().add(
+                            const VideoFeedLoadMoreRequested(),
+                          );
+                        }
+                      },
+                      itemBuilder:
+                          (
+                            context,
+                            video,
+                            index, {
+                            required isActive,
+                            controller,
+                          }) {
+                            final listSources =
+                                state.listOnlyVideoIds.contains(video.id)
+                                ? state.videoListSources[video.id]
+                                : null;
+                            return _WebVideoFeedItem(
+                              video: video,
+                              index: index,
+                              isActive: isActive,
+                              pagePosition: _pagePosition,
+                              contextTitle: state.mode.name,
+                              listSources: listSources,
+                              showAutoButton: autoAdvanceAvailable,
+                              isAutoEnabled: effectiveAutoEnabled,
+                              feedController: null,
+                              onAutoPressed: _toggleAutoAdvance,
+                              onInteracted: _suppressAutoAdvance,
+                            );
+                          },
+                    )
+                  else
+                    KeyedSubtree(
+                      key: ValueKey(state.mode),
+                      child: PooledVideoFeed(
+                        key: _feedKey,
+                        videos: pooledVideos,
+                        maxLoopDuration: VideoEditorConstants.maxDuration,
+                        controller: controller,
+                        onScrollOffsetChanged: (page) =>
+                            _pagePosition.value = page,
+                        itemBuilder: (context, video, index, {required isActive}) {
+                          final originalEvent = eventsById[video.id];
+                          if (originalEvent == null) {
+                            Log.debug(
+                              'Feed item missing original event: '
+                              'mode=${state.mode.name}, index=$index, '
+                              'videoId=${video.id}, playbackUrl=${video.url}, '
+                              'stateVideoCount=${state.videos.length}',
+                              name: 'VideoFeedPage',
+                              category: LogCategory.video,
+                            );
+                            return const ColoredBox(
+                              color: VineTheme.backgroundColor,
+                            );
+                          }
+                          Log.debug(
+                            'Feed item build: mode=${state.mode.name}, index=$index, '
+                            'eventId=${originalEvent.id}, isActive=$isActive, '
+                            'playbackUrl=${video.url}, originalUrl=${originalEvent.videoUrl}, '
+                            'thumbnailUrl=${originalEvent.thumbnailUrl}',
+                            name: 'VideoFeedPage',
+                            category: LogCategory.video,
+                          );
+                          final listSources =
+                              state.listOnlyVideoIds.contains(originalEvent.id)
+                              ? state.videoListSources[originalEvent.id]
+                              : null;
+                          return _PooledVideoFeedItem(
+                            video: originalEvent,
+                            index: index,
+                            isActive: isActive,
+                            pagePosition: _pagePosition,
+                            contextTitle: state.mode.name,
+                            listSources: listSources,
+                            showAutoButton: autoAdvanceAvailable,
+                            isAutoEnabled: effectiveAutoEnabled,
+                            isAutoAdvanceActive: effectiveAutoActive,
+                            onAutoPressed: _toggleAutoAdvance,
+                            onInteracted: _suppressAutoAdvance,
+                            onAutoAdvanceCompleted: _handleAutoAdvanceCompleted,
+                          );
+                        },
+                        onActiveVideoChanged: (video, index) {
+                          _resumeAutoAdvanceAfterSwipe();
+                          FeedPerformanceTracker().startVideoSwipeTracking(
+                            video.id,
+                          );
+                          final sourceIndex = state.videos.indexWhere(
+                            (event) => event.id == video.id,
+                          );
+                          if (sourceIndex != -1) {
+                            final event = state.videos[sourceIndex];
+                            Log.info(
+                              '📺 Feed active video: mode=${state.mode.name}, '
+                              'index=$index, eventId=${event.id}, pubkey=${event.pubkey}, '
+                              'playbackUrl=${video.url}, originalUrl=${event.videoUrl}, '
+                              'thumbnailUrl=${event.thumbnailUrl}',
+                              name: 'VideoFeedPage',
+                              category: LogCategory.video,
+                            );
+                          }
+                        },
+                        onNearEnd: (index) {
+                          // PooledVideoFeed fires this when the user is within
+                          // nearEndThreshold (default 3) of the end, using the
+                          // controller's actual video count (not the BlocBuilder's
+                          // list length, which may differ due to deduplication).
+                          if (state.hasMore) {
+                            context.read<VideoFeedBloc>().add(
+                              const VideoFeedLoadMoreRequested(),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  const FeedModeSwitch(),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -954,6 +945,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
     required this.index,
     required this.isActive,
     required this.pagePosition,
+    required this.feedController,
     required this.showAutoButton,
     required this.isAutoEnabled,
     this.contextTitle,
@@ -966,6 +958,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
   final int index;
   final bool isActive;
   final ValueNotifier<double> pagePosition;
+  final VideoFeedController? feedController;
   final bool showAutoButton;
   final bool isAutoEnabled;
   final String? contextTitle;
@@ -1001,6 +994,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
         index: index,
         listSources: listSources,
         showAutoButton: showAutoButton,
+        feedController: feedController,
         isAutoEnabled: isAutoEnabled,
         onAutoPressed: onAutoPressed,
         onInteracted: onInteracted,
@@ -1126,7 +1120,7 @@ class _PooledVideoFeedItemContentState
               errorType: errorType,
             );
           },
-          overlayBuilder: (context, videoController, player) =>
+          overlayBuilder: (context, videoController, player, feedController) =>
               FeedAutoAdvanceCompletionListener(
                 player: player,
                 isEnabled: widget.isActive && widget.isAutoAdvanceActive,
@@ -1141,6 +1135,7 @@ class _PooledVideoFeedItemContentState
                       player: player,
                       firstFrameFuture:
                           videoController?.waitUntilFirstFrameRendered,
+                      feedController: feedController,
                       listSources: widget.listSources,
                       showAutoButton: widget.showAutoButton,
                       isAutoEnabled: widget.isAutoEnabled,
