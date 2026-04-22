@@ -31,6 +31,8 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
@@ -1779,9 +1781,7 @@ Nip98AuthService nip98AuthService(Ref ref) {
 @riverpod
 BlossomAuthService blossomAuthService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  return BlossomAuthService(
-    authProvider: _BlossomAuthAdapter(authService),
-  );
+  return BlossomAuthService(authProvider: _BlossomAuthAdapter(authService));
 }
 
 /// Shared viewer auth service for media GET requests.
@@ -2246,11 +2246,25 @@ DmRepository dmRepository(Ref ref) {
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  final flagService = ref.watch(featureFlagServiceProvider);
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+
+  BlockedCommentFilter? blockFilter;
+  if (flagService.isEnabled(FeatureFlag.contentPolicyV2)) {
+    final engine = ref.watch(contentPolicyEngineProvider);
+    blockFilter = (pubkey) {
+      final decision = engine.evaluate(
+        PolicyInput(pubkey: pubkey),
+        blocklistRepository.currentState,
+      );
+      return decision is Block;
+    };
+  }
+
   final repository = CommentsRepository(
     nostrClient: nostrClient,
     funnelcakeApiClient: funnelcakeClient,
-    blockFilter: blocklistRepository.shouldFilterFromFeeds,
+    blockFilter: blockFilter,
   );
   ref.onDispose(repository.clearCommentCountCache);
   return repository;
