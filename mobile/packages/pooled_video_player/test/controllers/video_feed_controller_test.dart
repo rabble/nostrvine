@@ -3817,6 +3817,13 @@ void main() {
     });
 
     group('slow-load detection', () {
+      // NOTE: This test cannot use `fakeAsync` because the slow-load
+      // watchdog reads `Stopwatch.elapsedMilliseconds` (see
+      // `VideoFeedController._loadStopwatches`), which is bound to the OS
+      // clock and is not affected by `fakeAsync`'s virtual time. Converting
+      // the test would require migrating production code to `package:clock`
+      // first. Tracked alongside the startup_diagnostics deferrals in
+      // #3233 / #3237.
       test(
         'current video gives up with error when load exceeds threshold',
         () async {
@@ -3893,124 +3900,8 @@ void main() {
     });
 
     group('stale position recovery', () {
-      test('recovers when position is frozen after play', () async {
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 3),
-          pool: pool,
-          preloadAhead: 1,
-          preloadBehind: 0,
-        );
-
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
-
-        // Position advances for the first several heartbeats, then
-        // freezes at 533ms. Heartbeat fires every 100ms, grace is
-        // 5 ticks (500ms). Position must change at least once after
-        // grace so _positionHasAdvanced becomes true.
-        var callCount = 0;
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenAnswer((_) {
-          callCount++;
-          // Advance for first 10 calls (~1s), then freeze at 533
-          if (callCount <= 10) {
-            return Duration(milliseconds: callCount * 33);
-          }
-          return const Duration(milliseconds: 533);
-        });
-
-        // Trigger buffer ready so the controller starts the position
-        // timer
-        setup.bufferingController.add(false);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        // Wait for:
-        // ~1s for position to advance and then freeze
-        // + 8 stale ticks (800ms) + async buffer
-        await Future<void>.delayed(const Duration(milliseconds: 2500));
-
-        // Recovery should have called pause + seek + play
-        verify(setup.player.pause).called(greaterThanOrEqualTo(1));
-        verify(
-          () => setup.player.seek(const Duration(milliseconds: 533)),
-        ).called(greaterThanOrEqualTo(1));
-
-        controller.dispose();
-      });
-
-      test('does not trigger recovery when position advances', () async {
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 3),
-          pool: pool,
-          preloadAhead: 1,
-          preloadBehind: 0,
-        );
-
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
-        var currentPosition = 0;
-
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenAnswer(
-          (_) => Duration(milliseconds: currentPosition += 100),
-        );
-
-        setup.bufferingController.add(false);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        // Let heartbeat run through grace + threshold — position always
-        // advances
-        await Future<void>.delayed(const Duration(milliseconds: 1700));
-
-        // seek should only be called for the initial _resume seek-to-zero
-        // check, not for stale recovery
-        verifyNever(
-          () => setup.player.seek(const Duration(milliseconds: 533)),
-        );
-
-        controller.dispose();
-      });
-
-      test('does not trigger recovery when buffering', () async {
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 3),
-          pool: pool,
-          preloadAhead: 1,
-          preloadBehind: 0,
-        );
-
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
-
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(true);
-        when(() => setup.state.position).thenReturn(
-          const Duration(milliseconds: 533),
-        );
-
-        setup.bufferingController.add(false);
-        // Wait through grace + threshold — buffering prevents recovery
-        await Future<void>.delayed(const Duration(milliseconds: 1700));
-
-        // Recovery seek should NOT be called — buffering resets stale count
-        verifyNever(
-          () => setup.player.seek(const Duration(milliseconds: 533)),
-        );
-
-        controller.dispose();
-      });
-
-      test(
-        'does not trigger recovery during initial decoder warmup',
-        () async {
+      test('recovers when position is frozen after play', () {
+        fakeAsync((async) {
           final controller = VideoFeedController(
             videos: createTestVideos(count: 3),
             pool: pool,
@@ -4018,7 +3909,129 @@ void main() {
             preloadBehind: 0,
           );
 
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          async.elapse(const Duration(milliseconds: 50));
+
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
+
+          // Position advances for the first several heartbeats, then
+          // freezes at 533ms. Heartbeat fires every 100ms, grace is
+          // 5 ticks (500ms). Position must change at least once after
+          // grace so _positionHasAdvanced becomes true.
+          var callCount = 0;
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(() => setup.state.position).thenAnswer((_) {
+            callCount++;
+            // Advance for first 10 calls (~1s), then freeze at 533
+            if (callCount <= 10) {
+              return Duration(milliseconds: callCount * 33);
+            }
+            return const Duration(milliseconds: 533);
+          });
+
+          // Trigger buffer ready so the controller starts the position
+          // timer, then wait for ~1s of advancing position + 8 stale
+          // ticks (800ms) + async buffer.
+          setup.bufferingController.add(false);
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..elapse(const Duration(milliseconds: 2500));
+
+          // Recovery should have called pause + seek + play
+          verify(setup.player.pause).called(greaterThanOrEqualTo(1));
+          verify(
+            () => setup.player.seek(const Duration(milliseconds: 533)),
+          ).called(greaterThanOrEqualTo(1));
+
+          controller.dispose();
+          async.flushMicrotasks();
+        });
+      });
+
+      test('does not trigger recovery when position advances', () {
+        fakeAsync((async) {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
+          var currentPosition = 0;
+
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(() => setup.state.position).thenAnswer(
+            (_) => Duration(milliseconds: currentPosition += 100),
+          );
+
+          // Let heartbeat run through grace + threshold — position always
+          // advances.
+          setup.bufferingController.add(false);
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..elapse(const Duration(milliseconds: 1700));
+
+          // seek should only be called for the initial _resume seek-to-zero
+          // check, not for stale recovery
+          verifyNever(
+            () => setup.player.seek(const Duration(milliseconds: 533)),
+          );
+
+          controller.dispose();
+          async.flushMicrotasks();
+        });
+      });
+
+      test('does not trigger recovery when buffering', () {
+        fakeAsync((async) {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
+
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(true);
+          when(() => setup.state.position).thenReturn(
+            const Duration(milliseconds: 533),
+          );
+
+          // Wait through grace + threshold — buffering prevents recovery
+          setup.bufferingController.add(false);
+          async.elapse(const Duration(milliseconds: 1700));
+
+          // Recovery seek should NOT be called — buffering resets stale count
+          verifyNever(
+            () => setup.player.seek(const Duration(milliseconds: 533)),
+          );
+
+          controller.dispose();
+          async.flushMicrotasks();
+        });
+      });
+
+      test('does not trigger recovery during initial decoder warmup', () {
+        fakeAsync((async) {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
 
           final url = createTestVideos()[0].url;
           final setup = playerSetups[url]!;
@@ -4029,7 +4042,7 @@ void main() {
           when(() => setup.state.position).thenReturn(Duration.zero);
 
           setup.bufferingController.add(false);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          async.elapse(const Duration(milliseconds: 50));
 
           // Clear out any seeks from the initial setup path (e.g. the
           // resume_force_seek_zero defensive seek that fires once on the
@@ -4040,48 +4053,50 @@ void main() {
 
           // Wait well past grace + threshold — recovery should NOT fire
           // because position has never advanced from initial value
-          await Future<void>.delayed(
-            const Duration(milliseconds: 2000),
-          );
+          async.elapse(const Duration(milliseconds: 2000));
 
           // Stale-recovery seek should NOT be called
           verifyNever(() => setup.player.seek(Duration.zero));
 
           controller.dispose();
-        },
-      );
+          async.flushMicrotasks();
+        });
+      });
 
-      test('resets stale count on page change', () async {
-        final controller = VideoFeedController(
-          videos: createTestVideos(),
-          pool: pool,
-        );
+      test('resets stale count on page change', () {
+        fakeAsync((async) {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          async.elapse(const Duration(milliseconds: 50));
 
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
 
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenReturn(
-          const Duration(milliseconds: 533),
-        );
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(() => setup.state.position).thenReturn(
+            const Duration(milliseconds: 533),
+          );
 
-        setup.bufferingController.add(false);
-        // Swipe away during grace period — stale tracking never fires
-        await Future<void>.delayed(const Duration(milliseconds: 250));
+          // Swipe away during grace period — stale tracking never fires.
+          setup.bufferingController.add(false);
+          async.elapse(const Duration(milliseconds: 250));
 
-        // Swipe away before threshold is reached — resets stale tracking
-        controller.onPageChanged(1);
-        await Future<void>.delayed(const Duration(milliseconds: 1700));
+          // Swipe away before threshold is reached — resets stale tracking
+          controller.onPageChanged(1);
+          async.elapse(const Duration(milliseconds: 1700));
 
-        // Recovery seek to 533ms should NOT have been called on index 0
-        verifyNever(
-          () => setup.player.seek(const Duration(milliseconds: 533)),
-        );
+          // Recovery seek to 533ms should NOT have been called on index 0
+          verifyNever(
+            () => setup.player.seek(const Duration(milliseconds: 533)),
+          );
 
-        controller.dispose();
+          controller.dispose();
+          async.flushMicrotasks();
+        });
       });
     });
 
@@ -4205,9 +4220,8 @@ void main() {
     });
 
     group('stuck playback watchdog', () {
-      test(
-        'marks error when position stays at 0 for 5 seconds',
-        () async {
+      test('marks error when position stays at 0 for 5 seconds', () {
+        fakeAsync((async) {
           final videos = createTestVideos(count: 3);
 
           final setupByUrl = <String, MockPlayerSetup>{};
@@ -4227,26 +4241,26 @@ void main() {
           );
 
           // Wait for async loading to start.
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          async.elapse(const Duration(milliseconds: 100));
 
           // Make video 1 (preloaded) buffer-ready so it is in ready
           // state. Position stays at 0 (the default).
           setupByUrl[videos[1].url]!.bufferingController.add(false);
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          async.elapse(const Duration(milliseconds: 100));
 
           // Swipe to video 1 — triggers _playVideo ->
           // _startStuckPlaybackWatchdog because it is already ready.
           controller.onPageChanged(1);
 
           final notifier = controller.getIndexNotifier(1);
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          async.elapse(const Duration(milliseconds: 100));
 
           // Video should be ready (not yet stuck).
           expect(notifier.value.isReady, isTrue);
           expect(notifier.value.hasError, isFalse);
 
           // Wait for 5 ticks of 1-second timer + margin.
-          await Future<void>.delayed(const Duration(milliseconds: 5500));
+          async.elapse(const Duration(milliseconds: 5500));
 
           // Watchdog should have given up and marked as error.
           expect(notifier.value.hasError, isTrue);
@@ -4256,64 +4270,71 @@ void main() {
           );
 
           controller.dispose();
-          await stuckPool.dispose();
-        },
-      );
+          unawaited(stuckPool.dispose());
+          async.flushMicrotasks();
+        });
+      });
 
       test(
         'retries the raw Divine blob before error when a derivative stalls',
-        () async {
-          const hash =
-              '1234567890abcdef1234567890abcdef'
-              '1234567890abcdef1234567890abcdef';
-          const mp4Url = 'https://media.divine.video/$hash/720p.mp4';
-          const rawUrl = 'https://media.divine.video/$hash';
-          final videos = [
-            const VideoItem(id: 'video_0', url: 'https://example.com/a.mp4'),
-            const VideoItem(id: 'divine_video', url: mp4Url),
-          ];
+        () {
+          fakeAsync((async) {
+            const hash =
+                '1234567890abcdef1234567890abcdef'
+                '1234567890abcdef1234567890abcdef';
+            const mp4Url = 'https://media.divine.video/$hash/720p.mp4';
+            const rawUrl = 'https://media.divine.video/$hash';
+            final videos = [
+              const VideoItem(
+                id: 'video_0',
+                url: 'https://example.com/a.mp4',
+              ),
+              const VideoItem(id: 'divine_video', url: mp4Url),
+            ];
 
-          final setupByUrl = <String, MockPlayerSetup>{};
-          final divinePool = TestablePlayerPool(
-            mockPlayerFactory: (url) {
-              final setup = createMockPlayerSetup();
-              setupByUrl[url] = setup;
-              return createMockPooledPlayerFromSetup(setup);
-            },
-          );
+            final setupByUrl = <String, MockPlayerSetup>{};
+            final divinePool = TestablePlayerPool(
+              mockPlayerFactory: (url) {
+                final setup = createMockPlayerSetup();
+                setupByUrl[url] = setup;
+                return createMockPooledPlayerFromSetup(setup);
+              },
+            );
 
-          final controller = VideoFeedController(
-            videos: videos,
-            pool: divinePool,
-            preloadBehind: 0,
-            preloadAhead: 1,
-          );
+            final controller = VideoFeedController(
+              videos: videos,
+              pool: divinePool,
+              preloadBehind: 0,
+              preloadAhead: 1,
+            );
 
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+            async.elapse(const Duration(milliseconds: 100));
 
-          final setup = setupByUrl[mp4Url]!;
-          setup.bufferingController.add(false);
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+            final setup = setupByUrl[mp4Url]!;
+            setup.bufferingController.add(false);
+            async.elapse(const Duration(milliseconds: 100));
 
-          controller.onPageChanged(1);
-          final notifier = controller.getIndexNotifier(1);
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+            controller.onPageChanged(1);
+            final notifier = controller.getIndexNotifier(1);
+            async.elapse(const Duration(milliseconds: 100));
 
-          expect(notifier.value.isReady, isTrue);
-          expect(notifier.value.hasError, isFalse);
+            expect(notifier.value.isReady, isTrue);
+            expect(notifier.value.hasError, isFalse);
 
-          await Future<void>.delayed(const Duration(milliseconds: 5500));
+            async.elapse(const Duration(milliseconds: 5500));
 
-          verify(
-            () => setup.player.open(
-              any(that: isA<Media>().having((m) => m.uri, 'uri', rawUrl)),
-              play: false,
-            ),
-          ).called(1);
-          expect(notifier.value.hasError, isFalse);
+            verify(
+              () => setup.player.open(
+                any(that: isA<Media>().having((m) => m.uri, 'uri', rawUrl)),
+                play: false,
+              ),
+            ).called(1);
+            expect(notifier.value.hasError, isFalse);
 
-          controller.dispose();
-          await divinePool.dispose();
+            controller.dispose();
+            unawaited(divinePool.dispose());
+            async.flushMicrotasks();
+          });
         },
       );
 
@@ -4374,191 +4395,202 @@ void main() {
     });
 
     group('stale position recovery', () {
-      test('recovers when position is frozen after play', () async {
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 3),
-          pool: pool,
-          preloadAhead: 1,
-          preloadBehind: 0,
-        );
+      test('recovers when position is frozen after play', () {
+        fakeAsync((async) {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+          );
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          async.elapse(const Duration(milliseconds: 50));
 
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
 
-        // Position advances for the first several heartbeats, then
-        // freezes at 533ms. Heartbeat fires every 100ms, grace is
-        // 5 ticks (500ms). Position must change at least once after
-        // grace so _positionHasAdvanced becomes true.
-        var callCount = 0;
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenAnswer((_) {
-          callCount++;
-          // Advance for first 10 calls (~1s), then freeze at 533
-          if (callCount <= 10) {
-            return Duration(milliseconds: callCount * 33);
-          }
-          return const Duration(milliseconds: 533);
+          // Position advances for the first several heartbeats, then
+          // freezes at 533ms. Heartbeat fires every 100ms, grace is
+          // 5 ticks (500ms). Position must change at least once after
+          // grace so _positionHasAdvanced becomes true.
+          var callCount = 0;
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(() => setup.state.position).thenAnswer((_) {
+            callCount++;
+            // Advance for first 10 calls (~1s), then freeze at 533
+            if (callCount <= 10) {
+              return Duration(milliseconds: callCount * 33);
+            }
+            return const Duration(milliseconds: 533);
+          });
+
+          // Trigger buffer ready so the controller starts the position
+          // timer, then wait for ~1s of advancing position + 8 stale
+          // ticks (800ms) + async buffer.
+          setup.bufferingController.add(false);
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..elapse(const Duration(milliseconds: 2500));
+
+          // Recovery should have called pause + seek + play
+          verify(setup.player.pause).called(greaterThanOrEqualTo(1));
+          verify(
+            () => setup.player.seek(const Duration(milliseconds: 533)),
+          ).called(greaterThanOrEqualTo(1));
+
+          controller.dispose();
+          async.flushMicrotasks();
         });
-
-        // Trigger buffer ready so the controller starts the position
-        // timer
-        setup.bufferingController.add(false);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        // Wait for:
-        // ~1s for position to advance and then freeze
-        // + 8 stale ticks (800ms) + async buffer
-        await Future<void>.delayed(const Duration(milliseconds: 2500));
-
-        // Recovery should have called pause + seek + play
-        verify(setup.player.pause).called(greaterThanOrEqualTo(1));
-        verify(
-          () => setup.player.seek(const Duration(milliseconds: 533)),
-        ).called(greaterThanOrEqualTo(1));
-
-        controller.dispose();
       });
 
-      test('does not trigger recovery when position advances', () async {
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 3),
-          pool: pool,
-          preloadAhead: 1,
-          preloadBehind: 0,
-        );
+      test('does not trigger recovery when position advances', () {
+        fakeAsync((async) {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+          );
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          async.elapse(const Duration(milliseconds: 50));
 
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
-        var currentPosition = 0;
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
+          var currentPosition = 0;
 
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenAnswer(
-          (_) => Duration(milliseconds: currentPosition += 100),
-        );
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(() => setup.state.position).thenAnswer(
+            (_) => Duration(milliseconds: currentPosition += 100),
+          );
 
-        setup.bufferingController.add(false);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Let heartbeat run through grace + threshold — position always
+          // advances.
+          setup.bufferingController.add(false);
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..elapse(const Duration(milliseconds: 1700));
 
-        // Let heartbeat run through grace + threshold — position always
-        // advances
-        await Future<void>.delayed(const Duration(milliseconds: 1700));
+          // seek should only be called for the initial _resume seek-to-zero
+          // check, not for stale recovery
+          verifyNever(
+            () => setup.player.seek(const Duration(milliseconds: 533)),
+          );
 
-        // seek should only be called for the initial _resume seek-to-zero
-        // check, not for stale recovery
-        verifyNever(
-          () => setup.player.seek(const Duration(milliseconds: 533)),
-        );
-
-        controller.dispose();
+          controller.dispose();
+          async.flushMicrotasks();
+        });
       });
 
-      test('does not trigger recovery when buffering', () async {
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 3),
-          pool: pool,
-          preloadAhead: 1,
-          preloadBehind: 0,
-        );
+      test('does not trigger recovery when buffering', () {
+        fakeAsync((async) {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+          );
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          async.elapse(const Duration(milliseconds: 50));
 
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
 
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(true);
-        when(() => setup.state.position).thenReturn(
-          const Duration(milliseconds: 533),
-        );
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(true);
+          when(() => setup.state.position).thenReturn(
+            const Duration(milliseconds: 533),
+          );
 
-        setup.bufferingController.add(false);
-        // Wait through grace + threshold — buffering prevents recovery
-        await Future<void>.delayed(const Duration(milliseconds: 1700));
+          // Wait through grace + threshold — buffering prevents recovery
+          setup.bufferingController.add(false);
+          async.elapse(const Duration(milliseconds: 1700));
 
-        // Recovery seek should NOT be called — buffering resets stale count
-        verifyNever(
-          () => setup.player.seek(const Duration(milliseconds: 533)),
-        );
+          // Recovery seek should NOT be called — buffering resets stale count
+          verifyNever(
+            () => setup.player.seek(const Duration(milliseconds: 533)),
+          );
 
-        controller.dispose();
+          controller.dispose();
+          async.flushMicrotasks();
+        });
       });
 
-      test('does not trigger recovery during initial decoder warmup', () async {
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 3),
-          pool: pool,
-          preloadAhead: 1,
-          preloadBehind: 0,
-        );
+      test('does not trigger recovery during initial decoder warmup', () {
+        fakeAsync((async) {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+          );
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          async.elapse(const Duration(milliseconds: 50));
 
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
 
-        // Position stays frozen at 0 (decoder hasn't produced frames yet)
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenReturn(Duration.zero);
+          // Position stays frozen at 0 (decoder hasn't produced frames yet)
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(() => setup.state.position).thenReturn(Duration.zero);
 
-        setup.bufferingController.add(false);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          setup.bufferingController.add(false);
+          async.elapse(const Duration(milliseconds: 50));
 
-        // Clear seeks from the initial setup (specifically the
-        // resume_force_seek_zero defensive seek). This test only cares
-        // about whether STALE-recovery seeks fire later.
-        clearInteractions(setup.player);
-        when(() => setup.player.seek(any())).thenAnswer((_) async {});
+          // Clear seeks from the initial setup (specifically the
+          // resume_force_seek_zero defensive seek). This test only cares
+          // about whether STALE-recovery seeks fire later.
+          clearInteractions(setup.player);
+          when(() => setup.player.seek(any())).thenAnswer((_) async {});
 
-        // Wait well past grace + threshold — recovery should NOT fire
-        // because position has never advanced from initial value
-        await Future<void>.delayed(const Duration(milliseconds: 2000));
+          // Wait well past grace + threshold — recovery should NOT fire
+          // because position has never advanced from initial value
+          async.elapse(const Duration(milliseconds: 2000));
 
-        // Stale-recovery seek should NOT be called
-        verifyNever(
-          () => setup.player.seek(Duration.zero),
-        );
+          // Stale-recovery seek should NOT be called
+          verifyNever(() => setup.player.seek(Duration.zero));
 
-        controller.dispose();
+          controller.dispose();
+          async.flushMicrotasks();
+        });
       });
 
-      test('resets stale count on page change', () async {
-        final controller = VideoFeedController(
-          videos: createTestVideos(),
-          pool: pool,
-        );
+      test('resets stale count on page change', () {
+        fakeAsync((async) {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          async.elapse(const Duration(milliseconds: 50));
 
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
 
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenReturn(
-          const Duration(milliseconds: 533),
-        );
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(() => setup.state.position).thenReturn(
+            const Duration(milliseconds: 533),
+          );
 
-        setup.bufferingController.add(false);
-        // Swipe away during grace period — stale tracking never fires
-        await Future<void>.delayed(const Duration(milliseconds: 250));
+          // Swipe away during grace period — stale tracking never fires.
+          setup.bufferingController.add(false);
+          async.elapse(const Duration(milliseconds: 250));
 
-        // Swipe away before threshold is reached — resets stale tracking
-        controller.onPageChanged(1);
-        await Future<void>.delayed(const Duration(milliseconds: 1700));
+          // Swipe away before threshold is reached — resets stale tracking
+          controller.onPageChanged(1);
+          async.elapse(const Duration(milliseconds: 1700));
 
-        // Recovery seek to 533ms should NOT have been called on index 0
-        verifyNever(
-          () => setup.player.seek(const Duration(milliseconds: 533)),
-        );
+          // Recovery seek to 533ms should NOT have been called on index 0
+          verifyNever(
+            () => setup.player.seek(const Duration(milliseconds: 533)),
+          );
 
-        controller.dispose();
+          controller.dispose();
+          async.flushMicrotasks();
+        });
       });
     });
 
@@ -5641,6 +5673,18 @@ void main() {
       await pool.dispose();
     });
 
+    // NOTE: The three tests below cannot use `fakeAsync` because the
+    // playback-rate / state-snapshot diagnostics read
+    // `DateTime.now().millisecondsSinceEpoch` directly (see
+    // `VideoFeedController._checkPlaybackRate` and
+    // `_emitStateSnapshotIfDue` at `video_feed_controller.dart:1943,1994`).
+    // Under `fakeAsync`, `DateTime.now()` returns real wall-clock time,
+    // so `wallDelta` is always ~0 and the detection logic either never
+    // fires (breaking the positive test) or passes tautologically
+    // (hiding real regressions in the negative tests). Converting these
+    // requires migrating the wall-clock reads to `package:clock`'s
+    // injectable `clock.now()`. Tracked alongside the startup_diagnostics
+    // and stuck-playback deferrals in #3233 / #3237.
     test(
       'slow_playback_detected fires when position advances at '
       'well below real-time rate',
