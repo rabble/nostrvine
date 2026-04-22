@@ -1781,7 +1781,9 @@ Nip98AuthService nip98AuthService(Ref ref) {
 @riverpod
 BlossomAuthService blossomAuthService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  return BlossomAuthService(authProvider: _BlossomAuthAdapter(authService));
+  return BlossomAuthService(
+    authProvider: _BlossomAuthAdapter(authService),
+  );
 }
 
 /// Shared viewer auth service for media GET requests.
@@ -2249,7 +2251,7 @@ CommentsRepository commentsRepository(Ref ref) {
   final flagService = ref.watch(featureFlagServiceProvider);
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
 
-  BlockedCommentFilter? blockFilter;
+  final BlockedCommentFilter blockFilter;
   if (flagService.isEnabled(FeatureFlag.contentPolicyV2)) {
     final engine = ref.watch(contentPolicyEngineProvider);
     blockFilter = (pubkey) {
@@ -2259,6 +2261,8 @@ CommentsRepository commentsRepository(Ref ref) {
       );
       return decision is Block;
     };
+  } else {
+    blockFilter = blocklistRepository.shouldFilterFromFeeds;
   }
 
   final repository = CommentsRepository(
