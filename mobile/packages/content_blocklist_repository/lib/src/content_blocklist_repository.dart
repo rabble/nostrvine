@@ -355,7 +355,12 @@ class ContentBlocklistRepository {
     final signer = _signer;
     final nostrClient = _nostrClient;
 
+    // coverage:ignore-start
     if (signer == null || nostrClient == null) {
+      // Defensive: block/unblockUser already short-circuit into the
+      // degraded-mode commit path when services aren't attached, so this
+      // branch is unreachable via the public API. Kept as a safety net
+      // should a future call-site forget the guard.
       Log.debug(
         'Cannot publish block list - Nostr services not yet injected',
         name: 'ContentBlocklistRepository',
@@ -363,6 +368,7 @@ class ContentBlocklistRepository {
       );
       return const _PublishAttempt.error('services_not_attached');
     }
+    // coverage:ignore-end
 
     if (!signer.isAuthenticated) {
       return const _PublishAttempt.error('not_authenticated');

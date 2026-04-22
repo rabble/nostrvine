@@ -1540,4 +1540,302 @@ void main() {
       expect(repo.currentState.blockedPubkeys, contains('persisted-hex'));
     });
   });
+
+  group('ContentBlocklistRepository - attachNostrServices + degraded mode', () {
+    late _MockNostrClient mockClient;
+    late _MockBlockListSigner mockSigner;
+    const ourPubkey =
+        '0000000000000000000000000000000000000000000000000000000000000001';
+
+    setUp(() {
+      mockClient = _MockNostrClient();
+      mockSigner = _MockBlockListSigner();
+      when(
+        () => mockClient.subscribe(any()),
+      ).thenAnswer((_) => const Stream.empty());
+    });
+
+    test('attachNostrServices wires up services without subscribing', () async {
+      final service = ContentBlocklistRepository();
+      await service.attachNostrServices(
+        nostrClient: mockClient,
+        signer: mockSigner,
+        ourPubkey: ourPubkey,
+      );
+      verifyNever(() => mockClient.subscribe(any()));
+    });
+
+    test(
+      'blockUser in degraded mode (services not attached) commits locally',
+      () async {
+        final service = ContentBlocklistRepository();
+
+        final result = await service.blockUser('pubkey1');
+
+        expect(result.success, isTrue);
+        expect(service.isBlocked('pubkey1'), isTrue);
+      },
+    );
+
+    test(
+      'unblockUser in degraded mode (services not attached) commits locally',
+      () async {
+        final service = ContentBlocklistRepository();
+        await service.blockUser('pubkey1');
+
+        final result = await service.unblockUser('pubkey1');
+
+        expect(result.success, isTrue);
+        expect(service.isBlocked('pubkey1'), isFalse);
+      },
+    );
+
+    test(
+      'unblockUser returns success on no-op when user was not blocked',
+      () async {
+        final service = ContentBlocklistRepository();
+
+        final result = await service.unblockUser('never_blocked');
+
+        expect(result.success, isTrue);
+      },
+    );
+
+    test(
+      'unblockUser commits locally and returns success when publish accepts',
+      () async {
+        final event =
+            Event(
+                ourPubkey,
+                30000,
+                const <List<String>>[],
+                'Block list',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'evt'
+              ..sig = 'sig';
+        when(() => mockSigner.isAuthenticated).thenReturn(true);
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => event);
+        when(() => mockClient.publishEventWithRetry(any())).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const {'wss://relay.test'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          ),
+        );
+
+        final service = ContentBlocklistRepository();
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await service.blockUser('pubkey1');
+        expect(service.isBlocked('pubkey1'), isTrue);
+
+        final result = await service.unblockUser('pubkey1');
+
+        expect(result.success, isTrue);
+        expect(result.outcome, isNotNull);
+        expect(service.isBlocked('pubkey1'), isFalse);
+      },
+    );
+
+    test(
+      'blockUser returns success no-op when user is already blocked',
+      () async {
+        final event =
+            Event(
+                ourPubkey,
+                30000,
+                const <List<String>>[],
+                'Block list',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'evt'
+              ..sig = 'sig';
+        when(() => mockSigner.isAuthenticated).thenReturn(true);
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => event);
+        when(() => mockClient.publishEventWithRetry(any())).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const {'wss://relay.test'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          ),
+        );
+
+        final service = ContentBlocklistRepository();
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+        // First block publishes; second block is a no-op.
+        await service.blockUser('pubkey1');
+        clearInteractions(mockClient);
+
+        final result = await service.blockUser('pubkey1');
+
+        expect(result.success, isTrue);
+        expect(result.outcome, isNull);
+        verifyNever(() => mockClient.publishEventWithRetry(any()));
+      },
+    );
+
+    test('unblockUser does NOT commit locally when publish rejects', () async {
+      final event =
+          Event(
+              ourPubkey,
+              30000,
+              const <List<String>>[],
+              'Block list',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            )
+            ..id = 'evt'
+            ..sig = 'sig';
+      when(() => mockSigner.isAuthenticated).thenReturn(true);
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => event);
+      when(() => mockClient.publishEventWithRetry(any())).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {'wss://relay.test'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
+        ),
+      );
+
+      final service = ContentBlocklistRepository();
+      await service.syncBlockListsInBackground(
+        mockClient,
+        mockSigner,
+        ourPubkey,
+      );
+      await service.blockUser('pubkey1');
+      expect(service.isBlocked('pubkey1'), isTrue);
+
+      when(() => mockClient.publishEventWithRetry(any())).thenAnswer(
+        (_) async => PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const {},
+          rejectedBy: const {'wss://relay.test': 'rejected'},
+          noResponseFrom: const {},
+        ),
+      );
+
+      final result = await service.unblockUser('pubkey1');
+
+      expect(result.success, isFalse);
+      expect(service.isBlocked('pubkey1'), isTrue);
+    });
+
+    test('unblockUser surfaces pre-publish error when signing fails', () async {
+      final service = ContentBlocklistRepository();
+      // Block locally first via degraded path (signer not yet attached).
+      await service.blockUser('pubkey1');
+      expect(service.isBlocked('pubkey1'), isTrue);
+
+      // Now attach services; signing will fail.
+      when(() => mockSigner.isAuthenticated).thenReturn(true);
+      when(
+        () => mockSigner.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenThrow(Exception('sign fail'));
+      await service.attachNostrServices(
+        nostrClient: mockClient,
+        signer: mockSigner,
+        ourPubkey: ourPubkey,
+      );
+
+      final result = await service.unblockUser('pubkey1');
+
+      expect(result.success, isFalse);
+      // Not committed since publish failed.
+      expect(service.isBlocked('pubkey1'), isTrue);
+    });
+
+    test(
+      'blockUser returns no-op success when pubkey already blocked',
+      () async {
+        final service = ContentBlocklistRepository();
+        await service.blockUser('pubkey1');
+        // Second call: already-blocked fast path.
+        final result = await service.blockUser('pubkey1');
+
+        expect(result.success, isTrue);
+        expect(service.isBlocked('pubkey1'), isTrue);
+      },
+    );
+
+    test(
+      'unblockUser commits locally when publish is accepted by relay',
+      () async {
+        final event =
+            Event(
+                ourPubkey,
+                30000,
+                const <List<String>>[],
+                'Block list',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'evt'
+              ..sig = 'sig';
+        when(() => mockSigner.isAuthenticated).thenReturn(true);
+        when(
+          () => mockSigner.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => event);
+        when(() => mockClient.publishEventWithRetry(any())).thenAnswer(
+          (_) async => PublishOutcome(
+            eventId: event.id,
+            acceptedBy: const {'wss://relay.test'},
+            rejectedBy: const {},
+            noResponseFrom: const {},
+          ),
+        );
+
+        final service = ContentBlocklistRepository();
+        await service.syncBlockListsInBackground(
+          mockClient,
+          mockSigner,
+          ourPubkey,
+        );
+
+        await service.blockUser('pubkey1');
+        expect(service.isBlocked('pubkey1'), isTrue);
+
+        final result = await service.unblockUser('pubkey1');
+
+        expect(result.success, isTrue);
+        expect(result.outcome, isNotNull);
+        expect(result.feedback, isNotNull);
+        expect(service.isBlocked('pubkey1'), isFalse);
+      },
+    );
+  });
 }
