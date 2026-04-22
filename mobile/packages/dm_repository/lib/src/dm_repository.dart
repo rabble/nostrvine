@@ -911,12 +911,14 @@ class DmRepository {
       results.add(result);
     }
 
-    // If at least one send succeeded, persist locally (atomically).
-    if (results.any((r) => r.success)) {
+    // Persist locally only when every recipient accepted the message. With the
+    // current retry model a partial group send cannot be retried only for the
+    // failed recipients, so treating it as sent would make the UI lie.
+    if (results.every((r) => r.success)) {
       final participants = [_userPubkey, ...recipientPubkeys]..sort();
       final conversationId = computeConversationId(participants);
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final firstSuccess = results.firstWhere((r) => r.success);
+      final firstSuccess = results.first;
 
       await _conversationsDao.runInTransaction(() async {
         await _directMessagesDao.insertMessage(

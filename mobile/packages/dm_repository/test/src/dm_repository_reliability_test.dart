@@ -31,6 +31,8 @@ const _userPubkey =
     '1111111111111111111111111111111111111111111111111111111111111111';
 const _peerPubkey =
     '2222222222222222222222222222222222222222222222222222222222222222';
+const _thirdPubkey =
+    '5555555555555555555555555555555555555555555555555555555555555555';
 const _rumorEventId =
     '3333333333333333333333333333333333333333333333333333333333333333';
 const _giftWrapEventId =
@@ -466,6 +468,134 @@ void main() {
 
         // Give the fallback a chance to run and fail without crashing.
         await Future<void>.delayed(const Duration(milliseconds: 20));
+      },
+    );
+  });
+
+  group('sendGroupMessage reliability', () {
+    test(
+      'partial recipient failure does NOT persist the group message locally',
+      () async {
+        final messageService = _MockNip17MessageService();
+        when(
+          () => messageService.sendPrivateMessage(
+            recipientPubkey: _peerPubkey,
+            content: 'hello group',
+            eventKind: any(named: 'eventKind'),
+            additionalTags: any(named: 'additionalTags'),
+            recipientDmRelays: any(named: 'recipientDmRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: _rumorEventId,
+            messageEventId: _giftWrapEventId,
+            recipientPubkey: _peerPubkey,
+            outcome: _acceptedOutcome(),
+          ),
+        );
+        when(
+          () => messageService.sendPrivateMessage(
+            recipientPubkey: _thirdPubkey,
+            content: 'hello group',
+            eventKind: any(named: 'eventKind'),
+            additionalTags: any(named: 'additionalTags'),
+            recipientDmRelays: any(named: 'recipientDmRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.failure(
+            'publish failed',
+            outcome: _transientFailure(),
+          ),
+        );
+        when(
+          () => directMessagesDao.insertMessage(
+            id: any(named: 'id'),
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            giftWrapId: any(named: 'giftWrapId'),
+            messageKind: any(named: 'messageKind'),
+            replyToId: any(named: 'replyToId'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => conversationsDao.runInTransaction<void>(any()),
+        ).thenAnswer((invocation) async {
+          final action =
+              invocation.positionalArguments[0] as Future<void> Function();
+          await action();
+        });
+        when(
+          () => conversationsDao.runInTransaction<Null>(any()),
+        ).thenAnswer((invocation) async {
+          final action =
+              invocation.positionalArguments[0] as Future<Null> Function();
+          await action();
+        });
+        when(
+          () => conversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => conversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final repo = _buildRepo(
+          nostrClient: nostrClient,
+          directMessagesDao: directMessagesDao,
+          conversationsDao: conversationsDao,
+          signer: signer,
+          messageService: messageService,
+        );
+
+        final results = await repo.sendGroupMessage(
+          recipientPubkeys: const [_peerPubkey, _thirdPubkey],
+          content: 'hello group',
+        );
+
+        expect(results.map((r) => r.success), [true, false]);
+        verifyNever(
+          () => directMessagesDao.insertMessage(
+            id: any(named: 'id'),
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            giftWrapId: any(named: 'giftWrapId'),
+            messageKind: any(named: 'messageKind'),
+            replyToId: any(named: 'replyToId'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+        verifyNever(
+          () => conversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+          ),
+        );
       },
     );
   });

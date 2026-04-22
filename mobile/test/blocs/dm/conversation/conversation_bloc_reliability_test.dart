@@ -46,6 +46,8 @@ void main() {
       '1111111111111111111111111111111111111111111111111111111111111111';
   const recipientPubkey =
       '2222222222222222222222222222222222222222222222222222222222222222';
+  const thirdPubkey =
+      '5555555555555555555555555555555555555555555555555555555555555555';
   const sentEventId =
       '6666666666666666666666666666666666666666666666666666666666666666';
 
@@ -315,6 +317,68 @@ void main() {
           isTrue,
         );
       },
+      errors: () => [isA<Exception>()],
+    );
+
+    blocTest<ConversationBloc, ConversationState>(
+      'group send partial failure keeps optimistic message failed',
+      setUp: () {
+        when(
+          () => dmRepository.sendGroupMessage(
+            recipientPubkeys: const [recipientPubkey, thirdPubkey],
+            content: 'Hi group',
+          ),
+        ).thenAnswer(
+          (_) async => [
+            NIP17SendResult.success(
+              rumorEventId: sentEventId,
+              messageEventId: sentEventId,
+              recipientPubkey: recipientPubkey,
+              outcome: _accepted(),
+            ),
+            NIP17SendResult.failure(
+              'publish failed',
+              outcome: _transientFailure(),
+            ),
+          ],
+        );
+      },
+      build: build,
+      act: (bloc) => bloc.add(
+        const ConversationMessageSent(
+          recipientPubkeys: [recipientPubkey, thirdPubkey],
+          content: 'Hi group',
+        ),
+      ),
+      expect: () => [
+        isA<ConversationState>()
+            .having(
+              (s) => s.sendStatus,
+              'aggregate',
+              SendStatus.sending,
+            )
+            .having(
+              (s) => s.sendStatusByMessageId.values,
+              'per-message',
+              [MessageSendStatus.sending],
+            ),
+        isA<ConversationState>()
+            .having(
+              (s) => s.sendStatus,
+              'aggregate',
+              SendStatus.failed,
+            )
+            .having(
+              (s) => s.sendStatusByMessageId.values,
+              'per-message',
+              [MessageSendStatus.failed],
+            )
+            .having(
+              (s) => s.feedbackByMessageId.values.first.retryable,
+              'retryable',
+              isTrue,
+            ),
+      ],
       errors: () => [isA<Exception>()],
     );
   });

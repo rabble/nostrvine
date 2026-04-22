@@ -210,18 +210,19 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           recipientPubkeys: recipientPubkeys,
           content: content,
         );
-        final firstSuccess = results.where((r) => r.success);
-        if (firstSuccess.isEmpty) {
-          _markFailed(pendingId, results.first.outcome, emit);
+        final failures = results.where((r) => !r.success).toList();
+        if (failures.isNotEmpty) {
+          final firstFailure = failures.first;
+          _markFailed(pendingId, firstFailure.outcome, emit);
           addError(
             Exception(
-              results.first.error ?? 'Failed to send group message',
+              firstFailure.error ?? 'Failed to send group message',
             ),
             StackTrace.current,
           );
           return;
         }
-        result = firstSuccess.first;
+        result = results.first;
       }
 
       // Success — clear the optimistic row's status so the bubble
