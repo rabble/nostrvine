@@ -2926,7 +2926,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'5b4d5751d3f2ef22c9ee2610cda1c4e70b2302a7';
+String _$socialServiceHash() => r'025a0d7f80743f11d040e4867c012397282404b3';
 
 /// Cached following list loaded directly from SharedPreferences.
 ///

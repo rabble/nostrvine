@@ -1474,13 +1474,8 @@ HashtagService hashtagService(Ref ref) {
 SocialService socialService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
-  final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
-  return SocialService(
-    nostrService,
-    authService,
-    personalEventCache: personalEventCache,
-  );
+  return SocialService(nostrService, authService);
 }
 
 /// Cached following list loaded directly from SharedPreferences.
