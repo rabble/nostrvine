@@ -6,6 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
+import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -29,6 +33,7 @@ class UserProfileTile extends ConsumerWidget {
     this.isFollowing,
     this.onToggleFollow,
     this.index,
+    this.addToListEntryPoint = PeopleListEntryPoint.followersList,
   });
 
   /// The public key of the user to display.
@@ -51,11 +56,19 @@ class UserProfileTile extends ConsumerWidget {
   /// Optional index for semantic labeling in lists (e.g., Maestro tests).
   final int? index;
 
+  /// Which entry point to attribute the "Add to list" action to when the
+  /// curated-lists feature flag is on. Defaults to followers-list context.
+  final PeopleListEntryPoint addToListEntryPoint;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileReactiveProvider(pubkey)).value;
     final authService = ref.watch(authServiceProvider);
     final isCurrentUser = pubkey == authService.currentPublicKeyHex;
+    final curatedListsEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.curatedLists),
+    );
+    final showAddToList = curatedListsEnabled && !isCurrentUser;
 
     // Get display name or truncated npub (fallback for users without Kind 0)
     final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
@@ -119,6 +132,21 @@ class UserProfileTile extends ConsumerWidget {
                   ],
                 ),
               ),
+
+              // Add-to-list action (curated lists feature)
+              if (showAddToList) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.playlist_add),
+                  color: VineTheme.onSurfaceVariant,
+                  tooltip: 'Add to list',
+                  onPressed: () => AddToPeopleListsSheet.show(
+                    context,
+                    pubkey: pubkey,
+                    entryPoint: addToListEntryPoint,
+                  ),
+                ),
+              ],
 
               // Follow button
               if (showFollowButton &&

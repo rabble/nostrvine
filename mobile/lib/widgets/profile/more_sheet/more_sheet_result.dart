@@ -16,4 +16,7 @@ enum MoreSheetResult {
 
   /// User confirmed unblock action.
   unblockConfirmed,
+
+  /// User tapped add-to-list (curated lists feature).
+  addToList,
 }

@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_following/others_following_bloc.dart';
+import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -180,6 +181,7 @@ class _FollowingListBody extends StatelessWidget {
                 onTap: () => context.pushOtherProfile(userPubkey),
                 isFollowing: isFollowing,
                 index: index,
+                addToListEntryPoint: PeopleListEntryPoint.followingList,
                 onToggleFollow: () {
                   context.read<MyFollowingBloc>().add(
                     MyFollowingToggleRequested(userPubkey),

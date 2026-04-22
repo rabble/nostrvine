@@ -7,6 +7,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
+import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -199,6 +203,13 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     final displayName =
         profile?.bestDisplayName ?? widget.displayNameHint ?? fallbackName;
 
+    final curatedListsEnabled = ref.read(
+      isFeatureEnabledProvider(FeatureFlag.curatedLists),
+    );
+    final isOwnProfile =
+        widget.pubkey == ref.read(authServiceProvider).currentPublicKeyHex;
+    final showAddToList = curatedListsEnabled && !isOwnProfile;
+
     final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
       scrollable: false,
@@ -209,6 +220,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             displayName: displayName,
             isFollowing: isFollowing,
             isBlocked: isBlocked,
+            showAddToList: showAddToList,
           );
         },
       ),
@@ -221,6 +233,12 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
       case MoreSheetResult.copy:
         final npub = NostrKeyUtils.encodePubKey(widget.pubkey);
         await ClipboardUtils.copyPubkey(context, npub);
+      case MoreSheetResult.addToList:
+        await AddToPeopleListsSheet.show(
+          context,
+          pubkey: widget.pubkey,
+          entryPoint: PeopleListEntryPoint.profile,
+        );
       case MoreSheetResult.unfollow:
         await _unfollowUser();
       case MoreSheetResult.blockConfirmed:

@@ -31,6 +31,7 @@ class MoreSheetContent extends StatefulWidget {
     required this.isFollowing,
     required this.isBlocked,
     this.initialMode = MoreSheetMode.menu,
+    this.showAddToList = false,
     super.key,
   });
 
@@ -48,6 +49,9 @@ class MoreSheetContent extends StatefulWidget {
 
   /// The initial mode to display.
   final MoreSheetMode initialMode;
+
+  /// Whether to show the "Add to list" action (curated-lists feature flag).
+  final bool showAddToList;
 
   @override
   State<MoreSheetContent> createState() => _MoreSheetContentState();
@@ -165,6 +169,9 @@ class _MoreSheetContentState extends State<MoreSheetContent>
           _transitionTo(MoreSheetMode.blockConfirmation);
         }
       },
+      onAddToList: widget.showAddToList
+          ? () => Navigator.of(context).pop(MoreSheetResult.addToList)
+          : null,
     );
   }
 

@@ -77,6 +77,10 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         if (mounted) context.pop();
       case MoreSheetResult.unblockConfirmed:
         await blocklistRepository.unblockUser(otherPubkey);
+      case MoreSheetResult.addToList:
+        // addToList is not surfaced from this caller (showAddToList defaults
+        // to false on MoreSheetContent here), so this branch is unreachable.
+        break;
     }
   }
 

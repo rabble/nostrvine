@@ -2,6 +2,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
+import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
@@ -33,6 +38,12 @@ class SearchUserTile extends ConsumerWidget {
     final secondaryText = showVerifiedNip05 && claimedNip05 != null
         ? claimedNip05
         : profile.truncatedNpub;
+
+    final curatedListsEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.curatedLists),
+    );
+    final ownPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+    final showAddToList = curatedListsEnabled && profile.pubkey != ownPubkey;
 
     return Semantics(
       identifier: 'search_user_tile_${profile.pubkey}',
@@ -71,6 +82,17 @@ class SearchUserTile extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (showAddToList)
+                IconButton(
+                  icon: const Icon(Icons.playlist_add),
+                  color: VineTheme.secondaryText,
+                  tooltip: 'Add to list',
+                  onPressed: () => AddToPeopleListsSheet.show(
+                    context,
+                    pubkey: profile.pubkey,
+                    entryPoint: PeopleListEntryPoint.searchResult,
+                  ),
+                ),
             ],
           ),
         ),
