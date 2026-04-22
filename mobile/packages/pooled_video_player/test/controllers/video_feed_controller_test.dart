@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -4316,9 +4317,8 @@ void main() {
         },
       );
 
-      test(
-        'cancels when position advances past threshold',
-        () async {
+      test('cancels when position advances past threshold', () {
+        fakeAsync((async) {
           final videos = createTestVideos(count: 3);
 
           final setupByUrl = <String, MockPlayerSetup>{};
@@ -4337,39 +4337,40 @@ void main() {
             preloadAhead: 1,
           );
 
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          async.elapse(const Duration(milliseconds: 100));
 
           // Make video 1 (preloaded) buffer-ready.
           final setup = setupByUrl[videos[1].url]!;
           setup.bufferingController.add(false);
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          async.elapse(const Duration(milliseconds: 100));
 
           // Swipe to video 1 to trigger _playVideo and watchdog.
           controller.onPageChanged(1);
 
           final notifier = controller.getIndexNotifier(1);
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          async.elapse(const Duration(milliseconds: 100));
 
           expect(notifier.value.isReady, isTrue);
 
           // After 2 seconds, position advances past 100ms —
           // the watchdog should cancel without marking error.
-          await Future<void>.delayed(const Duration(seconds: 2));
+          async.elapse(const Duration(seconds: 2));
           when(
             () => setup.state.position,
           ).thenReturn(const Duration(milliseconds: 200));
 
           // Wait for remaining ticks that would otherwise trigger error.
-          await Future<void>.delayed(const Duration(seconds: 4));
+          async.elapse(const Duration(seconds: 4));
 
           // Should still be ready, not error.
           expect(notifier.value.hasError, isFalse);
           expect(notifier.value.isReady, isTrue);
 
           controller.dispose();
-          await advancingPool.dispose();
-        },
-      );
+          unawaited(advancingPool.dispose());
+          async.flushMicrotasks();
+        });
+      });
     });
 
     group('stale position recovery', () {
@@ -4859,48 +4860,50 @@ void main() {
     });
 
     group('stale position gives up after max attempts', () {
-      test('marks error after exceeding max recovery attempts', () async {
-        final controller = VideoFeedController(
-          videos: createTestVideos(count: 3),
-          pool: pool,
-          preloadAhead: 0,
-          preloadBehind: 0,
-        );
+      test('marks error after exceeding max recovery attempts', () {
+        fakeAsync((async) {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            preloadAhead: 0,
+            preloadBehind: 0,
+          );
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          async.elapse(const Duration(milliseconds: 50));
 
-        final url = createTestVideos()[0].url;
-        final setup = playerSetups[url]!;
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
 
-        // Position advances for first 10 calls then freezes at 500ms.
-        // This ensures _positionHasAdvanced becomes true before freeze.
-        var callCount = 0;
-        when(() => setup.state.playing).thenReturn(true);
-        when(() => setup.state.buffering).thenReturn(false);
-        when(() => setup.state.position).thenAnswer((_) {
-          callCount++;
-          if (callCount <= 10) {
-            return Duration(milliseconds: callCount * 33);
-          }
-          return const Duration(milliseconds: 500);
+          // Position advances for first 10 calls then freezes at 500ms.
+          // This ensures _positionHasAdvanced becomes true before freeze.
+          var callCount = 0;
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.buffering).thenReturn(false);
+          when(() => setup.state.position).thenAnswer((_) {
+            callCount++;
+            if (callCount <= 10) {
+              return Duration(milliseconds: callCount * 33);
+            }
+            return const Duration(milliseconds: 500);
+          });
+
+          // Video becomes ready, then wait for stale detection cycles.
+          // Heartbeat interval = 100ms, threshold = 8, max attempts = 2.
+          // Each cycle: 8 heartbeats (800ms). Need 3 cycles for
+          // attempts to exceed 2. Total ~2400ms + processing + grace.
+          setup.bufferingController.add(false);
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..elapse(const Duration(seconds: 5));
+
+          expect(
+            controller.getLoadState(0),
+            equals(LoadState.error),
+          );
+
+          controller.dispose();
+          async.flushMicrotasks();
         });
-
-        // Video becomes ready first
-        setup.bufferingController.add(false);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        // Wait for stale detection cycles.
-        // Heartbeat interval = 100ms, threshold = 8, max attempts = 2.
-        // Each cycle: 8 heartbeats (800ms). Need 3 cycles for
-        // attempts to exceed 2. Total ~2400ms + processing + grace.
-        await Future<void>.delayed(const Duration(seconds: 5));
-
-        expect(
-          controller.getLoadState(0),
-          equals(LoadState.error),
-        );
-
-        controller.dispose();
       });
     });
 
@@ -4930,6 +4933,13 @@ void main() {
     });
 
     group('stuck playback with no fallback sources', () {
+      // NOTE: This test cannot use `fakeAsync` because the slow-load
+      // watchdog reads `Stopwatch.elapsedMilliseconds` (see
+      // `VideoFeedController._loadStopwatches`), which is bound to the OS
+      // clock and is not affected by `fakeAsync`'s virtual time. Converting
+      // the test would require migrating production code to `package:clock`
+      // first. Tracked alongside the startup_diagnostics deferrals in
+      // #3233 follow-up.
       test(
         'marks error when stuck and no fallback sources available',
         () async {
