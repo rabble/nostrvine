@@ -4690,6 +4690,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Ontdek iets interessants';
 
   @override
+  String get searchListsSectionHeader => 'Lijsten';
+
+  @override
+  String get searchListsLoadingLabel => 'Lijstresultaten laden';
+
+  @override
   String get cameraAgeRestriction =>
       'Je moet 16 jaar of ouder zijn om content te maken';
 

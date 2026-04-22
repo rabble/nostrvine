@@ -342,10 +342,12 @@ class CuratedListRepository {
           Filter(kinds: [_peopleListKind], limit: 50),
         ],
       );
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
       log(
         'searchAllPeopleLists: relay query failed for "$query": $e',
         name: 'CuratedListRepository',
+        error: e,
+        stackTrace: stackTrace,
       );
       return;
     }

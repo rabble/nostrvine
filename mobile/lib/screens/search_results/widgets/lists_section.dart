@@ -57,7 +57,10 @@ class ListsSection extends StatelessWidget {
       slivers: [
         if (!showAll)
           SliverToBoxAdapter(
-            child: SectionHeader(title: 'Lists', onTap: onSeeAll),
+            child: SectionHeader(
+              title: context.l10n.searchListsSectionHeader,
+              onTap: onSeeAll,
+            ),
           ),
         _ListsContent(showAll: showAll),
       ],
@@ -269,7 +272,7 @@ class _ListsSkeletonLoader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       identifier: 'lists_loading_indicator',
-      label: 'Loading list results',
+      label: context.l10n.searchListsLoadingLabel,
       child: const Skeletonizer(
         effect: vineSkeletonEffect,
         child: Padding(
