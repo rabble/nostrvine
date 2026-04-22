@@ -1,6 +1,3 @@
-// The exhaustiveness test intentionally switches on a narrowed Block value to
-// verify both arms compile. The Allow arm is unreachable by design.
-// ignore_for_file: pattern_never_matches_value_type
 import 'package:content_policy/content_policy.dart';
 import 'package:test/test.dart';
 
@@ -17,20 +14,22 @@ void main() {
       expect(decision, isA<PolicyDecision>());
     });
 
-    test('pattern matches exhaustively', () {
-      PolicyDecision decision = const Allow();
+    test('pattern matches exhaustively on Allow', () {
+      const PolicyDecision decision = Allow();
       final label = switch (decision) {
         Allow() => 'allow',
         Block() => 'block',
       };
       expect(label, equals('allow'));
+    });
 
-      decision = const Block(ruleId: 'r');
-      final label2 = switch (decision) {
+    test('pattern matches exhaustively on Block', () {
+      const PolicyDecision decision = Block(ruleId: 'r');
+      final label = switch (decision) {
         Allow() => 'allow',
         Block() => 'block',
       };
-      expect(label2, equals('block'));
+      expect(label, equals('block'));
     });
   });
 }
