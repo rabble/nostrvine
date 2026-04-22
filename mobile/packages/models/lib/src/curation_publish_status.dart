@@ -3,7 +3,7 @@
 
 /// Status of a curation publish attempt.
 ///
-/// After the migration to [NostrClient.publishEventWithRetry], relay-level
+/// After the migration to `NostrClient.publishEventWithRetry`, relay-level
 /// retries, timeouts, and backoff are handled inside the client — this
 /// status only needs to carry a few UI-visible fields: whether a publish
 /// is currently in flight, whether the last publish succeeded, and which
@@ -28,10 +28,10 @@ class CurationPublishStatus {
   final DateTime? lastAttemptAt;
 
   /// Whether the last publish attempt finished without any relay
-  /// accepting. The root-cause reason lives on the [PublishOutcome]
-  /// returned from [CurationService.publishCuration] — callers that need
+  /// accepting. The root-cause reason lives on the `PublishOutcome`
+  /// returned from `CurationService.publishCuration` — callers that need
   /// a human-readable message should read that outcome's feedback via
-  /// [PublishResultMapper], not a string stored on this status.
+  /// `PublishResultMapper`, not a string stored on this status.
   final bool hasFailed;
 
   final List<String> successfulRelays;
