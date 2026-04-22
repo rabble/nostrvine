@@ -2,6 +2,7 @@
 //
 // Subsequent tasks will populate this barrel with src/ exports.
 
+export 'src/content_policy_engine.dart';
 export 'src/content_policy_state.dart';
 export 'src/policy_decision.dart';
 export 'src/policy_input.dart';
