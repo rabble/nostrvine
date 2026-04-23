@@ -5,13 +5,18 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 void main() {
   group('VideoEditorProvider', () {
@@ -398,6 +403,7 @@ void main() {
           container
               .read(clipManagerProvider.notifier)
               .addClip(
+                limitClipDuration: false,
                 video: EditorVideo.file('/docs/clip.mp4'),
                 targetAspectRatio: .vertical,
                 originalAspectRatio: 9 / 16,
@@ -440,6 +446,7 @@ void main() {
           container
               .read(clipManagerProvider.notifier)
               .addClip(
+                limitClipDuration: false,
                 video: EditorVideo.file('/docs/clip.mp4'),
                 targetAspectRatio: .vertical,
                 originalAspectRatio: 9 / 16,
@@ -478,6 +485,7 @@ void main() {
           container
               .read(clipManagerProvider.notifier)
               .addClip(
+                limitClipDuration: false,
                 video: EditorVideo.file('/docs/clip.mp4'),
                 targetAspectRatio: .vertical,
                 originalAspectRatio: 9 / 16,
@@ -556,6 +564,7 @@ void main() {
           container
               .read(clipManagerProvider.notifier)
               .addClip(
+                limitClipDuration: false,
                 video: EditorVideo.file('/docs/clip.mp4'),
                 targetAspectRatio: .vertical,
                 originalAspectRatio: 9 / 16,
@@ -629,6 +638,7 @@ void main() {
           container
               .read(clipManagerProvider.notifier)
               .addClip(
+                limitClipDuration: false,
                 video: EditorVideo.file('/docs/clip.mp4'),
                 targetAspectRatio: .vertical,
                 originalAspectRatio: 9 / 16,
@@ -670,6 +680,7 @@ void main() {
           container
               .read(clipManagerProvider.notifier)
               .addClip(
+                limitClipDuration: false,
                 video: EditorVideo.file('/docs/clip.mp4'),
                 targetAspectRatio: .vertical,
                 originalAspectRatio: 9 / 16,
@@ -765,6 +776,7 @@ void main() {
                 targetAspectRatio: .vertical,
                 originalAspectRatio: 9 / 16,
                 duration: const Duration(seconds: 2),
+                limitClipDuration: false,
               );
 
           notifier.setProcessing(true);
@@ -863,6 +875,7 @@ void main() {
       container
           .read(clipManagerProvider.notifier)
           .addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/docs/original.mp4'),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
@@ -887,6 +900,7 @@ void main() {
       container
           .read(clipManagerProvider.notifier)
           .addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/docs/original.mp4'),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
@@ -977,6 +991,7 @@ void main() {
       container
           .read(clipManagerProvider.notifier)
           .addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/docs/original.mp4'),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
@@ -1001,6 +1016,7 @@ void main() {
       container
           .read(clipManagerProvider.notifier)
           .addClip(
+            limitClipDuration: false,
             video: EditorVideo.file('/docs/original.mp4'),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
@@ -1107,6 +1123,70 @@ void main() {
         );
 
         expect(state.isValidToPost, isFalse);
+      });
+    });
+
+    group('restoreDraft', () {
+      late _MockDraftStorageService mockDraftStorage;
+      late ProviderContainer container;
+
+      setUp(() {
+        mockDraftStorage = _MockDraftStorageService();
+        container = ProviderContainer(
+          overrides: [
+            draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+          ],
+        );
+      });
+
+      tearDown(() {
+        container.dispose();
+      });
+
+      test('returns false when draft is not found', () async {
+        when(
+          () => mockDraftStorage.getDraftById(any()),
+        ).thenAnswer((_) async => null);
+
+        final result = await container
+            .read(videoEditorProvider.notifier)
+            .restoreDraft();
+
+        expect(result, isFalse);
+        verify(
+          () => mockDraftStorage.getDraftById(
+            VideoEditorConstants.autoSaveId,
+          ),
+        ).called(1);
+      });
+
+      test('returns false when draft is not found for custom id', () async {
+        when(
+          () => mockDraftStorage.getDraftById('custom-draft-id'),
+        ).thenAnswer((_) async => null);
+
+        final result = await container
+            .read(videoEditorProvider.notifier)
+            .restoreDraft('custom-draft-id');
+
+        expect(result, isFalse);
+        verify(
+          () => mockDraftStorage.getDraftById('custom-draft-id'),
+        ).called(1);
+      });
+
+      test('uses autoSaveId when no draftId is provided', () async {
+        when(
+          () => mockDraftStorage.getDraftById(any()),
+        ).thenAnswer((_) async => null);
+
+        await container.read(videoEditorProvider.notifier).restoreDraft();
+
+        verify(
+          () => mockDraftStorage.getDraftById(
+            VideoEditorConstants.autoSaveId,
+          ),
+        ).called(1);
       });
     });
   });

@@ -12,16 +12,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
-import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/extensions/aspect_ratio_extensions.dart';
+import 'package:openvine/extensions/video_editor_history_extensions.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
+import 'package:openvine/utils/path_resolver.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_feed_preview_overlay.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
@@ -59,7 +64,7 @@ class _VideoEditorCanvasState extends State<VideoEditorCanvas> {
         }
       },
       child: Padding(
-        padding: const .only(bottom: VideoEditorConstants.bottomBarHeight),
+        padding: .only(top: MediaQuery.viewPaddingOf(context).top),
         child: _CanvasFitter(
           builder: (bodySize, renderSize) =>
               _VideoEditor(renderSize: renderSize, bodySize: bodySize),
@@ -87,7 +92,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   bool _isInitialized = false;
   bool _isImportingHistory = false;
-  bool _hasImportedHistory = false;
 
   bool get _isLayerBeingTransformed => _selectedLayer != null;
 
@@ -100,6 +104,22 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Tracks last playback state to detect changes.
   bool _lastIsPlaying = false;
 
+  /// Last position dispatched to BLoC — avoids flooding with duplicates.
+  Duration _lastReportedPosition = Duration.zero;
+
+  /// Last duration dispatched to BLoC — avoids flooding with duplicates.
+  Duration _lastReportedDuration = Duration.zero;
+
+  /// Whether a native seekTo is currently in flight.
+  bool _isSeeking = false;
+
+  /// The most recent seek position received while a seek was in progress.
+  /// Processed as a trailing seek once the current seek completes.
+  Duration? _pendingSeekPosition;
+
+  /// Cached documents directory path — resolved once in [initState].
+  late final Future<String> _documentsPath;
+
   @override
   void initState() {
     super.initState();
@@ -109,6 +129,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       category: LogCategory.video,
     );
     _initializeController();
+    _documentsPath = getDocumentsPath();
 
     // Initialize the player with the current clips.
     if (_clipPaths.isNotEmpty) {
@@ -168,23 +189,68 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
   }
 
+  /// Handles seek requests from BLoC (e.g. timeline scrubbing).
+  ///
+  /// Uses a leading + trailing pattern with async backpressure:
+  /// - The first request (leading) is executed immediately via await.
+  /// - While the native seekTo is in flight, intermediate requests are
+  ///   dropped; only the latest position is kept.
+  /// - Once the seek completes, the last received position is fired as
+  ///   a trailing seek so the video always lands on the final frame.
+  ///
+  /// This relies on both Android and iOS returning from seekTo only
+  /// after the frame is actually decoded and rendered.
+  Future<void> _onSeekRequested(Duration position) async {
+    if (!_isPlayerReadyNotifier.value) return;
+
+    _proVideoController.setPlayTime(position);
+
+    if (_isSeeking) {
+      _pendingSeekPosition = position;
+      return;
+    }
+
+    _isSeeking = true;
+    await _videoPlayer?.seekTo(position);
+
+    // Process trailing seek if one arrived while we were busy.
+    while (_pendingSeekPosition != null && mounted) {
+      final pending = _pendingSeekPosition!;
+      _pendingSeekPosition = null;
+      await _videoPlayer?.seekTo(pending);
+    }
+
+    _isSeeking = false;
+  }
+
   /// Dispatches playback state changes to the BLoC.
   ///
-  /// Audio synchronization is handled natively by the player's
-  /// audio overlay tracks — no manual sync needed.
+  /// Reports play/pause state, current position, and duration so the
+  /// timeline can stay in sync with the real player.
+  /// Only dispatches when values actually change to avoid flooding.
   void _onPlayerStateChanged(DivineVideoPlayerState playerState) {
-    final isPlaying = playerState.isPlaying;
+    final bloc = context.read<VideoEditorMainBloc>();
 
+    final isPlaying = playerState.isPlaying;
     if (isPlaying != _lastIsPlaying) {
       _lastIsPlaying = isPlaying;
-      context.read<VideoEditorMainBloc>().add(
-        VideoEditorPlaybackChanged(isPlaying: isPlaying),
-      );
+      bloc.add(VideoEditorPlaybackChanged(isPlaying: isPlaying));
+    }
+
+    if (playerState.position != _lastReportedPosition) {
+      _lastReportedPosition = playerState.position;
+      bloc.add(VideoEditorPositionChanged(playerState.position));
+      _proVideoController.setPlayTime(playerState.position);
+    }
+
+    if (playerState.duration != _lastReportedDuration) {
+      _lastReportedDuration = playerState.duration;
+      bloc.add(VideoEditorDurationChanged(playerState.duration));
     }
   }
 
-  /// Called when clip paths change. Reinitializes the player with the new
-  /// paths or pauses when no clips are available.
+  /// Called when clip paths change. Updates the player with the new clips
+  /// or pauses when no clips are available.
   void _onClipPathsChanged(List<String> clipPaths) {
     if (clipPaths.isEmpty) {
       _videoPlayer?.pause();
@@ -195,7 +261,23 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       return;
     }
 
-    _initializePlayer(clipPaths);
+    final clips = ref.read(clipManagerProvider).clips;
+    final currentPosition = context
+        .read<VideoEditorMainBloc>()
+        .state
+        .currentPosition;
+    _videoPlayer?.setClips(
+      [
+        for (final clip in clips)
+          if (clip.video.file?.path case final path?)
+            VideoClip(
+              uri: path,
+              start: clip.trimStart,
+              end: clip.duration - clip.trimEnd,
+            ),
+      ],
+      startPosition: currentPosition,
+    );
   }
 
   /// Creates the [ProVideoController] (only once, not tied to a file).
@@ -230,7 +312,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   }
 
   /// Initializes (or reinitializes) the native video player with [clipPaths].
-  Future<void> _initializePlayer(List<String> clipPaths) async {
+  Future<void> _initializePlayer(
+    List<String> clipPaths, {
+    Duration? startPosition,
+  }) async {
     // Dispose old player if it exists.
     await _videoPlayerSubscription?.cancel();
     await _videoPlayer?.dispose();
@@ -249,21 +334,29 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     await _videoPlayer!.initialize();
     if (!mounted) return;
     await _videoPlayer!.setClips(
-      clipPaths.map((path) => VideoClip(uri: path)).toList(),
+      [
+        for (final clip in clips)
+          if (clip.video.file?.path case final path?)
+            VideoClip(
+              uri: path,
+              start: clip.trimStart,
+              end: clip.duration - clip.trimEnd,
+            ),
+      ],
+      startPosition: startPosition != null && startPosition > Duration.zero
+          ? startPosition
+          : null,
     );
     if (!mounted) return;
 
     final editorState = ref.read(videoEditorProvider);
     if (clips.isEmpty) return;
     await Future.wait([
-      _videoPlayer!.seekTo(clips.first.thumbnailTimestamp),
       _videoPlayer!.setLooping(looping: true),
       _videoPlayer!.setVolume(editorState.originalAudioVolume),
     ]);
     if (!mounted) return;
 
-    await _videoPlayer!.play();
-    if (!mounted) return;
     _isPlayerReadyNotifier.value = true;
 
     // Notify BLoC that player is ready
@@ -279,8 +372,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
 
     // Initialize audio if selected
-    final selectedSound = ref.read(videoEditorProvider).selectedSound;
-    await _loadAudio(selectedSound);
+    await _syncAudioTracks();
     Log.info(
       '🎬 Video player ready',
       name: 'VideoEditorCanvas',
@@ -288,15 +380,23 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
   }
 
-  /// Sets or clears the native audio overlay track.
+  /// Syncs native audio overlay tracks from the [TimelineOverlayBloc]
+  /// sound items.
   ///
-  /// Uses the video player's built-in audio overlay support so that
-  /// synchronisation, loop handling, and drift correction happen on
-  /// the native side automatically.
-  Future<void> _loadAudio(AudioEvent? sound) async {
+  /// Reads timeline positions (`startTime` / `endTime`) from the BLoC
+  /// state and combines them with the source [AudioEvent] from the
+  /// Riverpod provider (URL, asset path, start offset).
+  Future<void> _syncAudioTracks() async {
     if (_videoPlayer == null) return;
 
-    if (sound == null || sound.url == null) {
+    final overlayState = context.read<TimelineOverlayBloc>().state;
+    final audioEvents = overlayState.audioTracks;
+
+    final soundItems = overlayState.items
+        .where((item) => item.type == TimelineOverlayType.sound)
+        .toList();
+
+    if (soundItems.isEmpty || audioEvents.isEmpty) {
       await _videoPlayer!.removeAllAudioTracks();
       Log.info(
         '🎵 Audio cleared',
@@ -306,25 +406,56 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       return;
     }
 
+    // Index audio events by ID for fast lookup.
+    final audioById = {
+      for (final e in audioEvents) e.id: e,
+    };
+
     final customVolume = ref.read(videoEditorProvider).customAudioVolume;
 
-    final AudioTrack track;
-    if (sound.isBundled && sound.assetPath != null) {
-      track = await AudioTrack.asset(
-        sound.assetPath!,
-        volume: customVolume,
-        trackStart: sound.startOffset,
-      );
-    } else {
-      track = AudioTrack.network(
-        sound.url!,
-        volume: customVolume,
-        trackStart: sound.startOffset,
-      );
+    final tracks = <AudioTrack>[];
+    for (final item in soundItems) {
+      final sound = audioById[item.id];
+      if (sound == null || sound.url == null) continue;
+
+      try {
+        final AudioTrack track;
+        if (sound.isBundled && sound.assetPath != null) {
+          track = await AudioTrack.asset(
+            sound.assetPath!,
+            volume: customVolume,
+            videoStartTime: item.startTime,
+            videoEndTime: item.endTime,
+            trackStart: sound.startOffset,
+          );
+        } else {
+          track = AudioTrack.network(
+            sound.url!,
+            volume: customVolume,
+            videoStartTime: item.startTime,
+            videoEndTime: item.endTime,
+            trackStart: sound.startOffset,
+          );
+        }
+        tracks.add(track);
+      } catch (e, stackTrace) {
+        Log.error(
+          '🎵 Failed to build audio track ${item.id}: $e',
+          name: 'VideoEditorCanvas',
+          category: LogCategory.video,
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+
+    if (tracks.isEmpty) {
+      await _videoPlayer!.removeAllAudioTracks();
+      return;
     }
 
     try {
-      await _videoPlayer!.setAudioTracks([track]);
+      await _videoPlayer!.setAudioTracks(tracks);
     } catch (e, stackTrace) {
       Log.error(
         '🎵 Failed to load audio: $e',
@@ -337,8 +468,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
 
     Log.info(
-      '🎵 Audio loaded via native overlay: ${sound.title} '
-      '(trackStart: ${sound.startOffset.inMilliseconds}ms)',
+      '🎵 Audio synced: ${tracks.length} track(s)',
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
@@ -347,15 +477,64 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Syncs the main-editor capabilities from the main editor to the bloc.
   void _syncMainCapabilities(VideoEditorScope scope, VideoEditorMainBloc bloc) {
     final editor = scope.editor;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (editor == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       bloc.add(
         VideoEditorMainCapabilitiesChanged(
-          canUndo: editor?.canUndo ?? false,
-          canRedo: editor?.canRedo ?? false,
-          layers: editor?.activeLayers,
+          canUndo: editor.canUndo,
+          canRedo: editor.canRedo,
+          layers: editor.activeLayers,
         ),
       );
+
+      final videoDuration = context.read<ClipEditorBloc>().state.totalDuration;
+
+      context.read<TimelineOverlayBloc>().add(
+        TimelineOverlayItemsUpdate(
+          layers: editor.activeLayers,
+          filters: editor.stateManager.activeFilters,
+          totalVideoDuration: videoDuration,
+          audioTracks: editor.stateManager.audioTracks,
+        ),
+      );
+
+      final clips = List<DivineVideoClip>.from(
+        editor.stateManager.clipSnapshots(await _documentsPath),
+      );
+      if (!mounted || clips.isEmpty || _isImportingHistory) return;
+
+      // Only update if clips actually changed to avoid unnecessary rebuilds
+      // and autosave triggers. DivineVideoClip uses reference equality, so
+      // we compare the editable properties explicitly.
+      final currentClips = ref.read(clipManagerProvider).clips;
+      if (_clipsChanged(currentClips, clips)) {
+        ref.read(clipManagerProvider.notifier).replaceClips(clips);
+      }
+      if (_clipsChanged(context.read<ClipEditorBloc>().state.clips, clips)) {
+        context.read<ClipEditorBloc>().add(ClipEditorInitialized(clips));
+      }
     });
+  }
+
+  /// Compares two clip lists by their editable properties.
+  bool _clipsChanged(
+    List<DivineVideoClip> current,
+    List<DivineVideoClip> next,
+  ) {
+    if (current.length != next.length) return true;
+    for (var i = 0; i < current.length; i++) {
+      final a = current[i];
+      final b = next[i];
+      if (a.id != b.id ||
+          a.video != b.video ||
+          a.trimStart != b.trimStart ||
+          a.trimEnd != b.trimEnd ||
+          a.volume != b.volume) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Syncs the draw capabilities from the paint editor to the bloc.
@@ -379,7 +558,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     if (_isImportingHistory || !_isInitialized) return;
 
     _syncMainCapabilities(scope, bloc);
-    final result = await scope.editor!.exportStateHistory(
+    final result = await scope.requireEditor.exportStateHistory(
       configs: const ExportEditorConfigs(
         historySpan: .currentAndBackward,
         // We don't minify the state history so it remains readable for
@@ -422,13 +601,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Handles the done action from the main editor.
   ///
   /// Pauses video, marks processing state, navigates to metadata screen,
-  /// and resumes video when returning. Audio sync handled by listener.
+  /// and resumes video when returning only if it was playing before.
+  /// Audio sync handled by listener.
   Future<void> _handleDone() async {
     Log.info(
       '🎬 Done pressed - navigating to metadata screen',
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
+    final wasPlaying = _videoPlayer?.state.isPlaying ?? false;
     _videoPlayer?.pause();
     // IMPORTANT: Don't start video rendering here. We must await
     // `_handleEditorComplete` which generate the layer image before we start
@@ -436,7 +617,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     // since it shows a progress spinner anyway (~200ms task).
     ref.read(videoEditorProvider.notifier).setProcessing(true);
     await context.push(VideoMetadataScreen.path);
-    if (mounted) {
+    if (mounted && wasPlaying) {
       _videoPlayer?.play();
     }
   }
@@ -460,17 +641,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
     final targetAspectRatio = clip.targetAspectRatio;
 
-    // Listen for sound changes to reload audio overlay track
-    ref.listen<AudioEvent?>(
-      videoEditorProvider.select((s) => s.selectedSound),
-      (previous, next) {
-        if (previous?.url != next?.url ||
-            previous?.startOffset != next?.startOffset) {
-          _loadAudio(next);
-        }
-      },
-    );
-
     // Live volume preview: sync player volumes when state changes
     ref.listen<double>(
       videoEditorProvider.select((s) => s.originalAudioVolume),
@@ -492,7 +662,45 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       ),
       (previous, clipPaths) {
         if (listEquals(previous, clipPaths)) return;
+
+        // If only the order changed (reorder), the BlocListener below
+        // calls setClips with startPosition — no full reinit needed.
+        final prevSorted = previous != null
+            ? ([...previous]..sort())
+            : <String>[];
+        final currSorted = [...clipPaths]..sort();
+        if (listEquals(prevSorted, currSorted)) return;
+
         _onClipPathsChanged(clipPaths);
+      },
+    );
+
+    // Update native player clip boundaries when trim times change.
+    ref.listen<List<(Duration, Duration)>>(
+      clipManagerProvider.select(
+        (s) => s.clips.map((c) => (c.trimStart, c.trimEnd)).toList(),
+      ),
+      (previous, current) {
+        if (listEquals(previous, current)) return;
+
+        final clips = ref.read(clipManagerProvider).clips;
+        final currentPosition = context
+            .read<VideoEditorMainBloc>()
+            .state
+            .currentPosition;
+
+        _videoPlayer?.setClips(
+          [
+            for (final clip in clips)
+              if (clip.video.file?.path case final path?)
+                VideoClip(
+                  uri: path,
+                  start: clip.trimStart,
+                  end: clip.duration - clip.trimEnd,
+                ),
+          ],
+          startPosition: currentPosition,
+        );
       },
     );
 
@@ -500,6 +708,80 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     return _OverlayCutArea(
       child: MultiBlocListener(
         listeners: [
+          // Re-export state history when an overlay item drag or trim
+          // ends so the updated positions are persisted for ProofMode.
+          BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+            listenWhen: (previous, current) =>
+                (previous.draggingItemId != null &&
+                    current.draggingItemId == null) ||
+                (previous.trimmingItemId != null &&
+                    current.trimmingItemId == null),
+            listener: (context, state) {
+              _onStateHistoryChange(scope, bloc);
+            },
+          ),
+          // Sync native audio tracks when audio sources change
+          // (sound added/removed) or a sound item is dragged/trimmed.
+          BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+            listenWhen: (previous, current) {
+              // Audio sources changed (add / remove / replace).
+              if (previous.audioTracks != current.audioTracks) return true;
+
+              // Sound item drag/trim ended.
+              final dragEnded =
+                  previous.draggingItemId != null &&
+                  current.draggingItemId == null;
+              final trimEnded =
+                  previous.trimmingItemId != null &&
+                  current.trimmingItemId == null;
+              if (!dragEnded && !trimEnded) return false;
+
+              final changedId =
+                  previous.draggingItemId ?? previous.trimmingItemId;
+              final item = current.items
+                  .where((i) => i.id == changedId)
+                  .firstOrNull;
+              return item?.type == TimelineOverlayType.sound;
+            },
+            listener: (context, state) {
+              _syncAudioTracks();
+            },
+          ),
+          // Update native player clip boundaries when trim handle is
+          // released or for non-trim clip changes (reorder, add, remove).
+          BlocListener<ClipEditorBloc, ClipEditorState>(
+            listenWhen: (previous, current) {
+              // Trim handle released.
+              if (previous.isTrimDragging && !current.isTrimDragging) {
+                return true;
+              }
+              // Non-trim clip changes (reorder, add, remove).
+              if (!current.isTrimDragging &&
+                  !previous.isTrimDragging &&
+                  previous.clips != current.clips) {
+                return true;
+              }
+              return false;
+            },
+            listener: (context, state) {
+              final currentPosition = context
+                  .read<VideoEditorMainBloc>()
+                  .state
+                  .currentPosition;
+              _videoPlayer?.setClips(
+                [
+                  for (final clip in state.clips)
+                    if (clip.video.file?.path case final path?)
+                      VideoClip(
+                        uri: path,
+                        start: clip.trimStart,
+                        end: clip.duration - clip.trimEnd,
+                      ),
+                ],
+                startPosition: currentPosition,
+              );
+            },
+          ),
           BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
             listenWhen: (previous, current) =>
                 previous.isExternalPauseRequested !=
@@ -525,39 +807,115 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               _onPlaybackToggleRequested();
             },
           ),
+          BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+            listenWhen: (previous, current) =>
+                previous.seekCounter != current.seekCounter,
+            listener: (context, state) {
+              _onSeekRequested(state.seekPosition);
+            },
+          ),
+          BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+            listenWhen: (previous, current) =>
+                previous.isMuted != current.isMuted,
+            listener: (context, state) {
+              _videoPlayer?.setVolume(state.isMuted ? 0 : 1);
+              ref
+                  .read(videoEditorProvider.notifier)
+                  .setOriginalAudioVolume(state.isMuted ? 0 : 1);
+            },
+          ),
         ],
         child: ProImageEditor.video(
           _proVideoController,
           key: scope.editorKey,
-
-          /// TODO(@hm21): Once all subeditors have been implemented,
-          /// separate the configs/callbacks for better readability.
           configs: ProImageEditorConfigs(
-            stateHistory: !_hasImportedHistory && editorStateHistory.isNotEmpty
-                ? StateHistoryConfigs(
-                    initStateHistory: ImportStateHistory.fromMap(
-                      editorStateHistory,
-                    ),
-                  )
-                : const StateHistoryConfigs(),
+            stateHistory: StateHistoryConfigs(
+              initStateHistory: editorStateHistory.isNotEmpty
+                  ? .fromMap(editorStateHistory)
+                  : null,
+            ),
             imageGeneration: ImageGenerationConfigs(
               captureImageByteFormat: .rawStraightRgba,
+              enableBackgroundGeneration: false,
+              enableUseOriginalBytes: false,
+              processorConfigs: const ProcessorConfigs(
+                numberOfBackgroundProcessors: 4,
+                processorMode: .limit,
+                initializationDelay:
+                    VideoEditorConstants.isolatesInitialisationDelay,
+              ),
               customPixelRatio: max(
                 1,
-                VideoEditorConstants.quality.resolution.width /
-                    widget.renderSize.width,
+                max(
+                  VideoEditorConstants.quality.resolution.height /
+                      widget.renderSize.height,
+                  VideoEditorConstants.quality.resolution.width /
+                      widget.renderSize.width,
+                ),
               ),
             ),
             mainEditor: MainEditorConfigs(
               safeArea: const EditorSafeArea.none(),
               style: const MainEditorStyle(
                 uiOverlayStyle: VideoEditorConstants.uiOverlayStyle,
-                background: VineTheme.backgroundColor,
+                background: VineTheme.backgroundCamera,
               ),
+              captureLayersOnDone: true,
+              captureImageOnDone: false,
               widgets: MainEditorWidgets(
                 appBar: (_, _) => null,
                 bottomBar: (_, _, key) => null,
                 removeLayerArea: (key, _, _, _) => SizedBox.shrink(key: key),
+                bodyItems: (editor, rebuildStream) {
+                  return [
+                    ReactiveWidget(
+                      builder: (context) =>
+                          BlocSelector<
+                            VideoEditorMainBloc,
+                            VideoEditorMainState,
+                            ({
+                              bool isOver,
+                              bool isReordering,
+                              bool isSubEditorOpen,
+                            })
+                          >(
+                            selector: (state) => (
+                              isOver:
+                                  state.currentPosition.inMilliseconds >
+                                  VideoEditorConstants
+                                      .maxDuration
+                                      .inMilliseconds,
+                              isReordering: state.isReordering,
+                              isSubEditorOpen: state.isSubEditorOpen,
+                            ),
+                            builder: (context, record) {
+                              if (!record.isOver ||
+                                  record.isReordering ||
+                                  record.isSubEditorOpen) {
+                                return const SizedBox.shrink();
+                              }
+                              return IgnorePointer(
+                                child: ColoredBox(
+                                  color: VineTheme.backgroundColor.withAlpha(
+                                    128,
+                                  ),
+                                  child: const SizedBox.expand(),
+                                ),
+                              );
+                            },
+                          ),
+                      stream: rebuildStream,
+                    ),
+                    ReactiveWidget(
+                      builder: (context) => VideoEditorFeedPreviewOverlay(
+                        renderSize: widget.renderSize,
+                        targetAspectRatio: targetAspectRatio.value,
+                        isFeedPreviewVisible: editor.isLayerBeingTransformed,
+                      ),
+                      stream: rebuildStream,
+                    ),
+                  ];
+                },
               ),
             ),
             paintEditor: PaintEditorConfigs(
@@ -566,8 +924,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                   scope.fittedBoxScale /
                   2,
               safeArea: const EditorSafeArea.none(),
+              enableEdit: false,
               style: const PaintEditorStyle(
-                background: VineTheme.backgroundColor,
+                background: VineTheme.backgroundCamera,
               ),
               widgets: PaintEditorWidgets(
                 appBar: (_, _) => null,
@@ -579,7 +938,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               safeArea: const EditorSafeArea.none(),
               enableMultiSelection: false,
               style: const FilterEditorStyle(
-                background: VineTheme.backgroundColor,
+                background: VineTheme.backgroundCamera,
               ),
               widgets: FilterEditorWidgets(
                 appBar: (_, _) => null,
@@ -618,13 +977,24 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             mainEditorCallbacks: MainEditorCallbacks(
               onAfterViewInit: () {
                 _isInitialized = true;
-                _hasImportedHistory = true;
+
+                if (editorStateHistory.isEmpty) {
+                  final clips = ref.read(clipManagerProvider).clips;
+
+                  scope.requireEditor.stateManager.replaceHistory(
+                    scope.requireEditor.stateHistory.first.copyWith(
+                      meta: {
+                        ...scope.requireEditor.stateManager.activeMeta,
+                        VideoEditorConstants.clipsStateHistoryKey: clips
+                            .map((e) => e.toJson())
+                            .toList(),
+                      },
+                    ),
+                    index: 0,
+                  );
+                }
+
                 _syncMainCapabilities(scope, bloc);
-              },
-              onTap: () {
-                context.read<VideoEditorMainBloc>().add(
-                  const VideoEditorPlaybackToggleRequested(),
-                );
               },
               onDone: _handleDone,
               onImportHistoryStart: (state, import) {
@@ -732,6 +1102,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 );
                 _syncMainCapabilities(scope, bloc);
               },
+              onRedo: () => _syncMainCapabilities(scope, bloc),
+              onUndo: () => _syncMainCapabilities(scope, bloc),
               onCreateTextLayer: scope.onAddEditTextLayer,
               onEditTextLayer: scope.onAddEditTextLayer,
               helperLines: HelperLinesCallbacks(
@@ -763,14 +1135,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               onInit: () {
                 final filterBloc = context.read<VideoEditorFilterBloc>();
                 filterBloc.add(const VideoEditorFilterEditorInitialized());
-                final filterState = filterBloc.state;
-
-                // Sync editor with current BLoC state
-                final filterEditor = scope.filterEditor;
-                if (filterState.selectedFilter != null) {
-                  filterEditor?.setFilter(filterState.selectedFilter!);
-                }
-                filterEditor?.setFilterOpacity(filterState.opacity);
               },
             ),
           ),
@@ -793,49 +1157,24 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final useFullSize = targetAspectRatio.useFullScreenForSize(bodySize);
-
-    // Calculate the scale factor that FittedBox.cover applies
-    final scale = max(
-      bodySize.width / renderSize.width,
-      bodySize.height / renderSize.height,
+    // Contain mode: the visible area is targetAspectRatio fitted in renderSize
+    final containSize = Size(
+      renderSize.height * targetAspectRatio.value,
+      renderSize.height,
+    );
+    final containRadius = Radius.circular(
+      VideoEditorConstants.canvasRadius * containSize.width / bodySize.width,
     );
 
-    // Size in renderSize coordinates that equals bodySize after scaling
-    final size = bodySize / scale;
-    final radius = Radius.circular(VideoEditorConstants.canvasRadius / scale);
-
-    if (useFullSize) {
-      // Cover mode: show the visible portion of bodySize
-      return Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.vertical(bottom: radius),
-          child: SizedBox.fromSize(
-            size: size,
-            child: VideoEditorThumbnail(contentSize: size),
-          ),
+    return Center(
+      child: ClipRRect(
+        borderRadius: BorderRadius.all(containRadius),
+        child: SizedBox.fromSize(
+          size: containSize,
+          child: VideoEditorThumbnail(contentSize: containSize),
         ),
-      );
-    } else {
-      // Contain mode: the visible area is targetAspectRatio fitted in renderSize
-      final containSize = Size(
-        renderSize.height * targetAspectRatio.value,
-        renderSize.height,
-      );
-      final containRadius = Radius.circular(
-        VideoEditorConstants.canvasRadius * containSize.width / bodySize.width,
-      );
-
-      return Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.all(containRadius),
-          child: SizedBox.fromSize(
-            size: containSize,
-            child: VideoEditorThumbnail(contentSize: containSize),
-          ),
-        ),
-      );
-    }
+      ),
+    );
   }
 }
 
@@ -855,10 +1194,6 @@ class _CanvasFitter extends ConsumerWidget {
     return LayoutBuilder(
       builder: (_, constraints) {
         final bodySize = constraints.biggest;
-
-        final useFullSize = clip.targetAspectRatio.useFullScreenForSize(
-          bodySize,
-        );
 
         // Height is constrained by maxWidth or maxHeight,
         // depending on which dimension is reached first
@@ -882,34 +1217,29 @@ class _CanvasFitter extends ConsumerWidget {
           ),
         );
 
-        if (useFullSize) {
-          // Cover mode: fill entire bodySize with the original aspect ratio
-          return FittedBox(fit: BoxFit.cover, child: child);
+        // Contain mode: fit targetAspectRatio within bodySize,
+        // then cover that area with the original aspect ratio
+        final Size targetSize;
+        if (bodySize.aspectRatio > clip.targetAspectRatio.value) {
+          // Body is wider, height is limiting
+          targetSize = Size(
+            bodySize.height * clip.targetAspectRatio.value,
+            bodySize.height,
+          );
         } else {
-          // Contain mode: fit targetAspectRatio within bodySize,
-          // then cover that area with the original aspect ratio
-          final Size targetSize;
-          if (bodySize.aspectRatio > clip.targetAspectRatio.value) {
-            // Body is wider, height is limiting
-            targetSize = Size(
-              bodySize.height * clip.targetAspectRatio.value,
-              bodySize.height,
-            );
-          } else {
-            // Body is narrower, width is limiting
-            targetSize = Size(
-              bodySize.width,
-              bodySize.width / clip.targetAspectRatio.value,
-            );
-          }
-
-          return Center(
-            child: SizedBox.fromSize(
-              size: targetSize,
-              child: FittedBox(fit: BoxFit.cover, child: child),
-            ),
+          // Body is narrower, width is limiting
+          targetSize = Size(
+            bodySize.width,
+            bodySize.width / clip.targetAspectRatio.value,
           );
         }
+
+        return Center(
+          child: SizedBox.fromSize(
+            size: targetSize,
+            child: FittedBox(fit: BoxFit.cover, child: child),
+          ),
+        );
       },
     );
   }

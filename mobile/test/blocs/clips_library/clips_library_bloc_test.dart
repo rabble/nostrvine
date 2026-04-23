@@ -33,6 +33,7 @@ void main() {
         id: id ?? 'clip-${DateTime.now().millisecondsSinceEpoch}',
         video: EditorVideo.file('/path/to/clip.mp4'),
         thumbnailPath: '/path/to/thumb.jpg',
+        ghostFramePath: '/path/to/ghost.jpg',
         duration: duration,
         recordedAt: DateTime.now(),
         targetAspectRatio: .vertical,
@@ -43,6 +44,12 @@ void main() {
     setUp(() {
       mockClipLibraryService = _MockClipLibraryService();
       mockGallerySaveService = _MockGallerySaveService();
+
+      // Stub recoverMissingAssets so the unawaited background recovery
+      // triggered by clips with null ghostFramePath doesn't throw.
+      when(
+        () => mockClipLibraryService.recoverMissingAssets(any()),
+      ).thenAnswer((_) async => []);
     });
 
     ClipsLibraryBloc createBloc() => ClipsLibraryBloc(
@@ -91,6 +98,63 @@ void main() {
           const ClipsLibraryState(
             status: ClipsLibraryStatus.loaded,
           ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'pre-selects clips matching preSelectedIds',
+        setUp: () {
+          when(() => mockClipLibraryService.getAllClips()).thenAnswer(
+            (_) async => [createClip(id: 'c1'), createClip(id: 'c2')],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ClipsLibraryLoadRequested(preSelectedIds: {'c1'}),
+        ),
+        expect: () => [
+          const ClipsLibraryState(status: ClipsLibraryStatus.loading),
+          isA<ClipsLibraryState>()
+              .having((s) => s.status, 'status', ClipsLibraryStatus.loaded)
+              .having(
+                (s) => s.selectedClipIds,
+                'selectedClipIds',
+                equals({'c1'}),
+              )
+              .having(
+                (s) => s.selectedDuration,
+                'selectedDuration',
+                const Duration(seconds: 5),
+              ),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'ignores preSelectedIds that do not exist in loaded clips',
+        setUp: () {
+          when(() => mockClipLibraryService.getAllClips()).thenAnswer(
+            (_) async => [createClip(id: 'c1')],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ClipsLibraryLoadRequested(
+            preSelectedIds: {'c1', 'nonexistent'},
+          ),
+        ),
+        expect: () => [
+          const ClipsLibraryState(status: ClipsLibraryStatus.loading),
+          isA<ClipsLibraryState>()
+              .having(
+                (s) => s.selectedClipIds,
+                'selectedClipIds',
+                equals({'c1'}),
+              )
+              .having(
+                (s) => s.selectedDuration,
+                'selectedDuration',
+                const Duration(seconds: 5),
+              ),
         ],
       );
 
@@ -565,6 +629,21 @@ void main() {
           );
 
         expect(bloc.state.selectedClips, [clip1]);
+        bloc.close();
+      });
+
+      test('returns selected clips in selection order not list order', () {
+        // selectedClipIds iteration order is clip2 then clip1
+        final bloc = createBloc()
+          ..emit(
+            ClipsLibraryState(
+              status: ClipsLibraryStatus.loaded,
+              clips: [clip1, clip2],
+              selectedClipIds: const {'clip2', 'clip1'},
+            ),
+          );
+
+        expect(bloc.state.selectedClips, [clip2, clip1]);
         bloc.close();
       });
     });

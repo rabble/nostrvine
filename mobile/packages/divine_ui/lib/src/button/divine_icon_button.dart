@@ -25,11 +25,17 @@ enum DivineIconButtonType {
 }
 
 /// The size of a [DivineIconButton].
+///
+/// Both sizes have the same 48px total outer dimensions for consistent
+/// touch targets. The [small] variant wraps the visible button in 4px
+/// padding, making it appear 40px while keeping the 48px tap area.
 enum DivineIconButtonSize {
-  /// Small button: 8px padding, 16px border radius, 24px icon.
+  /// Small button: 4px outer padding, 8px inner padding, 16px border
+  /// radius, 24px icon. Visual size 40px, tap target 48px.
   small,
 
-  /// Base/medium button: 12px padding, 20px border radius, 32px icon.
+  /// Base/medium button: 12px padding, 20px border radius, 24px icon.
+  /// Total size 48px.
   base,
 }
 
@@ -37,6 +43,10 @@ enum DivineIconButtonSize {
 ///
 /// The button's appearance is determined by [type] and [size]. The disabled
 /// state is automatically applied when [onPressed] is null.
+///
+/// Both [DivineIconButtonSize.base] and [DivineIconButtonSize.small] have
+/// the same 48px tap target. The small variant appears 40px with a 4px
+/// transparent outer padding that captures taps.
 ///
 /// Example usage:
 /// ```dart
@@ -121,6 +131,7 @@ class _DivineIconButtonContent extends StatelessWidget {
 
   bool get _isEnabled => onPressed != null;
 
+  /// Inner padding around the icon.
   double get _padding => switch (size) {
     DivineIconButtonSize.small => 8,
     DivineIconButtonSize.base => 12,
@@ -131,10 +142,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     DivineIconButtonSize.base => 20,
   };
 
-  double get _iconSize => switch (size) {
-    DivineIconButtonSize.small => 24,
-    DivineIconButtonSize.base => 32,
-  };
+  /// Icon size is 24px for both variants.
 
   double get _disabledOpacity => switch (type) {
     DivineIconButtonType.error => 0.5,
@@ -190,7 +198,6 @@ class _DivineIconButtonContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconWidget = DivineIcon(
       icon: icon,
-      size: _iconSize,
       color: _iconColor,
     );
 
@@ -203,7 +210,7 @@ class _DivineIconButtonContent extends StatelessWidget {
       boxShadow: _isEnabled ? _boxShadow : null,
     );
 
-    return Semantics(
+    Widget button = Semantics(
       label: semanticLabel,
       value: semanticValue,
       button: true,
@@ -229,5 +236,13 @@ class _DivineIconButtonContent extends StatelessWidget {
         ),
       ),
     );
+
+    // Small variant: wrap in 4px padding so the visible button is 40px
+    // but the tap target remains 48px.
+    if (size == DivineIconButtonSize.small) {
+      button = Padding(padding: const EdgeInsets.all(4), child: button);
+    }
+
+    return button;
   }
 }

@@ -22,6 +22,7 @@ library;
 
 import 'dart:async';
 
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
@@ -34,7 +35,6 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
@@ -206,7 +206,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   static const Duration _retryDelay = Duration(seconds: 10);
 
   // Optional services for enhanced functionality
-  ContentBlocklistService? _blocklistService;
+  ContentBlocklistRepository? _blocklistRepository;
   AgeVerificationService? _ageVerificationService;
   LikesRepository? _likesRepository;
   ContentFilterService? _contentFilterService;
@@ -291,8 +291,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   }
 
   /// Set the blocklist service for content filtering
-  void setBlocklistService(ContentBlocklistService blocklistService) {
-    _blocklistService = blocklistService;
+  void setBlocklistRepository(ContentBlocklistRepository blocklistRepository) {
+    _blocklistRepository = blocklistRepository;
     Log.debug(
       'Blocklist service attached to VideoEventService',
       name: 'VideoEventService',
@@ -2120,7 +2120,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
 
       // Check if content is blocked
-      if (_blocklistService?.shouldFilterFromFeeds(event.pubkey) == true) {
+      if (_blocklistRepository?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
           'Filtering blocked content from ${event.pubkey}...',
           name: 'VideoEventService',
@@ -2410,7 +2410,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
 
       // Check if content is blocked
-      if (_blocklistService?.shouldFilterFromFeeds(event.pubkey) == true) {
+      if (_blocklistRepository?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
           'Filtering blocked historical content from ${event.pubkey}...',
           name: 'VideoEventService',
@@ -4060,7 +4060,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
 
     // Filter blocked users (centralized check for all subscription types)
-    if (_blocklistService?.shouldFilterFromFeeds(videoEvent.pubkey) == true) {
+    if (_blocklistRepository?.shouldFilterFromFeeds(videoEvent.pubkey) ==
+        true) {
       Log.verbose(
         'Filtering blocked content from ${videoEvent.pubkey} in $subscriptionType',
         name: 'VideoEventService',
@@ -5054,7 +5055,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
   }
 
-  /// Add a video event to the cache (for external services like CurationService)
+  /// Add a video event to the cache (for external services like CurationRepository)
   @override
   void addVideoEvent(VideoEvent videoEvent) {
     _addVideoToSubscription(videoEvent, SubscriptionType.discovery);

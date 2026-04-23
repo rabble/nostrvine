@@ -1,6 +1,8 @@
 // ABOUTME: Tracks startup performance metrics and identifies bottlenecks
 // ABOUTME: Provides data for optimizing initialization sequence
 
+import 'package:clock/clock.dart';
+
 /// Metrics collected during app startup
 class StartupMetrics {
   StartupMetrics({
@@ -113,7 +115,7 @@ class ServiceMetrics {
   }) => ServiceMetrics(
     name: name,
     startTime: startTime,
-    endTime: DateTime.now(),
+    endTime: clock.now(),
     success: success,
     error: error,
     stackTrace: stackTrace,
@@ -127,7 +129,7 @@ class StartupError {
     required this.error,
     this.stackTrace,
     DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
+  }) : timestamp = timestamp ?? clock.now();
   final String serviceName;
   final Object error;
   final StackTrace? stackTrace;
@@ -136,13 +138,13 @@ class StartupError {
 
 /// Tracks metrics during startup
 class MetricsCollector {
-  final DateTime _startTime = DateTime.now();
+  final DateTime _startTime = clock.now();
   final Map<String, ServiceMetrics> _services = {};
   final List<StartupError> _errors = [];
 
   /// Start tracking a service
   void startService(String name) {
-    _services[name] = ServiceMetrics(name: name, startTime: DateTime.now());
+    _services[name] = ServiceMetrics(name: name, startTime: clock.now());
   }
 
   /// Mark service as complete
@@ -170,7 +172,7 @@ class MetricsCollector {
 
   /// Generate final metrics
   StartupMetrics generateMetrics() {
-    final endTime = DateTime.now();
+    final endTime = clock.now();
     final serviceTimings = <String, Duration>{};
 
     for (final entry in _services.entries) {

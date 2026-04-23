@@ -26,7 +26,10 @@ class _MockProVideoEditor extends ProVideoEditor {
   }
 
   @override
-  Future<bool> hasAudioTrack(EditorVideo value) async {
+  Future<bool> hasAudioTrack(
+    EditorVideo value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
     if (shouldThrowOnHasAudio) throw Exception('hasAudioTrack failed');
     return hasAudio;
   }
@@ -35,6 +38,7 @@ class _MockProVideoEditor extends ProVideoEditor {
   Future<VideoMetadata> getMetadata(
     EditorVideo value, {
     bool checkStreamingOptimization = false,
+    NativeLogLevel? nativeLogLevel,
   }) async {
     if (shouldThrowOnGetMetadata) throw Exception('getMetadata failed');
     return VideoMetadata(
@@ -50,8 +54,9 @@ class _MockProVideoEditor extends ProVideoEditor {
   @override
   Future<String> extractAudioToFile(
     String filePath,
-    AudioExtractConfigs value,
-  ) async {
+    AudioExtractConfigs value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
     if (shouldThrowNoTrack) throw const AudioNoTrackException();
     if (shouldThrowOnExtract) throw Exception('extraction failed');
     // Create a small file to simulate extraction

@@ -64,26 +64,6 @@ class VideoEditorMainSubEditorClosed extends VideoEditorMainEvent {
   const VideoEditorMainSubEditorClosed();
 }
 
-/// Triggered when a layer is added to the editor.
-class VideoEditorLayerAdded extends VideoEditorMainEvent {
-  const VideoEditorLayerAdded(this.layer);
-
-  final Layer layer;
-
-  @override
-  List<Object?> get props => [layer];
-}
-
-/// Triggered when a layer is removed from the editor.
-class VideoEditorLayerRemoved extends VideoEditorMainEvent {
-  const VideoEditorLayerRemoved(this.layer);
-
-  final Layer layer;
-
-  @override
-  List<Object?> get props => [layer];
-}
-
 /// Triggered when the video playback state changes.
 class VideoEditorPlaybackChanged extends VideoEditorMainEvent {
   const VideoEditorPlaybackChanged({required this.isPlaying});
@@ -129,5 +109,55 @@ class VideoEditorPlaybackToggleRequested extends VideoEditorMainEvent {
   const VideoEditorPlaybackToggleRequested();
 }
 
+/// Triggered when the timeline requests a seek to a specific position.
+class VideoEditorSeekRequested extends VideoEditorMainEvent {
+  const VideoEditorSeekRequested(this.position);
+
+  final Duration position;
+
+  @override
+  List<Object?> get props => [position];
+}
+
+/// Triggered when the video player reports a new playback position.
+class VideoEditorPositionChanged extends VideoEditorMainEvent {
+  const VideoEditorPositionChanged(this.position);
+
+  final Duration position;
+
+  @override
+  List<Object?> get props => [position];
+}
+
+/// Triggered when the video player reports total duration.
+class VideoEditorDurationChanged extends VideoEditorMainEvent {
+  const VideoEditorDurationChanged(this.duration);
+
+  final Duration duration;
+
+  @override
+  List<Object?> get props => [duration];
+}
+
 /// Types of sub-editors that can be opened.
 enum SubEditorType { text, draw, filter, stickers, music, clips }
+
+/// Triggered when the user toggles audio mute in the timeline.
+class VideoEditorMuteToggled extends VideoEditorMainEvent {
+  const VideoEditorMuteToggled();
+}
+
+/// Triggered when clip reorder mode is toggled.
+class VideoEditorReorderingChanged extends VideoEditorMainEvent {
+  const VideoEditorReorderingChanged({required this.isReordering});
+
+  final bool isReordering;
+
+  @override
+  List<Object?> get props => [isReordering];
+}
+
+/// Triggered when the timeline visibility should be toggled.
+class VideoEditorTimelineVisibilityToggled extends VideoEditorMainEvent {
+  const VideoEditorTimelineVisibilityToggled();
+}

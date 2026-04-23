@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -1257,7 +1258,7 @@ class VideoFeedController extends ChangeNotifier {
       final hadExistingPlayer = pool.hasPlayer(video.url);
       final loadStopwatch = _loadStopwatches.putIfAbsent(
         index,
-        () => Stopwatch()..start(),
+        () => clock.stopwatch()..start(),
       );
       _logDebug(
         'load_start ${_videoDebugDetails(index)} '
@@ -1940,7 +1941,7 @@ class VideoFeedController extends ChangeNotifier {
       return;
     }
 
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final nowMs = clock.now().millisecondsSinceEpoch;
 
     if (_rateCheckWallStartMs == null) {
       _rateCheckWallStartMs = nowMs;
@@ -1991,7 +1992,7 @@ class VideoFeedController extends ChangeNotifier {
   /// tick, passed in so we don't read `player.state.position` a
   /// second time.
   void _emitStateSnapshotIfDue(int index, Player player, int positionMs) {
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final nowMs = clock.now().millisecondsSinceEpoch;
     if (_lastStateSnapshotWallMs != null &&
         nowMs - _lastStateSnapshotWallMs! < _stateSnapshotIntervalMs) {
       return;

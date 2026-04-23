@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_sort_dropdown.dart';
@@ -99,14 +101,41 @@ class _AudioSelectionBottomSheetState
     }
   }
 
-  void _selectSound(AudioEvent sound) {
+  Future<void> _selectSound(AudioEvent sound) async {
     Log.info(
       'Sound selected: ${sound.title ?? 'Untitled'} (${sound.id})',
       name: 'AudioSelectionBottomSheet',
       category: LogCategory.ui,
     );
     _stopPlayback();
-    context.pop(sound);
+
+    if (sound.duration == null ||
+        sound.duration! >
+            (VideoEditorConstants.maxDuration.inMilliseconds / 1000)) {
+      final timingResult = await Navigator.of(context).push<AudioTimingResult>(
+        PageRouteBuilder(
+          opaque: false,
+          barrierColor: VineTheme.transparent,
+          transitionsBuilder: (_, animation, _, child) =>
+              FadeTransition(opacity: animation, child: child),
+          pageBuilder: (_, _, _) => VideoAudioEditorTimingScreen(
+            sound: sound,
+            enableDeleteButton: false,
+          ),
+        ),
+      );
+
+      if (timingResult != null && mounted) {
+        switch (timingResult) {
+          case AudioTimingConfirmed(:final sound):
+            context.pop(sound);
+          case AudioTimingDeleted():
+            break;
+        }
+      }
+    } else {
+      context.pop(sound);
+    }
   }
 
   List<AudioEvent> _filterSounds(List<AudioEvent> sounds) {
@@ -295,26 +324,22 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
-          SizedBox(height: 16),
+          const Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
+          const SizedBox(height: 16),
           Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'No sounds available',
-            style: TextStyle(
-              color: VineTheme.whiteText,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
+            context.l10n.videoEditorAudioNoSoundsAvailableTitle,
+            style: VineTheme.bodyLargeFont(),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Sounds will appear here when creators share audio',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+            context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
+            style: VineTheme.bodyMediumFont(
+              color: VineTheme.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -328,26 +353,26 @@ class _NoResultsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 64, color: VineTheme.secondaryText),
-          SizedBox(height: 16),
-          Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'No sounds found',
-            style: TextStyle(
-              color: VineTheme.whiteText,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
+          const Icon(
+            Icons.search_off,
+            size: 64,
+            color: VineTheme.secondaryText,
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 16),
           Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Try a different search term',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+            context.l10n.videoEditorAudioNoSoundsFoundTitle,
+            style: VineTheme.bodyLargeFont().copyWith(),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.videoEditorAudioNoSoundsFoundSubtitle,
+            style: VineTheme.bodyMediumFont(
+              color: VineTheme.secondaryText,
+            ),
           ),
         ],
       ),
@@ -370,21 +395,15 @@ class _ErrorState extends ConsumerWidget {
           children: [
             const Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
             const SizedBox(height: 16),
-            const Text(
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              'Failed to load sounds',
-              style: TextStyle(
-                color: VineTheme.whiteText,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
+            Text(
+              context.l10n.videoEditorAudioFailedToLoadTitle,
+              style: VineTheme.bodyLargeFont(),
             ),
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: const TextStyle(
+              style: VineTheme.bodySmallFont(
                 color: VineTheme.secondaryText,
-                fontSize: 12,
               ),
               textAlign: TextAlign.center,
               maxLines: 3,

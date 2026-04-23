@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/services/thumbnail_api_service.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 import '../test_data/video_test_data.dart';
@@ -252,26 +251,6 @@ void main() {
       expect(find.byType(Container), findsWidgets);
     });
 
-    testWidgets('respects thumbnail size parameter', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoThumbnailWidget(
-              video: videoWithThumbnail,
-              width: 200,
-              height: 200,
-              size: ThumbnailSize.large,
-            ),
-          ),
-        ),
-      );
-
-      // Widget should build without error with different size
-      expect(find.byType(VideoThumbnailWidget), findsOneWidget);
-    });
-
     testWidgets('does not try to generate thumbnails when URL is missing', (
       tester,
     ) async {
@@ -294,30 +273,6 @@ void main() {
       // Should show flat placeholder, not loading indicator or image
       expect(find.byType(Container), findsWidgets);
       expect(find.byType(CachedNetworkImage), findsNothing);
-    });
-
-    testWidgets('shows loading state briefly during initialization', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoThumbnailWidget(
-              video: videoWithThumbnail,
-              width: 200,
-              height: 200,
-            ),
-          ),
-        ),
-      );
-
-      // Initially might show loading state
-      // After settling, should show the content
-      await tester.pumpAndSettle();
-
-      expect(find.byType(VideoThumbnailWidget), findsOneWidget);
     });
 
     testWidgets('handles empty thumbnail URL as null', (tester) async {

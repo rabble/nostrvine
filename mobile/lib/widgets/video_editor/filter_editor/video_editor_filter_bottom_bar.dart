@@ -65,7 +65,7 @@ class VideoEditorFilterBottomBar extends ConsumerWidget {
             filter: filter,
             isSelected: isSelected,
             thumbnailPath: clip.thumbnailPath ?? '',
-            activeFilters: stateManager?.activeFilters ?? [],
+            activeFilters: stateManager?.activeFilters.allMatrices ?? [],
             activeTuneAdjustments: stateManager?.activeTuneAdjustments ?? [],
             activeBlur: stateManager?.activeBlur ?? 0,
             onTap: () {
@@ -136,7 +136,7 @@ class _FilterItem extends StatelessWidget {
                     // In that scenario we don't need any special
                     // configurations, so we just use the default one.
                     configs: const ProImageEditorConfigs(),
-                    filters: [...activeFilters, ...filter.filters],
+                    filters: filter.filters,
                     tuneAdjustments: activeTuneAdjustments,
                     blurFactor: activeBlur,
                     fit: .cover,

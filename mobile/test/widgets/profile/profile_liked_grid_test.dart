@@ -132,9 +132,11 @@ void main() {
 
         await tester.pumpWidget(buildSubject());
 
-        expect(find.text('No Liked Videos Yet'), findsOneWidget);
+        expect(find.text('No likes yet'), findsOneWidget);
         expect(
-          find.text('Videos you like will appear here'),
+          find.text(
+            'When something catches your eye, tap the heart. Your likes will show up here.',
+          ),
           findsOneWidget,
         );
       });
@@ -150,9 +152,9 @@ void main() {
 
         await tester.pumpWidget(buildSubject(isOwnProfile: false));
 
-        expect(find.text('No Liked Videos Yet'), findsOneWidget);
+        expect(find.text('No likes yet'), findsOneWidget);
         expect(
-          find.text('Videos they like will appear here'),
+          find.text('Nothing caught their eye yet. Give it time.'),
           findsOneWidget,
         );
       });

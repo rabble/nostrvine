@@ -26,7 +26,10 @@ class _MockProVideoEditor extends ProVideoEditor {
   }
 
   @override
-  Future<WaveformData> getWaveform(WaveformConfigs configs) async {
+  Future<WaveformData> getWaveform(
+    WaveformConfigs configs, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
     if (shouldThrowError) {
       throw Exception('Waveform extraction failed');
     }

@@ -103,6 +103,18 @@ class VineTheme {
         color: color,
       );
 
+  /// Stat number: Bricolage Grotesque 800 20/28/0 — matches the Figma
+  /// profile stat-column number style (Followers / Following / Likes /
+  /// Loops). Sits between `titleLargeFont` (22) and `titleMediumFont` (16).
+  static TextStyle statNumberFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 20,
+        fontWeight: FontWeight.w800,
+        height: 28 / 20,
+        letterSpacing: 0,
+        color: color,
+      );
+
   /// Title medium: Bricolage Grotesque 800 16/24/0.15
   static TextStyle titleMediumFont({Color color = whiteText}) =>
       GoogleFonts.bricolageGrotesque(
@@ -296,6 +308,9 @@ class VineTheme {
   /// On-error-container color for text/icons on error container backgrounds.
   static const Color onErrorContainer = Color(0xFFFFEDEA);
 
+  /// Primary container background color.
+  static const Color primaryContainer = Color(0xFFD0FBCB);
+
   /// Error overlay for pressed/error state backgrounds (15% error).
   static const Color errorOverlay = Color(0x26F44336);
 
@@ -367,6 +382,9 @@ class VineTheme {
   /// Card and elevated surface background.
   static const Color cardBackground = Color(0xFF1A1A1A);
 
+  /// Camera background color
+  static const Color backgroundCamera = Color(0xFF000A06);
+
   /// Dark overlay color.
   static const Color darkOverlay = Color(0x88000000);
 
@@ -375,6 +393,9 @@ class VineTheme {
 
   /// Scrim at 30% opacity (black 30%).
   static const Color scrim30 = Color(0x4D000000);
+
+  /// Scrim at 35% opacity (black 35%).
+  static const Color scrim35 = Color(0x58000000);
 
   /// Scrim at 65% opacity (black 65%).
   static const Color scrim65 = Color(0xA6000000);
@@ -438,6 +459,9 @@ class VineTheme {
   /// Content warning amber color.
   static const Color contentWarningAmber = Color(0xFFFFB84D);
 
+  /// Dark background tint for content-warning banners.
+  static const Color contentWarningBackground = Color(0xFF4A1C00);
+
   // --------------------------------------------------------------------------
   // Button shadows
   // --------------------------------------------------------------------------
@@ -481,6 +505,9 @@ class VineTheme {
 
   /// Accent violet background color.
   static const Color accentVioletBackground = Color(0xFF2D214D);
+
+  /// Accent violet variant color.
+  static const Color accentVioletVariant = Color(0xFFE1E3FF);
 
   /// Accent purple color.
   static const Color accentPurple = Color(0xFF8568FF);

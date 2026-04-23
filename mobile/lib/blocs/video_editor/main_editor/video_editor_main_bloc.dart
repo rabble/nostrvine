@@ -1,3 +1,4 @@
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -21,13 +22,20 @@ class VideoEditorMainBloc
     on<VideoEditorLayerOverRemoveAreaChanged>(_onLayerOverRemoveAreaChanged);
     on<VideoEditorMainOpenSubEditor>(_onOpenSubEditor);
     on<VideoEditorMainSubEditorClosed>(_onSubEditorClosed);
-    on<VideoEditorLayerAdded>(_onLayerAdded);
-    on<VideoEditorLayerRemoved>(_onLayerRemoved);
     on<VideoEditorPlaybackChanged>(_onPlaybackChanged);
     on<VideoEditorPlayerReady>(_onPlayerReady);
     on<VideoEditorExternalPauseRequested>(_onExternalPauseRequested);
     on<VideoEditorPlaybackRestartRequested>(_onPlaybackRestartRequested);
     on<VideoEditorPlaybackToggleRequested>(_onPlaybackToggleRequested);
+    on<VideoEditorSeekRequested>(_onSeekRequested);
+    on<VideoEditorPositionChanged>(
+      _onPositionChanged,
+      transformer: restartable(),
+    );
+    on<VideoEditorDurationChanged>(_onDurationChanged);
+    on<VideoEditorMuteToggled>(_onMuteToggled);
+    on<VideoEditorReorderingChanged>(_onReorderingChanged);
+    on<VideoEditorTimelineVisibilityToggled>(_onTimelineVisibilityToggled);
   }
 
   /// Updates undo/redo/subEditor state based on editor capabilities.
@@ -39,7 +47,6 @@ class VideoEditorMainBloc
       state.copyWith(
         canUndo: event.canUndo,
         canRedo: event.canRedo,
-        layers: event.layers,
       ),
     );
   }
@@ -86,24 +93,6 @@ class VideoEditorMainBloc
     emit(state.copyWith(clearOpenSubEditor: true));
   }
 
-  void _onLayerAdded(
-    VideoEditorLayerAdded event,
-    Emitter<VideoEditorMainState> emit,
-  ) {
-    emit(state.copyWith(layers: [...state.layers, event.layer]));
-  }
-
-  void _onLayerRemoved(
-    VideoEditorLayerRemoved event,
-    Emitter<VideoEditorMainState> emit,
-  ) {
-    emit(
-      state.copyWith(
-        layers: state.layers.where((l) => l != event.layer).toList(),
-      ),
-    );
-  }
-
   void _onPlaybackChanged(
     VideoEditorPlaybackChanged event,
     Emitter<VideoEditorMainState> emit,
@@ -130,7 +119,10 @@ class VideoEditorMainBloc
     Emitter<VideoEditorMainState> emit,
   ) {
     emit(
-      state.copyWith(playbackRestartCounter: state.playbackRestartCounter + 1),
+      state.copyWith(
+        playbackRestartCounter: state.playbackRestartCounter + 1,
+        isExternalPauseRequested: false,
+      ),
     );
   }
 
@@ -139,7 +131,61 @@ class VideoEditorMainBloc
     Emitter<VideoEditorMainState> emit,
   ) {
     emit(
-      state.copyWith(playbackToggleCounter: state.playbackToggleCounter + 1),
+      state.copyWith(
+        playbackToggleCounter: state.playbackToggleCounter + 1,
+        isExternalPauseRequested: false,
+      ),
+    );
+  }
+
+  void _onSeekRequested(
+    VideoEditorSeekRequested event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        seekPosition: event.position,
+        seekCounter: state.seekCounter + 1,
+      ),
+    );
+  }
+
+  void _onPositionChanged(
+    VideoEditorPositionChanged event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(currentPosition: event.position));
+  }
+
+  void _onDurationChanged(
+    VideoEditorDurationChanged event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(totalDuration: event.duration));
+  }
+
+  void _onMuteToggled(
+    VideoEditorMuteToggled event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(isMuted: !state.isMuted));
+  }
+
+  void _onReorderingChanged(
+    VideoEditorReorderingChanged event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(isReordering: event.isReordering));
+  }
+
+  void _onTimelineVisibilityToggled(
+    VideoEditorTimelineVisibilityToggled event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        isTimelineHiddenByUser: !state.isTimelineHiddenByUser,
+      ),
     );
   }
 }

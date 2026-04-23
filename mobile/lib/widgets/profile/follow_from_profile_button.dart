@@ -42,14 +42,14 @@ class FollowFromProfileButton extends ConsumerWidget {
     ref.watch(blocklistVersionProvider);
 
     // Watch blocklist to reactively update button state
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    final isBlocked = blocklistService.isBlocked(pubkey);
-    final isBlockedByThem = blocklistService.hasBlockedUs(pubkey);
+    final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+    final isBlocked = blocklistRepository.isBlocked(pubkey);
+    final isBlockedByThem = blocklistRepository.hasBlockedUs(pubkey);
 
     return BlocProvider(
       create: (_) => MyFollowingBloc(
         followRepository: followRepository,
-        contentBlocklistService: blocklistService,
+        contentBlocklistRepository: blocklistRepository,
       )..add(const MyFollowingListLoadRequested()),
       child: FollowFromProfileButtonView(
         pubkey: pubkey,
@@ -64,8 +64,11 @@ class FollowFromProfileButton extends ConsumerWidget {
 }
 
 /// View widget that consumes [MyFollowingBloc] state and renders the follow button.
+///
+/// Expects a [MyFollowingBloc] to be available in the widget tree.
+/// Used by [FollowFromProfileButton] (which creates its own bloc)
+/// and by [ProfileActionButtons] (which shares the bloc for row reordering).
 class FollowFromProfileButtonView extends StatelessWidget {
-  @visibleForTesting
   const FollowFromProfileButtonView({
     required this.pubkey,
     required this.displayName,
@@ -203,7 +206,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
   }
 }
 
-/// Button showing "Following" state with checkmark icon.
+/// Button showing "Following" state — icon only, no label.
 class _FollowingButton extends StatelessWidget {
   const _FollowingButton({required this.onPressed});
 
@@ -212,10 +215,10 @@ class _FollowingButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DivineButton(
-      expanded: true,
       type: .secondary,
+      size: .small,
       onPressed: onPressed,
-      label: context.l10n.profileFollowingLabel,
+      label: '',
       leadingIcon: .userCheck,
     );
   }
@@ -231,7 +234,7 @@ class _FollowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return DivineButton(
       onPressed: onPressed,
-      expanded: true,
+      size: .small,
       leadingIcon: DivineIconName.userPlus,
       label: context.l10n.profileFollowLabel,
     );

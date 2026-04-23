@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 class VideoMetadataHelpSheet extends StatelessWidget {
   const VideoMetadataHelpSheet({
@@ -42,8 +43,8 @@ class VideoMetadataHelpSheet extends StatelessWidget {
 
             Semantics(
               button: true,
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              label: 'Dismiss help dialog',
+              label: context.l10n.videoMetadataDismissHelpDialogSemanticLabel,
+
               child: Material(
                 color: VineTheme.surfaceContainer,
                 shape: RoundedRectangleBorder(
@@ -60,8 +61,7 @@ class VideoMetadataHelpSheet extends StatelessWidget {
                     width: double.infinity,
                     padding: const .symmetric(horizontal: 24, vertical: 12),
                     child: Text(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      'Got it!',
+                      context.l10n.videoMetadataGotItButton,
                       textAlign: TextAlign.center,
                       style: VineTheme.titleMediumFont(
                         color: VineTheme.primary,

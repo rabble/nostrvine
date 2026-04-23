@@ -1,6 +1,8 @@
 // ABOUTME: BLoC for managing saved video clips in the library
 // ABOUTME: Handles loading, selection, deletion, and gallery export
 
+import 'dart:async';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -61,12 +63,39 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
 
+      // Pre-select clips that are already in the editor.
+      // Iterate preSelectedIds (which preserves ClipManager order)
+      // so the selection indices match the editor timeline.
+      final clipsById = {for (final c in clips) c.id: c};
+      final preSelectedIds = <String>{};
+      var preSelectedDuration = Duration.zero;
+      for (final id in event.preSelectedIds) {
+        final clip = clipsById[id];
+        if (clip != null) {
+          preSelectedIds.add(id);
+          preSelectedDuration += clip.duration;
+        }
+      }
+
       emit(
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
+          selectedClipIds: preSelectedIds,
+          disabledClipIds: event.disabledClipIds,
+          selectedDuration: preSelectedDuration,
         ),
       );
+
+      // Kick off background recovery for clips missing thumbnails/ghost
+      // frames. When done, a fresh load event is dispatched so the UI
+      // picks up the updated assets.
+      final hasIncomplete = clips.any(
+        (c) => c.thumbnailPath == null || c.ghostFramePath == null,
+      );
+      if (hasIncomplete) {
+        unawaited(_recoverAndReload(clips));
+      }
     } catch (e, stackTrace) {
       Log.error(
         '📚 Failed to load clips: $e',
@@ -83,6 +112,10 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     Emitter<ClipsLibraryState> emit,
   ) {
     final clip = event.clip;
+
+    // Disabled clips (already in the editor) cannot be toggled.
+    if (state.disabledClipIds.contains(clip.id)) return;
+
     final selectedIds = Set<String>.from(state.selectedClipIds);
     var selectedDuration = state.selectedDuration;
 
@@ -273,5 +306,23 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         ),
       ),
     );
+  }
+
+  /// Runs asset recovery in the background and dispatches a fresh load
+  /// event when done so the UI picks up the updated thumbnails/ghost frames.
+  Future<void> _recoverAndReload(List<DivineVideoClip> clips) async {
+    try {
+      final recovered = await _clipLibraryService.recoverMissingAssets(clips);
+      if (!identical(recovered, clips) && !isClosed) {
+        add(ClipsLibraryLoadRequested(preSelectedIds: state.selectedClipIds));
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        '📚 Background asset recovery failed: $e',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
+    }
   }
 }

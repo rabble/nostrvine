@@ -4,11 +4,13 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:models/models.dart'
     show AspectRatio, AudioEvent, InspiredByInfo, NativeProofData;
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/path_resolver.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -27,7 +29,7 @@ class DivineVideoDraft {
     required this.publishStatus,
     required this.publishAttempts,
     this.publishError,
-    this.allowAudioReuse = true,
+    this.allowAudioReuse = false,
     this.expireTime,
     this.proofManifestJson,
     this.editorStateHistory = const {},
@@ -48,7 +50,7 @@ class DivineVideoDraft {
     required String description,
     required Set<String> hashtags,
     required String selectedApproach,
-    bool allowAudioReuse = true,
+    bool allowAudioReuse = false,
     Duration? expireTime,
     String? id,
     String? proofManifestJson,
@@ -396,4 +398,30 @@ class DivineVideoDraft {
   bool get hasHashtags => hashtags.isNotEmpty;
   bool get canRetry => publishStatus == PublishStatus.failed;
   bool get isPublishing => publishStatus == PublishStatus.publishing;
+
+  /// Whether the draft has been edited beyond its initial recording.
+  ///
+  /// Checks metadata and editor state but ignores clips.
+  /// Note: [allowAudioReuse] is intentionally excluded — it is a publish-time
+  /// permission toggle (default `false`), not a content edit, so flipping it
+  /// alone should not mark the draft as edited or trigger autosave.
+  bool get hasBeenEdited =>
+      clips.isNotEmpty &&
+      (hasTitle ||
+          hasDescription ||
+          hasHashtags ||
+          (editorStateHistory.isNotEmpty &&
+              !mapEquals(
+                editorStateHistory,
+                CompleteParameters.fromMap({}).toMap(),
+              )) ||
+          finalRenderedClip != null ||
+          selectedSound != null ||
+          contentWarning != null ||
+          collaboratorPubkeys.isNotEmpty ||
+          inspiredByVideo != null ||
+          inspiredByNpub != null ||
+          originalAudioVolume != 1.0 ||
+          customAudioVolume != 1.0 ||
+          expireTime != null);
 }

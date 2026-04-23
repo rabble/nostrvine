@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 
@@ -37,8 +38,7 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
                   children: [
                     DivineIconButton(
                       icon: .arrowArcLeft,
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      semanticLabel: 'Undo',
+                      semanticLabel: context.l10n.videoEditorUndoSemanticLabel,
                       size: .small,
                       type: .ghostSecondary,
                       onPressed: state.canUndo
@@ -47,8 +47,7 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
                     ),
                     DivineIconButton(
                       icon: .arrowArcRight,
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      semanticLabel: 'Redo',
+                      semanticLabel: context.l10n.videoEditorRedoSemanticLabel,
                       size: .small,
                       type: .ghostSecondary,
                       onPressed: state.canRedo

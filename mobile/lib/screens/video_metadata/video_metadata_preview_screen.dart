@@ -8,14 +8,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/extensions/aspect_ratio_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_preview_thumbnail.dart';
+import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart';
+import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
 
 /// Full-screen preview of the recorded video with metadata overlay.
 ///
@@ -125,7 +126,10 @@ class _VideoMetadataPreviewScreenState
             ),
             // Post button at bottom
             if (!widget.previewOnly)
-              const SafeArea(top: false, child: VideoMetadataBottomBar()),
+              const SafeArea(
+                top: false,
+                child: VideoMetadataCaptureBottomBar(),
+              ),
           ],
         ),
       ),
@@ -151,62 +155,33 @@ class _VideoPreviewContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final aspectRatio = clip.targetAspectRatio.value;
+
     // Hero animation from metadata screen
     return Hero(
       tag: VideoEditorConstants.heroMetaPreviewId,
       // Use linear flight path instead of curved arc
       createRectTween: (begin, end) => RectTween(begin: begin, end: end),
-      child: Stack(
-        fit: .expand,
-        children: [
-          // Video playback layer
-          _VideoPlayerWidget(
-            clip: clip,
-            controller: controller,
-          ),
-          // Metadata overlay layer
-          if (!previewOnly) _PreviewOverlay(isPreviewReady: isPreviewReady),
-        ],
-      ),
-    );
-  }
-}
-
-/// Video player widget with thumbnail fallback and smooth transitions.
-class _VideoPlayerWidget extends StatelessWidget {
-  /// Creates a video player widget.
-  const _VideoPlayerWidget({
-    required this.clip,
-    required this.controller,
-  });
-
-  final DivineVideoClip clip;
-  final DivineVideoPlayerController? controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // For vertical videos (9:16), expand to fill the available space.
-          // For other ratios (e.g., square), maintain their intrinsic aspect.
-          final aspectRatio = clip.targetAspectRatio.useFullScreen
-              ? constraints.biggest.aspectRatio
-              : clip.targetAspectRatio.value;
-
-          return AspectRatio(
-            aspectRatio: aspectRatio,
-            child: ClipRRect(
-              borderRadius: .circular(16),
-              child: DivineVideoPlayer(
-                controller: controller,
-                placeholder: VideoMetadataPreviewThumbnail(
-                  clip: clip,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: aspectRatio,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Video playback layer
+                DivineVideoPlayer(
+                  controller: controller,
+                  placeholder: VideoMetadataCapturePreviewThumbnail(clip: clip),
                 ),
-              ),
+                // Metadata overlay layer
+                if (!previewOnly)
+                  _PreviewOverlay(isPreviewReady: isPreviewReady),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -240,27 +215,36 @@ class _PreviewOverlay extends ConsumerWidget {
       child: IgnorePointer(
         child: Opacity(
           opacity: 0.5,
-          child: ValueListenableBuilder(
-            valueListenable: isPreviewReady,
-            builder: (_, isActive, _) {
-              // Show overlay actions in preview mode
-              return VideoOverlayActions(
-                video: VideoEvent(
-                  id: 'id',
-                  pubkey: publicKey,
-                  timestamp: DateTime.now(),
-                  createdAt: DateTime.now().millisecondsSinceEpoch,
-                  content: metadata.title,
-                  hashtags: metadata.tags.toList(),
-                  originalLikes: 1,
-                  originalComments: 1,
-                  originalReposts: 1,
-                ),
-                isVisible: true,
-                isActive: isActive,
-                isPreviewMode: true,
-              );
-            },
+          child: Material(
+            type: .transparency,
+            child: ValueListenableBuilder(
+              valueListenable: isPreviewReady,
+              builder: (_, isActive, _) {
+                // Show overlay actions in preview mode
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const FeedModeSwitch(isPreviewMode: true),
+                    VideoOverlayActions(
+                      video: VideoEvent(
+                        id: 'id',
+                        pubkey: publicKey,
+                        timestamp: DateTime.now(),
+                        createdAt: DateTime.now().millisecondsSinceEpoch,
+                        content: metadata.title,
+                        hashtags: metadata.tags.toList(),
+                        originalLikes: 1,
+                        originalComments: 1,
+                        originalReposts: 1,
+                      ),
+                      isVisible: true,
+                      isActive: isActive,
+                      isPreviewMode: true,
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -285,8 +269,7 @@ class _CloseButton extends StatelessWidget {
             icon: .x,
             type: .ghostSecondary,
             size: .small,
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            semanticLabel: 'Close video preview',
+            semanticLabel: context.l10n.videoMetadataClosePreviewSemanticLabel,
             onPressed: () => context.pop(),
           ),
         ),

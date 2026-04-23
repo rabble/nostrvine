@@ -1,5 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:models/models.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Deep equality extension for [CompleteParameters].
 ///
@@ -7,6 +11,48 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 /// so two instances with identical bytes are considered unequal.
 /// This extension compares all fields with proper list/byte equality.
 extension CompleteParametersEquality on CompleteParameters {
+  List<AudioEvent> get audioTracksFromMeta {
+    try {
+      final raw = meta[VideoEditorConstants.audioStateHistoryKey];
+      if (raw is! List) return [];
+      return raw.cast<Map<String, dynamic>>().map(AudioEvent.fromJson).toList();
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to parse audioTracks from meta',
+        name: 'CompleteParametersEquality',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
+  /// Restores [DivineVideoClip] objects from the completion metadata.
+  ///
+  /// [documentsPath] is required to resolve relative file paths stored in
+  /// the serialized JSON back to absolute paths.
+  /// The list order represents the clip playback order.
+  List<DivineVideoClip> clipSnapshotsFromMeta(String documentsPath) {
+    try {
+      final raw = meta[VideoEditorConstants.clipsStateHistoryKey];
+      if (raw is! List) return [];
+      return raw
+          .cast<Map<String, dynamic>>()
+          .map((json) => DivineVideoClip.fromJson(json, documentsPath))
+          .toList();
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to parse clipSnapshots from meta',
+        name: 'CompleteParametersEquality',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
   /// Returns `true` when all fields match [other] by value,
   /// including byte-level comparison of [image].
   ///
@@ -30,7 +76,7 @@ extension CompleteParametersEquality on CompleteParameters {
       if (flipX != other.flipX) 'flipX',
       if (flipY != other.flipY) 'flipY',
       if (isTransformed != other.isTransformed) 'isTransformed',
-      if (customAudioTrack != other.customAudioTrack) 'customAudioTrack',
+      if (!listEquals(audioTracks, other.audioTracks)) 'audioTracks',
       if (!listEquals(layers, other.layers)) 'layers',
       if (!listEquals(videoClips, other.videoClips)) 'videoClips',
       if (!listEquals(matrixFilterList, other.matrixFilterList))

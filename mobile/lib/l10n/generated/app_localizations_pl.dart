@@ -427,6 +427,16 @@ class AppLocalizationsPl extends AppLocalizations {
       'Błąd wczytywania filmów ze współprac';
 
   @override
+  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+
+  @override
+  String get profileSavedOwnEmpty =>
+      'Bookmark videos from the share sheet and they\'ll show up here.';
+
+  @override
+  String get profileErrorLoadingSaved => 'Error loading saved videos';
+
+  @override
   String get profileNoCommentsOwnTitle => 'Brak komentarzy';
 
   @override
@@ -562,6 +572,30 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get profileSignInButton => 'Zaloguj się';
+
+  @override
+  String get profileMaybeLaterLabel => 'Maybe Later';
+
+  @override
+  String get profileSecurePrimaryButton => 'Add Email & Password';
+
+  @override
+  String get profileCompletePrimaryButton => 'Update Your Profile';
+
+  @override
+  String get profileLoopsLabel => 'Loops';
+
+  @override
+  String get profileLikesLabel => 'Likes';
+
+  @override
+  String get profileMyLibraryLabel => 'My Library';
+
+  @override
+  String get profileMessageLabel => 'Message';
+
+  @override
+  String get profileUserFallback => 'user';
 
   @override
   String get profileDismissTooltip => 'Odrzuć';
@@ -833,19 +867,18 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoGridDeleteVideo => 'Usuń film';
 
   @override
-  String get videoGridDeleteVideoSubtitle =>
-      'Usuń ten film z Divine. Inne klienty Nostr mogą go nadal pokazywać.';
+  String get videoGridDeleteVideoSubtitle => 'Trwale usuń tę treść';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Usuń film';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      'Ten film zostanie trwale usunięty z Divine. Może nadal być widoczny w innych klientach Nostr korzystających z innych przekaźników.';
+      'Na pewno chcesz usunąć ten film?';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'To wyślе żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.';
+      'To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
 
   @override
   String get videoGridDeleteCancel => 'Anuluj';
@@ -1310,15 +1343,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String metadataLoopsLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Pętli',
-      many: 'Pętli',
-      few: 'Pętle',
-      one: 'Pętla',
-    );
-    return '$_temp0';
+    return 'Pętle';
   }
 
   @override
@@ -3055,8 +3080,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeleteVideo => 'Usuń film';
 
   @override
-  String get shareMenuDeleteVideoSubtitle =>
-      'Usuń ten film z Divine. Inne klienty Nostr mogą go nadal pokazywać.';
+  String get shareMenuDeleteVideoSubtitle => 'Trwale usuń tę treść';
 
   @override
   String get shareMenuVideoInTheseLists => 'Film jest na tych listach:';
@@ -3078,8 +3102,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuClose => 'Zamknij';
 
   @override
-  String get shareMenuDeleteConfirmation =>
-      'Ten film zostanie trwale usunięty z Divine. Może nadal być widoczny w innych klientach Nostr korzystających z innych przekaźników.';
+  String get shareMenuDeleteConfirmation => 'Na pewno chcesz usunąć ten film?';
 
   @override
   String get shareMenuCancel => 'Anuluj';
@@ -3091,7 +3114,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeletingContent => 'Usuwanie treści...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'Film usunięty';
+  String get shareMenuDeleteRequestSent =>
+      'Żądanie usunięcia wysłane pomyślnie';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -3181,7 +3205,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'To wyślе żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Film usunięty';
+  String get shareMenuVideoDeletionRequested => 'Zażądano usunięcia filmu';
 
   @override
   String get shareMenuContentLabels => 'Etykiety treści';
@@ -3573,6 +3597,46 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get userSearchFailed => 'Wyszukiwanie nieudane';
+
+  @override
+  String get userPickerSearchByName => 'Szukaj po nazwie';
+
+  @override
+  String get userPickerFilterByNameHint => 'Filtruj po nazwie...';
+
+  @override
+  String get userPickerSearchByNameHint => 'Szukaj po nazwie...';
+
+  @override
+  String userPickerAlreadyAddedSemantics(String name) {
+    return '$name już dodano';
+  }
+
+  @override
+  String userPickerSelectSemantics(String name) {
+    return 'Wybierz $name';
+  }
+
+  @override
+  String get userPickerEmptyFollowListTitle => 'Twoja ekipa czeka';
+
+  @override
+  String get userPickerEmptyFollowListBody =>
+      'Obserwuj osoby, z którymi nadajesz na tych samych falach. Gdy obserwujecie się wzajemnie, możecie współtworzyć.';
+
+  @override
+  String get userPickerGoBack => 'Wróć';
+
+  @override
+  String get userPickerTypeNameToSearch => 'Wpisz nazwę, aby wyszukać';
+
+  @override
+  String get userPickerUnavailable =>
+      'Wyszukiwanie użytkowników jest niedostępne. Spróbuj ponownie później.';
+
+  @override
+  String get userPickerSearchFailedTryAgain =>
+      'Wyszukiwanie nie powiodło się. Spróbuj ponownie.';
 
   @override
   String get forgotPasswordTitle => 'Zresetuj hasło';
@@ -4572,6 +4636,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get commonRetry => 'Ponów';
 
   @override
+  String get commonNext => 'Dalej';
+
+  @override
   String get commonDelete => 'Usuń';
 
   @override
@@ -4584,10 +4651,25 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoMetadataExpiration => 'Wygaśnięcie';
 
   @override
-  String get videoMetadataContentWarnings => 'Ostrzeżenia o treści';
+  String get videoMetadataExpirationNotExpire => 'Nie wygasa';
 
   @override
-  String get videoEditorLayers => 'Warstwy';
+  String get videoMetadataExpirationOneDay => '1 dzień';
+
+  @override
+  String get videoMetadataExpirationOneWeek => '1 tydzień';
+
+  @override
+  String get videoMetadataExpirationOneMonth => '1 miesiąc';
+
+  @override
+  String get videoMetadataExpirationOneYear => '1 rok';
+
+  @override
+  String get videoMetadataExpirationOneDecade => '1 dekada';
+
+  @override
+  String get videoMetadataContentWarnings => 'Ostrzeżenia o treści';
 
   @override
   String get videoEditorStickers => 'Naklejki';
@@ -4810,6 +4892,12 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get searchDiscoverSomethingInteresting => 'Odkryj coś ciekawego';
+
+  @override
+  String get searchListsSectionHeader => 'Listy';
+
+  @override
+  String get searchListsLoadingLabel => 'Ładowanie wyników list';
 
   @override
   String get cameraAgeRestriction =>
@@ -5042,13 +5130,653 @@ class AppLocalizationsPl extends AppLocalizations {
   String get cameraPermissionGoToSettings => 'Przejdź do ustawień';
 
   @override
-  String get metadataCaptionsLabel => 'Captions';
+  String get videoRecorderWhySixSecondsTitle => 'Dlaczego sześć sekund?';
+
+  @override
+  String get videoRecorderWhySixSecondsSubtitle =>
+      'Krótkie klipy dają przestrzeń na spontaniczność. Format 6 sekund pomaga uchwycić autentyczne chwile w momencie, gdy się dzieją.';
+
+  @override
+  String get videoRecorderWhySixSecondsButton => 'Rozumiem!';
+
+  @override
+  String get videoRecorderAutosaveFoundTitle =>
+      'Znaleźliśmy niedokończoną pracę';
+
+  @override
+  String get videoRecorderAutosaveFoundSubtitle =>
+      'Czy chcesz kontynuować od miejsca, w którym skończyłeś?';
+
+  @override
+  String get videoRecorderAutosaveContinueButton => 'Tak, kontynuuj';
+
+  @override
+  String get videoRecorderAutosaveDiscardButton => 'Nie, rozpocznij nowy film';
+
+  @override
+  String get videoRecorderAutosaveRestoreFailure =>
+      'Nie udało się przywrócić wersji roboczej';
+
+  @override
+  String get videoRecorderStopRecordingTooltip => 'Zatrzymaj nagrywanie';
+
+  @override
+  String get videoRecorderStartRecordingTooltip => 'Rozpocznij nagrywanie';
+
+  @override
+  String get videoRecorderRecordingTapToStopLabel =>
+      'Nagrywanie. Dotknij dowolnego miejsca, aby zatrzymać';
+
+  @override
+  String get videoRecorderTapToStartLabel =>
+      'Dotknij dowolnego miejsca, aby rozpocząć nagrywanie';
+
+  @override
+  String get videoRecorderDeleteLastClipLabel => 'Usuń ostatni klip';
+
+  @override
+  String get videoRecorderSwitchCameraLabel => 'Przełącz aparat';
+
+  @override
+  String get videoRecorderToggleGridLabel => 'Przełącz siatkę';
+
+  @override
+  String get videoRecorderToggleGhostFrameLabel =>
+      'Przełącz klatkę odniesienia';
+
+  @override
+  String get videoRecorderGhostFrameEnabled => 'Klatka odniesienia włączona';
+
+  @override
+  String get videoRecorderGhostFrameDisabled => 'Klatka odniesienia wyłączona';
+
+  @override
+  String get videoRecorderClipDeletedMessage => 'Klip usunięty';
+
+  @override
+  String get videoRecorderCloseLabel => 'Zamknij rejestrator wideo';
+
+  @override
+  String get videoRecorderContinueToEditorLabel => 'Przejdź do edytora wideo';
+
+  @override
+  String get videoRecorderCaptureCloseLabel => 'Zamknij';
+
+  @override
+  String get videoRecorderCaptureNextLabel => 'Dalej';
+
+  @override
+  String get videoRecorderToggleFlashLabel => 'Przełącz lampę błyskową';
+
+  @override
+  String get videoRecorderCycleTimerLabel => 'Zmień timer';
+
+  @override
+  String get videoRecorderToggleAspectRatioLabel => 'Przełącz proporcje';
+
+  @override
+  String get videoRecorderLibraryEmptyLabel => 'Biblioteka klipów, brak klipów';
+
+  @override
+  String videoRecorderLibraryOpenLabel(int clipCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clipCount,
+      locale: localeName,
+      other: 'Otwórz bibliotekę klipów, $clipCount klipów',
+      one: 'Otwórz bibliotekę klipów, 1 klip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorClipsLabel => 'Klipy';
+
+  @override
+  String get videoEditorTextLabel => 'Tekst';
+
+  @override
+  String get videoEditorDrawLabel => 'Rysuj';
+
+  @override
+  String get videoEditorEffectsLabel => 'Efekty';
+
+  @override
+  String get videoEditorAudioLabel => 'Audio';
+
+  @override
+  String get videoEditorVolumeLabel => 'Głośność';
+
+  @override
+  String get videoEditorAddTitle => 'Dodaj';
+
+  @override
+  String get videoEditorOpenClipsSemanticLabel => 'Otwórz edytor klipów';
+
+  @override
+  String get videoEditorOpenAudioSemanticLabel => 'Otwórz edytor audio';
+
+  @override
+  String get videoEditorOpenTextSemanticLabel => 'Otwórz edytor tekstu';
+
+  @override
+  String get videoEditorOpenDrawSemanticLabel => 'Otwórz edytor rysowania';
+
+  @override
+  String get videoEditorOpenEffectsSemanticLabel => 'Otwórz edytor efektów';
+
+  @override
+  String get videoEditorSaveDraftTitle => 'Zapisać wersję roboczą?';
+
+  @override
+  String get videoEditorSaveDraftSubtitle =>
+      'Zachowaj edycje na później albo odrzuć je i opuść edytor.';
+
+  @override
+  String get videoEditorSaveDraftButton => 'Zapisz wersję roboczą';
+
+  @override
+  String get videoEditorDiscardChangesButton => 'Odrzuć zmiany';
+
+  @override
+  String get videoEditorKeepEditingButton => 'Kontynuuj edycję';
+
+  @override
+  String get videoEditorDeleteLayerDropZone =>
+      'Strefa upuszczania do usuwania warstwy';
+
+  @override
+  String get videoEditorReleaseToDeleteLayer => 'Puść, aby usunąć warstwę';
+
+  @override
+  String get videoEditorDoneLabel => 'Gotowe';
+
+  @override
+  String get videoEditorPlayPauseSemanticLabel => 'Odtwórz lub wstrzymaj wideo';
+
+  @override
+  String get videoEditorCropSemanticLabel => 'Przytnij';
+
+  @override
+  String get videoEditorCannotSplitProcessing =>
+      'Nie można podzielić klipu podczas przetwarzania. Poczekaj.';
+
+  @override
+  String videoEditorSplitPositionInvalid(int minDurationMs) {
+    return 'Nieprawidłowa pozycja podziału. Oba klipy muszą mieć co najmniej $minDurationMs ms.';
+  }
+
+  @override
+  String get videoEditorAddClipFromLibrary => 'Dodaj klip z biblioteki';
+
+  @override
+  String get videoEditorSaveSelectedClip => 'Zapisz wybrany klip';
+
+  @override
+  String get videoEditorSplitClip => 'Podziel klip';
+
+  @override
+  String get videoEditorSaveClip => 'Zapisz klip';
+
+  @override
+  String get videoEditorDeleteClip => 'Usuń klip';
+
+  @override
+  String get videoEditorClipSavedSuccess => 'Klip zapisany w bibliotece';
+
+  @override
+  String get videoEditorClipSaveFailed => 'Nie udało się zapisać klipu';
+
+  @override
+  String get videoEditorClipDeleted => 'Klip usunięty';
+
+  @override
+  String get videoEditorColorPickerSemanticLabel => 'Wybór koloru';
+
+  @override
+  String get videoEditorUndoSemanticLabel => 'Cofnij';
+
+  @override
+  String get videoEditorRedoSemanticLabel => 'Ponów';
+
+  @override
+  String get videoEditorTextColorSemanticLabel => 'Kolor tekstu';
+
+  @override
+  String get videoEditorTextAlignmentSemanticLabel => 'Wyrównanie tekstu';
+
+  @override
+  String get videoEditorTextBackgroundSemanticLabel => 'Tło tekstu';
+
+  @override
+  String get videoEditorFontSemanticLabel => 'Czcionka';
+
+  @override
+  String get videoEditorNoStickersFound => 'Nie znaleziono naklejek';
+
+  @override
+  String get videoEditorNoStickersAvailable => 'Brak dostępnych naklejek';
+
+  @override
+  String get videoEditorFailedLoadStickers => 'Nie udało się wczytać naklejek';
+
+  @override
+  String get videoEditorAdjustVolumeTitle => 'Dostosuj głośność';
+
+  @override
+  String get videoEditorRecordedAudioLabel => 'Nagrane audio';
+
+  @override
+  String get videoEditorCustomAudioLabel => 'Własne audio';
+
+  @override
+  String get videoEditorPlaySemanticLabel => 'Odtwórz';
+
+  @override
+  String get videoEditorPauseSemanticLabel => 'Wstrzymaj';
+
+  @override
+  String get videoEditorMuteAudioSemanticLabel => 'Wycisz audio';
+
+  @override
+  String get videoEditorUnmuteAudioSemanticLabel => 'Włącz dźwięk';
+
+  @override
+  String get videoEditorDeleteLabel => 'Usuń';
+
+  @override
+  String get videoEditorDeleteSelectedItemSemanticLabel =>
+      'Usuń wybrany element';
+
+  @override
+  String get videoEditorEditLabel => 'Edytuj';
+
+  @override
+  String get videoEditorEditSelectedItemSemanticLabel =>
+      'Edytuj wybrany element';
+
+  @override
+  String get videoEditorDuplicateLabel => 'Duplikuj';
+
+  @override
+  String get videoEditorDuplicateSelectedItemSemanticLabel =>
+      'Duplikuj wybrany element';
+
+  @override
+  String get videoEditorSplitLabel => 'Podziel';
+
+  @override
+  String get videoEditorSplitSelectedClipSemanticLabel =>
+      'Podziel wybrany klip';
+
+  @override
+  String get videoEditorFinishTimelineEditingSemanticLabel =>
+      'Zakończ edycję osi czasu';
+
+  @override
+  String get videoEditorSortNewest => 'Najnowsze';
+
+  @override
+  String get videoEditorSortLongest => 'Najdłuższe';
+
+  @override
+  String get videoEditorSortShortest => 'Najkrótsze';
+
+  @override
+  String videoEditorSortBySemanticLabel(String option) {
+    return 'Sortuj według $option. Dotknij, aby zmienić kolejność sortowania';
+  }
+
+  @override
+  String get videoEditorAudioPlayPreviewSemanticLabel => 'Odtwórz podgląd';
+
+  @override
+  String get videoEditorAudioPausePreviewSemanticLabel => 'Wstrzymaj podgląd';
+
+  @override
+  String get videoEditorAudioUntitledSound => 'Nienazwany dźwięk';
+
+  @override
+  String get videoEditorAudioSelectSoundSemanticLabel => 'Wybierz dźwięk';
+
+  @override
+  String get videoEditorAudioUntitled => 'Bez tytułu';
+
+  @override
+  String get videoEditorAudioAddAudio => 'Dodaj audio';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableTitle =>
+      'Brak dostępnych dźwięków';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableSubtitle =>
+      'Dźwięki pojawią się tutaj, gdy twórcy udostępnią audio';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundTitle => 'Nie znaleziono dźwięków';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundSubtitle =>
+      'Spróbuj innego wyszukiwania';
+
+  @override
+  String get videoEditorAudioFailedToLoadTitle =>
+      'Nie udało się wczytać dźwięków';
+
+  @override
+  String get videoEditorDrawToolArrowSemanticLabel => 'Narzędzie strzałki';
+
+  @override
+  String get videoEditorDrawToolEraserSemanticLabel => 'Narzędzie gumki';
+
+  @override
+  String get videoEditorDrawToolMarkerSemanticLabel => 'Narzędzie markera';
+
+  @override
+  String get videoEditorDrawToolPencilSemanticLabel => 'Narzędzie ołówka';
+
+  @override
+  String videoEditorLayerReorderLabel(int index) {
+    return 'Zmień kolejność warstwy $index';
+  }
+
+  @override
+  String get videoEditorLayerReorderHint =>
+      'Przytrzymaj, aby zmienić kolejność';
+
+  @override
+  String get videoEditorShowTimelineSemanticLabel => 'Pokaż oś czasu';
+
+  @override
+  String get videoEditorHideTimelineSemanticLabel => 'Ukryj oś czasu';
+
+  @override
+  String get videoEditorFeedPreviewContent =>
+      'Unikaj umieszczania treści za tymi obszarami.';
+
+  @override
+  String get videoEditorStickerSearchHint => 'Szukaj naklejek...';
+
+  @override
+  String get videoEditorSelectFontSemanticLabel => 'Wybierz czcionkę';
+
+  @override
+  String get videoEditorFontUnknown => 'Nieznana';
+
+  @override
+  String get videoEditorSplitPlayheadOutsideClip =>
+      'Aby podzielić, głowica odtwarzania musi znajdować się w wybranym klipie.';
+
+  @override
+  String get videoEditorTimelineTrimStartSemanticLabel => 'Przytnij początek';
+
+  @override
+  String get videoEditorTimelineTrimEndSemanticLabel => 'Przytnij koniec';
+
+  @override
+  String get videoEditorTimelineTrimClipSemanticLabel => 'Przytnij klip';
+
+  @override
+  String get videoEditorTimelineTrimClipHint =>
+      'Przeciągnij uchwyty, aby dostosować długość klipu';
+
+  @override
+  String videoEditorTimelineDraggingClipSemanticLabel(int index) {
+    return 'Przeciąganie klipu $index';
+  }
+
+  @override
+  String videoEditorTimelineClipSemanticLabel(
+    int index,
+    int total,
+    String duration,
+  ) {
+    return 'Klip $index z $total, $duration sekund';
+  }
+
+  @override
+  String get videoEditorTimelineClipReorderHint =>
+      'Przytrzymaj, aby zmienić kolejność';
+
+  @override
+  String get videoEditorTimelineClipMoveLeft => 'Przesuń w lewo';
+
+  @override
+  String get videoEditorTimelineClipMoveRight => 'Przesuń w prawo';
+
+  @override
+  String get videoEditorTimelineLongPressToDragHint =>
+      'Przytrzymaj, aby przeciągnąć';
+
+  @override
+  String get videoEditorVideoTimelineSemanticLabel => 'Oś czasu wideo';
+
+  @override
+  String videoEditorTimelinePositionFormat(int minutes, String seconds) {
+    return '$minutes min $seconds s';
+  }
+
+  @override
+  String videoEditorColorSelectedSemanticLabel(String colorName) {
+    return '$colorName, wybrany';
+  }
+
+  @override
+  String get videoEditorCloseColorPickerSemanticLabel => 'Zamknij wybór koloru';
+
+  @override
+  String get videoEditorPickColorTitle => 'Wybierz kolor';
+
+  @override
+  String get videoEditorConfirmColorSemanticLabel => 'Potwierdź kolor';
+
+  @override
+  String get videoEditorSaturationBrightnessSemanticLabel =>
+      'Nasycenie i jasność';
+
+  @override
+  String videoEditorSaturationBrightnessValue(int saturation, int brightness) {
+    return 'Nasycenie $saturation%, jasność $brightness%';
+  }
+
+  @override
+  String get videoEditorHueSemanticLabel => 'Odcień';
+
+  @override
+  String get videoEditorAddElementSemanticLabel => 'Dodaj element';
+
+  @override
+  String get videoEditorCloseSemanticLabel => 'Zamknij';
+
+  @override
+  String get videoEditorDoneSemanticLabel => 'Gotowe';
+
+  @override
+  String get videoEditorLevelSemanticLabel => 'Poziom';
+
+  @override
+  String get videoMetadataBackSemanticLabel => 'Wstecz';
+
+  @override
+  String get videoMetadataDismissHelpDialogSemanticLabel =>
+      'Zamknij okno pomocy';
+
+  @override
+  String get videoMetadataGotItButton => 'Rozumiem!';
+
+  @override
+  String get videoMetadataLimitReachedWarning =>
+      'Osiągnięto limit 64 KB. Usuń część treści, aby kontynuować.';
+
+  @override
+  String get videoMetadataExpirationLabel => 'Wygaśnięcie';
+
+  @override
+  String get videoMetadataSelectExpirationSemanticLabel =>
+      'Wybierz czas wygaśnięcia';
+
+  @override
+  String get videoMetadataTitleLabel => 'Tytuł';
+
+  @override
+  String get videoMetadataDescriptionLabel => 'Opis';
+
+  @override
+  String get videoMetadataTagsLabel => 'Tagi';
+
+  @override
+  String get videoMetadataDeleteTagSemanticLabel => 'Usuń';
+
+  @override
+  String videoMetadataDeleteTagHint(String tag) {
+    return 'Usuń tag $tag';
+  }
+
+  @override
+  String get videoMetadataContentWarningLabel => 'Ostrzeżenie o treści';
+
+  @override
+  String get videoMetadataSelectContentWarningsSemanticLabel =>
+      'Wybierz ostrzeżenia o treści';
+
+  @override
+  String get videoMetadataContentWarningSelectAllThatApply =>
+      'Wybierz wszystko, co dotyczy Twojej treści';
+
+  @override
+  String get videoMetadataContentWarningDoneButton => 'Gotowe';
+
+  @override
+  String get videoMetadataCollaboratorsLabel => 'Współtwórcy';
+
+  @override
+  String get videoMetadataAddCollaboratorSemanticLabel => 'Dodaj współtwórcę';
+
+  @override
+  String get videoMetadataCollaboratorsHelpTooltip =>
+      'Jak działają współtwórcy';
+
+  @override
+  String videoMetadataCollaboratorsCount(int count, int max) {
+    return '$count/$max współtwórców';
+  }
+
+  @override
+  String get videoMetadataRemoveCollaboratorSemanticLabel => 'Usuń współtwórcę';
+
+  @override
+  String get videoMetadataCollaboratorsHelpMessage =>
+      'Współtwórcy są oznaczani jako współautorzy tego posta. Możesz dodać tylko osoby, które obserwujecie się wzajemnie, a ich dane pojawią się w metadanych po publikacji.';
+
+  @override
+  String get videoMetadataMutualFollowersSearchText => 'Wzajemni obserwujący';
+
+  @override
+  String videoMetadataMustMutuallyFollowSnackbar(String name) {
+    return 'Aby dodać $name jako współtwórcę, musicie obserwować się wzajemnie.';
+  }
+
+  @override
+  String get videoMetadataInspiredByLabel => 'Zainspirowane przez';
+
+  @override
+  String get videoMetadataSetInspiredBySemanticLabel =>
+      'Ustaw zainspirowane przez';
+
+  @override
+  String get videoMetadataInspiredByHelpTooltip =>
+      'Jak działają przypisania inspiracji';
+
+  @override
+  String get videoMetadataInspiredByNone => 'Brak';
+
+  @override
+  String get videoMetadataInspiredByHelpMessage =>
+      'Użyj tego, aby dodać przypisanie. Oznaczenie zainspirowane przez różni się od współtwórców: wskazuje wpływ, ale nie oznacza nikogo jako współautora.';
+
+  @override
+  String get videoMetadataCreatorCannotBeReferencedSnackbar =>
+      'Nie można odwołać się do tego twórcy.';
+
+  @override
+  String get videoMetadataRemoveInspiredBySemanticLabel =>
+      'Usuń zainspirowane przez';
+
+  @override
+  String get videoMetadataPostDetailsTitle => 'Szczegóły posta';
+
+  @override
+  String get videoMetadataSavedToLibrarySnackbar => 'Zapisano w bibliotece';
+
+  @override
+  String get videoMetadataFailedToSaveSnackbar => 'Nie udało się zapisać';
+
+  @override
+  String get videoMetadataGoToLibraryButton => 'Przejdź do biblioteki';
+
+  @override
+  String get videoMetadataSaveForLaterSemanticLabel =>
+      'Przycisk zapisz na później';
+
+  @override
+  String get videoMetadataRenderingVideoHint => 'Renderowanie wideo...';
+
+  @override
+  String get videoMetadataSavingVideoHint => 'Zapisywanie wideo...';
+
+  @override
+  String videoMetadataSaveToDraftsHint(String destination) {
+    return 'Zapisz wideo w wersjach roboczych i $destination';
+  }
+
+  @override
+  String get videoMetadataSaveForLaterButton => 'Zapisz na później';
+
+  @override
+  String get videoMetadataPostSemanticLabel => 'Przycisk opublikuj';
+
+  @override
+  String get videoMetadataPublishVideoHint => 'Opublikuj wideo w feedzie';
+
+  @override
+  String get videoMetadataFormNotReadyHint => 'Wypełnij formularz, aby włączyć';
+
+  @override
+  String get videoMetadataPostButton => 'Opublikuj';
+
+  @override
+  String get videoMetadataOpenPreviewSemanticLabel =>
+      'Otwórz ekran podglądu posta';
+
+  @override
+  String get videoMetadataShareTitle => 'Udostępnij';
+
+  @override
+  String get videoMetadataVideoDetailsSubtitle => 'Szczegóły wideo';
+
+  @override
+  String get videoMetadataClassicDoneButton => 'Gotowe';
+
+  @override
+  String get videoMetadataPlayPreviewSemanticLabel => 'Odtwórz podgląd';
+
+  @override
+  String get videoMetadataPausePreviewSemanticLabel => 'Wstrzymaj podgląd';
+
+  @override
+  String get videoMetadataClosePreviewSemanticLabel => 'Zamknij podgląd wideo';
+
+  @override
+  String get videoMetadataRemoveSemanticLabel => 'Usuń';
+
+  @override
+  String get metadataCaptionsLabel => 'Napisy';
 
   @override
   String get metadataCaptionsEnabledSemantics =>
-      'Captions enabled for all videos';
+      'Napisy włączone dla wszystkich filmów';
 
   @override
   String get metadataCaptionsDisabledSemantics =>
-      'Captions disabled for all videos';
+      'Napisy wyłączone dla wszystkich filmów';
 }

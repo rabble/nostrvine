@@ -19,6 +19,7 @@ class VideoEditorFilterBloc
     on<VideoEditorFilterSelected>(_onFilterSelected);
     on<VideoEditorFilterOpacityChanged>(_onOpacityChanged);
     on<VideoEditorFilterCancelled>(_onCancelled);
+    on<VideoEditorFilterConfirmed>(_onFilterConfirmed);
   }
 
   void _onEditorInitialized(
@@ -30,6 +31,7 @@ class VideoEditorFilterBloc
       state.copyWith(
         initialSelectedFilter: state.selectedFilter,
         initialOpacity: state.opacity,
+        initialAppliedFilters: state.appliedFilters,
       ),
     );
   }
@@ -58,10 +60,28 @@ class VideoEditorFilterBloc
     Emitter<VideoEditorFilterState> emit,
   ) {
     // Restore to initial values from when the editor was opened
+    final initial = state.initialSelectedFilter;
     emit(
       state.copyWith(
-        selectedFilter: state.initialSelectedFilter,
+        selectedFilter: initial,
+        clearSelectedFilter: initial == null,
         opacity: state.initialOpacity,
+        appliedFilters: state.initialAppliedFilters,
+      ),
+    );
+  }
+
+  void _onFilterConfirmed(
+    VideoEditorFilterConfirmed event,
+    Emitter<VideoEditorFilterState> emit,
+  ) {
+    final filter = state.selectedFilter;
+    if (filter == null || filter == PresetFilters.none) return;
+
+    emit(
+      state.copyWith(
+        appliedFilters: [...state.appliedFilters, filter],
+        clearSelectedFilter: true,
       ),
     );
   }

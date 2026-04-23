@@ -27,6 +27,72 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             name: NSNotification.Name("DivineCameraAutoStop"),
             object: nil
         )
+
+        // Pre-warm the AV media stack on a background queue at plugin
+        // registration (very early in app launch, before the user can reach
+        // the camera page).
+        //
+        // Why here and not in CameraController.setupCamera(): doing dlopen()
+        // on a background queue WHILE Main is wiring up the camera page
+        // causes dyld to post process-wide image-load notifications that
+        // block Main on its next lazy symbol bind. That was the source of
+        // the ~1s freeze on first camera open.
+        //
+        // Doing the pre-warm here, far away from camera open, gives dyld
+        // and mediaserverd time to settle. By the time the user reaches
+        // the camera, AudioToolbox + VideoToolbox are loaded and Main is
+        // not blocked.
+        preWarmFrameworks()
+    }
+
+    /// Loads AudioToolbox + VideoToolbox + the AVAudioSession machinery off
+    /// the main thread at plugin registration. Idempotent — safe to call
+    /// once per process.
+    private static func preWarmFrameworks() {
+        DispatchQueue.global(qos: .utility).async {
+            // 1. AudioToolbox + AVAudioSession + mediaserverd XPC roundtrip.
+            let audioSession = AVAudioSession.sharedInstance()
+            do {
+                try audioSession.setCategory(
+                    .playAndRecord,
+                    mode: .default,
+                    options: [.defaultToSpeaker, .allowBluetoothA2DP]
+                )
+                // Do NOT call setActive(true) — that would steal audio focus
+                // from anything currently playing. setCategory alone triggers
+                // the dlopen.
+                print("DivineCamera: AVAudioSession category configured")
+            } catch {
+                print("DivineCamera: AVAudioSession config failed: \(error.localizedDescription)")
+            }
+            _ = AVCaptureDevice.default(for: .audio)
+
+            // 2. VideoToolbox via a throwaway AVAssetWriter.
+            // startWriting() loads the H.264 encoder; cancelWriting()
+            // releases it immediately so we don't hold any encoder resources.
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("divine_av_prewarm.mp4")
+            try? FileManager.default.removeItem(at: tempURL)
+            do {
+                let writer = try AVAssetWriter(outputURL: tempURL, fileType: .mp4)
+                let videoSettings: [String: Any] = [
+                    AVVideoCodecKey: AVVideoCodecType.h264,
+                    AVVideoWidthKey: 1080,
+                    AVVideoHeightKey: 1920,
+                ]
+                let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
+                videoInput.expectsMediaDataInRealTime = true
+                if writer.canAdd(videoInput) {
+                    writer.add(videoInput)
+                }
+                writer.startWriting()
+                writer.cancelWriting()
+                try? FileManager.default.removeItem(at: tempURL)
+                print("DivineCamera: VideoToolbox pre-warmed via AVAssetWriter")
+            } catch {
+                print("DivineCamera: VideoToolbox pre-warm failed: \(error.localizedDescription)")
+            }
+        }
     }
     
     @objc private func handleAutoStop(_ notification: Notification) {

@@ -171,6 +171,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     required EditorVideo video,
     required double originalAspectRatio,
     required model.AspectRatio targetAspectRatio,
+    required bool limitClipDuration,
     Duration? duration,
     String? thumbnailPath,
     CameraLensMetadata? lensMetadata,
@@ -181,16 +182,16 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     final remainingDuration = this.remainingDuration;
 
     // Check if clip needs to be trimmed to fit within max duration
-    final isClipToLong = clipDuration > remainingDuration;
+    final isClipTooLong = limitClipDuration && clipDuration > remainingDuration;
 
     // Create a completer to track async trimming progress only when needed.
     // Proof generation runs independently and does not block the UI.
-    final processingCompleter = isClipToLong ? Completer<bool>() : null;
+    final processingCompleter = isClipTooLong ? Completer<bool>() : null;
 
     var clip = DivineVideoClip(
       id: 'clip_${DateTime.now().millisecondsSinceEpoch}_${_clipCounter++}',
       video: video,
-      duration: isClipToLong ? remainingDuration : clipDuration,
+      duration: isClipTooLong ? remainingDuration : clipDuration,
       recordedAt: .now(),
       thumbnailPath: thumbnailPath,
       targetAspectRatio: targetAspectRatio,
@@ -200,7 +201,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     );
 
     // Asynchronously trim the clip if it exceeds remaining duration
-    if (isClipToLong) {
+    if (isClipTooLong) {
       unawaited(
         VideoEditorRenderService.limitClipDuration(
           clip: clip,
@@ -633,12 +634,15 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
   /// Remove the most recent clip (undo last recording).
   ///
-  /// Safely removes only the last clip if any exist, otherwise logs debug
-  /// message.
-  Future<void> removeLastClip() async {
+  /// Delegates to [removeClipById] to update state and autosave, then
+  /// deletes the clip's associated files (video, thumbnail, ghost frame)
+  /// if they are not referenced by other drafts or library entries.
+  ///
+  /// No-ops when the clip list is empty.
+  Future<void> deleteLastRecordedClip() async {
     if (_clips.isEmpty) {
       Log.debug(
-        '⚠️ Cannot remove last clip - no clips available',
+        '⚠️ Cannot delete last clip - no clips available',
         name: 'ClipManagerNotifier',
         category: .video,
       );
@@ -646,10 +650,16 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     }
     final lastClip = _clips.last;
     Log.info(
-      '↩️  Removing last clip: ${lastClip.id}',
+      '↩️  Deleting last clip: ${lastClip.id}',
       name: 'ClipManagerNotifier',
       category: .video,
     );
+    // Delete from library first so consumers see clean state when
+    // the session-clip removal triggers rebuilds.
+    final clipLibraryService = ref.read(clipLibraryServiceProvider);
+    await clipLibraryService.deleteClip(lastClip.id);
+
+    // Remove from autosave and invalidate the final-rendered clip.
     await removeClipById(lastClip.id);
   }
 

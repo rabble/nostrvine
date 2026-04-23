@@ -1333,6 +1333,7 @@ class VideoOverlayActions extends ConsumerWidget {
     this.showListAttribution = false,
     this.isPreviewMode = false,
     this.hideFollowButtonIfFollowing = false,
+    this.showBottomGradient = true,
     this.topOffset = 8.0,
     this.overlayOpacity = 1.0,
     this.showAutoButton = false,
@@ -1362,6 +1363,8 @@ class VideoOverlayActions extends ConsumerWidget {
 
   /// When true, hides the follow button if already following the author.
   final bool hideFollowButtonIfFollowing;
+
+  final bool showBottomGradient;
 
   /// Opacity for the entire overlay, driven by scroll position.
   ///
@@ -1405,31 +1408,32 @@ class VideoOverlayActions extends ConsumerWidget {
         child: Stack(
           children: [
             // Bottom gradient overlay (sits below UI elements, only overlays video)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: IgnorePointer(
-                child: FractionallySizedBox(
-                  widthFactor: 1.0,
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height / 4,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            VineTheme.backgroundColor.withValues(alpha: 0.0),
-                            VineTheme.backgroundColor.withValues(alpha: 0.5),
-                          ],
+            if (showBottomGradient)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: IgnorePointer(
+                  child: FractionallySizedBox(
+                    widthFactor: 1.0,
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height / 4,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              VineTheme.backgroundColor.withValues(alpha: 0.0),
+                              VineTheme.backgroundColor.withValues(alpha: 0.5),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
             // Content warning badge below back button area
             if (video.hasContentWarning &&
                 !shouldShowContentWarningOverlay(

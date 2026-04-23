@@ -35,6 +35,9 @@ class AudioEvent {
     this.sourceVideoReference,
     this.sourceVideoRelay,
     this.startOffset = Duration.zero,
+    this.volume = 1.0,
+    this.startTime = Duration.zero,
+    this.endTime,
   });
 
   /// Parse an AudioEvent from a Nostr Event.
@@ -181,6 +184,13 @@ class AudioEvent {
               milliseconds: json['startOffsetMs'] as int,
             )
           : Duration.zero,
+      volume: (json['volume'] as num?)?.toDouble() ?? 1.0,
+      startTime: json['startTimeMs'] != null
+          ? Duration(milliseconds: json['startTimeMs'] as int)
+          : Duration.zero,
+      endTime: json['endTimeMs'] != null
+          ? Duration(milliseconds: json['endTimeMs'] as int)
+          : null,
     );
   }
 
@@ -249,6 +259,17 @@ class AudioEvent {
   /// [Duration.zero] (start from beginning). Only used
   /// locally, not published to Nostr.
   final Duration startOffset;
+
+  /// Volume of the audio track (0.0 silent, 1.0 full).
+  final double volume;
+
+  /// The time on the editor timeline where this audio event starts playing.
+  /// Default is [Duration.zero] (start of the timeline).
+  final Duration startTime;
+
+  /// The time on the editor timeline where this audio event stops playing.
+  /// If null, the audio plays until the end of its duration.
+  final Duration? endTime;
 
   /// Get the kind number from the source video reference.
   /// Returns null if no source video reference is set.
@@ -354,6 +375,9 @@ class AudioEvent {
     String? sourceVideoReference,
     String? sourceVideoRelay,
     Duration? startOffset,
+    double? volume,
+    Duration? startTime,
+    Duration? endTime,
   }) {
     return AudioEvent(
       id: id ?? this.id,
@@ -369,6 +393,9 @@ class AudioEvent {
       sourceVideoReference: sourceVideoReference ?? this.sourceVideoReference,
       sourceVideoRelay: sourceVideoRelay ?? this.sourceVideoRelay,
       startOffset: startOffset ?? this.startOffset,
+      volume: volume ?? this.volume,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
     );
   }
 
@@ -377,11 +404,13 @@ class AudioEvent {
     if (identical(this, other)) return true;
     return other is AudioEvent &&
         other.id == id &&
-        other.startOffset == startOffset;
+        other.startOffset == startOffset &&
+        other.startTime == startTime &&
+        other.endTime == endTime;
   }
 
   @override
-  int get hashCode => Object.hash(id, startOffset);
+  int get hashCode => Object.hash(id, startOffset, startTime, endTime);
 
   @override
   String toString() {
@@ -407,5 +436,8 @@ class AudioEvent {
     'sourceVideoReference': ?sourceVideoReference,
     'sourceVideoRelay': ?sourceVideoRelay,
     if (startOffset != .zero) 'startOffsetMs': startOffset.inMilliseconds,
+    if (volume != 1.0) 'volume': volume,
+    if (startTime != Duration.zero) 'startTimeMs': startTime.inMilliseconds,
+    if (endTime != null) 'endTimeMs': endTime!.inMilliseconds,
   };
 }

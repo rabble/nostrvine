@@ -11,19 +11,28 @@ typedef TextFont = TextStyle Function({double? fontSize, Color? color});
 /// Constants for the video editor feature.
 class VideoEditorConstants {
   /// Key used to identify autosaved drafts in storage.
-  static String autoSaveId = 'draft_autosave';
+  static const String autoSaveId = 'draft_autosave';
 
   /// Prefix key used to identify drafts being published in storage.
-  static String publishPrefixId = 'draft_publish';
+  static const String publishPrefixId = 'draft_publish';
+
+  /// Unique history key for clip items.
+  static const String clipsStateHistoryKey = 'clips';
+
+  /// Unique history key for audio items.
+  static const String audioStateHistoryKey = 'audio';
 
   /// Maximum number of tags allowed per video.
-  static int tagLimit = 1 << 30; // ~1 billion
+  static const int tagLimit = 1 << 30; // ~1 billion
 
   /// Whether to enforce the tag limit in the UI.
-  static bool enableTagLimit = false;
+  static const bool enableTagLimit = false;
 
   /// Maximum recording duration for videos.
   static const maxDuration = Duration(seconds: 6, milliseconds: 300);
+
+  /// Maximum number of undo steps to keep in memory.
+  static const maxUndoSteps = 30;
 
   /// Default time offset for extracting video thumbnails.
   static const defaultThumbnailExtractTime = Duration(milliseconds: 200);
@@ -89,7 +98,7 @@ class VideoEditorConstants {
   static const double drawItemWidth = 48.0;
 
   /// Border radius applied to the video editor canvas.
-  static const double canvasRadius = 32.0;
+  static const double canvasRadius = 8.0;
 
   /// Base font size in pixels for text overlays.
   static const double baseFontSize = 24.0;
@@ -113,6 +122,10 @@ class VideoEditorConstants {
 
   /// Height of the bottom action bar in the video editor.
   static const double bottomBarHeight = 90;
+
+  /// Delay before background isolates start processing to avoid
+  /// contention with the main isolate during editor initialisation.
+  static const isolatesInitialisationDelay = Duration(milliseconds: 500);
 
   /// Video quality for recording and editing
   static const DivineVideoQuality quality = DivineVideoQuality.fhd;

@@ -2322,8 +2322,8 @@ class _EditInspiredBySection extends ConsumerWidget {
     if (profile == null || !context.mounted) return;
 
     // Check if the user has muted us
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    if (blocklistService.hasMutedUs(profile.pubkey)) {
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+    if (blocklistRepository.hasMutedUs(profile.pubkey)) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
