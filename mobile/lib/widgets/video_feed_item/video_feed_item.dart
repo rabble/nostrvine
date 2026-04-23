@@ -1733,10 +1733,19 @@ class VideoOverlayActionColumn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Gate the edit button at the column level so that when it shouldn't
+    // render, it's not included as a child at all. A `SizedBox.shrink` child
+    // under `Column(spacing: 24)` would still pick up the inter-child gap
+    // and inject 24 px of dead space above whichever button ends up first.
+    final showEditButton =
+        !isFullscreen &&
+        !isPreviewMode &&
+        _shouldShowEditButton(ref, video);
+
     return Column(
       spacing: 24,
       children: [
-        if (!isFullscreen && !isPreviewMode) _VideoEditButton(video: video),
+        if (showEditButton) _VideoEditButton(video: video),
         if (showAutoButton && onAutoPressed != null)
           AutoActionButton(
             isEnabled: isAutoEnabled,
@@ -1762,94 +1771,78 @@ class VideoOverlayActionColumn extends ConsumerWidget {
       ],
     );
   }
+
+  /// Whether the editor affordance should appear in the column. Mirrors the
+  /// gates previously inside [_VideoEditButton.build]: the editor feature
+  /// flag must be on and the viewer must own the video.
+  static bool _shouldShowEditButton(WidgetRef ref, VideoEvent video) {
+    final featureFlagService = ref.watch(featureFlagServiceProvider);
+    if (!featureFlagService.isEnabled(FeatureFlag.enableVideoEditorV1)) {
+      return false;
+    }
+    final authService = ref.watch(authServiceProvider);
+    final currentUserPubkey = authService.currentPublicKeyHex;
+    return currentUserPubkey != null && currentUserPubkey == video.pubkey;
+  }
 }
 
-/// Edit button shown only for owned videos when feature flag is enabled.
+/// Edit button slot for owned videos when the editor feature flag is on.
 ///
-/// This widget checks:
-/// 1. Feature flag `enableVideoEditorV1` is enabled
-/// 2. Current user owns the video
-///
-/// If both conditions are met, displays an edit button that opens the
-/// video edit dialog.
-class _VideoEditButton extends ConsumerWidget {
+/// Visibility is decided by [VideoOverlayActionColumn._shouldShowEditButton]
+/// before this widget is ever instantiated, so `build` assumes the button
+/// should render and no longer performs feature-flag / ownership checks.
+class _VideoEditButton extends StatelessWidget {
   const _VideoEditButton({required this.video});
 
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Check feature flag
-    final featureFlagService = ref.watch(featureFlagServiceProvider);
-    final isEditorEnabled = featureFlagService.isEnabled(
-      FeatureFlag.enableVideoEditorV1,
-    );
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'edit_button',
+      container: true,
+      explicitChildNodes: true,
+      button: true,
+      label: context.l10n.videoPlayerEditVideo,
+      child: IconButton(
+        padding: const EdgeInsets.all(8),
+        constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+        style: IconButton.styleFrom(
+          highlightColor: VineTheme.transparent,
+          splashFactory: NoSplash.splashFactory,
+        ),
+        onPressed: () {
+          Log.info(
+            '✏️ Edit button tapped for ${video.id}',
+            name: 'VideoFeedItem',
+            category: LogCategory.ui,
+          );
 
-    if (!isEditorEnabled) {
-      return const SizedBox.shrink();
-    }
-
-    // Check ownership
-    final authService = ref.watch(authServiceProvider);
-    final currentUserPubkey = authService.currentPublicKeyHex;
-    final isOwnVideo =
-        currentUserPubkey != null && currentUserPubkey == video.pubkey;
-
-    if (!isOwnVideo) {
-      return const SizedBox.shrink();
-    }
-
-    // Show edit button
-    return Column(
-      children: [
-        const SizedBox(height: 4),
-        Semantics(
-          identifier: 'edit_button',
-          container: true,
-          explicitChildNodes: true,
-          button: true,
-          label: context.l10n.videoPlayerEditVideo,
-          child: IconButton(
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-            style: IconButton.styleFrom(
-              highlightColor: VineTheme.transparent,
-              splashFactory: NoSplash.splashFactory,
-            ),
-            onPressed: () {
-              Log.info(
-                '✏️ Edit button tapped for ${video.id}',
-                name: 'VideoFeedItem',
-                category: LogCategory.ui,
-              );
-
-              // Show edit dialog directly (works on all platforms)
-              showEditDialogForVideo(context, video);
-            },
-            tooltip: context.l10n.videoPlayerEditVideoTooltip,
-            icon: DecoratedBox(
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: VineTheme.backgroundColor.withValues(alpha: 0.15),
-                    blurRadius: 15,
-                    spreadRadius: 1,
-                  ),
-                ],
+          // Show edit dialog directly (works on all platforms)
+          showEditDialogForVideo(context, video);
+        },
+        tooltip: context.l10n.videoPlayerEditVideoTooltip,
+        icon: DecoratedBox(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: VineTheme.backgroundColor.withValues(alpha: 0.15),
+                blurRadius: 15,
+                spreadRadius: 1,
               ),
-              child: SvgPicture.asset(
-                DivineIconName.pencilSimpleLineDuo.assetPath,
-                width: 32,
-                height: 32,
-                colorFilter: const ColorFilter.mode(
-                  VineTheme.whiteText,
-                  BlendMode.srcIn,
-                ),
-              ),
+            ],
+          ),
+          child: SvgPicture.asset(
+            DivineIconName.pencilSimpleLineDuo.assetPath,
+            width: 32,
+            height: 32,
+            colorFilter: const ColorFilter.mode(
+              VineTheme.whiteText,
+              BlendMode.srcIn,
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
