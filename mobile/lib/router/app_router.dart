@@ -89,6 +89,28 @@ void resetNavigationState() {
   _hasNavigated = false;
 }
 
+/// Rewrites a `/reset-password` deep link to the nested
+/// [WelcomeScreen.resetPasswordPath] route, preserving `token` and
+/// optional `email` query params.
+///
+/// Shared by the top-level redirect in [goRouterProvider] and the
+/// router-level regression test so both paths produce the same output for
+/// the same input. See issue #3156.
+@visibleForTesting
+String rewriteResetPasswordDeepLink(Uri uri) {
+  final token = uri.queryParameters['token'] ?? '';
+  final email = uri.queryParameters['email'];
+  final buffer = StringBuffer(WelcomeScreen.resetPasswordPath)
+    ..write('?token=')
+    ..write(Uri.encodeQueryComponent(token));
+  if (email != null && email.isNotEmpty) {
+    buffer
+      ..write('&email=')
+      ..write(Uri.encodeQueryComponent(email));
+  }
+  return buffer.toString();
+}
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
   final authService = ref.read(authServiceProvider);
@@ -541,19 +563,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       // redirect deep link route to full reset password path
       GoRoute(
         path: ResetPasswordScreen.path,
-        redirect: (context, state) {
-          final token = state.uri.queryParameters['token'] ?? '';
-          final email = state.uri.queryParameters['email'];
-          final buffer = StringBuffer(WelcomeScreen.resetPasswordPath)
-            ..write('?token=')
-            ..write(Uri.encodeQueryComponent(token));
-          if (email != null && email.isNotEmpty) {
-            buffer
-              ..write('&email=')
-              ..write(Uri.encodeQueryComponent(email));
-          }
-          return buffer.toString();
-        },
+        redirect: (context, state) => rewriteResetPasswordDeepLink(state.uri),
       ),
       // Email verification route - supports both modes:
       // - Token mode (deep link): /verify-email?token=xyz

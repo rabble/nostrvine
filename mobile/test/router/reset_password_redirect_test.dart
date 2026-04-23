@@ -2,28 +2,10 @@
 // ABOUTME: the token and email query params when rewriting to the nested path
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/router/app_router.dart'
+    show rewriteResetPasswordDeepLink;
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
-
-/// Mirrors the `redirect:` callback on the top-level
-/// [ResetPasswordScreen.path] `GoRoute` in `app_router.dart`.
-///
-/// IMPORTANT: keep in sync with the router. This isolated copy lets us
-/// assert URL-rewriting behavior without pulling in Firebase or a full
-/// [GoRouter] instance.
-String rewriteResetPasswordDeepLink(Uri uri) {
-  final token = uri.queryParameters['token'] ?? '';
-  final email = uri.queryParameters['email'];
-  final buffer = StringBuffer(WelcomeScreen.resetPasswordPath)
-    ..write('?token=')
-    ..write(Uri.encodeQueryComponent(token));
-  if (email != null && email.isNotEmpty) {
-    buffer
-      ..write('&email=')
-      ..write(Uri.encodeQueryComponent(email));
-  }
-  return buffer.toString();
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
