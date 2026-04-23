@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -20,10 +21,12 @@ const _pageSize = 50;
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({
     required ProfileRepository profileRepository,
+    FollowRepository? followRepository,
     this.hasVideos = false,
     this.searchTimeout = const Duration(seconds: 20),
     FeedPerformanceTracker? feedTracker,
   }) : _profileRepository = profileRepository,
+       _followRepository = followRepository,
        _feedTracker = feedTracker,
        super(const UserSearchState()) {
     on<UserSearchQueryChanged>(
@@ -35,6 +38,11 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   }
 
   final ProfileRepository _profileRepository;
+
+  /// Optional follow graph used to boost followed users to the top of the
+  /// initial search page. Null for consumers that want raw server ranking.
+  final FollowRepository? _followRepository;
+
   final FeedPerformanceTracker? _feedTracker;
 
   /// Whether to filter results to users who have uploaded videos.
@@ -63,18 +71,26 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     // the search to get stuck in loading/empty-success states with no recovery
     // path (the user could never re-trigger the same query).
 
+    // Keep the previous query's results visible while the new search loads,
+    // so a rapid re-trigger (e.g. iOS autocorrect rewriting "liz" to "Liz")
+    // never blanks the list. Pagination cursors reset for the new query.
     emit(
       state.copyWith(
         status: UserSearchStatus.loading,
         query: query,
-        results: const [],
-        resultCount: null,
+        offset: 0,
+        hasMore: false,
         isLoadingMore: false,
       ),
     );
 
     _feedTracker?.startFeedLoad('user_search');
     var trackedFirst = false;
+
+    // Snapshot the follow graph once for this query so every progressive
+    // yield uses the same boost set without O(n) list scans per profile.
+    final followedPubkeys =
+        _followRepository?.followingPubkeys.toSet() ?? const <String>{};
 
     try {
       final searchStream = _profileRepository.searchUsersProgressive(
@@ -96,10 +112,11 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
               results.length,
             );
           }
+          final boosted = _boostFollowed(results, followedPubkeys);
           return state.copyWith(
             status: UserSearchStatus.loading,
-            results: results,
-            resultCount: results.length,
+            results: boosted,
+            resultCount: boosted.length,
           );
         },
       );
@@ -171,5 +188,29 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
   void _onCleared(UserSearchCleared event, Emitter<UserSearchState> emit) {
     emit(const UserSearchState());
+  }
+
+  /// Moves followed users to the front of [results] while preserving the
+  /// server-relative order within each group.
+  ///
+  /// Only applied to the initial search page. Load-more pages append raw
+  /// (see [_onLoadMore]) so that already-visible positions stay stable as
+  /// the user scrolls.
+  List<UserProfile> _boostFollowed(
+    List<UserProfile> results,
+    Set<String> followedPubkeys,
+  ) {
+    if (followedPubkeys.isEmpty) return results;
+    final boosted = <UserProfile>[];
+    final rest = <UserProfile>[];
+    for (final profile in results) {
+      if (followedPubkeys.contains(profile.pubkey)) {
+        boosted.add(profile);
+      } else {
+        rest.add(profile);
+      }
+    }
+    if (boosted.isEmpty) return results;
+    return [...boosted, ...rest];
   }
 }

@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
@@ -12,6 +13,8 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockFeedPerformanceTracker extends Mock
     implements FeedPerformanceTracker {}
@@ -246,10 +249,19 @@ void main() {
         act: (bloc) => bloc.add(const UserSearchQueryChanged('flutter')),
         wait: debounceDuration,
         expect: () => [
+          // Previous results stay visible during re-query to prevent the
+          // full-screen spinner flash on autocorrect-triggered re-runs.
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.query, 'query', 'flutter')
-              .having((s) => s.results, 'results', isEmpty),
+              .having((s) => s.results, 'results preserved', hasLength(1))
+              .having(
+                (s) => s.results.first.displayName,
+                'previous result',
+                'Flutter Dev',
+              )
+              .having((s) => s.offset, 'offset reset', 0)
+              .having((s) => s.hasMore, 'hasMore reset', false),
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.results, 'results', hasLength(1))
@@ -690,6 +702,202 @@ void main() {
       );
     });
 
+    group('follow boost', () {
+      const debounceDuration = Duration(milliseconds: 400);
+
+      UserProfile profile(String idPrefix, String name) =>
+          createTestProfile('${idPrefix}x${'a' * 62}'.substring(0, 64), name);
+
+      UserSearchBloc createBoostedBloc(FollowRepository followRepository) =>
+          UserSearchBloc(
+            profileRepository: mockProfileRepository,
+            followRepository: followRepository,
+          );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'moves followed users to the top of the initial page',
+        setUp: () {
+          final zoe = profile('00', 'Zoe'); // server-first
+          final liz = profile('01', 'Liz Sweigart'); // followed, server-middle
+          final maya = profile('02', 'Maya'); // server-last
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'liz',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) => Stream.value([zoe, liz, maya]));
+        },
+        build: () {
+          final follows = _MockFollowRepository();
+          when(() => follows.followingPubkeys).thenReturn([
+            '01x${'a' * 61}',
+          ]);
+          return createBoostedBloc(follows);
+        },
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('liz')),
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'liz',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having(
+                (s) => s.results.map((p) => p.displayName).toList(),
+                'results order',
+                ['Liz Sweigart', 'Zoe', 'Maya'],
+              ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having(
+                (s) => s.results.map((p) => p.displayName).toList(),
+                'results order',
+                ['Liz Sweigart', 'Zoe', 'Maya'],
+              ),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'preserves server-relative order within each group',
+        setUp: () {
+          final a = profile('00', 'A'); // followed
+          final b = profile('01', 'B'); // not followed
+          final c = profile('02', 'C'); // followed
+          final d = profile('03', 'D'); // not followed
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'test',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) => Stream.value([a, b, c, d]));
+        },
+        build: () {
+          final follows = _MockFollowRepository();
+          when(() => follows.followingPubkeys).thenReturn([
+            '00x${'a' * 61}',
+            '02x${'a' * 61}',
+          ]);
+          return createBoostedBloc(follows);
+        },
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'test',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having(
+                (s) => s.results.map((p) => p.displayName).toList(),
+                'results order',
+                ['A', 'C', 'B', 'D'],
+              ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having(
+                (s) => s.results.map((p) => p.displayName).toList(),
+                'results order',
+                ['A', 'C', 'B', 'D'],
+              ),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'is a no-op when the follow list is empty',
+        setUp: () {
+          final zoe = profile('00', 'Zoe');
+          final maya = profile('01', 'Maya');
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'test',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) => Stream.value([zoe, maya]));
+        },
+        build: () {
+          final follows = _MockFollowRepository();
+          when(() => follows.followingPubkeys).thenReturn(const []);
+          return createBoostedBloc(follows);
+        },
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'test',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having(
+                (s) => s.results.map((p) => p.displayName).toList(),
+                'results order',
+                ['Zoe', 'Maya'],
+              ),
+          isA<UserSearchState>().having(
+            (s) => s.status,
+            'status',
+            UserSearchStatus.success,
+          ),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'does not re-boost already-shown results on UserSearchLoadMore',
+        setUp: () {
+          // Page 2 includes a followed user — should be appended at the end,
+          // not moved to the top of the already-visible list.
+          final liz2 = profile('99', 'Liz From Page 2');
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'liz',
+              limit: any(named: 'limit'),
+              offset: 50,
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) => Stream.value([liz2]));
+        },
+        build: () {
+          final follows = _MockFollowRepository();
+          when(() => follows.followingPubkeys).thenReturn([
+            '99x${'a' * 61}',
+          ]);
+          return createBoostedBloc(follows);
+        },
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'liz',
+          results: createTestProfiles(50),
+          offset: 50,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const UserSearchLoadMore()),
+        expect: () => [
+          isA<UserSearchState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.results.length, 'results.length', 51)
+              .having(
+                (s) => s.results.last.displayName,
+                'new page appended at end',
+                'Liz From Page 2',
+              ),
+        ],
+      );
+    });
+
     group('hasVideos parameter', () {
       const debounceDuration = Duration(milliseconds: 400);
 
@@ -793,8 +1001,8 @@ void main() {
       const debounceDuration = Duration(milliseconds: 400);
 
       blocTest<UserSearchBloc, UserSearchState>(
-        'clears previous results and emits failure when a subsequent query '
-        'fails',
+        'keeps previous results while a subsequent query is loading and '
+        'emits failure on error',
         setUp: () {
           when(
             () => mockProfileRepository.searchUsersProgressive(
@@ -837,13 +1045,24 @@ void main() {
             'status',
             UserSearchStatus.success,
           ),
+          // New query keeps the prior 'alice' results visible while loading.
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.query, 'query', 'error')
-              .having((s) => s.results, 'results cleared', isEmpty),
+              .having(
+                (s) => s.results,
+                'stale results preserved',
+                hasLength(1),
+              ),
+          // On failure, status flips to failure but the stale results are
+          // retained in state — the UI decides whether to show them.
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.failure)
-              .having((s) => s.results, 'results still empty', isEmpty),
+              .having(
+                (s) => s.results,
+                'stale results still in state',
+                hasLength(1),
+              ),
         ],
       );
     });

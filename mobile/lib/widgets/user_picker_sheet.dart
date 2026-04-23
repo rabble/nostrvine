@@ -64,6 +64,7 @@ class UserPickerSheet extends ConsumerStatefulWidget {
     this.scrollController,
     this.autoFocus = false,
     this.excludePubkeys = const {},
+    this.searchTimeout = const Duration(seconds: 20),
     super.key,
   });
 
@@ -77,6 +78,10 @@ class UserPickerSheet extends ConsumerStatefulWidget {
 
   /// Pubkeys to exclude from search results (already selected users).
   final Set<String> excludePubkeys;
+
+  /// Optional timeout forwarded to the internally created [UserSearchBloc].
+  /// Pass `null` in tests that use `pumpAndSettle` to avoid pending timers.
+  final Duration? searchTimeout;
 
   @override
   ConsumerState<UserPickerSheet> createState() => _UserPickerSheetState();
@@ -107,6 +112,8 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
     _searchBloc = UserSearchBloc(
       profileRepository: profileRepo,
+      followRepository: ref.read(followRepositoryProvider),
+      searchTimeout: widget.searchTimeout,
     );
 
     if (_useLocalSearch) {
@@ -216,6 +223,11 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
               autofocus: widget.autoFocus,
               controller: _searchController,
               textInputAction: .search,
+              // iOS predictive text and autocorrect silently rewrite the
+              // query (e.g. "liz" → "Liz"), which re-fires `onChanged` and
+              // blanks the results. Search fields should always opt out.
+              autocorrect: false,
+              enableSuggestions: false,
               onChanged: _onSearchChanged,
               onSubmitted: _onSearchChanged,
               cursorColor: VineTheme.vineGreen,
@@ -508,7 +520,7 @@ class _ResultsList extends StatelessWidget {
     return ListView.separated(
       controller: scrollController,
       itemCount: results.length,
-      padding: .fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         0,
         32,
         0,
@@ -552,20 +564,28 @@ class _NetworkResults extends StatelessWidget {
       builder: (context, state) {
         return switch (state.status) {
           UserSearchStatus.initial => const _EmptyHint(),
+          // Render cached/stale results while a new query loads — prevents
+          // the full-screen spinner flash (e.g. when iOS autocorrect silently
+          // replaces the query and re-triggers the search).
+          UserSearchStatus.loading when state.results.isNotEmpty =>
+            _ResultsList(
+              scrollController: scrollController,
+              results: state.results,
+              onUserSelected: onUserSelected,
+              excludePubkeys: excludePubkeys,
+            ),
           UserSearchStatus.loading => const Center(
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
           ),
           UserSearchStatus.failure => const _ErrorState(),
-          UserSearchStatus.success => () {
-            return state.results.isEmpty
-                ? const _NoResults()
-                : _ResultsList(
-                    scrollController: scrollController,
-                    results: state.results,
-                    onUserSelected: onUserSelected,
-                    excludePubkeys: excludePubkeys,
-                  );
-          }(),
+          UserSearchStatus.success when state.results.isEmpty =>
+            const _NoResults(),
+          UserSearchStatus.success => _ResultsList(
+            scrollController: scrollController,
+            results: state.results,
+            onUserSelected: onUserSelected,
+            excludePubkeys: excludePubkeys,
+          ),
         };
       },
     );
