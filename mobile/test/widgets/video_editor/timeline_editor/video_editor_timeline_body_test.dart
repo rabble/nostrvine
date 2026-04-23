@@ -47,34 +47,34 @@ void main() {
         () => mainBloc.state,
       ).thenReturn(VideoEditorMainState(isReordering: isReordering));
 
-        final scrollController = ScrollController();
-        final playhead = ValueNotifier(Duration.zero);
-        addTearDown(scrollController.dispose);
-        addTearDown(playhead.dispose);
+      final scrollController = ScrollController();
+      final playhead = ValueNotifier(Duration.zero);
+      addTearDown(scrollController.dispose);
+      addTearDown(playhead.dispose);
 
       await tester.pumpWidget(
         MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: MultiBlocProvider(
             providers: [
               BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
               BlocProvider<TimelineOverlayBloc>.value(value: overlayBloc),
             ],
-              child: SizedBox(
-                height: 120000,
-                child: VideoEditorTimelineBody(
-                  totalDuration: const Duration(seconds: 12),
-                  pixelsPerSecond: 80,
-                  scrollController: scrollController,
-                  scrollPadding: 16,
-                  clips: const <DivineVideoClip>[],
-                  totalWidth: 960,
-                  isInteracting: false,
-                  onReorder: (_) {},
-                  onReorderChanged: (_) {},
-                  playheadPosition: playhead,
-                ),
+            child: SizedBox(
+              height: 120000,
+              child: VideoEditorTimelineBody(
+                totalDuration: const Duration(seconds: 12),
+                pixelsPerSecond: 80,
+                scrollController: scrollController,
+                scrollPadding: 16,
+                clips: const <DivineVideoClip>[],
+                totalWidth: 960,
+                isInteracting: false,
+                onReorder: (_) {},
+                onReorderChanged: (_) {},
+                playheadPosition: playhead,
+              ),
             ),
           ),
         ),
