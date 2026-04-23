@@ -1223,6 +1223,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Ativar avanço automático';
 
   @override

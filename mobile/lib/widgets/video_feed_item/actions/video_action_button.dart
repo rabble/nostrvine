@@ -31,6 +31,7 @@ class VideoActionButton extends StatelessWidget {
     this.count = 0,
     this.isLoading = false,
     this.caption,
+    this.labelWhenZero,
     super.key,
   });
 
@@ -49,14 +50,21 @@ class VideoActionButton extends StatelessWidget {
   /// Color applied to the SVG icon. Defaults to white.
   final Color iconColor;
 
-  /// Count to display beneath the icon. Shows empty space when 0.
+  /// Count to display beneath the icon. Shows empty space when 0 unless
+  /// [labelWhenZero] is provided.
   final int count;
 
   /// When true, shows a loading spinner instead of the icon.
   final bool isLoading;
 
-  /// Optional fixed caption shown beneath the icon instead of a count.
+  /// Optional fixed caption shown beneath the icon instead of a count or
+  /// zero-label. When set, always wins over [count] and [labelWhenZero].
   final String? caption;
+
+  /// Short placeholder label shown beneath the icon when [count] is 0 and
+  /// no [caption] is set (e.g. "Like", "Reply"). When null, the caption
+  /// slot stays empty at zero count.
+  final String? labelWhenZero;
 
   @override
   Widget build(BuildContext context) {
@@ -105,31 +113,37 @@ class VideoActionButton extends StatelessWidget {
                   ),
           ),
         ),
-        if (!isLoading && caption != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: SizedBox(
-              width: 48,
-              child: Text(
-                caption!,
-                style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          )
-        else if (!isLoading && count > 0)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: SizedBox(
-              width: 48,
-              child: Text(
-                count > 0 ? StringUtils.formatCompactNumber(count) : '',
-                style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
+        if (!isLoading) ?_buildCaption(),
       ],
+    );
+  }
+
+  /// Resolves the caption slot text in priority order:
+  /// 1. [caption] — fixed override from the caller.
+  /// 2. The formatted [count] — once there's at least one interaction.
+  /// 3. [labelWhenZero] — placeholder word like "Like" / "Reply" when no
+  ///    interactions have landed yet.
+  /// Returns null when the slot should collapse entirely.
+  Widget? _buildCaption() {
+    final text = switch ((caption, count, labelWhenZero)) {
+      (final String c, _, _) => c,
+      (_, final int n, _) when n > 0 => StringUtils.formatCompactNumber(n),
+      (_, _, final String zero) => zero,
+      _ => null,
+    };
+
+    if (text == null) return null;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: SizedBox(
+        width: 48,
+        child: Text(
+          text,
+          style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
+          textAlign: TextAlign.center,
+        ),
+      ),
     );
   }
 }

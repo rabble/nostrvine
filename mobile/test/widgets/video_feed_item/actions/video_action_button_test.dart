@@ -18,6 +18,7 @@ void main() {
     int count = 0,
     bool isLoading = false,
     String? caption,
+    String? labelWhenZero,
   }) {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -32,6 +33,7 @@ void main() {
           count: count,
           isLoading: isLoading,
           caption: caption,
+          labelWhenZero: labelWhenZero,
         ),
       ),
     );
@@ -90,6 +92,39 @@ void main() {
 
         expect(find.text('Auto'), findsOneWidget);
       });
+
+      testWidgets(
+        'renders labelWhenZero as a placeholder when count is 0',
+        (tester) async {
+          await tester.pumpWidget(buildSubject(labelWhenZero: 'Like'));
+
+          expect(find.text('Like'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hides labelWhenZero once count goes above 0',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(count: 12, labelWhenZero: 'Like'),
+          );
+
+          expect(find.text('12'), findsOneWidget);
+          expect(find.text('Like'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'caption takes precedence over labelWhenZero',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(caption: 'Auto', labelWhenZero: 'Like'),
+          );
+
+          expect(find.text('Auto'), findsOneWidget);
+          expect(find.text('Like'), findsNothing);
+        },
+      );
     });
 
     group('loading state', () {
@@ -106,6 +141,14 @@ void main() {
         await tester.pumpWidget(buildSubject(isLoading: true, count: 10));
 
         expect(find.text('10'), findsNothing);
+      });
+
+      testWidgets('hides labelWhenZero when loading', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(isLoading: true, labelWhenZero: 'Like'),
+        );
+
+        expect(find.text('Like'), findsNothing);
       });
 
       testWidgets('disables tap when loading', (tester) async {

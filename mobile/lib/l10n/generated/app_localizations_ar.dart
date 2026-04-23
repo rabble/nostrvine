@@ -1190,6 +1190,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionAutoLabel => 'تلقائي';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
   String get videoActionEnableAutoAdvance => 'تفعيل التقدّم التلقائي';
 
   @override

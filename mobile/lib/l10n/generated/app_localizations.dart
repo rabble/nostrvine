@@ -2164,6 +2164,30 @@ abstract class AppLocalizations {
   /// **'Auto'**
   String get videoActionAutoLabel;
 
+  /// No description provided for @videoActionLikeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Like'**
+  String get videoActionLikeLabel;
+
+  /// No description provided for @videoActionReplyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get videoActionReplyLabel;
+
+  /// No description provided for @videoActionRepostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repost'**
+  String get videoActionRepostLabel;
+
+  /// No description provided for @videoActionShareLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get videoActionShareLabel;
+
   /// No description provided for @videoActionEnableAutoAdvance.
   ///
   /// In en, this message translates to:
