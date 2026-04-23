@@ -435,6 +435,92 @@ void main() {
     });
   });
 
+  group('ZendeskSupportService.createTicket attachmentPaths', () {
+    setUp(() async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            return null;
+          });
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+    });
+
+    test('includes attachmentPaths when provided', () async {
+      Map<String, dynamic>? capturedArgs;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'createTicket') {
+              capturedArgs = Map<String, dynamic>.from(
+                call.arguments as Map,
+              );
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.createTicket(
+        subject: 'Test',
+        description: 'Test desc',
+        attachmentPaths: ['/tmp/img1.jpg', '/tmp/img2.jpg'],
+      );
+
+      expect(capturedArgs, isNotNull);
+      expect(
+        capturedArgs!['attachmentPaths'],
+        ['/tmp/img1.jpg', '/tmp/img2.jpg'],
+      );
+    });
+
+    test('omits attachmentPaths when null', () async {
+      Map<String, dynamic>? capturedArgs;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'createTicket') {
+              capturedArgs = Map<String, dynamic>.from(
+                call.arguments as Map,
+              );
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.createTicket(
+        subject: 'Test',
+        description: 'Test desc',
+      );
+
+      expect(capturedArgs, isNotNull);
+      expect(capturedArgs!.containsKey('attachmentPaths'), false);
+    });
+
+    test('omits attachmentPaths when empty list', () async {
+      Map<String, dynamic>? capturedArgs;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'createTicket') {
+              capturedArgs = Map<String, dynamic>.from(
+                call.arguments as Map,
+              );
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.createTicket(
+        subject: 'Test',
+        description: 'Test desc',
+        attachmentPaths: [],
+      );
+
+      expect(capturedArgs, isNotNull);
+      expect(capturedArgs!.containsKey('attachmentPaths'), false);
+    });
+  });
+
   group('ZendeskSupportService.createTicket JWT expiry retry', () {
     test(
       'retries with anonymous identity when JWT returns unauthorized',
