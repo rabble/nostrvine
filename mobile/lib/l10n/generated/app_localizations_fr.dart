@@ -5164,6 +5164,12 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get videoEditorCameraLabel => 'Camera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Open camera';
+
+  @override
   String get videoEditorClipsLabel => 'Clips';
 
   @override
@@ -5173,7 +5179,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoEditorDrawLabel => 'Dessiner';
 
   @override
-  String get videoEditorEffectsLabel => 'Effets';
+  String get videoEditorFilterLabel => 'Filtre';
 
   @override
   String get videoEditorAudioLabel => 'Audio';
@@ -5197,8 +5203,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Ouvrir l\'éditeur de dessin';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel =>
-      'Ouvrir l\'éditeur d\'effets';
+  String get videoEditorOpenFilterSemanticLabel =>
+      'Ouvrir l\'éditeur de filtres';
 
   @override
   String get videoEditorSaveDraftTitle => 'Enregistrer votre brouillon ?';

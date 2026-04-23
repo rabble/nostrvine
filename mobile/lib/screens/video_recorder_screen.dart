@@ -1,5 +1,5 @@
-// ABOUTME: Video recorder screen with modern UI design
-// ABOUTME: Features top search bar, camera preview with grid, and bottom controls
+// ABOUTME: Video recorder screen with camera preview and recording controls.
+// ABOUTME: Supports classic and capture modes; opened standalone or from the video editor.
 
 import 'dart:async';
 
@@ -31,7 +31,13 @@ const _kWhySixSecondsShownKey = 'why_six_seconds_shown';
 /// Video recorder screen with camera preview and recording controls.
 class VideoRecorderScreen extends ConsumerStatefulWidget {
   /// Creates a video recorder screen.
-  const VideoRecorderScreen({super.key});
+  const VideoRecorderScreen({super.key, this.fromEditor = false});
+
+  /// Whether the screen is opened from the video editor.
+  ///
+  /// When `true`, the bottom bar is hidden and navigation uses `context.pop`
+  /// instead of the standard recorder close flow.
+  final bool fromEditor;
 
   /// Route name for this screen.
   static const routeName = 'video-recorder';
@@ -356,16 +362,21 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
                     child: switch (ref
                         .watch(videoRecorderProvider)
                         .recorderMode) {
-                      .capture => const VideoRecorderCaptureStack(),
+                      .capture => VideoRecorderCaptureStack(
+                        fromEditor: widget.fromEditor,
+                      ),
                       .classic => const VideoRecorderClassicStack(),
                     },
                   ),
                 ),
 
-                const Padding(
-                  padding: .symmetric(vertical: 22),
-                  child: VideoRecorderBottomBar(),
-                ),
+                if (!widget.fromEditor)
+                  const Padding(
+                    padding: .symmetric(vertical: 22),
+                    child: VideoRecorderBottomBar(),
+                  )
+                else
+                  SizedBox(height: MediaQuery.viewPaddingOf(context).bottom),
               ],
             ),
           ),

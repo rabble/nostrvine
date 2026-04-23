@@ -66,7 +66,7 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                       onTap: scope.onAdjustVolume,
                     ),
                     _ActionButton(
-                      label: context.l10n.videoEditorEffectsLabel,
+                      label: context.l10n.videoEditorFilterLabel,
                       icon: .fadersHorizontal,
                       onTap: () => scope.editor?.openFilterEditor(),
                     ),

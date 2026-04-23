@@ -5142,6 +5142,12 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get videoEditorCameraLabel => 'Camera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Open camera';
+
+  @override
   String get videoEditorClipsLabel => 'Clip';
 
   @override
@@ -5151,7 +5157,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorDrawLabel => 'Disegna';
 
   @override
-  String get videoEditorEffectsLabel => 'Effetti';
+  String get videoEditorFilterLabel => 'Filtro';
 
   @override
   String get videoEditorAudioLabel => 'Audio';
@@ -5175,7 +5181,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Apri editor disegno';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'Apri editor effetti';
+  String get videoEditorOpenFilterSemanticLabel => 'Apri editor filtri';
 
   @override
   String get videoEditorSaveDraftTitle => 'Salvare la bozza?';

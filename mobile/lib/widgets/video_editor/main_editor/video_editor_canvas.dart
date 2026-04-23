@@ -6,7 +6,7 @@ import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show kReleaseMode, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -838,8 +838,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               captureImageByteFormat: .rawStraightRgba,
               enableBackgroundGeneration: false,
               enableUseOriginalBytes: false,
+              // Disabled in debug mode: combined RAM usage from the editor
+              // and MediaKit (background) causes crashes on hot-reload.
+              // Release builds are unaffected.
+              enableIsolateGeneration: kReleaseMode,
               processorConfigs: const ProcessorConfigs(
-                numberOfBackgroundProcessors: 4,
+                numberOfBackgroundProcessors: 3,
                 processorMode: .limit,
                 initializationDelay:
                     VideoEditorConstants.isolatesInitialisationDelay,

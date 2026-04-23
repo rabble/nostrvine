@@ -35,6 +35,7 @@ void main() {
           home: VideoEditorScope(
             editorKey: editorKey,
             removeAreaKey: removeAreaKey,
+            onOpenCamera: () {},
             onAddStickers: () {},
             onAdjustVolume: () {},
             onOpenClipsEditor: () {},

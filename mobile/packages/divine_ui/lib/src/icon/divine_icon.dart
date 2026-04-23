@@ -61,6 +61,7 @@ enum DivineIconName {
   checkCircle('check_circle'),
   checks('checks'),
   circleDuo('circle_duo'),
+  circlesThree('circles_three'),
   clipboard('clipboard'),
   clockCountdown('clock_countdown'),
   clockCountdown10('clock_countdown_10'),

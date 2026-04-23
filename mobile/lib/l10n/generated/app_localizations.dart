@@ -9008,6 +9008,18 @@ abstract class AppLocalizations {
   /// **'{clipCount, plural, one{Open clip library, 1 clip} other{Open clip library, {clipCount} clips}}'**
   String videoRecorderLibraryOpenLabel(int clipCount);
 
+  /// No description provided for @videoEditorCameraLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get videoEditorCameraLabel;
+
+  /// No description provided for @videoEditorOpenCameraSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open camera'**
+  String get videoEditorOpenCameraSemanticLabel;
+
   /// No description provided for @videoEditorClipsLabel.
   ///
   /// In en, this message translates to:
@@ -9026,11 +9038,11 @@ abstract class AppLocalizations {
   /// **'Draw'**
   String get videoEditorDrawLabel;
 
-  /// No description provided for @videoEditorEffectsLabel.
+  /// No description provided for @videoEditorFilterLabel.
   ///
   /// In en, this message translates to:
-  /// **'Effects'**
-  String get videoEditorEffectsLabel;
+  /// **'Filter'**
+  String get videoEditorFilterLabel;
 
   /// No description provided for @videoEditorAudioLabel.
   ///
@@ -9074,11 +9086,11 @@ abstract class AppLocalizations {
   /// **'Open draw editor'**
   String get videoEditorOpenDrawSemanticLabel;
 
-  /// No description provided for @videoEditorOpenEffectsSemanticLabel.
+  /// No description provided for @videoEditorOpenFilterSemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Open effects editor'**
-  String get videoEditorOpenEffectsSemanticLabel;
+  /// **'Open filter editor'**
+  String get videoEditorOpenFilterSemanticLabel;
 
   /// No description provided for @videoEditorSaveDraftTitle.
   ///

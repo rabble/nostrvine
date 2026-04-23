@@ -5074,6 +5074,12 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get videoEditorCameraLabel => 'Camera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Open camera';
+
+  @override
   String get videoEditorClipsLabel => 'Klipler';
 
   @override
@@ -5083,7 +5089,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorDrawLabel => 'Çiz';
 
   @override
-  String get videoEditorEffectsLabel => 'Efektler';
+  String get videoEditorFilterLabel => 'Filtre';
 
   @override
   String get videoEditorAudioLabel => 'Ses';
@@ -5107,7 +5113,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Çizim düzenleyiciyi aç';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'Efekt düzenleyiciyi aç';
+  String get videoEditorOpenFilterSemanticLabel => 'Filtre düzenleyiciyi aç';
 
   @override
   String get videoEditorSaveDraftTitle => 'Taslağınızı kaydedin?';

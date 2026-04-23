@@ -66,6 +66,7 @@ void main() {
               child: VideoEditorScope(
                 editorKey: GlobalKey(),
                 removeAreaKey: GlobalKey(),
+                onOpenCamera: () {},
                 onAddStickers: () {},
                 onAdjustVolume: () {},
                 onOpenClipsEditor: () {},

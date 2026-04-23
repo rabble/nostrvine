@@ -5229,6 +5229,12 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get videoEditorCameraLabel => 'Camera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Open camera';
+
+  @override
   String get videoEditorClipsLabel => 'Clipuri';
 
   @override
@@ -5238,7 +5244,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorDrawLabel => 'Desen';
 
   @override
-  String get videoEditorEffectsLabel => 'Efecte';
+  String get videoEditorFilterLabel => 'Filtru';
 
   @override
   String get videoEditorAudioLabel => 'Audio';
@@ -5263,8 +5269,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Deschide editorul de desen';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel =>
-      'Deschide editorul de efecte';
+  String get videoEditorOpenFilterSemanticLabel =>
+      'Deschide editorul de filtre';
 
   @override
   String get videoEditorSaveDraftTitle => 'Salvezi schița?';

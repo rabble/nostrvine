@@ -2667,10 +2667,12 @@
       }
     }
   },
+  "videoEditorCameraLabel": "Camera",
+  "videoEditorOpenCameraSemanticLabel": "Open camera",
   "videoEditorClipsLabel": "Clips",
   "videoEditorTextLabel": "Text",
   "videoEditorDrawLabel": "Draw",
-  "videoEditorEffectsLabel": "Effects",
+  "videoEditorFilterLabel": "Filter",
   "videoEditorAudioLabel": "Audio",
   "videoEditorVolumeLabel": "Volume",
   "videoEditorAddTitle": "Add",
@@ -2678,7 +2680,7 @@
   "videoEditorOpenAudioSemanticLabel": "Open audio editor",
   "videoEditorOpenTextSemanticLabel": "Open text editor",
   "videoEditorOpenDrawSemanticLabel": "Open draw editor",
-  "videoEditorOpenEffectsSemanticLabel": "Open effects editor",
+  "videoEditorOpenFilterSemanticLabel": "Open filter editor",
   "videoEditorSaveDraftTitle": "Save your draft?",
   "videoEditorSaveDraftSubtitle": "Keep your edits for later, or discard them and leave the editor.",
   "videoEditorSaveDraftButton": "Save draft",
