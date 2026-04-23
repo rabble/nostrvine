@@ -405,6 +405,16 @@ class AppLocalizationsSv extends AppLocalizations {
       'Fel vid inläsning av samarbetsvideor';
 
   @override
+  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+
+  @override
+  String get profileSavedOwnEmpty =>
+      'Bookmark videos from the share sheet and they\'ll show up here.';
+
+  @override
+  String get profileErrorLoadingSaved => 'Error loading saved videos';
+
+  @override
   String get profileNoCommentsOwnTitle => 'Inga kommentarer än';
 
   @override
@@ -537,6 +547,30 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get profileSignInButton => 'Logga in';
+
+  @override
+  String get profileMaybeLaterLabel => 'Maybe Later';
+
+  @override
+  String get profileSecurePrimaryButton => 'Add Email & Password';
+
+  @override
+  String get profileCompletePrimaryButton => 'Update Your Profile';
+
+  @override
+  String get profileLoopsLabel => 'Loops';
+
+  @override
+  String get profileLikesLabel => 'Likes';
+
+  @override
+  String get profileMyLibraryLabel => 'My Library';
+
+  @override
+  String get profileMessageLabel => 'Message';
+
+  @override
+  String get profileUserFallback => 'user';
 
   @override
   String get profileDismissTooltip => 'Avfärda';
@@ -809,18 +843,18 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoGridDeleteVideoSubtitle =>
-      'Ta bort videon från Divine. Andra Nostr-klienter kan fortfarande visa den.';
+      'Ta bort det här innehållet permanent';
 
   @override
   String get videoGridDeleteConfirmTitle => 'Ta bort video';
 
   @override
   String get videoGridDeleteConfirmMessage =>
-      'Den här videon raderas permanent från Divine. Den kan fortfarande synas i andra Nostr-klienter som använder andra reläer.';
+      'Är du säker på att du vill ta bort den här videon?';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.';
+      'Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.';
 
   @override
   String get videoGridDeleteCancel => 'Avbryt';
@@ -925,6 +959,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoPlayerPlayVideo => 'Spela upp video';
+
+  @override
+  String get videoPlayerMute => 'Stäng av ljudet på videon';
+
+  @override
+  String get videoPlayerUnmute => 'Slå på ljudet för videon';
 
   @override
   String get videoPlayerEditVideo => 'Redigera video';
@@ -1275,13 +1315,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String metadataLoopsLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Loopar',
-      one: 'Loop',
-    );
-    return '$_temp0';
+    return 'Loopar';
   }
 
   @override
@@ -2954,7 +2988,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuDeleteVideoSubtitle =>
-      'Ta bort videon från Divine. Andra Nostr-klienter kan fortfarande visa den.';
+      'Ta bort det här innehållet permanent';
 
   @override
   String get shareMenuVideoInTheseLists => 'Videon finns i de här listorna:';
@@ -2969,7 +3003,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuDeleteConfirmation =>
-      'Den här videon raderas permanent från Divine. Den kan fortfarande synas i andra Nostr-klienter som använder andra reläer.';
+      'Är du säker på att du vill ta bort den här videon?';
 
   @override
   String get shareMenuCancel => 'Avbryt';
@@ -2981,7 +3015,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuDeletingContent => 'Tar bort innehåll...';
 
   @override
-  String get shareMenuDeleteRequestSent => 'Videon borttagen';
+  String get shareMenuDeleteRequestSent => 'Borttagningsbegäran skickad';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -3071,7 +3105,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.';
 
   @override
-  String get shareMenuVideoDeletionRequested => 'Videon borttagen';
+  String get shareMenuVideoDeletionRequested => 'Videoborttagning begärd';
 
   @override
   String get shareMenuContentLabels => 'Innehållsetiketter';
@@ -3455,6 +3489,46 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get userSearchFailed => 'Sökning misslyckades';
+
+  @override
+  String get userPickerSearchByName => 'Sök efter namn';
+
+  @override
+  String get userPickerFilterByNameHint => 'Filtrera efter namn...';
+
+  @override
+  String get userPickerSearchByNameHint => 'Sök efter namn...';
+
+  @override
+  String userPickerAlreadyAddedSemantics(String name) {
+    return '$name har redan lagts till';
+  }
+
+  @override
+  String userPickerSelectSemantics(String name) {
+    return 'Välj $name';
+  }
+
+  @override
+  String get userPickerEmptyFollowListTitle => 'Ditt crew finns där ute';
+
+  @override
+  String get userPickerEmptyFollowListBody =>
+      'Följ personer du vibbar med. När de följer tillbaka kan ni samarbeta.';
+
+  @override
+  String get userPickerGoBack => 'Gå tillbaka';
+
+  @override
+  String get userPickerTypeNameToSearch => 'Skriv ett namn för att söka';
+
+  @override
+  String get userPickerUnavailable =>
+      'Användarsökning är inte tillgänglig. Försök igen senare.';
+
+  @override
+  String get userPickerSearchFailedTryAgain =>
+      'Sökningen misslyckades. Försök igen.';
 
   @override
   String get forgotPasswordTitle => 'Återställ lösenord';
@@ -4359,6 +4433,50 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxRemovedConversation => 'Konversation borttagen';
 
   @override
+  String get inboxEmptyTitle => 'Inga meddelanden än';
+
+  @override
+  String get inboxEmptySubtitle => '+-knappen bits inte.';
+
+  @override
+  String get inboxActionMute => 'Tysta konversation';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return 'Rapportera $displayName';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return 'Blockera $displayName';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return 'Avblockera $displayName';
+  }
+
+  @override
+  String get inboxActionRemove => 'Ta bort konversation';
+
+  @override
+  String get inboxRemoveConfirmTitle => 'Ta bort konversation?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return 'Detta tar bort din konversation med $displayName. Denna åtgärd kan inte ångras.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => 'Ta bort';
+
+  @override
+  String get inboxConversationMuted => 'Konversation tystad';
+
+  @override
+  String get inboxConversationUnmuted => 'Konversation inte tystad';
+
+  @override
   String get reportDialogCancel => 'Avbryt';
 
   @override
@@ -4388,6 +4506,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commonRetry => 'Försök igen';
 
   @override
+  String get commonNext => 'Nästa';
+
+  @override
   String get commonDelete => 'Radera';
 
   @override
@@ -4400,10 +4521,25 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoMetadataExpiration => 'Utgångsdatum';
 
   @override
-  String get videoMetadataContentWarnings => 'Innehållsvarningar';
+  String get videoMetadataExpirationNotExpire => 'Löper inte ut';
 
   @override
-  String get videoEditorLayers => 'Lager';
+  String get videoMetadataExpirationOneDay => '1 dag';
+
+  @override
+  String get videoMetadataExpirationOneWeek => '1 vecka';
+
+  @override
+  String get videoMetadataExpirationOneMonth => '1 månad';
+
+  @override
+  String get videoMetadataExpirationOneYear => '1 år';
+
+  @override
+  String get videoMetadataExpirationOneDecade => '1 decennium';
+
+  @override
+  String get videoMetadataContentWarnings => 'Innehållsvarningar';
 
   @override
   String get videoEditorStickers => 'Klistermärken';
@@ -4606,6 +4742,18 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get searchFindCuratedVideoLists => 'Hitta kurerade videolistor';
+
+  @override
+  String get searchEnterQuery => 'Skriv en sökterm';
+
+  @override
+  String get searchDiscoverSomethingInteresting => 'Upptäck något intressant';
+
+  @override
+  String get searchListsSectionHeader => 'Listor';
+
+  @override
+  String get searchListsLoadingLabel => 'Laddar listresultat';
 
   @override
   String get cameraAgeRestriction =>
@@ -4838,13 +4986,649 @@ class AppLocalizationsSv extends AppLocalizations {
   String get cameraPermissionGoToSettings => 'Gå till inställningar';
 
   @override
-  String get metadataCaptionsLabel => 'Captions';
+  String get videoRecorderWhySixSecondsTitle => 'Varför sex sekunder?';
+
+  @override
+  String get videoRecorderWhySixSecondsSubtitle =>
+      'Snabba klipp skapar utrymme för spontanitet. Formatet på 6 sekunder hjälper dig att fånga äkta ögonblick när de händer.';
+
+  @override
+  String get videoRecorderWhySixSecondsButton => 'Jag fattar!';
+
+  @override
+  String get videoRecorderAutosaveFoundTitle =>
+      'Vi hittade ett pågående arbete';
+
+  @override
+  String get videoRecorderAutosaveFoundSubtitle =>
+      'Vill du fortsätta där du slutade?';
+
+  @override
+  String get videoRecorderAutosaveContinueButton => 'Ja, fortsätt';
+
+  @override
+  String get videoRecorderAutosaveDiscardButton => 'Nej, starta en ny video';
+
+  @override
+  String get videoRecorderAutosaveRestoreFailure =>
+      'Det gick inte att återställa ditt utkast';
+
+  @override
+  String get videoRecorderStopRecordingTooltip => 'Stoppa inspelning';
+
+  @override
+  String get videoRecorderStartRecordingTooltip => 'Starta inspelning';
+
+  @override
+  String get videoRecorderRecordingTapToStopLabel =>
+      'Spelar in. Tryck var som helst för att stoppa';
+
+  @override
+  String get videoRecorderTapToStartLabel =>
+      'Tryck var som helst för att starta inspelningen';
+
+  @override
+  String get videoRecorderDeleteLastClipLabel => 'Ta bort senaste klippet';
+
+  @override
+  String get videoRecorderSwitchCameraLabel => 'Byt kamera';
+
+  @override
+  String get videoRecorderToggleGridLabel => 'Växla rutnät';
+
+  @override
+  String get videoRecorderToggleGhostFrameLabel => 'Växla spökram';
+
+  @override
+  String get videoRecorderGhostFrameEnabled => 'Spökram aktiverad';
+
+  @override
+  String get videoRecorderGhostFrameDisabled => 'Spökram inaktiverad';
+
+  @override
+  String get videoRecorderClipDeletedMessage => 'Klipp borttaget';
+
+  @override
+  String get videoRecorderCloseLabel => 'Stäng videoinspelaren';
+
+  @override
+  String get videoRecorderContinueToEditorLabel =>
+      'Fortsätt till videoredigeraren';
+
+  @override
+  String get videoRecorderCaptureCloseLabel => 'Stäng';
+
+  @override
+  String get videoRecorderCaptureNextLabel => 'Nästa';
+
+  @override
+  String get videoRecorderToggleFlashLabel => 'Växla blixt';
+
+  @override
+  String get videoRecorderCycleTimerLabel => 'Växla timer';
+
+  @override
+  String get videoRecorderToggleAspectRatioLabel => 'Växla bildförhållande';
+
+  @override
+  String get videoRecorderLibraryEmptyLabel => 'Klippbibliotek, inga klipp';
+
+  @override
+  String videoRecorderLibraryOpenLabel(int clipCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clipCount,
+      locale: localeName,
+      other: 'Öppna klippbibliotek, $clipCount klipp',
+      one: 'Öppna klippbibliotek, 1 klipp',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorClipsLabel => 'Klipp';
+
+  @override
+  String get videoEditorTextLabel => 'Text';
+
+  @override
+  String get videoEditorDrawLabel => 'Rita';
+
+  @override
+  String get videoEditorEffectsLabel => 'Effekter';
+
+  @override
+  String get videoEditorAudioLabel => 'Ljud';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volym';
+
+  @override
+  String get videoEditorAddTitle => 'Lägg till';
+
+  @override
+  String get videoEditorOpenClipsSemanticLabel => 'Öppna klippredigerare';
+
+  @override
+  String get videoEditorOpenAudioSemanticLabel => 'Öppna ljudredigerare';
+
+  @override
+  String get videoEditorOpenTextSemanticLabel => 'Öppna textredigerare';
+
+  @override
+  String get videoEditorOpenDrawSemanticLabel => 'Öppna ritredigerare';
+
+  @override
+  String get videoEditorOpenEffectsSemanticLabel => 'Öppna effektredigerare';
+
+  @override
+  String get videoEditorSaveDraftTitle => 'Spara ditt utkast?';
+
+  @override
+  String get videoEditorSaveDraftSubtitle =>
+      'Spara dina redigeringar till senare, eller kasta dem och lämna redigeraren.';
+
+  @override
+  String get videoEditorSaveDraftButton => 'Spara utkast';
+
+  @override
+  String get videoEditorDiscardChangesButton => 'Kasta ändringar';
+
+  @override
+  String get videoEditorKeepEditingButton => 'Fortsätt redigera';
+
+  @override
+  String get videoEditorDeleteLayerDropZone => 'Släppzon för att ta bort lager';
+
+  @override
+  String get videoEditorReleaseToDeleteLayer => 'Släpp för att ta bort lager';
+
+  @override
+  String get videoEditorDoneLabel => 'Klar';
+
+  @override
+  String get videoEditorPlayPauseSemanticLabel => 'Spela upp eller pausa video';
+
+  @override
+  String get videoEditorCropSemanticLabel => 'Beskär';
+
+  @override
+  String get videoEditorCannotSplitProcessing =>
+      'Kan inte dela klipp medan det bearbetas. Vänta.';
+
+  @override
+  String videoEditorSplitPositionInvalid(int minDurationMs) {
+    return 'Ogiltig delningsposition. Båda klippen måste vara minst $minDurationMs ms långa.';
+  }
+
+  @override
+  String get videoEditorAddClipFromLibrary => 'Lägg till klipp från bibliotek';
+
+  @override
+  String get videoEditorSaveSelectedClip => 'Spara valt klipp';
+
+  @override
+  String get videoEditorSplitClip => 'Dela klipp';
+
+  @override
+  String get videoEditorSaveClip => 'Spara klipp';
+
+  @override
+  String get videoEditorDeleteClip => 'Ta bort klipp';
+
+  @override
+  String get videoEditorClipSavedSuccess => 'Klipp sparat i bibliotek';
+
+  @override
+  String get videoEditorClipSaveFailed => 'Det gick inte att spara klipp';
+
+  @override
+  String get videoEditorClipDeleted => 'Klipp borttaget';
+
+  @override
+  String get videoEditorColorPickerSemanticLabel => 'Färgväljare';
+
+  @override
+  String get videoEditorUndoSemanticLabel => 'Ångra';
+
+  @override
+  String get videoEditorRedoSemanticLabel => 'Gör om';
+
+  @override
+  String get videoEditorTextColorSemanticLabel => 'Textfärg';
+
+  @override
+  String get videoEditorTextAlignmentSemanticLabel => 'Textjustering';
+
+  @override
+  String get videoEditorTextBackgroundSemanticLabel => 'Textbakgrund';
+
+  @override
+  String get videoEditorFontSemanticLabel => 'Typsnitt';
+
+  @override
+  String get videoEditorNoStickersFound => 'Inga stickers hittades';
+
+  @override
+  String get videoEditorNoStickersAvailable => 'Inga stickers tillgängliga';
+
+  @override
+  String get videoEditorFailedLoadStickers =>
+      'Det gick inte att ladda stickers';
+
+  @override
+  String get videoEditorAdjustVolumeTitle => 'Justera volym';
+
+  @override
+  String get videoEditorRecordedAudioLabel => 'Inspelat ljud';
+
+  @override
+  String get videoEditorCustomAudioLabel => 'Eget ljud';
+
+  @override
+  String get videoEditorPlaySemanticLabel => 'Spela';
+
+  @override
+  String get videoEditorPauseSemanticLabel => 'Pausa';
+
+  @override
+  String get videoEditorMuteAudioSemanticLabel => 'Stäng av ljud';
+
+  @override
+  String get videoEditorUnmuteAudioSemanticLabel => 'Sätt på ljud';
+
+  @override
+  String get videoEditorDeleteLabel => 'Ta bort';
+
+  @override
+  String get videoEditorDeleteSelectedItemSemanticLabel =>
+      'Ta bort valt objekt';
+
+  @override
+  String get videoEditorEditLabel => 'Redigera';
+
+  @override
+  String get videoEditorEditSelectedItemSemanticLabel => 'Redigera valt objekt';
+
+  @override
+  String get videoEditorDuplicateLabel => 'Duplicera';
+
+  @override
+  String get videoEditorDuplicateSelectedItemSemanticLabel =>
+      'Duplicera valt objekt';
+
+  @override
+  String get videoEditorSplitLabel => 'Dela';
+
+  @override
+  String get videoEditorSplitSelectedClipSemanticLabel => 'Dela valt klipp';
+
+  @override
+  String get videoEditorFinishTimelineEditingSemanticLabel =>
+      'Avsluta redigering av tidslinje';
+
+  @override
+  String get videoEditorSortNewest => 'Nyaste';
+
+  @override
+  String get videoEditorSortLongest => 'Längsta';
+
+  @override
+  String get videoEditorSortShortest => 'Kortaste';
+
+  @override
+  String videoEditorSortBySemanticLabel(String option) {
+    return 'Sortera efter $option. Tryck för att ändra sorteringsordning';
+  }
+
+  @override
+  String get videoEditorAudioPlayPreviewSemanticLabel =>
+      'Spela förhandsvisning';
+
+  @override
+  String get videoEditorAudioPausePreviewSemanticLabel =>
+      'Pausa förhandsvisning';
+
+  @override
+  String get videoEditorAudioUntitledSound => 'Namnlöst ljud';
+
+  @override
+  String get videoEditorAudioSelectSoundSemanticLabel => 'Välj ljud';
+
+  @override
+  String get videoEditorAudioUntitled => 'Namnlös';
+
+  @override
+  String get videoEditorAudioAddAudio => 'Lägg till ljud';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableTitle => 'Inga ljud tillgängliga';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableSubtitle =>
+      'Ljud visas här när skapare delar ljud';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundTitle => 'Inga ljud hittades';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundSubtitle => 'Prova ett annat sökord';
+
+  @override
+  String get videoEditorAudioFailedToLoadTitle =>
+      'Det gick inte att ladda ljud';
+
+  @override
+  String get videoEditorDrawToolArrowSemanticLabel => 'Pilverktyg';
+
+  @override
+  String get videoEditorDrawToolEraserSemanticLabel => 'Suddverktyg';
+
+  @override
+  String get videoEditorDrawToolMarkerSemanticLabel => 'Markeringsverktyg';
+
+  @override
+  String get videoEditorDrawToolPencilSemanticLabel => 'Pennverktyg';
+
+  @override
+  String videoEditorLayerReorderLabel(int index) {
+    return 'Ordna om lager $index';
+  }
+
+  @override
+  String get videoEditorLayerReorderHint => 'Håll ned för att ordna om';
+
+  @override
+  String get videoEditorShowTimelineSemanticLabel => 'Visa tidslinje';
+
+  @override
+  String get videoEditorHideTimelineSemanticLabel => 'Dölj tidslinje';
+
+  @override
+  String get videoEditorFeedPreviewContent =>
+      'Undvik att placera innehåll bakom dessa områden.';
+
+  @override
+  String get videoEditorStickerSearchHint => 'Sök stickers...';
+
+  @override
+  String get videoEditorSelectFontSemanticLabel => 'Välj typsnitt';
+
+  @override
+  String get videoEditorFontUnknown => 'Okänt';
+
+  @override
+  String get videoEditorSplitPlayheadOutsideClip =>
+      'Uppspelningshuvudet måste vara inom det valda klippet för att dela.';
+
+  @override
+  String get videoEditorTimelineTrimStartSemanticLabel => 'Trimma start';
+
+  @override
+  String get videoEditorTimelineTrimEndSemanticLabel => 'Trimma slut';
+
+  @override
+  String get videoEditorTimelineTrimClipSemanticLabel => 'Trimma klipp';
+
+  @override
+  String get videoEditorTimelineTrimClipHint =>
+      'Dra handtagen för att justera klippets längd';
+
+  @override
+  String videoEditorTimelineDraggingClipSemanticLabel(int index) {
+    return 'Drar klipp $index';
+  }
+
+  @override
+  String videoEditorTimelineClipSemanticLabel(
+    int index,
+    int total,
+    String duration,
+  ) {
+    return 'Klipp $index av $total, $duration sekunder';
+  }
+
+  @override
+  String get videoEditorTimelineClipReorderHint => 'Håll ned för att ordna om';
+
+  @override
+  String get videoEditorTimelineClipMoveLeft => 'Flytta vänster';
+
+  @override
+  String get videoEditorTimelineClipMoveRight => 'Flytta höger';
+
+  @override
+  String get videoEditorTimelineLongPressToDragHint => 'Håll ned för att dra';
+
+  @override
+  String get videoEditorVideoTimelineSemanticLabel => 'Videotidslinje';
+
+  @override
+  String videoEditorTimelinePositionFormat(int minutes, String seconds) {
+    return '${minutes}m ${seconds}s';
+  }
+
+  @override
+  String videoEditorColorSelectedSemanticLabel(String colorName) {
+    return '$colorName, vald';
+  }
+
+  @override
+  String get videoEditorCloseColorPickerSemanticLabel => 'Stäng färgväljare';
+
+  @override
+  String get videoEditorPickColorTitle => 'Välj färg';
+
+  @override
+  String get videoEditorConfirmColorSemanticLabel => 'Bekräfta färg';
+
+  @override
+  String get videoEditorSaturationBrightnessSemanticLabel =>
+      'Mättnad och ljusstyrka';
+
+  @override
+  String videoEditorSaturationBrightnessValue(int saturation, int brightness) {
+    return 'Mättnad $saturation%, Ljusstyrka $brightness%';
+  }
+
+  @override
+  String get videoEditorHueSemanticLabel => 'Nyans';
+
+  @override
+  String get videoEditorAddElementSemanticLabel => 'Lägg till element';
+
+  @override
+  String get videoEditorCloseSemanticLabel => 'Stäng';
+
+  @override
+  String get videoEditorDoneSemanticLabel => 'Klar';
+
+  @override
+  String get videoEditorLevelSemanticLabel => 'Nivå';
+
+  @override
+  String get videoMetadataBackSemanticLabel => 'Tillbaka';
+
+  @override
+  String get videoMetadataDismissHelpDialogSemanticLabel => 'Stäng hjälpdialog';
+
+  @override
+  String get videoMetadataGotItButton => 'Jag fattar!';
+
+  @override
+  String get videoMetadataLimitReachedWarning =>
+      'Gränsen på 64KB är nådd. Ta bort innehåll för att fortsätta.';
+
+  @override
+  String get videoMetadataExpirationLabel => 'Utgång';
+
+  @override
+  String get videoMetadataSelectExpirationSemanticLabel => 'Välj utgångstid';
+
+  @override
+  String get videoMetadataTitleLabel => 'Titel';
+
+  @override
+  String get videoMetadataDescriptionLabel => 'Beskrivning';
+
+  @override
+  String get videoMetadataTagsLabel => 'Taggar';
+
+  @override
+  String get videoMetadataDeleteTagSemanticLabel => 'Ta bort';
+
+  @override
+  String videoMetadataDeleteTagHint(String tag) {
+    return 'Ta bort tagg $tag';
+  }
+
+  @override
+  String get videoMetadataContentWarningLabel => 'Innehållsvarning';
+
+  @override
+  String get videoMetadataSelectContentWarningsSemanticLabel =>
+      'Välj innehållsvarningar';
+
+  @override
+  String get videoMetadataContentWarningSelectAllThatApply =>
+      'Välj allt som gäller för ditt innehåll';
+
+  @override
+  String get videoMetadataContentWarningDoneButton => 'Klar';
+
+  @override
+  String get videoMetadataCollaboratorsLabel => 'Samarbetspartners';
+
+  @override
+  String get videoMetadataAddCollaboratorSemanticLabel =>
+      'Lägg till samarbetspartner';
+
+  @override
+  String get videoMetadataCollaboratorsHelpTooltip =>
+      'Så fungerar samarbetspartners';
+
+  @override
+  String videoMetadataCollaboratorsCount(int count, int max) {
+    return '$count/$max samarbetspartners';
+  }
+
+  @override
+  String get videoMetadataRemoveCollaboratorSemanticLabel =>
+      'Ta bort samarbetspartner';
+
+  @override
+  String get videoMetadataCollaboratorsHelpMessage =>
+      'Samarbetspartners taggas som medskapare i det här inlägget. Du kan bara lägga till personer som ni följer varandra ömsesidigt, och de visas i inläggets metadata när det publiceras.';
+
+  @override
+  String get videoMetadataMutualFollowersSearchText => 'Ömsesidiga följare';
+
+  @override
+  String videoMetadataMustMutuallyFollowSnackbar(String name) {
+    return 'Ni måste följa varandra ömsesidigt för att lägga till $name som samarbetspartner.';
+  }
+
+  @override
+  String get videoMetadataInspiredByLabel => 'Inspirerad av';
+
+  @override
+  String get videoMetadataSetInspiredBySemanticLabel => 'Ange inspirerad av';
+
+  @override
+  String get videoMetadataInspiredByHelpTooltip =>
+      'Så fungerar inspirationskrediter';
+
+  @override
+  String get videoMetadataInspiredByNone => 'Ingen';
+
+  @override
+  String get videoMetadataInspiredByHelpMessage =>
+      'Använd detta för att ge erkännande. Inspirerad av skiljer sig från samarbetspartners: det erkänner påverkan, men taggar inte någon som medskapare.';
+
+  @override
+  String get videoMetadataCreatorCannotBeReferencedSnackbar =>
+      'Den här skaparen kan inte refereras.';
+
+  @override
+  String get videoMetadataRemoveInspiredBySemanticLabel =>
+      'Ta bort inspirerad av';
+
+  @override
+  String get videoMetadataPostDetailsTitle => 'Inläggsdetaljer';
+
+  @override
+  String get videoMetadataSavedToLibrarySnackbar => 'Sparad i bibliotek';
+
+  @override
+  String get videoMetadataFailedToSaveSnackbar => 'Det gick inte att spara';
+
+  @override
+  String get videoMetadataGoToLibraryButton => 'Gå till bibliotek';
+
+  @override
+  String get videoMetadataSaveForLaterSemanticLabel =>
+      'Knapp spara till senare';
+
+  @override
+  String get videoMetadataRenderingVideoHint => 'Renderar video...';
+
+  @override
+  String get videoMetadataSavingVideoHint => 'Sparar video...';
+
+  @override
+  String videoMetadataSaveToDraftsHint(String destination) {
+    return 'Spara video till utkast och $destination';
+  }
+
+  @override
+  String get videoMetadataSaveForLaterButton => 'Spara till senare';
+
+  @override
+  String get videoMetadataPostSemanticLabel => 'Knapp publicera';
+
+  @override
+  String get videoMetadataPublishVideoHint => 'Publicera video i flödet';
+
+  @override
+  String get videoMetadataFormNotReadyHint =>
+      'Fyll i formuläret för att aktivera';
+
+  @override
+  String get videoMetadataPostButton => 'Publicera';
+
+  @override
+  String get videoMetadataOpenPreviewSemanticLabel =>
+      'Öppna förhandsgranskningsskärm för inlägg';
+
+  @override
+  String get videoMetadataShareTitle => 'Dela';
+
+  @override
+  String get videoMetadataVideoDetailsSubtitle => 'Videodetaljer';
+
+  @override
+  String get videoMetadataClassicDoneButton => 'Klar';
+
+  @override
+  String get videoMetadataPlayPreviewSemanticLabel => 'Spela förhandsvisning';
+
+  @override
+  String get videoMetadataPausePreviewSemanticLabel => 'Pausa förhandsvisning';
+
+  @override
+  String get videoMetadataClosePreviewSemanticLabel =>
+      'Stäng videoförhandsvisning';
+
+  @override
+  String get videoMetadataRemoveSemanticLabel => 'Ta bort';
+
+  @override
+  String get metadataCaptionsLabel => 'Undertexter';
 
   @override
   String get metadataCaptionsEnabledSemantics =>
-      'Captions enabled for all videos';
+      'Undertexter aktiverade för alla videor';
 
   @override
   String get metadataCaptionsDisabledSemantics =>
-      'Captions disabled for all videos';
+      'Undertexter inaktiverade för alla videor';
 }

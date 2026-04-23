@@ -32,8 +32,9 @@ class MockProVideoEditor extends ProVideoEditor {
   @override
   Future<String> renderVideoToFile(
     String outputPath,
-    VideoRenderData renderData,
-  ) async {
+    VideoRenderData renderData, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
     if (shouldThrowError) {
       throw Exception('Render failed');
     }
@@ -133,6 +134,38 @@ void main() {
           VideoEditorSplitService.isValidSplitPosition(
             clip,
             const Duration(milliseconds: 30),
+          ),
+          isTrue,
+        );
+      });
+
+      test('validates against trimmedDuration for trimmed clips', () {
+        final clip = DivineVideoClip(
+          id: 'test-clip',
+          video: EditorVideo.file('/test/video.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+          trimStart: const Duration(seconds: 3),
+          trimEnd: const Duration(seconds: 2),
+        );
+
+        // trimmedDuration = 10 - 3 - 2 = 5s
+        // Split at 4.98s — end clip would only be 20ms (< 30ms min)
+        expect(
+          VideoEditorSplitService.isValidSplitPosition(
+            clip,
+            const Duration(milliseconds: 4980),
+          ),
+          isFalse,
+        );
+
+        // Split at 2.5s — both clips are 2.5s
+        expect(
+          VideoEditorSplitService.isValidSplitPosition(
+            clip,
+            const Duration(milliseconds: 2500),
           ),
           isTrue,
         );
@@ -366,6 +399,59 @@ void main() {
         );
 
         expect(result1.endClip.id, isNot(equals(result2.endClip.id)));
+      });
+
+      test('splits trimmed clip at correct absolute position', () async {
+        // 10s clip trimmed to show 3s–8s (trimmedDuration = 5s)
+        final clip = DivineVideoClip(
+          id: 'trimmed-clip',
+          video: EditorVideo.file('/test/video.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+          trimStart: const Duration(seconds: 3),
+          trimEnd: const Duration(seconds: 2),
+        );
+
+        DivineVideoClip? capturedStartClip;
+        DivineVideoClip? capturedEndClip;
+
+        final result = await VideoEditorSplitService.splitClip(
+          sourceClip: clip,
+          // Split at 2s into the trimmed clip (absolute 5s)
+          splitPosition: const Duration(seconds: 2),
+          onClipsCreated: (start, end) {
+            capturedStartClip = start;
+            capturedEndClip = end;
+          },
+          onThumbnailExtracted: null,
+          onClipRendered: null,
+        );
+
+        // Start clip: 0–5s (absolute), trimStart=3s, trimEnd=0
+        // trimmedDuration = 5 - 3 = 2s ✓
+        expect(result.startClip.duration, const Duration(seconds: 5));
+        expect(result.startClip.trimStart, const Duration(seconds: 3));
+        expect(result.startClip.trimEnd, Duration.zero);
+        expect(result.startClip.trimmedDuration, const Duration(seconds: 2));
+
+        // End clip: 5s–10s (absolute), trimStart=0, trimEnd=2s
+        // trimmedDuration = 5 - 2 = 3s ✓
+        expect(result.endClip.duration, const Duration(seconds: 5));
+        expect(result.endClip.trimStart, Duration.zero);
+        expect(result.endClip.trimEnd, const Duration(seconds: 2));
+        expect(result.endClip.trimmedDuration, const Duration(seconds: 3));
+
+        // Total trimmedDuration preserved: 2 + 3 = 5s
+        expect(
+          result.startClip.trimmedDuration + result.endClip.trimmedDuration,
+          clip.trimmedDuration,
+        );
+
+        // onClipsCreated should receive matching clips
+        expect(capturedStartClip!.duration, const Duration(seconds: 5));
+        expect(capturedEndClip!.duration, const Duration(seconds: 5));
       });
     });
   });

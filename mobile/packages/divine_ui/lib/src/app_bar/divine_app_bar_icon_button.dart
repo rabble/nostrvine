@@ -120,11 +120,14 @@ class DiVineAppBarIconButton extends StatelessWidget {
       button: true,
       enabled: onPressed != null,
       label: semanticLabel,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        onPressed: onPressed,
-        icon: buttonContent,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          onPressed: onPressed,
+          icon: buttonContent,
+        ),
       ),
     );
   }

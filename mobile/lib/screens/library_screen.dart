@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
@@ -35,6 +34,12 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// Path for clips route.
   static const clipsPath = '/clips';
 
+  /// Route name for clips path without Sounds tab.
+  static const clipsNoSoundRouteName = 'clipsNoSound';
+
+  /// Path for clips route without Sounds tab.
+  static const clipsNoSoundPath = '/clips-no-sound';
+
   /// Route name for sounds path.
   static const soundsRouteName = 'sounds';
 
@@ -45,7 +50,9 @@ class LibraryScreen extends ConsumerStatefulWidget {
     super.key,
     this.initialTabIndex = 0,
     this.selectionMode = false,
+    this.enableSoundTab = true,
     this.editorClips = const [],
+    this.scrollController,
   });
 
   /// Index of the tab to show when the screen opens.
@@ -62,9 +69,15 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// - Selected clips are added to the video editor on confirmation
   final bool selectionMode;
 
+  /// Whether the Sounds tab is visible.
+  final bool enableSoundTab;
+
   /// Current editor clips, used to calculate remaining duration and
   /// target aspect ratio in selection mode.
   final List<DivineVideoClip> editorClips;
+
+  /// Optional scroll controller, e.g. from a parent [DraggableScrollableSheet].
+  final ScrollController? scrollController;
 
   @override
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
@@ -78,7 +91,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: widget.enableSoundTab ? 3 : 2,
       initialIndex: widget.initialTabIndex,
       vsync: this,
     );
@@ -96,19 +109,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     super.dispose();
   }
 
-  Duration _remainingDuration(
-    ClipsLibraryState clipsState,
-  ) {
-    final editorRemaining = widget.selectionMode
-        ? VideoEditorConstants.maxDuration -
-              widget.editorClips.fold<Duration>(
-                Duration.zero,
-                (sum, c) => sum + c.duration,
-              )
-        : VideoEditorConstants.maxDuration;
-    return editorRemaining - clipsState.selectedDuration;
-  }
-
   void _showSnackBar(
     BuildContext context, {
     required String label,
@@ -124,64 +124,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     );
   }
 
-  Future<void> _showDeleteConfirmationDialog(
-    BuildContext context,
-    ClipsLibraryBloc clipsBloc,
-  ) async {
-    final clipCount = clipsBloc.state.selectedClipIds.length;
-    if (clipCount == 0) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: Text(
-          context.l10n.libraryDeleteClipsTitle,
-          style: const TextStyle(color: VineTheme.whiteText),
-        ),
-        content: Column(
-          mainAxisSize: .min,
-          crossAxisAlignment: .start,
-          spacing: 12,
-          children: [
-            Text(
-              context.l10n.libraryDeleteClipsMessage(clipCount),
-              style: const TextStyle(color: VineTheme.whiteText),
-            ),
-            Text(
-              context.l10n.libraryDeleteClipsWarning,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              context.l10n.commonCancel,
-              style: const TextStyle(color: VineTheme.secondaryText),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: VineTheme.error,
-              foregroundColor: VineTheme.whiteText,
-            ),
-            child: Text(context.l10n.commonDelete),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      clipsBloc.add(const ClipsLibraryDeleteSelected());
-    }
-  }
-
   Future<void> _createVideoFromSelected(
     BuildContext context, {
     required List<DivineVideoClip> selectedClips,
@@ -194,27 +136,36 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
       final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
       for (final clip in selectedClips) {
-        clipManagerNotifier.addClip(
-          video: clip.video,
-          duration: clip.duration,
-          thumbnailPath: clip.thumbnailPath,
-          targetAspectRatio: clip.targetAspectRatio,
-          originalAspectRatio: clip.targetAspectRatio.value,
-          lensMetadata: clip.lensMetadata,
+        clipManagerNotifier.insertClip(
+          clipManagerNotifier.clips.length,
+          clip,
         );
       }
     }
 
-    clipsBloc.add(const ClipsLibraryClearSelection());
-
-    if (!context.mounted) return;
-
     if (widget.selectionMode) {
-      context.pop(selectedClips);
+      final disabledIds = widget.editorClips.map((c) => c.id).toSet();
+      final newClips = selectedClips
+          .where((c) => !disabledIds.contains(c.id))
+          .toList();
+      clipsBloc.add(const ClipsLibraryClearSelection());
+      if (!context.mounted) return;
+      context.pop(newClips);
     } else {
+      if (!context.mounted) return;
       await context.push(
         VideoEditorScreen.path,
         extra: {'fromLibrary': true},
+      );
+      // Re-sync selection with ClipManager after returning from editor.
+      if (!context.mounted) return;
+      final currentClipIds = ref
+          .read(clipManagerProvider)
+          .clips
+          .map((c) => c.id)
+          .toSet();
+      clipsBloc.add(
+        ClipsLibraryLoadRequested(preSelectedIds: currentClipIds),
       );
     }
   }
@@ -236,10 +187,22 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     return MultiBlocProvider(
       providers: [
         BlocProvider<ClipsLibraryBloc>(
-          create: (_) => ClipsLibraryBloc(
-            clipLibraryService: ref.read(clipLibraryServiceProvider),
-            gallerySaveService: ref.read(gallerySaveServiceProvider),
-          )..add(const ClipsLibraryLoadRequested()),
+          create: (_) {
+            final editorClipIds = widget.selectionMode
+                ? widget.editorClips.map((c) => c.id).toSet()
+                : ref.read(clipManagerProvider).clips.map((c) => c.id).toSet();
+            return ClipsLibraryBloc(
+              clipLibraryService: ref.read(clipLibraryServiceProvider),
+              gallerySaveService: ref.read(gallerySaveServiceProvider),
+            )..add(
+              ClipsLibraryLoadRequested(
+                preSelectedIds: editorClipIds,
+                disabledClipIds: widget.selectionMode
+                    ? editorClipIds
+                    : const {},
+              ),
+            );
+          },
         ),
         BlocProvider<DraftsLibraryBloc>(
           create: (_) => DraftsLibraryBloc(
@@ -323,8 +286,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                           .value
                     : null;
 
-                final remaining = _remainingDuration(clipsState);
-
                 return Stack(
                   children: [
                     Scaffold(
@@ -335,17 +296,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                           ? null
                           : _LibraryAppBar(
                               tabController: _tabController,
-                              onSaveToGallery: () => clipsBloc.add(
-                                const ClipsLibrarySaveToGallery(),
-                              ),
-                              onDelete: () => _showDeleteConfirmationDialog(
+                              enableSoundTab: widget.enableSoundTab,
+                              onNext: () => _createVideoFromSelected(
                                 context,
-                                clipsBloc,
+                                selectedClips: clipsState.selectedClips,
+                                clipsBloc: clipsBloc,
                               ),
                             ),
                       body: widget.selectionMode
                           ? _SelectionBody(
-                              remainingDuration: remaining,
+                              scrollController: widget.scrollController,
                               targetAspectRatio: targetAspectRatio,
                               onCreate: () => _createVideoFromSelected(
                                 context,
@@ -355,19 +315,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                             )
                           : _TabBody(
                               tabController: _tabController,
-                              remainingDuration: remaining,
+                              enableSoundTab: widget.enableSoundTab,
                               targetAspectRatio: targetAspectRatio,
-                            ),
-                      floatingActionButton:
-                          widget.selectionMode ||
-                              clipsState.selectedClipIds.isEmpty
-                          ? null
-                          : _CreateVideoFab(
-                              onPressed: () => _createVideoFromSelected(
-                                context,
-                                selectedClips: clipsState.selectedClips,
-                                clipsBloc: clipsBloc,
-                              ),
                             ),
                     ),
                     if (clipsState.isDeleting ||
@@ -455,13 +404,13 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
 class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
   const _LibraryAppBar({
     required this.tabController,
-    required this.onSaveToGallery,
-    required this.onDelete,
+    required this.onNext,
+    this.enableSoundTab = true,
   });
 
   final TabController tabController;
-  final VoidCallback onSaveToGallery;
-  final VoidCallback onDelete;
+  final VoidCallback onNext;
+  final bool enableSoundTab;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 48);
@@ -473,6 +422,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
       builder: (context, hasSelection) {
         return DiVineAppBar(
           title: context.l10n.profileLibraryLabel,
+          style: DiVineAppBarStyle(titleStyle: VineTheme.titleMediumFont()),
           backgroundColor: VineTheme.onPrimary,
           surfaceTintColor: VineTheme.transparent,
           shape: const Border(
@@ -490,20 +440,14 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
           actions: hasSelection
               ? [
                   DiVineAppBarAction(
+                    backgroundColor: VineTheme.primary,
+                    iconColor: VineTheme.onPrimary,
                     icon: SvgIconSource(
-                      DivineIconName.downloadSimple.assetPath,
+                      DivineIconName.caretRight.assetPath,
                     ),
-                    onPressed: onSaveToGallery,
-                    tooltip: context.l10n.librarySaveToCameraRollTooltip,
-                    semanticLabel: context.l10n.librarySaveToCameraRollTooltip,
-                  ),
-                  DiVineAppBarAction(
-                    icon: SvgIconSource(DivineIconName.trash.assetPath),
-                    onPressed: onDelete,
-                    tooltip: context.l10n.libraryDeleteSelectedClipsTooltip,
-                    semanticLabel:
-                        context.l10n.libraryDeleteSelectedClipsTooltip,
-                    iconColor: VineTheme.error,
+                    onPressed: onNext,
+                    tooltip: context.l10n.commonNext,
+                    semanticLabel: context.l10n.commonNext,
                   ),
                 ]
               : const [],
@@ -523,7 +467,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
             tabs: [
               Tab(text: context.l10n.libraryTabDrafts),
               Tab(text: context.l10n.libraryTabClips),
-              Tab(text: context.l10n.soundsTitle),
+              if (enableSoundTab) Tab(text: context.l10n.soundsTitle),
             ],
           ),
         );
@@ -534,28 +478,25 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
 
 class _SelectionBody extends StatelessWidget {
   const _SelectionBody({
-    required this.remainingDuration,
     required this.onCreate,
     this.targetAspectRatio,
+    this.scrollController,
   });
 
-  final Duration remainingDuration;
   final VoidCallback onCreate;
   final double? targetAspectRatio;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ClipSelectionHeader(
-          remainingDuration: remainingDuration,
-          onCreate: onCreate,
-        ),
+        ClipSelectionHeader(onCreate: onCreate),
         Expanded(
           child: ClipsTab(
-            remainingDuration: remainingDuration,
             targetAspectRatio: targetAspectRatio,
-            isSelectionMode: true,
+            showRecordButton: true,
+            scrollController: scrollController,
           ),
         ),
       ],
@@ -566,12 +507,12 @@ class _SelectionBody extends StatelessWidget {
 class _TabBody extends StatelessWidget {
   const _TabBody({
     required this.tabController,
-    required this.remainingDuration,
+    this.enableSoundTab = true,
     this.targetAspectRatio,
   });
 
   final TabController tabController;
-  final Duration remainingDuration;
+  final bool enableSoundTab;
   final double? targetAspectRatio;
 
   @override
@@ -579,33 +520,16 @@ class _TabBody extends StatelessWidget {
     return TabBarView(
       controller: tabController,
       children: [
-        const DraftsTab(),
-        ClipsTab(
-          remainingDuration: remainingDuration,
-          targetAspectRatio: targetAspectRatio,
-          isSelectionMode: false,
+        const DraftsTab(
+          showRecordButton: false,
+          showAutosavedDraft: false,
         ),
-        const SoundsTab(),
+        ClipsTab(
+          targetAspectRatio: targetAspectRatio,
+          showRecordButton: false,
+        ),
+        if (enableSoundTab) const SoundsTab(),
       ],
-    );
-  }
-}
-
-class _CreateVideoFab extends StatelessWidget {
-  const _CreateVideoFab({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: onPressed,
-      icon: const DivineIcon(icon: .pencilSimple, color: VineTheme.whiteText),
-      label: Text(
-        context.l10n.libraryCreateVideo,
-        style: VineTheme.titleSmallFont(),
-      ),
-      backgroundColor: VineTheme.primary,
     );
   }
 }

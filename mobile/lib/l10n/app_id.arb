@@ -403,14 +403,22 @@
     "videoGridEditVideo": "Ubah Video",
     "videoGridEditVideoSubtitle": "Perbarui judul, deskripsi, dan hashtag",
     "videoGridDeleteVideo": "Hapus Video",
-    "videoGridDeleteVideoSubtitle": "Hapus video ini dari Divine. Klien Nostr lain mungkin masih menampilkannya.",
+    "videoGridDeleteVideoSubtitle": "Hapus konten ini secara permanen",
     "videoGridDeleteConfirmTitle": "Hapus Video",
-    "videoGridDeleteConfirmMessage": "Video ini akan dihapus permanen dari Divine. Video ini mungkin masih muncul di klien Nostr lain yang memakai relay berbeda.",
-    "videoGridDeleteConfirmNote": "Ini akan mengirim permintaan hapus ke relay. Catatan: Beberapa relay mungkin masih punya salinan cache.",
+    "videoGridDeleteConfirmMessage": "Yakin mau menghapus video ini?",
+    "videoGridDeleteConfirmNote": "Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.",
     "videoGridDeleteCancel": "Batal",
     "videoGridDeleteConfirm": "Hapus",
     "videoGridDeletingContent": "Menghapus konten...",
     "videoGridDeleteSuccess": "Permintaan hapus berhasil dikirim",
+    "videoGridDeleteFailure": "Gagal menghapus konten: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
     "exploreTabClassics": "Klasik",
     "exploreTabNew": "Baru",
     "exploreTabPopular": "Populer",
@@ -462,6 +470,8 @@
     },
     "videoPlayerLoadingVideo": "Memuat video...",
     "videoPlayerPlayVideo": "Putar video",
+    "videoPlayerMute": "Bisukan video",
+    "videoPlayerUnmute": "Aktifkan suara video",
     "videoPlayerEditVideo": "Ubah video",
     "videoPlayerEditVideoTooltip": "Ubah video",
     "contentWarningLabel": "Peringatan Konten",
@@ -586,9 +596,6 @@
     "shareMessageHint": "Tambahkan pesan opsional...",
     "videoActionUnlike": "Batalkan suka video",
     "videoActionLike": "Suka video",
-    "videoActionAutoLabel": "Otomatis",
-    "videoActionEnableAutoAdvance": "Aktifkan lanjut otomatis",
-    "videoActionDisableAutoAdvance": "Nonaktifkan lanjut otomatis",
     "videoActionRemoveRepost": "Hapus repost",
     "videoActionRepost": "Repost video",
     "videoActionViewComments": "Lihat komentar",
@@ -603,17 +610,6 @@
             }
         }
     },
-    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
-    "@videoFeedLoopCountLine": {
-        "placeholders": {
-            "compactCount": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Bukan Divine",
     "metadataBadgeHumanMade": "Buatan Manusia",
     "metadataSoundsLabel": "Suara",
@@ -625,14 +621,7 @@
     "metadataCollaboratorsLabel": "Kolaborator",
     "metadataInspiredByLabel": "Terinspirasi oleh",
     "metadataRepostedByLabel": "Di-repost oleh",
-    "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loop}}",
-    "@metadataLoopsLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
+    "metadataLoopsLabel": "Loop",
     "metadataLikesLabel": "Suka",
     "metadataCommentsLabel": "Komentar",
     "metadataRepostsLabel": "Repost",
@@ -1502,7 +1491,7 @@
     "shareMenuEditVideo": "Ubah Video",
     "shareMenuEditVideoSubtitle": "Perbarui judul, deskripsi, dan hashtag",
     "shareMenuDeleteVideo": "Hapus Video",
-    "shareMenuDeleteVideoSubtitle": "Hapus video ini dari Divine. Klien Nostr lain mungkin masih menampilkannya.",
+    "shareMenuDeleteVideoSubtitle": "Hapus konten ini secara permanen",
     "shareMenuVideoInTheseLists": "Video ada di daftar ini:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {
@@ -1513,17 +1502,20 @@
         }
     },
     "shareMenuClose": "Tutup",
-    "shareMenuDeleteConfirmation": "Video ini akan dihapus permanen dari Divine. Video ini mungkin masih muncul di klien Nostr lain yang memakai relay berbeda.",
+    "shareMenuDeleteConfirmation": "Yakin mau menghapus video ini?",
+    "shareMenuDeleteWarning": "Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.",
     "shareMenuCancel": "Batal",
     "shareMenuDelete": "Hapus",
     "shareMenuDeletingContent": "Menghapus konten...",
-    "shareMenuDeleteRequestSent": "Video dihapus",
-    "shareMenuDeleteFailedNotInitialized": "Penghapusan belum siap. Coba lagi sebentar lagi.",
-    "shareMenuDeleteFailedNotOwner": "Kamu cuma bisa menghapus video milikmu sendiri.",
-    "shareMenuDeleteFailedNotAuthenticated": "Masuk lagi, lalu coba hapus.",
-    "shareMenuDeleteFailedCouldNotSign": "Tidak bisa menandatangani permintaan hapus. Coba lagi.",
-  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedGeneric": "Tidak bisa menghapus video ini. Coba lagi.",
+    "shareMenuDeleteRequestSent": "Permintaan hapus berhasil dikirim",
+    "shareMenuFailedToDeleteContent": "Gagal menghapus konten: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuFollowSetName": "Nama Set Ikuti",
     "shareMenuFollowSetNameHint": "contoh: Kreator Konten, Musisi, dll.",
     "shareMenuDescriptionOptional": "Deskripsi (opsional)",
@@ -1557,7 +1549,15 @@
     },
     "shareMenuDeleteVideoQuestion": "Hapus Video?",
     "shareMenuDeleteRelayWarning": "Ini akan mengirim permintaan hapus ke relay. Catatan: Beberapa relay mungkin masih punya salinan cache.",
-    "shareMenuVideoDeletionRequested": "Video dihapus",
+    "shareMenuVideoDeletionRequested": "Penghapusan video diminta",
+    "shareMenuFailedToDeleteVideo": "Gagal menghapus video: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuContentLabels": "Label konten",
     "shareMenuAddContentLabels": "Tambah label konten",
     "shareMenuClearAll": "Bersihkan semua",
@@ -1727,9 +1727,9 @@
     "feedFailedToLoadVideos": "Gagal memuat video",
     "feedRetry": "Coba Lagi",
     "feedNoFollowedUsers": "Tidak ada pengguna yang diikuti.\nIkuti seseorang untuk melihat video mereka di sini.",
-    "feedForYouEmpty": "Feed Untukmu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.",
+    "feedForYouEmpty": "Feed Untuk Anda kamu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.",
     "feedFollowingEmpty": "Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.",
-    "feedLatestEmpty": "Belum ada video baru.\nCek lagi nanti.",
+    "feedLatestEmpty": "Belum ada video baru.\nCek lagi sebentar lagi.",
     "feedExploreVideos": "Jelajahi Video",
     "feedExternalVideoSlow": "Video eksternal memuat lambat",
     "feedSkip": "Lewati",
@@ -1769,6 +1769,31 @@
     "userSearchPrompt": "Cari pengguna",
     "userSearchNoResults": "Tidak ada pengguna ditemukan",
     "userSearchFailed": "Pencarian gagal",
+    "userPickerSearchByName": "Cari berdasarkan nama",
+    "userPickerFilterByNameHint": "Filter berdasarkan nama...",
+    "userPickerSearchByNameHint": "Cari berdasarkan nama...",
+    "userPickerAlreadyAddedSemantics": "{name} sudah ditambahkan",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerSelectSemantics": "Pilih {name}",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "Kru kamu ada di luar sana",
+    "userPickerEmptyFollowListBody": "Ikuti orang yang cocok dengan vibe kamu. Saat mereka follow balik, kalian bisa kolaborasi.",
+    "userPickerGoBack": "Kembali",
+    "userPickerTypeNameToSearch": "Ketik nama untuk mencari",
+    "userPickerUnavailable": "Pencarian pengguna tidak tersedia. Coba lagi nanti.",
+    "userPickerSearchFailedTryAgain": "Pencarian gagal. Coba lagi.",
     "forgotPasswordTitle": "Reset Kata Sandi",
     "forgotPasswordDescription": "Masukkan alamat emailmu dan kami akan mengirim tautan untuk mereset kata sandimu.",
     "forgotPasswordEmailLabel": "Alamat Email",
@@ -1798,7 +1823,9 @@
     "navInbox": "Kotak Masuk",
     "navProfile": "Profil",
     "navMyProfile": "Profilku",
+    "navSearch": "Cari",
     "navNotifications": "Notifikasi",
+    "navSearchTooltip": "Cari",
     "navOpenCamera": "Buka kamera",
     "navUnknown": "Tidak Dikenal",
     "navExploreClassics": "Klasik",
@@ -2153,6 +2180,7 @@
     "commonCancel": "Batal",
     "commonDelete": "Hapus",
     "commonRetry": "Coba lagi",
+    "commonNext": "Berikutnya",
     "discoverListsFailedToUpdateSubscription": "Gagal memperbarui langganan: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2191,6 +2219,32 @@
     "featureRequestCancel": "Batal",
     "followersFailedToLoadList": "Gagal memuat daftar pengikut",
     "followingFailedToLoadList": "Gagal memuat daftar mengikuti",
+    "inboxActionBlock": "Blokir {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Bisukan percakapan",
+    "inboxActionRemove": "Hapus percakapan",
+    "inboxActionReport": "Laporkan {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Buka blokir {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} diblokir",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2199,6 +2253,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Percakapan dibisukan",
+    "inboxConversationUnmuted": "Bisu percakapan dibatalkan",
+    "inboxEmptySubtitle": "Tombol + tidak menggigit kok.",
+    "inboxEmptyTitle": "Belum ada pesan",
+    "inboxRemoveConfirmBody": "Ini akan menghapus percakapanmu dengan {displayName}. Tindakan ini tidak bisa dibatalkan.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Hapus",
+    "inboxRemoveConfirmTitle": "Hapus percakapan?",
     "inboxRemovedConversation": "Percakapan dihapus",
     "inboxReportedUser": "{displayName} dilaporkan",
     "@inboxReportedUser": {
@@ -2323,15 +2391,24 @@
     "reportDialogReport": "Laporkan",
     "routerInvalidCreator": "Kreator tidak valid",
     "routerInvalidHashtagRoute": "Rute hashtag tidak valid",
+    "searchDiscoverSomethingInteresting": "Temukan sesuatu yang menarik",
+    "searchEnterQuery": "Masukkan kata pencarian",
     "searchFindCuratedVideoLists": "Temukan daftar video pilihan",
+  "searchListsSectionHeader": "Daftar",
+  "searchListsLoadingLabel": "Memuat hasil daftar",
     "searchForLists": "Cari daftar",
     "searchSomethingWentWrong": "Terjadi kesalahan",
     "searchTryAgain": "Coba lagi",
     "trendingTitle": "Trending",
-    "videoEditorLayers": "Lapisan",
     "videoEditorStickers": "Stiker",
     "videoMetadataContentWarnings": "Peringatan Konten",
     "videoMetadataExpiration": "Kedaluwarsa",
+    "videoMetadataExpirationNotExpire": "Tidak kedaluwarsa",
+    "videoMetadataExpirationOneDay": "1 hari",
+    "videoMetadataExpirationOneWeek": "1 minggu",
+    "videoMetadataExpirationOneMonth": "1 bulan",
+    "videoMetadataExpirationOneYear": "1 tahun",
+    "videoMetadataExpirationOneDecade": "1 dekade",
     "videoMetadataTags": "Tag",
     "contentLabelAiGenerated": "Dibuat oleh AI",
     "contentLabelAlcohol": "Alkohol",
@@ -2526,5 +2603,330 @@
     "cameraPermissionAllowAccessTitle": "Izinkan akses kamera & mikrofon",
     "cameraPermissionAllowAccessDescription": "Ini memungkinkan Anda merekam dan mengedit video langsung di aplikasi, tidak lebih.",
     "cameraPermissionContinue": "Lanjutkan",
-    "cameraPermissionGoToSettings": "Buka pengaturan"
+    "cameraPermissionGoToSettings": "Buka pengaturan",
+    "videoEditorAddClipFromLibrary": "Tambah klip dari Perpustakaan",
+    "videoEditorAddElementSemanticLabel": "Tambah elemen",
+    "videoEditorAddTitle": "Tambah",
+    "videoEditorAdjustVolumeTitle": "Atur volume",
+    "videoEditorAudioAddAudio": "Tambah audio",
+    "videoEditorAudioFailedToLoadTitle": "Gagal memuat suara",
+    "videoEditorAudioLabel": "Audio",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "Suara akan muncul di sini saat kreator berbagi audio",
+    "videoEditorAudioNoSoundsAvailableTitle": "Tidak ada suara tersedia",
+    "videoEditorAudioNoSoundsFoundSubtitle": "Coba kata kunci pencarian lain",
+    "videoEditorAudioNoSoundsFoundTitle": "Suara tidak ditemukan",
+    "videoEditorAudioPausePreviewSemanticLabel": "Jeda pratinjau",
+    "videoEditorAudioPlayPreviewSemanticLabel": "Putar pratinjau",
+    "videoEditorAudioSelectSoundSemanticLabel": "Pilih suara",
+    "videoEditorAudioUntitled": "Tanpa judul",
+    "videoEditorAudioUntitledSound": "Suara tanpa judul",
+    "videoEditorCannotSplitProcessing": "Tidak dapat membagi klip saat sedang diproses. Harap tunggu.",
+    "videoEditorClipDeleted": "Klip dihapus",
+    "videoEditorClipSaveFailed": "Gagal menyimpan klip",
+    "videoEditorClipSavedSuccess": "Klip disimpan ke perpustakaan",
+    "videoEditorClipsLabel": "Klip",
+    "videoEditorCloseColorPickerSemanticLabel": "Tutup pemilih warna",
+    "videoEditorCloseSemanticLabel": "Tutup",
+    "videoEditorColorPickerSemanticLabel": "Pemilih warna",
+    "videoEditorColorSelectedSemanticLabel": "{colorName}, dipilih",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorConfirmColorSemanticLabel": "Konfirmasi warna",
+    "videoEditorCropSemanticLabel": "Pangkas",
+    "videoEditorCustomAudioLabel": "Audio kustom",
+    "videoEditorDeleteClip": "Hapus klip",
+    "videoEditorDeleteLabel": "Hapus",
+    "videoEditorDeleteLayerDropZone": "Area lepas untuk menghapus lapisan",
+    "videoEditorDeleteSelectedItemSemanticLabel": "Hapus item yang dipilih",
+    "videoEditorDiscardChangesButton": "Buang perubahan",
+    "videoEditorDoneLabel": "Selesai",
+    "videoEditorDoneSemanticLabel": "Selesai",
+    "videoEditorDrawLabel": "Gambar",
+    "videoEditorDrawToolArrowSemanticLabel": "Alat panah",
+    "videoEditorDrawToolEraserSemanticLabel": "Alat penghapus",
+    "videoEditorDrawToolMarkerSemanticLabel": "Alat marker",
+    "videoEditorDrawToolPencilSemanticLabel": "Alat pensil",
+    "videoEditorDuplicateLabel": "Duplikat",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "Duplikat item yang dipilih",
+    "videoEditorEditLabel": "Edit",
+    "videoEditorEditSelectedItemSemanticLabel": "Edit item yang dipilih",
+    "videoEditorEffectsLabel": "Efek",
+    "videoEditorFailedLoadStickers": "Gagal memuat stiker",
+    "videoEditorFeedPreviewContent": "Hindari menempatkan konten di belakang area ini.",
+    "videoEditorFinishTimelineEditingSemanticLabel": "Selesai mengedit timeline",
+    "videoEditorFontSemanticLabel": "Font",
+    "videoEditorFontUnknown": "Tidak dikenal",
+    "videoEditorHideTimelineSemanticLabel": "Sembunyikan timeline",
+    "videoEditorHueSemanticLabel": "Rona",
+    "videoEditorKeepEditingButton": "Lanjutkan mengedit",
+    "videoEditorLayerReorderHint": "Tahan untuk mengurutkan ulang",
+    "videoEditorLayerReorderLabel": "Urutkan ulang lapisan {index}",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLevelSemanticLabel": "Level",
+    "videoEditorMuteAudioSemanticLabel": "Matikan suara",
+    "videoEditorNoStickersAvailable": "Tidak ada stiker tersedia",
+    "videoEditorNoStickersFound": "Stiker tidak ditemukan",
+    "videoEditorOpenAudioSemanticLabel": "Buka editor audio",
+    "videoEditorOpenClipsSemanticLabel": "Buka editor klip",
+    "videoEditorOpenDrawSemanticLabel": "Buka editor gambar",
+    "videoEditorOpenEffectsSemanticLabel": "Buka editor efek",
+    "videoEditorOpenTextSemanticLabel": "Buka editor teks",
+    "videoEditorPauseSemanticLabel": "Jeda",
+    "videoEditorPickColorTitle": "Pilih warna",
+    "videoEditorPlayPauseSemanticLabel": "Putar atau jeda video",
+    "videoEditorPlaySemanticLabel": "Putar",
+    "videoEditorRecordedAudioLabel": "Audio yang direkam",
+    "videoEditorRedoSemanticLabel": "Ulangi",
+    "videoEditorReleaseToDeleteLayer": "Lepas untuk menghapus lapisan",
+    "videoEditorSaturationBrightnessSemanticLabel": "Saturasi dan kecerahan",
+    "videoEditorSaturationBrightnessValue": "Saturasi {saturation}%, Kecerahan {brightness}%",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorSaveClip": "Simpan klip",
+    "videoEditorSaveDraftButton": "Simpan draf",
+    "videoEditorSaveDraftSubtitle": "Simpan editan untuk nanti, atau buang dan keluar dari editor.",
+    "videoEditorSaveDraftTitle": "Simpan draf?",
+    "videoEditorSaveSelectedClip": "Simpan klip yang dipilih",
+    "videoEditorSelectFontSemanticLabel": "Pilih font",
+    "videoEditorShowTimelineSemanticLabel": "Tampilkan timeline",
+    "videoEditorSortBySemanticLabel": "Urutkan berdasarkan {option}. Ketuk untuk mengubah urutan",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorSortLongest": "Terpanjang",
+    "videoEditorSortNewest": "Terbaru",
+    "videoEditorSortShortest": "Terpendek",
+    "videoEditorSplitClip": "Bagi klip",
+    "videoEditorSplitLabel": "Bagi",
+    "videoEditorSplitPlayheadOutsideClip": "Playhead harus berada di dalam klip yang dipilih untuk membagi.",
+    "videoEditorSplitPositionInvalid": "Posisi pembagian tidak valid. Setiap klip harus minimal {minDurationMs}ms.",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorSplitSelectedClipSemanticLabel": "Bagi klip yang dipilih",
+    "videoEditorStickerSearchHint": "Cari stiker...",
+    "videoEditorTextAlignmentSemanticLabel": "Perataan teks",
+    "videoEditorTextBackgroundSemanticLabel": "Latar belakang teks",
+    "videoEditorTextColorSemanticLabel": "Warna teks",
+    "videoEditorTextLabel": "Teks",
+    "videoEditorTimelineClipMoveLeft": "Geser ke kiri",
+    "videoEditorTimelineClipMoveRight": "Geser ke kanan",
+    "videoEditorTimelineClipReorderHint": "Tekan lama untuk mengurutkan ulang",
+    "videoEditorTimelineClipSemanticLabel": "Klip {index} dari {total}, {duration} detik",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineDraggingClipSemanticLabel": "Menyeret klip {index}",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineLongPressToDragHint": "Tekan lama untuk menyeret",
+    "videoEditorTimelinePositionFormat": "{minutes}m {seconds}d",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineTrimClipHint": "Seret pegangan untuk mengatur durasi klip",
+    "videoEditorTimelineTrimClipSemanticLabel": "Pangkas klip",
+    "videoEditorTimelineTrimEndSemanticLabel": "Pangkas akhir",
+    "videoEditorTimelineTrimStartSemanticLabel": "Pangkas awal",
+    "videoEditorUndoSemanticLabel": "Batalkan",
+    "videoEditorUnmuteAudioSemanticLabel": "Aktifkan suara",
+    "videoEditorVideoTimelineSemanticLabel": "Timeline video",
+    "videoEditorVolumeLabel": "Volume",
+    "videoMetadataAddCollaboratorSemanticLabel": "Tambah kolaborator",
+    "videoMetadataBackSemanticLabel": "Kembali",
+    "videoMetadataClassicDoneButton": "Selesai",
+    "videoMetadataClosePreviewSemanticLabel": "Tutup pratinjau video",
+    "videoMetadataCollaboratorsCount": "{count}/{max} Kolaborator",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataCollaboratorsHelpMessage": "Kolaborator ditandai sebagai co-creator pada postingan ini. Kamu hanya dapat menambahkan orang yang saling kamu ikuti, dan mereka muncul dalam metadata postingan saat dipublikasikan.",
+    "videoMetadataCollaboratorsHelpTooltip": "Cara kerja kolaborator",
+    "videoMetadataCollaboratorsLabel": "Kolaborator",
+    "videoMetadataContentWarningDoneButton": "Selesai",
+    "videoMetadataContentWarningLabel": "Peringatan Konten",
+    "videoMetadataContentWarningSelectAllThatApply": "Pilih semua yang berlaku untuk kontenmu",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "Kreator ini tidak dapat direferensikan.",
+    "videoMetadataDeleteTagHint": "Hapus tag {tag}",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataDeleteTagSemanticLabel": "Hapus",
+    "videoMetadataDescriptionLabel": "Deskripsi",
+    "videoMetadataDismissHelpDialogSemanticLabel": "Tutup dialog bantuan",
+    "videoMetadataExpirationLabel": "Kedaluwarsa",
+    "videoMetadataFailedToSaveSnackbar": "Gagal menyimpan",
+    "videoMetadataFormNotReadyHint": "Isi formulir untuk mengaktifkan",
+    "videoMetadataGoToLibraryButton": "Pergi ke Perpustakaan",
+    "videoMetadataGotItButton": "Mengerti!",
+    "videoMetadataInspiredByHelpMessage": "Gunakan ini untuk memberikan atribusi. Kredit terinspirasi berbeda dari kolaborator: ini mengakui pengaruh, tetapi tidak menandai seseorang sebagai co-creator.",
+    "videoMetadataInspiredByHelpTooltip": "Cara kerja kredit inspirasi",
+    "videoMetadataInspiredByLabel": "Terinspirasi oleh",
+    "videoMetadataInspiredByNone": "Tidak ada",
+    "videoMetadataLimitReachedWarning": "Batas 64KB tercapai. Hapus beberapa konten untuk melanjutkan.",
+    "videoMetadataMustMutuallyFollowSnackbar": "Kamu perlu saling mengikuti {name} untuk menambahkannya sebagai kolaborator.",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataMutualFollowersSearchText": "Pengikut saling mengikuti",
+    "videoMetadataOpenPreviewSemanticLabel": "Buka layar pratinjau postingan",
+    "videoMetadataPausePreviewSemanticLabel": "Jeda pratinjau",
+    "videoMetadataPlayPreviewSemanticLabel": "Putar pratinjau",
+    "videoMetadataPostButton": "Posting",
+    "videoMetadataPostDetailsTitle": "Detail postingan",
+    "videoMetadataPostSemanticLabel": "Tombol posting",
+    "videoMetadataPublishVideoHint": "Publikasikan video ke feed",
+    "videoMetadataRemoveCollaboratorSemanticLabel": "Hapus kolaborator",
+    "videoMetadataRemoveInspiredBySemanticLabel": "Hapus inspirasi",
+    "videoMetadataRemoveSemanticLabel": "Hapus",
+    "videoMetadataRenderingVideoHint": "Merender video...",
+    "videoMetadataSaveForLaterButton": "Simpan untuk Nanti",
+    "videoMetadataSaveForLaterSemanticLabel": "Tombol simpan untuk nanti",
+    "videoMetadataSaveToDraftsHint": "Simpan video ke draf dan {destination}",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSavedToLibrarySnackbar": "Disimpan ke perpustakaan",
+    "videoMetadataSavingVideoHint": "Menyimpan video...",
+    "videoMetadataSelectContentWarningsSemanticLabel": "Pilih peringatan konten",
+    "videoMetadataSelectExpirationSemanticLabel": "Pilih waktu kedaluwarsa",
+    "videoMetadataSetInspiredBySemanticLabel": "Atur inspirasi",
+    "videoMetadataShareTitle": "Bagikan",
+    "videoMetadataTagsLabel": "Tag",
+    "videoMetadataTitleLabel": "Judul",
+    "videoMetadataVideoDetailsSubtitle": "Detail video",
+    "videoRecorderAutosaveContinueButton": "Ya, lanjutkan",
+    "videoRecorderAutosaveDiscardButton": "Tidak, mulai video baru",
+    "videoRecorderAutosaveFoundSubtitle": "Apakah kamu ingin melanjutkan dari tempat kamu berhenti?",
+    "videoRecorderAutosaveFoundTitle": "Kami menemukan pekerjaan yang belum selesai",
+    "videoRecorderAutosaveRestoreFailure": "Tidak dapat memulihkan draf kamu",
+    "videoRecorderCaptureCloseLabel": "Tutup",
+    "videoRecorderCaptureNextLabel": "Berikutnya",
+    "videoRecorderClipDeletedMessage": "Klip dihapus",
+    "videoRecorderCloseLabel": "Tutup perekam video",
+    "videoRecorderContinueToEditorLabel": "Lanjutkan ke editor video",
+    "videoRecorderCycleTimerLabel": "Timer siklus",
+    "videoRecorderDeleteLastClipLabel": "Hapus klip terakhir",
+    "videoRecorderGhostFrameDisabled": "Frame hantu dinonaktifkan",
+    "videoRecorderGhostFrameEnabled": "Frame hantu diaktifkan",
+    "videoRecorderLibraryEmptyLabel": "Perpustakaan klip, tidak ada klip",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Buka perpustakaan klip, 1 klip} other{Buka perpustakaan klip, {clipCount} klip}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderRecordingTapToStopLabel": "Merekam. Ketuk di mana saja untuk berhenti",
+    "videoRecorderStartRecordingTooltip": "Mulai merekam",
+    "videoRecorderStopRecordingTooltip": "Hentikan perekaman",
+    "videoRecorderSwitchCameraLabel": "Ganti kamera",
+    "videoRecorderTapToStartLabel": "Ketuk di mana saja untuk mulai merekam",
+    "videoRecorderToggleAspectRatioLabel": "Ganti rasio aspek",
+    "videoRecorderToggleFlashLabel": "Ganti flash",
+    "videoRecorderToggleGhostFrameLabel": "Ganti frame hantu",
+    "videoRecorderToggleGridLabel": "Ganti grid",
+    "videoRecorderWhySixSecondsButton": "Mengerti!",
+    "videoRecorderWhySixSecondsSubtitle": "Klip pendek memberi ruang untuk spontanitas. Format 6 detik membantu kamu menangkap momen autentik saat terjadi.",
+    "videoRecorderWhySixSecondsTitle": "Mengapa enam detik?",
+    "videoActionAutoLabel": "Otomatis",
+    "videoActionEnableAutoAdvance": "Aktifkan lanjut otomatis",
+    "videoActionDisableAutoAdvance": "Nonaktifkan lanjut otomatis",
+    "metadataCaptionsLabel": "Teks",
+    "metadataCaptionsEnabledSemantics": "Teks diaktifkan untuk semua video",
+    "metadataCaptionsDisabledSemantics": "Teks dinonaktifkan untuk semua video",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuDeleteFailedCouldNotSign": "Tidak bisa menandatangani permintaan hapus. Coba lagi.",
+    "shareMenuDeleteFailedGeneric": "Tidak bisa menghapus video ini. Coba lagi.",
+    "shareMenuDeleteFailedNotAuthenticated": "Masuk lagi, lalu coba hapus.",
+    "shareMenuDeleteFailedNotInitialized": "Penghapusan belum siap. Coba lagi sebentar lagi.",
+    "shareMenuDeleteFailedNotOwner": "Kamu cuma bisa menghapus video milikmu sendiri.",
+    "videoEditorLayers": "Lapisan",
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
 }

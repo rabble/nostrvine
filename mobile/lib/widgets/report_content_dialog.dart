@@ -200,9 +200,11 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             );
 
             // 2. Also add to local blocklist for immediate filtering
-            final blocklistService = ref.read(contentBlocklistServiceProvider);
+            final blocklistRepository = ref.read(
+              contentBlocklistRepositoryProvider,
+            );
             final nostrClient = ref.read(nostrServiceProvider);
-            blocklistService.blockUser(
+            blocklistRepository.blockUser(
               widget.video.pubkey,
               ourPubkey: nostrClient.publicKey,
             );

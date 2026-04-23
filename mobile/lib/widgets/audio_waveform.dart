@@ -32,6 +32,7 @@ class AudioWaveform extends StatefulWidget {
     this.color,
     this.backgroundColor,
     this.barCount = 30,
+    this.showPositionText = true,
   });
 
   /// Total duration of the audio. Null if not loaded.
@@ -54,6 +55,9 @@ class AudioWaveform extends StatefulWidget {
 
   /// Number of bars in the waveform visualization.
   final int barCount;
+
+  /// Whether to display the position text below the waveform.
+  final bool showPositionText;
 
   @override
   State<AudioWaveform> createState() => _AudioWaveformState();
@@ -144,8 +148,10 @@ class _AudioWaveformState extends State<AudioWaveform>
   Widget build(BuildContext context) {
     final waveformColor = widget.color ?? VineTheme.vineGreen;
     final bgColor = widget.backgroundColor ?? VineTheme.transparent;
-    // Total height: waveform + spacing + text
-    final totalHeight = widget.height + _spacing + _textHeight;
+    // Total height: waveform + optional spacing + text
+    final totalHeight = widget.showPositionText
+        ? widget.height + _spacing + _textHeight
+        : widget.height;
 
     return Semantics(
       identifier: 'audio_waveform',
@@ -179,10 +185,11 @@ class _AudioWaveformState extends State<AudioWaveform>
                 },
               ),
             ),
-            const SizedBox(height: _spacing),
-
-            // Position text
-            SizedBox(height: _textHeight, child: _buildPositionText()),
+            if (widget.showPositionText) ...[
+              const SizedBox(height: _spacing),
+              // Position text
+              SizedBox(height: _textHeight, child: _buildPositionText()),
+            ],
           ],
         ),
       ),

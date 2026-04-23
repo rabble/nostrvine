@@ -403,14 +403,22 @@
     "videoGridEditVideo": "Videoyu Düzenle",
     "videoGridEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "videoGridDeleteVideo": "Videoyu Sil",
-    "videoGridDeleteVideoSubtitle": "Bu videoyu Divine uygulamasından kaldırır. Diğer Nostr istemcilerinde görünmeye devam edebilir.",
+    "videoGridDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
     "videoGridDeleteConfirmTitle": "Videoyu Sil",
-    "videoGridDeleteConfirmMessage": "Bu video Divine uygulamasından kalıcı olarak silinir. Başka röleler kullanan üçüncü taraf Nostr istemcilerinde görünmeye devam edebilir.",
-    "videoGridDeleteConfirmNote": "Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.",
+    "videoGridDeleteConfirmMessage": "Bu videoyu silmek istediğinden emin misin?",
+    "videoGridDeleteConfirmNote": "Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.",
     "videoGridDeleteCancel": "İptal",
     "videoGridDeleteConfirm": "Sil",
     "videoGridDeletingContent": "İçerik siliniyor...",
     "videoGridDeleteSuccess": "Silme isteği başarıyla gönderildi",
+    "videoGridDeleteFailure": "İçerik silinemedi: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
     "exploreTabClassics": "Klasikler",
     "exploreTabNew": "Yeni",
     "exploreTabPopular": "Popüler",
@@ -462,6 +470,8 @@
     },
     "videoPlayerLoadingVideo": "Video yükleniyor...",
     "videoPlayerPlayVideo": "Videoyu oynat",
+    "videoPlayerMute": "Videoyu sessize al",
+    "videoPlayerUnmute": "Videonun sesini aç",
     "videoPlayerEditVideo": "Videoyu düzenle",
     "videoPlayerEditVideoTooltip": "Videoyu düzenle",
     "contentWarningLabel": "İçerik Uyarısı",
@@ -586,9 +596,6 @@
     "shareMessageHint": "Opsiyonel mesaj ekle...",
     "videoActionUnlike": "Beğenmekten vazgeç",
     "videoActionLike": "Videoyu beğen",
-    "videoActionAutoLabel": "Otomatik",
-    "videoActionEnableAutoAdvance": "Otomatik ilerlemeyi aç",
-    "videoActionDisableAutoAdvance": "Otomatik ilerlemeyi kapat",
     "videoActionRemoveRepost": "Yeniden paylaşımı kaldır",
     "videoActionRepost": "Videoyu yeniden paylaş",
     "videoActionViewComments": "Yorumları görüntüle",
@@ -603,17 +610,6 @@
             }
         }
     },
-    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{döngü} other{döngüler}}",
-    "@videoFeedLoopCountLine": {
-        "placeholders": {
-            "compactCount": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Divine Değil",
     "metadataBadgeHumanMade": "İnsan Yapımı",
     "metadataSoundsLabel": "Sesler",
@@ -625,14 +621,7 @@
     "metadataCollaboratorsLabel": "İşbirlikçiler",
     "metadataInspiredByLabel": "İlham alındı",
     "metadataRepostedByLabel": "Yeniden paylaşan",
-    "metadataLoopsLabel": "{count, plural, =1{Döngü} other{Döngüler}}",
-    "@metadataLoopsLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
+    "metadataLoopsLabel": "Döngüler",
     "metadataLikesLabel": "Beğeniler",
     "metadataCommentsLabel": "Yorumlar",
     "metadataRepostsLabel": "Yeniden Paylaşımlar",
@@ -1502,7 +1491,7 @@
     "shareMenuEditVideo": "Videoyu Düzenle",
     "shareMenuEditVideoSubtitle": "Başlık, açıklama ve etiketleri güncelle",
     "shareMenuDeleteVideo": "Videoyu Sil",
-    "shareMenuDeleteVideoSubtitle": "Bu videoyu Divine uygulamasından kaldırır. Diğer Nostr istemcilerinde görünmeye devam edebilir.",
+    "shareMenuDeleteVideoSubtitle": "Bu içeriği kalıcı olarak kaldır",
     "shareMenuVideoInTheseLists": "Video şu listelerde:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {
@@ -1513,17 +1502,20 @@
         }
     },
     "shareMenuClose": "Kapat",
-    "shareMenuDeleteConfirmation": "Bu video Divine uygulamasından kalıcı olarak silinir. Başka röleler kullanan üçüncü taraf Nostr istemcilerinde görünmeye devam edebilir.",
+    "shareMenuDeleteConfirmation": "Bu videoyu silmek istediğinden emin misin?",
+    "shareMenuDeleteWarning": "Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.",
     "shareMenuCancel": "İptal",
     "shareMenuDelete": "Sil",
     "shareMenuDeletingContent": "İçerik siliniyor...",
-    "shareMenuDeleteRequestSent": "Video silindi",
-    "shareMenuDeleteFailedNotInitialized": "Silme henüz hazır değil. Birazdan tekrar dene.",
-    "shareMenuDeleteFailedNotOwner": "Yalnızca kendi videolarını silebilirsin.",
-    "shareMenuDeleteFailedNotAuthenticated": "Tekrar giriş yap, sonra silmeyi dene.",
-    "shareMenuDeleteFailedCouldNotSign": "Silme isteği imzalanamadı. Tekrar dene.",
-  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedGeneric": "Bu video silinemedi. Tekrar dene.",
+    "shareMenuDeleteRequestSent": "Silme isteği başarıyla gönderildi",
+    "shareMenuFailedToDeleteContent": "İçerik silinemedi: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuFollowSetName": "Takip Seti Adı",
     "shareMenuFollowSetNameHint": "örn. İçerik Üreticileri, Müzisyenler vb.",
     "shareMenuDescriptionOptional": "Açıklama (opsiyonel)",
@@ -1557,7 +1549,15 @@
     },
     "shareMenuDeleteVideoQuestion": "Video Silinsin mi?",
     "shareMenuDeleteRelayWarning": "Bu işlem rölelere bir silme isteği gönderir. Not: Bazı rölelerin hala önbelleğe alınmış kopyaları olabilir.",
-    "shareMenuVideoDeletionRequested": "Video silindi",
+    "shareMenuVideoDeletionRequested": "Video silme isteği alındı",
+    "shareMenuFailedToDeleteVideo": "Video silinemedi: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuContentLabels": "İçerik etiketleri",
     "shareMenuAddContentLabels": "İçerik etiketleri ekle",
     "shareMenuClearAll": "Tümünü temizle",
@@ -1727,9 +1727,9 @@
     "feedFailedToLoadVideos": "Videolar yüklenemedi",
     "feedRetry": "Tekrar Dene",
     "feedNoFollowedUsers": "Takip edilen kullanıcı yok.\nVideolarını burada görmek için birini takip et.",
-    "feedForYouEmpty": "Senin İçin akışın boş.\nVideoları keşfet ve içerik üreticilerini takip ederek akışını şekillendir.",
-    "feedFollowingEmpty": "Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bul ve takip et.",
-    "feedLatestEmpty": "Henüz yeni video yok.\nBiraz sonra tekrar bak.",
+    "feedForYouEmpty": "Sana Özel akışın boş.\nVideolar keşfet ve içerik üreticileri takip ederek akışını şekillendir.",
+    "feedFollowingEmpty": "Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bulup takip et.",
+    "feedLatestEmpty": "Henüz yeni video yok.\nYakında tekrar kontrol et.",
     "feedExploreVideos": "Videoları Keşfet",
     "feedExternalVideoSlow": "Harici video yavaş yükleniyor",
     "feedSkip": "Atla",
@@ -1769,6 +1769,31 @@
     "userSearchPrompt": "Kullanıcı ara",
     "userSearchNoResults": "Kullanıcı bulunamadı",
     "userSearchFailed": "Arama başarısız",
+    "userPickerSearchByName": "Ada göre ara",
+    "userPickerFilterByNameHint": "Ada göre filtrele...",
+    "userPickerSearchByNameHint": "Ada göre ara...",
+    "userPickerAlreadyAddedSemantics": "{name} zaten eklendi",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerSelectSemantics": "{name} seç",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "Ekibin dışarıda",
+    "userPickerEmptyFollowListBody": "Aynı frekansta olduğun kişileri takip et. Onlar da seni takip ettiğinde birlikte üretim yapabilirsiniz.",
+    "userPickerGoBack": "Geri dön",
+    "userPickerTypeNameToSearch": "Aramak için bir isim yaz",
+    "userPickerUnavailable": "Kullanıcı araması kullanılamıyor. Lütfen daha sonra tekrar dene.",
+    "userPickerSearchFailedTryAgain": "Arama başarısız oldu. Lütfen tekrar dene.",
     "forgotPasswordTitle": "Parolayı Sıfırla",
     "forgotPasswordDescription": "E-posta adresini gir, parolanı sıfırlamak için sana bir bağlantı gönderelim.",
     "forgotPasswordEmailLabel": "E-posta Adresi",
@@ -1798,7 +1823,9 @@
     "navInbox": "Gelen Kutusu",
     "navProfile": "Profil",
     "navMyProfile": "Profilim",
+    "navSearch": "Ara",
     "navNotifications": "Bildirimler",
+    "navSearchTooltip": "Ara",
     "navOpenCamera": "Kamerayı aç",
     "navUnknown": "Bilinmeyen",
     "navExploreClassics": "Klasikler",
@@ -2153,6 +2180,7 @@
     "commonCancel": "İptal",
     "commonDelete": "Sil",
     "commonRetry": "Tekrar dene",
+    "commonNext": "İleri",
     "discoverListsFailedToUpdateSubscription": "Abonelik güncellenemedi: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2191,6 +2219,32 @@
     "featureRequestCancel": "İptal",
     "followersFailedToLoadList": "Takipçi listesi yüklenemedi",
     "followingFailedToLoadList": "Takip edilen listesi yüklenemedi",
+    "inboxActionBlock": "{displayName} kullanıcısını engelle",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Sohbeti sessize al",
+    "inboxActionRemove": "Sohbeti kaldır",
+    "inboxActionReport": "{displayName} kullanıcısını bildir",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "{displayName} kullanıcısının engelini kaldır",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} engellendi",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2199,6 +2253,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Sohbet sessize alındı",
+    "inboxConversationUnmuted": "Sohbet sessizden çıkarıldı",
+    "inboxEmptySubtitle": "+ tuşu ısırmaz.",
+    "inboxEmptyTitle": "Henüz mesaj yok",
+    "inboxRemoveConfirmBody": "Bu işlem, {displayName} ile olan sohbetini siler. Bu işlem geri alınamaz.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Kaldır",
+    "inboxRemoveConfirmTitle": "Sohbet kaldırılsın mı?",
     "inboxRemovedConversation": "Sohbet kaldırıldı",
     "inboxReportedUser": "{displayName} bildirildi",
     "@inboxReportedUser": {
@@ -2323,15 +2391,24 @@
     "reportDialogReport": "Bildir",
     "routerInvalidCreator": "Geçersiz içerik üretici",
     "routerInvalidHashtagRoute": "Geçersiz hashtag rotası",
+    "searchDiscoverSomethingInteresting": "İlginç bir şey keşfet",
+    "searchEnterQuery": "Bir arama terimi girin",
     "searchFindCuratedVideoLists": "Küratörlü video listelerini bul",
+  "searchListsSectionHeader": "Listeler",
+  "searchListsLoadingLabel": "Liste sonuçları yükleniyor",
     "searchForLists": "Liste ara",
     "searchSomethingWentWrong": "Bir şeyler ters gitti",
     "searchTryAgain": "Tekrar dene",
     "trendingTitle": "Gündemde",
-    "videoEditorLayers": "Katmanlar",
     "videoEditorStickers": "Çıkartmalar",
     "videoMetadataContentWarnings": "İçerik Uyarıları",
     "videoMetadataExpiration": "Son Kullanma",
+    "videoMetadataExpirationNotExpire": "Süresi dolmaz",
+    "videoMetadataExpirationOneDay": "1 gün",
+    "videoMetadataExpirationOneWeek": "1 hafta",
+    "videoMetadataExpirationOneMonth": "1 ay",
+    "videoMetadataExpirationOneYear": "1 yıl",
+    "videoMetadataExpirationOneDecade": "1 on yıl",
     "videoMetadataTags": "Etiketler",
     "contentLabelAiGenerated": "Yapay Zekâ Üretimi",
     "contentLabelAlcohol": "Alkol",
@@ -2526,5 +2603,330 @@
     "cameraPermissionAllowAccessTitle": "Kamera ve mikrofona erişime izin ver",
     "cameraPermissionAllowAccessDescription": "Bu, videoları doğrudan uygulama içinde çekip düzenlemeni sağlar, daha fazlasını değil.",
     "cameraPermissionContinue": "Devam et",
-    "cameraPermissionGoToSettings": "Ayarlara git"
+    "cameraPermissionGoToSettings": "Ayarlara git",
+    "videoEditorAddClipFromLibrary": "Kütüphaneden klip ekle",
+    "videoEditorAddElementSemanticLabel": "Öğe ekle",
+    "videoEditorAddTitle": "Ekle",
+    "videoEditorAdjustVolumeTitle": "Ses seviyesini ayarla",
+    "videoEditorAudioAddAudio": "Ses ekle",
+    "videoEditorAudioFailedToLoadTitle": "Sesler yüklenemedi",
+    "videoEditorAudioLabel": "Ses",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "İçerik üreticileri ses paylaştığında burada görünür",
+    "videoEditorAudioNoSoundsAvailableTitle": "Kullanılabilir ses yok",
+    "videoEditorAudioNoSoundsFoundSubtitle": "Farklı bir arama terimi deneyin",
+    "videoEditorAudioNoSoundsFoundTitle": "Ses bulunamadı",
+    "videoEditorAudioPausePreviewSemanticLabel": "Önizlemeyi duraklat",
+    "videoEditorAudioPlayPreviewSemanticLabel": "Önizlemeyi oynat",
+    "videoEditorAudioSelectSoundSemanticLabel": "Ses seç",
+    "videoEditorAudioUntitled": "Başlıksız",
+    "videoEditorAudioUntitledSound": "Başlıksız ses",
+    "videoEditorCannotSplitProcessing": "Klip işlenirken bölünemez. Lütfen bekleyin.",
+    "videoEditorClipDeleted": "Klip silindi",
+    "videoEditorClipSaveFailed": "Klip kaydedilemedi",
+    "videoEditorClipSavedSuccess": "Klip kütüphaneye kaydedildi",
+    "videoEditorClipsLabel": "Klipler",
+    "videoEditorCloseColorPickerSemanticLabel": "Renk seçiciyi kapat",
+    "videoEditorCloseSemanticLabel": "Kapat",
+    "videoEditorColorPickerSemanticLabel": "Renk seçici",
+    "videoEditorColorSelectedSemanticLabel": "{colorName}, seçildi",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorConfirmColorSemanticLabel": "Rengi onayla",
+    "videoEditorCropSemanticLabel": "Kırp",
+    "videoEditorCustomAudioLabel": "Özel ses",
+    "videoEditorDeleteClip": "Klibi sil",
+    "videoEditorDeleteLabel": "Sil",
+    "videoEditorDeleteLayerDropZone": "Katman silme bırakma alanı",
+    "videoEditorDeleteSelectedItemSemanticLabel": "Seçili öğeyi sil",
+    "videoEditorDiscardChangesButton": "Değişiklikleri sil",
+    "videoEditorDoneLabel": "Bitti",
+    "videoEditorDoneSemanticLabel": "Bitti",
+    "videoEditorDrawLabel": "Çiz",
+    "videoEditorDrawToolArrowSemanticLabel": "Ok aracı",
+    "videoEditorDrawToolEraserSemanticLabel": "Silgi aracı",
+    "videoEditorDrawToolMarkerSemanticLabel": "İşaretleyici aracı",
+    "videoEditorDrawToolPencilSemanticLabel": "Kalem aracı",
+    "videoEditorDuplicateLabel": "Çoğalt",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "Seçili öğeyi çoğalt",
+    "videoEditorEditLabel": "Düzenle",
+    "videoEditorEditSelectedItemSemanticLabel": "Seçili öğeyi düzenle",
+    "videoEditorEffectsLabel": "Efektler",
+    "videoEditorFailedLoadStickers": "Çıkartmalar yüklenemedi",
+    "videoEditorFeedPreviewContent": "Bu alanların arkasına içerik yerleştirmekten kaçının.",
+    "videoEditorFinishTimelineEditingSemanticLabel": "Zaman çizelgesi düzenlemeyi bitir",
+    "videoEditorFontSemanticLabel": "Yazı tipi",
+    "videoEditorFontUnknown": "Bilinmiyor",
+    "videoEditorHideTimelineSemanticLabel": "Zaman çizelgesini gizle",
+    "videoEditorHueSemanticLabel": "Ton",
+    "videoEditorKeepEditingButton": "Düzenlemeye devam et",
+    "videoEditorLayerReorderHint": "Yeniden sıralamak için basılı tut",
+    "videoEditorLayerReorderLabel": "Katman {index}'i yeniden sırala",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLevelSemanticLabel": "Seviye",
+    "videoEditorMuteAudioSemanticLabel": "Sesi kapat",
+    "videoEditorNoStickersAvailable": "Kullanılabilir çıkartma yok",
+    "videoEditorNoStickersFound": "Çıkartma bulunamadı",
+    "videoEditorOpenAudioSemanticLabel": "Ses düzenleyiciyi aç",
+    "videoEditorOpenClipsSemanticLabel": "Klip düzenleyiciyi aç",
+    "videoEditorOpenDrawSemanticLabel": "Çizim düzenleyiciyi aç",
+    "videoEditorOpenEffectsSemanticLabel": "Efekt düzenleyiciyi aç",
+    "videoEditorOpenTextSemanticLabel": "Metin düzenleyiciyi aç",
+    "videoEditorPauseSemanticLabel": "Duraklat",
+    "videoEditorPickColorTitle": "Renk seç",
+    "videoEditorPlayPauseSemanticLabel": "Videoyu oynat veya duraklat",
+    "videoEditorPlaySemanticLabel": "Oynat",
+    "videoEditorRecordedAudioLabel": "Kaydedilmiş ses",
+    "videoEditorRedoSemanticLabel": "Yinele",
+    "videoEditorReleaseToDeleteLayer": "Katmanı silmek için bırak",
+    "videoEditorSaturationBrightnessSemanticLabel": "Doygunluk ve parlaklık",
+    "videoEditorSaturationBrightnessValue": "Doygunluk {saturation}%, Parlaklık {brightness}%",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorSaveClip": "Klibi kaydet",
+    "videoEditorSaveDraftButton": "Taslağı kaydet",
+    "videoEditorSaveDraftSubtitle": "Düzenlemelerinizi sonraya kaydedin veya atıp düzenleyiciden çıkın.",
+    "videoEditorSaveDraftTitle": "Taslağınızı kaydedin?",
+    "videoEditorSaveSelectedClip": "Seçili klibi kaydet",
+    "videoEditorSelectFontSemanticLabel": "Yazı tipi seç",
+    "videoEditorShowTimelineSemanticLabel": "Zaman çizelgesini göster",
+    "videoEditorSortBySemanticLabel": "{option} ile sırala. Sıralama düzenini değiştirmek için dokun",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorSortLongest": "En uzun",
+    "videoEditorSortNewest": "En yeni",
+    "videoEditorSortShortest": "En kısa",
+    "videoEditorSplitClip": "Klibi böl",
+    "videoEditorSplitLabel": "Böl",
+    "videoEditorSplitPlayheadOutsideClip": "Bölmek için oynatma kafası seçili klip içinde olmalıdır.",
+    "videoEditorSplitPositionInvalid": "Bölme konumu geçersiz. Her iki klip de en az {minDurationMs}ms uzunluğunda olmalıdır.",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorSplitSelectedClipSemanticLabel": "Seçili klibi böl",
+    "videoEditorStickerSearchHint": "Çıkartma ara...",
+    "videoEditorTextAlignmentSemanticLabel": "Metin hizalama",
+    "videoEditorTextBackgroundSemanticLabel": "Metin arka planı",
+    "videoEditorTextColorSemanticLabel": "Metin rengi",
+    "videoEditorTextLabel": "Metin",
+    "videoEditorTimelineClipMoveLeft": "Sola taşı",
+    "videoEditorTimelineClipMoveRight": "Sağa taşı",
+    "videoEditorTimelineClipReorderHint": "Yeniden sıralamak için uzun basın",
+    "videoEditorTimelineClipSemanticLabel": "{total} klipten {index}. klip, {duration} saniye",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineDraggingClipSemanticLabel": "{index}. klip sürükleniyor",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineLongPressToDragHint": "Sürüklemek için uzun basın",
+    "videoEditorTimelinePositionFormat": "{minutes}d {seconds}s",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineTrimClipHint": "Klip süresini ayarlamak için tutamaçları sürükleyin",
+    "videoEditorTimelineTrimClipSemanticLabel": "Klibi kırp",
+    "videoEditorTimelineTrimEndSemanticLabel": "Sonu kırp",
+    "videoEditorTimelineTrimStartSemanticLabel": "Başlangıcı kırp",
+    "videoEditorUndoSemanticLabel": "Geri al",
+    "videoEditorUnmuteAudioSemanticLabel": "Sesi aç",
+    "videoEditorVideoTimelineSemanticLabel": "Video zaman çizelgesi",
+    "videoEditorVolumeLabel": "Ses seviyesi",
+    "videoMetadataAddCollaboratorSemanticLabel": "Ortak çalışan ekle",
+    "videoMetadataBackSemanticLabel": "Geri",
+    "videoMetadataClassicDoneButton": "Bitti",
+    "videoMetadataClosePreviewSemanticLabel": "Video önizlemesini kapat",
+    "videoMetadataCollaboratorsCount": "{count}/{max} Ortak çalışan",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataCollaboratorsHelpMessage": "Ortak çalışanlar bu gönderide ortak içerik üretici olarak etiketlenir. Yalnızca karşılıklı takip ettiğiniz kişileri ekleyebilirsiniz; yayınlandığında gönderi meta verilerinde görünürler.",
+    "videoMetadataCollaboratorsHelpTooltip": "Ortak çalışanlar nasıl çalışır?",
+    "videoMetadataCollaboratorsLabel": "Ortak çalışanlar",
+    "videoMetadataContentWarningDoneButton": "Bitti",
+    "videoMetadataContentWarningLabel": "İçerik Uyarısı",
+    "videoMetadataContentWarningSelectAllThatApply": "İçeriğinize uyanların hepsini seçin",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "Bu içerik üreticisi referans alınamaz.",
+    "videoMetadataDeleteTagHint": "{tag} etiketini sil",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataDeleteTagSemanticLabel": "Sil",
+    "videoMetadataDescriptionLabel": "Açıklama",
+    "videoMetadataDismissHelpDialogSemanticLabel": "Yardım iletişim kutusunu kapat",
+    "videoMetadataExpirationLabel": "Son kullanma tarihi",
+    "videoMetadataFailedToSaveSnackbar": "Kaydedilemedi",
+    "videoMetadataFormNotReadyHint": "Etkinleştirmek için formu doldurun",
+    "videoMetadataGoToLibraryButton": "Kütüphaneye git",
+    "videoMetadataGotItButton": "Anladım!",
+    "videoMetadataInspiredByHelpMessage": "Atıf vermek için kullanın. İlham kredisi ortak çalışanlardan farklıdır: etkiyi kabul eder, ancak birini ortak içerik üretici olarak etiketlemez.",
+    "videoMetadataInspiredByHelpTooltip": "İlham kredileri nasıl çalışır?",
+    "videoMetadataInspiredByLabel": "İlham kaynağı",
+    "videoMetadataInspiredByNone": "Yok",
+    "videoMetadataLimitReachedWarning": "64KB sınırına ulaşıldı. Devam etmek için bazı içerikleri kaldırın.",
+    "videoMetadataMustMutuallyFollowSnackbar": "{name}'i ortak çalışan olarak eklemek için karşılıklı takipleşmeniz gerekiyor.",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataMutualFollowersSearchText": "Karşılıklı takipçiler",
+    "videoMetadataOpenPreviewSemanticLabel": "Gönderi önizleme ekranını aç",
+    "videoMetadataPausePreviewSemanticLabel": "Önizlemeyi duraklat",
+    "videoMetadataPlayPreviewSemanticLabel": "Önizlemeyi oynat",
+    "videoMetadataPostButton": "Paylaş",
+    "videoMetadataPostDetailsTitle": "Gönderi ayrıntıları",
+    "videoMetadataPostSemanticLabel": "Paylaş düğmesi",
+    "videoMetadataPublishVideoHint": "Videoyu akışa yayınla",
+    "videoMetadataRemoveCollaboratorSemanticLabel": "Ortak çalışanı kaldır",
+    "videoMetadataRemoveInspiredBySemanticLabel": "İlham kaynağını kaldır",
+    "videoMetadataRemoveSemanticLabel": "Kaldır",
+    "videoMetadataRenderingVideoHint": "Video işleniyor...",
+    "videoMetadataSaveForLaterButton": "Sonra Kaydet",
+    "videoMetadataSaveForLaterSemanticLabel": "Sonra kaydet düğmesi",
+    "videoMetadataSaveToDraftsHint": "Videoyu taslağa ve {destination}'a kaydet",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSavedToLibrarySnackbar": "Kütüphaneye kaydedildi",
+    "videoMetadataSavingVideoHint": "Video kaydediliyor...",
+    "videoMetadataSelectContentWarningsSemanticLabel": "İçerik uyarılarını seç",
+    "videoMetadataSelectExpirationSemanticLabel": "Son kullanma zamanını seç",
+    "videoMetadataSetInspiredBySemanticLabel": "İlham kaynağını ayarla",
+    "videoMetadataShareTitle": "Paylaş",
+    "videoMetadataTagsLabel": "Etiketler",
+    "videoMetadataTitleLabel": "Başlık",
+    "videoMetadataVideoDetailsSubtitle": "Video ayrıntıları",
+    "videoRecorderAutosaveContinueButton": "Evet, devam et",
+    "videoRecorderAutosaveDiscardButton": "Hayır, yeni video başlat",
+    "videoRecorderAutosaveFoundSubtitle": "Kaldığınız yerden devam etmek ister misiniz?",
+    "videoRecorderAutosaveFoundTitle": "Devam eden bir çalışma bulduk",
+    "videoRecorderAutosaveRestoreFailure": "Taslağınız geri yüklenemedi",
+    "videoRecorderCaptureCloseLabel": "Kapat",
+    "videoRecorderCaptureNextLabel": "İleri",
+    "videoRecorderClipDeletedMessage": "Klip silindi",
+    "videoRecorderCloseLabel": "Video kaydediciyi kapat",
+    "videoRecorderContinueToEditorLabel": "Video düzenleyiciye devam et",
+    "videoRecorderCycleTimerLabel": "Zamanlayıcıyı değiştir",
+    "videoRecorderDeleteLastClipLabel": "Son klibi sil",
+    "videoRecorderGhostFrameDisabled": "Hayalet kare devre dışı",
+    "videoRecorderGhostFrameEnabled": "Hayalet kare etkin",
+    "videoRecorderLibraryEmptyLabel": "Klip kütüphanesi, klip yok",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Klip kütüphanesini aç, 1 klip} other{Klip kütüphanesini aç, {clipCount} klip}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderRecordingTapToStopLabel": "Kaydediliyor. Durdurmak için herhangi bir yere dokunun",
+    "videoRecorderStartRecordingTooltip": "Kaydı başlat",
+    "videoRecorderStopRecordingTooltip": "Kaydı durdur",
+    "videoRecorderSwitchCameraLabel": "Kamerayı değiştir",
+    "videoRecorderTapToStartLabel": "Kaydı başlatmak için herhangi bir yere dokunun",
+    "videoRecorderToggleAspectRatioLabel": "En-boy oranını değiştir",
+    "videoRecorderToggleFlashLabel": "Flaşı değiştir",
+    "videoRecorderToggleGhostFrameLabel": "Hayalet kareyi değiştir",
+    "videoRecorderToggleGridLabel": "Izgarayı değiştir",
+    "videoRecorderWhySixSecondsButton": "Anladım!",
+    "videoRecorderWhySixSecondsSubtitle": "Kısa klipler kendiliğindenlik için alan yaratır. 6 saniyelik format, anların gerçekleştiği anda otantik anları yakalamanıza yardımcı olur.",
+    "videoRecorderWhySixSecondsTitle": "Neden altı saniye?",
+    "videoActionAutoLabel": "Otomatik",
+    "videoActionEnableAutoAdvance": "Otomatik ilerlemeyi etkinleştir",
+    "videoActionDisableAutoAdvance": "Otomatik ilerlemeyi devre dışı bırak",
+    "metadataCaptionsLabel": "Altyazılar",
+    "metadataCaptionsEnabledSemantics": "Tüm videolar için altyazılar etkin",
+    "metadataCaptionsDisabledSemantics": "Tüm videolar için altyazılar devre dışı",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuDeleteFailedCouldNotSign": "Silme isteği imzalanamadı. Tekrar dene.",
+    "shareMenuDeleteFailedGeneric": "Bu video silinemedi. Tekrar dene.",
+    "shareMenuDeleteFailedNotAuthenticated": "Tekrar giriş yap, sonra silmeyi dene.",
+    "shareMenuDeleteFailedNotInitialized": "Silme henüz hazır değil. Birazdan tekrar dene.",
+    "shareMenuDeleteFailedNotOwner": "Yalnızca kendi videolarını silebilirsin.",
+    "videoEditorLayers": "Katmanlar",
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{döngü} other{döngüler}}",
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
 }

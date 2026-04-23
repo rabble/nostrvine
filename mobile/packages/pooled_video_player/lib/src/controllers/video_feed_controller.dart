@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -132,11 +133,13 @@ class VideoFeedController extends ChangeNotifier {
     required List<VideoItem> videos,
     PlayerPool? pool,
     int initialIndex = 0,
+    double initialVolume = 1.0,
     this.preloadAhead = 2,
     this.preloadBehind = 1,
     this.mediaSourceResolver,
     this.onVideoReady,
     this.onVideoStalled,
+    this.onVolumeChanged,
     this.positionCallback,
     this.positionCallbackInterval = const Duration(milliseconds: 250),
     this.slowLoadThreshold = const Duration(seconds: 8),
@@ -145,6 +148,7 @@ class VideoFeedController extends ChangeNotifier {
     this.onLog,
   }) : pool = pool ?? PlayerPool.instance,
        _videos = List.from(videos),
+       _desiredPlaybackVolume = initialVolume.clamp(0.0, 1.0),
        _currentIndex = initialIndex.clamp(
          0,
          videos.isEmpty ? 0 : videos.length - 1,
@@ -178,6 +182,12 @@ class VideoFeedController extends ChangeNotifier {
   /// Hook: Called when the current video repeatedly stalls and should be
   /// skipped.
   final VideoStalledCallback? onVideoStalled;
+
+  /// Hook: Called when the playback volume changes (mute/unmute/setVolume).
+  ///
+  /// The callback receives the new volume value (0.0 = muted, 1.0 = full).
+  /// Use this to persist the mute/volume state outside the package.
+  final ValueChanged<double>? onVolumeChanged;
 
   /// Hook: Called periodically with position updates.
   ///
@@ -225,7 +235,7 @@ class VideoFeedController extends ChangeNotifier {
   bool _isActive = true;
   bool _isPaused = false;
   bool _isDisposed = false;
-  double _desiredPlaybackVolume = 1;
+  double _desiredPlaybackVolume;
 
   // Loaded players by index
   final Map<int, PooledPlayer> _loadedPlayers = {};
@@ -385,6 +395,9 @@ class VideoFeedController extends ChangeNotifier {
 
   /// Whether this feed is active.
   bool get isActive => _isActive;
+
+  /// Whether playback is currently muted.
+  bool get isMuted => _desiredPlaybackVolume == 0;
 
   /// Get the video controller for rendering at the given index.
   VideoController? getVideoController(int index) =>
@@ -943,13 +956,41 @@ class VideoFeedController extends ChangeNotifier {
     }
   }
 
-  /// Set volume (0.0 to 1.0) for current video.
-  void setVolume(double volume) {
-    _desiredPlaybackVolume = volume.clamp(0.0, 1.0);
+  /// Toggles mute state for the current video's player.
+  ///
+  /// Uses the controller's desired playback volume as the source of truth:
+  /// when [_desiredPlaybackVolume] is greater than zero, this mutes by
+  /// setting the player volume to `0`; otherwise it unmutes to `1`.
+  ///
+  /// Only the current player's volume is set here. Preloaded players
+  /// intentionally buffer at volume 0 and receive [_desiredPlayerVolume]
+  /// when they become current via [_playVideo] / [play].
+  void toggleMuteState() {
+    final volume = _desiredPlaybackVolume > 0 ? 0.0 : 1.0;
+    _desiredPlaybackVolume = volume;
     final player = _loadedPlayers[_currentIndex]?.player;
     if (player != null) {
       unawaited(player.setVolume(_desiredPlayerVolume));
     }
+    onVolumeChanged?.call(volume);
+    notifyListeners();
+  }
+
+  /// Set volume (0.0 to 1.0) for current video.
+  ///
+  /// Only the current player's volume is set here. Preloaded players
+  /// intentionally buffer at volume 0 and receive [_desiredPlayerVolume]
+  /// when they become current via [_playVideo] / [play].
+  void setVolume(double volume) {
+    final clamped = volume.clamp(0.0, 1.0);
+    if (_desiredPlaybackVolume == clamped) return;
+    _desiredPlaybackVolume = clamped;
+    final player = _loadedPlayers[_currentIndex]?.player;
+    if (player != null) {
+      unawaited(player.setVolume(_desiredPlayerVolume));
+    }
+    onVolumeChanged?.call(clamped);
+    notifyListeners();
   }
 
   double get _desiredPlayerVolume =>
@@ -1217,7 +1258,7 @@ class VideoFeedController extends ChangeNotifier {
       final hadExistingPlayer = pool.hasPlayer(video.url);
       final loadStopwatch = _loadStopwatches.putIfAbsent(
         index,
-        () => Stopwatch()..start(),
+        () => clock.stopwatch()..start(),
       );
       _logDebug(
         'load_start ${_videoDebugDetails(index)} '
@@ -1900,7 +1941,7 @@ class VideoFeedController extends ChangeNotifier {
       return;
     }
 
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final nowMs = clock.now().millisecondsSinceEpoch;
 
     if (_rateCheckWallStartMs == null) {
       _rateCheckWallStartMs = nowMs;
@@ -1951,7 +1992,7 @@ class VideoFeedController extends ChangeNotifier {
   /// tick, passed in so we don't read `player.state.position` a
   /// second time.
   void _emitStateSnapshotIfDue(int index, Player player, int positionMs) {
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final nowMs = clock.now().millisecondsSinceEpoch;
     if (_lastStateSnapshotWallMs != null &&
         nowMs - _lastStateSnapshotWallMs! < _stateSnapshotIntervalMs) {
       return;

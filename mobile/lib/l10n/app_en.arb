@@ -245,33 +245,36 @@
   "profileUserBlockedContent": "You won't see content from this user in your feeds.",
   "profileUserBlockedUnblockHint": "You can unblock them anytime from their profile or in Settings > Safety.",
   "profileCloseButton": "Close",
-  "profileNoCollabsTitle": "No Collabs Yet",
-  "profileCollabsOwnEmpty": "Videos you collaborate on will appear here",
-  "profileCollabsOtherEmpty": "Videos they collaborate on will appear here",
+  "profileNoCollabsTitle": "No collabs yet",
+  "profileCollabsOwnEmpty": "Videos you collaborate on will appear here.",
+  "profileCollabsOtherEmpty": "Videos they collaborate on will appear here.",
   "profileErrorLoadingCollabs": "Error loading collab videos",
-  "profileNoCommentsOwnTitle": "No Comments Yet",
-  "profileNoCommentsOtherTitle": "No Comments",
-  "profileCommentsOwnEmpty": "Your comments and replies will appear here",
-  "profileCommentsOtherEmpty": "Their comments and replies will appear here",
+  "profileNoSavedVideosTitle": "Nothing saved yet",
+  "profileSavedOwnEmpty": "Bookmark videos from the share sheet and they'll show up here.",
+  "profileErrorLoadingSaved": "Error loading saved videos",
+  "profileNoCommentsOwnTitle": "No comments yet",
+  "profileNoCommentsOtherTitle": "No comments yet",
+  "profileCommentsOwnEmpty": "Your comments and replies will appear here.",
+  "profileCommentsOtherEmpty": "Their comments and replies will appear here.",
   "profileErrorLoadingComments": "Error loading comments",
   "profileVideoRepliesSection": "Video Replies",
   "profileCommentsSection": "Comments",
   "profileEditLabel": "Edit",
   "profileLibraryLabel": "Library",
-  "profileNoLikedVideosTitle": "No Liked Videos Yet",
-  "profileLikedOwnEmpty": "Videos you like will appear here",
-  "profileLikedOtherEmpty": "Videos they like will appear here",
+  "profileNoLikedVideosTitle": "No likes yet",
+  "profileLikedOwnEmpty": "When something catches your eye, tap the heart. Your likes will show up here.",
+  "profileLikedOtherEmpty": "Nothing caught their eye yet. Give it time.",
   "profileErrorLoadingLiked": "Error loading liked videos",
-  "profileNoRepostsTitle": "No Reposts Yet",
-  "profileRepostsOwnEmpty": "Videos you repost will appear here",
-  "profileRepostsOtherEmpty": "Videos they repost will appear here",
+  "profileNoRepostsTitle": "No reposts yet",
+  "profileRepostsOwnEmpty": "See something worth sharing? Repost it and it'll appear here.",
+  "profileRepostsOtherEmpty": "They haven't passed anything on yet. When they do, it'll show up here.",
   "profileErrorLoadingReposts": "Error loading reposted videos",
   "profileLoadingTitle": "Loading profile...",
   "profileLoadingSubtitle": "This may take a few moments",
   "profileLoadingVideos": "Loading videos...",
-  "profileNoVideosTitle": "No Videos Yet",
-  "profileNoVideosOwnSubtitle": "Share your first video to see it here",
-  "profileNoVideosOtherSubtitle": "This user hasn't shared any videos yet",
+  "profileNoVideosTitle": "No videos yet",
+  "profileNoVideosOwnSubtitle": "Your stage is set. Start posting and your videos will live here.",
+  "profileNoVideosOtherSubtitle": "The world is waiting. Follow them so you don't miss it.",
   "profileVideoThumbnailLabel": "Video thumbnail {number}",
   "@profileVideoThumbnailLabel": {
     "placeholders": {
@@ -304,6 +307,17 @@
   "profileSessionExpired": "Session Expired",
   "profileSignInToRestore": "Sign in again to restore full access",
   "profileSignInButton": "Sign in",
+  "profileMaybeLaterLabel": "Maybe Later",
+  "profileSecurePrimaryButton": "Add Email & Password",
+  "profileCompletePrimaryButton": "Update Your Profile",
+  "profileLoopsLabel": "Loops",
+  "profileLikesLabel": "Likes",
+  "profileMyLibraryLabel": "My Library",
+  "profileMessageLabel": "Message",
+  "profileUserFallback": "user",
+  "@profileUserFallback": {
+    "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+  },
   "profileDismissTooltip": "Dismiss",
   "profileLinkCopied": "Profile link copied",
   "profileSetupEditProfileTitle": "Edit Profile",
@@ -462,6 +476,8 @@
   },
   "videoPlayerLoadingVideo": "Loading video...",
   "videoPlayerPlayVideo": "Play video",
+  "videoPlayerMute": "Mute video",
+  "videoPlayerUnmute": "Unmute video",
   "videoPlayerEditVideo": "Edit video",
   "videoPlayerEditVideoTooltip": "Edit video",
   "contentWarningLabel": "Content Warning",
@@ -1769,6 +1785,31 @@
   "userSearchPrompt": "Search for users",
   "userSearchNoResults": "No users found",
   "userSearchFailed": "Search failed",
+  "userPickerSearchByName": "Search by name",
+  "userPickerFilterByNameHint": "Filter by name...",
+  "userPickerSearchByNameHint": "Search by name...",
+  "userPickerAlreadyAddedSemantics": "{name} already added",
+  "@userPickerAlreadyAddedSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "userPickerSelectSemantics": "Select {name}",
+  "@userPickerSelectSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "userPickerEmptyFollowListTitle": "Your crew is out there",
+  "userPickerEmptyFollowListBody": "Follow people you vibe with. When they follow back, you can collab.",
+  "userPickerGoBack": "Go back",
+  "userPickerTypeNameToSearch": "Type a name to search",
+  "userPickerUnavailable": "User search is unavailable. Please try again later.",
+  "userPickerSearchFailedTryAgain": "Search failed. Please try again.",
   "forgotPasswordTitle": "Reset Password",
   "forgotPasswordDescription": "Enter your email address and we'll send you a link to reset your password.",
   "forgotPasswordEmailLabel": "Email Address",
@@ -2167,6 +2208,50 @@
   },
   "inboxRemovedConversation": "Removed conversation",
 
+  "inboxEmptyTitle": "No messages yet",
+  "inboxEmptySubtitle": "That + button won't bite.",
+
+  "inboxActionMute": "Mute conversation",
+  "inboxActionReport": "Report {displayName}",
+  "@inboxActionReport": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionBlock": "Block {displayName}",
+  "@inboxActionBlock": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionUnblock": "Unblock {displayName}",
+  "@inboxActionUnblock": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionRemove": "Remove conversation",
+
+  "inboxRemoveConfirmTitle": "Remove conversation?",
+  "inboxRemoveConfirmBody": "This will delete your conversation with {displayName}. This action cannot be undone.",
+  "@inboxRemoveConfirmBody": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemoveConfirmConfirm": "Remove",
+
+  "inboxConversationMuted": "Conversation muted",
+  "inboxConversationUnmuted": "Conversation unmuted",
+
   "reportDialogCancel": "Cancel",
   "reportDialogReport": "Report",
 
@@ -2209,14 +2294,20 @@
   },
 
   "commonRetry": "Retry",
+  "commonNext": "Next",
   "commonDelete": "Delete",
   "commonCancel": "Cancel",
 
   "videoMetadataTags": "Tags",
   "videoMetadataExpiration": "Expiration",
+  "videoMetadataExpirationNotExpire": "Does not expire",
+  "videoMetadataExpirationOneDay": "1 day",
+  "videoMetadataExpirationOneWeek": "1 week",
+  "videoMetadataExpirationOneMonth": "1 month",
+  "videoMetadataExpirationOneYear": "1 year",
+  "videoMetadataExpirationOneDecade": "1 decade",
   "videoMetadataContentWarnings": "Content Warnings",
 
-  "videoEditorLayers": "Layers",
   "videoEditorStickers": "Stickers",
 
   "trendingTitle": "Trending",
@@ -2346,6 +2437,16 @@
   "searchTryAgain": "Try again",
   "searchForLists": "Search for lists",
   "searchFindCuratedVideoLists": "Find curated video lists",
+  "searchEnterQuery": "Enter a search query",
+  "@searchEnterQuery": {
+    "description": "Title of the empty-query placeholder shown on the search results screen before the user has entered a query."
+  },
+  "searchDiscoverSomethingInteresting": "Discover something interesting",
+  "@searchDiscoverSomethingInteresting": {
+    "description": "Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query."
+  },
+  "searchListsSectionHeader": "Lists",
+  "searchListsLoadingLabel": "Loading list results",
 
   "contentWarningViewAnyway": "View Anyway",
 
@@ -2531,6 +2632,300 @@
   "cameraPermissionAllowAccessDescription": "This allows you to capture and edit videos right here in the app, nothing more.",
   "cameraPermissionContinue": "Continue",
   "cameraPermissionGoToSettings": "Go to settings",
+  "videoRecorderWhySixSecondsTitle": "Why six seconds?",
+  "videoRecorderWhySixSecondsSubtitle": "Quick clips make space for spontaneity. The 6-second format helps you capture authentic moments as they happen.",
+  "videoRecorderWhySixSecondsButton": "Got it!",
+  "videoRecorderAutosaveFoundTitle": "We found work in progress",
+  "videoRecorderAutosaveFoundSubtitle": "Would you like to continue where you left off?",
+  "videoRecorderAutosaveContinueButton": "Yes, continue",
+  "videoRecorderAutosaveDiscardButton": "No, start a new video",
+  "videoRecorderAutosaveRestoreFailure": "Could not restore your draft",
+  "videoRecorderStopRecordingTooltip": "Stop recording",
+  "videoRecorderStartRecordingTooltip": "Start recording",
+  "videoRecorderRecordingTapToStopLabel": "Recording. Tap anywhere to stop",
+  "videoRecorderTapToStartLabel": "Tap anywhere to start recording",
+  "videoRecorderDeleteLastClipLabel": "Delete last clip",
+  "videoRecorderSwitchCameraLabel": "Switch camera",
+  "videoRecorderToggleGridLabel": "Toggle grid",
+  "videoRecorderToggleGhostFrameLabel": "Toggle ghost frame",
+  "videoRecorderGhostFrameEnabled": "Ghost frame enabled",
+  "videoRecorderGhostFrameDisabled": "Ghost frame disabled",
+  "videoRecorderClipDeletedMessage": "Clip deleted",
+  "videoRecorderCloseLabel": "Close video recorder",
+  "videoRecorderContinueToEditorLabel": "Continue to video editor",
+  "videoRecorderCaptureCloseLabel": "Close",
+  "videoRecorderCaptureNextLabel": "Next",
+  "videoRecorderToggleFlashLabel": "Toggle flash",
+  "videoRecorderCycleTimerLabel": "Cycle timer",
+  "videoRecorderToggleAspectRatioLabel": "Toggle aspect ratio",
+  "videoRecorderLibraryEmptyLabel": "Clip library, no clips",
+  "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Open clip library, 1 clip} other{Open clip library, {clipCount} clips}}",
+  "@videoRecorderLibraryOpenLabel": {
+    "placeholders": {
+      "clipCount": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorClipsLabel": "Clips",
+  "videoEditorTextLabel": "Text",
+  "videoEditorDrawLabel": "Draw",
+  "videoEditorEffectsLabel": "Effects",
+  "videoEditorAudioLabel": "Audio",
+  "videoEditorVolumeLabel": "Volume",
+  "videoEditorAddTitle": "Add",
+  "videoEditorOpenClipsSemanticLabel": "Open clips editor",
+  "videoEditorOpenAudioSemanticLabel": "Open audio editor",
+  "videoEditorOpenTextSemanticLabel": "Open text editor",
+  "videoEditorOpenDrawSemanticLabel": "Open draw editor",
+  "videoEditorOpenEffectsSemanticLabel": "Open effects editor",
+  "videoEditorSaveDraftTitle": "Save your draft?",
+  "videoEditorSaveDraftSubtitle": "Keep your edits for later, or discard them and leave the editor.",
+  "videoEditorSaveDraftButton": "Save draft",
+  "videoEditorDiscardChangesButton": "Discard changes",
+  "videoEditorKeepEditingButton": "Keep editing",
+  "videoEditorDeleteLayerDropZone": "Delete layer drop zone",
+  "videoEditorReleaseToDeleteLayer": "Release to delete layer",
+  "videoEditorDoneLabel": "Done",
+  "videoEditorPlayPauseSemanticLabel": "Play or pause video",
+  "videoEditorCropSemanticLabel": "Crop",
+  "videoEditorCannotSplitProcessing": "Cannot split clip while it is being processed. Please wait.",
+  "videoEditorSplitPositionInvalid": "Split position invalid. Both clips must be at least {minMs}ms long.",
+  "@videoEditorSplitPositionInvalid": {
+    "placeholders": {
+      "minMs": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorAddClipFromLibrary": "Add clip from Library",
+  "videoEditorSaveSelectedClip": "Save selected clip",
+  "videoEditorSplitClip": "Split clip",
+  "videoEditorSaveClip": "Save clip",
+  "videoEditorDeleteClip": "Delete clip",
+  "videoEditorClipSavedSuccess": "Clip saved to library",
+  "videoEditorClipSaveFailed": "Failed to save clip",
+  "videoEditorClipDeleted": "Clip deleted",
+  "videoEditorColorPickerSemanticLabel": "Color picker",
+  "videoEditorUndoSemanticLabel": "Undo",
+  "videoEditorRedoSemanticLabel": "Redo",
+  "videoEditorTextColorSemanticLabel": "Text color",
+  "videoEditorTextAlignmentSemanticLabel": "Text alignment",
+  "videoEditorTextBackgroundSemanticLabel": "Text background",
+  "videoEditorFontSemanticLabel": "Font",
+  "videoEditorNoStickersFound": "No stickers found",
+  "videoEditorNoStickersAvailable": "No stickers available",
+  "videoEditorFailedLoadStickers": "Failed to load stickers",
+  "videoEditorAdjustVolumeTitle": "Adjust volume",
+  "videoEditorRecordedAudioLabel": "Recorded audio",
+  "videoEditorCustomAudioLabel": "Custom audio",
+  "videoEditorPlaySemanticLabel": "Play",
+  "videoEditorPauseSemanticLabel": "Pause",
+  "videoEditorMuteAudioSemanticLabel": "Mute audio",
+  "videoEditorUnmuteAudioSemanticLabel": "Unmute audio",
+  "videoEditorDeleteLabel": "Delete",
+  "videoEditorDeleteSelectedItemSemanticLabel": "Delete selected item",
+  "videoEditorEditLabel": "Edit",
+  "videoEditorEditSelectedItemSemanticLabel": "Edit selected item",
+  "videoEditorDuplicateLabel": "Duplicate",
+  "videoEditorDuplicateSelectedItemSemanticLabel": "Duplicate selected item",
+  "videoEditorSplitLabel": "Split",
+  "videoEditorSplitSelectedClipSemanticLabel": "Split selected clip",
+  "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
+  "videoEditorSortNewest": "Newest",
+  "videoEditorSortLongest": "Longest",
+  "videoEditorSortShortest": "Shortest",
+  "videoEditorSortBySemanticLabel": "Sort by {option}. Tap to change sort order",
+  "@videoEditorSortBySemanticLabel": {
+    "placeholders": {
+      "option": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
+  "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",
+  "videoEditorAudioUntitledSound": "Untitled sound",
+  "videoEditorAudioSelectSoundSemanticLabel": "Select sound",
+  "videoEditorAudioUntitled": "Untitled",
+  "videoEditorAudioAddAudio": "Add audio",
+  "videoEditorAudioNoSoundsAvailableTitle": "No sounds available",
+  "videoEditorAudioNoSoundsAvailableSubtitle": "Sounds will appear here when creators share audio",
+  "videoEditorAudioNoSoundsFoundTitle": "No sounds found",
+  "videoEditorAudioNoSoundsFoundSubtitle": "Try a different search term",
+  "videoEditorAudioFailedToLoadTitle": "Failed to load sounds",
+  "videoEditorDrawToolArrowSemanticLabel": "Arrow tool",
+  "videoEditorDrawToolEraserSemanticLabel": "Eraser tool",
+  "videoEditorDrawToolMarkerSemanticLabel": "Marker tool",
+  "videoEditorDrawToolPencilSemanticLabel": "Pencil tool",
+  "videoEditorLayerReorderLabel": "Reorder layer {index}",
+  "@videoEditorLayerReorderLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorLayerReorderHint": "Hold to reorder",
+  "videoEditorShowTimelineSemanticLabel": "Show timeline",
+  "videoEditorHideTimelineSemanticLabel": "Hide timeline",
+  "videoEditorFeedPreviewContent": "Avoid placing content behind these areas.",
+  "videoEditorStickerSearchHint": "Search stickers...",
+  "videoEditorSelectFontSemanticLabel": "Select font",
+  "videoEditorFontUnknown": "Unknown",
+  "videoEditorSplitPlayheadOutsideClip": "Playhead must be within the selected clip to split.",
+  "videoEditorSplitPositionInvalid": "Split position invalid. Both clips must be at least {minDurationMs}ms long.",
+  "@videoEditorSplitPositionInvalid": {
+    "placeholders": {
+      "minDurationMs": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorTimelineTrimStartSemanticLabel": "Trim start",
+  "videoEditorTimelineTrimEndSemanticLabel": "Trim end",
+  "videoEditorTimelineTrimClipSemanticLabel": "Trim clip",
+  "videoEditorTimelineTrimClipHint": "Drag handles to adjust clip duration",
+  "videoEditorTimelineDraggingClipSemanticLabel": "Dragging clip {index}",
+  "@videoEditorTimelineDraggingClipSemanticLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorTimelineClipSemanticLabel": "Clip {index} of {total}, {duration} seconds",
+  "@videoEditorTimelineClipSemanticLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditorTimelineClipReorderHint": "Long press to reorder",
+  "videoEditorTimelineClipMoveLeft": "Move left",
+  "videoEditorTimelineClipMoveRight": "Move right",
+  "videoEditorTimelineLongPressToDragHint": "Long press to drag",
+  "videoEditorVideoTimelineSemanticLabel": "Video timeline",
+  "videoEditorTimelinePositionFormat": "{minutes}m {seconds}s",
+  "@videoEditorTimelinePositionFormat": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "seconds": { "type": "String" }
+    }
+  },
+  "videoEditorColorPickerSemanticLabel": "Color picker",
+  "videoEditorColorSelectedSemanticLabel": "{colorName}, selected",
+  "@videoEditorColorSelectedSemanticLabel": {
+    "placeholders": {
+      "colorName": { "type": "String" }
+    }
+  },
+  "videoEditorCloseColorPickerSemanticLabel": "Close color picker",
+  "videoEditorPickColorTitle": "Pick color",
+  "videoEditorConfirmColorSemanticLabel": "Confirm color",
+  "videoEditorSaturationBrightnessSemanticLabel": "Saturation and brightness",
+  "videoEditorSaturationBrightnessValue": "Saturation {saturation}%, Brightness {brightness}%",
+  "@videoEditorSaturationBrightnessValue": {
+    "placeholders": {
+      "saturation": { "type": "int" },
+      "brightness": { "type": "int" }
+    }
+  },
+  "videoEditorHueSemanticLabel": "Hue",
+  "videoEditorAddElementSemanticLabel": "Add element",
+  "videoEditorCloseSemanticLabel": "Close",
+  "videoEditorDoneSemanticLabel": "Done",
+  "videoEditorLevelSemanticLabel": "Level",
+
+  "videoMetadataBackSemanticLabel": "Back",
+  "videoMetadataDismissHelpDialogSemanticLabel": "Dismiss help dialog",
+  "videoMetadataGotItButton": "Got it!",
+  "videoMetadataLimitReachedWarning": "64KB limit reached. Remove some content to continue.",
+  "videoMetadataExpirationLabel": "Expiration",
+  "videoMetadataSelectExpirationSemanticLabel": "Select expiration time",
+  "videoMetadataTitleLabel": "Title",
+  "videoMetadataDescriptionLabel": "Description",
+  "videoMetadataTagsLabel": "Tags",
+  "videoMetadataDeleteTagSemanticLabel": "Delete",
+  "videoMetadataDeleteTagHint": "Delete Tag {tag}",
+  "@videoMetadataDeleteTagHint": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataContentWarningLabel": "Content Warning",
+  "videoMetadataSelectContentWarningsSemanticLabel": "Select content warnings",
+  "videoMetadataContentWarningSelectAllThatApply": "Select all that apply to your content",
+  "videoMetadataContentWarningDoneButton": "Done",
+  "videoMetadataCollaboratorsLabel": "Collaborators",
+  "videoMetadataAddCollaboratorSemanticLabel": "Add collaborator",
+  "videoMetadataCollaboratorsHelpTooltip": "How collaborators work",
+  "videoMetadataCollaboratorsCount": "{count}/{max} Collaborators",
+  "@videoMetadataCollaboratorsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "videoMetadataRemoveCollaboratorSemanticLabel": "Remove collaborator",
+  "videoMetadataCollaboratorsHelpMessage": "Collaborators are tagged as co-creators on this post. You can only add people you mutually follow, and they appear in the post metadata when published.",
+  "videoMetadataMutualFollowersSearchText": "Mutual followers",
+  "videoMetadataMustMutuallyFollowSnackbar": "You need to mutually follow {name} to add them as a collaborator.",
+  "@videoMetadataMustMutuallyFollowSnackbar": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataInspiredByLabel": "Inspired by",
+  "videoMetadataSetInspiredBySemanticLabel": "Set inspired by",
+  "videoMetadataInspiredByHelpTooltip": "How inspiration credits work",
+  "videoMetadataInspiredByNone": "None",
+  "videoMetadataInspiredByHelpMessage": "Use this to give attribution. Inspired-by credit is different from collaborators: it acknowledges influence, but does not tag someone as a co-creator.",
+  "videoMetadataCreatorCannotBeReferencedSnackbar": "This creator cannot be referenced.",
+  "videoMetadataRemoveInspiredBySemanticLabel": "Remove inspired by",
+  "videoMetadataPostDetailsTitle": "Post details",
+  "videoMetadataSavedToLibrarySnackbar": "Saved to library",
+  "videoMetadataFailedToSaveSnackbar": "Failed to save",
+  "videoMetadataGoToLibraryButton": "Go to Library",
+  "videoMetadataSaveForLaterSemanticLabel": "Save for later button",
+  "videoMetadataRenderingVideoHint": "Rendering video...",
+  "videoMetadataSavingVideoHint": "Saving video...",
+  "videoMetadataSaveToDraftsHint": "Save video to drafts and {destination}",
+  "@videoMetadataSaveToDraftsHint": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataSaveForLaterButton": "Save for Later",
+  "videoMetadataPostSemanticLabel": "Post button",
+  "videoMetadataPublishVideoHint": "Publish video to feed",
+  "videoMetadataFormNotReadyHint": "Fill out the form to enable",
+  "videoMetadataPostButton": "Post",
+  "videoMetadataOpenPreviewSemanticLabel": "Open post preview screen",
+  "videoMetadataShareTitle": "Share",
+  "videoMetadataVideoDetailsSubtitle": "Video details",
+  "videoMetadataClassicDoneButton": "Done",
+  "videoMetadataPlayPreviewSemanticLabel": "Play preview",
+  "videoMetadataPausePreviewSemanticLabel": "Pause preview",
+  "videoMetadataClosePreviewSemanticLabel": "Close video preview",
+  "videoMetadataRemoveSemanticLabel": "Remove",
   "metadataCaptionsLabel": "Captions",
   "@metadataCaptionsLabel": {
     "description": "Label for the global captions toggle in the video metadata sheet"

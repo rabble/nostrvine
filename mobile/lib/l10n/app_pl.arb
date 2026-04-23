@@ -403,14 +403,22 @@
     "videoGridEditVideo": "Edytuj film",
     "videoGridEditVideoSubtitle": "Zaktualizuj tytuł, opis i hashtagi",
     "videoGridDeleteVideo": "Usuń film",
-    "videoGridDeleteVideoSubtitle": "Usuń ten film z Divine. Inne klienty Nostr mogą go nadal pokazywać.",
+    "videoGridDeleteVideoSubtitle": "Trwale usuń tę treść",
     "videoGridDeleteConfirmTitle": "Usuń film",
-    "videoGridDeleteConfirmMessage": "Ten film zostanie trwale usunięty z Divine. Może nadal być widoczny w innych klientach Nostr korzystających z innych przekaźników.",
-    "videoGridDeleteConfirmNote": "To wyślе żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.",
+    "videoGridDeleteConfirmMessage": "Na pewno chcesz usunąć ten film?",
+    "videoGridDeleteConfirmNote": "To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.",
     "videoGridDeleteCancel": "Anuluj",
     "videoGridDeleteConfirm": "Usuń",
     "videoGridDeletingContent": "Usuwanie treści...",
     "videoGridDeleteSuccess": "Żądanie usunięcia wysłane pomyślnie",
+    "videoGridDeleteFailure": "Nie udało się usunąć treści: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
     "exploreTabClassics": "Klasyki",
     "exploreTabNew": "Nowe",
     "exploreTabPopular": "Popularne",
@@ -462,6 +470,8 @@
     },
     "videoPlayerLoadingVideo": "Wczytywanie filmu...",
     "videoPlayerPlayVideo": "Odtwórz film",
+    "videoPlayerMute": "Wycisz film",
+    "videoPlayerUnmute": "Włącz dźwięk filmu",
     "videoPlayerEditVideo": "Edytuj film",
     "videoPlayerEditVideoTooltip": "Edytuj film",
     "contentWarningLabel": "Ostrzeżenie o treści",
@@ -603,17 +613,6 @@
             }
         }
     },
-    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{pętla} few{pętle} many{pętli} other{pętli}}",
-    "@videoFeedLoopCountLine": {
-        "placeholders": {
-            "compactCount": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Nie Divine",
     "metadataBadgeHumanMade": "Zrobione przez człowieka",
     "metadataSoundsLabel": "Dźwięki",
@@ -625,14 +624,7 @@
     "metadataCollaboratorsLabel": "Współtwórcy",
     "metadataInspiredByLabel": "Zainspirowane przez",
     "metadataRepostedByLabel": "Repostowane przez",
-    "metadataLoopsLabel": "{count, plural, =1{Pętla} few{Pętle} many{Pętli} other{Pętli}}",
-    "@metadataLoopsLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
+    "metadataLoopsLabel": "Pętle",
     "metadataLikesLabel": "Polubienia",
     "metadataCommentsLabel": "Komentarze",
     "metadataRepostsLabel": "Reposty",
@@ -1502,7 +1494,7 @@
     "shareMenuEditVideo": "Edytuj film",
     "shareMenuEditVideoSubtitle": "Zaktualizuj tytuł, opis i hashtagi",
     "shareMenuDeleteVideo": "Usuń film",
-    "shareMenuDeleteVideoSubtitle": "Usuń ten film z Divine. Inne klienty Nostr mogą go nadal pokazywać.",
+    "shareMenuDeleteVideoSubtitle": "Trwale usuń tę treść",
     "shareMenuVideoInTheseLists": "Film jest na tych listach:",
     "shareMenuVideoCount": "{count, plural, one{1 film} few{{count} filmy} many{{count} filmów} other{{count} filmu}}",
     "@shareMenuVideoCount": {
@@ -1513,17 +1505,20 @@
         }
     },
     "shareMenuClose": "Zamknij",
-    "shareMenuDeleteConfirmation": "Ten film zostanie trwale usunięty z Divine. Może nadal być widoczny w innych klientach Nostr korzystających z innych przekaźników.",
+    "shareMenuDeleteConfirmation": "Na pewno chcesz usunąć ten film?",
+    "shareMenuDeleteWarning": "To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.",
     "shareMenuCancel": "Anuluj",
     "shareMenuDelete": "Usuń",
     "shareMenuDeletingContent": "Usuwanie treści...",
-    "shareMenuDeleteRequestSent": "Film usunięty",
-    "shareMenuDeleteFailedNotInitialized": "Usuwanie nie jest jeszcze gotowe. Spróbuj ponownie za chwilę.",
-    "shareMenuDeleteFailedNotOwner": "Możesz usuwać tylko własne filmy.",
-    "shareMenuDeleteFailedNotAuthenticated": "Zaloguj się ponownie i spróbuj usunąć.",
-    "shareMenuDeleteFailedCouldNotSign": "Nie udało się podpisać żądania usunięcia. Spróbuj ponownie.",
-  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedGeneric": "Nie udało się usunąć tego filmu. Spróbuj ponownie.",
+    "shareMenuDeleteRequestSent": "Żądanie usunięcia wysłane pomyślnie",
+    "shareMenuFailedToDeleteContent": "Nie udało się usunąć treści: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuFollowSetName": "Nazwa zestawu obserwowanych",
     "shareMenuFollowSetNameHint": "np. Twórcy treści, Muzycy itp.",
     "shareMenuDescriptionOptional": "Opis (opcjonalnie)",
@@ -1557,7 +1552,15 @@
     },
     "shareMenuDeleteVideoQuestion": "Usunąć film?",
     "shareMenuDeleteRelayWarning": "To wyślе żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.",
-    "shareMenuVideoDeletionRequested": "Film usunięty",
+    "shareMenuVideoDeletionRequested": "Zażądano usunięcia filmu",
+    "shareMenuFailedToDeleteVideo": "Nie udało się usunąć filmu: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuContentLabels": "Etykiety treści",
     "shareMenuAddContentLabels": "Dodaj etykiety treści",
     "shareMenuClearAll": "Wyczyść wszystko",
@@ -1769,6 +1772,31 @@
     "userSearchPrompt": "Szukaj użytkowników",
     "userSearchNoResults": "Nie znaleziono użytkowników",
     "userSearchFailed": "Wyszukiwanie nieudane",
+    "userPickerSearchByName": "Szukaj po nazwie",
+    "userPickerFilterByNameHint": "Filtruj po nazwie...",
+    "userPickerSearchByNameHint": "Szukaj po nazwie...",
+    "userPickerAlreadyAddedSemantics": "{name} już dodano",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerSelectSemantics": "Wybierz {name}",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "Twoja ekipa czeka",
+    "userPickerEmptyFollowListBody": "Obserwuj osoby, z którymi nadajesz na tych samych falach. Gdy obserwujecie się wzajemnie, możecie współtworzyć.",
+    "userPickerGoBack": "Wróć",
+    "userPickerTypeNameToSearch": "Wpisz nazwę, aby wyszukać",
+    "userPickerUnavailable": "Wyszukiwanie użytkowników jest niedostępne. Spróbuj ponownie później.",
+    "userPickerSearchFailedTryAgain": "Wyszukiwanie nie powiodło się. Spróbuj ponownie.",
     "forgotPasswordTitle": "Zresetuj hasło",
     "forgotPasswordDescription": "Wprowadź swój adres e-mail, a wyślemy ci link do zresetowania hasła.",
     "forgotPasswordEmailLabel": "Adres e-mail",
@@ -2153,6 +2181,7 @@
     "commonCancel": "Anuluj",
     "commonDelete": "Usuń",
     "commonRetry": "Ponów",
+    "commonNext": "Dalej",
     "discoverListsFailedToUpdateSubscription": "Nie udało się zaktualizować subskrypcji: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2191,6 +2220,32 @@
     "featureRequestCancel": "Anuluj",
     "followersFailedToLoadList": "Nie udało się załadować listy obserwujących",
     "followingFailedToLoadList": "Nie udało się załadować listy obserwowanych",
+    "inboxActionBlock": "Zablokuj {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Wycisz rozmowę",
+    "inboxActionRemove": "Usuń rozmowę",
+    "inboxActionReport": "Zgłoś {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Odblokuj {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "Zablokowano {displayName}",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2199,6 +2254,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Wyciszono rozmowę",
+    "inboxConversationUnmuted": "Wyłączono wyciszenie rozmowy",
+    "inboxEmptySubtitle": "Ten przycisk + nie gryzie.",
+    "inboxEmptyTitle": "Brak wiadomości",
+    "inboxRemoveConfirmBody": "Spowoduje to usunięcie rozmowy z {displayName}. Tej operacji nie można cofnąć.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Usuń",
+    "inboxRemoveConfirmTitle": "Usunąć rozmowę?",
     "inboxRemovedConversation": "Usunięto rozmowę",
     "inboxReportedUser": "Zgłoszono {displayName}",
     "@inboxReportedUser": {
@@ -2323,15 +2392,24 @@
     "reportDialogReport": "Zgłoś",
     "routerInvalidCreator": "Nieprawidłowy twórca",
     "routerInvalidHashtagRoute": "Nieprawidłowa ścieżka hashtagu",
+    "searchDiscoverSomethingInteresting": "Odkryj coś ciekawego",
+    "searchEnterQuery": "Wpisz zapytanie",
     "searchFindCuratedVideoLists": "Znajdź wyselekcjonowane listy filmów",
+  "searchListsSectionHeader": "Listy",
+  "searchListsLoadingLabel": "Ładowanie wyników list",
     "searchForLists": "Szukaj list",
     "searchSomethingWentWrong": "Coś poszło nie tak",
     "searchTryAgain": "Spróbuj ponownie",
     "trendingTitle": "Na czasie",
-    "videoEditorLayers": "Warstwy",
     "videoEditorStickers": "Naklejki",
     "videoMetadataContentWarnings": "Ostrzeżenia o treści",
     "videoMetadataExpiration": "Wygaśnięcie",
+    "videoMetadataExpirationNotExpire": "Nie wygasa",
+    "videoMetadataExpirationOneDay": "1 dzień",
+    "videoMetadataExpirationOneWeek": "1 tydzień",
+    "videoMetadataExpirationOneMonth": "1 miesiąc",
+    "videoMetadataExpirationOneYear": "1 rok",
+    "videoMetadataExpirationOneDecade": "1 dekada",
     "videoMetadataTags": "Tagi",
     "contentLabelAiGenerated": "Wygenerowane przez AI",
     "contentLabelAlcohol": "Alkohol",
@@ -2526,5 +2604,327 @@
     "cameraPermissionAllowAccessTitle": "Zezwól na dostęp do aparatu i mikrofonu",
     "cameraPermissionAllowAccessDescription": "To pozwala nagrywać i edytować filmy bezpośrednio w aplikacji i nic więcej.",
     "cameraPermissionContinue": "Kontynuuj",
-    "cameraPermissionGoToSettings": "Przejdź do ustawień"
+    "cameraPermissionGoToSettings": "Przejdź do ustawień",
+    "videoRecorderWhySixSecondsTitle": "Dlaczego sześć sekund?",
+    "videoRecorderWhySixSecondsSubtitle": "Krótkie klipy dają przestrzeń na spontaniczność. Format 6 sekund pomaga uchwycić autentyczne chwile w momencie, gdy się dzieją.",
+    "videoRecorderWhySixSecondsButton": "Rozumiem!",
+    "videoRecorderAutosaveFoundTitle": "Znaleźliśmy niedokończoną pracę",
+    "videoRecorderAutosaveFoundSubtitle": "Czy chcesz kontynuować od miejsca, w którym skończyłeś?",
+    "videoRecorderAutosaveContinueButton": "Tak, kontynuuj",
+    "videoRecorderAutosaveDiscardButton": "Nie, rozpocznij nowy film",
+    "videoRecorderAutosaveRestoreFailure": "Nie udało się przywrócić wersji roboczej",
+    "videoRecorderStopRecordingTooltip": "Zatrzymaj nagrywanie",
+    "videoRecorderStartRecordingTooltip": "Rozpocznij nagrywanie",
+    "videoRecorderRecordingTapToStopLabel": "Nagrywanie. Dotknij dowolnego miejsca, aby zatrzymać",
+    "videoRecorderTapToStartLabel": "Dotknij dowolnego miejsca, aby rozpocząć nagrywanie",
+    "videoRecorderDeleteLastClipLabel": "Usuń ostatni klip",
+    "videoRecorderSwitchCameraLabel": "Przełącz aparat",
+    "videoRecorderToggleGridLabel": "Przełącz siatkę",
+    "videoRecorderToggleGhostFrameLabel": "Przełącz klatkę odniesienia",
+    "videoRecorderGhostFrameEnabled": "Klatka odniesienia włączona",
+    "videoRecorderGhostFrameDisabled": "Klatka odniesienia wyłączona",
+    "videoRecorderClipDeletedMessage": "Klip usunięty",
+    "videoRecorderCloseLabel": "Zamknij rejestrator wideo",
+    "videoRecorderContinueToEditorLabel": "Przejdź do edytora wideo",
+    "videoRecorderCaptureCloseLabel": "Zamknij",
+    "videoRecorderCaptureNextLabel": "Dalej",
+    "videoRecorderToggleFlashLabel": "Przełącz lampę błyskową",
+    "videoRecorderCycleTimerLabel": "Zmień timer",
+    "videoRecorderToggleAspectRatioLabel": "Przełącz proporcje",
+    "videoRecorderLibraryEmptyLabel": "Biblioteka klipów, brak klipów",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Otwórz bibliotekę klipów, 1 klip} other{Otwórz bibliotekę klipów, {clipCount} klipów}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorClipsLabel": "Klipy",
+    "videoEditorTextLabel": "Tekst",
+    "videoEditorDrawLabel": "Rysuj",
+    "videoEditorEffectsLabel": "Efekty",
+    "videoEditorAudioLabel": "Audio",
+    "videoEditorVolumeLabel": "Głośność",
+    "videoEditorAddTitle": "Dodaj",
+    "videoEditorOpenClipsSemanticLabel": "Otwórz edytor klipów",
+    "videoEditorOpenAudioSemanticLabel": "Otwórz edytor audio",
+    "videoEditorOpenTextSemanticLabel": "Otwórz edytor tekstu",
+    "videoEditorOpenDrawSemanticLabel": "Otwórz edytor rysowania",
+    "videoEditorOpenEffectsSemanticLabel": "Otwórz edytor efektów",
+    "videoEditorSaveDraftTitle": "Zapisać wersję roboczą?",
+    "videoEditorSaveDraftSubtitle": "Zachowaj edycje na później albo odrzuć je i opuść edytor.",
+    "videoEditorSaveDraftButton": "Zapisz wersję roboczą",
+    "videoEditorDiscardChangesButton": "Odrzuć zmiany",
+    "videoEditorKeepEditingButton": "Kontynuuj edycję",
+    "videoEditorDeleteLayerDropZone": "Strefa upuszczania do usuwania warstwy",
+    "videoEditorReleaseToDeleteLayer": "Puść, aby usunąć warstwę",
+    "videoEditorDoneLabel": "Gotowe",
+    "videoEditorPlayPauseSemanticLabel": "Odtwórz lub wstrzymaj wideo",
+    "videoEditorCropSemanticLabel": "Przytnij",
+    "videoEditorCannotSplitProcessing": "Nie można podzielić klipu podczas przetwarzania. Poczekaj.",
+    "videoEditorSplitPositionInvalid": "Nieprawidłowa pozycja podziału. Oba klipy muszą mieć co najmniej {minDurationMs} ms.",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorAddClipFromLibrary": "Dodaj klip z biblioteki",
+    "videoEditorSaveSelectedClip": "Zapisz wybrany klip",
+    "videoEditorSplitClip": "Podziel klip",
+    "videoEditorSaveClip": "Zapisz klip",
+    "videoEditorDeleteClip": "Usuń klip",
+    "videoEditorClipSavedSuccess": "Klip zapisany w bibliotece",
+    "videoEditorClipSaveFailed": "Nie udało się zapisać klipu",
+    "videoEditorClipDeleted": "Klip usunięty",
+    "videoEditorColorPickerSemanticLabel": "Wybór koloru",
+    "videoEditorUndoSemanticLabel": "Cofnij",
+    "videoEditorRedoSemanticLabel": "Ponów",
+    "videoEditorTextColorSemanticLabel": "Kolor tekstu",
+    "videoEditorTextAlignmentSemanticLabel": "Wyrównanie tekstu",
+    "videoEditorTextBackgroundSemanticLabel": "Tło tekstu",
+    "videoEditorFontSemanticLabel": "Czcionka",
+    "videoEditorNoStickersFound": "Nie znaleziono naklejek",
+    "videoEditorNoStickersAvailable": "Brak dostępnych naklejek",
+    "videoEditorFailedLoadStickers": "Nie udało się wczytać naklejek",
+    "videoEditorAdjustVolumeTitle": "Dostosuj głośność",
+    "videoEditorRecordedAudioLabel": "Nagrane audio",
+    "videoEditorCustomAudioLabel": "Własne audio",
+    "videoEditorPlaySemanticLabel": "Odtwórz",
+    "videoEditorPauseSemanticLabel": "Wstrzymaj",
+    "videoEditorMuteAudioSemanticLabel": "Wycisz audio",
+    "videoEditorUnmuteAudioSemanticLabel": "Włącz dźwięk",
+    "videoEditorDeleteLabel": "Usuń",
+    "videoEditorDeleteSelectedItemSemanticLabel": "Usuń wybrany element",
+    "videoEditorEditLabel": "Edytuj",
+    "videoEditorEditSelectedItemSemanticLabel": "Edytuj wybrany element",
+    "videoEditorDuplicateLabel": "Duplikuj",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "Duplikuj wybrany element",
+    "videoEditorSplitLabel": "Podziel",
+    "videoEditorSplitSelectedClipSemanticLabel": "Podziel wybrany klip",
+    "videoEditorFinishTimelineEditingSemanticLabel": "Zakończ edycję osi czasu",
+    "videoEditorSortNewest": "Najnowsze",
+    "videoEditorSortLongest": "Najdłuższe",
+    "videoEditorSortShortest": "Najkrótsze",
+    "videoEditorSortBySemanticLabel": "Sortuj według {option}. Dotknij, aby zmienić kolejność sortowania",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorAudioPlayPreviewSemanticLabel": "Odtwórz podgląd",
+    "videoEditorAudioPausePreviewSemanticLabel": "Wstrzymaj podgląd",
+    "videoEditorAudioUntitledSound": "Nienazwany dźwięk",
+    "videoEditorAudioSelectSoundSemanticLabel": "Wybierz dźwięk",
+    "videoEditorAudioUntitled": "Bez tytułu",
+    "videoEditorAudioAddAudio": "Dodaj audio",
+    "videoEditorAudioNoSoundsAvailableTitle": "Brak dostępnych dźwięków",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "Dźwięki pojawią się tutaj, gdy twórcy udostępnią audio",
+    "videoEditorAudioNoSoundsFoundTitle": "Nie znaleziono dźwięków",
+    "videoEditorAudioNoSoundsFoundSubtitle": "Spróbuj innego wyszukiwania",
+    "videoEditorAudioFailedToLoadTitle": "Nie udało się wczytać dźwięków",
+    "videoEditorDrawToolArrowSemanticLabel": "Narzędzie strzałki",
+    "videoEditorDrawToolEraserSemanticLabel": "Narzędzie gumki",
+    "videoEditorDrawToolMarkerSemanticLabel": "Narzędzie markera",
+    "videoEditorDrawToolPencilSemanticLabel": "Narzędzie ołówka",
+    "videoEditorLayerReorderLabel": "Zmień kolejność warstwy {index}",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLayerReorderHint": "Przytrzymaj, aby zmienić kolejność",
+    "videoEditorShowTimelineSemanticLabel": "Pokaż oś czasu",
+    "videoEditorHideTimelineSemanticLabel": "Ukryj oś czasu",
+    "videoEditorFeedPreviewContent": "Unikaj umieszczania treści za tymi obszarami.",
+    "videoEditorStickerSearchHint": "Szukaj naklejek...",
+    "videoEditorSelectFontSemanticLabel": "Wybierz czcionkę",
+    "videoEditorFontUnknown": "Nieznana",
+    "videoEditorSplitPlayheadOutsideClip": "Aby podzielić, głowica odtwarzania musi znajdować się w wybranym klipie.",
+    "videoEditorTimelineTrimStartSemanticLabel": "Przytnij początek",
+    "videoEditorTimelineTrimEndSemanticLabel": "Przytnij koniec",
+    "videoEditorTimelineTrimClipSemanticLabel": "Przytnij klip",
+    "videoEditorTimelineTrimClipHint": "Przeciągnij uchwyty, aby dostosować długość klipu",
+    "videoEditorTimelineDraggingClipSemanticLabel": "Przeciąganie klipu {index}",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineClipSemanticLabel": "Klip {index} z {total}, {duration} sekund",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineClipReorderHint": "Przytrzymaj, aby zmienić kolejność",
+    "videoEditorTimelineClipMoveLeft": "Przesuń w lewo",
+    "videoEditorTimelineClipMoveRight": "Przesuń w prawo",
+    "videoEditorTimelineLongPressToDragHint": "Przytrzymaj, aby przeciągnąć",
+    "videoEditorVideoTimelineSemanticLabel": "Oś czasu wideo",
+    "videoEditorTimelinePositionFormat": "{minutes} min {seconds} s",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorColorSelectedSemanticLabel": "{colorName}, wybrany",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorCloseColorPickerSemanticLabel": "Zamknij wybór koloru",
+    "videoEditorPickColorTitle": "Wybierz kolor",
+    "videoEditorConfirmColorSemanticLabel": "Potwierdź kolor",
+    "videoEditorSaturationBrightnessSemanticLabel": "Nasycenie i jasność",
+    "videoEditorSaturationBrightnessValue": "Nasycenie {saturation}%, jasność {brightness}%",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorHueSemanticLabel": "Odcień",
+    "videoEditorAddElementSemanticLabel": "Dodaj element",
+    "videoEditorCloseSemanticLabel": "Zamknij",
+    "videoEditorDoneSemanticLabel": "Gotowe",
+    "videoEditorLevelSemanticLabel": "Poziom",
+    "videoMetadataBackSemanticLabel": "Wstecz",
+    "videoMetadataDismissHelpDialogSemanticLabel": "Zamknij okno pomocy",
+    "videoMetadataGotItButton": "Rozumiem!",
+    "videoMetadataLimitReachedWarning": "Osiągnięto limit 64 KB. Usuń część treści, aby kontynuować.",
+    "videoMetadataExpirationLabel": "Wygaśnięcie",
+    "videoMetadataSelectExpirationSemanticLabel": "Wybierz czas wygaśnięcia",
+    "videoMetadataTitleLabel": "Tytuł",
+    "videoMetadataDescriptionLabel": "Opis",
+    "videoMetadataTagsLabel": "Tagi",
+    "videoMetadataDeleteTagSemanticLabel": "Usuń",
+    "videoMetadataDeleteTagHint": "Usuń tag {tag}",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataContentWarningLabel": "Ostrzeżenie o treści",
+    "videoMetadataSelectContentWarningsSemanticLabel": "Wybierz ostrzeżenia o treści",
+    "videoMetadataContentWarningSelectAllThatApply": "Wybierz wszystko, co dotyczy Twojej treści",
+    "videoMetadataContentWarningDoneButton": "Gotowe",
+    "videoMetadataCollaboratorsLabel": "Współtwórcy",
+    "videoMetadataAddCollaboratorSemanticLabel": "Dodaj współtwórcę",
+    "videoMetadataCollaboratorsHelpTooltip": "Jak działają współtwórcy",
+    "videoMetadataCollaboratorsCount": "{count}/{max} współtwórców",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataRemoveCollaboratorSemanticLabel": "Usuń współtwórcę",
+    "videoMetadataCollaboratorsHelpMessage": "Współtwórcy są oznaczani jako współautorzy tego posta. Możesz dodać tylko osoby, które obserwujecie się wzajemnie, a ich dane pojawią się w metadanych po publikacji.",
+    "videoMetadataMutualFollowersSearchText": "Wzajemni obserwujący",
+    "videoMetadataMustMutuallyFollowSnackbar": "Aby dodać {name} jako współtwórcę, musicie obserwować się wzajemnie.",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataInspiredByLabel": "Zainspirowane przez",
+    "videoMetadataSetInspiredBySemanticLabel": "Ustaw zainspirowane przez",
+    "videoMetadataInspiredByHelpTooltip": "Jak działają przypisania inspiracji",
+    "videoMetadataInspiredByNone": "Brak",
+    "videoMetadataInspiredByHelpMessage": "Użyj tego, aby dodać przypisanie. Oznaczenie zainspirowane przez różni się od współtwórców: wskazuje wpływ, ale nie oznacza nikogo jako współautora.",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "Nie można odwołać się do tego twórcy.",
+    "videoMetadataRemoveInspiredBySemanticLabel": "Usuń zainspirowane przez",
+    "videoMetadataPostDetailsTitle": "Szczegóły posta",
+    "videoMetadataSavedToLibrarySnackbar": "Zapisano w bibliotece",
+    "videoMetadataFailedToSaveSnackbar": "Nie udało się zapisać",
+    "videoMetadataGoToLibraryButton": "Przejdź do biblioteki",
+    "videoMetadataSaveForLaterSemanticLabel": "Przycisk zapisz na później",
+    "videoMetadataRenderingVideoHint": "Renderowanie wideo...",
+    "videoMetadataSavingVideoHint": "Zapisywanie wideo...",
+    "videoMetadataSaveToDraftsHint": "Zapisz wideo w wersjach roboczych i {destination}",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveForLaterButton": "Zapisz na później",
+    "videoMetadataPostSemanticLabel": "Przycisk opublikuj",
+    "videoMetadataPublishVideoHint": "Opublikuj wideo w feedzie",
+    "videoMetadataFormNotReadyHint": "Wypełnij formularz, aby włączyć",
+    "videoMetadataPostButton": "Opublikuj",
+    "videoMetadataOpenPreviewSemanticLabel": "Otwórz ekran podglądu posta",
+    "videoMetadataShareTitle": "Udostępnij",
+    "videoMetadataVideoDetailsSubtitle": "Szczegóły wideo",
+    "videoMetadataClassicDoneButton": "Gotowe",
+    "videoMetadataPlayPreviewSemanticLabel": "Odtwórz podgląd",
+    "videoMetadataPausePreviewSemanticLabel": "Wstrzymaj podgląd",
+    "videoMetadataClosePreviewSemanticLabel": "Zamknij podgląd wideo",
+    "videoMetadataRemoveSemanticLabel": "Usuń",
+    "metadataCaptionsLabel": "Napisy",
+    "metadataCaptionsEnabledSemantics": "Napisy włączone dla wszystkich filmów",
+    "metadataCaptionsDisabledSemantics": "Napisy wyłączone dla wszystkich filmów",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuDeleteFailedCouldNotSign": "Nie udało się podpisać żądania usunięcia. Spróbuj ponownie.",
+    "shareMenuDeleteFailedGeneric": "Nie udało się usunąć tego filmu. Spróbuj ponownie.",
+    "shareMenuDeleteFailedNotAuthenticated": "Zaloguj się ponownie i spróbuj usunąć.",
+    "shareMenuDeleteFailedNotInitialized": "Usuwanie nie jest jeszcze gotowe. Spróbuj ponownie za chwilę.",
+    "shareMenuDeleteFailedNotOwner": "Możesz usuwać tylko własne filmy.",
+    "videoEditorLayers": "Warstwy",
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{pętla} few{pętle} many{pętli} other{pętli}}",
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
 }

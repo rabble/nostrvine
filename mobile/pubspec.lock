@@ -252,10 +252,10 @@ packages:
     dependency: "direct dev"
     description:
       name: build_runner
-      sha256: "110c56ef29b5eb367b4d17fc79375fa8c18a6cd7acd92c05bb3986c17a079057"
+      sha256: b4d854962a32fd9f8efc0b76f98214790b833af8b2e9b2df6bfc927c0415a072
       url: "https://pub.dev"
     source: hosted
-    version: "2.10.4"
+    version: "2.10.5"
   built_collection:
     dependency: transitive
     description:
@@ -354,7 +354,7 @@ packages:
     source: hosted
     version: "0.4.2"
   clock:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: clock
       sha256: fddb70d9b5277016c77a80201021d40a2247104d9f4aa7bab7157b7e3f05b84b
@@ -1363,14 +1363,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  linked_scroll_controller:
-    dependency: "direct main"
-    description:
-      name: linked_scroll_controller
-      sha256: e6020062bcf4ffc907ee7fd090fa971e65d8dfaac3c62baf601a3ced0b37986a
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.0"
   lints:
     dependency: transitive
     description:
@@ -1496,10 +1488,10 @@ packages:
     dependency: transitive
     description:
       name: mockito
-      sha256: dac24d461418d363778d53198d9ac0510b9d073869f078450f195766ec48d05e
+      sha256: eff30d002f0c8bf073b6f929df4483b543133fcafce056870163587b03f1d422
       url: "https://pub.dev"
     source: hosted
-    version: "5.6.1"
+    version: "5.6.4"
   mocktail:
     dependency: "direct dev"
     description:
@@ -1808,18 +1800,18 @@ packages:
     dependency: "direct main"
     description:
       name: pro_image_editor
-      sha256: d7d06e085edb1b97e17bd7a47ae9d1cb86bf12179a67480bbcc870642bd98824
+      sha256: b12229ecf7371f930f4acc3bdba2a69fd69330cf53b08bb28768db7f21b569c7
       url: "https://pub.dev"
     source: hosted
-    version: "12.0.13"
+    version: "12.4.3"
   pro_video_editor:
     dependency: "direct main"
     description:
       name: pro_video_editor
-      sha256: cfed1424b3ca3d5981cc81efdd20b844c995c0ad2818e185eb5bc06a8674f728
+      sha256: "4c1a92374c443a2599f4a018208e3f0532e92c246912113989c65b60e4b552fe"
       url: "https://pub.dev"
     source: hosted
-    version: "1.14.2"
+    version: "1.15.0"
   process:
     dependency: transitive
     description:
@@ -2561,6 +2553,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "15.0.2"
+  volume_controller:
+    dependency: "direct main"
+    description:
+      name: volume_controller
+      sha256: ce25d4e02dd6f0b6d5d02dc1daa8de11b2d42d0f5afab8b1eda6aa0ebab3937a
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.4.4"
   wakelock_plus:
     dependency: transitive
     description:

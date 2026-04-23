@@ -118,9 +118,9 @@ void main() {
 
         await tester.pumpWidget(buildSubject());
 
-        expect(find.text('No Comments Yet'), findsOneWidget);
+        expect(find.text('No comments yet'), findsOneWidget);
         expect(
-          find.text('Your comments and replies will appear here'),
+          find.text('Your comments and replies will appear here.'),
           findsOneWidget,
         );
       });
@@ -132,9 +132,9 @@ void main() {
 
         await tester.pumpWidget(buildSubject(isOwnProfile: false));
 
-        expect(find.text('No Comments'), findsOneWidget);
+        expect(find.text('No comments yet'), findsOneWidget);
         expect(
-          find.text('Their comments and replies will appear here'),
+          find.text('Their comments and replies will appear here.'),
           findsOneWidget,
         );
       });

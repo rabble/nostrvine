@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -20,7 +21,7 @@ class VideoMetadataUserChip extends ConsumerWidget {
     required String pubkey,
     this.onRemove,
     this.isLoading = false,
-    this.removeLabel = 'Remove',
+    this.removeLabel,
     super.key,
   }) : _pubkey = pubkey,
        _npub = null;
@@ -30,7 +31,7 @@ class VideoMetadataUserChip extends ConsumerWidget {
     required String npub,
     this.onRemove,
     this.isLoading = false,
-    this.removeLabel = 'Remove',
+    this.removeLabel,
     super.key,
   }) : _npub = npub,
        _pubkey = null;
@@ -46,7 +47,7 @@ class VideoMetadataUserChip extends ConsumerWidget {
   final bool isLoading;
 
   /// Accessibility label for the remove button.
-  final String removeLabel;
+  final String? removeLabel;
 
   String get _hexPubkey {
     if (_pubkey != null) return _pubkey;
@@ -99,7 +100,8 @@ class VideoMetadataUserChip extends ConsumerWidget {
             )
           else if (onRemove != null)
             Semantics(
-              label: removeLabel,
+              label:
+                  removeLabel ?? context.l10n.videoMetadataRemoveSemanticLabel,
               button: true,
               child: GestureDetector(
                 onTap: onRemove,

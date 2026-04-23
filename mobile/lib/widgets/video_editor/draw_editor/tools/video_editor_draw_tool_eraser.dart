@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item_button.dart';
 
 /// Button for selecting the eraser tool.
@@ -27,8 +28,7 @@ class DrawToolEraser extends StatelessWidget {
     return VideoEditorDrawItemButton(
       onTap: onTap,
       isSelected: isSelected,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      semanticLabel: 'Eraser tool',
+      semanticLabel: context.l10n.videoEditorDrawToolEraserSemanticLabel,
       painter: const _EraserPainter(),
     );
   }

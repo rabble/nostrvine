@@ -249,6 +249,8 @@ void main() {
         0.5,
         VideoEditorConstants.filters[2],
         0.8,
+        const <dynamic>[],
+        const <dynamic>[],
       ]);
     });
 

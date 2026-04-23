@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Reusable top bar for video editor sub-editors.
 ///
@@ -20,8 +21,8 @@ class VideoEditorToolbar extends StatelessWidget {
     this.closeIcon = DivineIconName.x,
     this.doneIcon = DivineIconName.check,
     this.closeType = DivineIconButtonType.ghostSecondary,
-    this.closeSemanticLabel = 'Close',
-    this.doneSemanticLabel = 'Done',
+    this.closeSemanticLabel,
+    this.doneSemanticLabel,
     this.center,
     this.padding = const EdgeInsets.fromLTRB(16, 12, 16, 0),
     super.key,
@@ -45,10 +46,10 @@ class VideoEditorToolbar extends StatelessWidget {
   final DivineIconButtonType closeType;
 
   /// Accessibility label for the close button.
-  final String closeSemanticLabel;
+  final String? closeSemanticLabel;
 
   /// Accessibility label for the done button.
-  final String doneSemanticLabel;
+  final String? doneSemanticLabel;
 
   /// Optional widgets displayed between the close and done buttons.
   final Widget? center;
@@ -70,7 +71,9 @@ class VideoEditorToolbar extends StatelessWidget {
               tag: VideoEditorConstants.heroToolbarLeadingId,
               child: DivineIconButton(
                 icon: closeIcon,
-                semanticLabel: closeSemanticLabel,
+                semanticLabel:
+                    closeSemanticLabel ??
+                    context.l10n.videoEditorCloseSemanticLabel,
                 size: .small,
                 type: closeType,
                 onPressed: onClose,
@@ -81,9 +84,10 @@ class VideoEditorToolbar extends StatelessWidget {
               tag: VideoEditorConstants.heroToolbarTrailingId,
               child: DivineIconButton(
                 icon: doneIcon,
-                semanticLabel: doneSemanticLabel,
+                semanticLabel:
+                    doneSemanticLabel ??
+                    context.l10n.videoEditorDoneSemanticLabel,
                 size: .small,
-                type: .tertiary,
                 onPressed: onDone,
               ),
             ),

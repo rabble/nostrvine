@@ -184,7 +184,9 @@ class _VideoMetadataTagsInputState
                     controller: _controller,
                     focusNode: _focusNode,
                     // TODO(l10n): Replace with context.l10n when localization is added.
-                    labelText: tags.isEmpty ? 'Tags' : null,
+                    labelText: tags.isEmpty
+                        ? context.l10n.videoMetadataTagsLabel
+                        : null,
                     contentPadding: .zero,
                     textInputAction: .done,
                     maxLines: 1,
@@ -261,9 +263,8 @@ class _TagChip extends ConsumerWidget {
           ),
           const SizedBox(width: 8),
           Semantics(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label: 'Delete',
-            hint: 'Delete Tag $tag',
+            label: context.l10n.videoMetadataDeleteTagSemanticLabel,
+            hint: context.l10n.videoMetadataDeleteTagHint(tag),
             button: true,
             child: GestureDetector(
               onTap: () => _removeTag(ref),

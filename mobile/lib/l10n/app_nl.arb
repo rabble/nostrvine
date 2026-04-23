@@ -403,14 +403,22 @@
     "videoGridEditVideo": "Video bewerken",
     "videoGridEditVideoSubtitle": "Titel, beschrijving en hashtags bijwerken",
     "videoGridDeleteVideo": "Video verwijderen",
-    "videoGridDeleteVideoSubtitle": "Verwijder deze video uit Divine. Andere Nostr-clients kunnen hem nog tonen.",
+    "videoGridDeleteVideoSubtitle": "Deze inhoud definitief verwijderen",
     "videoGridDeleteConfirmTitle": "Video verwijderen",
-    "videoGridDeleteConfirmMessage": "Deze video wordt permanent uit Divine verwijderd. Hij kan nog zichtbaar zijn in andere Nostr-clients die andere relays gebruiken.",
-    "videoGridDeleteConfirmNote": "Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopieën.",
+    "videoGridDeleteConfirmMessage": "Weet je zeker dat je deze video wilt verwijderen?",
+    "videoGridDeleteConfirmNote": "Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.",
     "videoGridDeleteCancel": "Annuleren",
     "videoGridDeleteConfirm": "Verwijderen",
     "videoGridDeletingContent": "Inhoud verwijderen...",
     "videoGridDeleteSuccess": "Verwijderverzoek succesvol verstuurd",
+    "videoGridDeleteFailure": "Inhoud verwijderen mislukt: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
     "exploreTabClassics": "Klassiekers",
     "exploreTabNew": "Nieuw",
     "exploreTabPopular": "Populair",
@@ -462,6 +470,8 @@
     },
     "videoPlayerLoadingVideo": "Video laden...",
     "videoPlayerPlayVideo": "Video afspelen",
+    "videoPlayerMute": "Video dempen",
+    "videoPlayerUnmute": "Videogeluid inschakelen",
     "videoPlayerEditVideo": "Video bewerken",
     "videoPlayerEditVideoTooltip": "Video bewerken",
     "contentWarningLabel": "Inhoudswaarschuwing",
@@ -603,17 +613,6 @@
             }
         }
     },
-    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}",
-    "@videoFeedLoopCountLine": {
-        "placeholders": {
-            "compactCount": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Niet Divine",
     "metadataBadgeHumanMade": "Door mensen gemaakt",
     "metadataSoundsLabel": "Geluiden",
@@ -625,14 +624,7 @@
     "metadataCollaboratorsLabel": "Samenwerkers",
     "metadataInspiredByLabel": "Geïnspireerd door",
     "metadataRepostedByLabel": "Gerepost door",
-    "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loops}}",
-    "@metadataLoopsLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
+    "metadataLoopsLabel": "Loops",
     "metadataLikesLabel": "Likes",
     "metadataCommentsLabel": "Reacties",
     "metadataRepostsLabel": "Reposts",
@@ -1502,7 +1494,7 @@
     "shareMenuEditVideo": "Video bewerken",
     "shareMenuEditVideoSubtitle": "Titel, beschrijving en hashtags bijwerken",
     "shareMenuDeleteVideo": "Video verwijderen",
-    "shareMenuDeleteVideoSubtitle": "Verwijder deze video uit Divine. Andere Nostr-clients kunnen hem nog tonen.",
+    "shareMenuDeleteVideoSubtitle": "Deze inhoud definitief verwijderen",
     "shareMenuVideoInTheseLists": "Video staat in deze lijsten:",
     "shareMenuVideoCount": "{count} video's",
     "@shareMenuVideoCount": {
@@ -1513,17 +1505,20 @@
         }
     },
     "shareMenuClose": "Sluiten",
-    "shareMenuDeleteConfirmation": "Deze video wordt permanent uit Divine verwijderd. Hij kan nog zichtbaar zijn in andere Nostr-clients die andere relays gebruiken.",
+    "shareMenuDeleteConfirmation": "Weet je zeker dat je deze video wilt verwijderen?",
+    "shareMenuDeleteWarning": "Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.",
     "shareMenuCancel": "Annuleren",
     "shareMenuDelete": "Verwijderen",
     "shareMenuDeletingContent": "Inhoud verwijderen...",
-    "shareMenuDeleteRequestSent": "Video verwijderd",
-    "shareMenuDeleteFailedNotInitialized": "Verwijderen is nog niet klaar. Probeer het zo meteen opnieuw.",
-    "shareMenuDeleteFailedNotOwner": "Je kunt alleen je eigen video's verwijderen.",
-    "shareMenuDeleteFailedNotAuthenticated": "Log opnieuw in en probeer te verwijderen.",
-    "shareMenuDeleteFailedCouldNotSign": "Kon het verwijderverzoek niet ondertekenen. Probeer opnieuw.",
-  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedGeneric": "Kon deze video niet verwijderen. Probeer opnieuw.",
+    "shareMenuDeleteRequestSent": "Verwijderverzoek succesvol verstuurd",
+    "shareMenuFailedToDeleteContent": "Inhoud verwijderen mislukt: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuFollowSetName": "Naam volgset",
     "shareMenuFollowSetNameHint": "Bijv. content creators, muzikanten, enz.",
     "shareMenuDescriptionOptional": "Beschrijving (optioneel)",
@@ -1557,7 +1552,15 @@
     },
     "shareMenuDeleteVideoQuestion": "Video verwijderen?",
     "shareMenuDeleteRelayWarning": "Dit stuurt een verwijderverzoek naar relays. Let op: sommige relays hebben misschien nog gecachte kopieën.",
-    "shareMenuVideoDeletionRequested": "Video verwijderd",
+    "shareMenuVideoDeletionRequested": "Video-verwijdering aangevraagd",
+    "shareMenuFailedToDeleteVideo": "Video verwijderen mislukt: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuContentLabels": "Inhoudslabels",
     "shareMenuAddContentLabels": "Inhoudslabels toevoegen",
     "shareMenuClearAll": "Alles wissen",
@@ -1769,6 +1772,31 @@
     "userSearchPrompt": "Zoek gebruikers",
     "userSearchNoResults": "Geen gebruikers gevonden",
     "userSearchFailed": "Zoeken mislukt",
+    "userPickerSearchByName": "Zoeken op naam",
+    "userPickerFilterByNameHint": "Filteren op naam...",
+    "userPickerSearchByNameHint": "Zoeken op naam...",
+    "userPickerAlreadyAddedSemantics": "{name} al toegevoegd",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerSelectSemantics": "Selecteer {name}",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "Je crew is daarbuiten",
+    "userPickerEmptyFollowListBody": "Volg mensen met wie je klikt. Als ze je terugvolgen, kunnen jullie samenwerken.",
+    "userPickerGoBack": "Ga terug",
+    "userPickerTypeNameToSearch": "Typ een naam om te zoeken",
+    "userPickerUnavailable": "Zoeken naar gebruikers is niet beschikbaar. Probeer het later opnieuw.",
+    "userPickerSearchFailedTryAgain": "Zoeken is mislukt. Probeer het opnieuw.",
     "forgotPasswordTitle": "Wachtwoord resetten",
     "forgotPasswordDescription": "Voer je e-mailadres in en we sturen je een link om je wachtwoord te resetten.",
     "forgotPasswordEmailLabel": "E-mailadres",
@@ -2153,6 +2181,7 @@
     "commonCancel": "Annuleren",
     "commonDelete": "Verwijderen",
     "commonRetry": "Opnieuw proberen",
+    "commonNext": "Volgende",
     "discoverListsFailedToUpdateSubscription": "Abonnement bijwerken mislukt: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2191,6 +2220,32 @@
     "featureRequestCancel": "Annuleren",
     "followersFailedToLoadList": "Volgerlijst kon niet worden geladen",
     "followingFailedToLoadList": "Volglijst kon niet worden geladen",
+    "inboxActionBlock": "{displayName} blokkeren",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Gesprek dempen",
+    "inboxActionRemove": "Gesprek verwijderen",
+    "inboxActionReport": "{displayName} rapporteren",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "{displayName} deblokkeren",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} geblokkeerd",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2199,6 +2254,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Gesprek gedempt",
+    "inboxConversationUnmuted": "Gesprek niet meer gedempt",
+    "inboxEmptySubtitle": "Die +-knop bijt niet.",
+    "inboxEmptyTitle": "Nog geen berichten",
+    "inboxRemoveConfirmBody": "Dit verwijdert je gesprek met {displayName}. Deze actie kan niet ongedaan worden gemaakt.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Verwijderen",
+    "inboxRemoveConfirmTitle": "Gesprek verwijderen?",
     "inboxRemovedConversation": "Gesprek verwijderd",
     "inboxReportedUser": "{displayName} gerapporteerd",
     "@inboxReportedUser": {
@@ -2323,15 +2392,24 @@
     "reportDialogReport": "Rapporteren",
     "routerInvalidCreator": "Ongeldige maker",
     "routerInvalidHashtagRoute": "Ongeldige hashtagroute",
+    "searchDiscoverSomethingInteresting": "Ontdek iets interessants",
+    "searchEnterQuery": "Voer een zoekopdracht in",
     "searchFindCuratedVideoLists": "Vind samengestelde videolijsten",
+  "searchListsSectionHeader": "Lijsten",
+  "searchListsLoadingLabel": "Lijstresultaten laden",
     "searchForLists": "Zoek naar lijsten",
     "searchSomethingWentWrong": "Er ging iets mis",
     "searchTryAgain": "Opnieuw proberen",
     "trendingTitle": "Trending",
-    "videoEditorLayers": "Lagen",
     "videoEditorStickers": "Stickers",
     "videoMetadataContentWarnings": "Inhoudswaarschuwingen",
     "videoMetadataExpiration": "Vervaldatum",
+    "videoMetadataExpirationNotExpire": "Verloopt niet",
+    "videoMetadataExpirationOneDay": "1 dag",
+    "videoMetadataExpirationOneWeek": "1 week",
+    "videoMetadataExpirationOneMonth": "1 maand",
+    "videoMetadataExpirationOneYear": "1 jaar",
+    "videoMetadataExpirationOneDecade": "1 decennium",
     "videoMetadataTags": "Tags",
     "contentLabelAiGenerated": "AI-gegenereerd",
     "contentLabelAlcohol": "Alcohol",
@@ -2526,5 +2604,327 @@
     "cameraPermissionAllowAccessTitle": "Toegang tot camera en microfoon toestaan",
     "cameraPermissionAllowAccessDescription": "Hiermee kun je video's rechtstreeks in de app opnemen en bewerken, verder niets.",
     "cameraPermissionContinue": "Doorgaan",
-    "cameraPermissionGoToSettings": "Naar instellingen"
+    "cameraPermissionGoToSettings": "Naar instellingen",
+    "videoRecorderWhySixSecondsTitle": "Waarom zes seconden?",
+    "videoRecorderWhySixSecondsSubtitle": "Korte clips geven ruimte aan spontaniteit. Het 6-secondenformaat helpt je om authentieke momenten vast te leggen terwijl ze gebeuren.",
+    "videoRecorderWhySixSecondsButton": "Begrepen!",
+    "videoRecorderAutosaveFoundTitle": "We hebben werk in uitvoering gevonden",
+    "videoRecorderAutosaveFoundSubtitle": "Wil je doorgaan waar je was gebleven?",
+    "videoRecorderAutosaveContinueButton": "Ja, doorgaan",
+    "videoRecorderAutosaveDiscardButton": "Nee, start een nieuwe video",
+    "videoRecorderAutosaveRestoreFailure": "Je concept kon niet worden hersteld",
+    "videoRecorderStopRecordingTooltip": "Opname stoppen",
+    "videoRecorderStartRecordingTooltip": "Opname starten",
+    "videoRecorderRecordingTapToStopLabel": "Bezig met opnemen. Tik ergens om te stoppen",
+    "videoRecorderTapToStartLabel": "Tik ergens om de opname te starten",
+    "videoRecorderDeleteLastClipLabel": "Laatste clip verwijderen",
+    "videoRecorderSwitchCameraLabel": "Camera wisselen",
+    "videoRecorderToggleGridLabel": "Raster in-/uitschakelen",
+    "videoRecorderToggleGhostFrameLabel": "Spookframe in-/uitschakelen",
+    "videoRecorderGhostFrameEnabled": "Spookframe ingeschakeld",
+    "videoRecorderGhostFrameDisabled": "Spookframe uitgeschakeld",
+    "videoRecorderClipDeletedMessage": "Clip verwijderd",
+    "videoRecorderCloseLabel": "Videorecorder sluiten",
+    "videoRecorderContinueToEditorLabel": "Doorgaan naar video-editor",
+    "videoRecorderCaptureCloseLabel": "Sluiten",
+    "videoRecorderCaptureNextLabel": "Volgende",
+    "videoRecorderToggleFlashLabel": "Flitser in-/uitschakelen",
+    "videoRecorderCycleTimerLabel": "Timer wisselen",
+    "videoRecorderToggleAspectRatioLabel": "Beeldverhouding wisselen",
+    "videoRecorderLibraryEmptyLabel": "Clipbibliotheek, geen clips",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Clipbibliotheek openen, 1 clip} other{Clipbibliotheek openen, {clipCount} clips}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorClipsLabel": "Clips",
+    "videoEditorTextLabel": "Tekst",
+    "videoEditorDrawLabel": "Tekenen",
+    "videoEditorEffectsLabel": "Effecten",
+    "videoEditorAudioLabel": "Audio",
+    "videoEditorVolumeLabel": "Volume",
+    "videoEditorAddTitle": "Toevoegen",
+    "videoEditorOpenClipsSemanticLabel": "Clip-editor openen",
+    "videoEditorOpenAudioSemanticLabel": "Audio-editor openen",
+    "videoEditorOpenTextSemanticLabel": "Teksteditor openen",
+    "videoEditorOpenDrawSemanticLabel": "Tekeneditor openen",
+    "videoEditorOpenEffectsSemanticLabel": "Effecteditor openen",
+    "videoEditorSaveDraftTitle": "Je concept opslaan?",
+    "videoEditorSaveDraftSubtitle": "Bewaar je bewerkingen voor later, of verwerp ze en verlaat de editor.",
+    "videoEditorSaveDraftButton": "Concept opslaan",
+    "videoEditorDiscardChangesButton": "Wijzigingen verwerpen",
+    "videoEditorKeepEditingButton": "Doorgaan met bewerken",
+    "videoEditorDeleteLayerDropZone": "Sleepzone om laag te verwijderen",
+    "videoEditorReleaseToDeleteLayer": "Loslaten om laag te verwijderen",
+    "videoEditorDoneLabel": "Gereed",
+    "videoEditorPlayPauseSemanticLabel": "Video afspelen of pauzeren",
+    "videoEditorCropSemanticLabel": "Bijsnijden",
+    "videoEditorCannotSplitProcessing": "Kan clip niet splitsen terwijl deze wordt verwerkt. Even geduld.",
+    "videoEditorSplitPositionInvalid": "Ongeldige splitpositie. Beide clips moeten minimaal {minDurationMs} ms lang zijn.",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorAddClipFromLibrary": "Clip toevoegen uit bibliotheek",
+    "videoEditorSaveSelectedClip": "Geselecteerde clip opslaan",
+    "videoEditorSplitClip": "Clip splitsen",
+    "videoEditorSaveClip": "Clip opslaan",
+    "videoEditorDeleteClip": "Clip verwijderen",
+    "videoEditorClipSavedSuccess": "Clip opgeslagen in bibliotheek",
+    "videoEditorClipSaveFailed": "Clip opslaan mislukt",
+    "videoEditorClipDeleted": "Clip verwijderd",
+    "videoEditorColorPickerSemanticLabel": "Kleurkiezer",
+    "videoEditorUndoSemanticLabel": "Ongedaan maken",
+    "videoEditorRedoSemanticLabel": "Opnieuw",
+    "videoEditorTextColorSemanticLabel": "Tekstkleur",
+    "videoEditorTextAlignmentSemanticLabel": "Tekstuitlijning",
+    "videoEditorTextBackgroundSemanticLabel": "Tekstachtergrond",
+    "videoEditorFontSemanticLabel": "Lettertype",
+    "videoEditorNoStickersFound": "Geen stickers gevonden",
+    "videoEditorNoStickersAvailable": "Geen stickers beschikbaar",
+    "videoEditorFailedLoadStickers": "Stickers laden mislukt",
+    "videoEditorAdjustVolumeTitle": "Volume aanpassen",
+    "videoEditorRecordedAudioLabel": "Opgenomen audio",
+    "videoEditorCustomAudioLabel": "Aangepaste audio",
+    "videoEditorPlaySemanticLabel": "Afspelen",
+    "videoEditorPauseSemanticLabel": "Pauzeren",
+    "videoEditorMuteAudioSemanticLabel": "Audio dempen",
+    "videoEditorUnmuteAudioSemanticLabel": "Audio inschakelen",
+    "videoEditorDeleteLabel": "Verwijderen",
+    "videoEditorDeleteSelectedItemSemanticLabel": "Geselecteerd item verwijderen",
+    "videoEditorEditLabel": "Bewerken",
+    "videoEditorEditSelectedItemSemanticLabel": "Geselecteerd item bewerken",
+    "videoEditorDuplicateLabel": "Dupliceren",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "Geselecteerd item dupliceren",
+    "videoEditorSplitLabel": "Splitsen",
+    "videoEditorSplitSelectedClipSemanticLabel": "Geselecteerde clip splitsen",
+    "videoEditorFinishTimelineEditingSemanticLabel": "Bewerken van tijdlijn voltooien",
+    "videoEditorSortNewest": "Nieuwste",
+    "videoEditorSortLongest": "Langste",
+    "videoEditorSortShortest": "Kortste",
+    "videoEditorSortBySemanticLabel": "Sorteren op {option}. Tik om sorteervolgorde te wijzigen",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",
+    "videoEditorAudioPausePreviewSemanticLabel": "Voorbeeld pauzeren",
+    "videoEditorAudioUntitledSound": "Naamloos geluid",
+    "videoEditorAudioSelectSoundSemanticLabel": "Geluid selecteren",
+    "videoEditorAudioUntitled": "Naamloos",
+    "videoEditorAudioAddAudio": "Audio toevoegen",
+    "videoEditorAudioNoSoundsAvailableTitle": "Geen geluiden beschikbaar",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "Geluiden verschijnen hier wanneer creators audio delen",
+    "videoEditorAudioNoSoundsFoundTitle": "Geen geluiden gevonden",
+    "videoEditorAudioNoSoundsFoundSubtitle": "Probeer een andere zoekterm",
+    "videoEditorAudioFailedToLoadTitle": "Geluiden laden mislukt",
+    "videoEditorDrawToolArrowSemanticLabel": "Pijlgereedschap",
+    "videoEditorDrawToolEraserSemanticLabel": "Gumgereedschap",
+    "videoEditorDrawToolMarkerSemanticLabel": "Markeergereedschap",
+    "videoEditorDrawToolPencilSemanticLabel": "Potloodgereedschap",
+    "videoEditorLayerReorderLabel": "Laag {index} herordenen",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLayerReorderHint": "Vasthouden om te herordenen",
+    "videoEditorShowTimelineSemanticLabel": "Tijdlijn tonen",
+    "videoEditorHideTimelineSemanticLabel": "Tijdlijn verbergen",
+    "videoEditorFeedPreviewContent": "Plaats geen content achter deze gebieden.",
+    "videoEditorStickerSearchHint": "Stickers zoeken...",
+    "videoEditorSelectFontSemanticLabel": "Lettertype selecteren",
+    "videoEditorFontUnknown": "Onbekend",
+    "videoEditorSplitPlayheadOutsideClip": "De afspeelkop moet binnen de geselecteerde clip staan om te splitsen.",
+    "videoEditorTimelineTrimStartSemanticLabel": "Begin bijsnijden",
+    "videoEditorTimelineTrimEndSemanticLabel": "Einde bijsnijden",
+    "videoEditorTimelineTrimClipSemanticLabel": "Clip bijsnijden",
+    "videoEditorTimelineTrimClipHint": "Sleep de handgrepen om de clipduur aan te passen",
+    "videoEditorTimelineDraggingClipSemanticLabel": "Clip {index} slepen",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineClipSemanticLabel": "Clip {index} van {total}, {duration} seconden",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineClipReorderHint": "Lang indrukken om te slepen",
+    "videoEditorTimelineClipMoveLeft": "Naar links verplaatsen",
+    "videoEditorTimelineClipMoveRight": "Naar rechts verplaatsen",
+    "videoEditorTimelineLongPressToDragHint": "Lang indrukken om te slepen",
+    "videoEditorVideoTimelineSemanticLabel": "Videotijdlijn",
+    "videoEditorTimelinePositionFormat": "{minutes}m {seconds}s",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorColorSelectedSemanticLabel": "{colorName}, geselecteerd",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorCloseColorPickerSemanticLabel": "Kleurkiezer sluiten",
+    "videoEditorPickColorTitle": "Kleur kiezen",
+    "videoEditorConfirmColorSemanticLabel": "Kleur bevestigen",
+    "videoEditorSaturationBrightnessSemanticLabel": "Verzadiging en helderheid",
+    "videoEditorSaturationBrightnessValue": "Verzadiging {saturation}%, Helderheid {brightness}%",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorHueSemanticLabel": "Tint",
+    "videoEditorAddElementSemanticLabel": "Element toevoegen",
+    "videoEditorCloseSemanticLabel": "Sluiten",
+    "videoEditorDoneSemanticLabel": "Gereed",
+    "videoEditorLevelSemanticLabel": "Niveau",
+    "videoMetadataBackSemanticLabel": "Terug",
+    "videoMetadataDismissHelpDialogSemanticLabel": "Helpdialoog sluiten",
+    "videoMetadataGotItButton": "Begrepen!",
+    "videoMetadataLimitReachedWarning": "Limiet van 64KB bereikt. Verwijder wat inhoud om door te gaan.",
+    "videoMetadataExpirationLabel": "Vervaldatum",
+    "videoMetadataSelectExpirationSemanticLabel": "Vervaltijd selecteren",
+    "videoMetadataTitleLabel": "Titel",
+    "videoMetadataDescriptionLabel": "Beschrijving",
+    "videoMetadataTagsLabel": "Tags",
+    "videoMetadataDeleteTagSemanticLabel": "Verwijderen",
+    "videoMetadataDeleteTagHint": "Tag {tag} verwijderen",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataContentWarningLabel": "Inhoudswaarschuwing",
+    "videoMetadataSelectContentWarningsSemanticLabel": "Inhoudswaarschuwingen selecteren",
+    "videoMetadataContentWarningSelectAllThatApply": "Selecteer alles wat van toepassing is op je inhoud",
+    "videoMetadataContentWarningDoneButton": "Gereed",
+    "videoMetadataCollaboratorsLabel": "Samenwerkers",
+    "videoMetadataAddCollaboratorSemanticLabel": "Samenwerker toevoegen",
+    "videoMetadataCollaboratorsHelpTooltip": "Hoe samenwerkers werken",
+    "videoMetadataCollaboratorsCount": "{count}/{max} samenwerkers",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataRemoveCollaboratorSemanticLabel": "Samenwerker verwijderen",
+    "videoMetadataCollaboratorsHelpMessage": "Samenwerkers worden als mede-makers getagd in dit bericht. Je kunt alleen mensen toevoegen die jij en zij elkaar volgen. Ze verschijnen in de metadata wanneer het bericht wordt gepubliceerd.",
+    "videoMetadataMutualFollowersSearchText": "Wederzijdse volgers",
+    "videoMetadataMustMutuallyFollowSnackbar": "Jullie moeten elkaar volgen om {name} als samenwerker toe te voegen.",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataInspiredByLabel": "Geinspireerd door",
+    "videoMetadataSetInspiredBySemanticLabel": "Geinspireerd door instellen",
+    "videoMetadataInspiredByHelpTooltip": "Hoe inspiratievermeldingen werken",
+    "videoMetadataInspiredByNone": "Geen",
+    "videoMetadataInspiredByHelpMessage": "Gebruik dit voor bronvermelding. Geinspireerd door is iets anders dan samenwerkers: het erkent invloed, maar tagt iemand niet als mede-maker.",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "Naar deze creator kan niet worden verwezen.",
+    "videoMetadataRemoveInspiredBySemanticLabel": "Geinspireerd door verwijderen",
+    "videoMetadataPostDetailsTitle": "Berichtdetails",
+    "videoMetadataSavedToLibrarySnackbar": "Opgeslagen in bibliotheek",
+    "videoMetadataFailedToSaveSnackbar": "Opslaan mislukt",
+    "videoMetadataGoToLibraryButton": "Naar bibliotheek",
+    "videoMetadataSaveForLaterSemanticLabel": "Knop opslaan voor later",
+    "videoMetadataRenderingVideoHint": "Video renderen...",
+    "videoMetadataSavingVideoHint": "Video opslaan...",
+    "videoMetadataSaveToDraftsHint": "Video opslaan in concepten en {destination}",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveForLaterButton": "Opslaan voor later",
+    "videoMetadataPostSemanticLabel": "Knop plaatsen",
+    "videoMetadataPublishVideoHint": "Video publiceren naar feed",
+    "videoMetadataFormNotReadyHint": "Vul het formulier in om in te schakelen",
+    "videoMetadataPostButton": "Plaatsen",
+    "videoMetadataOpenPreviewSemanticLabel": "Scherm met berichtvoorbeeld openen",
+    "videoMetadataShareTitle": "Delen",
+    "videoMetadataVideoDetailsSubtitle": "Videodetails",
+    "videoMetadataClassicDoneButton": "Gereed",
+    "videoMetadataPlayPreviewSemanticLabel": "Voorbeeld afspelen",
+    "videoMetadataPausePreviewSemanticLabel": "Voorbeeld pauzeren",
+    "videoMetadataClosePreviewSemanticLabel": "Videovoorbeeld sluiten",
+    "videoMetadataRemoveSemanticLabel": "Verwijderen",
+    "metadataCaptionsLabel": "Ondertitels",
+    "metadataCaptionsEnabledSemantics": "Ondertitels ingeschakeld voor alle video's",
+    "metadataCaptionsDisabledSemantics": "Ondertitels uitgeschakeld voor alle video's",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuDeleteFailedCouldNotSign": "Kon het verwijderverzoek niet ondertekenen. Probeer opnieuw.",
+    "shareMenuDeleteFailedGeneric": "Kon deze video niet verwijderen. Probeer opnieuw.",
+    "shareMenuDeleteFailedNotAuthenticated": "Log opnieuw in en probeer te verwijderen.",
+    "shareMenuDeleteFailedNotInitialized": "Verwijderen is nog niet klaar. Probeer het zo meteen opnieuw.",
+    "shareMenuDeleteFailedNotOwner": "Je kunt alleen je eigen video's verwijderen.",
+    "videoEditorLayers": "Lagen",
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}",
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
 }

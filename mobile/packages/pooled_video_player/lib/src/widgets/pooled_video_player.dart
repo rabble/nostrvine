@@ -24,6 +24,7 @@ typedef OverlayBuilder =
       BuildContext context,
       VideoController? videoController,
       Player? player,
+      VideoFeedController? feedController,
     );
 
 /// Builder for the error state.
@@ -110,7 +111,12 @@ class PooledVideoPlayer extends StatelessWidget {
         final videoController = state.videoController;
         final player = state.player;
         final loadState = state.loadState;
-        final overlay = overlayBuilder?.call(context, videoController, player);
+        final overlay = overlayBuilder?.call(
+          context,
+          videoController,
+          player,
+          feedController,
+        );
 
         final isReady = videoController != null && loadState == .ready;
 

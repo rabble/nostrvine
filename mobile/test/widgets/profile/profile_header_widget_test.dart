@@ -9,11 +9,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
-import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -32,9 +30,6 @@ class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
 class _MockOthersFollowersBloc
     extends MockBloc<OthersFollowersEvent, OthersFollowersState>
     implements OthersFollowersBloc {}
-
-// Mock for KeycastOAuth used by EmailVerificationCubit
-class MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
 // Mock classes
 class MockFollowRepository extends Mock implements FollowRepository {
@@ -162,12 +157,11 @@ void main() {
     Widget buildTestWidget({
       required String userIdHex,
       required bool isOwnProfile,
-      int? videoCount = 10,
+      int videoCount = 10,
       UserProfile? profile,
       UserProfile? suppliedProfile,
       ProfileStats? profileStats,
       bool profileIsLoading = false,
-      VoidCallback? onSetupProfile,
       bool isAnonymous = false,
       bool hasExpiredSession = false,
       SharedPreferences? sharedPreferences,
@@ -184,7 +178,7 @@ void main() {
         isOwnProfile: isOwnProfile,
         videoCount: videoCount,
         profile: suppliedProfile,
-        onSetupProfile: onSetupProfile,
+        profileStats: profileStats,
         displayNameHint: displayNameHint,
         avatarUrlHint: avatarUrlHint,
       );
@@ -238,16 +232,10 @@ void main() {
             (ref) => AuthState.authenticated,
           ),
         ],
-        child: BlocProvider<EmailVerificationCubit>(
-          create: (_) => EmailVerificationCubit(
-            oauthClient: MockKeycastOAuth(),
-            authService: authService,
-          ),
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: SingleChildScrollView(child: header)),
-          ),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: SingleChildScrollView(child: header)),
         ),
       );
     }
@@ -297,13 +285,15 @@ void main() {
       },
     );
 
-    testWidgets('prefers archived video count when stats are provided', (
+    testWidgets('displays stats from ProfileStats when provided', (
       tester,
     ) async {
       final testProfile = createTestProfile(displayName: 'Counted User');
       const profileStats = ProfileStats(
         pubkey: testUserHex,
         videoCount: 42,
+        totalLikes: 100,
+        totalViews: 5000,
       );
 
       await tester.pumpWidget(
@@ -317,92 +307,50 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('42'), findsWidgets);
-      expect(find.text('Videos'), findsOneWidget);
+      expect(find.text('Likes'), findsOneWidget);
+      expect(find.text('Loops'), findsOneWidget);
     });
 
-    testWidgets(
-      'shows true video count from stats provider for own profile',
-      (tester) async {
-        final testProfile = createTestProfile(displayName: 'Own User');
-        const stats = ProfileStats(
-          pubkey: testUserHex,
-          videoCount: 142,
-        );
+    testWidgets('displays all four stat columns when stats are available', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(displayName: 'Test User');
+      const profileStats = ProfileStats(pubkey: testUserHex);
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            profileStats: stats,
-            videoCount: 5,
-          ),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          profile: testProfile,
+          profileStats: profileStats,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.text('142'), findsWidgets);
-        expect(find.text('Videos'), findsOneWidget);
-      },
-    );
+      expect(find.text('Followers'), findsOneWidget);
+      expect(find.text('Following'), findsOneWidget);
+      expect(find.text('Likes'), findsOneWidget);
+      expect(find.text('Loops'), findsOneWidget);
+    });
 
-    testWidgets(
-      'falls back to totalVideoCount when stats provider has no data',
-      (tester) async {
-        final testProfile = createTestProfile(displayName: 'Fallback User');
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            videoCount: 5,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('5'), findsWidgets);
-        expect(find.text('Videos'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'shows loading state when both stats and totalVideoCount are null',
-      (tester) async {
-        final testProfile = createTestProfile(displayName: 'Loading User');
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            videoCount: null,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Should show loading dash instead of a number
-        expect(find.text('—'), findsWidgets);
-        expect(find.text('Videos'), findsOneWidget);
-      },
-    );
-
-    testWidgets('displays all three stat columns', (tester) async {
+    testWidgets('hides all stat columns when profileStats is null', (
+      tester,
+    ) async {
       final testProfile = createTestProfile(displayName: 'Test User');
 
       await tester.pumpWidget(
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
-
           profile: testProfile,
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Videos'), findsOneWidget);
-      expect(find.text('Followers'), findsOneWidget);
-      expect(find.text('Following'), findsOneWidget);
+      expect(find.text('Followers'), findsNothing);
+      expect(find.text('Following'), findsNothing);
+      expect(find.text('Likes'), findsNothing);
+      expect(find.text('Loops'), findsNothing);
     });
 
     testWidgets('displays user bio when present', (tester) async {
@@ -443,33 +391,25 @@ void main() {
       expect(find.text('test@example.com'), findsOneWidget);
     });
 
-    testWidgets('shows setup banner for own profile without custom name', (
-      tester,
-    ) async {
-      var setupCalled = false;
-      final profileWithDefaultName = createTestProfile();
+    testWidgets(
+      'shows Complete your profile label for own profile without custom name',
+      (tester) async {
+        final profileWithDefaultName = createTestProfile();
 
-      await tester.pumpWidget(
-        buildTestWidget(
-          userIdHex: testUserHex,
-          isOwnProfile: true,
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: profileWithDefaultName,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          profile: profileWithDefaultName,
-          onSetupProfile: () => setupCalled = true,
-        ),
-      );
-      await tester.pumpAndSettle();
+        expect(find.text('Complete your profile'), findsOneWidget);
+      },
+    );
 
-      expect(find.text('Complete Your Profile'), findsOneWidget);
-      expect(find.text('Set Up'), findsOneWidget);
-
-      await tester.tap(find.text('Set Up'));
-      await tester.pump();
-
-      expect(setupCalled, isTrue);
-    });
-
-    testWidgets('hides setup banner while profile is still loading', (
+    testWidgets('shows Complete your profile while profile is still loading', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -477,16 +417,16 @@ void main() {
           userIdHex: testUserHex,
           isOwnProfile: true,
           profileIsLoading: true,
-          onSetupProfile: () {},
         ),
       );
       // Do not pumpAndSettle — provider never resolves
       await tester.pump();
 
-      expect(find.text('Complete Your Profile'), findsNothing);
+      // No profile info available yet → prompt should show
+      expect(find.text('Complete your profile'), findsOneWidget);
     });
 
-    testWidgets('hides setup banner when profile has custom name', (
+    testWidgets('hides action label when profile has custom name', (
       tester,
     ) async {
       final testProfile = createTestProfile(displayName: 'Test User');
@@ -495,31 +435,27 @@ void main() {
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: true,
-
           profile: testProfile,
-          onSetupProfile: () {},
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete Your Profile'), findsNothing);
+      expect(find.text('Complete your profile'), findsNothing);
     });
 
-    testWidgets('hides setup banner for other profiles', (tester) async {
+    testWidgets('hides action label for other profiles', (tester) async {
       final profileWithDefaultName = createTestProfile();
 
       await tester.pumpWidget(
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: false,
-
           profile: profileWithDefaultName,
-          onSetupProfile: () {},
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Complete Your Profile'), findsNothing);
+      expect(find.text('Complete your profile'), findsNothing);
     });
 
     testWidgets(
@@ -635,8 +571,8 @@ void main() {
       testWidgets('tapping "Show less" collapses bio and shows "Show more"', (
         tester,
       ) async {
-        // Set a phone-like screen size to ensure text wraps
-        tester.view.physicalSize = const Size(400, 800);
+        // Use a taller viewport so expanded bio content stays in bounds
+        tester.view.physicalSize = const Size(400, 1200);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(() => tester.view.resetPhysicalSize());
 
@@ -649,7 +585,6 @@ void main() {
           buildTestWidget(
             userIdHex: testUserHex,
             isOwnProfile: true,
-
             profile: testProfile,
           ),
         );
@@ -657,6 +592,10 @@ void main() {
 
         // First expand
         await tester.tap(find.text('Show more'));
+        await tester.pumpAndSettle();
+
+        // Scroll down to reveal "Show less" if needed
+        await tester.ensureVisible(find.text('Show less'));
         await tester.pumpAndSettle();
 
         // Then collapse
@@ -669,9 +608,9 @@ void main() {
       });
     });
 
-    group('Secure Account Banner', () {
+    group('Action Label', () {
       testWidgets(
-        'shows secure account banner for own profile when anonymous',
+        'shows Secure label when anonymous with custom name',
         (tester) async {
           final testProfile = createTestProfile(displayName: 'Test User');
 
@@ -679,64 +618,41 @@ void main() {
             buildTestWidget(
               userIdHex: testUserHex,
               isOwnProfile: true,
-
               profile: testProfile,
               isAnonymous: true,
             ),
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('Secure Your Account'), findsOneWidget);
-          expect(find.text('Register'), findsOneWidget);
-          expect(
-            find.text(
-              'Add email & password to recover your account on any device',
-            ),
-            findsOneWidget,
-          );
+          expect(find.text('Secure your account'), findsOneWidget);
+          // 1 action — badge shows "1"
+          expect(find.text('1'), findsOneWidget);
         },
       );
 
       testWidgets(
-        'hides secure account banner for own profile when not anonymous',
+        'shows Secure label with count badge when anonymous and no name',
         (tester) async {
-          final testProfile = createTestProfile(displayName: 'Test User');
+          final profileWithDefaultName = createTestProfile();
 
           await tester.pumpWidget(
             buildTestWidget(
               userIdHex: testUserHex,
               isOwnProfile: true,
-
-              profile: testProfile,
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.text('Secure Your Account'), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'hides secure account banner for other profiles even when anonymous',
-        (tester) async {
-          final testProfile = createTestProfile(displayName: 'Test User');
-
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: false,
-
-              profile: testProfile,
+              profile: profileWithDefaultName,
               isAnonymous: true,
             ),
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('Secure Your Account'), findsNothing);
+          // Secure takes precedence
+          expect(find.text('Secure your account'), findsOneWidget);
+          // 2 actions — red badge with "2"
+          expect(find.text('2'), findsOneWidget);
         },
       );
 
-      testWidgets('secure account banner Register button is tappable', (
+      testWidgets('hides label when not anonymous and has custom name', (
         tester,
       ) async {
         final testProfile = createTestProfile(displayName: 'Test User');
@@ -745,103 +661,114 @@ void main() {
           buildTestWidget(
             userIdHex: testUserHex,
             isOwnProfile: true,
+            profile: testProfile,
+          ),
+        );
+        await tester.pumpAndSettle();
 
+        expect(find.text('Secure your account'), findsNothing);
+        expect(find.text('Complete your profile'), findsNothing);
+      });
+
+      testWidgets('hides label for other profiles even when anonymous', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Test User');
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
             profile: testProfile,
             isAnonymous: true,
           ),
         );
         await tester.pumpAndSettle();
 
+        expect(find.text('Secure your account'), findsNothing);
+      });
+
+      testWidgets('tapping label opens actions bottom sheet', (tester) async {
+        final profileWithDefaultName = createTestProfile();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: profileWithDefaultName,
+            isAnonymous: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap on the action label
+        await tester.tap(find.text('Secure your account'));
+        await tester.pumpAndSettle();
+
+        // The bottom sheet should show the first action
         expect(find.text('Secure Your Account'), findsOneWidget);
-
-        // Verify Register button exists and is an ElevatedButton
-        final registerButton = find.widgetWithText(ElevatedButton, 'Register');
-        expect(registerButton, findsOneWidget);
-
-        // Verify the button has correct styling
-        final button = tester.widget<ElevatedButton>(registerButton);
-        expect(button.onPressed, isNotNull);
+        expect(find.text('Add Email & Password'), findsOneWidget);
+        expect(find.text('Maybe Later'), findsOneWidget);
       });
     });
 
-    group('Session Expired Banner', () {
-      testWidgets('shows session expired banner when session is expired', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Test User');
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
+    group('Session Expired', () {
+      testWidgets(
+        'shows session expired bottom sheet when session is expired',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            hasExpiredSession: true,
-            sharedPreferences: prefs,
-          ),
-        );
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: testProfile,
+              hasExpiredSession: true,
+              sharedPreferences: prefs,
+            ),
+          );
+          await tester.pumpAndSettle();
 
-        expect(find.text('Session Expired'), findsOneWidget);
-      });
-
-      testWidgets('session expired banner stays hidden within 30 days', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Test User');
-        final dismissedAt = DateTime.now()
-            .subtract(const Duration(days: 29))
-            .millisecondsSinceEpoch;
-
-        SharedPreferences.setMockInitialValues({
-          '$_dismissedDivineLoginBannerPrefix$testUserHex': dismissedAt,
-        });
-        final prefs = await SharedPreferences.getInstance();
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            hasExpiredSession: true,
-            sharedPreferences: prefs,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsNothing);
-      });
-
-      testWidgets('session expired banner returns after 30 days', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Test User');
-        final dismissedAt = DateTime.now()
-            .subtract(const Duration(days: 31))
-            .millisecondsSinceEpoch;
-
-        SharedPreferences.setMockInitialValues({
-          '$_dismissedDivineLoginBannerPrefix$testUserHex': dismissedAt,
-        });
-        final prefs = await SharedPreferences.getInstance();
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            hasExpiredSession: true,
-            sharedPreferences: prefs,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsOneWidget);
-      });
+          // Bottom sheet shows session expired prompt (button copy sourced
+          // from the existing profileSignInButton ARB key, which is "Sign in").
+          expect(find.text('Session Expired'), findsOneWidget);
+          expect(find.text('Sign in'), findsOneWidget);
+          expect(find.text('Maybe Later'), findsOneWidget);
+        },
+      );
 
       testWidgets(
-        'shows secure account instead of session expired for anonymous users',
+        'does not show session expired sheet when dismissed within 30 days',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+          final dismissedAt = DateTime.now()
+              .subtract(const Duration(days: 29))
+              .millisecondsSinceEpoch;
+
+          SharedPreferences.setMockInitialValues({
+            '$_dismissedDivineLoginBannerPrefix$testUserHex': dismissedAt,
+          });
+          final prefs = await SharedPreferences.getInstance();
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: testProfile,
+              hasExpiredSession: true,
+              sharedPreferences: prefs,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Session Expired'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows secure account label for anonymous users with expired session',
         (tester) async {
           final testProfile = createTestProfile(displayName: 'Test User');
           SharedPreferences.setMockInitialValues({});
@@ -859,36 +786,11 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('Secure Your Account'), findsOneWidget);
+          // Anonymous users see the action label pill, not session expired
+          expect(find.text('Secure your account'), findsOneWidget);
           expect(find.text('Session Expired'), findsNothing);
         },
       );
-
-      testWidgets('dismiss button hides the session expired banner', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Test User');
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-            hasExpiredSession: true,
-            sharedPreferences: prefs,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsOneWidget);
-
-        await tester.tap(find.byTooltip('Dismiss'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Session Expired'), findsNothing);
-      });
     });
   });
 

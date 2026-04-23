@@ -7,6 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_sort_dropdown.dart';
 
+// Expected English labels matching the l10n values in app_en.arb.
+const Map<AudioSortOption, String> _expectedLabel = {
+  AudioSortOption.newest: 'Newest',
+  AudioSortOption.longest: 'Longest',
+  AudioSortOption.shortest: 'Shortest',
+};
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -31,10 +38,12 @@ void main() {
 
     group('Rendering', () {
       for (final value in AudioSortOption.values) {
-        testWidgets('renders "${value.label}" when selected', (tester) async {
+        testWidgets('renders "${_expectedLabel[value]}" when selected', (
+          tester,
+        ) async {
           await tester.pumpWidget(buildDropdown(value: value));
 
-          expect(find.text(value.label), findsOneWidget);
+          expect(find.text(_expectedLabel[value]!), findsOneWidget);
         });
       }
 
@@ -178,12 +187,6 @@ void main() {
   });
 
   group(AudioSortOption, () {
-    test('has correct labels', () {
-      expect(AudioSortOption.newest.label, 'Newest');
-      expect(AudioSortOption.longest.label, 'Longest');
-      expect(AudioSortOption.shortest.label, 'Shortest');
-    });
-
     test('has 3 values', () {
       expect(AudioSortOption.values.length, 3);
     });

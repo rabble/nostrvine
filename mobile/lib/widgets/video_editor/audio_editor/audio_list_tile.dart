@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/video_editor_icon_button.dart';
 
@@ -27,8 +28,9 @@ class AudioListTile extends StatelessWidget {
       child: ListTile(
         minTileHeight: 48,
         leading: VideoEditorIconButton(
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          semanticLabel: isPlaying ? 'Pause preview' : 'Play preview',
+          semanticLabel: isPlaying
+              ? context.l10n.videoEditorAudioPausePreviewSemanticLabel
+              : context.l10n.videoEditorAudioPlayPreviewSemanticLabel,
           onTap: onPlayPause,
           icon: isPlaying ? .pauseFill : .playFill,
           iconColor: VineTheme.onSurface,
@@ -38,8 +40,7 @@ class AudioListTile extends StatelessWidget {
           radius: 12,
         ),
         title: Text(
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          audio.title ?? 'Untitled sound',
+          audio.title ?? context.l10n.videoEditorAudioUntitledSound,
           style: VineTheme.titleMediumFont(),
           maxLines: 1,
           overflow: .ellipsis,
@@ -65,8 +66,7 @@ class AudioListTile extends StatelessWidget {
           ),
         ),
         trailing: VideoEditorIconButton(
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          semanticLabel: 'Select sound',
+          semanticLabel: context.l10n.videoEditorAudioSelectSoundSemanticLabel,
           onTap: onSelect,
           icon: .plus,
           iconColor: VineTheme.onPrimary,

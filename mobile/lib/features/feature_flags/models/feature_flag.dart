@@ -51,6 +51,10 @@ enum FeatureFlag {
     'HLS + NIP-98 Web Player',
     'Route web video playback through hls.js with NIP-98 auth headers so '
         'age-gated and other 401-protected media can be viewed on web',
+  ),
+  peopleListSearch(
+    'People List Search',
+    'Show people list (kind 30000) results alongside video lists in search',
   )
   ;
 

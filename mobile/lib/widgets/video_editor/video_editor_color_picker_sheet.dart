@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -214,10 +215,12 @@ class _ColorButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final String label;
     if (isColorPicker) {
-      label = 'Color picker';
+      label = context.l10n.videoEditorColorPickerSemanticLabel;
     } else {
       final colorName = _getColorName(color);
-      label = isSelected ? '$colorName, selected' : colorName;
+      label = isSelected
+          ? context.l10n.videoEditorColorSelectedSemanticLabel(colorName)
+          : colorName;
     }
 
     return Semantics(
@@ -333,19 +336,22 @@ class _FullColorPickerSheetState extends State<_FullColorPickerSheet> {
                   icon: .x,
                   type: .secondary,
                   size: .small,
-                  semanticLabel: 'Close color picker',
+                  semanticLabel:
+                      context.l10n.videoEditorCloseColorPickerSemanticLabel,
                   onPressed: context.pop,
                 ),
                 Flexible(
                   child: Text(
-                    'Pick color',
+                    context.l10n.videoEditorPickColorTitle,
                     style: VineTheme.titleMediumFont(),
                   ),
                 ),
                 DivineIconButton(
                   icon: .check,
                   size: .small,
-                  semanticLabel: 'Confirm color',
+                  semanticLabel:
+                      context.l10n.videoEditorConfirmColorSemanticLabel,
+
                   onPressed: () {
                     widget.onColorSelected(_hsvColor.toColor());
                     context.pop();
@@ -406,29 +412,36 @@ class _SaturationBrightnessPanel extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, _height);
-        return GestureDetector(
-          onPanStart: (d) => _handleInteraction(d.localPosition, size),
-          onPanUpdate: (d) => _handleInteraction(d.localPosition, size),
-          onTapDown: (d) => _handleInteraction(d.localPosition, size),
-          child: SizedBox(
-            width: size.width,
-            height: size.height,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(_borderRadius),
-                  child: CustomPaint(
-                    size: size,
-                    painter: _SatBrightPainter(hue: hsvColor.hue),
+        return Semantics(
+          label: context.l10n.videoEditorSaturationBrightnessSemanticLabel,
+          value: context.l10n.videoEditorSaturationBrightnessValue(
+            (hsvColor.saturation * 100).round(),
+            (hsvColor.value * 100).round(),
+          ),
+          child: GestureDetector(
+            onPanStart: (d) => _handleInteraction(d.localPosition, size),
+            onPanUpdate: (d) => _handleInteraction(d.localPosition, size),
+            onTapDown: (d) => _handleInteraction(d.localPosition, size),
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(_borderRadius),
+                    child: CustomPaint(
+                      size: size,
+                      painter: _SatBrightPainter(hue: hsvColor.hue),
+                    ),
                   ),
-                ),
-                Positioned(
-                  left: hsvColor.saturation * size.width - _thumbSize / 2,
-                  top: (1 - hsvColor.value) * size.height - _thumbSize / 2,
-                  child: const _ColorThumb(),
-                ),
-              ],
+                  Positioned(
+                    left: hsvColor.saturation * size.width - _thumbSize / 2,
+                    top: (1 - hsvColor.value) * size.height - _thumbSize / 2,
+                    child: const _ColorThumb(),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -492,29 +505,38 @@ class _HueBar extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        return GestureDetector(
-          onPanStart: (d) => _handleInteraction(d.localPosition, width),
-          onPanUpdate: (d) => _handleInteraction(d.localPosition, width),
-          onTapDown: (d) => _handleInteraction(d.localPosition, width),
-          child: SizedBox(
-            width: width,
-            height: _height,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                ClipRRect(
-                  borderRadius: .circular(_height / 2),
-                  child: CustomPaint(
-                    size: Size(width, _height),
-                    painter: const _HueBarPainter(),
+        return Semantics(
+          slider: true,
+          label: context.l10n.videoEditorHueSemanticLabel,
+          value: '${hue.round()}°',
+          increasedValue: '${(hue + 10).clamp(0.0, 360.0).round()}°',
+          decreasedValue: '${(hue - 10).clamp(0.0, 360.0).round()}°',
+          onIncrease: () => onChanged((hue + 10).clamp(0.0, 360.0)),
+          onDecrease: () => onChanged((hue - 10).clamp(0.0, 360.0)),
+          child: GestureDetector(
+            onPanStart: (d) => _handleInteraction(d.localPosition, width),
+            onPanUpdate: (d) => _handleInteraction(d.localPosition, width),
+            onTapDown: (d) => _handleInteraction(d.localPosition, width),
+            child: SizedBox(
+              width: width,
+              height: _height,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ClipRRect(
+                    borderRadius: .circular(_height / 2),
+                    child: CustomPaint(
+                      size: Size(width, _height),
+                      painter: const _HueBarPainter(),
+                    ),
                   ),
-                ),
-                Positioned(
-                  left: (hue / 360) * width - _thumbSize / 2,
-                  top: 0,
-                  child: const _ColorThumb(),
-                ),
-              ],
+                  Positioned(
+                    left: (hue / 360) * width - _thumbSize / 2,
+                    top: 0,
+                    child: const _ColorThumb(),
+                  ),
+                ],
+              ),
             ),
           ),
         );

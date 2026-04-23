@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
@@ -16,7 +18,6 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
-import 'package:time_formatter/time_formatter.dart';
 
 /// View for a single DM conversation.
 ///
@@ -45,9 +46,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   ) async {
     if (otherPubkey.isEmpty) return;
 
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     final followRepository = ref.read(followRepositoryProvider);
-    final isBlocked = blocklistService.isBlocked(otherPubkey);
+    final isBlocked = blocklistRepository.isBlocked(otherPubkey);
     final isFollowing = followRepository.isFollowing(otherPubkey);
 
     final result = await VineBottomSheet.show<MoreSheetResult>(
@@ -73,13 +74,13 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       case MoreSheetResult.unfollow:
         await followRepository.toggleFollow(otherPubkey);
       case MoreSheetResult.blockConfirmed:
-        await blocklistService.blockUser(
+        await blocklistRepository.blockUser(
           otherPubkey,
           ourPubkey: ref.read(authServiceProvider).currentPublicKeyHex ?? '',
         );
         if (mounted) context.pop();
       case MoreSheetResult.unblockConfirmed:
-        await blocklistService.unblockUser(otherPubkey);
+        await blocklistRepository.unblockUser(otherPubkey);
     }
   }
 
@@ -278,7 +279,11 @@ class _MessageList extends StatelessWidget {
 
         return MessageBubble(
           message: message.content,
-          timestamp: TimeFormatter.formatMessageTime(message.createdAt),
+          timestamp: LocalizedTimeFormatter.formatMessageTime(
+            context.l10n,
+            message.createdAt,
+            locale: Localizations.localeOf(context).toLanguageTag(),
+          ),
           isSent: isSent,
           isFirstInGroup: isFirstInGroup,
           isLastInGroup: isLastInGroup,

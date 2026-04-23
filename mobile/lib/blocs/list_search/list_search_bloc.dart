@@ -1,23 +1,47 @@
-// ABOUTME: BLoC for searching curated video lists (kind 30005).
-// ABOUTME: Streams local + relay results progressively via CuratedListRepository.
+// ABOUTME: BLoC for searching curated video lists (kind 30005) and people lists (kind 30000).
+// ABOUTME: Merges both streams via a tagged union and uses emit.forEach for safe lifecycle.
 
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'list_search_event.dart';
 part 'list_search_state.dart';
 
-/// BLoC for searching curated video lists (kind 30005).
+/// Tagged union emitted by the merged search stream.
+sealed class _SearchResult {
+  const _SearchResult();
+}
+
+final class _VideoSearchResult extends _SearchResult {
+  const _VideoSearchResult(this.lists);
+  final List<CuratedList> lists;
+}
+
+final class _PeopleSearchResult extends _SearchResult {
+  const _PeopleSearchResult(this.lists);
+  final List<UserList> lists;
+}
+
+/// BLoC for searching curated video lists (kind 30005) and people lists
+/// (kind 30000).
 ///
-/// Delegates to [CuratedListRepository.searchAllLists] which yields local
-/// results first, then progressively merges relay results.
+/// Merges [CuratedListRepository.searchAllLists] and
+/// [CuratedListRepository.searchAllPeopleLists] into a single stream via
+/// [Rx.merge] and processes it with [emit.forEach] so that
+/// [debounceRestartable] correctly cancels in-flight subscriptions.
+///
+/// The [peopleListSearchEnabled] flag controls whether the people list stream
+/// is included. When `false`, only video lists are searched.
 class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
   ListSearchBloc({
     required CuratedListRepository curatedListRepository,
+    bool peopleListSearchEnabled = false,
   }) : _curatedListRepository = curatedListRepository,
+       _peopleListSearchEnabled = peopleListSearchEnabled,
        super(const ListSearchState()) {
     on<ListSearchQueryChanged>(
       _onQueryChanged,
@@ -27,6 +51,7 @@ class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
   }
 
   final CuratedListRepository _curatedListRepository;
+  final bool _peopleListSearchEnabled;
 
   Future<void> _onQueryChanged(
     ListSearchQueryChanged event,
@@ -45,25 +70,45 @@ class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
       return;
     }
 
-    emit(state.copyWith(status: ListSearchStatus.loading, query: query));
+    emit(
+      state.copyWith(
+        status: ListSearchStatus.loading,
+        query: query,
+        videoResults: const [],
+        peopleResults: const [],
+      ),
+    );
 
     try {
-      await emit.forEach(
-        _curatedListRepository.searchAllLists(query),
-        onData: (results) => state.copyWith(
-          status: ListSearchStatus.success,
-          results: results,
-        ),
+      final videoStream = _curatedListRepository
+          .searchAllLists(query)
+          .map<_SearchResult>(_VideoSearchResult.new);
+
+      final streams = [
+        videoStream,
+        if (_peopleListSearchEnabled)
+          _curatedListRepository
+              .searchAllPeopleLists(query)
+              .map<_SearchResult>(_PeopleSearchResult.new),
+      ];
+
+      await emit.forEach<_SearchResult>(
+        Rx.merge(streams),
+        onData: (result) => switch (result) {
+          _VideoSearchResult(:final lists) => state.copyWith(
+            status: ListSearchStatus.success,
+            videoResults: lists,
+          ),
+          _PeopleSearchResult(:final lists) => state.copyWith(
+            status: ListSearchStatus.success,
+            peopleResults: lists,
+          ),
+        },
       );
 
-      // If stream completes without emitting, still emit success
+      // If stream completes without emitting, still emit success.
       if (state.status == ListSearchStatus.loading) {
-        emit(
-          state.copyWith(
-            status: ListSearchStatus.success,
-            results: const [],
-          ),
-        );
+        emit(state.copyWith(status: ListSearchStatus.success));
       }
     } on Exception catch (e, stackTrace) {
       addError(e, stackTrace);

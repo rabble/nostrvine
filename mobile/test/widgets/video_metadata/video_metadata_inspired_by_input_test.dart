@@ -1,3 +1,4 @@
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,16 +9,15 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_inspired_by_input.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Mock for FollowRepository
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
-/// Mock for ContentBlocklistService
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+/// Mock for ContentBlocklistRepository
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 /// Mock notifier for testing
 class _MockVideoEditorNotifier extends VideoEditorNotifier {
@@ -56,11 +56,11 @@ _MockFollowRepository _createMockFollowRepository({
   return mock;
 }
 
-/// Create a mock ContentBlocklistService
-_MockContentBlocklistService _createMockContentBlocklistService({
+/// Create a mock ContentBlocklistRepository
+_MockContentBlocklistRepository _createMockContentBlocklistRepository({
   bool hasMutedUs = false,
 }) {
-  final mock = _MockContentBlocklistService();
+  final mock = _MockContentBlocklistRepository();
   when(() => mock.hasMutedUs(any())).thenReturn(hasMutedUs);
   when(() => mock.isBlocked(any())).thenReturn(false);
   return mock;
@@ -77,8 +77,8 @@ void main() {
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              _createMockContentBlocklistService(),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              _createMockContentBlocklistRepository(),
             ),
           ],
           child: const MaterialApp(
@@ -99,8 +99,8 @@ void main() {
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              _createMockContentBlocklistService(),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              _createMockContentBlocklistRepository(),
             ),
           ],
           child: const MaterialApp(
@@ -123,8 +123,8 @@ void main() {
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              _createMockContentBlocklistService(),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              _createMockContentBlocklistRepository(),
             ),
           ],
           child: const MaterialApp(
@@ -148,8 +148,8 @@ void main() {
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              _createMockContentBlocklistService(),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              _createMockContentBlocklistRepository(),
             ),
           ],
           child: const MaterialApp(
@@ -183,8 +183,8 @@ void main() {
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              _createMockContentBlocklistService(),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              _createMockContentBlocklistRepository(),
             ),
           ],
           child: const MaterialApp(
@@ -219,8 +219,8 @@ void main() {
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              _createMockContentBlocklistService(),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              _createMockContentBlocklistRepository(),
             ),
             videoEditorProvider.overrideWith(
               () => _MockVideoEditorNotifier(state),
@@ -252,8 +252,8 @@ void main() {
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              _createMockContentBlocklistService(),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              _createMockContentBlocklistRepository(),
             ),
             videoEditorProvider.overrideWith(
               () => _MockVideoEditorNotifier(state),
@@ -281,8 +281,8 @@ void main() {
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              _createMockContentBlocklistService(),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              _createMockContentBlocklistRepository(),
             ),
           ],
           child: const MaterialApp(

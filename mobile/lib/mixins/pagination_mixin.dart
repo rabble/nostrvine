@@ -1,6 +1,7 @@
 // ABOUTME: Reusable pagination mixin with throttling for PageView widgets
 // ABOUTME: Prevents duplicate loadMore() calls with configurable threshold and throttle
 
+import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -43,7 +44,7 @@ mixin PaginationMixin<T extends StatefulWidget> on State<T> {
     }
 
     // Rate limit pagination calls to prevent spam
-    final now = DateTime.now();
+    final now = clock.now();
     if (_lastPaginationCall != null &&
         now.difference(_lastPaginationCall!).inSeconds < throttleSeconds) {
       Log.debug(

@@ -403,14 +403,22 @@
     "videoGridEditVideo": "تعديل الفيديو",
     "videoGridEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "videoGridDeleteVideo": "حذف الفيديو",
-    "videoGridDeleteVideoSubtitle": "أزِل هذا الفيديو من Divine. قد يظل ظاهرًا في عملاء Nostr آخرين.",
+    "videoGridDeleteVideoSubtitle": "إزالة هذا المحتوى نهائيًا",
     "videoGridDeleteConfirmTitle": "حذف الفيديو",
-    "videoGridDeleteConfirmMessage": "سيتم حذف هذا الفيديو نهائيًا من Divine. قد يظل ظاهرًا في عملاء Nostr الآخرين الذين يستخدمون محولات مختلفة.",
-    "videoGridDeleteConfirmNote": "سيرسل هذا طلب حذف إلى المحولات. ملاحظة: قد تحتفظ بعض المحولات بنسخ مخزّنة.",
+    "videoGridDeleteConfirmMessage": "هل أنت متأكد من رغبتك في حذف هذا الفيديو؟",
+    "videoGridDeleteConfirmNote": "سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.",
     "videoGridDeleteCancel": "إلغاء",
     "videoGridDeleteConfirm": "حذف",
     "videoGridDeletingContent": "جاري حذف المحتوى...",
     "videoGridDeleteSuccess": "تم إرسال طلب الحذف بنجاح",
+    "videoGridDeleteFailure": "فشل حذف المحتوى: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
     "exploreTabClassics": "الكلاسيكيات",
     "exploreTabNew": "جديد",
     "exploreTabPopular": "الرائج",
@@ -462,6 +470,8 @@
     },
     "videoPlayerLoadingVideo": "جاري تحميل الفيديو...",
     "videoPlayerPlayVideo": "تشغيل الفيديو",
+    "videoPlayerMute": "كتم الفيديو",
+    "videoPlayerUnmute": "إلغاء كتم الفيديو",
     "videoPlayerEditVideo": "تعديل الفيديو",
     "videoPlayerEditVideoTooltip": "تعديل الفيديو",
     "contentWarningLabel": "تحذير محتوى",
@@ -586,9 +596,6 @@
     "shareMessageHint": "أضف رسالة اختيارية...",
     "videoActionUnlike": "إلغاء الإعجاب بالفيديو",
     "videoActionLike": "الإعجاب بالفيديو",
-    "videoActionAutoLabel": "تلقائي",
-    "videoActionEnableAutoAdvance": "تفعيل التقدّم التلقائي",
-    "videoActionDisableAutoAdvance": "إيقاف التقدّم التلقائي",
     "videoActionRemoveRepost": "إزالة إعادة النشر",
     "videoActionRepost": "إعادة نشر الفيديو",
     "videoActionViewComments": "عرض التعليقات",
@@ -603,17 +610,6 @@
             }
         }
     },
-    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{تكرار} other{تكرارات}}",
-    "@videoFeedLoopCountLine": {
-        "placeholders": {
-            "compactCount": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "ليس Divine",
     "metadataBadgeHumanMade": "من صنع البشر",
     "metadataSoundsLabel": "أصوات",
@@ -625,14 +621,7 @@
     "metadataCollaboratorsLabel": "المتعاونون",
     "metadataInspiredByLabel": "مستوحى من",
     "metadataRepostedByLabel": "أعاد نشره",
-    "metadataLoopsLabel": "{count, plural, =1{تكرار} other{التكرارات}}",
-    "@metadataLoopsLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
+    "metadataLoopsLabel": "التكرارات",
     "metadataLikesLabel": "الإعجابات",
     "metadataCommentsLabel": "التعليقات",
     "metadataRepostsLabel": "إعادات النشر",
@@ -1502,7 +1491,7 @@
     "shareMenuEditVideo": "تعديل الفيديو",
     "shareMenuEditVideoSubtitle": "تحديث العنوان والوصف والوسوم",
     "shareMenuDeleteVideo": "حذف الفيديو",
-    "shareMenuDeleteVideoSubtitle": "أزِل هذا الفيديو من Divine. قد يظل ظاهرًا في عملاء Nostr آخرين.",
+    "shareMenuDeleteVideoSubtitle": "إزالة هذا المحتوى نهائيًا",
     "shareMenuVideoInTheseLists": "الفيديو في هذه القوائم:",
     "shareMenuVideoCount": "{count} فيديو",
     "@shareMenuVideoCount": {
@@ -1513,17 +1502,20 @@
         }
     },
     "shareMenuClose": "إغلاق",
-    "shareMenuDeleteConfirmation": "سيتم حذف هذا الفيديو نهائيًا من Divine. قد يظل ظاهرًا في عملاء Nostr الآخرين الذين يستخدمون محولات مختلفة.",
+    "shareMenuDeleteConfirmation": "هل أنت متأكد من رغبتك في حذف هذا الفيديو؟",
+    "shareMenuDeleteWarning": "سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.",
     "shareMenuCancel": "إلغاء",
     "shareMenuDelete": "حذف",
     "shareMenuDeletingContent": "جاري حذف المحتوى...",
-    "shareMenuDeleteRequestSent": "تم حذف الفيديو",
-    "shareMenuDeleteFailedNotInitialized": "الحذف غير جاهز بعد. حاول مرة أخرى بعد لحظة.",
-    "shareMenuDeleteFailedNotOwner": "يمكنك حذف مقاطع الفيديو الخاصة بك فقط.",
-    "shareMenuDeleteFailedNotAuthenticated": "سجّل الدخول مرة أخرى، ثم حاول الحذف.",
-    "shareMenuDeleteFailedCouldNotSign": "لم نتمكن من توقيع طلب الحذف. حاول مرة أخرى.",
-  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedGeneric": "تعذّر حذف هذا الفيديو. حاول مرة أخرى.",
+    "shareMenuDeleteRequestSent": "تم إرسال طلب الحذف بنجاح",
+    "shareMenuFailedToDeleteContent": "فشل حذف المحتوى: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuFollowSetName": "اسم مجموعة المتابعة",
     "shareMenuFollowSetNameHint": "مثل: صناع المحتوى، موسيقيون، إلخ.",
     "shareMenuDescriptionOptional": "الوصف (اختياري)",
@@ -1557,7 +1549,15 @@
     },
     "shareMenuDeleteVideoQuestion": "حذف الفيديو؟",
     "shareMenuDeleteRelayWarning": "سيرسل هذا طلب حذف إلى المحولات. ملاحظة: قد تحتفظ بعض المحولات بنسخ مخزّنة.",
-    "shareMenuVideoDeletionRequested": "تم حذف الفيديو",
+    "shareMenuVideoDeletionRequested": "تم طلب حذف الفيديو",
+    "shareMenuFailedToDeleteVideo": "فشل حذف الفيديو: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuContentLabels": "وسوم المحتوى",
     "shareMenuAddContentLabels": "إضافة وسوم محتوى",
     "shareMenuClearAll": "مسح الكل",
@@ -1727,9 +1727,9 @@
     "feedFailedToLoadVideos": "تعذر تحميل مقاطع الفيديو",
     "feedRetry": "إعادة المحاولة",
     "feedNoFollowedUsers": "لا يوجد مستخدمون متابَعون.\nتابِع شخصًا ما لترى مقاطع الفيديو هنا.",
-    "feedForYouEmpty": "خلاصة \"لك\" فارغة.\nاستكشف مقاطع الفيديو وتابع المبدعين لتشكيلها.",
-    "feedFollowingEmpty": "لا توجد مقاطع فيديو من الأشخاص الذين تتابعهم بعد.\nاعثر على مبدعين تحبهم وتابعهم.",
-    "feedLatestEmpty": "لا توجد مقاطع فيديو جديدة بعد.\nعد قريبًا للاطلاع.",
+    "feedForYouEmpty": "خلاصة لك فارغة.\nاستكشف المقاطع واتبع صناع المحتوى لتخصيصها.",
+    "feedFollowingEmpty": "لا توجد مقاطع بعد من الأشخاص الذين تتابعهم.\nاعثر على صناع محتوى يعجبونك وتابعهم.",
+    "feedLatestEmpty": "لا توجد مقاطع جديدة بعد.\nعد لاحقًا.",
     "feedExploreVideos": "استكشاف مقاطع الفيديو",
     "feedExternalVideoSlow": "الفيديو الخارجي يُحمَّل ببطء",
     "feedSkip": "تخطي",
@@ -1769,6 +1769,31 @@
     "userSearchPrompt": "البحث عن مستخدمين",
     "userSearchNoResults": "لم يُعثر على مستخدمين",
     "userSearchFailed": "فشل البحث",
+    "userPickerSearchByName": "İsme göre ara",
+    "userPickerFilterByNameHint": "İsme göre filtrele...",
+    "userPickerSearchByNameHint": "İsme göre ara...",
+    "userPickerAlreadyAddedSemantics": "{name} zaten eklendi",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerSelectSemantics": "{name} seç",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "Ekibin orada",
+    "userPickerEmptyFollowListBody": "Uyum sağladığın kişileri takip et. Onlar da seni takip ettiğinde birlikte içerik üretebilirsin.",
+    "userPickerGoBack": "Geri dön",
+    "userPickerTypeNameToSearch": "Aramak için bir ad yaz",
+    "userPickerUnavailable": "Kullanıcı araması şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.",
+    "userPickerSearchFailedTryAgain": "Arama başarısız oldu. Lütfen tekrar dene.",
     "forgotPasswordTitle": "إعادة تعيين كلمة المرور",
     "forgotPasswordDescription": "أدخل بريدك الإلكتروني وسنُرسل إليك رابطًا لإعادة تعيين كلمة المرور.",
     "forgotPasswordEmailLabel": "البريد الإلكتروني",
@@ -1798,7 +1823,9 @@
     "navInbox": "الوارد",
     "navProfile": "الملف الشخصي",
     "navMyProfile": "ملفي الشخصي",
+    "navSearch": "بحث",
     "navNotifications": "الإشعارات",
+    "navSearchTooltip": "بحث",
     "navOpenCamera": "فتح الكاميرا",
     "navUnknown": "غير معروف",
     "navExploreClassics": "الكلاسيكيات",
@@ -2153,6 +2180,7 @@
     "commonCancel": "إلغاء",
     "commonDelete": "حذف",
     "commonRetry": "إعادة المحاولة",
+    "commonNext": "التالي",
     "discoverListsFailedToUpdateSubscription": "فشل تحديث الاشتراك: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2191,6 +2219,32 @@
     "featureRequestCancel": "إلغاء",
     "followersFailedToLoadList": "فشل تحميل قائمة المتابعين",
     "followingFailedToLoadList": "فشل تحميل قائمة المتابَعين",
+    "inboxActionBlock": "حظر {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "كتم المحادثة",
+    "inboxActionRemove": "إزالة المحادثة",
+    "inboxActionReport": "الإبلاغ عن {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "إلغاء حظر {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "تم حظر {displayName}",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2199,6 +2253,20 @@
             }
         }
     },
+    "inboxConversationMuted": "تم كتم المحادثة",
+    "inboxConversationUnmuted": "تم إلغاء كتم المحادثة",
+    "inboxEmptySubtitle": "زر + لن يعضّك.",
+    "inboxEmptyTitle": "لا توجد رسائل بعد",
+    "inboxRemoveConfirmBody": "سيؤدي هذا إلى حذف محادثتك مع {displayName}. لا يمكن التراجع عن هذا الإجراء.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "إزالة",
+    "inboxRemoveConfirmTitle": "إزالة المحادثة؟",
     "inboxRemovedConversation": "تمت إزالة المحادثة",
     "inboxReportedUser": "تم الإبلاغ عن {displayName}",
     "@inboxReportedUser": {
@@ -2273,7 +2341,7 @@
     "libraryDeleteClipsTitle": "حذف المقاطع",
     "libraryDeleteClipsWarning": "لا يمكن التراجع. ستُزال ملفات الفيديو نهائيًا من جهازك.",
     "libraryDeleteConfirm": "حذف",
-    "libraryDeleteDraftMessage": "\u0647\u0644 \u062a\u0631\u064a\u062f \u062d\u0630\u064f \u201c{title}\u201d\u061f",
+    "libraryDeleteDraftMessage": "هل تريد حذُ “{title}”؟",
     "@libraryDeleteDraftMessage": {
         "placeholders": {
             "title": {
@@ -2323,15 +2391,24 @@
     "reportDialogReport": "إبلاغ",
     "routerInvalidCreator": "منشئ غير صالح",
     "routerInvalidHashtagRoute": "مسار هاشتاغ غير صالح",
+    "searchDiscoverSomethingInteresting": "اكتشف شيئًا مثيرًا للاهتمام",
+    "searchEnterQuery": "أدخل استعلام البحث",
     "searchFindCuratedVideoLists": "ابحث عن قوائم فيديو مختارة",
+  "searchListsSectionHeader": "القوائم",
+  "searchListsLoadingLabel": "جارٍ تحميل نتائج القوائم",
     "searchForLists": "البحث عن قوائم",
     "searchSomethingWentWrong": "حدث خطأ ما",
     "searchTryAgain": "حاول مجددًا",
     "trendingTitle": "الرائج",
-    "videoEditorLayers": "الطبقات",
     "videoEditorStickers": "الملصقات",
     "videoMetadataContentWarnings": "تحذيرات المحتوى",
     "videoMetadataExpiration": "انتهاء الصلاحية",
+    "videoMetadataExpirationNotExpire": "لا تنتهي الصلاحية",
+    "videoMetadataExpirationOneDay": "يوم واحد",
+    "videoMetadataExpirationOneWeek": "أسبوع واحد",
+    "videoMetadataExpirationOneMonth": "شهر واحد",
+    "videoMetadataExpirationOneYear": "سنة واحدة",
+    "videoMetadataExpirationOneDecade": "عشر سنوات",
     "videoMetadataTags": "الوسوم",
     "contentLabelAiGenerated": "محتوى مُولّد بالذكاء الاصطناعي",
     "contentLabelAlcohol": "كحول",
@@ -2526,5 +2603,330 @@
     "cameraPermissionAllowAccessTitle": "السماح بالوصول إلى الكاميرا والميكروفون",
     "cameraPermissionAllowAccessDescription": "يتيح لك هذا التقاط الفيديوهات وتعديلها مباشرة داخل التطبيق، ولا شيء أكثر.",
     "cameraPermissionContinue": "متابعة",
-    "cameraPermissionGoToSettings": "الذهاب إلى الإعدادات"
+    "cameraPermissionGoToSettings": "الذهاب إلى الإعدادات",
+    "videoEditorAddClipFromLibrary": "إضافة مقطع من المكتبة",
+    "videoEditorAddElementSemanticLabel": "إضافة عنصر",
+    "videoEditorAddTitle": "إضافة",
+    "videoEditorAdjustVolumeTitle": "ضبط الصوت",
+    "videoEditorAudioAddAudio": "إضافة صوت",
+    "videoEditorAudioFailedToLoadTitle": "فشل تحميل الأصوات",
+    "videoEditorAudioLabel": "الصوت",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "ستظهر الأصوات هنا عندما يشاركها المبدعون",
+    "videoEditorAudioNoSoundsAvailableTitle": "لا توجد أصوات متاحة",
+    "videoEditorAudioNoSoundsFoundSubtitle": "جرّب مصطلح بحث مختلف",
+    "videoEditorAudioNoSoundsFoundTitle": "لم يتم العثور على أصوات",
+    "videoEditorAudioPausePreviewSemanticLabel": "إيقاف المعاينة مؤقتًا",
+    "videoEditorAudioPlayPreviewSemanticLabel": "تشغيل المعاينة",
+    "videoEditorAudioSelectSoundSemanticLabel": "اختيار صوت",
+    "videoEditorAudioUntitled": "بدون عنوان",
+    "videoEditorAudioUntitledSound": "صوت بدون عنوان",
+    "videoEditorCannotSplitProcessing": "لا يمكن تقسيم المقطع أثناء معالجته. يرجى الانتظار.",
+    "videoEditorClipDeleted": "تم حذف المقطع",
+    "videoEditorClipSaveFailed": "فشل حفظ المقطع",
+    "videoEditorClipSavedSuccess": "تم حفظ المقطع في المكتبة",
+    "videoEditorClipsLabel": "المقاطع",
+    "videoEditorCloseColorPickerSemanticLabel": "إغلاق منتقي الألوان",
+    "videoEditorCloseSemanticLabel": "إغلاق",
+    "videoEditorColorPickerSemanticLabel": "منتقي الألوان",
+    "videoEditorColorSelectedSemanticLabel": "{colorName}، محدد",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorConfirmColorSemanticLabel": "تأكيد اللون",
+    "videoEditorCropSemanticLabel": "قص",
+    "videoEditorCustomAudioLabel": "صوت مخصص",
+    "videoEditorDeleteClip": "حذف المقطع",
+    "videoEditorDeleteLabel": "حذف",
+    "videoEditorDeleteLayerDropZone": "منطقة إسقاط لحذف الطبقة",
+    "videoEditorDeleteSelectedItemSemanticLabel": "حذف العنصر المحدد",
+    "videoEditorDiscardChangesButton": "تجاهل التغييرات",
+    "videoEditorDoneLabel": "تم",
+    "videoEditorDoneSemanticLabel": "تم",
+    "videoEditorDrawLabel": "رسم",
+    "videoEditorDrawToolArrowSemanticLabel": "أداة السهم",
+    "videoEditorDrawToolEraserSemanticLabel": "أداة الممحاة",
+    "videoEditorDrawToolMarkerSemanticLabel": "أداة الماركر",
+    "videoEditorDrawToolPencilSemanticLabel": "أداة القلم",
+    "videoEditorDuplicateLabel": "تكرار",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "تكرار العنصر المحدد",
+    "videoEditorEditLabel": "تحرير",
+    "videoEditorEditSelectedItemSemanticLabel": "تحرير العنصر المحدد",
+    "videoEditorEffectsLabel": "التأثيرات",
+    "videoEditorFailedLoadStickers": "فشل تحميل الملصقات",
+    "videoEditorFeedPreviewContent": "تجنب وضع المحتوى خلف هذه المناطق.",
+    "videoEditorFinishTimelineEditingSemanticLabel": "إنهاء تحرير الجدول الزمني",
+    "videoEditorFontSemanticLabel": "الخط",
+    "videoEditorFontUnknown": "غير معروف",
+    "videoEditorHideTimelineSemanticLabel": "إخفاء الجدول الزمني",
+    "videoEditorHueSemanticLabel": "الصبغة",
+    "videoEditorKeepEditingButton": "مواصلة التحرير",
+    "videoEditorLayerReorderHint": "اضغط مطولاً لإعادة الترتيب",
+    "videoEditorLayerReorderLabel": "إعادة ترتيب الطبقة {index}",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLevelSemanticLabel": "المستوى",
+    "videoEditorMuteAudioSemanticLabel": "كتم الصوت",
+    "videoEditorNoStickersAvailable": "لا توجد ملصقات متاحة",
+    "videoEditorNoStickersFound": "لم يتم العثور على ملصقات",
+    "videoEditorOpenAudioSemanticLabel": "فتح محرر الصوت",
+    "videoEditorOpenClipsSemanticLabel": "فتح محرر المقاطع",
+    "videoEditorOpenDrawSemanticLabel": "فتح محرر الرسم",
+    "videoEditorOpenEffectsSemanticLabel": "فتح محرر التأثيرات",
+    "videoEditorOpenTextSemanticLabel": "فتح محرر النص",
+    "videoEditorPauseSemanticLabel": "إيقاف مؤقت",
+    "videoEditorPickColorTitle": "اختيار لون",
+    "videoEditorPlayPauseSemanticLabel": "تشغيل الفيديو أو إيقافه مؤقتًا",
+    "videoEditorPlaySemanticLabel": "تشغيل",
+    "videoEditorRecordedAudioLabel": "الصوت المسجل",
+    "videoEditorRedoSemanticLabel": "إعادة",
+    "videoEditorReleaseToDeleteLayer": "أفلت لحذف الطبقة",
+    "videoEditorSaturationBrightnessSemanticLabel": "التشبع والسطوع",
+    "videoEditorSaturationBrightnessValue": "التشبع {saturation}%، السطوع {brightness}%",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorSaveClip": "حفظ المقطع",
+    "videoEditorSaveDraftButton": "حفظ المسودة",
+    "videoEditorSaveDraftSubtitle": "احفظ تعديلاتك لاحقًا، أو تجاهلها واخرج من المحرر.",
+    "videoEditorSaveDraftTitle": "حفظ المسودة؟",
+    "videoEditorSaveSelectedClip": "حفظ المقطع المحدد",
+    "videoEditorSelectFontSemanticLabel": "اختيار خط",
+    "videoEditorShowTimelineSemanticLabel": "إظهار الجدول الزمني",
+    "videoEditorSortBySemanticLabel": "ترتيب حسب {option}. اضغط لتغيير ترتيب الفرز",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorSortLongest": "الأطول",
+    "videoEditorSortNewest": "الأحدث",
+    "videoEditorSortShortest": "الأقصر",
+    "videoEditorSplitClip": "تقسيم المقطع",
+    "videoEditorSplitLabel": "تقسيم",
+    "videoEditorSplitPlayheadOutsideClip": "يجب أن يكون رأس التشغيل داخل المقطع المحدد للتقسيم.",
+    "videoEditorSplitPositionInvalid": "موضع التقسيم غير صالح. يجب أن يكون كل مقطع {minDurationMs} مللي ثانية على الأقل.",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorSplitSelectedClipSemanticLabel": "تقسيم المقطع المحدد",
+    "videoEditorStickerSearchHint": "البحث في الملصقات...",
+    "videoEditorTextAlignmentSemanticLabel": "محاذاة النص",
+    "videoEditorTextBackgroundSemanticLabel": "خلفية النص",
+    "videoEditorTextColorSemanticLabel": "لون النص",
+    "videoEditorTextLabel": "النص",
+    "videoEditorTimelineClipMoveLeft": "تحريك لليسار",
+    "videoEditorTimelineClipMoveRight": "تحريك لليمين",
+    "videoEditorTimelineClipReorderHint": "اضغط مطولاً لإعادة الترتيب",
+    "videoEditorTimelineClipSemanticLabel": "المقطع {index} من {total}، مدة {duration} ثانية",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineDraggingClipSemanticLabel": "سحب المقطع {index}",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineLongPressToDragHint": "اضغط مطولاً للسحب",
+    "videoEditorTimelinePositionFormat": "{minutes}د {seconds}ث",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineTrimClipHint": "اسحب المقابض لضبط مدة المقطع",
+    "videoEditorTimelineTrimClipSemanticLabel": "قص المقطع",
+    "videoEditorTimelineTrimEndSemanticLabel": "قص النهاية",
+    "videoEditorTimelineTrimStartSemanticLabel": "قص البداية",
+    "videoEditorUndoSemanticLabel": "تراجع",
+    "videoEditorUnmuteAudioSemanticLabel": "إلغاء كتم الصوت",
+    "videoEditorVideoTimelineSemanticLabel": "الجدول الزمني للفيديو",
+    "videoEditorVolumeLabel": "الصوت",
+    "videoMetadataAddCollaboratorSemanticLabel": "إضافة متعاون",
+    "videoMetadataBackSemanticLabel": "رجوع",
+    "videoMetadataClassicDoneButton": "تم",
+    "videoMetadataClosePreviewSemanticLabel": "إغلاق معاينة الفيديو",
+    "videoMetadataCollaboratorsCount": "{count}/{max} متعاونين",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataCollaboratorsHelpMessage": "يُضاف المتعاونون كمبدعين مشاركين في هذا المنشور. يمكنك إضافة الأشخاص الذين تتابعهم بشكل متبادل فقط، ويظهرون في بيانات المنشور عند نشره.",
+    "videoMetadataCollaboratorsHelpTooltip": "كيفية عمل المتعاونين",
+    "videoMetadataCollaboratorsLabel": "المتعاونون",
+    "videoMetadataContentWarningDoneButton": "تم",
+    "videoMetadataContentWarningLabel": "تحذير المحتوى",
+    "videoMetadataContentWarningSelectAllThatApply": "اختر كل ما ينطبق على محتواك",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "لا يمكن الإشارة إلى هذا المبدع.",
+    "videoMetadataDeleteTagHint": "حذف الوسم {tag}",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataDeleteTagSemanticLabel": "حذف",
+    "videoMetadataDescriptionLabel": "الوصف",
+    "videoMetadataDismissHelpDialogSemanticLabel": "إغلاق مربع حوار المساعدة",
+    "videoMetadataExpirationLabel": "انتهاء الصلاحية",
+    "videoMetadataFailedToSaveSnackbar": "فشل الحفظ",
+    "videoMetadataFormNotReadyHint": "أكمل النموذج للتفعيل",
+    "videoMetadataGoToLibraryButton": "الذهاب إلى المكتبة",
+    "videoMetadataGotItButton": "فهمت!",
+    "videoMetadataInspiredByHelpMessage": "استخدم هذا لإعطاء الفضل. يختلف رصيد الإلهام عن المتعاونين: يُقرّ بالتأثير، لكنه لا يُضيف شخصًا كمبدع مشارك.",
+    "videoMetadataInspiredByHelpTooltip": "كيفية عمل أرصدة الإلهام",
+    "videoMetadataInspiredByLabel": "مستلهم من",
+    "videoMetadataInspiredByNone": "لا شيء",
+    "videoMetadataLimitReachedWarning": "تم الوصول إلى حد 64 كيلوبايت. أزل بعض المحتوى للمتابعة.",
+    "videoMetadataMustMutuallyFollowSnackbar": "يجب أن تتابع {name} بشكل متبادل لإضافته كمتعاون.",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataMutualFollowersSearchText": "المتابعون المتبادلون",
+    "videoMetadataOpenPreviewSemanticLabel": "فتح شاشة معاينة المنشور",
+    "videoMetadataPausePreviewSemanticLabel": "إيقاف المعاينة مؤقتًا",
+    "videoMetadataPlayPreviewSemanticLabel": "تشغيل المعاينة",
+    "videoMetadataPostButton": "نشر",
+    "videoMetadataPostDetailsTitle": "تفاصيل المنشور",
+    "videoMetadataPostSemanticLabel": "زر النشر",
+    "videoMetadataPublishVideoHint": "نشر الفيديو في الخلاصة",
+    "videoMetadataRemoveCollaboratorSemanticLabel": "إزالة المتعاون",
+    "videoMetadataRemoveInspiredBySemanticLabel": "إزالة مصدر الإلهام",
+    "videoMetadataRemoveSemanticLabel": "إزالة",
+    "videoMetadataRenderingVideoHint": "جاري تصيير الفيديو...",
+    "videoMetadataSaveForLaterButton": "حفظ لاحقًا",
+    "videoMetadataSaveForLaterSemanticLabel": "زر الحفظ لاحقًا",
+    "videoMetadataSaveToDraftsHint": "حفظ الفيديو في المسودات و{destination}",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSavedToLibrarySnackbar": "تم الحفظ في المكتبة",
+    "videoMetadataSavingVideoHint": "جاري حفظ الفيديو...",
+    "videoMetadataSelectContentWarningsSemanticLabel": "اختيار تحذيرات المحتوى",
+    "videoMetadataSelectExpirationSemanticLabel": "اختيار وقت انتهاء الصلاحية",
+    "videoMetadataSetInspiredBySemanticLabel": "تحديد مصدر الإلهام",
+    "videoMetadataShareTitle": "مشاركة",
+    "videoMetadataTagsLabel": "الوسوم",
+    "videoMetadataTitleLabel": "العنوان",
+    "videoMetadataVideoDetailsSubtitle": "تفاصيل الفيديو",
+    "videoRecorderAutosaveContinueButton": "نعم، متابعة",
+    "videoRecorderAutosaveDiscardButton": "لا، ابدأ فيديو جديد",
+    "videoRecorderAutosaveFoundSubtitle": "هل تريد المتابعة من حيث توقفت؟",
+    "videoRecorderAutosaveFoundTitle": "وجدنا عملاً قيد التنفيذ",
+    "videoRecorderAutosaveRestoreFailure": "تعذر استعادة مسودتك",
+    "videoRecorderCaptureCloseLabel": "إغلاق",
+    "videoRecorderCaptureNextLabel": "التالي",
+    "videoRecorderClipDeletedMessage": "تم حذف المقطع",
+    "videoRecorderCloseLabel": "إغلاق مسجل الفيديو",
+    "videoRecorderContinueToEditorLabel": "المتابعة إلى محرر الفيديو",
+    "videoRecorderCycleTimerLabel": "تدوير المؤقت",
+    "videoRecorderDeleteLastClipLabel": "حذف آخر مقطع",
+    "videoRecorderGhostFrameDisabled": "الإطار الشبحي معطل",
+    "videoRecorderGhostFrameEnabled": "الإطار الشبحي مفعّل",
+    "videoRecorderLibraryEmptyLabel": "مكتبة المقاطع، لا توجد مقاطع",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{فتح مكتبة المقاطع، مقطع واحد} other{فتح مكتبة المقاطع، {clipCount} مقاطع}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderRecordingTapToStopLabel": "جاري التسجيل. اضغط في أي مكان للإيقاف",
+    "videoRecorderStartRecordingTooltip": "بدء التسجيل",
+    "videoRecorderStopRecordingTooltip": "إيقاف التسجيل",
+    "videoRecorderSwitchCameraLabel": "تبديل الكاميرا",
+    "videoRecorderTapToStartLabel": "اضغط في أي مكان لبدء التسجيل",
+    "videoRecorderToggleAspectRatioLabel": "تبديل نسبة العرض إلى الارتفاع",
+    "videoRecorderToggleFlashLabel": "تبديل الفلاش",
+    "videoRecorderToggleGhostFrameLabel": "تبديل الإطار الشبحي",
+    "videoRecorderToggleGridLabel": "تبديل الشبكة",
+    "videoRecorderWhySixSecondsButton": "فهمت!",
+    "videoRecorderWhySixSecondsSubtitle": "المقاطع القصيرة تفسح المجال للتلقائية. يساعدك التنسيق المدته 6 ثوانٍ على التقاط اللحظات الأصيلة فور حدوثها.",
+    "videoRecorderWhySixSecondsTitle": "لماذا ست ثوانٍ؟",
+    "videoActionAutoLabel": "تلقائي",
+    "videoActionEnableAutoAdvance": "تفعيل التشغيل التلقائي",
+    "videoActionDisableAutoAdvance": "تعطيل التشغيل التلقائي",
+    "metadataCaptionsLabel": "التسميات التوضيحية",
+    "metadataCaptionsEnabledSemantics": "التسميات التوضيحية مفعّلة لجميع مقاطع الفيديو",
+    "metadataCaptionsDisabledSemantics": "التسميات التوضيحية معطّلة لجميع مقاطع الفيديو",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuDeleteFailedCouldNotSign": "لم نتمكن من توقيع طلب الحذف. حاول مرة أخرى.",
+    "shareMenuDeleteFailedGeneric": "تعذّر حذف هذا الفيديو. حاول مرة أخرى.",
+    "shareMenuDeleteFailedNotAuthenticated": "سجّل الدخول مرة أخرى، ثم حاول الحذف.",
+    "shareMenuDeleteFailedNotInitialized": "الحذف غير جاهز بعد. حاول مرة أخرى بعد لحظة.",
+    "shareMenuDeleteFailedNotOwner": "يمكنك حذف مقاطع الفيديو الخاصة بك فقط.",
+    "videoEditorLayers": "الطبقات",
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{تكرار} other{تكرارات}}",
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
 }

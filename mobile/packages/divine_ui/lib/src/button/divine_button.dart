@@ -36,11 +36,17 @@ enum DivineButtonType {
 }
 
 /// The size of a [DivineButton].
+///
+/// Both sizes have the same 48px total outer height for consistent touch
+/// targets. The [small] variant wraps the visible button in 4px padding,
+/// making it appear 40px tall while keeping the 48px tap area.
 enum DivineButtonSize {
-  /// Small button: 16px horizontal padding, 8px vertical, 16px border radius.
+  /// Small button: 4px outer padding, 16px horizontal / 8px vertical
+  /// inner padding, 16px border radius. Visual height 40px, tap target 48px.
   small,
 
-  /// Base/medium button: 24px horizontal padding, 12px vertical, 20px border radius.
+  /// Base/medium button: 24px horizontal / 12px vertical padding, 20px
+  /// border radius. Total height 48px.
   base,
 }
 
@@ -154,21 +160,35 @@ class _DivineButtonContent extends StatelessWidget {
 
   bool get _isEnabled => onPressed != null && !isLoading;
 
-  double get _iconSize => switch (size) {
-    DivineButtonSize.small => 20,
-    DivineButtonSize.base => 24,
-  };
+  /// Icon size is 24px for both variants.
+  static const double _iconSize = 24;
 
-  EdgeInsets get _padding => switch (size) {
-    DivineButtonSize.small => const EdgeInsets.symmetric(
-      horizontal: 16,
-      vertical: 8,
-    ),
-    DivineButtonSize.base => const EdgeInsets.symmetric(
-      horizontal: 24,
-      vertical: 12,
-    ),
-  };
+  /// Whether the button has no text label (icon-only mode).
+  ///
+  /// When true, padding and spacing match `DivineIconButton` for
+  /// visual parity between a label-less [DivineButton] and a
+  /// `DivineIconButton`.
+  bool get _noLabel => label.isEmpty;
+
+  EdgeInsets get _padding {
+    if (_noLabel) {
+      // Match DivineIconButton padding for icon-only mode.
+      return switch (size) {
+        DivineButtonSize.small => const EdgeInsets.all(8),
+        DivineButtonSize.base => const EdgeInsets.all(12),
+      };
+    }
+    return switch (size) {
+      DivineButtonSize.small => const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ),
+      DivineButtonSize.base => const EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: 12,
+      ),
+    };
+  }
 
   double get _borderRadius => switch (size) {
     DivineButtonSize.small => 16,
@@ -206,15 +226,15 @@ class _DivineButtonContent extends StatelessWidget {
   };
 
   TextStyle get _textStyle {
-    final baseStyle = type == DivineButtonType.link
-        ? VineTheme.bodyLargeFont(color: _foregroundColor).copyWith(
-            decoration: TextDecoration.underline,
-            decorationColor: VineTheme.primary,
-            decorationThickness: 2,
-          )
-        : VineTheme.titleMediumFont(color: _foregroundColor);
+    if (type == DivineButtonType.link) {
+      return VineTheme.bodyLargeFont(color: _foregroundColor).copyWith(
+        decoration: TextDecoration.underline,
+        decorationColor: VineTheme.primary,
+        decorationThickness: 2,
+      );
+    }
 
-    return baseStyle;
+    return VineTheme.titleMediumFont(color: _foregroundColor);
   }
 
   List<BoxShadow>? get _boxShadow {
@@ -242,8 +262,11 @@ class _DivineButtonContent extends StatelessWidget {
     final content = Row(
       mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
+      // 8px between children when we have a label alongside icon(s); no gap
+      // in icon-only mode so the button stays tight.
+      spacing: _noLabel ? 0 : 8,
       children: [
-        if (isLoading) ...[
+        if (isLoading)
           SizedBox(
             width: _iconSize,
             height: _iconSize,
@@ -251,27 +274,27 @@ class _DivineButtonContent extends StatelessWidget {
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(_foregroundColor),
             ),
-          ),
-          const SizedBox(width: 8),
-        ] else if (leadingIcon != null) ...[
+          )
+        else if (leadingIcon != null)
           DivineIcon(
             icon: leadingIcon!,
-            size: _iconSize,
             color: _foregroundColor,
           ),
-          const SizedBox(width: 8),
-        ],
-        Flexible(
-          child: Text(label, style: _textStyle, textAlign: .center),
-        ),
-        if (trailingIcon != null) ...[
-          const SizedBox(width: 8),
+        if (!_noLabel)
+          Flexible(
+            child: Text(
+              label,
+              style: _textStyle,
+              textAlign: .center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        if (trailingIcon != null)
           DivineIcon(
             icon: trailingIcon!,
-            size: _iconSize,
             color: _foregroundColor,
           ),
-        ],
       ],
     );
 
@@ -284,7 +307,7 @@ class _DivineButtonContent extends StatelessWidget {
       boxShadow: _isEnabled ? _boxShadow : null,
     );
 
-    final button = AnimatedOpacity(
+    Widget button = AnimatedOpacity(
       duration: const Duration(milliseconds: 150),
       opacity: _isEnabled ? 1.0 : _disabledOpacity,
       child: Material(
@@ -304,6 +327,12 @@ class _DivineButtonContent extends StatelessWidget {
         ),
       ),
     );
+
+    // Small variant: wrap in 4px padding so the visible button is 40px
+    // tall but the tap target remains 48px.
+    if (size == DivineButtonSize.small) {
+      button = Padding(padding: const EdgeInsets.all(4), child: button);
+    }
 
     return button;
   }

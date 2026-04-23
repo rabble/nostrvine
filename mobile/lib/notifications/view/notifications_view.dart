@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -16,7 +17,6 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:time_formatter/time_formatter.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// The notification list UI.
@@ -396,8 +396,10 @@ class _NotificationList extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
-                  TimeFormatter.formatDateLabel(
+                  LocalizedTimeFormatter.formatDateLabel(
+                    context.l10n,
                     notification.timestamp.millisecondsSinceEpoch ~/ 1000,
+                    locale: Localizations.localeOf(context).toLanguageTag(),
                   ),
                   style: const TextStyle(
                     fontSize: 14,

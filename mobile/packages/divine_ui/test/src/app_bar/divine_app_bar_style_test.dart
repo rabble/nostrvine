@@ -12,9 +12,9 @@ void main() {
 
         expect(style.height, 72);
         expect(style.leadingWidth, 80);
-        expect(style.iconButtonSize, 48);
-        expect(style.iconSize, 32);
-        expect(style.iconButtonBorderRadius, 20);
+        expect(style.iconButtonSize, 40);
+        expect(style.iconSize, 24);
+        expect(style.iconButtonBorderRadius, 16);
         expect(style.iconButtonBackgroundColor, isNull);
         expect(style.iconColor, isNull);
         expect(style.titleStyle, isNull);
@@ -64,9 +64,9 @@ void main() {
 
         expect(style.height, 72);
         expect(style.leadingWidth, 80);
-        expect(style.iconButtonSize, 48);
-        expect(style.iconSize, 32);
-        expect(style.iconButtonBorderRadius, 20);
+        expect(style.iconButtonSize, 40);
+        expect(style.iconSize, 24);
+        expect(style.iconButtonBorderRadius, 16);
         expect(style.iconButtonBackgroundColor, isNull);
         expect(style.iconColor, isNull);
         expect(style.titleStyle, isNull);

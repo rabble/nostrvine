@@ -1,20 +1,28 @@
 // ABOUTME: Tests for VideoRecorderBottomBar widget
-// ABOUTME: Validates bottom bar UI, record button, and control buttons
+// ABOUTME: Validates bottom bar UI, mode selector, library button, and opacity
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_library_button.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_mode_selector.dart';
 
 import '../../mocks/mock_camera_service.dart';
+
+class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('VideoRecorderBottomBar Widget Tests', () {
+  group(VideoRecorderBottomBar, () {
     late MockCameraService mockCamera;
+    late _MockClipLibraryService mockClipLibrary;
 
     setUp(() async {
       mockCamera = MockCameraService.create(
@@ -22,6 +30,8 @@ void main() {
         onAutoStopped: (_) {},
       );
       await mockCamera.initialize();
+      mockClipLibrary = _MockClipLibraryService();
+      when(() => mockClipLibrary.getAllClips()).thenAnswer((_) async => []);
     });
 
     Widget buildTestWidget() {
@@ -30,6 +40,7 @@ void main() {
           videoRecorderProvider.overrideWith(
             () => VideoRecorderNotifier(mockCamera),
           ),
+          clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -39,109 +50,88 @@ void main() {
       );
     }
 
-    testWidgets('renders bottom bar widget', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
+    group('renders', () {
+      testWidgets('renders $VideoRecorderBottomBar', (tester) async {
+        await tester.pumpWidget(buildTestWidget());
 
-      expect(find.byType(VideoRecorderBottomBar), findsOneWidget);
+        expect(find.byType(VideoRecorderBottomBar), findsOneWidget);
+      });
+
+      testWidgets('renders $VideoRecorderModeSelectorWheel', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget());
+
+        expect(
+          find.byType(VideoRecorderModeSelectorWheel),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('renders $VideoRecorderLibraryButton', (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+
+        expect(find.byType(VideoRecorderLibraryButton), findsOneWidget);
+      });
     });
 
-    testWidgets('displays flash toggle button', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
+    group('layout', () {
+      testWidgets('uses $SafeArea with top: false', (tester) async {
+        await tester.pumpWidget(buildTestWidget());
 
-      // Flash button should be visible - wrapped in Tooltip
-      expect(
-        find.byWidgetPredicate(
-          (widget) => widget is Tooltip && widget.message == 'Toggle flash',
-        ),
-        findsOneWidget,
+        final safeArea = tester.widget<SafeArea>(
+          find.descendant(
+            of: find.byType(VideoRecorderBottomBar),
+            matching: find.byType(SafeArea),
+          ),
+        );
+        expect(safeArea.top, isFalse);
+      });
+
+      testWidgets('wraps content in $AnimatedOpacity', (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+
+        expect(
+          find.descendant(
+            of: find.byType(VideoRecorderBottomBar),
+            matching: find.byType(AnimatedOpacity),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets(
+        'library button is aligned to center-left',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget());
+
+          final aligns = tester.widgetList<Align>(
+            find.descendant(
+              of: find.byType(VideoRecorderBottomBar),
+              matching: find.byType(Align),
+            ),
+          );
+
+          final leftAlign = aligns.where(
+            (a) => a.alignment == Alignment.centerLeft,
+          );
+          expect(leftAlign, isNotEmpty);
+        },
       );
     });
 
-    testWidgets('displays timer toggle button', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
+    group('opacity', () {
+      testWidgets('is fully opaque when not recording', (tester) async {
+        await tester.pumpWidget(buildTestWidget());
 
-      // Timer button should be visible
-      expect(
-        find.byWidgetPredicate(
-          (widget) => widget is Tooltip && widget.message == 'Cycle timer',
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('displays aspect ratio toggle button', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-
-      // Aspect ratio button should be visible
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Tooltip && widget.message == 'Toggle aspect ratio',
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('displays camera flip button', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-
-      // Camera flip button should be visible
-      expect(
-        find.byWidgetPredicate(
-          (widget) => widget is Tooltip && widget.message == 'Switch camera',
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('displays remove last clip button', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-
-      // Remove last clip button should be visible
-      expect(
-        find.byWidgetPredicate(
-          (widget) => widget is Tooltip && widget.message == 'Remove last clip',
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('displays more options button', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-
-      // More options button should be visible
-      expect(
-        find.byWidgetPredicate(
-          (widget) => widget is Tooltip && widget.message == 'More options',
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('has 6 control buttons', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-
-      // Flash, Timer, Aspect Ratio, Flip Camera, Undo Last Clip, More Options
-      expect(find.byType(IconButton), findsNWidgets(6));
-    });
-
-    testWidgets('uses SafeArea for bottom positioning', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-
-      expect(find.byType(SafeArea), findsOneWidget);
-    });
-
-    testWidgets('contains Row with controls', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-
-      // Should have a Row with control buttons
-      final row = tester.widget<Row>(
-        find.descendant(
-          of: find.byType(VideoRecorderBottomBar),
-          matching: find.byType(Row),
-        ),
-      );
-      expect(row.mainAxisAlignment, equals(MainAxisAlignment.spaceAround));
+        final opacity = tester.widget<AnimatedOpacity>(
+          find.descendant(
+            of: find.byType(VideoRecorderBottomBar),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        );
+        expect(opacity.opacity, equals(1.0));
+      });
     });
   });
 }

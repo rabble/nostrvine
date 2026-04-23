@@ -18,6 +18,16 @@ void main() {
       originalAspectRatio: 9 / 16,
     );
 
+    final clip2 = DivineVideoClip(
+      id: 'clip2',
+      video: EditorVideo.file('/path/to/clip2.mp4'),
+      thumbnailPath: '/path/to/thumb2.jpg',
+      duration: const Duration(seconds: 3),
+      recordedAt: DateTime(2026),
+      targetAspectRatio: .vertical,
+      originalAspectRatio: 9 / 16,
+    );
+
     test('supports value equality', () {
       expect(
         const ClipsLibraryState(),
@@ -119,6 +129,35 @@ void main() {
       });
     });
 
+    group('selectedClips', () {
+      test('returns empty list when nothing selected', () {
+        final state = ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1, clip2],
+        );
+        expect(state.selectedClips, isEmpty);
+      });
+
+      test('returns clips in selection order', () {
+        // clip2 is selected first, then clip1
+        final state = ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1, clip2],
+          selectedClipIds: const {'clip2', 'clip1'},
+        );
+        expect(state.selectedClips, equals([clip2, clip1]));
+      });
+
+      test('skips IDs that have no matching clip', () {
+        final state = ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1],
+          selectedClipIds: const {'clip1', 'missing'},
+        );
+        expect(state.selectedClips, equals([clip1]));
+      });
+    });
+
     test('props are correct', () {
       final state = ClipsLibraryState(
         status: ClipsLibraryStatus.loaded,
@@ -136,6 +175,7 @@ void main() {
         ClipsLibraryStatus.loaded,
         [clip1],
         {'clip1'},
+        const <String>{},
         const Duration(seconds: 5),
         const GallerySaveResultSuccess(successCount: 1, failureCount: 0),
         1,

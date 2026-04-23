@@ -14,6 +14,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
@@ -116,7 +118,15 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                       children: [
                         _CommentHeader(
                           authorPubkey: widget.comment.authorPubkey,
-                          relativeTime: widget.comment.relativeTime,
+                          relativeTime:
+                              LocalizedTimeFormatter.formatRelativeVerbose(
+                                context.l10n,
+                                widget
+                                        .comment
+                                        .createdAt
+                                        .millisecondsSinceEpoch ~/
+                                    1000,
+                              ),
                           avatarSize: widget.depth >= 2 ? 28.0 : 36.0,
                         ),
                         const SizedBox(height: 12),

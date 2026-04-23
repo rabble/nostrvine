@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
@@ -87,19 +88,17 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
 
         if (state.videoReplies.isEmpty && state.textComments.isEmpty) {
           return ProfileTabEmptyState(
-            icon: DivineIconName.chat,
-            iconColor: VineTheme.onSurfaceMuted,
             title: widget.isOwnProfile
                 ? context.l10n.profileNoCommentsOwnTitle
                 : context.l10n.profileNoCommentsOtherTitle,
             subtitle: widget.isOwnProfile
                 ? context.l10n.profileCommentsOwnEmpty
                 : context.l10n.profileCommentsOtherEmpty,
-            subtitleColor: VineTheme.onSurfaceMuted,
           );
         }
 
         return CustomScrollView(
+          physics: const ClampingScrollPhysics(),
           slivers: [
             if (state.videoReplies.isNotEmpty) ...[
               SliverToBoxAdapter(
@@ -240,7 +239,10 @@ class _ProfileCommentCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    comment.relativeTime,
+                    LocalizedTimeFormatter.formatRelativeVerbose(
+                      context.l10n,
+                      comment.createdAt.millisecondsSinceEpoch ~/ 1000,
+                    ),
                     style: const TextStyle(
                       color: VineTheme.onSurfaceMuted,
                       fontSize: 12,

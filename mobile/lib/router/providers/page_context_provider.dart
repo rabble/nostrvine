@@ -72,6 +72,7 @@ enum RouteType {
   contentFilters, // Content filter preferences (Show/Warn/Hide)
   editProfile, // Profile editing screen
   clips, // Clip library screen
+  clipsNoSound, // Clip library screen without Sounds tab
   drafts, // Draft library screen
   welcome, // Welcome/onboarding screen
   developerOptions, // Developer options (hidden, unlock by tapping version 7x)
@@ -309,6 +310,10 @@ RouteContext parseRoute(String path) {
       // Clip library screen - standalone route outside ShellRoute
       return const RouteContext(type: RouteType.clips);
 
+    case 'clips-no-sound':
+      // Clip library screen without Sounds tab
+      return const RouteContext(type: RouteType.clipsNoSound);
+
     case 'drafts':
       // Draft library screen - standalone route outside ShellRoute
       return const RouteContext(type: RouteType.drafts);
@@ -523,6 +528,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.clips:
       return LibraryScreen.clipsPath;
+
+    case RouteType.clipsNoSound:
+      return LibraryScreen.clipsNoSoundPath;
 
     case RouteType.drafts:
       return LibraryScreen.draftsPath;

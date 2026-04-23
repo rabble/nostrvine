@@ -77,7 +77,7 @@ class PopularNowFeed extends _$PopularNowFeed {
     }
 
     // Read blocklist service for filtering blocked users
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
 
     // Try REST API first if available (use centralized availability check)
     final funnelcakeAvailable =
@@ -108,7 +108,9 @@ class PopularNowFeed extends _$PopularNowFeed {
           final filteredVideos = videoEventService.filterVideoList(
             apiVideos
                 .where((v) => v.isSupportedOnCurrentPlatform)
-                .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
+                .where(
+                  (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
+                )
                 .toList(),
           );
 
@@ -236,7 +238,9 @@ class PopularNowFeed extends _$PopularNowFeed {
 
         if (apiVideos.isNotEmpty) {
           // Deduplicate and merge (case-insensitive for Nostr IDs)
-          final blocklistService = ref.read(contentBlocklistServiceProvider);
+          final blocklistRepository = ref.read(
+            contentBlocklistRepositoryProvider,
+          );
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
@@ -244,7 +248,9 @@ class PopularNowFeed extends _$PopularNowFeed {
             apiVideos
                 .where((v) => !existingIds.contains(v.id.toLowerCase()))
                 .where((v) => v.isSupportedOnCurrentPlatform)
-                .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
+                .where(
+                  (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
+                )
                 .toList(),
           );
 
@@ -400,11 +406,15 @@ class PopularNowFeed extends _$PopularNowFeed {
           // Reset cursor for pagination
           _nextCursor = getOldestTimestamp(apiVideos);
 
-          final blocklistService = ref.read(contentBlocklistServiceProvider);
+          final blocklistRepository = ref.read(
+            contentBlocklistRepositoryProvider,
+          );
           final filteredVideos = videoEventService.filterVideoList(
             apiVideos
                 .where((v) => v.isSupportedOnCurrentPlatform)
-                .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
+                .where(
+                  (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
+                )
                 .toList(),
           );
 
@@ -483,12 +493,12 @@ class PopularNowFeed extends _$PopularNowFeed {
   /// and blocked users, then sorts by timestamp (newest first) with
   /// secondary sort by ID for stable ordering.
   List<VideoEvent> _filterAndSortNostrVideos(List<VideoEvent> videos) {
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
     final filtered = videoEventService.filterVideoList(
       videos
           .where((v) => v.isSupportedOnCurrentPlatform)
-          .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
+          .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
           .toList(),
     );
     filtered.sort((a, b) {

@@ -4,8 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
-import 'package:openvine/services/thumbnail_api_service.dart'
-    show ThumbnailSize;
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 import '../../builders/test_video_event_builder.dart';
@@ -69,32 +67,6 @@ void main() {
               video: videoMinimal,
               width: 150,
               height: 200,
-            ),
-          ),
-        )
-        ..addScenario(
-          'Small Size',
-          SizedBox(
-            width: 100,
-            height: 100,
-            child: VideoThumbnailWidget(
-              video: videoWithBlurhash,
-              width: 100,
-              height: 100,
-              size: ThumbnailSize.small,
-            ),
-          ),
-        )
-        ..addScenario(
-          'Large Size',
-          SizedBox(
-            width: 200,
-            height: 200,
-            child: VideoThumbnailWidget(
-              video: videoWithBlurhash,
-              width: 200,
-              height: 200,
-              size: ThumbnailSize.large,
             ),
           ),
         )

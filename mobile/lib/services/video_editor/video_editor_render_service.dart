@@ -292,7 +292,7 @@ class VideoEditorRenderService {
     }
 
     final clip = DivineVideoClip(
-      id: 'clip-${DateTime.now()}',
+      id: 'clip-${DateTime.now().millisecondsSinceEpoch}',
       video: EditorVideo.file(outputPath),
       duration: metaData.duration,
       recordedAt: DateTime.now(),
@@ -338,9 +338,7 @@ class VideoEditorRenderService {
       );
 
       if (proofData != null) {
-        result.add(
-          clip.copyWith(proofManifestJson: jsonEncode(proofData)),
-        );
+        result.add(clip.copyWith(proofManifestJson: jsonEncode(proofData)));
         Log.info(
           '✅ Backfilled proof for clip ${clip.id}',
           name: _logName,
@@ -587,7 +585,16 @@ class VideoEditorRenderService {
         category: .video,
       );
       return _NormalizationResult(
-        segments: clips.map((c) => VideoSegment(video: c.video)).toList(),
+        segments: clips
+            .map(
+              (c) => VideoSegment(
+                video: c.video,
+                startTime: c.trimStart == .zero ? null : c.trimStart,
+                endTime: c.trimStart + c.trimmedDuration,
+                volume: c.volume,
+              ),
+            )
+            .toList(),
         tempFilePaths: [],
         globalTransform:
             clipAnalysis.entries.first.cropParams.needsCropping(
@@ -685,17 +692,6 @@ class VideoEditorRenderService {
       id: '${clip.id}_normalized',
       videoSegments: [VideoSegment(video: clip.video)],
       shouldOptimizeForNetworkUse: true,
-      imageLayers: parameters?.layers.isNotEmpty == true
-          ? [
-              ImageLayer(
-                image: EditorLayerImage.memory(parameters!.image),
-              ),
-            ]
-          : null,
-      blur: parameters?.blur,
-      colorFilters: (parameters?.colorFilters ?? [])
-          .map((matrix) => ColorFilter(matrix: matrix))
-          .toList(),
       imageBytesWithCropping: true,
       transform: ExportTransform(
         x: cropParams.x,
@@ -742,19 +738,22 @@ class VideoEditorRenderService {
       'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
     );
 
-    final hasCustomAudio =
-        customAudioVolume > 0 && parameters?.customAudioTrack != null;
+    final customTracks = parameters?.audioTracks ?? const <AudioTrack>[];
+    final hasCustomAudio = customAudioVolume > 0 && customTracks.isNotEmpty;
 
     final audioTracks = <VideoAudioTrack>[];
     if (hasCustomAudio) {
-      final audioPath = await parameters?.customAudioTrack?.audio
-          .safeFilePath();
-      if (audioPath != null) {
+      for (final track in customTracks) {
+        final audioPath = await track.audio.safeFilePath();
         audioTracks.add(
           VideoAudioTrack(
             path: audioPath,
             volume: customAudioVolume,
-            audioStartTime: parameters?.customAudioTrack?.startTime,
+            startTime: track.startTime,
+            endTime: track.endTime,
+            audioStartTime: track.audioStartTime,
+            audioEndTime: track.audioEndTime,
+            loop: track.loop,
           ),
         );
       }
@@ -764,6 +763,15 @@ class VideoEditorRenderService {
         .map((s) => s.copyWith(volume: originalAudioVolume))
         .toList();
 
+    Size? renderResolution;
+    if (parameters?.capturedLayers.isNotEmpty == true &&
+        volumeSegments.isNotEmpty) {
+      final metadata = await ProVideoEditor.instance.getMetadata(
+        volumeSegments.first.video,
+      );
+      renderResolution = metadata.resolution;
+    }
+
     final task = VideoRenderData(
       id: taskId,
       videoSegments: volumeSegments,
@@ -771,17 +779,59 @@ class VideoEditorRenderService {
       shouldOptimizeForNetworkUse: true,
       audioTracks: audioTracks,
       enableAudio: originalAudioVolume > 0 || hasCustomAudio,
-      imageLayers: parameters?.layers.isNotEmpty == true
-          ? [
-              ImageLayer(
-                image: EditorLayerImage.memory(parameters!.image),
-              ),
-            ]
+      imageLayers: parameters?.capturedLayers.isNotEmpty == true
+          ? () {
+              final bodySize = parameters!.bodySize;
+              if (bodySize == null) return null;
+              final videoSize =
+                  renderResolution ??
+                  VideoEditorConstants.quality.resolutionForAspectRatio(
+                    aspectRatio,
+                  );
+              final scale = videoSize.width / bodySize.width;
+              return [
+                for (final item in parameters.capturedLayers)
+                  ImageLayer(
+                    image: EditorLayerImage.memory(item.bytes),
+                    startTime: item.layer.startTime,
+                    endTime: item.layer.endTime,
+                    offset: Offset(
+                      (bodySize.width / 2 +
+                              item.layer.offset.dx -
+                              item.logicalSize.width / 2) *
+                          scale,
+                      (bodySize.height / 2 +
+                              item.layer.offset.dy -
+                              item.logicalSize.height / 2) *
+                          scale,
+                    ),
+                    size: Size(
+                      item.logicalSize.width * scale,
+                      item.logicalSize.height * scale,
+                    ),
+                  ),
+              ];
+            }()
           : null,
       blur: parameters?.blur,
-      colorFilters: (parameters?.colorFilters ?? [])
-          .map((matrix) => ColorFilter(matrix: matrix))
-          .toList(),
+      colorFilters: [
+        ...?parameters?.tuneAdjustments.map(
+          (t) => ColorFilter(
+            matrix: t.matrix,
+            startTime: t.startTime,
+            endTime: t.endTime,
+          ),
+        ),
+        ...?parameters?.filterStates.expand(
+          (f) => f.matrices.map(
+            (matrix) => ColorFilter(
+              matrix: matrix,
+              startTime: f.startTime,
+              endTime: f.endTime,
+            ),
+          ),
+        ),
+      ],
       imageBytesWithCropping: true,
       qualityConfig: VideoQualityConfig.custom(
         bitrate: VideoEditorConstants.quality.bitrate,

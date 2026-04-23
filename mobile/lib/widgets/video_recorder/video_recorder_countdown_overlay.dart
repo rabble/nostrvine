@@ -31,12 +31,8 @@ class VideoRecorderCountdownOverlay extends ConsumerWidget {
           child: Center(
             child: Text(
               countdownValue.toString(),
-              style: const TextStyle(
-                color: VineTheme.primaryText,
+              style: VineTheme.displayLargeFont().copyWith(
                 fontSize: 114,
-                fontFamily: VineTheme.fontFamilyBricolage,
-                fontWeight: .w700,
-                height: 1.12,
               ),
             ),
           ),

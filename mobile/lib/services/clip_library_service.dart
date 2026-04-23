@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:db_client/db_client.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -188,5 +189,82 @@ class ClipLibraryService {
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
     );
+  }
+
+  /// Recovers missing thumbnails and ghost frames for clips that were
+  /// persisted before their assets had been generated.
+  ///
+  /// Returns the updated list if any clips were recovered, or the original
+  /// list unchanged.
+  Future<List<DivineVideoClip>> recoverMissingAssets(
+    List<DivineVideoClip> clips,
+  ) async {
+    final incomplete = clips
+        .where(
+          (c) => c.thumbnailPath == null || c.ghostFramePath == null,
+        )
+        .toList();
+
+    if (incomplete.isEmpty) return clips;
+
+    Log.info(
+      '📚 Recovering assets for ${incomplete.length} clip(s)',
+      name: 'ClipLibraryService',
+      category: LogCategory.video,
+    );
+
+    var updated = false;
+
+    for (final clip in incomplete) {
+      try {
+        final videoPath = await clip.video.safeFilePath();
+        var updatedClip = clip;
+
+        if (clip.thumbnailPath == null) {
+          final result = await VideoThumbnailService.extractThumbnail(
+            videoPath: videoPath,
+          );
+          if (result != null) {
+            updatedClip = updatedClip.copyWith(
+              thumbnailPath: result.path,
+              thumbnailTimestamp: result.timestamp,
+            );
+          }
+        }
+
+        if (clip.ghostFramePath == null) {
+          final ghostPath = await VideoThumbnailService.extractLastFrame(
+            videoPath: videoPath,
+            videoDuration: clip.duration,
+          );
+          if (ghostPath != null) {
+            updatedClip = updatedClip.copyWith(ghostFramePath: ghostPath);
+          }
+        }
+
+        if (updatedClip != clip) {
+          await saveClip(updatedClip);
+          updated = true;
+          Log.debug(
+            '📚 Recovered assets for clip ${clip.id}',
+            name: 'ClipLibraryService',
+            category: LogCategory.video,
+          );
+        }
+      } catch (e, s) {
+        Log.error(
+          '📚 Failed to recover assets for clip ${clip.id}: $e',
+          name: 'ClipLibraryService',
+          category: LogCategory.video,
+          error: e,
+          stackTrace: s,
+        );
+      }
+    }
+
+    if (updated) {
+      return getAllClips();
+    }
+    return clips;
   }
 }

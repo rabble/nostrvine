@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -352,7 +353,7 @@ class AsyncUtils {
     DateTime? lastCall;
 
     return () {
-      final now = DateTime.now();
+      final now = clock.now();
       if (lastCall == null || now.difference(lastCall!) >= interval) {
         lastCall = now;
         operation();
@@ -391,7 +392,7 @@ class AsyncUtils {
     for (var i = 0; i < operations.length; i++) {
       // Calculate delay needed
       if (lastExecutionTime != null) {
-        final elapsed = DateTime.now().difference(lastExecutionTime);
+        final elapsed = clock.now().difference(lastExecutionTime);
         final remaining = minInterval - elapsed;
 
         if (!remaining.isNegative && remaining.inMicroseconds > 0) {
@@ -404,7 +405,7 @@ class AsyncUtils {
 
       // Execute operation
       try {
-        lastExecutionTime = DateTime.now();
+        lastExecutionTime = clock.now();
         final result = await operations[i]();
         results.add(result);
 

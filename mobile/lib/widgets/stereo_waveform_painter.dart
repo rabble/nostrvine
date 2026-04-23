@@ -62,6 +62,8 @@ class StereoWaveformPainter extends CustomPainter {
     this.activeBackgroundColor,
     this.heightFactor = 1.0,
     this.startOffset = Duration.zero,
+    this.barWidth = WaveformConstants.barWidth,
+    this.barSpacing = WaveformConstants.barSpacing,
   });
 
   /// Left channel amplitude data.
@@ -94,6 +96,15 @@ class StereoWaveformPainter extends CustomPainter {
 
   /// Multiplier for bar heights (0.0 to 1.0) used for entrance animation.
   final double heightFactor;
+
+  /// Width of each waveform bar.
+  final double barWidth;
+
+  /// Spacing between waveform bars.
+  final double barSpacing;
+
+  /// Computed step (width + spacing) for each bar.
+  double get _barStep => barWidth + barSpacing;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -168,9 +179,8 @@ class StereoWaveformPainter extends CustomPainter {
 
     // Draw placeholder bars for remaining empty space (if audio < maxDuration)
     if (barFillRatio < 1.0) {
-      final waveformBarCount = (waveformWidth / WaveformConstants.barStep)
-          .floor();
-      final emptyStartX = waveformBarCount * WaveformConstants.barStep;
+      final waveformBarCount = (waveformWidth / _barStep).floor();
+      final emptyStartX = waveformBarCount * _barStep;
 
       _drawEmptyBars(
         canvas: canvas,
@@ -204,14 +214,14 @@ class StereoWaveformPainter extends CustomPainter {
           Rect.fromLTWH(
             x,
             centerY - WaveformConstants.minBarHeight,
-            WaveformConstants.barWidth,
+            barWidth,
             totalHeight,
           ),
           WaveformConstants.barRadius,
         ),
         paint,
       );
-      x += WaveformConstants.barStep;
+      x += _barStep;
     }
   }
 
@@ -227,7 +237,7 @@ class StereoWaveformPainter extends CustomPainter {
     required int sampleOffset,
     required double progressX,
   }) {
-    final barCount = (waveformWidth / WaveformConstants.barStep).floor();
+    final barCount = (waveformWidth / _barStep).floor();
 
     if (barCount <= 0 || visibleSampleCount <= 0) return;
 
@@ -235,7 +245,7 @@ class StereoWaveformPainter extends CustomPainter {
         halfHeight * WaveformConstants.amplitudeScale * heightFactor;
 
     for (var i = 0; i < barCount; i++) {
-      final x = i * WaveformConstants.barStep;
+      final x = i * _barStep;
 
       // Map bar position to sample index within visible samples, offset by startOffset
       final sampleIndex =
@@ -272,7 +282,7 @@ class StereoWaveformPainter extends CustomPainter {
       // Draw single connected bar spanning both channels
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromLTWH(x, topY, WaveformConstants.barWidth, totalHeight),
+          Rect.fromLTWH(x, topY, barWidth, totalHeight),
           WaveformConstants.barRadius,
         ),
         paint,
@@ -290,6 +300,8 @@ class StereoWaveformPainter extends CustomPainter {
         oldDelegate.audioDuration != audioDuration ||
         oldDelegate.maxDuration != maxDuration ||
         oldDelegate.heightFactor != heightFactor ||
-        oldDelegate.startOffset != startOffset;
+        oldDelegate.startOffset != startOffset ||
+        oldDelegate.barWidth != barWidth ||
+        oldDelegate.barSpacing != barSpacing;
   }
 }

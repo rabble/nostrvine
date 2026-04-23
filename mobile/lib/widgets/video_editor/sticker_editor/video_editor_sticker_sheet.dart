@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show StickerData;
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 
 /// A bottom sheet that displays a searchable grid of stickers.
@@ -34,29 +35,29 @@ class VideoEditorStickerSheet extends StatelessWidget {
           // Grid with Sticker Icons
           SliverPadding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
-            sliver: BlocBuilder<VideoEditorStickerBloc, VideoEditorStickerState>(
-              builder: (context, state) {
-                return switch (state) {
-                  VideoEditorStickerInitial() ||
-                  VideoEditorStickerLoading() => const SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  VideoEditorStickerLoaded(:final stickers)
-                      when stickers.isNotEmpty =>
-                    _StickerGrid(stickers: stickers),
-                  VideoEditorStickerLoaded(:final hasSearchQuery) => _EmptyState(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    message: hasSearchQuery
-                        ? 'No stickers found'
-                        : 'No stickers available',
-                  ),
-                  VideoEditorStickerError() => const _EmptyState(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    message: 'Failed to load stickers',
-                  ),
-                };
-              },
-            ),
+            sliver:
+                BlocBuilder<VideoEditorStickerBloc, VideoEditorStickerState>(
+                  builder: (context, state) {
+                    return switch (state) {
+                      VideoEditorStickerInitial() ||
+                      VideoEditorStickerLoading() => const SliverToBoxAdapter(
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      VideoEditorStickerLoaded(:final stickers)
+                          when stickers.isNotEmpty =>
+                        _StickerGrid(stickers: stickers),
+                      VideoEditorStickerLoaded(:final hasSearchQuery) =>
+                        _EmptyState(
+                          message: hasSearchQuery
+                              ? context.l10n.videoEditorNoStickersFound
+                              : context.l10n.videoEditorNoStickersAvailable,
+                        ),
+                      VideoEditorStickerError() => _EmptyState(
+                        message: context.l10n.videoEditorFailedLoadStickers,
+                      ),
+                    };
+                  },
+                ),
           ),
         ],
       ),
@@ -162,8 +163,7 @@ class _SearchBarState extends State<_SearchBar> {
           onChanged: _setQuery,
           onSubmitted: (_) => _focusNode.unfocus(),
           decoration: InputDecoration(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            hintText: 'Search stickers...',
+            hintText: context.l10n.videoEditorStickerSearchHint,
             hintStyle: VineTheme.bodyLargeFont(
               color: VineTheme.onSurfaceMuted,
             ),

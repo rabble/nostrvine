@@ -36,8 +36,39 @@ void main() {
         );
       });
 
-      test('props are empty', () {
-        expect(const ClipsLibraryLoadRequested().props, isEmpty);
+      test('supports value equality with preSelectedIds', () {
+        expect(
+          const ClipsLibraryLoadRequested(preSelectedIds: {'a', 'b'}),
+          equals(
+            const ClipsLibraryLoadRequested(preSelectedIds: {'a', 'b'}),
+          ),
+        );
+      });
+
+      test('different preSelectedIds are not equal', () {
+        expect(
+          const ClipsLibraryLoadRequested(preSelectedIds: {'a'}),
+          isNot(
+            equals(
+              const ClipsLibraryLoadRequested(preSelectedIds: {'b'}),
+            ),
+          ),
+        );
+      });
+
+      test('props contains preSelectedIds', () {
+        const event = ClipsLibraryLoadRequested(preSelectedIds: {'x'});
+        expect(event.props, [
+          const {'x'},
+          const <String>{},
+        ]);
+      });
+
+      test('default preSelectedIds is empty', () {
+        expect(
+          const ClipsLibraryLoadRequested().preSelectedIds,
+          isEmpty,
+        );
       });
     });
 
