@@ -42,6 +42,24 @@ MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "minioadmin")
 
 INDEXER_RELAY_URL = os.environ.get("INDEXER_RELAY_URL", "ws://relay-indexer:8080")
 EXTERNAL_RELAY_URL = os.environ.get("EXTERNAL_RELAY_URL", "ws://relay-external:8080")
+# Public URLs written into kind 10002 relay-list r-tags — clients use these
+# to connect from outside the docker network.
+#
+# Defaults target the Android emulator, which aliases the host as 10.0.2.2.
+# The rest of the local stack (BLOSSOM_PUBLIC_URL above, app config via
+# EnvironmentConfig.local) shares that assumption, so the defaults are
+# consistent with the rest of the stack.
+#
+# Override these when running a client that does NOT alias 10.0.2.2 — iOS
+# simulator, macOS host, CI without a socat alias — otherwise the app's
+# outbox-routing code will fail to connect to the relays advertised in the
+# seeded kind 10002 events. Example:
+#
+#   RELAY_PUBLIC_URL=ws://host.docker.internal:47777 \
+#   EXTERNAL_RELAY_PUBLIC_URL=ws://host.docker.internal:47779 \
+#   docker compose up seed
+#
+# or `ws://localhost:47777` on a macOS host.
 RELAY_PUBLIC_URL = os.environ.get("RELAY_PUBLIC_URL", "ws://10.0.2.2:47777")
 EXTERNAL_RELAY_PUBLIC_URL = os.environ.get("EXTERNAL_RELAY_PUBLIC_URL", "ws://10.0.2.2:47779")
 
@@ -727,8 +745,13 @@ def main() -> None:
     print(f"All {NUM_UNIQUE_VIDEOS} videos uploaded successfully")
 
     # 5. Build and route video events
-    # Type A authors: all videos → FunnelCake
-    # Type B authors: odd-indexed → external, even-indexed → FunnelCake
+    # Type A (Divine) authors: videos → FunnelCake (matches profile placement
+    #   on FunnelCake + indexer).
+    # Type B (Nostr-native) authors: videos → external relay (matches profile
+    #   placement on external + indexer). This keeps each author's profile and
+    #   content on the same relay so the E2E fixtures and the seeded data model
+    #   the same persona shape — a Type B author who has videos on FunnelCake
+    #   but no kind-0 there would be an incoherent, unrealistic state.
     print(f"\nBuilding {NUM_VIDEOS} events...")
     rng = random.Random(42)
     author_assignments = build_author_video_map(rng)
@@ -757,8 +780,6 @@ def main() -> None:
         )
 
         if author_is_type_a(author_idx):
-            funnelcake_events.append(event)
-        elif i % 2 == 0:
             funnelcake_events.append(event)
         else:
             external_events.append(event)

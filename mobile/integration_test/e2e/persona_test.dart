@@ -108,7 +108,13 @@ Future<bool> _verifyFunnelcakeApiReachable() async {
 void main() {
   group('Persona E2E Tests', () {
     patrolTest(
-      'can browse Type B (Nostr-native) profile from external relay',
+      // The Type B profile lives on the external relay + indexer (see
+      // `setupTypeBPresence`), but this test's video is published to
+      // FunnelCake via `publishTestVideoEvent` with no `relayPort`. So the
+      // scenario exercised is: profile resolves from external-via-indexer
+      // while the video is served from FunnelCake — a mixed-relay render
+      // path, not a pure external-only fetch.
+      'browse Type B profile (external relay) with a FunnelCake-hosted video',
       timeout: const Timeout(Duration(minutes: 5)),
       ($) async {
         final tester = $.tester;

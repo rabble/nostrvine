@@ -406,29 +406,6 @@ Future<String> publishDeleteEvent({
   return deletionId;
 }
 
-/// Publish a kind 7 reaction event to the specified relay.
-///
-/// Creates a reaction ("+") from [privateKey] targeting [targetEventId]
-/// by [targetPubkey]. Used to seed notification data for testing.
-Future<String> publishTestReactionEvent({
-  required String targetEventId,
-  required String targetPubkey,
-  required String privateKey,
-  int? relayPort,
-}) async {
-  final pubKey = getPublicKey(privateKey);
-
-  final event = Event(pubKey, 7, [
-    ['e', targetEventId],
-    ['p', targetPubkey],
-  ], '+');
-  event.sign(privateKey);
-
-  final eventId = await _publishEvent(event, relayPort: relayPort);
-  debugPrint('Published reaction event: $eventId (target: $targetEventId)');
-  return eventId;
-}
-
 /// Send an event to the local relay and wait for OK confirmation.
 Future<String> _publishEvent(Event event, {int? relayPort}) async {
   final port = relayPort ?? localRelayPort;
