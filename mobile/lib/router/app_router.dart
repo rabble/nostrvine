@@ -542,8 +542,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: ResetPasswordScreen.path,
         redirect: (context, state) {
-          final token = state.uri.queryParameters['token'];
-          return '${WelcomeScreen.resetPasswordPath}?token=$token';
+          final token = state.uri.queryParameters['token'] ?? '';
+          final email = state.uri.queryParameters['email'];
+          final buffer = StringBuffer(WelcomeScreen.resetPasswordPath)
+            ..write('?token=')
+            ..write(Uri.encodeQueryComponent(token));
+          if (email != null && email.isNotEmpty) {
+            buffer
+              ..write('&email=')
+              ..write(Uri.encodeQueryComponent(email));
+          }
+          return buffer.toString();
         },
       ),
       // Email verification route - supports both modes:
