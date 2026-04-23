@@ -940,6 +940,7 @@ AuthService authService(Ref ref) {
     pendingVerificationService: pendingVerificationService,
     profileCheckIndexerUrl: authEnv.indexerRelays.first,
     indexerRelays: authEnv.indexerRelays,
+    primaryRelayUrl: authEnv.relayUrl,
     preFetchFollowing: (pubkeyHex) async {
       // Pre-fetch following list from funnelcake REST API during login
       // setup. This populates SharedPreferences BEFORE auth state is

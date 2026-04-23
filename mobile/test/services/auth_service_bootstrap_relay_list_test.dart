@@ -82,10 +82,12 @@ void main() {
       _ControllableRelayDiscoveryService discovery, {
       NostrIdentity? identity,
       _BootstrapCallbackRecorder? recorder,
+      String? primaryRelayUrl,
     }) {
       final authService = AuthService(
         userDataCleanupService: mockCleanupService,
         relayDiscoveryService: discovery,
+        primaryRelayUrl: primaryRelayUrl,
       );
       if (identity != null) {
         authService.debugSetIdentity(identity);
@@ -361,6 +363,51 @@ void main() {
           async.flushMicrotasks();
           expect(flagValue ?? false, isFalse);
         });
+      },
+    );
+
+    test(
+      'uses injected primaryRelayUrl in r tag and target relay list (#3183)',
+      () async {
+        const stagingRelayUrl = 'wss://relay.staging.dvines.org';
+
+        final discovery = _ControllableRelayDiscoveryService(
+          outcome: () => RelayDiscoveryResult.failure('No relay list found'),
+        );
+        final recorder = _BootstrapCallbackRecorder(publishResult: true);
+        final authService = buildAuthService(
+          discovery,
+          identity: buildIdentity(),
+          recorder: recorder,
+          primaryRelayUrl: stagingRelayUrl,
+        );
+
+        await authService.debugDiscoverUserRelays(testNpub);
+
+        expect(recorder.invocations, hasLength(1));
+        final invocation = recorder.invocations.single;
+
+        // Event r tag points at the injected (non-prod) relay.
+        expect(
+          invocation.event.tags,
+          equals([
+            ['r', stagingRelayUrl],
+          ]),
+        );
+        // Target-relay list leads with the injected relay, not the prod
+        // default — prevents non-prod builds from advertising prod relay to
+        // public indexers. See #3183.
+        expect(
+          invocation.targetRelays,
+          equals([
+            stagingRelayUrl,
+            ...IndexerRelayConfig.defaultIndexers,
+          ]),
+        );
+        expect(
+          invocation.targetRelays,
+          isNot(contains(AppConstants.defaultRelayUrl)),
+        );
       },
     );
   });

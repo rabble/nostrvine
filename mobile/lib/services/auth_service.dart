@@ -168,6 +168,7 @@ class AuthService implements BackgroundAwareService {
     PreFetchFollowingCallback? preFetchFollowing,
     String? profileCheckIndexerUrl,
     List<String>? indexerRelays,
+    String? primaryRelayUrl,
     RelayDiscoveryService? relayDiscoveryService,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _nostrKeyManager = nostrKeyManager,
@@ -177,6 +178,7 @@ class AuthService implements BackgroundAwareService {
        _pendingVerificationService = pendingVerificationService,
        _preFetchFollowing = preFetchFollowing,
        _profileCheckIndexerUrl = profileCheckIndexerUrl,
+       _primaryRelayUrl = primaryRelayUrl ?? AppConstants.defaultRelayUrl,
        _relayDiscoveryService =
            relayDiscoveryService ??
            RelayDiscoveryService(indexerRelays: indexerRelays),
@@ -191,6 +193,13 @@ class AuthService implements BackgroundAwareService {
   final PendingVerificationService? _pendingVerificationService;
   final PreFetchFollowingCallback? _preFetchFollowing;
   final String? _profileCheckIndexerUrl;
+
+  /// Relay URL used when self-publishing the bootstrap kind:10002 event for
+  /// accounts whose indexer discovery returned empty. Injected from
+  /// [EnvironmentConfig.relayUrl] at the provider so non-prod builds do not
+  /// advertise the production relay. Falls back to
+  /// [AppConstants.defaultRelayUrl] when unset. See #3183.
+  final String _primaryRelayUrl;
 
   AuthState _authState = AuthState.checking;
   SecureKeyContainer? _currentKeyContainer;
@@ -4034,8 +4043,9 @@ class AuthService implements BackgroundAwareService {
   /// `relay.nos.social`). That in turn degrades reachability for every
   /// downstream publish operation (profile save, likes, comments) because
   /// the client can only connect to the fallback relay set. This method
-  /// self-publishes a minimal kind:10002 pointing at
-  /// [AppConstants.defaultRelayUrl] so subsequent logins on this or any other
+  /// self-publishes a minimal kind:10002 pointing at [_primaryRelayUrl] (the
+  /// current environment's primary relay, injected from
+  /// [EnvironmentConfig.relayUrl]) so subsequent logins on this or any other
   /// client can discover it.
   ///
   /// Guards:
@@ -4071,7 +4081,7 @@ class AuthService implements BackgroundAwareService {
         pubkeyHex,
         EventKind.relayListMetadata,
         <List<String>>[
-          <String>['r', AppConstants.defaultRelayUrl],
+          <String>['r', _primaryRelayUrl],
         ],
         '',
       );
@@ -4105,7 +4115,7 @@ class AuthService implements BackgroundAwareService {
       }
 
       final targetRelays = <String>[
-        AppConstants.defaultRelayUrl,
+        _primaryRelayUrl,
         ...IndexerRelayConfig.defaultIndexers,
       ];
 
