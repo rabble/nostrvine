@@ -276,6 +276,22 @@ class _AuthorInfoSection extends ConsumerWidget {
   final Set<String>? listSources;
   final VoidCallback? onInteracted;
 
+  /// Drop shadows applied to the video caption block (title + description +
+  /// hashtags). Matches the Figma `video info` spec so the text stays legible
+  /// over bright video frames even without the bottom gradient.
+  static const _captionShadows = [
+    Shadow(
+      color: VineTheme.innerShadow,
+      offset: Offset(1, 1),
+      blurRadius: 1,
+    ),
+    Shadow(
+      color: VineTheme.innerShadow,
+      offset: Offset(0.4, 0.4),
+      blurRadius: 0.6,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileReactiveProvider(video.pubkey)).value;
@@ -350,34 +366,65 @@ class _AuthorInfoSection extends ConsumerWidget {
             ),
           ],
         ),
-        // Video description
+        // Video title and description (caption block)
         if (hasTextContent) ...[
           const SizedBox(height: 2),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              onInteracted?.call();
-              MetadataExpandedSheet.show(context, video);
-            },
-            child: Semantics(
-              identifier: 'video_description',
-              container: true,
-              explicitChildNodes: true,
-              label:
-                  'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-              child: ClickableHashtagText(
-                text:
-                    (video.content.isNotEmpty
-                            ? video.content
-                            : video.title ?? '')
-                        .trim(),
-                style: VineTheme.bodyMediumFont(),
-                hashtagStyle: VineTheme.bodySmallFont(),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
+          // Title (when present)
+          if (video.title != null && video.title!.trim().isNotEmpty)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                onInteracted?.call();
+                MetadataExpandedSheet.show(context, video);
+              },
+              child: Semantics(
+                identifier: 'video_title',
+                container: true,
+                explicitChildNodes: true,
+                label: 'Video title: ${video.title!.trim()}',
+                child: Text(
+                  video.title!.trim(),
+                  style: VineTheme.labelMediumFont().copyWith(
+                    shadows: _captionShadows,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
-          ),
+          // 4 px gap between title and description when both are present
+          // (matches the Figma caption block spacing).
+          if (video.title != null &&
+              video.title!.trim().isNotEmpty &&
+              video.content.trim().isNotEmpty)
+            const SizedBox(height: 4),
+          // Description (only when actual content exists — no title fallback,
+          // the title has its own row above).
+          if (video.content.trim().isNotEmpty)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                onInteracted?.call();
+                MetadataExpandedSheet.show(context, video);
+              },
+              child: Semantics(
+                identifier: 'video_description',
+                container: true,
+                explicitChildNodes: true,
+                label: 'Video description: ${video.content.trim()}',
+                child: ClickableHashtagText(
+                  text: video.content.trim(),
+                  style: VineTheme.bodySmallFont().copyWith(
+                    shadows: _captionShadows,
+                  ),
+                  hashtagStyle: VineTheme.bodySmallFont().copyWith(
+                    shadows: _captionShadows,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
           // Collaborator avatars
           if (video.hasCollaborators) ...[
             const SizedBox(height: 4),
@@ -389,9 +436,14 @@ class _AuthorInfoSection extends ConsumerWidget {
             InspiredByAttributionRow(video: video, isActive: true),
           ],
         ],
-        // Audio attribution (all videos)
-        const SizedBox(height: 4),
-        AudioAttributionRow(video: video),
+        // Audio attribution — only when the video actually references
+        // shared audio. AudioAttributionRow itself would render
+        // SizedBox.shrink otherwise; gating here avoids the leading 4 px
+        // spacer becoming dead space.
+        if (video.hasAudioReference && video.audioEventId != null) ...[
+          const SizedBox(height: 4),
+          AudioAttributionRow(video: video),
+        ],
         // List attribution (curated lists)
         if (listSources != null && listSources!.isNotEmpty) ...[
           const SizedBox(height: 4),
@@ -400,7 +452,8 @@ class _AuthorInfoSection extends ConsumerWidget {
             onInteracted: onInteracted,
           ),
         ],
-        const SizedBox(height: 8),
+        // Bottom padding per Figma `video data` spec (always 4 px).
+        const SizedBox(height: 4),
       ],
     );
   }
