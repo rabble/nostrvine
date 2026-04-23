@@ -215,8 +215,10 @@ class RelayNotificationApiService {
       }
       // Always send `before`, without it the API returns notifications in
       // random order instead of newest-first.
+      // Server expects Unix seconds (10-digit), not milliseconds (13-digit)
+      // — see docs/FUNNELCAKE_API.md. Mirrors PR #3009 on the BLoC path.
       queryParams['before'] =
-          before ?? DateTime.now().millisecondsSinceEpoch.toString();
+          before ?? (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
 
       final uri = Uri.parse(
         '$_baseUrl/api/users/$pubkey/notifications',
