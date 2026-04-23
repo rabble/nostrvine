@@ -2640,6 +2640,7 @@
             }
         }
     },
+    "videoEditorCameraLabel": "Kamera",
     "videoEditorClipsLabel": "Klipp",
     "videoEditorTextLabel": "Text",
     "videoEditorDrawLabel": "Rita",
@@ -2647,6 +2648,7 @@
     "videoEditorAudioLabel": "Ljud",
     "videoEditorVolumeLabel": "Volym",
     "videoEditorAddTitle": "Lägg till",
+    "videoEditorOpenCameraSemanticLabel": "Öppna kamera",
     "videoEditorOpenClipsSemanticLabel": "Öppna klippredigerare",
     "videoEditorOpenAudioSemanticLabel": "Öppna ljudredigerare",
     "videoEditorOpenTextSemanticLabel": "Öppna textredigerare",

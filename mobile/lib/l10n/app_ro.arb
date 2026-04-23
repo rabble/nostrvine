@@ -2640,6 +2640,7 @@
             }
         }
     },
+    "videoEditorCameraLabel": "Cameră",
     "videoEditorClipsLabel": "Clipuri",
     "videoEditorTextLabel": "Text",
     "videoEditorDrawLabel": "Desen",
@@ -2647,6 +2648,7 @@
     "videoEditorAudioLabel": "Audio",
     "videoEditorVolumeLabel": "Volum",
     "videoEditorAddTitle": "Adaugă",
+    "videoEditorOpenCameraSemanticLabel": "Deschide camera",
     "videoEditorOpenClipsSemanticLabel": "Deschide editorul de clipuri",
     "videoEditorOpenAudioSemanticLabel": "Deschide editorul audio",
     "videoEditorOpenTextSemanticLabel": "Deschide editorul de text",

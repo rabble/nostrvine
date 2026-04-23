@@ -2640,6 +2640,7 @@
             }
         }
     },
+    "videoEditorCameraLabel": "Câmera",
     "videoEditorClipsLabel": "Clipes",
     "videoEditorTextLabel": "Texto",
     "videoEditorDrawLabel": "Desenhar",
@@ -2647,6 +2648,7 @@
     "videoEditorAudioLabel": "Áudio",
     "videoEditorVolumeLabel": "Volume",
     "videoEditorAddTitle": "Adicionar",
+    "videoEditorOpenCameraSemanticLabel": "Abrir câmera",
     "videoEditorOpenClipsSemanticLabel": "Abrir editor de clipes",
     "videoEditorOpenAudioSemanticLabel": "Abrir editor de áudio",
     "videoEditorOpenTextSemanticLabel": "Abrir editor de texto",

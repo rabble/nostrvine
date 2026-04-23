@@ -2640,6 +2640,7 @@
             }
         }
     },
+    "videoEditorCameraLabel": "Camera",
     "videoEditorClipsLabel": "Clips",
     "videoEditorTextLabel": "Tekst",
     "videoEditorDrawLabel": "Tekenen",
@@ -2647,6 +2648,7 @@
     "videoEditorAudioLabel": "Audio",
     "videoEditorVolumeLabel": "Volume",
     "videoEditorAddTitle": "Toevoegen",
+    "videoEditorOpenCameraSemanticLabel": "Camera openen",
     "videoEditorOpenClipsSemanticLabel": "Clip-editor openen",
     "videoEditorOpenAudioSemanticLabel": "Audio-editor openen",
     "videoEditorOpenTextSemanticLabel": "Teksteditor openen",
