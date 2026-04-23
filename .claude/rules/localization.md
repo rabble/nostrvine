@@ -42,6 +42,28 @@ When creating new UI, add strings to the ARB file first:
 - **`divine_ui` package stays l10n-free** — its widgets accept string params with English defaults
 - **Plurals use ICU syntax** in ARB files, not conditional logic in Dart
 - **Every `MaterialApp` in tests needs delegates** — use `localizationsDelegates: AppLocalizations.localizationsDelegates` and `supportedLocales: AppLocalizations.supportedLocales`
+- **Never hardcode English strings in widget test assertions** — resolve the key from `AppLocalizations` instead, so the test survives copy changes and breaks loudly if the widget stops reading from l10n. Pick whichever lookup fits the test:
+
+```dart
+// Option A — direct lookup by locale (no BuildContext needed)
+final l10n = lookupAppLocalizations(const Locale('en'));
+expect(find.text(l10n.videoEditorAudioSegmentInstruction), findsOneWidget);
+
+// Option B — via the pumped widget's BuildContext
+final l10n = AppLocalizations.of(
+  tester.element(find.byType(VideoAudioEditorTimingScreen)),
+);
+expect(find.text(l10n.videoEditorAudioSegmentInstruction), findsOneWidget);
+
+// Optional but recommended — prove the widget actually reads from l10n
+expect(
+  find.text(lookupAppLocalizations(const Locale('de')).videoEditorAudioSegmentInstruction),
+  findsNothing,
+);
+
+// Bad — hardcoded string breaks when copy changes and hides missing l10n
+expect(find.text('Select the audio segment for your video'), findsOneWidget);
+```
 
 ## Key Files
 
