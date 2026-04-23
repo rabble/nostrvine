@@ -4,7 +4,7 @@
 
 Users are seeing content from authors they have blocked or muted. The pattern is recurring — issue #948 reported exactly this for search in February, was closed, and the leak has returned. A full audit (see the expanded comment on #948) found that blocked-author content leaks in comments, video search, user search, hashtag feeds, other-user profile feeds, and likely notifications. Only the primary feeds, video detail screen, and DM conversations apply filtering.
 
-The root cause is architectural. The app has **three overlapping content-moderation services** — `MuteService` (dead code, `lib/services/mute_service.dart`), `ContentModerationService` (dead code, `lib/services/content_moderation_service.dart`), and `ContentBlocklistService` (the only one wired up). Filtering is applied at the presentation layer on a per-surface basis via `.where(!shouldFilterFromFeeds(...))` calls in feeds and providers. Every new feed has to remember to call the filter, and most don't.
+The root cause is architectural. The app has **three overlapping content-moderation services** — `MuteService` (dead code, `lib/services/mute_service.dart`), `ContentModerationService` (dead code, `lib/services/content_moderation_service.dart`), and `ContentBlocklistRepository` (the only one wired up). Filtering is applied at the presentation layer on a per-surface basis via `.where(!shouldFilterFromFeeds(...))` calls in feeds and providers. Every new feed has to remember to call the filter, and most don't.
 
 Patching each surface one-at-a-time is how #948 reopened. The fix is to move the policy boundary down, not sideways.
 
@@ -31,7 +31,7 @@ Four invariants that every component in the design must uphold.
 
 ### 1. Ingress invariant
 
-Blocked content must not become a Dart object in the app's memory. The filter runs at parse time — at the boundary where raw JSON becomes `NostrEvent` or `VideoEvent`. If the policy engine says block, no object is constructed, no signature is verified, no downstream code runs.
+Blocked content must not cross an app ingress boundary into app state. The filter runs at repository parse boundaries, REST model-construction loops, and relay-subscription delivery seams. If the policy engine says block, the event or model is dropped before it is cached, exposed to app subscribers, or rendered by downstream features.
 
 ### 2. Interaction invariant
 
@@ -73,7 +73,8 @@ These invariants describe the behavior of *this* app. They do not prevent the us
       │ VideoEvent.fromJson│      │   affordance gates │
       │ etc.              │       │                   │
       │                   │       │                   │
-      │ JSON → Event?     │       │                   │
+      │ JSON/relay event  │       │                   │
+      │ → app model?      │       │                   │
       │ (null = dropped)  │       │                   │
       └───────────────────┘       └───────────────────┘
                 ▲
@@ -81,9 +82,11 @@ These invariants describe the behavior of *this* app. They do not prevent the us
       ┌─────────┴──────────┐
       │ NostrClient /      │
       │ FunnelcakeClient   │
-      │ receive raw JSON,  │
-      │ never see Events   │
-      │ that don't parse   │
+      │ receive raw JSON / │
+      │ raw relay events;  │
+      │ blocked content is │
+      │ dropped at app     │
+      │ ingress seams      │
       └────────────────────┘
 ```
 
@@ -235,6 +238,8 @@ Affected parse boundaries (to be audited and mapped in the implementation plan):
 - `VideoEvent.fromJson` and related model `fromJson` constructors in `mobile/packages/models/`.
 - Funnelcake REST response deserialization paths (e.g. `getVideosByAuthor`, `search`, `getFeed`, `getHashtagVideos`, profile lookups).
 
+For video content, the existing `videos_repository` `BlockedVideoFilter` seam is the intended enforcement point for both relay and Funnelcake REST responses. The implementation plan should treat that as the coverage mechanism for video REST paths rather than inventing a second video-only hook.
+
 At each boundary:
 
 ```dart
@@ -258,7 +263,7 @@ Event? parse(Map<String, dynamic> json) {
 
 For list-valued REST responses, iterate the raw items, short-circuit on blocked pubkeys, skip without constructing the model.
 
-Blocked events are **never** constructed, never signature-verified, never written to any cache, never dispatched to any subscriber.
+Blocked content is **never** allowed past the app ingress seam into app state, caches, or subscribers. Some low-level SDK objects may still exist transiently before the app-level seam decides to drop them; that is an accepted tradeoff to keep app policy out of the SDK.
 
 ### 5. Interaction gating (`canTarget`)
 
@@ -352,7 +357,7 @@ Four phases, each independently shippable. Feature-flagged under `content_policy
 
 - Enable `content_policy_v2` in all builds.
 - Remove every `.where(!shouldFilterFromFeeds(...))` call in feeds, providers, and BLoCs. The parse-gate now owns that work.
-- Remove the `ContentBlocklistService` → `shouldFilterFromFeeds` call sites. Keep the method on the repository for a deprecation window; mark `@Deprecated`.
+- Remove the `ContentBlocklistRepository` → `shouldFilterFromFeeds` call sites. Keep the method on the repository for a deprecation window; mark `@Deprecated`.
 - Close #948.
 
 ### Phase 4 — Cleanup

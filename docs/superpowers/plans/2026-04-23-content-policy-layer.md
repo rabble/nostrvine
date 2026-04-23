@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace three overlapping moderation services with a single pure-Dart `ContentPolicyEngine` that gates every parse boundary, so blocked/muted content never becomes an in-memory object on any feed.
+**Goal:** Replace three overlapping moderation services with a single pure-Dart `ContentPolicyEngine` that gates every repository and relay-dispatch ingress boundary, so blocked/muted content never reaches app state on any feed.
 
-**Architecture:** A new `content_policy` package exposes a stateless engine composed of ordered `PolicyRule`s, plus an immutable `ContentPolicyState` value type. `ContentBlocklistService` gains `currentState` / `stream` accessors. The engine is injected into every `fromJson` / relay-event-handler boundary and at affordance-gate call sites (Follow, DM, mention, share/tag pickers). Ships behind a `content_policy_v2` feature flag until Phase 3.
+**Architecture:** A new `content_policy` package exposes a stateless engine composed of ordered `PolicyRule`s, plus an immutable `ContentPolicyState` value type. `ContentBlocklistRepository` gains `currentState` / `stateStream` accessors. The engine is injected into repository parse boundaries, REST model-construction paths, relay-event dispatch seams, and affordance-gate call sites (Follow, DM, mention, share/tag pickers). Ships behind a `content_policy_v2` feature flag until Phase 3.
 
 **Tech Stack:** Dart 3 sealed classes, `flutter_riverpod` (legacy glue), existing `FeatureFlag` enum, `shared_preferences`, `bloc_test`, `mocktail`.
 
@@ -23,8 +23,8 @@ You likely do not have context for this codebase. Before starting any task:
 - **Never truncate Nostr IDs** anywhere — code, logs, tests, analytics, debug output. Full hex pubkeys always.
 - **Disclosure invariant is a hard rule** — the app must never tell a user they have been blocked by another user. No ruleId string, no pubkey, no "MutualMute" token in any user-visible copy, snackbar, release log, analytics event, or Crashlytics breadcrumb. This affects test design (negative assertions) and logging choices throughout the plan.
 - **Existing feature flags** live at `mobile/lib/features/feature_flags/`. The enum is `mobile/lib/features/feature_flags/models/feature_flag.dart`; the service is `mobile/lib/features/feature_flags/services/feature_flag_service.dart`. Defaults are declared in `build_configuration.dart` in the same directory.
-- **Two names to reconcile** — the spec uses `ContentBlocklistRepository` (as of a rename referenced in #3227); the current code still uses `ContentBlocklistService` at `mobile/lib/services/content_blocklist_service.dart`. This plan uses the **current** name (`ContentBlocklistService`) because the rename has not yet landed. If #3227 lands before this plan is executed, globally swap `ContentBlocklistService` → `ContentBlocklistRepository` in the task text below.
-- **Existing block-filter hook** — `mobile/packages/videos_repository/lib/src/video_content_filter.dart` defines `typedef BlockedVideoFilter = bool Function(String pubkey);` and `videos_repository.dart` already calls it at four parse points (lines 787, 826, 860, 900 of the current file). The engine-injection work in Phase 1 preserves this callback shape — we replace the callback's **implementation** with `engine.evaluate(...) is Block`, not the callback's position in the code. Other repositories (comments, profile, hashtag, notifications) do **not** yet have an equivalent hook; the plan adds one.
+- **Current naming** — the blocklist rename has already landed. Use `ContentBlocklistRepository` from `mobile/packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart` and the Riverpod provider `contentBlocklistRepositoryProvider` in `mobile/lib/providers/app_providers.dart`.
+- **Existing block-filter hook** — `mobile/packages/videos_repository/lib/src/video_content_filter.dart` defines `typedef BlockedVideoFilter = bool Function(String pubkey);` and `videos_repository.dart` already calls it at four parse points (lines 787, 826, 860, 900 of the current file). The engine-injection work in Phase 1 preserves this callback shape — we replace the callback's **implementation** with `engine.evaluate(...) is Block`, not the callback's position in the code. Equivalent hooks already exist for comments, profile, and notifications; the remaining new hook work is for hashtag, likes, and reposts.
 
 ---
 
@@ -397,7 +397,7 @@ Write `mobile/packages/content_policy/lib/src/content_policy_state.dart`:
 ```dart
 /// Immutable snapshot of all state the policy engine needs to evaluate.
 ///
-/// Rebuilt by [ContentBlocklistService] whenever the underlying source
+/// Rebuilt by [ContentBlocklistRepository] whenever the underlying source
 /// data changes. The engine never mutates it; it is replaced wholesale.
 class ContentPolicyState {
   const ContentPolicyState({
@@ -1274,21 +1274,21 @@ git add mobile/lib/features/feature_flags
 git commit -m "feat(feature_flags): add contentPolicyV2 flag (default off)"
 ```
 
-### Task 1.2: Extend `ContentBlocklistService` to expose `ContentPolicyState`
+### Task 1.2: Extend `ContentBlocklistRepository` to expose `ContentPolicyState`
 
-`ContentBlocklistService` (at `mobile/lib/services/content_blocklist_service.dart`) already holds four sets internally: `_runtimeBlocklist` + `_internalBlocklist` (= user's blocks), `_mutualMuteBlocklist` (= users muting us), `_blockedByOthers` (= users blocking us via kind 30000). This task adds the mapping to `ContentPolicyState` without changing the existing sets or publishing paths.
+`ContentBlocklistRepository` (at `mobile/packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart`) already holds four sets internally: `_runtimeBlocklist` + `_internalBlocklist` (= user's blocks), `_mutualMuteBlocklist` (= users muting us), `_blockedByOthers` (= users blocking us via kind 30000). This task adds the mapping to `ContentPolicyState` without changing the existing sets or publishing paths.
 
-We introduce two new accessors: `currentState` (synchronous snapshot) and `stateStream` (broadcast stream that emits when `_notifyChanged()` fires). Phase 1 has no separate `mutedPubkeys` set in the service — kind 10000 of *our own* mute list is not yet read locally. We surface an empty `mutedPubkeys` set for now; the spec's `PubkeyMuteRule` will simply never block from this path until a later PR plumbs own-kind-10000 reading. The `MutualMuteRule` and `PubkeyBlockRule` paths do all current work.
+We introduce two new accessors: `currentState` (synchronous snapshot) and `stateStream` (broadcast stream that emits when `_notifyChanged()` fires). Phase 1 has no separate `mutedPubkeys` set in the repository — kind 10000 of *our own* mute list is not yet read locally. We surface an empty `mutedPubkeys` set for now; the spec's `PubkeyMuteRule` will simply never block from this path until a later PR plumbs own-kind-10000 reading. The `MutualMuteRule` and `PubkeyBlockRule` paths do all current work.
 
-> **Note for the implementer:** the spec assumes kind 10000 personal-mute reading exists. Today the service only reads kind 10000 events that *name us*. Do not introduce personal-mute reading in this task — that is a follow-up PR (out of scope per the spec's "Deferred" section's own-profile mute list tracking). Just leave `mutedPubkeys` empty in the mapping and add a `TODO(#XXXX)` comment naming the follow-up.
+> **Note for the implementer:** the spec assumes kind 10000 personal-mute reading exists. Today the repository only reads kind 10000 events that *name us*. Do not introduce personal-mute reading in this task — that is a follow-up PR (out of scope per the spec's "Deferred" section's own-profile mute list tracking). Just leave `mutedPubkeys` empty in the mapping and add a `TODO(#XXXX)` comment naming the follow-up.
 
 **Files:**
-- Modify: `mobile/lib/services/content_blocklist_service.dart`
-- Test: `mobile/test/services/content_blocklist_service_test.dart`
+- Modify: `mobile/packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart`
+- Test: `mobile/packages/content_blocklist_repository/test/src/content_blocklist_repository_test.dart`
 
 - [ ] **Step 1: Write the failing test**
 
-Add to `mobile/test/services/content_blocklist_service_test.dart` (inside the existing `main() { group(...) }`):
+Add to `mobile/packages/content_blocklist_repository/test/src/content_blocklist_repository_test.dart` (inside the existing `main() { group(...) }`):
 
 ```dart
 group('ContentPolicyState exposure', () {
@@ -1296,7 +1296,7 @@ group('ContentPolicyState exposure', () {
       () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
-    final service = ContentBlocklistService(prefs: prefs);
+    final service = ContentBlocklistRepository(prefs: prefs);
 
     const me = 'my-full-hex-pubkey';
     const blockedByUs = 'blocked-by-us-hex';
@@ -1312,7 +1312,7 @@ group('ContentPolicyState exposure', () {
   test('stateStream emits a new snapshot after block/unblock', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
-    final service = ContentBlocklistService(prefs: prefs);
+    final service = ContentBlocklistRepository(prefs: prefs);
 
     const blocked = 'some-hex';
     final snapshots = <ContentPolicyState>[];
@@ -1337,12 +1337,12 @@ import 'package:content_policy/content_policy.dart';
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd mobile && flutter test test/services/content_blocklist_service_test.dart -n "ContentPolicyState exposure"`
-Expected: FAIL — `currentState` and `stateStream` undefined on `ContentBlocklistService`.
+Run: `cd mobile && flutter test packages/content_blocklist_repository/test/src/content_blocklist_repository_test.dart -n "ContentPolicyState exposure"`
+Expected: FAIL — `currentState` and `stateStream` undefined on `ContentBlocklistRepository`.
 
 - [ ] **Step 3: Add dep and implement**
 
-Modify `mobile/lib/services/content_blocklist_service.dart`:
+Modify `mobile/packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart`:
 
 3a. Add import:
 ```dart
@@ -1359,7 +1359,7 @@ final _stateController = StreamController<ContentPolicyState>.broadcast();
 /// Synchronous snapshot of the current policy state.
 ///
 /// Safe to call from any context, including build methods. Reads the
-/// service's internal sets and projects them into the immutable
+/// repository's internal sets and projects them into the immutable
 /// [ContentPolicyState] shape the engine consumes.
 ContentPolicyState get currentState => ContentPolicyState(
       currentUserPubkey: _ourPubkey,
@@ -1402,17 +1402,17 @@ void dispose() {
 }
 ```
 
-3f. Update `pubspec.yaml` of the `mobile` app to ensure `content_policy:` is a dep (done in Chunk 1 Task 0.1 if you added it correctly — verify).
+3f. Update `mobile/packages/content_blocklist_repository/pubspec.yaml` to ensure `content_policy:` is a dependency if it is not already inherited via workspace config.
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd mobile && flutter test test/services/content_blocklist_service_test.dart`
+Run: `cd mobile && flutter test packages/content_blocklist_repository/test/src/content_blocklist_repository_test.dart`
 Expected: PASS (full file).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add mobile/lib/services/content_blocklist_service.dart mobile/test/services/content_blocklist_service_test.dart
+git add mobile/packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart mobile/packages/content_blocklist_repository/test/src/content_blocklist_repository_test.dart
 git commit -m "feat(blocklist): expose ContentPolicyState snapshot and stream"
 ```
 
@@ -1451,7 +1451,7 @@ Expected: FAIL — `contentPolicyEngineProvider` undefined.
 
 - [ ] **Step 3: Implement the provider**
 
-Modify `mobile/lib/providers/app_providers.dart`. Near the `contentBlocklistService` provider (around line 806), add:
+Modify `mobile/lib/providers/app_providers.dart`. Near the `contentBlocklistRepository` provider (around line 800), add:
 
 ```dart
 import 'package:content_policy/content_policy.dart';
@@ -1482,25 +1482,25 @@ git commit -m "feat(providers): add contentPolicyEngineProvider"
 
 ### Task 1.4: Bootstrap hydration — block state ready before first subscription
 
-The spec's "State hydration" section requires the policy state to be fully hydrated from local storage before the parse-gate accepts its first call. Today, `ContentBlocklistService`'s constructor already loads from `SharedPreferences` synchronously (see `_loadBlockedUsers` called from the constructor). What's missing is an explicit assertion: the `blocklistSyncBridge` (app_providers.dart:838) must not start relay subscriptions until the service's local hydration is done.
+The spec's "State hydration" section requires the policy state to be fully hydrated from local storage before the parse-gate accepts its first call. Today, `ContentBlocklistRepository`'s constructor already loads from `SharedPreferences` synchronously (see `_loadBlockedUsers` called from the constructor). What's missing is an explicit assertion: the `blocklistSyncBridge` (app_providers.dart:832) must not start relay subscriptions until the repository's local hydration is done.
 
 Local hydration is synchronous today. This task adds a test that asserts `currentState` is populated from prefs *before* any `syncBlockListsInBackground` call, so future refactors can't regress the order.
 
 **Files:**
-- Test: `mobile/test/services/content_blocklist_service_hydration_test.dart` (new)
+- Test: `mobile/packages/content_blocklist_repository/test/src/content_blocklist_repository_hydration_test.dart` (new)
 
 - [ ] **Step 1: Write the failing test**
 
-Write `mobile/test/services/content_blocklist_service_hydration_test.dart`:
+Write `mobile/packages/content_blocklist_repository/test/src/content_blocklist_repository_hydration_test.dart`:
 
 ```dart
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  group('ContentBlocklistService hydration', () {
+  group('ContentBlocklistRepository hydration', () {
     test('currentState reflects persisted blocks before any sync call',
         () async {
       // Simulate an app restart with persisted state.
@@ -1509,7 +1509,7 @@ void main() {
       });
       final prefs = await SharedPreferences.getInstance();
 
-      final service = ContentBlocklistService(prefs: prefs);
+      final service = ContentBlocklistRepository(prefs: prefs);
 
       // No relay sync has happened — currentState must already include
       // the persisted block.
@@ -1521,7 +1521,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
-      final service = ContentBlocklistService(prefs: prefs);
+      final service = ContentBlocklistRepository(prefs: prefs);
 
       final state = service.currentState;
       expect(state.blockedPubkeys, isEmpty);
@@ -1534,19 +1534,21 @@ void main() {
 
 - [ ] **Step 2: Run test to verify it fails or passes**
 
-Run: `cd mobile && flutter test test/services/content_blocklist_service_hydration_test.dart`
+Run: `cd mobile && flutter test packages/content_blocklist_repository/test/src/content_blocklist_repository_hydration_test.dart`
 Expected: likely PASSES already because constructor hydration exists. The value of this test is documenting the invariant — future refactors that break synchronous hydration will fail here.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add mobile/test/services/content_blocklist_service_hydration_test.dart
+git add mobile/packages/content_blocklist_repository/test/src/content_blocklist_repository_hydration_test.dart
 git commit -m "test(blocklist): pin synchronous prefs hydration invariant"
 ```
 
 ### Task 1.5: Parse-gate at `videos_repository` — engine behind flag
 
 The repository already accepts a `BlockedVideoFilter` callback. We replace its *source* (still a callback — `BlockedVideoFilter`'s shape doesn't change), so the repository stays decoupled from the engine. The provider factory at `app_providers.dart` is the injection seam. When `contentPolicyV2` is ON, the callback consults the engine; when OFF, it consults `shouldFilterFromFeeds` exactly as before.
+
+This task also covers the Funnelcake REST paths that `videos_repository` already funnels through `BlockedVideoFilter` (for example `getVideosByAuthor`, feed/search transformations, and other REST response loops inside the repository). No separate Funnelcake task is needed for video content as long as those paths keep using the same filter seam.
 
 **Files:**
 - Modify: `mobile/lib/services/blocklist_content_filter.dart`
@@ -1630,14 +1632,14 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 final flagService = ref.watch(featureFlagServiceProvider);
 final useV2 = flagService.isEnabled(FeatureFlag.contentPolicyV2);
 
-final blocklistService = ref.watch(contentBlocklistServiceProvider);
+final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
 
 final blockFilter = useV2
     ? createPolicyEngineFilter(
         ref.watch(contentPolicyEngineProvider),
-        () => blocklistService.currentState,
+        () => blocklistRepository.currentState,
       )
-    : createBlocklistFilter(blocklistService);
+    : createBlocklistFilter(blocklistRepository);
 
 // Pass blockFilter into the VideosRepository constructor as before.
 ```
@@ -1677,35 +1679,33 @@ Each repository under `mobile/packages/<name>_repository/` that converts relay e
 3. At every `fromJson` / `fromEvent` / row-to-model conversion, return `null` or skip when the filter returns `true`.
 4. Wire the filter at the repository's Riverpod provider in `mobile/lib/providers/app_providers.dart`, routing through the flag exactly as Task 1.5.
 
-> **Important**: each of these repositories currently has **no** author filter. The spec's audit calls out comments, profile feeds, hashtag feeds, notifications, search as leak surfaces. This task is where those leaks get closed. Do one repository at a time, each as its own test-first sub-commit.
+> **Important**: not every repository here starts from the same place. Comments, profile, and notifications already have pubkey-filter hooks; hashtag, likes, and reposts still need new ones. This task closes the remaining leak surfaces one repository at a time, each as its own test-first sub-commit.
 
 **Repository sub-tasks** (each its own TDD cycle and commit):
 
 - [ ] **Sub-task 1.6.a — `comments_repository`**
-  - Files: `mobile/packages/comments_repository/lib/src/{comments_repository.dart, blocked_author_filter.dart}`, corresponding test file.
-  - Find every `Comment.fromJson` / `Comment` construction site in `comments_repository.dart` — gate each one with `if (_blockFilter?.call(authorPubkey) ?? false) continue;` (or `return null` for single-item paths).
-  - Integration test: seed a blocked author in the test engine's state; publish a comment event into the repository's stream; assert the state has no matching comment.
+  - Files: `mobile/packages/comments_repository/lib/src/{comments_repository.dart, blocked_comment_filter.dart}`, corresponding test file.
+  - The hook already exists. Replace the provider wiring so `BlockedCommentFilter` is engine-backed when `contentPolicyV2` is ON, then add a regression test proving blocked authors never surface through the repository.
   - Commit: `feat(comments_repository): engine-gate comment parsing`.
 
 - [ ] **Sub-task 1.6.b — `profile_repository`**
-  - Files: `mobile/packages/profile_repository/lib/src/profile_repository.dart` + test.
-  - Profile repository handles both own and other profiles. Important: **do not** filter the current user's own profile fetch (SelfReferenceRule already handles that, but the repository may have a direct path that bypasses the engine). Manually audit: `ProfileRepository.getProfile(pubkey)` should still return the user's own profile unconditionally.
-  - Gate at the `Profile.fromJson`/`fromEvent` boundary. For the list-shaped endpoints (follower/following lists), filter the list before returning.
+  - Files: `mobile/packages/profile_repository/lib/src/{profile_repository.dart, blocked_profile_filter.dart}` + test.
+  - The hook already exists. Replace the provider wiring so `BlockedProfileFilter` is engine-backed when `contentPolicyV2` is ON, then verify the current user's own profile still survives via `SelfReferenceRule`.
   - Commit: `feat(profile_repository): engine-gate profile parsing`.
 
 - [ ] **Sub-task 1.6.c — `hashtag_repository`**
   - Files: `mobile/packages/hashtag_repository/lib/src/*.dart` + test.
-  - Filter at the hashtag search / hashtag-feed response parse boundary.
+  - Add a new pubkey-based filter hook at the hashtag search / hashtag-feed response parse boundary, then wire it from the provider layer.
   - Commit: `feat(hashtag_repository): engine-gate hashtag feed parsing`.
 
 - [ ] **Sub-task 1.6.d — `likes_repository`** / `reposts_repository`
   - Files: `mobile/packages/likes_repository/lib/src/*.dart`, `mobile/packages/reposts_repository/lib/src/*.dart`, plus tests.
-  - Each produces events authored by third parties. Gate at parse.
+  - Each produces events authored by third parties. Add a new pubkey-based filter hook and gate at parse.
   - Commits: `feat(likes_repository): engine-gate like parsing`, `feat(reposts_repository): engine-gate repost parsing`.
 
 - [ ] **Sub-task 1.6.e — `notification_repository`**
-  - Files: `mobile/packages/notification_repository/lib/src/*.dart` + test.
-  - Notifications are generated from third-party events naming the current user. Gate at the parse boundary that ingests those events, so a muted author cannot generate a notification.
+  - Files: `mobile/packages/notification_repository/lib/src/{notification_repository.dart, blocked_notification_filter.dart}`, `mobile/lib/notifications/providers/notification_repository_provider.dart`, plus test.
+  - The hook already exists. Replace the provider wiring so `BlockedNotificationFilter` is engine-backed when `contentPolicyV2` is ON, then verify a blocked author cannot generate a notification.
   - Commit: `feat(notification_repository): engine-gate notification parsing`.
 
 Each sub-task follows the exact TDD structure shown in Task 1.5 (failing test, minimal implementation, passing test, commit). The reviewing agent should verify that after each sub-task, the file's existing tests still pass.
@@ -1716,7 +1716,7 @@ The videos repository already has a parse seam at the event level. Other surface
 
 The spec's ingress invariant says: no Dart object for blocked content. Perfect enforcement requires gating at `Event.fromJson` or at every relay subscription delivery point. Gating inside `Event.fromJson` is invasive and couples the Nostr SDK package to the app-level policy engine — unacceptable. Instead, we gate at each subscription delivery seam.
 
-The existing videos-repo seam handles the highest-volume path. This task adds a second seam at the relay-pool dispatcher that is used by the Nostr client's low-level subscribers (used by `ContentBlocklistService` itself and other services that don't go through repositories).
+The existing videos-repo seam handles the highest-volume path. This task adds a second seam at the relay-pool dispatcher that is used by the Nostr client's low-level subscribers (used by `ContentBlocklistRepository` itself and other services that don't go through repositories).
 
 **Files:**
 - Modify: `mobile/packages/nostr_client/lib/src/nostr_client.dart`
@@ -1782,7 +1782,7 @@ Create under `mobile/test/content_policy/surfaces/` (new directory):
 
 Each test:
 1. Overrides `featureFlagServiceProvider` to enable `contentPolicyV2`.
-2. Seeds a blocked pubkey via `contentBlocklistServiceProvider`.
+2. Seeds a blocked pubkey via `contentBlocklistRepositoryProvider`.
 3. Pumps the relevant BLoC/Provider.
 4. Asserts the blocked author's content/event/notification is absent from the final state.
 
@@ -1862,21 +1862,21 @@ When `blockUser` / `unblockUser` is called, the state stream emits; any session 
 
 For Riverpod: watch the blocklist version counter (already exists: `blocklistVersionProvider`) in the relevant feed providers, so they rebuild on change. This is the *existing* pattern — we verify it still holds under the engine path. Audit each feed provider identified in Chunk 1 Task 1.5/1.6 to confirm it invalidates when `blocklistVersionProvider` bumps.
 
-For BLoCs: each feed BLoC that holds its own cache (e.g. `VideoFeedBloc`, `CommentsBloc`) must subscribe to `contentBlocklistService.stateStream` and dispatch a refresh event.
+For BLoCs: each feed BLoC that holds its own cache (e.g. `VideoFeedBloc`, `CommentsBloc`) must subscribe to `contentBlocklistRepository.stateStream` and dispatch a refresh event.
 
 **Files:**
 - Modify: BLoCs in `mobile/lib/blocs/*/` that cache third-party content.
 
 - [ ] **Step 1: Audit**
 
-Run a grep: `rg "contentBlocklistServiceProvider|contentBlocklistService" mobile/lib/blocs` and list every hit.
+Run a grep: `rg "contentBlocklistRepositoryProvider|contentBlocklistRepository" mobile/lib/blocs` and list every hit.
 
 - [ ] **Step 2: Add stream subscription + refresh for each identified BLoC**
 
 Pattern (example for `VideoFeedBloc`):
 
 ```dart
-VideoFeedBloc(..., ContentBlocklistService blocklist) : ... {
+VideoFeedBloc(..., ContentBlocklistRepository blocklist) : ... {
   _stateSub = blocklist.stateStream.listen(
     (_) => add(const VideoFeedPolicyStateChanged()),
   );
@@ -1953,7 +1953,7 @@ Inside `app_providers.dart`:
 bool canTarget(CanTargetRef ref, String pubkey) {
   final flagService = ref.watch(featureFlagServiceProvider);
   final engine = ref.watch(contentPolicyEngineProvider);
-  final blocklist = ref.watch(contentBlocklistServiceProvider);
+  final blocklist = ref.watch(contentBlocklistRepositoryProvider);
   // Also re-read on state changes:
   ref.watch(blocklistVersionProvider);
 
@@ -2076,7 +2076,7 @@ Per the audit in Chunk 1, callers live at (from the earlier grep):
 For each:
 
 - [ ] Delete the `.where(...)` call (or the `if (...shouldFilterFromFeeds)` branch).
-- [ ] Delete any now-dead `final blocklistService = ref.read(contentBlocklistServiceProvider);` locals.
+- [ ] Delete any now-dead `final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);` locals.
 - [ ] Re-run the surface regression test from Task 1.8 for that surface. It must still pass — the engine is doing the filtering now.
 - [ ] Commit per file: `refactor(<surface>): remove redundant blocklist filter, engine owns it`.
 
@@ -2089,9 +2089,9 @@ For each:
 - [ ] **Step 3:** Run full test suite.
 - [ ] **Step 4:** Commit: `chore(blocklist): remove legacy filter factory`.
 
-### Task 3.4: Mark `ContentBlocklistService.shouldFilterFromFeeds` deprecated
+### Task 3.4: Mark `ContentBlocklistRepository.shouldFilterFromFeeds` deprecated
 
-**Files:** `mobile/lib/services/content_blocklist_service.dart`
+**Files:** `mobile/packages/content_blocklist_repository/lib/src/content_blocklist_repository.dart`
 
 - [ ] **Step 1:** Annotate `shouldFilterFromFeeds` with `@Deprecated('Use ContentPolicyEngine. Removal tracked in #<issue>.')`.
 - [ ] **Step 2:** Run analyzer — tests that still call it will get deprecation warnings. Migrate or suppress the warning in each test.
@@ -2103,6 +2103,7 @@ For each:
 - Delete: `mobile/lib/services/mute_service.dart`
 - Delete: `mobile/lib/services/content_moderation_service.dart`
 - Delete: corresponding Riverpod providers in `mobile/lib/providers/app_providers.dart` / `.g.dart`.
+- Keep `ContentBlocklistRepository` in `mobile/packages/content_blocklist_repository/`; it is the long-term state source and is not part of this cleanup.
 
 - [ ] **Step 1:** Run: `rg "MuteService|ContentModerationService" mobile/lib` — list every usage. Confirm every site is either (a) dead code itself, or (b) a no-op path. If any active caller remains, stop and surface to the implementer.
 - [ ] **Step 2:** Delete the files.
