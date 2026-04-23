@@ -591,6 +591,7 @@
   "videoActionReplyLabel": "Reply",
   "videoActionRepostLabel": "Repost",
   "videoActionShareLabel": "Share",
+  "videoActionAboutLabel": "About",
   "videoActionEnableAutoAdvance": "Enable auto advance",
   "videoActionDisableAutoAdvance": "Disable auto advance",
   "videoActionRemoveRepost": "Remove repost",

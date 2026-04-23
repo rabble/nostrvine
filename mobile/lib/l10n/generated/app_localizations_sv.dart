@@ -1212,6 +1212,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoActionShareLabel => 'Share';
 
   @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Aktivera automatisk fortsättning';
 
   @override

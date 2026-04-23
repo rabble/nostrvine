@@ -1252,6 +1252,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionShareLabel => 'Share';
 
   @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Activează avansarea automată';
 
   @override

@@ -1235,6 +1235,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoActionShareLabel => 'Share';
 
   @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Ativar avanço automático';
 
   @override

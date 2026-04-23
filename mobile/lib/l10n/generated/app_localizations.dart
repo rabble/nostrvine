@@ -2188,6 +2188,12 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get videoActionShareLabel;
 
+  /// No description provided for @videoActionAboutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get videoActionAboutLabel;
+
   /// No description provided for @videoActionEnableAutoAdvance.
   ///
   /// In en, this message translates to:

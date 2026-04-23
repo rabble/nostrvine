@@ -1143,6 +1143,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionShareLabel => 'Share';
 
   @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => '자동 넘김 켜기';
 
   @override

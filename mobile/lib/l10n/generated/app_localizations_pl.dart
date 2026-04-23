@@ -1238,6 +1238,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoActionShareLabel => 'Share';
 
   @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance =>
       'Włącz automatyczne przechodzenie dalej';
 

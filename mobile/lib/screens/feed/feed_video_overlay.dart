@@ -401,8 +401,6 @@ class _AuthorInfoSection extends ConsumerWidget {
               ),
             ),
         ],
-        // Bottom padding per Figma `video data` spec (always 4 px).
-        const SizedBox(height: 4),
       ],
     );
   }

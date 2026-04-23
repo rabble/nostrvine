@@ -1136,6 +1136,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoActionShareLabel => 'Share';
 
   @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => '自動送りをオンにする';
 
   @override
