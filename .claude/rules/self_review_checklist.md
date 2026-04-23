@@ -61,18 +61,38 @@ Design system (check `divine_ui` first — most review nits map here):
 - [ ] Interactive tap targets (`GestureDetector`, `InkWell`, custom) are
   wrapped in `Semantics(button: true, label: ...)`. Decorative images
   use `ExcludeSemantics`. See [`accessibility.md`](accessibility.md).
+- [ ] Any bespoke widget that deliberately diverges from a `divine_ui`
+  component has a docstring explaining **why** (size delta, missing
+  variant, Figma node that forced it). See
+  [`code_style.md`](code_style.md#document-design-system-divergence).
 
 Composition and style:
 
 - [ ] No methods returning `Widget`. Extract to a widget class (private
   `_Xxx` inside the same file is fine). See
   [`code_style.md`](code_style.md).
-- [ ] No `Future.delayed()` for UI timing. Use `AnimatedSwitcher`,
-  animation controllers, stream listeners.
+- [ ] No `Future.delayed()` **or `Timer`** for UI timing. Use
+  `AnimationController` + `FadeTransition` / `AnimatedSwitcher` /
+  stream listeners — they pause with the route, respect reduced-motion,
+  and align with vsync. See
+  [`ui_theming.md`](ui_theming.md#animationcontroller-over-timer-for-ui-timing).
+- [ ] No `ValueKey` on `AnimatedSwitcher` branches that are already
+  different runtime types. See
+  [`ui_theming.md`](ui_theming.md#animatedswitcher-differentiates-children-by-runtime-type).
 - [ ] Build methods stay small — a high-level composition of widget
   classes.
 - [ ] Check `context.mounted` after every `await` before using
   `BuildContext`.
+- [ ] No speculative parameters on a reusable widget/utility. If the
+  branch a parameter unlocks is unreachable from any caller, delete
+  the parameter. See
+  [`code_style.md`](code_style.md#no-speculative-parameters-on-reusable-widgets).
+- [ ] To inject an ancestor (`BlocProvider`, `InheritedWidget`) above
+  every slot of a modal/sheet/route, use a `contentWrapper` parameter
+  on the target — not a builder closure at the call site. See
+  [`code_style.md`](code_style.md#dont-hide-ancestors-inside-a-one-off-widget-function-closure)
+  and
+  [`state_management.md`](state_management.md#scoping-blocprovider-to-a-modal-route).
 
 Scroll and navigation:
 
@@ -92,6 +112,9 @@ State management:
   enums + `addError`. See [`state_management.md`](state_management.md).
 - [ ] No mutable instance variables on a BLoC class. All state lives in
   the state object.
+- [ ] Modal-scoped blocs are owned by a `BlocProvider` **inside** the
+  modal's subtree (via `contentWrapper` or equivalent) — never
+  instantiated at the call site and `close()`-d in a `try/finally`.
 
 Testing:
 
@@ -102,6 +125,19 @@ Testing:
 - [ ] New public method on a strict-coverage package (currently
   `mobile/packages/divine_ui`) has a matching test **in the same PR**.
   See [`testing.md`](testing.md#strict-coverage-packages).
+- [ ] No absolute wall-clock bounds on benchmark assertions (`<100 ns`,
+  `<100 ms`); use relative comparisons, `fakeAsync`, or skip with a
+  `TODO(any):`. See
+  [`testing.md`](testing.md#absolute-timing-bounds-flake-on-shared-ci-runners).
+- [ ] No incidental `expect(tester.takeException(), isNotNull)` that
+  depends on a partially-set-up provider throwing. Assert the test's
+  actual contract; drain incidental errors with
+  `tester.takeException()` without assertion. See
+  [`testing.md`](testing.md#testertakeexception-isnotnull-is-fragile-under-test-suite-optimization).
+- [ ] Code that compares wall-clock timestamps (`DateTime.now()`) reads
+  through `package:clock`'s `clock.now()`; the test wraps its body in
+  `withClock(...)` so the comparison is deterministic. See
+  [`testing.md`](testing.md#inject-packageclock-for-time-sensitive-logic).
 
 ---
 

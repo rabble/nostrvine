@@ -21,6 +21,32 @@ Write straightforward code. Clever or obscure code is difficult to maintain.
 ### Reuse Before Writing
 Before writing a new helper, utility, or formatter, search `mobile/packages/` for an existing package that already provides the functionality. The monorepo contains shared packages (e.g., `count_formatter`, `divine_ui`) specifically to avoid duplication across features.
 
+### Document Design-System Divergence
+
+If a bespoke widget deliberately diverges from a `divine_ui` component (different size, different structure, bypassed variant), the class's docstring **must** say why — specifically, which design-system component it's close to and what forced the divergence. Without that note, the next reviewer (or the next you, six months later) will re-raise the "why not just use `DivineIconButton`?" question, and you'll have to re-litigate the decision.
+
+**Good — explains the divergence inline:**
+```dart
+/// Shared Figma-matched center control used for transient play/pause states.
+///
+/// Visually equivalent to a [DivineIconButton] in ghost style (scrim65
+/// background + white glyph) but sized 64×64 with a 32 icon instead of
+/// DivineIconButton's 40×40 (small) / 56×56 (base) presets, because the
+/// Figma spec for the paused-video affordance (node 15314:53971) calls
+/// for a larger tap target than any standard DivineIconButton size. Kept
+/// as a bespoke widget rather than extending DivineIconButton with a
+/// third size enum that only this surface would use.
+class CenterPlaybackControl extends StatelessWidget { ... }
+```
+
+**Bad — no hint that the bespoke widget is intentional:**
+```dart
+/// Center play/pause control.
+class CenterPlaybackControl extends StatelessWidget { ... }
+```
+
+The rule is satisfied by a 2–4 sentence note in the docstring. No separate ADR required — but a link to the Figma node that forced the divergence (when applicable) saves a round-trip.
+
 ---
 
 ## Naming Conventions
@@ -148,6 +174,60 @@ if (useOldSearch) {
 
 ---
 
+## No Speculative Parameters on Reusable Widgets
+
+Before adding a parameter to a reusable widget or utility (anything in
+`divine_ui` or `lib/utils/`), trace the caller flow end-to-end and
+confirm the branch it unlocks is actually reachable. "Future-proof" or
+anticipatory parameters tend to sit unused, inflate the API surface,
+and confuse the next reader — the parameter's only documentation is
+the dead branch.
+
+**Smell: parameter name includes "Builder" / "Callback" / "Resolver"
+and there is exactly one caller, which always supplies it.** That's a
+named-parameter closure being used as a late-binding for behavior
+that could live in the caller's code. Ask whether the caller can
+compute the value directly and pass the resolved value in.
+
+**Example (from review on #3224):**
+
+```dart
+// Bad — caller computes an initial size based on keyboard state,
+// but the sheet is only ever opened from a surface that has no text
+// input (feed), so the keyboard is never open at show time. The
+// parameter's entire body is dead.
+static Future<T?> show<T>({
+  double initialChildSize = 0.6,
+  double Function(BuildContext)? initialChildSizeBuilder,
+  // ...
+}) {
+  final size = initialChildSizeBuilder?.call(context) ?? initialChildSize;
+  // ...
+}
+
+// Good — the speculative branch is deleted; callers pass a plain
+// number, and there's nothing to miss-configure.
+static Future<T?> show<T>({
+  double initialChildSize = 0.6,
+  // ...
+}) { /* ... */ }
+```
+
+Bias toward **removing** a parameter that has one caller and one
+code path — adding it back later is cheap; living with a
+never-exercised branch is not. If a parameter genuinely must exist
+for one forced scenario, assert that scenario at the top of the
+function so the invariant is explicit:
+
+```dart
+assert(
+  initialChildSizeBuilder == null || someScenarioHolds,
+  'initialChildSizeBuilder is only valid when ...',
+);
+```
+
+---
+
 ## Dart Best Practices
 
 ### Null Safety
@@ -261,6 +341,85 @@ class MyWidget extends StatelessWidget {
 2. Enables efficient rendering and DevTools inspection
 3. Widgets can be tested in isolation
 4. Widget classes can be `const` and benefit from Flutter's diffing algorithm
+
+### Don't Hide Ancestors Inside a One-Off `Widget Function` Closure
+
+When a call site needs to inject an **ancestor** (a `BlocProvider`,
+`InheritedWidget`, `Theme`, etc.) above a widget's whole subtree, do
+**not** reach for a one-off `Widget Function(BuildContext, Widget)`
+closure at the call site — that's a `_buildFoo` in disguise, just
+lifted into an argument. Instead, add a `contentWrapper` (or similarly
+named) parameter to the target widget/utility and let each call site
+supply the wrapper declaratively.
+
+**Smell: the call site invents a named closure that takes `(context,
+child)` and wraps `child` in a provider / inherited widget.** That
+call site is asking for a `contentWrapper` parameter.
+
+**Bad — the wrapping is a builder closure baked into a single call
+site. It's easy to miss that the provider must wrap the *entire*
+sheet, and if the target widget ever gains a new slot, the closure
+silently won't apply there:**
+
+```dart
+// In a utility that shows a sheet:
+Future<void> showMySheet(BuildContext context, {
+  required Widget Function(BuildContext, Widget) builder,
+  required Widget body,
+}) {
+  return showModalBottomSheet(
+    context: context,
+    builder: (ctx) => builder(ctx, MySheet(body: body)),
+  );
+}
+
+// At the call site:
+showMySheet(
+  context,
+  builder: (ctx, child) => BlocProvider<MyBloc>(
+    create: (_) => MyBloc(),
+    child: child,
+  ),
+  body: ...,
+);
+```
+
+**Good — the target exposes a `contentWrapper` parameter that
+participates in its own API. The wrapping is declarative and the
+target can guarantee it applies across every slot:**
+
+```dart
+Future<void> showMySheet(BuildContext context, {
+  Widget Function(BuildContext, Widget)? contentWrapper,
+  required Widget body,
+}) {
+  return showModalBottomSheet(
+    context: context,
+    builder: (ctx) {
+      final Widget sheet = MySheet(body: body);
+      return contentWrapper?.call(ctx, sheet) ?? sheet;
+    },
+  );
+}
+
+showMySheet(
+  context,
+  contentWrapper: (ctx, child) => BlocProvider<MyBloc>(
+    create: (_) => MyBloc(),
+    child: child,
+  ),
+  body: ...,
+);
+```
+
+The cue is almost always a `BlocProvider` / `InheritedWidget` that
+needs to sit **above** every slot of the target — not beside one of
+them. The `contentWrapper` parameter turns that intent into part of
+the widget's contract instead of a call-site pattern.
+
+See the companion rule in
+[`state_management.md`](state_management.md#scoping-blocprovider-to-a-modal-route)
+for why this matters specifically for `BlocProvider` lifecycle.
 
 ---
 

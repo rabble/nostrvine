@@ -471,6 +471,117 @@ so they live in the always-visible sliver region.
 
 ---
 
+## `AnimatedSwitcher` differentiates children by runtime type
+
+`AnimatedSwitcher` decides "is this a new child?" with
+`Widget.canUpdate(oldChild, newChild)` — which is true when
+`oldChild.runtimeType == newChild.runtimeType && oldChild.key ==
+newChild.key`. If your switcher's branches already return **different
+widget types** (`Center`, `IgnorePointer`, `SizedBox`, etc.), they are
+already distinguishable. Adding a `ValueKey` on top is redundant.
+
+Worse: hardcoded `ValueKey`s in a widget that is reused elsewhere in
+the same subtree (or inside another `AnimatedSwitcher`) can trigger
+"duplicate GlobalKey in the widget tree" assertions. Only add a
+`ValueKey` when:
+
+1. The branches are the **same** runtime type (e.g. two `Text`
+   widgets with different strings — `AnimatedSwitcher` won't see a
+   transition without a key), **or**
+2. A test anchors on the key via `find.byKey(...)`. In that case,
+   leave a one-line comment on the key explaining the test dependency,
+   so the key can't be silently renamed.
+
+**Bad — redundant keys on already-different runtime types:**
+```dart
+AnimatedSwitcher(
+  duration: _kFadeDuration,
+  child: shouldShowPlay
+      ? Center(
+          key: const ValueKey('play'),     // Center is already unique
+          child: const PlayIcon(),
+        )
+      : shouldShowFeedback
+          ? IgnorePointer(
+              key: const ValueKey('feedback'),  // IgnorePointer is unique
+              child: const FeedbackIcon(),
+            )
+          : const SizedBox.shrink(
+              key: ValueKey('hidden'),     // SizedBox is unique
+            ),
+);
+```
+
+**Good — rely on runtime type; keep the one key a test anchors on:**
+```dart
+AnimatedSwitcher(
+  duration: _kFadeDuration,
+  child: shouldShowPlay
+      ? Center(
+          // Tested via find.byKey(ValueKey('play')); see
+          // paused_video_play_overlay_test.dart.
+          key: const ValueKey('play'),
+          child: const PlayIcon(),
+        )
+      : shouldShowFeedback
+          ? IgnorePointer(child: const FeedbackIcon())
+          : const SizedBox.shrink(),
+);
+```
+
+---
+
+## `AnimationController` over `Timer` for UI timing
+
+The [`self_review_checklist.md`](self_review_checklist.md) already
+says "No `Future.delayed()` for UI timing." `Timer` from `dart:async`
+falls in the same bucket and for the same reasons — plus a few
+specific to Flutter:
+
+- A ticker-backed `AnimationController` **pauses with the route**
+  (offscreen sheets stop firing frames); a `Timer` keeps running and
+  fires `setState` after the widget is disposed unless you cancel it
+  by hand.
+- `AnimationController` respects `MediaQuery.disableAnimations`
+  (reduced-motion); a `Timer`-driven fade doesn't.
+- `AnimationController` uses the frame scheduler, so opacity /
+  position updates align with the next vsync. `Timer`-driven
+  `setState` can land mid-frame.
+
+Prefer this shape for transient flashes (unpause feedback, badge
+pulses, snackbar-like overlays):
+
+```dart
+// Good — AnimationController + FadeTransition/AnimatedBuilder.
+late final AnimationController _feedbackController = AnimationController(
+  vsync: this,
+  duration: const Duration(milliseconds: 550),
+);
+
+@override
+void dispose() {
+  _feedbackController.dispose();
+  super.dispose();
+}
+
+void _triggerFeedback() {
+  _feedbackController.forward(from: 0);
+}
+
+// In build:
+FadeTransition(
+  opacity: Tween(begin: 1.0, end: 0.0).animate(_feedbackController),
+  child: const FeedbackIcon(),
+)
+```
+
+Reach for `Timer` (or its partner-in-crime `Future.delayed`) only when
+the effect is genuinely outside the rendering pipeline — e.g. a
+debounce before hitting the network, or a cancellable delay before
+logging analytics. If you're animating pixels, use an animation API.
+
+---
+
 ## Accessibility
 
 See `accessibility.md` for the full accessibility guide (semantic labels, announcements, traversal order, contrast, font responsiveness, motion, and testing).
