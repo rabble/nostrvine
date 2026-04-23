@@ -16,7 +16,7 @@ const _maxSessionAge = Duration(seconds: 60);
 /// Service for tracking feed performance and user engagement
 class FeedPerformanceTracker {
   factory FeedPerformanceTracker() => _instance ??= FeedPerformanceTracker._();
-  FeedPerformanceTracker._();
+  FeedPerformanceTracker._() : _bypassAnalytics = false;
 
   static FeedPerformanceTracker? _instance;
 
@@ -32,13 +32,18 @@ class FeedPerformanceTracker {
   /// Creates a testable instance that does not touch [FirebaseAnalytics].
   @visibleForTesting
   FeedPerformanceTracker.testInstance({FirebaseAnalytics? analytics})
-    : _analyticsOverride = analytics;
+    : _analyticsOverride = analytics,
+      _bypassAnalytics = true;
 
   // Lazy-init to avoid crashing when Firebase isn't initialized (e.g. tests).
   FirebaseAnalytics? _analyticsOverride;
   FirebaseAnalytics? _analyticsInstance;
-  FirebaseAnalytics? get _analytics =>
-      _analyticsOverride ?? (_analyticsInstance ??= _initAnalytics());
+  final bool _bypassAnalytics;
+
+  FirebaseAnalytics? get _analytics {
+    if (_bypassAnalytics) return _analyticsOverride;
+    return _analyticsOverride ?? (_analyticsInstance ??= _initAnalytics());
+  }
 
   static FirebaseAnalytics? _initAnalytics() {
     try {

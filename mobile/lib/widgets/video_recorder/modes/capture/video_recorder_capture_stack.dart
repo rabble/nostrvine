@@ -91,6 +91,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                       child: DivineIconButton(
                         icon: .arrowCounterClockwise,
                         type: .ghostSecondary,
+                        size: .small,
                         onPressed: null,
                       ),
                     ),

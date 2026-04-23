@@ -768,6 +768,13 @@ void main() {
               trendingSoundsProvider.overrideWith(
                 () => MockTrendingSoundsNotifier(sounds: testSounds),
               ),
+              // Force empty bundled sounds so only the Trending Sounds
+              // horizontal list renders; otherwise rootBundle loads the
+              // bundled manifest and the Featured Sounds section adds a
+              // second horizontal ListView.
+              soundLibraryServiceProvider.overrideWith(
+                (_) async => SoundLibraryService(),
+              ),
               audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
             ],
           ),
