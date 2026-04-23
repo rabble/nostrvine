@@ -58,8 +58,8 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
               ),
               _ItemButton(
                 icon: .images,
-                label: context.l10n.videoEditorClipsLabel,
-                semanticLabel: context.l10n.videoEditorOpenClipsSemanticLabel,
+                label: context.l10n.videoEditorLibraryLabel,
+                semanticLabel: context.l10n.videoEditorOpenLibrarySemanticLabel,
                 onTap: () {
                   Navigator.pop(context);
                   scope.onOpenClipsEditor();

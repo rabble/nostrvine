@@ -5067,13 +5067,13 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get videoEditorCameraLabel => 'Camera';
+  String get videoEditorCameraLabel => 'Kamera';
 
   @override
-  String get videoEditorOpenCameraSemanticLabel => 'Open camera';
+  String get videoEditorOpenCameraSemanticLabel => 'Buka kamera';
 
   @override
-  String get videoEditorClipsLabel => 'Klip';
+  String get videoEditorLibraryLabel => 'Perpustakaan';
 
   @override
   String get videoEditorTextLabel => 'Teks';
@@ -5094,7 +5094,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorAddTitle => 'Tambah';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'Buka editor klip';
+  String get videoEditorOpenLibrarySemanticLabel => 'Buka perpustakaan';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Buka editor audio';

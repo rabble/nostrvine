@@ -4898,13 +4898,13 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get videoEditorCameraLabel => 'Camera';
+  String get videoEditorCameraLabel => '카메라';
 
   @override
-  String get videoEditorOpenCameraSemanticLabel => 'Open camera';
+  String get videoEditorOpenCameraSemanticLabel => '카메라 열기';
 
   @override
-  String get videoEditorClipsLabel => '클립';
+  String get videoEditorLibraryLabel => '라이브러리';
 
   @override
   String get videoEditorTextLabel => '텍스트';
@@ -4925,7 +4925,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAddTitle => '추가';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => '클립 편집기 열기';
+  String get videoEditorOpenLibrarySemanticLabel => '라이브러리 열기';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => '오디오 편집기 열기';

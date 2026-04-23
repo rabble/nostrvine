@@ -2641,7 +2641,7 @@
         }
     },
     "videoEditorCameraLabel": "Cámara",
-    "videoEditorClipsLabel": "Clips",
+    "videoEditorLibraryLabel": "Biblioteca",
     "videoEditorTextLabel": "Texto",
     "videoEditorDrawLabel": "Dibujar",
     "videoEditorFilterLabel": "Filtro",
@@ -2649,7 +2649,7 @@
     "videoEditorVolumeLabel": "Volumen",
     "videoEditorAddTitle": "Agregar",
     "videoEditorOpenCameraSemanticLabel": "Abrir cámara",
-    "videoEditorOpenClipsSemanticLabel": "Abrir editor de clips",
+    "videoEditorOpenLibrarySemanticLabel": "Abrir biblioteca",
     "videoEditorOpenAudioSemanticLabel": "Abrir editor de audio",
     "videoEditorOpenTextSemanticLabel": "Abrir editor de texto",
     "videoEditorOpenDrawSemanticLabel": "Abrir editor de dibujo",

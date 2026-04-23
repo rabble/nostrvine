@@ -4876,13 +4876,13 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get videoEditorCameraLabel => 'Camera';
+  String get videoEditorCameraLabel => 'カメラ';
 
   @override
-  String get videoEditorOpenCameraSemanticLabel => 'Open camera';
+  String get videoEditorOpenCameraSemanticLabel => 'カメラを開く';
 
   @override
-  String get videoEditorClipsLabel => 'クリップ';
+  String get videoEditorLibraryLabel => 'ライブラリ';
 
   @override
   String get videoEditorTextLabel => 'テキスト';
@@ -4903,7 +4903,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAddTitle => '追加';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'クリップエディタを開く';
+  String get videoEditorOpenLibrarySemanticLabel => 'ライブラリを開く';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'オーディオエディタを開く';

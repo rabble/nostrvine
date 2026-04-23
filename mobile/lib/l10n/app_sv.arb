@@ -2641,7 +2641,7 @@
         }
     },
     "videoEditorCameraLabel": "Kamera",
-    "videoEditorClipsLabel": "Klipp",
+    "videoEditorLibraryLabel": "Bibliotek",
     "videoEditorTextLabel": "Text",
     "videoEditorDrawLabel": "Rita",
     "videoEditorFilterLabel": "Filter",
@@ -2649,7 +2649,7 @@
     "videoEditorVolumeLabel": "Volym",
     "videoEditorAddTitle": "Lägg till",
     "videoEditorOpenCameraSemanticLabel": "Öppna kamera",
-    "videoEditorOpenClipsSemanticLabel": "Öppna klippredigerare",
+    "videoEditorOpenLibrarySemanticLabel": "Öppna bibliotek",
     "videoEditorOpenAudioSemanticLabel": "Öppna ljudredigerare",
     "videoEditorOpenTextSemanticLabel": "Öppna textredigerare",
     "videoEditorOpenDrawSemanticLabel": "Öppna ritredigerare",

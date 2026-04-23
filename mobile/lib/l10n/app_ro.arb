@@ -2641,7 +2641,7 @@
         }
     },
     "videoEditorCameraLabel": "Cameră",
-    "videoEditorClipsLabel": "Clipuri",
+    "videoEditorLibraryLabel": "Bibliotecă",
     "videoEditorTextLabel": "Text",
     "videoEditorDrawLabel": "Desen",
     "videoEditorFilterLabel": "Filtru",
@@ -2649,7 +2649,7 @@
     "videoEditorVolumeLabel": "Volum",
     "videoEditorAddTitle": "Adaugă",
     "videoEditorOpenCameraSemanticLabel": "Deschide camera",
-    "videoEditorOpenClipsSemanticLabel": "Deschide editorul de clipuri",
+    "videoEditorOpenLibrarySemanticLabel": "Deschide biblioteca",
     "videoEditorOpenAudioSemanticLabel": "Deschide editorul audio",
     "videoEditorOpenTextSemanticLabel": "Deschide editorul de text",
     "videoEditorOpenDrawSemanticLabel": "Deschide editorul de desen",

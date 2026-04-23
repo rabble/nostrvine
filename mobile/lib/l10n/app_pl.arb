@@ -2641,7 +2641,7 @@
         }
     },
     "videoEditorCameraLabel": "Kamera",
-    "videoEditorClipsLabel": "Klipy",
+    "videoEditorLibraryLabel": "Biblioteka",
     "videoEditorTextLabel": "Tekst",
     "videoEditorDrawLabel": "Rysuj",
     "videoEditorFilterLabel": "Filtr",
@@ -2649,7 +2649,7 @@
     "videoEditorVolumeLabel": "Głośność",
     "videoEditorAddTitle": "Dodaj",
     "videoEditorOpenCameraSemanticLabel": "Otwórz kamerę",
-    "videoEditorOpenClipsSemanticLabel": "Otwórz edytor klipów",
+    "videoEditorOpenLibrarySemanticLabel": "Otwórz bibliotekę",
     "videoEditorOpenAudioSemanticLabel": "Otwórz edytor audio",
     "videoEditorOpenTextSemanticLabel": "Otwórz edytor tekstu",
     "videoEditorOpenDrawSemanticLabel": "Otwórz edytor rysowania",

@@ -9020,11 +9020,11 @@ abstract class AppLocalizations {
   /// **'Open camera'**
   String get videoEditorOpenCameraSemanticLabel;
 
-  /// No description provided for @videoEditorClipsLabel.
+  /// No description provided for @videoEditorLibraryLabel.
   ///
   /// In en, this message translates to:
-  /// **'Clips'**
-  String get videoEditorClipsLabel;
+  /// **'Library'**
+  String get videoEditorLibraryLabel;
 
   /// No description provided for @videoEditorTextLabel.
   ///
@@ -9062,11 +9062,11 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get videoEditorAddTitle;
 
-  /// No description provided for @videoEditorOpenClipsSemanticLabel.
+  /// No description provided for @videoEditorOpenLibrarySemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Open clips editor'**
-  String get videoEditorOpenClipsSemanticLabel;
+  /// **'Open Library'**
+  String get videoEditorOpenLibrarySemanticLabel;
 
   /// No description provided for @videoEditorOpenAudioSemanticLabel.
   ///
