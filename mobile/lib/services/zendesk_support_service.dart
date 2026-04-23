@@ -562,6 +562,7 @@ class ZendeskSupportService {
     List<String>? tags,
     int? ticketFormId,
     List<Map<String, dynamic>>? customFields,
+    List<String>? attachmentPaths,
   }) async {
     if (!_initialized) {
       Log.warning(
@@ -584,6 +585,8 @@ class ZendeskSupportService {
         'ticketFormId': ?ticketFormId,
         if (customFields != null && customFields.isNotEmpty)
           'customFields': customFields,
+        if (attachmentPaths != null && attachmentPaths.isNotEmpty)
+          'attachmentPaths': attachmentPaths,
       });
 
       if (result == true) {
@@ -648,6 +651,8 @@ class ZendeskSupportService {
               'ticketFormId': ?ticketFormId,
               if (customFields != null && customFields.isNotEmpty)
                 'customFields': customFields,
+              if (attachmentPaths != null && attachmentPaths.isNotEmpty)
+                'attachmentPaths': attachmentPaths,
             });
             if (retryResult == true) {
               Log.info(
@@ -843,6 +848,7 @@ class ZendeskSupportService {
     String? userPubkey,
     Map<String, int>? errorCounts,
     String? logsSummary,
+    List<String>? attachmentPaths,
   }) async {
     Log.info(
       'Creating structured Zendesk bug report: $reportId',
@@ -949,6 +955,7 @@ class ZendeskSupportService {
         tags: tags,
         ticketFormId: 14772963437071,
         customFields: customFields,
+        attachmentPaths: attachmentPaths,
       );
     }
 
