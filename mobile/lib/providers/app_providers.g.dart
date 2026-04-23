@@ -1914,8 +1914,9 @@ String _$seenVideosServiceHash() => r'74099bd4d859b446a3fc0cf1a7f416756a104e43';
 /// provider auto-disposes, the subscription is lost, and blocks restored
 /// from the relay are never delivered to new instances.
 
-@ProviderFor(contentBlocklistService)
-const contentBlocklistServiceProvider = ContentBlocklistServiceProvider._();
+@ProviderFor(contentBlocklistRepository)
+const contentBlocklistRepositoryProvider =
+    ContentBlocklistRepositoryProvider._();
 
 /// Content blocklist service for filtering unwanted content from feeds
 ///
@@ -1928,14 +1929,14 @@ const contentBlocklistServiceProvider = ContentBlocklistServiceProvider._();
 /// provider auto-disposes, the subscription is lost, and blocks restored
 /// from the relay are never delivered to new instances.
 
-final class ContentBlocklistServiceProvider
+final class ContentBlocklistRepositoryProvider
     extends
         $FunctionalProvider<
-          ContentBlocklistService,
-          ContentBlocklistService,
-          ContentBlocklistService
+          ContentBlocklistRepository,
+          ContentBlocklistRepository,
+          ContentBlocklistRepository
         >
-    with $Provider<ContentBlocklistService> {
+    with $Provider<ContentBlocklistRepository> {
   /// Content blocklist service for filtering unwanted content from feeds
   ///
   /// Injects SharedPreferences for local block persistence across restarts.
@@ -1946,42 +1947,42 @@ final class ContentBlocklistServiceProvider
   /// [syncBlockListsInBackground] survives widget rebuilds. Without it the
   /// provider auto-disposes, the subscription is lost, and blocks restored
   /// from the relay are never delivered to new instances.
-  const ContentBlocklistServiceProvider._()
+  const ContentBlocklistRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'contentBlocklistServiceProvider',
+        name: r'contentBlocklistRepositoryProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$contentBlocklistServiceHash();
+  String debugGetCreateSourceHash() => _$contentBlocklistRepositoryHash();
 
   @$internal
   @override
-  $ProviderElement<ContentBlocklistService> $createElement(
+  $ProviderElement<ContentBlocklistRepository> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  ContentBlocklistService create(Ref ref) {
-    return contentBlocklistService(ref);
+  ContentBlocklistRepository create(Ref ref) {
+    return contentBlocklistRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ContentBlocklistService value) {
+  Override overrideWithValue(ContentBlocklistRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<ContentBlocklistService>(value),
+      providerOverride: $SyncValueProvider<ContentBlocklistRepository>(value),
     );
   }
 }
 
-String _$contentBlocklistServiceHash() =>
-    r'ab2be1c7be1db5cebbe4293f2e0f04cadd16b638';
+String _$contentBlocklistRepositoryHash() =>
+    r'018895442a5345b97d9d646ce1f4b39a065732e0';
 
 /// Version counter to trigger rebuilds when blocklist changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.
@@ -2118,7 +2119,7 @@ final class BlocklistSyncBridgeProvider
 }
 
 String _$blocklistSyncBridgeHash() =>
-    r'821b0f14b15e81cd7eadd8e6bcb0fc98d533dc73';
+    r'a543fd12f75015c3e71079ff8560b873c576bbe5';
 
 /// Draft storage service for persisting vine drafts
 
@@ -2778,7 +2779,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'b8cf948e728d3680cad3a1fff0e56994df434c8b';
+String _$videoEventServiceHash() => r'92b71b57fc8b77723a40b99cc1ac9e902bace647';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -3268,7 +3269,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'3bfe6e383fd841b79ea445f95fef8f89da9bb19c';
+String _$profileRepositoryHash() => r'f15391d96765ac093341600f23de69a7b5d6782e';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -3796,50 +3797,56 @@ String _$viewEventPublisherHash() =>
 
 /// Curation Service - manages NIP-51 video curation sets
 
-@ProviderFor(curationService)
-const curationServiceProvider = CurationServiceProvider._();
+@ProviderFor(curationRepository)
+const curationRepositoryProvider = CurationRepositoryProvider._();
 
 /// Curation Service - manages NIP-51 video curation sets
 
-final class CurationServiceProvider
+final class CurationRepositoryProvider
     extends
-        $FunctionalProvider<CurationService, CurationService, CurationService>
-    with $Provider<CurationService> {
+        $FunctionalProvider<
+          CurationRepository,
+          CurationRepository,
+          CurationRepository
+        >
+    with $Provider<CurationRepository> {
   /// Curation Service - manages NIP-51 video curation sets
-  const CurationServiceProvider._()
+  const CurationRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'curationServiceProvider',
+        name: r'curationRepositoryProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$curationServiceHash();
+  String debugGetCreateSourceHash() => _$curationRepositoryHash();
 
   @$internal
   @override
-  $ProviderElement<CurationService> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $ProviderElement<CurationRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
-  CurationService create(Ref ref) {
-    return curationService(ref);
+  CurationRepository create(Ref ref) {
+    return curationRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(CurationService value) {
+  Override overrideWithValue(CurationRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<CurationService>(value),
+      providerOverride: $SyncValueProvider<CurationRepository>(value),
     );
   }
 }
 
-String _$curationServiceHash() => r'c2e09557d5382b0286cedd6f09854b9537af477e';
+String _$curationRepositoryHash() =>
+    r'a1a9ce03d658dd1bf9c924270bd9dacd0d070a56';
 
 /// Content reporting service for NIP-56 compliance
 
@@ -4637,7 +4644,7 @@ final class CommentsRepositoryProvider
 }
 
 String _$commentsRepositoryHash() =>
-    r'bc4e74db3003bcf6884e467471892a1d8f01a194';
+    r'aac5ae89576a1ec2fb282db45374990a3b253594';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///
@@ -4717,7 +4724,7 @@ String _$videoLocalStorageHash() => r'0be44203ec8edf59105a013aae374c07637a3ba0';
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - VideoLocalStorage for cache-first lookups and caching results
-/// - ContentBlocklistService for filtering blocked/muted users
+/// - ContentBlocklistRepository for filtering blocked/muted users
 /// - ContentFilterService for filtering NSFW content based on user preferences
 /// - FunnelcakeApiClient for trending/popular video sorting
 
@@ -4732,7 +4739,7 @@ const videosRepositoryProvider = VideosRepositoryProvider._();
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - VideoLocalStorage for cache-first lookups and caching results
-/// - ContentBlocklistService for filtering blocked/muted users
+/// - ContentBlocklistRepository for filtering blocked/muted users
 /// - ContentFilterService for filtering NSFW content based on user preferences
 /// - FunnelcakeApiClient for trending/popular video sorting
 
@@ -4752,7 +4759,7 @@ final class VideosRepositoryProvider
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
   /// - VideoLocalStorage for cache-first lookups and caching results
-  /// - ContentBlocklistService for filtering blocked/muted users
+  /// - ContentBlocklistRepository for filtering blocked/muted users
   /// - ContentFilterService for filtering NSFW content based on user preferences
   /// - FunnelcakeApiClient for trending/popular video sorting
   const VideosRepositoryProvider._()
@@ -4788,7 +4795,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'8abf84d0f4b17aa2c6752983cf0886d8b27824ee';
+String _$videosRepositoryHash() => r'c7d1b97d331002634db0433623f914ba602abd61';
 
 /// Provider for LikesRepository instance
 ///

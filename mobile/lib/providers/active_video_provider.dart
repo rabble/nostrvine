@@ -2,6 +2,7 @@
 // ABOUTME: Derives active video ID from URL context, feed state, and app foreground state
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -10,7 +11,6 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
-import 'package:riverpod/src/providers/provider.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Active video ID derived from router state and app lifecycle
@@ -116,6 +116,7 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.blueskySettings:
     case RouteType.editProfile:
     case RouteType.clips:
+    case RouteType.clipsNoSound:
     case RouteType.drafts:
     case RouteType.importKey:
     case RouteType.welcome:

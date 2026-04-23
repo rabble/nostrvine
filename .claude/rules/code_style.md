@@ -388,10 +388,34 @@ Future<User?> fetchUser(String id) async {
 ```
 
 ### Comments
-- Write clear comments for complex or non-obvious code
+
+Keep comments short. Prefer one line over a paragraph. Long comments are often a sign that the code itself needs to be clearer.
+
+Multi-line comments (more than 2–3 lines) are only justified when the explanation is genuinely critical — for example: non-obvious protocol constraints, security invariants, known platform bugs, or algorithmic decisions that cannot be expressed in code. If you find yourself writing a long comment, ask first whether the code could be restructured to make the comment unnecessary.
+
+**Comment rules:**
+- Use `///` for doc comments (dartdoc); `//` for inline implementation notes
+- Start doc comments with a single-sentence summary
+- Comment the **why**, not the **what** — if the code is readable, it already shows what it does
 - Avoid over-commenting obvious code
-- Use `///` for doc comments (dartdoc)
-- Start with a single-sentence summary
+- Do **not** add section headers, `// --- Title ---` dividers, or step labels like `// Step 1:` to group lines within a function — extract to smaller functions instead
+
+**Comments go stale.** An outdated comment is worse than no comment because it actively misleads. Rules for keeping comments accurate:
+- When you change code, update or delete any comment that described the old behaviour
+- Never leave a comment that contradicts the current implementation
+- If a comment requires constant upkeep, the design is probably wrong — refactor so the code speaks for itself
+
+**LLM-specific:** AI-generated code tends to over-comment. When reviewing AI output, strip comments that restate the code literally or add no new information:
+
+```dart
+// Bad — restates what the code already says
+final user = await _repository.fetchUser(id); // fetch user by id
+if (user == null) return; // return if user is null
+
+// Good — explains non-obvious intent only
+// Null means the account was deleted; skip silently to avoid error state.
+if (user == null) return;
+```
 
 ---
 

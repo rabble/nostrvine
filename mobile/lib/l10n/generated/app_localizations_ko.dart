@@ -379,6 +379,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileErrorLoadingCollabs => '콜라보 영상을 불러오지 못했어요';
 
   @override
+  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+
+  @override
+  String get profileSavedOwnEmpty =>
+      'Bookmark videos from the share sheet and they\'ll show up here.';
+
+  @override
+  String get profileErrorLoadingSaved => 'Error loading saved videos';
+
+  @override
   String get profileNoCommentsOwnTitle => '아직 댓글 없음';
 
   @override
@@ -504,6 +514,30 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileSignInButton => '로그인';
+
+  @override
+  String get profileMaybeLaterLabel => 'Maybe Later';
+
+  @override
+  String get profileSecurePrimaryButton => 'Add Email & Password';
+
+  @override
+  String get profileCompletePrimaryButton => 'Update Your Profile';
+
+  @override
+  String get profileLoopsLabel => 'Loops';
+
+  @override
+  String get profileLikesLabel => 'Likes';
+
+  @override
+  String get profileMyLibraryLabel => 'My Library';
+
+  @override
+  String get profileMessageLabel => 'Message';
+
+  @override
+  String get profileUserFallback => 'user';
 
   @override
   String get profileDismissTooltip => '닫기';
@@ -758,19 +792,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteVideo => '영상 삭제';
 
   @override
-  String get videoGridDeleteVideoSubtitle =>
-      '이 영상을 Divine에서 지워요. 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
+  String get videoGridDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
 
   @override
   String get videoGridDeleteConfirmTitle => '영상 삭제';
 
   @override
-  String get videoGridDeleteConfirmMessage =>
-      '이 영상은 Divine에서 영구적으로 삭제돼요. 다른 릴레이를 쓰는 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
+  String get videoGridDeleteConfirmMessage => '이 영상을 정말 삭제할까요?';
 
   @override
   String get videoGridDeleteConfirmNote =>
-      '릴레이에 삭제 요청을 보내요. 참고: 일부 릴레이에는 캐시된 사본이 남아 있을 수 있어요.';
+      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
 
   @override
   String get videoGridDeleteCancel => '취소';
@@ -872,6 +904,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoPlayerPlayVideo => '영상 재생';
+
+  @override
+  String get videoPlayerMute => '영상 음소거';
+
+  @override
+  String get videoPlayerUnmute => '영상 음소거 해제';
 
   @override
   String get videoPlayerEditVideo => '영상 편집';
@@ -1146,10 +1184,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionAboutLabel => 'About';
 
   @override
-  String get videoActionEnableAutoAdvance => '자동 넘김 켜기';
+  String get videoActionEnableAutoAdvance => '자동 넘기기 활성화';
 
   @override
-  String get videoActionDisableAutoAdvance => '자동 넘김 끄기';
+  String get videoActionDisableAutoAdvance => '자동 넘기기 비활성화';
 
   @override
   String get videoActionRemoveRepost => '리포스트 취소';
@@ -1219,12 +1257,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String metadataLoopsLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '루프',
-    );
-    return '$_temp0';
+    return '루프';
   }
 
   @override
@@ -2831,8 +2864,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideo => '영상 삭제';
 
   @override
-  String get shareMenuDeleteVideoSubtitle =>
-      '이 영상을 Divine에서 지워요. 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
+  String get shareMenuDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
 
   @override
   String get shareMenuVideoInTheseLists => '영상이 다음 리스트에 있어요:';
@@ -2846,8 +2878,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuClose => '닫기';
 
   @override
-  String get shareMenuDeleteConfirmation =>
-      '이 영상은 Divine에서 영구적으로 삭제돼요. 다른 릴레이를 쓰는 다른 Nostr 앱에서는 여전히 보일 수 있어요.';
+  String get shareMenuDeleteConfirmation => '이 영상을 정말 삭제할까요?';
 
   @override
   String get shareMenuCancel => '취소';
@@ -2859,7 +2890,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeletingContent => '콘텐츠 삭제 중...';
 
   @override
-  String get shareMenuDeleteRequestSent => '영상을 삭제했어요';
+  String get shareMenuDeleteRequestSent => '삭제 요청을 보냈어요';
 
   @override
   String get shareMenuDeleteFailedNotInitialized =>
@@ -2945,7 +2976,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '릴레이에 삭제 요청을 보내요. 참고: 일부 릴레이에는 캐시된 사본이 남아 있을 수 있어요.';
 
   @override
-  String get shareMenuVideoDeletionRequested => '영상을 삭제했어요';
+  String get shareMenuVideoDeletionRequested => '영상 삭제를 요청했어요';
 
   @override
   String get shareMenuContentLabels => '콘텐츠 라벨';
@@ -3230,14 +3261,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get feedForYouEmpty =>
-      '추천 피드가 비어 있어요.\n영상을 둘러보고 크리에이터를 팔로우해 피드를 채워보세요.';
+      '추천 피드가 비어 있어요.\n동영상을 탐색하고 크리에이터를 팔로우해 피드를 만들어보세요.';
 
   @override
   String get feedFollowingEmpty =>
-      '팔로우한 사용자의 영상이 아직 없어요.\n마음에 드는 크리에이터를 찾아 팔로우해 보세요.';
+      '아직 팔로우한 사람들의 동영상이 없어요.\n마음에 드는 크리에이터를 찾아 팔로우해 보세요.';
 
   @override
-  String get feedLatestEmpty => '아직 새로운 영상이 없어요.\n잠시 후 다시 확인해 주세요.';
+  String get feedLatestEmpty => '아직 새로운 동영상이 없어요.\n잠시 후 다시 확인해 주세요.';
 
   @override
   String get feedExploreVideos => '영상 둘러보기';
@@ -3317,6 +3348,44 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get userSearchFailed => '검색에 실패했어요';
+
+  @override
+  String get userPickerSearchByName => '이름으로 검색';
+
+  @override
+  String get userPickerFilterByNameHint => '이름으로 필터링...';
+
+  @override
+  String get userPickerSearchByNameHint => '이름으로 검색...';
+
+  @override
+  String userPickerAlreadyAddedSemantics(String name) {
+    return '$name 이미 추가됨';
+  }
+
+  @override
+  String userPickerSelectSemantics(String name) {
+    return '$name 선택';
+  }
+
+  @override
+  String get userPickerEmptyFollowListTitle => '네 크루는 밖에 있어';
+
+  @override
+  String get userPickerEmptyFollowListBody =>
+      '잘 맞는 사람들을 팔로우해 보세요. 서로 팔로우하면 함께 협업할 수 있어요.';
+
+  @override
+  String get userPickerGoBack => '뒤로 가기';
+
+  @override
+  String get userPickerTypeNameToSearch => '검색할 이름을 입력하세요';
+
+  @override
+  String get userPickerUnavailable => '사용자 검색을 사용할 수 없습니다. 나중에 다시 시도해 주세요.';
+
+  @override
+  String get userPickerSearchFailedTryAgain => '검색에 실패했어요. 다시 시도해 주세요.';
 
   @override
   String get forgotPasswordTitle => '비밀번호 재설정';
@@ -4208,6 +4277,50 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxRemovedConversation => '대화를 삭제했어요';
 
   @override
+  String get inboxEmptyTitle => '아직 메시지가 없어요';
+
+  @override
+  String get inboxEmptySubtitle => '+ 버튼, 물지 않아요.';
+
+  @override
+  String get inboxActionMute => '대화 알림 끄기';
+
+  @override
+  String inboxActionReport(String displayName) {
+    return '$displayName 신고';
+  }
+
+  @override
+  String inboxActionBlock(String displayName) {
+    return '$displayName 차단';
+  }
+
+  @override
+  String inboxActionUnblock(String displayName) {
+    return '$displayName 차단 해제';
+  }
+
+  @override
+  String get inboxActionRemove => '대화 삭제';
+
+  @override
+  String get inboxRemoveConfirmTitle => '대화를 삭제할까요?';
+
+  @override
+  String inboxRemoveConfirmBody(String displayName) {
+    return '$displayName와의 대화가 삭제돼요. 이 작업은 되돌릴 수 없어요.';
+  }
+
+  @override
+  String get inboxRemoveConfirmConfirm => '삭제';
+
+  @override
+  String get inboxConversationMuted => '대화 알림을 껐어요';
+
+  @override
+  String get inboxConversationUnmuted => '대화 알림을 다시 켰어요';
+
+  @override
   String get reportDialogCancel => '취소';
 
   @override
@@ -4237,6 +4350,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get commonRetry => '다시 시도';
 
   @override
+  String get commonNext => '다음';
+
+  @override
   String get commonDelete => '삭제';
 
   @override
@@ -4249,10 +4365,25 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataExpiration => '만료';
 
   @override
-  String get videoMetadataContentWarnings => '콘텐츠 경고';
+  String get videoMetadataExpirationNotExpire => '만료되지 않음';
 
   @override
-  String get videoEditorLayers => '레이어';
+  String get videoMetadataExpirationOneDay => '1일';
+
+  @override
+  String get videoMetadataExpirationOneWeek => '1주';
+
+  @override
+  String get videoMetadataExpirationOneMonth => '1개월';
+
+  @override
+  String get videoMetadataExpirationOneYear => '1년';
+
+  @override
+  String get videoMetadataExpirationOneDecade => '10년';
+
+  @override
+  String get videoMetadataContentWarnings => '콘텐츠 경고';
 
   @override
   String get videoEditorStickers => '스티커';
@@ -4450,6 +4581,18 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get searchFindCuratedVideoLists => '큐레이션된 동영상 목록 찾기';
+
+  @override
+  String get searchEnterQuery => '검색어를 입력하세요';
+
+  @override
+  String get searchDiscoverSomethingInteresting => '흥미로운 것을 발견해보세요';
+
+  @override
+  String get searchListsSectionHeader => '목록';
+
+  @override
+  String get searchListsLoadingLabel => '목록 결과 불러오는 중';
 
   @override
   String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';
@@ -4678,13 +4821,619 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cameraPermissionGoToSettings => '설정으로 이동';
 
   @override
-  String get metadataCaptionsLabel => 'Captions';
+  String get videoRecorderWhySixSecondsTitle => '왜 6초인가요?';
 
   @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Captions enabled for all videos';
+  String get videoRecorderWhySixSecondsSubtitle =>
+      '짧은 클립은 자발성을 위한 공간을 만듭니다. 6초 형식은 순간이 일어나는 그대로 진정성 있는 순간을 포착하는 데 도움이 됩니다.';
 
   @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Captions disabled for all videos';
+  String get videoRecorderWhySixSecondsButton => '알겠어요!';
+
+  @override
+  String get videoRecorderAutosaveFoundTitle => '작업 중인 항목을 찾았습니다';
+
+  @override
+  String get videoRecorderAutosaveFoundSubtitle => '중단한 부분에서 계속하시겠어요?';
+
+  @override
+  String get videoRecorderAutosaveContinueButton => '네, 계속하기';
+
+  @override
+  String get videoRecorderAutosaveDiscardButton => '아니요, 새 동영상 시작';
+
+  @override
+  String get videoRecorderAutosaveRestoreFailure => '임시저장을 복원할 수 없습니다';
+
+  @override
+  String get videoRecorderStopRecordingTooltip => '녹화 중지';
+
+  @override
+  String get videoRecorderStartRecordingTooltip => '녹화 시작';
+
+  @override
+  String get videoRecorderRecordingTapToStopLabel => '녹화 중. 아무 곳이나 탭하여 중지';
+
+  @override
+  String get videoRecorderTapToStartLabel => '아무 곳이나 탭하여 녹화 시작';
+
+  @override
+  String get videoRecorderDeleteLastClipLabel => '마지막 클립 삭제';
+
+  @override
+  String get videoRecorderSwitchCameraLabel => '카메라 전환';
+
+  @override
+  String get videoRecorderToggleGridLabel => '그리드 전환';
+
+  @override
+  String get videoRecorderToggleGhostFrameLabel => '고스트 프레임 전환';
+
+  @override
+  String get videoRecorderGhostFrameEnabled => '고스트 프레임 활성화됨';
+
+  @override
+  String get videoRecorderGhostFrameDisabled => '고스트 프레임 비활성화됨';
+
+  @override
+  String get videoRecorderClipDeletedMessage => '클립이 삭제되었습니다';
+
+  @override
+  String get videoRecorderCloseLabel => '동영상 녹화기 닫기';
+
+  @override
+  String get videoRecorderContinueToEditorLabel => '동영상 편집기로 계속';
+
+  @override
+  String get videoRecorderCaptureCloseLabel => '닫기';
+
+  @override
+  String get videoRecorderCaptureNextLabel => '다음';
+
+  @override
+  String get videoRecorderToggleFlashLabel => '플래시 전환';
+
+  @override
+  String get videoRecorderCycleTimerLabel => '타이머 전환';
+
+  @override
+  String get videoRecorderToggleAspectRatioLabel => '화면 비율 전환';
+
+  @override
+  String get videoRecorderLibraryEmptyLabel => '클립 보관함, 클립 없음';
+
+  @override
+  String videoRecorderLibraryOpenLabel(int clipCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      clipCount,
+      locale: localeName,
+      other: '클립 보관함 열기, $clipCount개 클립',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get videoEditorClipsLabel => '클립';
+
+  @override
+  String get videoEditorTextLabel => '텍스트';
+
+  @override
+  String get videoEditorDrawLabel => '그리기';
+
+  @override
+  String get videoEditorEffectsLabel => '효과';
+
+  @override
+  String get videoEditorAudioLabel => '오디오';
+
+  @override
+  String get videoEditorVolumeLabel => '볼륨';
+
+  @override
+  String get videoEditorAddTitle => '추가';
+
+  @override
+  String get videoEditorOpenClipsSemanticLabel => '클립 편집기 열기';
+
+  @override
+  String get videoEditorOpenAudioSemanticLabel => '오디오 편집기 열기';
+
+  @override
+  String get videoEditorOpenTextSemanticLabel => '텍스트 편집기 열기';
+
+  @override
+  String get videoEditorOpenDrawSemanticLabel => '그리기 편집기 열기';
+
+  @override
+  String get videoEditorOpenEffectsSemanticLabel => '효과 편집기 열기';
+
+  @override
+  String get videoEditorSaveDraftTitle => '임시저장 하시겠어요?';
+
+  @override
+  String get videoEditorSaveDraftSubtitle => '편집 내용을 나중에 저장하거나, 버리고 편집기를 나갑니다.';
+
+  @override
+  String get videoEditorSaveDraftButton => '임시저장';
+
+  @override
+  String get videoEditorDiscardChangesButton => '변경사항 버리기';
+
+  @override
+  String get videoEditorKeepEditingButton => '계속 편집';
+
+  @override
+  String get videoEditorDeleteLayerDropZone => '레이어 삭제 드롭 영역';
+
+  @override
+  String get videoEditorReleaseToDeleteLayer => '놓아서 레이어 삭제';
+
+  @override
+  String get videoEditorDoneLabel => '완료';
+
+  @override
+  String get videoEditorPlayPauseSemanticLabel => '동영상 재생 또는 일시 정지';
+
+  @override
+  String get videoEditorCropSemanticLabel => '자르기';
+
+  @override
+  String get videoEditorCannotSplitProcessing =>
+      '처리 중에는 클립을 분할할 수 없습니다. 잠시 기다려 주세요.';
+
+  @override
+  String videoEditorSplitPositionInvalid(int minDurationMs) {
+    return '분할 위치가 유효하지 않습니다. 각 클립은 최소 ${minDurationMs}ms 이상이어야 합니다.';
+  }
+
+  @override
+  String get videoEditorAddClipFromLibrary => '보관함에서 클립 추가';
+
+  @override
+  String get videoEditorSaveSelectedClip => '선택한 클립 저장';
+
+  @override
+  String get videoEditorSplitClip => '클립 분할';
+
+  @override
+  String get videoEditorSaveClip => '클립 저장';
+
+  @override
+  String get videoEditorDeleteClip => '클립 삭제';
+
+  @override
+  String get videoEditorClipSavedSuccess => '클립이 보관함에 저장되었습니다';
+
+  @override
+  String get videoEditorClipSaveFailed => '클립 저장 실패';
+
+  @override
+  String get videoEditorClipDeleted => '클립이 삭제되었습니다';
+
+  @override
+  String get videoEditorColorPickerSemanticLabel => '색상 선택기';
+
+  @override
+  String get videoEditorUndoSemanticLabel => '실행 취소';
+
+  @override
+  String get videoEditorRedoSemanticLabel => '다시 실행';
+
+  @override
+  String get videoEditorTextColorSemanticLabel => '텍스트 색상';
+
+  @override
+  String get videoEditorTextAlignmentSemanticLabel => '텍스트 정렬';
+
+  @override
+  String get videoEditorTextBackgroundSemanticLabel => '텍스트 배경';
+
+  @override
+  String get videoEditorFontSemanticLabel => '폰트';
+
+  @override
+  String get videoEditorNoStickersFound => '스티커를 찾을 수 없음';
+
+  @override
+  String get videoEditorNoStickersAvailable => '사용 가능한 스티커 없음';
+
+  @override
+  String get videoEditorFailedLoadStickers => '스티커 로드 실패';
+
+  @override
+  String get videoEditorAdjustVolumeTitle => '볼륨 조정';
+
+  @override
+  String get videoEditorRecordedAudioLabel => '녹음된 오디오';
+
+  @override
+  String get videoEditorCustomAudioLabel => '커스텀 오디오';
+
+  @override
+  String get videoEditorPlaySemanticLabel => '재생';
+
+  @override
+  String get videoEditorPauseSemanticLabel => '일시 정지';
+
+  @override
+  String get videoEditorMuteAudioSemanticLabel => '오디오 음소거';
+
+  @override
+  String get videoEditorUnmuteAudioSemanticLabel => '오디오 음소거 해제';
+
+  @override
+  String get videoEditorDeleteLabel => '삭제';
+
+  @override
+  String get videoEditorDeleteSelectedItemSemanticLabel => '선택한 항목 삭제';
+
+  @override
+  String get videoEditorEditLabel => '편집';
+
+  @override
+  String get videoEditorEditSelectedItemSemanticLabel => '선택한 항목 편집';
+
+  @override
+  String get videoEditorDuplicateLabel => '복제';
+
+  @override
+  String get videoEditorDuplicateSelectedItemSemanticLabel => '선택한 항목 복제';
+
+  @override
+  String get videoEditorSplitLabel => '분할';
+
+  @override
+  String get videoEditorSplitSelectedClipSemanticLabel => '선택한 클립 분할';
+
+  @override
+  String get videoEditorFinishTimelineEditingSemanticLabel => '타임라인 편집 완료';
+
+  @override
+  String get videoEditorSortNewest => '최신순';
+
+  @override
+  String get videoEditorSortLongest => '긴 순';
+
+  @override
+  String get videoEditorSortShortest => '짧은 순';
+
+  @override
+  String videoEditorSortBySemanticLabel(String option) {
+    return '$option 기준 정렬. 탭하여 정렬 순서 변경';
+  }
+
+  @override
+  String get videoEditorAudioPlayPreviewSemanticLabel => '미리보기 재생';
+
+  @override
+  String get videoEditorAudioPausePreviewSemanticLabel => '미리보기 일시 정지';
+
+  @override
+  String get videoEditorAudioUntitledSound => '제목 없는 사운드';
+
+  @override
+  String get videoEditorAudioSelectSoundSemanticLabel => '사운드 선택';
+
+  @override
+  String get videoEditorAudioUntitled => '제목 없음';
+
+  @override
+  String get videoEditorAudioAddAudio => '오디오 추가';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableTitle => '사용 가능한 사운드 없음';
+
+  @override
+  String get videoEditorAudioNoSoundsAvailableSubtitle =>
+      '크리에이터가 오디오를 공유하면 여기에 표시됩니다';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundTitle => '사운드를 찾을 수 없음';
+
+  @override
+  String get videoEditorAudioNoSoundsFoundSubtitle => '다른 검색어를 시도해 보세요';
+
+  @override
+  String get videoEditorAudioFailedToLoadTitle => '사운드 로드 실패';
+
+  @override
+  String get videoEditorDrawToolArrowSemanticLabel => '화살표 도구';
+
+  @override
+  String get videoEditorDrawToolEraserSemanticLabel => '지우개 도구';
+
+  @override
+  String get videoEditorDrawToolMarkerSemanticLabel => '마커 도구';
+
+  @override
+  String get videoEditorDrawToolPencilSemanticLabel => '연필 도구';
+
+  @override
+  String videoEditorLayerReorderLabel(int index) {
+    return '레이어 $index 순서 변경';
+  }
+
+  @override
+  String get videoEditorLayerReorderHint => '길게 눌러 순서 변경';
+
+  @override
+  String get videoEditorShowTimelineSemanticLabel => '타임라인 표시';
+
+  @override
+  String get videoEditorHideTimelineSemanticLabel => '타임라인 숨기기';
+
+  @override
+  String get videoEditorFeedPreviewContent => '이 영역 뒤에 콘텐츠를 배치하지 마세요.';
+
+  @override
+  String get videoEditorStickerSearchHint => '스티커 검색...';
+
+  @override
+  String get videoEditorSelectFontSemanticLabel => '폰트 선택';
+
+  @override
+  String get videoEditorFontUnknown => '알 수 없음';
+
+  @override
+  String get videoEditorSplitPlayheadOutsideClip =>
+      '분할하려면 재생 헤드가 선택한 클립 안에 있어야 합니다.';
+
+  @override
+  String get videoEditorTimelineTrimStartSemanticLabel => '시작 트림';
+
+  @override
+  String get videoEditorTimelineTrimEndSemanticLabel => '끝 트림';
+
+  @override
+  String get videoEditorTimelineTrimClipSemanticLabel => '클립 트림';
+
+  @override
+  String get videoEditorTimelineTrimClipHint => '핸들을 드래그하여 클립 길이 조정';
+
+  @override
+  String videoEditorTimelineDraggingClipSemanticLabel(int index) {
+    return '클립 $index 드래그 중';
+  }
+
+  @override
+  String videoEditorTimelineClipSemanticLabel(
+    int index,
+    int total,
+    String duration,
+  ) {
+    return '클립 $total개 중 $index번째, $duration초';
+  }
+
+  @override
+  String get videoEditorTimelineClipReorderHint => '길게 눌러 순서 변경';
+
+  @override
+  String get videoEditorTimelineClipMoveLeft => '왼쪽으로 이동';
+
+  @override
+  String get videoEditorTimelineClipMoveRight => '오른쪽으로 이동';
+
+  @override
+  String get videoEditorTimelineLongPressToDragHint => '길게 눌러 드래그';
+
+  @override
+  String get videoEditorVideoTimelineSemanticLabel => '동영상 타임라인';
+
+  @override
+  String videoEditorTimelinePositionFormat(int minutes, String seconds) {
+    return '$minutes분 $seconds초';
+  }
+
+  @override
+  String videoEditorColorSelectedSemanticLabel(String colorName) {
+    return '$colorName, 선택됨';
+  }
+
+  @override
+  String get videoEditorCloseColorPickerSemanticLabel => '색상 선택기 닫기';
+
+  @override
+  String get videoEditorPickColorTitle => '색상 선택';
+
+  @override
+  String get videoEditorConfirmColorSemanticLabel => '색상 확인';
+
+  @override
+  String get videoEditorSaturationBrightnessSemanticLabel => '채도 및 밝기';
+
+  @override
+  String videoEditorSaturationBrightnessValue(int saturation, int brightness) {
+    return '채도 $saturation%, 밝기 $brightness%';
+  }
+
+  @override
+  String get videoEditorHueSemanticLabel => '색조';
+
+  @override
+  String get videoEditorAddElementSemanticLabel => '요소 추가';
+
+  @override
+  String get videoEditorCloseSemanticLabel => '닫기';
+
+  @override
+  String get videoEditorDoneSemanticLabel => '완료';
+
+  @override
+  String get videoEditorLevelSemanticLabel => '레벨';
+
+  @override
+  String get videoMetadataBackSemanticLabel => '뒤로';
+
+  @override
+  String get videoMetadataDismissHelpDialogSemanticLabel => '도움말 대화상자 닫기';
+
+  @override
+  String get videoMetadataGotItButton => '알겠어요!';
+
+  @override
+  String get videoMetadataLimitReachedWarning =>
+      '64KB 제한에 도달했습니다. 계속하려면 일부 콘텐츠를 삭제하세요.';
+
+  @override
+  String get videoMetadataExpirationLabel => '만료';
+
+  @override
+  String get videoMetadataSelectExpirationSemanticLabel => '만료 시간 선택';
+
+  @override
+  String get videoMetadataTitleLabel => '제목';
+
+  @override
+  String get videoMetadataDescriptionLabel => '설명';
+
+  @override
+  String get videoMetadataTagsLabel => '태그';
+
+  @override
+  String get videoMetadataDeleteTagSemanticLabel => '삭제';
+
+  @override
+  String videoMetadataDeleteTagHint(String tag) {
+    return '태그 $tag 삭제';
+  }
+
+  @override
+  String get videoMetadataContentWarningLabel => '콘텐츠 경고';
+
+  @override
+  String get videoMetadataSelectContentWarningsSemanticLabel => '콘텐츠 경고 선택';
+
+  @override
+  String get videoMetadataContentWarningSelectAllThatApply =>
+      '콘텐츠에 해당하는 것을 모두 선택';
+
+  @override
+  String get videoMetadataContentWarningDoneButton => '완료';
+
+  @override
+  String get videoMetadataCollaboratorsLabel => '협업자';
+
+  @override
+  String get videoMetadataAddCollaboratorSemanticLabel => '협업자 추가';
+
+  @override
+  String get videoMetadataCollaboratorsHelpTooltip => '협업자 작동 방식';
+
+  @override
+  String videoMetadataCollaboratorsCount(int count, int max) {
+    return '$count/$max명의 협업자';
+  }
+
+  @override
+  String get videoMetadataRemoveCollaboratorSemanticLabel => '협업자 삭제';
+
+  @override
+  String get videoMetadataCollaboratorsHelpMessage =>
+      '협업자는 이 게시물의 공동 크리에이터로 태그됩니다. 서로 팔로우하는 사람만 추가할 수 있으며, 게시 시 게시물 메타데이터에 표시됩니다.';
+
+  @override
+  String get videoMetadataMutualFollowersSearchText => '맞팔 팔로워';
+
+  @override
+  String videoMetadataMustMutuallyFollowSnackbar(String name) {
+    return '$name을(를) 협업자로 추가하려면 서로 팔로우해야 합니다.';
+  }
+
+  @override
+  String get videoMetadataInspiredByLabel => '영감 출처';
+
+  @override
+  String get videoMetadataSetInspiredBySemanticLabel => '영감 출처 설정';
+
+  @override
+  String get videoMetadataInspiredByHelpTooltip => '영감 크레딧 작동 방식';
+
+  @override
+  String get videoMetadataInspiredByNone => '없음';
+
+  @override
+  String get videoMetadataInspiredByHelpMessage =>
+      '출처 표시를 위해 사용하세요. 영감 크레딧은 협업자와 다릅니다. 영향을 인정하지만 공동 크리에이터로 태그하지는 않습니다.';
+
+  @override
+  String get videoMetadataCreatorCannotBeReferencedSnackbar =>
+      '이 크리에이터는 참조할 수 없습니다.';
+
+  @override
+  String get videoMetadataRemoveInspiredBySemanticLabel => '영감 출처 삭제';
+
+  @override
+  String get videoMetadataPostDetailsTitle => '게시물 세부 정보';
+
+  @override
+  String get videoMetadataSavedToLibrarySnackbar => '보관함에 저장되었습니다';
+
+  @override
+  String get videoMetadataFailedToSaveSnackbar => '저장 실패';
+
+  @override
+  String get videoMetadataGoToLibraryButton => '보관함으로 이동';
+
+  @override
+  String get videoMetadataSaveForLaterSemanticLabel => '나중에 저장 버튼';
+
+  @override
+  String get videoMetadataRenderingVideoHint => '동영상 렌더링 중...';
+
+  @override
+  String get videoMetadataSavingVideoHint => '동영상 저장 중...';
+
+  @override
+  String videoMetadataSaveToDraftsHint(String destination) {
+    return '동영상을 임시저장 및 $destination에 저장';
+  }
+
+  @override
+  String get videoMetadataSaveForLaterButton => '나중에 저장';
+
+  @override
+  String get videoMetadataPostSemanticLabel => '게시 버튼';
+
+  @override
+  String get videoMetadataPublishVideoHint => '피드에 동영상 게시';
+
+  @override
+  String get videoMetadataFormNotReadyHint => '활성화하려면 양식을 작성하세요';
+
+  @override
+  String get videoMetadataPostButton => '게시';
+
+  @override
+  String get videoMetadataOpenPreviewSemanticLabel => '게시물 미리보기 화면 열기';
+
+  @override
+  String get videoMetadataShareTitle => '공유';
+
+  @override
+  String get videoMetadataVideoDetailsSubtitle => '동영상 세부 정보';
+
+  @override
+  String get videoMetadataClassicDoneButton => '완료';
+
+  @override
+  String get videoMetadataPlayPreviewSemanticLabel => '미리보기 재생';
+
+  @override
+  String get videoMetadataPausePreviewSemanticLabel => '미리보기 일시 정지';
+
+  @override
+  String get videoMetadataClosePreviewSemanticLabel => '동영상 미리보기 닫기';
+
+  @override
+  String get videoMetadataRemoveSemanticLabel => '삭제';
+
+  @override
+  String get metadataCaptionsLabel => '자막';
+
+  @override
+  String get metadataCaptionsEnabledSemantics => '모든 동영상에서 자막이 활성화되었습니다';
+
+  @override
+  String get metadataCaptionsDisabledSemantics => '모든 동영상에서 자막이 비활성화되었습니다';
 }

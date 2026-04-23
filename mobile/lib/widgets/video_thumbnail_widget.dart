@@ -6,9 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart'
     show HttpExceptionWithStatus;
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
-import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/services/thumbnail_api_service.dart'
-    show ThumbnailSize;
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -20,8 +17,6 @@ class VideoThumbnailWidget extends StatefulWidget {
     this.width,
     this.height,
     this.fit = BoxFit.cover,
-    this.timeSeconds = 2.5,
-    this.size = ThumbnailSize.medium,
     this.showPlayIcon = false,
     this.borderRadius,
   });
@@ -29,8 +24,6 @@ class VideoThumbnailWidget extends StatefulWidget {
   final double? width;
   final double? height;
   final BoxFit fit;
-  final double timeSeconds;
-  final ThumbnailSize size;
   final bool showPlayIcon;
   final BorderRadius? borderRadius;
 
@@ -40,7 +33,6 @@ class VideoThumbnailWidget extends StatefulWidget {
 
 class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   String? _thumbnailUrl;
-  bool _isLoading = false;
   double? _resolvedAspectRatio;
 
   @override
@@ -52,69 +44,21 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   @override
   void didUpdateWidget(VideoThumbnailWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reload if video ID changed
     if (oldWidget.video.id != widget.video.id) {
       _resolvedAspectRatio = null;
       _loadThumbnail();
     }
   }
 
-  Future<void> _loadThumbnail() async {
-    // Check if we have an existing thumbnail URL
-    if (widget.video.thumbnailUrl != null &&
-        widget.video.thumbnailUrl!.isNotEmpty) {
-      _thumbnailUrl = widget.video.thumbnailUrl;
-      _isLoading = false;
-      _resolveImageDimensions(_thumbnailUrl!);
-      if (mounted) setState(() {});
-      return;
+  void _loadThumbnail() {
+    final url = widget.video.thumbnailUrl;
+    if (url != null && url.isNotEmpty) {
+      _thumbnailUrl = url;
+      _resolveImageDimensions(url);
+    } else {
+      _thumbnailUrl = null;
     }
-
-    // Check if video is hosted on api.openvine.co - only try API thumbnails for those
-    final videoUrl = widget.video.videoUrl;
-    final shouldTryApiThumbnail =
-        videoUrl != null && videoUrl.contains('api.openvine.co');
-
-    if (!shouldTryApiThumbnail) {
-      // Video not hosted on api.openvine.co - don't try to generate thumbnail
-      // Just show blurhash or placeholder
-      if (mounted) {
-        setState(() {
-          _thumbnailUrl = null;
-          _isLoading = false;
-        });
-      }
-      return;
-    }
-
-    // Video is on api.openvine.co - try to get API thumbnail
-    // Keep in loading state - show blurhash or loading indicator while generating
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final generatedThumbnailUrl = await widget.video.getApiThumbnailUrl();
-      if (generatedThumbnailUrl != null && generatedThumbnailUrl.isNotEmpty) {
-        if (mounted) {
-          setState(() {
-            _thumbnailUrl = generatedThumbnailUrl;
-            _isLoading = false;
-          });
-        }
-        return;
-      }
-    } catch (e) {
-      // Silently fail - will use blurhash or placeholder
-    }
-
-    // No API thumbnail available - stop loading and show blurhash or placeholder
-    if (mounted) {
-      setState(() {
-        _thumbnailUrl = null;
-        _isLoading = false;
-      });
-    }
+    if (mounted) setState(() {});
   }
 
   /// Resolves image dimensions from the network image when video dimensions
@@ -144,35 +88,6 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   }
 
   Widget _buildContent(BoxFit fit) {
-    // While loading, show flat placeholder color
-    if (_isLoading) {
-      return Stack(
-        children: [
-          Container(
-            width: widget.width,
-            height: widget.height,
-            color: VineTheme.surfaceContainer,
-          ),
-          if (widget.showPlayIcon)
-            Center(
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: VineTheme.backgroundColor.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.play_arrow,
-                  color: VineTheme.whiteText,
-                  size: 32,
-                ),
-              ),
-            ),
-        ],
-      );
-    }
-
     if (_thumbnailUrl != null) {
       // Show the thumbnail with flat color as placeholder while loading
       return Stack(

@@ -83,14 +83,14 @@ class VideoEditorTextStyleBar extends StatelessWidget {
                   spacing: 8,
                   children: [
                     _ColorSwatchButton(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      semanticsLabel: 'Text color',
+                      semanticsLabel:
+                          context.l10n.videoEditorTextColorSemanticLabel,
                       color: state.color,
                       onTap: () => _toggleColorPicker(context, state),
                     ),
                     DivineIconButton(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      semanticLabel: 'Text alignment',
+                      semanticLabel:
+                          context.l10n.videoEditorTextAlignmentSemanticLabel,
                       semanticValue: state.alignment.localizedAccessibilityName(
                         context.l10n,
                       ),
@@ -100,8 +100,8 @@ class VideoEditorTextStyleBar extends StatelessWidget {
                       onPressed: textEditor.toggleTextAlign,
                     ),
                     DivineIconButton(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      semanticLabel: 'Text background',
+                      semanticLabel:
+                          context.l10n.videoEditorTextBackgroundSemanticLabel,
                       semanticValue: state.backgroundStyle
                           .localizedAccessibilityName(context.l10n),
                       size: .small,
@@ -190,12 +190,14 @@ class _FontSelectorButton extends StatelessWidget {
     final textScaler = MediaQuery.textScalerOf(context).clamp(
       maxScaleFactor: 1.2,
     );
+    final display = fontName == 'Unknown'
+        ? context.l10n.videoEditorFontUnknown
+        : fontName;
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: Semantics(
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        label: 'Select font',
-        value: fontName,
+        label: context.l10n.videoEditorSelectFontSemanticLabel,
+        value: display,
         button: true,
         child: GestureDetector(
           onTap: onTap,
@@ -212,7 +214,7 @@ class _FontSelectorButton extends StatelessWidget {
               children: [
                 Flexible(
                   child: Text(
-                    fontName,
+                    display,
                     overflow: .ellipsis,
                     style: VineTheme.titleMediumFont(color: VineTheme.primary),
                   ),

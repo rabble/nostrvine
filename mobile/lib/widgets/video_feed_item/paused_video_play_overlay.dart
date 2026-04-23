@@ -1,7 +1,11 @@
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
 
 /// Large centered play affordance shown when a pooled video is paused, plus a
@@ -10,6 +14,7 @@ import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
 class PausedVideoPlayOverlay extends StatefulWidget {
   const PausedVideoPlayOverlay({
     required this.player,
+    required this.onToggleMuteState,
     this.firstFrameFuture,
     this.isVisible = true,
     super.key,
@@ -18,6 +23,7 @@ class PausedVideoPlayOverlay extends StatefulWidget {
   final Player player;
   final Future<void>? firstFrameFuture;
   final bool isVisible;
+  final VoidCallback onToggleMuteState;
 
   @override
   State<PausedVideoPlayOverlay> createState() => _PausedVideoPlayOverlayState();
@@ -187,55 +193,102 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
           builder: (context, bufferingSnapshot) {
             final isBuffering = bufferingSnapshot.data ?? false;
 
-            return StreamBuilder<bool>(
-              stream: widget.player.stream.playing,
-              initialData: widget.player.state.playing,
-              builder: (context, playingSnapshot) {
-                final isPlaying = playingSnapshot.data ?? false;
-                final shouldShowPlay =
-                    _hasStartedPlayback && !isPlaying && !isBuffering;
-                final shouldShowUnpauseFeedback =
-                    _showUnpauseFeedback && isPlaying && !shouldShowPlay;
+            return StreamBuilder<double>(
+              stream: widget.player.stream.volume,
+              initialData: widget.player.state.volume,
+              builder: (context, volumeSnapshot) {
+                // Icon state is driven by the player's volume stream
+                // (not VideoVolumeCubit) deliberately: the player is the
+                // source of truth for what the user is hearing right now.
+                // Using context.select on the cubit would lag by a few
+                // frames while setVolume propagates to the player.
+                final isMuted = volumeSnapshot.data == 0;
 
-                final Widget child;
-                if (shouldShowPlay) {
-                  child = const CenterPlaybackControl(
-                    key: ValueKey('paused-play'),
-                    state: CenterPlaybackControlState.play,
-                    semanticsLabel: 'Play video',
-                  );
-                } else if (shouldShowUnpauseFeedback) {
-                  child = AnimatedOpacity(
-                    key: const ValueKey('unpause-feedback'),
-                    opacity: _unpauseFeedbackOpacity,
-                    duration: _unpauseFadeDuration,
-                    child: const CenterPlaybackControl(
-                      state: CenterPlaybackControlState.pause,
-                    ),
-                  );
-                } else {
-                  child = const SizedBox.shrink(key: ValueKey('paused-hidden'));
-                }
+                return StreamBuilder<bool>(
+                  stream: widget.player.stream.playing,
+                  initialData: widget.player.state.playing,
+                  builder: (context, playingSnapshot) {
+                    final isPlaying = playingSnapshot.data ?? false;
+                    final shouldShowPlay =
+                        _hasStartedPlayback && !isPlaying && !isBuffering;
+                    final shouldShowUnpauseFeedback =
+                        _showUnpauseFeedback && isPlaying && !shouldShowPlay;
 
-                return IgnorePointer(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: ScaleTransition(
-                          scale: Tween<double>(
-                            begin: 0.92,
-                            end: 1,
-                          ).animate(animation),
-                          child: child,
+                    final Widget child;
+                    if (shouldShowPlay) {
+                      child = Center(
+                        key: const ValueKey('paused-play'),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          spacing: 16,
+                          children: [
+                            if (!kIsWeb)
+                              DivineIconButton(
+                                icon: isMuted
+                                    ? DivineIconName.speakerSimpleX
+                                    : DivineIconName.speakerHigh,
+                                size: DivineIconButtonSize.small,
+                                type: DivineIconButtonType.ghost,
+                                semanticLabel: isMuted
+                                    ? context.l10n.videoPlayerUnmute
+                                    : context.l10n.videoPlayerMute,
+                                onPressed: () {
+                                  widget.onToggleMuteState();
+                                  SemanticsService.sendAnnouncement(
+                                    View.of(context),
+                                    isMuted
+                                        ? context.l10n.videoPlayerUnmute
+                                        : context.l10n.videoPlayerMute,
+                                    Directionality.of(context),
+                                  );
+                                },
+                              ),
+                            IgnorePointer(
+                              child: CenterPlaybackControl(
+                                state: CenterPlaybackControlState.play,
+                                semanticsLabel:
+                                    context.l10n.videoPlayerPlayVideo,
+                              ),
+                            ),
+                          ],
                         ),
                       );
-                    },
-                    child: child,
-                  ),
+                    } else if (shouldShowUnpauseFeedback) {
+                      child = IgnorePointer(
+                        key: const ValueKey('unpause-feedback'),
+                        child: AnimatedOpacity(
+                          opacity: _unpauseFeedbackOpacity,
+                          duration: _unpauseFadeDuration,
+                          child: const CenterPlaybackControl(
+                            state: CenterPlaybackControlState.pause,
+                          ),
+                        ),
+                      );
+                    } else {
+                      child = const SizedBox.shrink(
+                        key: ValueKey('paused-hidden'),
+                      );
+                    }
+
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(
+                              begin: 0.92,
+                              end: 1,
+                            ).animate(animation),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: child,
+                    );
+                  },
                 );
               },
             );

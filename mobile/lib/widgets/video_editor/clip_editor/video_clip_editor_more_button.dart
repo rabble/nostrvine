@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -58,14 +59,12 @@ class _VideoEditorMoreButtonState
       options: [
         VineBottomSheetActionData(
           iconPath: DivineIconName.folderOpen.assetPath,
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: 'Add clip from Library',
+          label: context.l10n.videoEditorAddClipFromLibrary,
           onTap: () => _pickFromLibrary(context),
         ),
         VineBottomSheetActionData(
           iconPath: DivineIconName.save.assetPath,
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: 'Save selected clip',
+          label: context.l10n.videoEditorSaveSelectedClip,
           onTap: _saveClipToLibrary,
         ),
       ],
@@ -82,22 +81,19 @@ class _VideoEditorMoreButtonState
       options: [
         VineBottomSheetActionData(
           iconPath: DivineIconName.scissors.assetPath,
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: 'Split clip',
+          label: context.l10n.videoEditorSplitClip,
           onTap: () => context.read<ClipEditorBloc>().add(
             const ClipEditorSplitRequested(),
           ),
         ),
         VineBottomSheetActionData(
           iconPath: DivineIconName.save.assetPath,
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: 'Save clip',
+          label: context.l10n.videoEditorSaveClip,
           onTap: _saveClipToLibrary,
         ),
         VineBottomSheetActionData(
           iconPath: DivineIconName.trash.assetPath,
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: 'Delete clip',
+          label: context.l10n.videoEditorDeleteClip,
           onTap: isLastClip ? null : _removeClip,
           isDestructive: true,
         ),
@@ -114,7 +110,9 @@ class _VideoEditorMoreButtonState
 
     // TODO(l10n): Replace with context.l10n when localization is added.
     _showSnackBar(
-      message: success ? 'Clip saved to library' : 'Failed to save clip',
+      message: success
+          ? context.l10n.videoEditorClipSavedSuccess
+          : context.l10n.videoEditorClipSaveFailed,
       isError: !success,
     );
   }
@@ -141,8 +139,7 @@ class _VideoEditorMoreButtonState
       bloc.add(ClipEditorClipSelected(clips.length - 2));
     }
     bloc.add(const ClipEditorEditingStopped());
-    // TODO(l10n): Replace with context.l10n when localization is added.
-    _showSnackBar(message: 'Clip deleted');
+    _showSnackBar(message: context.l10n.videoEditorClipDeleted);
   }
 
   /// Shows a styled snackbar with the given message.
@@ -244,8 +241,7 @@ class _VideoEditorMoreButtonState
       backgroundColor: VineTheme.transparent,
       icon: .moreHoriz,
       onTap: _showMoreOptions,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      semanticLabel: 'More options',
+      semanticLabel: context.l10n.videoActionMoreOptions,
     );
   }
 }

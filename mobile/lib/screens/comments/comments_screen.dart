@@ -110,8 +110,8 @@ abstract final class CommentsScreen {
     final commentsRepository = container.read(commentsRepositoryProvider);
     final authService = container.read(authServiceProvider);
     final likesRepository = container.read(likesRepositoryProvider);
-    final contentBlocklistService = container.read(
-      contentBlocklistServiceProvider,
+    final contentBlocklistRepository = container.read(
+      contentBlocklistRepositoryProvider,
     );
     // Async provider — pass as Future per the established pattern.
     final contentReportingServiceFuture = container.read(
@@ -125,7 +125,7 @@ abstract final class CommentsScreen {
       authService: authService,
       likesRepository: likesRepository,
       contentReportingServiceFuture: contentReportingServiceFuture,
-      contentBlocklistService: contentBlocklistService,
+      contentBlocklistRepository: contentBlocklistRepository,
       rootEventId: video.id,
       rootEventKind: NIP71VideoKinds.addressableShortVideo,
       rootAuthorPubkey: video.pubkey,

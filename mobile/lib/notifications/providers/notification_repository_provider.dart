@@ -39,13 +39,13 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
   final nip98AuthService = ref.watch(nip98AuthServiceProvider);
   final userPubkey = authService.currentPublicKeyHex ?? '';
 
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
   return NotificationRepository(
     funnelcakeApiClient: funnelcakeApiClient,
     profileRepository: profileRepository,
     notificationsDao: db.notificationsDao,
     userPubkey: userPubkey,
-    blockFilter: blocklistService.shouldFilterFromFeeds,
+    blockFilter: blocklistRepository.shouldFilterFromFeeds,
     authHeadersProvider: (url, method) async {
       final httpMethod = switch (method.toUpperCase()) {
         'POST' => HttpMethod.post,

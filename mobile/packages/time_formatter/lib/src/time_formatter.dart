@@ -1,6 +1,5 @@
-// ABOUTME: Utility for formatting timestamps into
-// ABOUTME: human-readable relative strings.
-// ABOUTME: Used by conversation list items and message bubbles.
+// ABOUTME: Utility for formatting timestamps into human-readable strings.
+// ABOUTME: Supports relative, verbose, date-label, and conversation formats.
 
 import 'package:intl/intl.dart';
 
@@ -57,7 +56,7 @@ abstract class TimeFormatter {
 
   /// Formats a Unix timestamp (seconds) for conversation list timestamps.
   ///
-  /// - Under 1 minute: "now"
+  /// - Under 1 minute: "1m" (floor — never "0m" or "now")
   /// - Under 1 hour: relative minutes — "1m", "5m", "59m"
   /// - Same calendar day: relative hours — "1h", "3h", "23h"
   /// - Yesterday: "Yesterday"
@@ -72,7 +71,7 @@ abstract class TimeFormatter {
     ).toLocal();
     final diff = now.difference(date);
 
-    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 1) return '1m';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
 
     final dayDiff = _calendarDayDiff(now, date);
@@ -113,5 +112,33 @@ abstract class TimeFormatter {
     if (dayDiff >= 2 && dayDiff <= 6) return DateFormat.EEEE().format(date);
     if (date.year == now.year) return DateFormat.MMMd().format(date);
     return DateFormat.yMMMd().format(date);
+  }
+
+  /// Formats a [Duration] as `m:ss.cc` (minutes, seconds, centiseconds).
+  ///
+  /// Examples: "0:04.60", "1:23.05", "0:00.00"
+  static String formatPreciseDuration(Duration d) {
+    final minutes = d.inMinutes;
+    final seconds = d.inSeconds % 60;
+    final centiseconds = (d.inMilliseconds % 1000) ~/ 10;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}.'
+        '${centiseconds.toString().padLeft(2, '0')}';
+  }
+
+  /// Formats a [Duration] as `ss:cs` (seconds, centiseconds).
+  ///
+  /// Minutes are prepended only when the duration is >= 1 minute.
+  ///
+  /// Examples: "05:73", "00:00", "1:05:73"
+  static String formatCompactDuration(Duration d) {
+    final cs = (d.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(
+      2,
+      '0',
+    );
+    final secs = (d.inSeconds % 60).toString().padLeft(2, '0');
+    if (d.inMinutes > 0) {
+      return '${d.inMinutes}:$secs:$cs';
+    }
+    return '$secs:$cs';
   }
 }

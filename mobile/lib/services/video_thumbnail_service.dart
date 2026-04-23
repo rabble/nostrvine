@@ -1,6 +1,8 @@
 // ABOUTME: Service for extracting thumbnails from video files
 // ABOUTME: Generates preview frames for video posts to include in NIP-71 events
 
+import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:ui';
 
@@ -16,7 +18,14 @@ class VideoThumbnailService {
   static const int _thumbnailQuality = 75;
   static const Size _thumbnailSize = Size.square(640);
 
-  static final ProVideoEditor _proVideoEditor = ProVideoEditor.instance;
+  static ProVideoEditor get _proVideoEditor => ProVideoEditor.instance;
+
+  /// Serial queue for strip thumbnail extraction batches.
+  ///
+  /// This keeps only one native decode call active at a time, but allows
+  /// multiple clip streams to interleave batch-by-batch for faster
+  /// perceived timeline fill across clips.
+  static Future<void> _stripBatchQueue = Future<void>.value();
 
   /// Extract a thumbnail from a video file at a specific timestamp
   ///
@@ -483,6 +492,198 @@ class VideoThumbnailService {
     return destPath;
   }
 
+  /// Generates thumbnails for a timeline strip, yielded in batches so the
+  /// UI can update progressively.
+  ///
+  /// [thumbsPerSecond] controls how many frames are extracted per second of
+  /// video. Pass `ceil(maxPixelsPerSecond / thumbnailWidth)` to ensure every
+  /// visual slot has a distinct frame at maximum zoom.
+  ///
+  /// Thumbnails are written to temporary cache files to avoid holding
+  /// large byte arrays in memory. The caller is responsible for deleting
+  /// the files when they are no longer needed (see [StripThumbnail.path]).
+  ///
+  /// Each yield contains the **accumulated** list so far, allowing the
+  /// caller to simply replace its current list on each event.
+  static Stream<List<StripThumbnail>> generateStripThumbnails({
+    required String videoPath,
+    required String clipId,
+    required Duration duration,
+    required Size outputSize,
+    int thumbsPerSecond = 1,
+    int quality = _thumbnailQuality,
+    int batchSize = 6,
+    List<Duration>? priorityTimestamps,
+  }) async* {
+    if (duration <= Duration.zero) return;
+
+    yield* _generateStripThumbnailsBatched(
+      videoPath: videoPath,
+      clipId: clipId,
+      duration: duration,
+      outputSize: outputSize,
+      thumbsPerSecond: thumbsPerSecond,
+      quality: quality,
+      batchSize: batchSize,
+      priorityTimestamps: priorityTimestamps,
+    );
+  }
+
+  static Future<T> _runStripBatchExclusive<T>(
+    Future<T> Function() action,
+  ) async {
+    final previous = _stripBatchQueue;
+    final release = Completer<void>();
+    _stripBatchQueue = release.future;
+
+    await previous;
+    try {
+      return await action();
+    } finally {
+      release.complete();
+    }
+  }
+
+  static Stream<List<StripThumbnail>> _generateStripThumbnailsBatched({
+    required String videoPath,
+    required String clipId,
+    required Duration duration,
+    required Size outputSize,
+    required int thumbsPerSecond,
+    required int quality,
+    required int batchSize,
+    List<Duration>? priorityTimestamps,
+  }) async* {
+    final durationMs = duration.inMilliseconds;
+    // Enough frames to cover every visual slot at the requested density.
+    final count = ((durationMs / 1000) * thumbsPerSecond).ceil().clamp(1, 500);
+
+    // Extract center-first so the strip gets useful visual coverage quickly.
+    final densityTimestamps = _buildProgressiveStripTimestamps(
+      durationMs: durationMs,
+      count: count,
+    );
+
+    // Priority timestamps go first (the exact frames the visible slots
+    // need at the current zoom), followed by the full-density set with
+    // duplicates removed.
+    final List<Duration> allTimestamps;
+    if (priorityTimestamps != null && priorityTimestamps.isNotEmpty) {
+      final seenMs = <int>{};
+      final merged = <Duration>[];
+      for (final ts in priorityTimestamps) {
+        if (seenMs.add(ts.inMilliseconds)) merged.add(ts);
+      }
+      for (final ts in densityTimestamps) {
+        if (seenMs.add(ts.inMilliseconds)) merged.add(ts);
+      }
+      allTimestamps = merged;
+    } else {
+      allTimestamps = densityTimestamps;
+    }
+
+    final cacheDir = await getTemporaryDirectory();
+    final batchId = '${clipId}_${DateTime.now().millisecondsSinceEpoch}';
+
+    final accumulated = <StripThumbnail>[];
+
+    for (
+      var batchStart = 0;
+      batchStart < allTimestamps.length;
+      batchStart += batchSize
+    ) {
+      final batchEnd = (batchStart + batchSize).clamp(0, allTimestamps.length);
+      final batchTimestamps = allTimestamps.sublist(batchStart, batchEnd);
+
+      List<Uint8List> bytes;
+      try {
+        bytes = await _runStripBatchExclusive(
+          () => _proVideoEditor.getThumbnails(
+            ThumbnailConfigs(
+              video: EditorVideo.file(videoPath),
+              outputSize: outputSize,
+              timestamps: batchTimestamps,
+              jpegQuality: quality,
+            ),
+            nativeLogLevel: .warning,
+          ),
+        );
+      } catch (error) {
+        Log.warning(
+          'Failed to generate strip thumbnails for clip $clipId: $error',
+          name: 'VideoThumbnailService',
+          category: LogCategory.video,
+        );
+        break;
+      }
+
+      for (var i = 0; i < bytes.length && i < batchTimestamps.length; i++) {
+        final file = File(
+          '${cacheDir.path}/strip_${batchId}_${batchStart + i}.jpg',
+        );
+        await file.writeAsBytes(bytes[i]);
+        accumulated.add(
+          StripThumbnail(
+            path: file.path,
+            timestamp: batchTimestamps[i],
+          ),
+        );
+      }
+
+      final sorted = [...accumulated]
+        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      yield List.unmodifiable(sorted);
+    }
+  }
+
+  /// Builds a center-first timestamp sequence (midpoint refinement).
+  ///
+  /// Example progression for ~10s: 5.0s, 2.5s, 7.5s, 1.25s, 3.75s...
+  /// This improves perceived loading because early batches cover the full
+  /// timeline instead of only the beginning.
+  static List<Duration> _buildProgressiveStripTimestamps({
+    required int durationMs,
+    required int count,
+  }) {
+    final timestamps = <Duration>[];
+    final seenMs = <int>{};
+    final segments = Queue<(double, double)>()..add((0, durationMs.toDouble()));
+
+    final minMs = durationMs > 1 ? 1 : 0;
+    final maxMs = durationMs > 1 ? durationMs - 1 : durationMs;
+
+    while (segments.isNotEmpty && timestamps.length < count) {
+      final (start, end) = segments.removeFirst();
+      final width = end - start;
+      if (width <= 0) {
+        continue;
+      }
+
+      final midMs = ((start + end) / 2).round().clamp(minMs, maxMs);
+
+      if (seenMs.add(midMs)) {
+        timestamps.add(Duration(milliseconds: midMs));
+      }
+
+      if (width > 1) {
+        final mid = midMs.toDouble();
+        segments
+          ..add((start, mid))
+          ..add((mid, end));
+      }
+    }
+
+    if (timestamps.length < count) {
+      for (var i = 0; i < count && timestamps.length < count; i++) {
+        final fraction = (i + 0.5) / count;
+        final ms = (durationMs * fraction).round().clamp(minMs, maxMs);
+        timestamps.add(Duration(milliseconds: ms));
+      }
+    }
+
+    return timestamps.take(count).toList(growable: false);
+  }
+
   /// Get optimal thumbnail timestamp based on video duration
   static Duration getOptimalTimestamp(Duration videoDuration) {
     // Extract thumbnail from 10% into the video
@@ -534,5 +735,16 @@ class ThumbnailFileResult {
 
   /// The actual video timestamp where the thumbnail was extracted from.
   /// May differ from the requested timestamp due to retry logic.
+  final Duration timestamp;
+}
+
+/// A single thumbnail extracted for a timeline strip, persisted to disk.
+class StripThumbnail {
+  const StripThumbnail({required this.path, required this.timestamp});
+
+  /// Path to the cached thumbnail file.
+  final String path;
+
+  /// The video position this thumbnail represents.
   final Duration timestamp;
 }

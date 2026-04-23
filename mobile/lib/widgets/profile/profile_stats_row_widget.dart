@@ -1,11 +1,14 @@
-// ABOUTME: Stats row widget for profile page showing loops and likes counts
+// ABOUTME: Stats column widget for profile page showing stat count + label
 // ABOUTME: Displays animated stat values with loading states
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/utils/string_utils.dart';
 
-/// Individual stat column widget for videos/followers/following counts
+/// Individual stat column widget for followers/following/likes/loops counts.
+///
+/// Numbers use [VineTheme.statNumberFont] (Bricolage Grotesque 800 20/28/0).
+/// Labels use bodySmall (Inter 12/16). Both are center-aligned.
 class ProfileStatColumn extends StatelessWidget {
   const ProfileStatColumn({
     required this.count,
@@ -22,35 +25,28 @@ class ProfileStatColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final clampedScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.3,
-    );
-
-    final column = MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: clampedScaler),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: isLoading
-                ? Text(
-                    '—',
-                    style: VineTheme.titleMediumFont(
-                      color: VineTheme.onSurfaceMuted,
-                    ),
-                  )
-                : Text(
-                    count != null
-                        ? StringUtils.formatCompactNumber(count!)
-                        : '—',
-                    style: VineTheme.titleMediumFont(),
-                  ),
+    final column = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Text(
+            isLoading || count == null
+                ? '—'
+                : StringUtils.formatCompactNumber(count!),
+            key: ValueKey(isLoading ? 'loading' : count),
+            style: VineTheme.statNumberFont(
+              color: isLoading || count == null
+                  ? VineTheme.onSurfaceMuted
+                  : VineTheme.whiteText,
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(label, style: VineTheme.bodyMediumFont()),
-        ],
-      ),
+        ),
+        Text(
+          label,
+          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+        ),
+      ],
     );
 
     if (onTap != null) {
@@ -58,7 +54,7 @@ class ProfileStatColumn extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: column,
         ),
       );

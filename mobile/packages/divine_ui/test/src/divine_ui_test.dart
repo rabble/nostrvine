@@ -137,6 +137,14 @@ void main() {
         expect(style.fontWeight, FontWeight.w800);
         expect(style.letterSpacing, 0.1);
       });
+
+      testWidgets('statNumberFont returns correct style', (tester) async {
+        final style = VineTheme.statNumberFont();
+        expect(style.fontSize, 20);
+        expect(style.fontWeight, FontWeight.w800);
+        expect(style.height, 28 / 20);
+        expect(style.letterSpacing, 0);
+      });
     });
 
     group('typography - body fonts', () {

@@ -1,9 +1,10 @@
 // ABOUTME: Bottom toolbar for the video editor with sub-editor buttons.
-// ABOUTME: Provides access to text, draw, stickers, effects, and music editors.
+// ABOUTME: Provides access to clips, text, draw, volume, and effects editors.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 /// Bottom action bar for the video editor.
@@ -39,39 +40,33 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     _ActionButton(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      label: 'Clips',
+                      label: context.l10n.videoEditorClipsLabel,
                       icon: .images,
                       onTap: scope.onOpenClipsEditor,
                     ),
                     _ActionButton(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      label: 'Text',
+                      label: context.l10n.videoEditorTextLabel,
                       icon: .textAa,
                       onTap: () => scope.editor?.openTextEditor(),
                     ),
                     _ActionButton(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      label: 'Draw',
+                      label: context.l10n.videoEditorDrawLabel,
                       icon: .scribble,
                       onTap: () => scope.editor?.openPaintEditor(),
                     ),
                     /* TODO(hm21): uncomment stickers once we have a license for them
                     _ActionButton(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
                       label: 'Stickers',
                       icon: .sticker,
                       onTap: scope.onAddStickers,
                     ),*/
                     _ActionButton(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      label: 'Volume',
+                      label: context.l10n.videoEditorVolumeLabel,
                       icon: .speakerHigh,
                       onTap: scope.onAdjustVolume,
                     ),
                     _ActionButton(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      label: 'Effects',
+                      label: context.l10n.videoEditorEffectsLabel,
                       icon: .fadersHorizontal,
                       onTap: () => scope.editor?.openFilterEditor(),
                     ),
@@ -125,10 +120,12 @@ class _ActionButton extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          label,
-          style: VineTheme.bodySmallFont(),
-          textAlign: .center,
+        ExcludeSemantics(
+          child: Text(
+            label,
+            style: VineTheme.bodySmallFont(),
+            textAlign: .center,
+          ),
         ),
       ],
     );

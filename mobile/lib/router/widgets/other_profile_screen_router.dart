@@ -46,8 +46,8 @@ class OtherProfileScreenRouter extends ConsumerWidget {
 
     // If this user has blocked us, show unavailable
     if (targetHex != null) {
-      final blocklistService = ref.watch(contentBlocklistServiceProvider);
-      if (blocklistService.hasBlockedUs(targetHex)) {
+      final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+      if (blocklistRepository.hasBlockedUs(targetHex)) {
         return UserNotAvailableScreen(onBack: context.pop);
       }
     }

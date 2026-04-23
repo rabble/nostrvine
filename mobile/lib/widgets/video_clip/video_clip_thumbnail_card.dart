@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 
@@ -13,14 +12,12 @@ import 'package:openvine/utils/video_editor_utils.dart';
 ///
 /// Displays a video clip thumbnail with duration badge and optional selection
 /// indicator.
-/// Uses [FutureBuilder] to asynchronously check thumbnail file existence for
-/// optimal performance.
 class VideoClipThumbnailCard extends StatefulWidget {
   const VideoClipThumbnailCard({
     required this.clip,
     required this.onTap,
     required this.onLongPress,
-    this.isSelected = false,
+    this.selectionIndex = -1,
     this.disabled = false,
     this.showDurationBadge = true,
     super.key,
@@ -30,15 +27,16 @@ class VideoClipThumbnailCard extends StatefulWidget {
   /// aspect ratio.
   final DivineVideoClip clip;
 
+  /// The 1-based position of this clip in the current selection order.
+  ///
+  /// Displayed inside the selection circle when the card is selected.
+  final int selectionIndex;
+
   /// Callback invoked when the card is tapped.
   final VoidCallback onTap;
 
   /// Callback invoked when the card is long-pressed.
   final VoidCallback onLongPress;
-
-  /// Whether this clip is currently selected, showing green border and
-  /// check icon.
-  final bool isSelected;
 
   /// Whether to show the duration badge at the bottom-left corner.
   final bool showDurationBadge;
@@ -57,6 +55,8 @@ class VideoClipThumbnailCard extends StatefulWidget {
 /// Manages thumbnail existence check as a cached [Future] to prevent
 /// redundant file system checks on rebuild.
 class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
+  bool get _isSelected => widget.selectionIndex > 0;
+
   @override
   Widget build(BuildContext context) {
     // Calculate aspect ratio for container
@@ -65,16 +65,16 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
     return Semantics(
       // TODO(l10n): Replace with context.l10n when localization is added.
       label: 'Video clip, ${widget.clip.duration.toFormattedSeconds()} seconds',
-      value: widget.isSelected ? 'Selected' : 'Not selected',
+      value: _isSelected ? 'Selected' : 'Not selected',
       button: true,
-      selected: widget.isSelected,
+      selected: _isSelected,
       enabled: !widget.disabled,
       onTap: widget.disabled ? null : widget.onTap,
       onLongPress: widget.disabled ? null : widget.onLongPress,
       // TODO(l10n): Replace with context.l10n when localization is added.
       hint: widget.disabled
           ? 'Disabled'
-          : 'Tap to ${widget.isSelected ? 'deselect' : 'select'}, '
+          : 'Tap to ${_isSelected ? 'deselect' : 'select'}, '
                 'long press to preview',
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 100),
@@ -99,11 +99,8 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                       _DurationBadge(clip: widget.clip),
 
                     /// Selection check circle - top right
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 120),
-                      child: widget.isSelected
-                          ? const _SelectionOverlay()
-                          : const SizedBox.shrink(),
+                    _SelectionOverlay(
+                      selectionIndex: widget.selectionIndex,
                     ),
                   ],
                 ),
@@ -118,9 +115,8 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
 
 /// Builds the thumbnail image or placeholder.
 ///
-/// Uses [FutureBuilder] to show a loading spinner while checking if the
-/// thumbnail exists, then displays either the thumbnail image or a
-/// placeholder icon.
+/// Checks thumbnail file existence synchronously on init and refreshes
+/// via [didUpdateWidget] when the clip's thumbnail path changes.
 class _Thumbnail extends StatefulWidget {
   const _Thumbnail({required this.clip});
 
@@ -139,7 +135,15 @@ class _ThumbnailState extends State<_Thumbnail> {
     _thumbnailExists = _checkThumbnailExists();
   }
 
-  /// Asynchronously checks if the thumbnail file exists
+  @override
+  void didUpdateWidget(_Thumbnail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.clip.thumbnailPath != widget.clip.thumbnailPath) {
+      _thumbnailExists = _checkThumbnailExists();
+    }
+  }
+
+  /// Checks if the thumbnail file exists on disk.
   bool _checkThumbnailExists() {
     if (widget.clip.thumbnailPath == null) {
       return false;
@@ -171,24 +175,18 @@ class _DurationBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PositionedDirectional(
-      start: 12,
-      bottom: 12,
+      start: 8,
+      bottom: 8,
       child: Container(
-        padding: const .symmetric(horizontal: 8, vertical: 4),
+        padding: const .symmetric(horizontal: 4),
         decoration: BoxDecoration(
           color: VineTheme.scrim65,
           borderRadius: .circular(4),
         ),
         child: Text(
           clip.durationInSeconds.toStringAsFixed(2),
-          style: const TextStyle(
-            color: VineTheme.whiteText,
-            fontSize: 14,
-            fontFamily: VineTheme.fontFamilyBricolage,
-            fontWeight: .w800,
-            height: 1.43,
-            letterSpacing: 0.10,
-            fontFeatures: [.tabularFigures()],
+          style: VineTheme.labelSmallFont().copyWith(
+            fontFeatures: [const .tabularFigures()],
           ),
         ),
       ),
@@ -196,42 +194,52 @@ class _DurationBadge extends StatelessWidget {
   }
 }
 
-/// Builds the selection overlay with green border and check icon.
+/// Builds the selection overlay with a numbered circle indicator.
 ///
-/// Returns a list containing:
-/// - A [DecoratedBox] for the 4px green border
-/// - A positioned check icon in a circular green background
+/// Shows a circular badge in the top-right corner. When selected, displays
+/// the selection index number; when unselected, shows an empty circle.
 class _SelectionOverlay extends StatelessWidget {
-  const _SelectionOverlay();
+  const _SelectionOverlay({required this.selectionIndex});
+
+  final int selectionIndex;
+
+  bool get _isSelected => selectionIndex > 0;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: .circular(4),
-              border: .all(color: VineTheme.tabIndicatorGreen, width: 4),
-            ),
-          ),
-        ),
         PositionedDirectional(
-          end: 14,
-          top: 14,
+          end: 8,
+          top: 6,
           child: Container(
-            width: 32,
-            height: 32,
+            constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
             padding: const .all(5),
-            decoration: const BoxDecoration(
-              shape: .circle,
-              color: VineTheme.tabIndicatorGreen,
+            decoration: BoxDecoration(
+              color: _isSelected
+                  ? VineTheme.surfaceBackground
+                  : VineTheme.onSurfaceDisabled,
+              border: Border.all(
+                color: _isSelected ? VineTheme.primary : VineTheme.onSurface,
+                width: 3,
+              ),
+              borderRadius: .circular(999),
             ),
-            child: SvgPicture.asset(
-              DivineIconName.check.assetPath,
-              colorFilter: const .mode(VineTheme.surfaceContainer, .srcIn),
-            ),
+            child: _isSelected
+                ? Center(
+                    child: MediaQuery.withNoTextScaling(
+                      child: Text(
+                        selectionIndex.toString(),
+                        maxLines: 1,
+                        style: VineTheme.labelLargeFont().copyWith(
+                          fontFeatures: [const .tabularFigures()],
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  )
+                : null,
           ),
         ),
       ],

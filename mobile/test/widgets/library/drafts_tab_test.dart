@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/divine_video_draft.dart';
@@ -47,7 +48,10 @@ void main() {
       mockBloc = _MockDraftsLibraryBloc();
     });
 
-    Widget buildWidget() {
+    Widget buildWidget({
+      bool isSelectionMode = true,
+      bool showAutosavedDraft = true,
+    }) {
       return ProviderScope(
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -56,7 +60,10 @@ void main() {
           home: Scaffold(
             body: BlocProvider<DraftsLibraryBloc>.value(
               value: mockBloc,
-              child: const DraftsTab(),
+              child: DraftsTab(
+                showRecordButton: isSelectionMode,
+                showAutosavedDraft: showAutosavedDraft,
+              ),
             ),
           ),
         ),
@@ -116,6 +123,76 @@ void main() {
         expect(find.byType(ListView), findsOneWidget);
         expect(find.byType(DraftListTile), findsNWidgets(2));
       });
+
+      testWidgets(
+        'hides autosaved draft when showAutosavedDraft is false',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            DraftsLibraryLoaded(
+              drafts: [
+                createDraft(
+                  id: VideoEditorConstants.autoSaveId,
+                  title: 'Autosaved',
+                ),
+                createDraft(id: 'real-draft', title: 'Real Draft'),
+              ],
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildWidget(showAutosavedDraft: false),
+          );
+
+          expect(find.byType(DraftListTile), findsOneWidget);
+          expect(find.text('Real Draft'), findsOneWidget);
+          expect(find.text('Autosaved'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows autosaved draft when showAutosavedDraft is true',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            DraftsLibraryLoaded(
+              drafts: [
+                createDraft(
+                  id: VideoEditorConstants.autoSaveId,
+                  title: 'Autosaved',
+                ),
+                createDraft(id: 'real-draft', title: 'Real Draft'),
+              ],
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+
+          expect(find.byType(DraftListTile), findsNWidgets(2));
+        },
+      );
+
+      testWidgets(
+        'shows $EmptyLibraryState when only autosaved draft '
+        'and showAutosavedDraft is false',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            DraftsLibraryLoaded(
+              drafts: [
+                createDraft(
+                  id: VideoEditorConstants.autoSaveId,
+                  title: 'Autosaved',
+                ),
+              ],
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildWidget(showAutosavedDraft: false),
+          );
+
+          expect(find.byType(EmptyLibraryState), findsOneWidget);
+          expect(find.text('No Drafts Yet'), findsOneWidget);
+        },
+      );
     });
   });
 

@@ -403,14 +403,22 @@
     "videoGridEditVideo": "Editează videoclipul",
     "videoGridEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
     "videoGridDeleteVideo": "Șterge videoclipul",
-    "videoGridDeleteVideoSubtitle": "Elimină acest videoclip din Divine. Alți clienți Nostr îl pot afișa în continuare.",
+    "videoGridDeleteVideoSubtitle": "Elimină definitiv acest conținut",
     "videoGridDeleteConfirmTitle": "Șterge videoclipul",
-    "videoGridDeleteConfirmMessage": "Acest videoclip va fi șters definitiv din Divine. Poate să apară în continuare în alți clienți Nostr care folosesc alte relay-uri.",
-    "videoGridDeleteConfirmNote": "Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.",
+    "videoGridDeleteConfirmMessage": "Sigur vrei să ștergi acest videoclip?",
+    "videoGridDeleteConfirmNote": "Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.",
     "videoGridDeleteCancel": "Anulează",
     "videoGridDeleteConfirm": "Șterge",
     "videoGridDeletingContent": "Se șterge conținutul...",
     "videoGridDeleteSuccess": "Cererea de ștergere a fost trimisă cu succes",
+    "videoGridDeleteFailure": "N-am putut șterge conținutul: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
     "exploreTabClassics": "Clasice",
     "exploreTabNew": "Noi",
     "exploreTabPopular": "Populare",
@@ -462,6 +470,8 @@
     },
     "videoPlayerLoadingVideo": "Se încarcă videoclipul...",
     "videoPlayerPlayVideo": "Redă videoclipul",
+    "videoPlayerMute": "Dezactivează sunetul videoclipului",
+    "videoPlayerUnmute": "Activează sunetul videoclipului",
     "videoPlayerEditVideo": "Editează videoclipul",
     "videoPlayerEditVideoTooltip": "Editează videoclipul",
     "contentWarningLabel": "Atenționare de conținut",
@@ -603,17 +613,6 @@
             }
         }
     },
-    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{buclă} other{bucle}}",
-    "@videoFeedLoopCountLine": {
-        "placeholders": {
-            "compactCount": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Nu e Divine",
     "metadataBadgeHumanMade": "Făcut de om",
     "metadataSoundsLabel": "Sunete",
@@ -625,14 +624,7 @@
     "metadataCollaboratorsLabel": "Colaboratori",
     "metadataInspiredByLabel": "Inspirat de",
     "metadataRepostedByLabel": "Redistribuit de",
-    "metadataLoopsLabel": "{count, plural, =1{Buclă} other{Bucle}}",
-    "@metadataLoopsLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
+    "metadataLoopsLabel": "Bucle",
     "metadataLikesLabel": "Aprecieri",
     "metadataCommentsLabel": "Comentarii",
     "metadataRepostsLabel": "Redistribuiri",
@@ -1502,7 +1494,7 @@
     "shareMenuEditVideo": "Editează videoclipul",
     "shareMenuEditVideoSubtitle": "Actualizează titlul, descrierea și hashtagurile",
     "shareMenuDeleteVideo": "Șterge videoclipul",
-    "shareMenuDeleteVideoSubtitle": "Elimină acest videoclip din Divine. Alți clienți Nostr îl pot afișa în continuare.",
+    "shareMenuDeleteVideoSubtitle": "Elimină definitiv acest conținut",
     "shareMenuVideoInTheseLists": "Videoclipul e în aceste liste:",
     "shareMenuVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
     "@shareMenuVideoCount": {
@@ -1513,17 +1505,20 @@
         }
     },
     "shareMenuClose": "Închide",
-    "shareMenuDeleteConfirmation": "Acest videoclip va fi șters definitiv din Divine. Poate să apară în continuare în alți clienți Nostr care folosesc alte relay-uri.",
+    "shareMenuDeleteConfirmation": "Sigur vrei să ștergi acest videoclip?",
+    "shareMenuDeleteWarning": "Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.",
     "shareMenuCancel": "Anulează",
     "shareMenuDelete": "Șterge",
     "shareMenuDeletingContent": "Se șterge conținutul...",
-    "shareMenuDeleteRequestSent": "Videoclip șters",
-    "shareMenuDeleteFailedNotInitialized": "Ștergerea nu e încă gata. Încearcă din nou peste un moment.",
-    "shareMenuDeleteFailedNotOwner": "Poți șterge doar propriile videoclipuri.",
-    "shareMenuDeleteFailedNotAuthenticated": "Autentifică-te din nou, apoi încearcă să ștergi.",
-    "shareMenuDeleteFailedCouldNotSign": "Nu am putut semna cererea de ștergere. Încearcă din nou.",
-  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedGeneric": "Nu am putut șterge acest videoclip. Încearcă din nou.",
+    "shareMenuDeleteRequestSent": "Cererea de ștergere a fost trimisă cu succes",
+    "shareMenuFailedToDeleteContent": "N-am putut șterge conținutul: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuFollowSetName": "Numele setului de urmărire",
     "shareMenuFollowSetNameHint": "ex. Creatori de conținut, Muzicieni etc.",
     "shareMenuDescriptionOptional": "Descriere (opțional)",
@@ -1557,7 +1552,15 @@
     },
     "shareMenuDeleteVideoQuestion": "Ștergi videoclipul?",
     "shareMenuDeleteRelayWarning": "Asta va trimite o cerere de ștergere către relay-uri. Notă: Unele relay-uri pot avea încă copii în cache.",
-    "shareMenuVideoDeletionRequested": "Videoclip șters",
+    "shareMenuVideoDeletionRequested": "Cerere de ștergere a videoclipului trimisă",
+    "shareMenuFailedToDeleteVideo": "N-am putut șterge videoclipul: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuContentLabels": "Etichete de conținut",
     "shareMenuAddContentLabels": "Adaugă etichete de conținut",
     "shareMenuClearAll": "Șterge tot",
@@ -1769,6 +1772,31 @@
     "userSearchPrompt": "Caută utilizatori",
     "userSearchNoResults": "Niciun utilizator găsit",
     "userSearchFailed": "Căutarea a eșuat",
+    "userPickerSearchByName": "Caută după nume",
+    "userPickerFilterByNameHint": "Filtrează după nume...",
+    "userPickerSearchByNameHint": "Caută după nume...",
+    "userPickerAlreadyAddedSemantics": "{name} este deja adăugat",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerSelectSemantics": "Selectează {name}",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "Gașca ta e acolo",
+    "userPickerEmptyFollowListBody": "Urmărește oameni cu care rezonezi. Când vă urmăriți reciproc, puteți colabora.",
+    "userPickerGoBack": "Înapoi",
+    "userPickerTypeNameToSearch": "Scrie un nume pentru a căuta",
+    "userPickerUnavailable": "Căutarea utilizatorilor nu este disponibilă. Te rugăm să încerci din nou mai târziu.",
+    "userPickerSearchFailedTryAgain": "Căutarea a eșuat. Încearcă din nou.",
     "forgotPasswordTitle": "Resetează parola",
     "forgotPasswordDescription": "Introdu adresa ta de email și âți trimitem un link de resetare a parolei.",
     "forgotPasswordEmailLabel": "Adresă de email",
@@ -2153,6 +2181,7 @@
     "commonCancel": "Anulează",
     "commonDelete": "Șterge",
     "commonRetry": "Reîncearcă",
+    "commonNext": "Următorul",
     "discoverListsFailedToUpdateSubscription": "Nu s-a putut actualiza abonamentul: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2191,6 +2220,32 @@
     "featureRequestCancel": "Anulează",
     "followersFailedToLoadList": "Nu s-a putut încărca lista de urmăritori",
     "followingFailedToLoadList": "Nu s-a putut încărca lista de urmăriți",
+    "inboxActionBlock": "Blochează {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Dezactivează sunetul conversației",
+    "inboxActionRemove": "Elimină conversația",
+    "inboxActionReport": "Raportează {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Deblochează {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} a fost blocat(ă)",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2199,6 +2254,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Conversație dezactivată",
+    "inboxConversationUnmuted": "Conversație reactivată",
+    "inboxEmptySubtitle": "Butonul + nu mușcă.",
+    "inboxEmptyTitle": "Încă niciun mesaj",
+    "inboxRemoveConfirmBody": "Astfel, conversația ta cu {displayName} va fi ștearsă. Această acțiune nu poate fi anulată.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Elimină",
+    "inboxRemoveConfirmTitle": "Elimini conversația?",
     "inboxRemovedConversation": "Conversație eliminată",
     "inboxReportedUser": "{displayName} a fost raportat(ă)",
     "@inboxReportedUser": {
@@ -2323,15 +2392,24 @@
     "reportDialogReport": "Raportează",
     "routerInvalidCreator": "Creator invalid",
     "routerInvalidHashtagRoute": "Rută hashtag invalidă",
+    "searchDiscoverSomethingInteresting": "Descoperă ceva interesant",
+    "searchEnterQuery": "Introdu un termen de căutare",
     "searchFindCuratedVideoLists": "Găsește liste de videoclipuri selectate",
+  "searchListsSectionHeader": "Liste",
+  "searchListsLoadingLabel": "Se încarcă rezultatele listelor",
     "searchForLists": "Caută liste",
     "searchSomethingWentWrong": "Ceva nu a mers bine",
     "searchTryAgain": "Încearcă din nou",
     "trendingTitle": "În tendințe",
-    "videoEditorLayers": "Straturi",
     "videoEditorStickers": "Stickere",
     "videoMetadataContentWarnings": "Avertismente de conținut",
     "videoMetadataExpiration": "Expirare",
+    "videoMetadataExpirationNotExpire": "Nu expiră",
+    "videoMetadataExpirationOneDay": "1 zi",
+    "videoMetadataExpirationOneWeek": "1 săptămână",
+    "videoMetadataExpirationOneMonth": "1 lună",
+    "videoMetadataExpirationOneYear": "1 an",
+    "videoMetadataExpirationOneDecade": "1 deceniu",
     "videoMetadataTags": "Etichete",
     "contentLabelAiGenerated": "Generat de AI",
     "contentLabelAlcohol": "Alcool",
@@ -2526,5 +2604,327 @@
     "cameraPermissionAllowAccessTitle": "Permite accesul la cameră și microfon",
     "cameraPermissionAllowAccessDescription": "Aceasta îți permite să capturezi și să editezi videoclipuri direct în aplicație, nimic mai mult.",
     "cameraPermissionContinue": "Continuă",
-    "cameraPermissionGoToSettings": "Mergi la setări"
+    "cameraPermissionGoToSettings": "Mergi la setări",
+    "videoRecorderWhySixSecondsTitle": "De ce șase secunde?",
+    "videoRecorderWhySixSecondsSubtitle": "Clipurile scurte lasă loc pentru spontaneitate. Formatul de 6 secunde te ajută să surprinzi momente autentice exact când se întâmplă.",
+    "videoRecorderWhySixSecondsButton": "Am înțeles!",
+    "videoRecorderAutosaveFoundTitle": "Am găsit lucru în desfășurare",
+    "videoRecorderAutosaveFoundSubtitle": "Vrei să continui de unde ai rămas?",
+    "videoRecorderAutosaveContinueButton": "Da, continuă",
+    "videoRecorderAutosaveDiscardButton": "Nu, începe un videoclip nou",
+    "videoRecorderAutosaveRestoreFailure": "Nu am putut restaura schița ta",
+    "videoRecorderStopRecordingTooltip": "Oprește înregistrarea",
+    "videoRecorderStartRecordingTooltip": "Începe înregistrarea",
+    "videoRecorderRecordingTapToStopLabel": "Înregistrare în curs. Atinge oriunde pentru a opri",
+    "videoRecorderTapToStartLabel": "Atinge oriunde pentru a începe înregistrarea",
+    "videoRecorderDeleteLastClipLabel": "Șterge ultimul clip",
+    "videoRecorderSwitchCameraLabel": "Schimbă camera",
+    "videoRecorderToggleGridLabel": "Activează/dezactivează grila",
+    "videoRecorderToggleGhostFrameLabel": "Activează/dezactivează cadrul fantomă",
+    "videoRecorderGhostFrameEnabled": "Cadru fantomă activat",
+    "videoRecorderGhostFrameDisabled": "Cadru fantomă dezactivat",
+    "videoRecorderClipDeletedMessage": "Clip șters",
+    "videoRecorderCloseLabel": "Închide înregistratorul video",
+    "videoRecorderContinueToEditorLabel": "Continuă către editorul video",
+    "videoRecorderCaptureCloseLabel": "Închide",
+    "videoRecorderCaptureNextLabel": "Următorul",
+    "videoRecorderToggleFlashLabel": "Activează/dezactivează blițul",
+    "videoRecorderCycleTimerLabel": "Schimbă temporizatorul",
+    "videoRecorderToggleAspectRatioLabel": "Schimbă raportul de aspect",
+    "videoRecorderLibraryEmptyLabel": "Bibliotecă de clipuri, fără clipuri",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Deschide biblioteca de clipuri, 1 clip} other{Deschide biblioteca de clipuri, {clipCount} clipuri}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorClipsLabel": "Clipuri",
+    "videoEditorTextLabel": "Text",
+    "videoEditorDrawLabel": "Desen",
+    "videoEditorEffectsLabel": "Efecte",
+    "videoEditorAudioLabel": "Audio",
+    "videoEditorVolumeLabel": "Volum",
+    "videoEditorAddTitle": "Adaugă",
+    "videoEditorOpenClipsSemanticLabel": "Deschide editorul de clipuri",
+    "videoEditorOpenAudioSemanticLabel": "Deschide editorul audio",
+    "videoEditorOpenTextSemanticLabel": "Deschide editorul de text",
+    "videoEditorOpenDrawSemanticLabel": "Deschide editorul de desen",
+    "videoEditorOpenEffectsSemanticLabel": "Deschide editorul de efecte",
+    "videoEditorSaveDraftTitle": "Salvezi schița?",
+    "videoEditorSaveDraftSubtitle": "Păstrează editările pentru mai târziu sau renunță la ele și părăsește editorul.",
+    "videoEditorSaveDraftButton": "Salvează schița",
+    "videoEditorDiscardChangesButton": "Renunță la modificări",
+    "videoEditorKeepEditingButton": "Continuă editarea",
+    "videoEditorDeleteLayerDropZone": "Zonă de plasare pentru ștergerea stratului",
+    "videoEditorReleaseToDeleteLayer": "Eliberează pentru a șterge stratul",
+    "videoEditorDoneLabel": "Gata",
+    "videoEditorPlayPauseSemanticLabel": "Redă sau pune pe pauză videoclipul",
+    "videoEditorCropSemanticLabel": "Decupează",
+    "videoEditorCannotSplitProcessing": "Clipul nu poate fi împărțit în timp ce este procesat. Te rugăm să aștepți.",
+    "videoEditorSplitPositionInvalid": "Poziție de împărțire invalidă. Ambele clipuri trebuie să aibă cel puțin {minDurationMs} ms.",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorAddClipFromLibrary": "Adaugă clip din bibliotecă",
+    "videoEditorSaveSelectedClip": "Salvează clipul selectat",
+    "videoEditorSplitClip": "Împarte clipul",
+    "videoEditorSaveClip": "Salvează clipul",
+    "videoEditorDeleteClip": "Șterge clipul",
+    "videoEditorClipSavedSuccess": "Clip salvat în bibliotecă",
+    "videoEditorClipSaveFailed": "Nu s-a putut salva clipul",
+    "videoEditorClipDeleted": "Clip șters",
+    "videoEditorColorPickerSemanticLabel": "Selector de culoare",
+    "videoEditorUndoSemanticLabel": "Anulează",
+    "videoEditorRedoSemanticLabel": "Refă",
+    "videoEditorTextColorSemanticLabel": "Culoare text",
+    "videoEditorTextAlignmentSemanticLabel": "Aliniere text",
+    "videoEditorTextBackgroundSemanticLabel": "Fundal text",
+    "videoEditorFontSemanticLabel": "Font",
+    "videoEditorNoStickersFound": "Nu au fost găsite stickere",
+    "videoEditorNoStickersAvailable": "Nu sunt disponibile stickere",
+    "videoEditorFailedLoadStickers": "Nu s-au putut încărca stickerele",
+    "videoEditorAdjustVolumeTitle": "Ajustează volumul",
+    "videoEditorRecordedAudioLabel": "Audio înregistrat",
+    "videoEditorCustomAudioLabel": "Audio personalizat",
+    "videoEditorPlaySemanticLabel": "Redă",
+    "videoEditorPauseSemanticLabel": "Pauză",
+    "videoEditorMuteAudioSemanticLabel": "Dezactivează sunetul",
+    "videoEditorUnmuteAudioSemanticLabel": "Activează sunetul",
+    "videoEditorDeleteLabel": "Șterge",
+    "videoEditorDeleteSelectedItemSemanticLabel": "Șterge elementul selectat",
+    "videoEditorEditLabel": "Editează",
+    "videoEditorEditSelectedItemSemanticLabel": "Editează elementul selectat",
+    "videoEditorDuplicateLabel": "Duplichează",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "Duplichează elementul selectat",
+    "videoEditorSplitLabel": "Împarte",
+    "videoEditorSplitSelectedClipSemanticLabel": "Împarte clipul selectat",
+    "videoEditorFinishTimelineEditingSemanticLabel": "Finalizează editarea cronologiei",
+    "videoEditorSortNewest": "Cele mai noi",
+    "videoEditorSortLongest": "Cele mai lungi",
+    "videoEditorSortShortest": "Cele mai scurte",
+    "videoEditorSortBySemanticLabel": "Sortează după {option}. Atinge pentru a schimba ordinea de sortare",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorAudioPlayPreviewSemanticLabel": "Redă previzualizarea",
+    "videoEditorAudioPausePreviewSemanticLabel": "Pune previzualizarea pe pauză",
+    "videoEditorAudioUntitledSound": "Sunet fără titlu",
+    "videoEditorAudioSelectSoundSemanticLabel": "Selectează sunetul",
+    "videoEditorAudioUntitled": "Fără titlu",
+    "videoEditorAudioAddAudio": "Adaugă audio",
+    "videoEditorAudioNoSoundsAvailableTitle": "Nu sunt sunete disponibile",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "Sunetele vor apărea aici când creatorii vor partaja audio",
+    "videoEditorAudioNoSoundsFoundTitle": "Nu au fost găsite sunete",
+    "videoEditorAudioNoSoundsFoundSubtitle": "Încearcă un alt termen de căutare",
+    "videoEditorAudioFailedToLoadTitle": "Nu s-au putut încărca sunetele",
+    "videoEditorDrawToolArrowSemanticLabel": "Instrument săgeată",
+    "videoEditorDrawToolEraserSemanticLabel": "Instrument radieră",
+    "videoEditorDrawToolMarkerSemanticLabel": "Instrument marker",
+    "videoEditorDrawToolPencilSemanticLabel": "Instrument creion",
+    "videoEditorLayerReorderLabel": "Reordonează stratul {index}",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLayerReorderHint": "Ține apăsat pentru a reordona",
+    "videoEditorShowTimelineSemanticLabel": "Afișează cronologia",
+    "videoEditorHideTimelineSemanticLabel": "Ascunde cronologia",
+    "videoEditorFeedPreviewContent": "Evită să plasezi conținut în spatele acestor zone.",
+    "videoEditorStickerSearchHint": "Caută stickere...",
+    "videoEditorSelectFontSemanticLabel": "Selectează fontul",
+    "videoEditorFontUnknown": "Necunoscut",
+    "videoEditorSplitPlayheadOutsideClip": "Capul de redare trebuie să fie în clipul selectat pentru a împărți.",
+    "videoEditorTimelineTrimStartSemanticLabel": "Taie începutul",
+    "videoEditorTimelineTrimEndSemanticLabel": "Taie finalul",
+    "videoEditorTimelineTrimClipSemanticLabel": "Taie clipul",
+    "videoEditorTimelineTrimClipHint": "Trage mânerele pentru a ajusta durata clipului",
+    "videoEditorTimelineDraggingClipSemanticLabel": "Se trage clipul {index}",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineClipSemanticLabel": "Clipul {index} din {total}, {duration} secunde",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineClipReorderHint": "Apăsare lungă pentru reordonare",
+    "videoEditorTimelineClipMoveLeft": "Mută la stânga",
+    "videoEditorTimelineClipMoveRight": "Mută la dreapta",
+    "videoEditorTimelineLongPressToDragHint": "Apasă lung pentru a trage",
+    "videoEditorVideoTimelineSemanticLabel": "Cronologie video",
+    "videoEditorTimelinePositionFormat": "{minutes}m {seconds}s",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorColorSelectedSemanticLabel": "{colorName}, selectat",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorCloseColorPickerSemanticLabel": "Închide selectorul de culoare",
+    "videoEditorPickColorTitle": "Alege culoarea",
+    "videoEditorConfirmColorSemanticLabel": "Confirmă culoarea",
+    "videoEditorSaturationBrightnessSemanticLabel": "Saturație și luminozitate",
+    "videoEditorSaturationBrightnessValue": "Saturație {saturation}%, Luminozitate {brightness}%",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorHueSemanticLabel": "Nuanță",
+    "videoEditorAddElementSemanticLabel": "Adaugă element",
+    "videoEditorCloseSemanticLabel": "Închide",
+    "videoEditorDoneSemanticLabel": "Gata",
+    "videoEditorLevelSemanticLabel": "Nivel",
+    "videoMetadataBackSemanticLabel": "Înapoi",
+    "videoMetadataDismissHelpDialogSemanticLabel": "Închide dialogul de ajutor",
+    "videoMetadataGotItButton": "Am înțeles!",
+    "videoMetadataLimitReachedWarning": "Limita de 64KB a fost atinsă. Elimină conținut pentru a continua.",
+    "videoMetadataExpirationLabel": "Expirare",
+    "videoMetadataSelectExpirationSemanticLabel": "Selectează timpul de expirare",
+    "videoMetadataTitleLabel": "Titlu",
+    "videoMetadataDescriptionLabel": "Descriere",
+    "videoMetadataTagsLabel": "Etichete",
+    "videoMetadataDeleteTagSemanticLabel": "Șterge",
+    "videoMetadataDeleteTagHint": "Șterge eticheta {tag}",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataContentWarningLabel": "Avertisment de conținut",
+    "videoMetadataSelectContentWarningsSemanticLabel": "Selectează avertismente de conținut",
+    "videoMetadataContentWarningSelectAllThatApply": "Selectează tot ce se aplică conținutului tău",
+    "videoMetadataContentWarningDoneButton": "Gata",
+    "videoMetadataCollaboratorsLabel": "Colaboratori",
+    "videoMetadataAddCollaboratorSemanticLabel": "Adaugă colaborator",
+    "videoMetadataCollaboratorsHelpTooltip": "Cum funcționează colaboratorii",
+    "videoMetadataCollaboratorsCount": "{count}/{max} colaboratori",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataRemoveCollaboratorSemanticLabel": "Elimină colaborator",
+    "videoMetadataCollaboratorsHelpMessage": "Colaboratorii sunt etichetați ca și co-creatori ai acestei postări. Poți adăuga doar persoane pe care le urmăriți reciproc, iar ele apar în metadatele postării când este publicată.",
+    "videoMetadataMutualFollowersSearchText": "Urmăritori reciproci",
+    "videoMetadataMustMutuallyFollowSnackbar": "Trebuie să vă urmăriți reciproc cu {name} pentru a-l adăuga ca și colaborator.",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataInspiredByLabel": "Inspirat de",
+    "videoMetadataSetInspiredBySemanticLabel": "Setează inspirat de",
+    "videoMetadataInspiredByHelpTooltip": "Cum funcționează creditele de inspirație",
+    "videoMetadataInspiredByNone": "Niciunul",
+    "videoMetadataInspiredByHelpMessage": "Folosește asta pentru a oferi atribuire. Creditul inspirat de este diferit de colaboratori: recunoaște influența, dar nu etichetează pe cineva ca și co-creator.",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "Nu se poate face referire la acest creator.",
+    "videoMetadataRemoveInspiredBySemanticLabel": "Elimină inspirat de",
+    "videoMetadataPostDetailsTitle": "Detalii postare",
+    "videoMetadataSavedToLibrarySnackbar": "Salvat în bibliotecă",
+    "videoMetadataFailedToSaveSnackbar": "Salvare eșuată",
+    "videoMetadataGoToLibraryButton": "Mergi la bibliotecă",
+    "videoMetadataSaveForLaterSemanticLabel": "Buton salvează pentru mai târziu",
+    "videoMetadataRenderingVideoHint": "Se redă videoclipul...",
+    "videoMetadataSavingVideoHint": "Se salvează videoclipul...",
+    "videoMetadataSaveToDraftsHint": "Salvează videoclipul în schițe și {destination}",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveForLaterButton": "Salvează pentru mai târziu",
+    "videoMetadataPostSemanticLabel": "Buton publică",
+    "videoMetadataPublishVideoHint": "Publică videoclipul în feed",
+    "videoMetadataFormNotReadyHint": "Completează formularul pentru a activa",
+    "videoMetadataPostButton": "Publică",
+    "videoMetadataOpenPreviewSemanticLabel": "Deschide ecranul de previzualizare a postării",
+    "videoMetadataShareTitle": "Distribuie",
+    "videoMetadataVideoDetailsSubtitle": "Detalii videoclip",
+    "videoMetadataClassicDoneButton": "Gata",
+    "videoMetadataPlayPreviewSemanticLabel": "Redă previzualizarea",
+    "videoMetadataPausePreviewSemanticLabel": "Pune previzualizarea pe pauză",
+    "videoMetadataClosePreviewSemanticLabel": "Închide previzualizarea videoclipului",
+    "videoMetadataRemoveSemanticLabel": "Elimină",
+    "metadataCaptionsLabel": "Subtitrări",
+    "metadataCaptionsEnabledSemantics": "Subtitrări activate pentru toate videoclipurile",
+    "metadataCaptionsDisabledSemantics": "Subtitrări dezactivate pentru toate videoclipurile",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuDeleteFailedCouldNotSign": "Nu am putut semna cererea de ștergere. Încearcă din nou.",
+    "shareMenuDeleteFailedGeneric": "Nu am putut șterge acest videoclip. Încearcă din nou.",
+    "shareMenuDeleteFailedNotAuthenticated": "Autentifică-te din nou, apoi încearcă să ștergi.",
+    "shareMenuDeleteFailedNotInitialized": "Ștergerea nu e încă gata. Încearcă din nou peste un moment.",
+    "shareMenuDeleteFailedNotOwner": "Poți șterge doar propriile videoclipuri.",
+    "videoEditorLayers": "Straturi",
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{buclă} other{bucle}}",
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
 }

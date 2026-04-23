@@ -380,6 +380,97 @@ SingleChildScrollView(
 
 ---
 
+## NestedScrollView edge-to-edge and pinned headers
+
+When building a screen with an edge-to-edge layout (banner extends
+behind the status bar, no outer `SafeArea`) plus a
+`NestedScrollView` with a pinned `SliverPersistentHeader`, the pinned
+header will sit **under the status bar** by default — icons/labels get
+clipped by the notch / Dynamic Island.
+
+**Fix:** the delegate must take a `topInset` that contributes to both
+`minExtent` and `maxExtent`, and render a matching `Padding(top:
+topInset)` above its content:
+
+```dart
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar, {required this.topInset});
+
+  final TabBar _tabBar;
+  final double topInset;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height + topInset;
+
+  @override
+  double get maxExtent => _tabBar.preferredSize.height + topInset;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool _) =>
+      DecoratedBox(
+        decoration: const BoxDecoration(color: VineTheme.surfaceBackground),
+        child: Padding(
+          padding: EdgeInsets.only(top: topInset),
+          child: _tabBar,
+        ),
+      );
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) =>
+      topInset != oldDelegate.topInset || _tabBar != oldDelegate._tabBar;
+}
+```
+
+### Prefer a dynamic topInset over a static one
+
+Setting `topInset = safeAreaTop` unconditionally leaves a permanent
+safe-area-sized gap above the pinned header when the user is at scroll
+offset 0 — visually loose. Drive the inset from scroll position so it
+only grows when the header is actually about to pin under the status
+bar:
+
+```dart
+// In the enclosing State (scroll listener):
+void _onScroll() {
+  final safeAreaTop = MediaQuery.paddingOf(context).top;
+  final triggerScroll = _headerHeight + _spacerHeight - safeAreaTop;
+  final newInset =
+      (scrollOffset - triggerScroll).clamp(0.0, safeAreaTop);
+  if (newInset != _tabBarTopInset) {
+    setState(() => _tabBarTopInset = newInset);
+  }
+}
+```
+
+### Pitfall: pinned-header height inflates outer maxScrollExtent
+
+`NestedScrollView` includes the pinned header's height in the outer
+`maxScrollExtent`. After the header and any scrolling action-buttons
+row are fully scrolled off, the outer can still scroll past that point
+by `pinnedHeaderHeight` before the inner scroll takes over — producing
+a visible "dead zone" at the top when scrolling back up (action
+buttons or other overlay widgets remain offscreen for that extra
+distance before reappearing). Options:
+
+1. Accept the gap and document it as a known issue.
+2. Use `SliverOverlapAbsorber`/`SliverOverlapInjector` (standard
+   Flutter pattern — doesn't fully solve, adjusts where the transition
+   happens).
+3. Restructure to a non-`NestedScrollView` architecture
+   (e.g. a single `CustomScrollView` whose pinned header is the only
+   scroll coordinator).
+
+### Pitfall: body subtree is rendered under pinned headers
+
+`NestedScrollView`'s body is laid out from y=0 of its own viewport, not
+from the pinned header's bottom edge. Decorations on the body's top
+edge (top borders, top-rounded `ClipRRect`, foreground `BorderSide`)
+are painted **behind** the pinned header and invisible. Put such
+decorations **inside the pinned header's delegate**, not on the body,
+so they live in the always-visible sliver region.
+
+---
+
 ## Accessibility
 
 See `accessibility.md` for the full accessibility guide (semantic labels, announcements, traversal order, contrast, font responsiveness, motion, and testing).

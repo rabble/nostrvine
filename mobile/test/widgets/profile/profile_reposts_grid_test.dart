@@ -130,9 +130,11 @@ void main() {
 
         await tester.pumpWidget(buildSubject());
 
-        expect(find.text('No Reposts Yet'), findsOneWidget);
+        expect(find.text('No reposts yet'), findsOneWidget);
         expect(
-          find.text('Videos you repost will appear here'),
+          find.text(
+            "See something worth sharing? Repost it and it'll appear here.",
+          ),
           findsOneWidget,
         );
       });
@@ -148,9 +150,11 @@ void main() {
 
         await tester.pumpWidget(buildSubject(isOwnProfile: false));
 
-        expect(find.text('No Reposts Yet'), findsOneWidget);
+        expect(find.text('No reposts yet'), findsOneWidget);
         expect(
-          find.text('Videos they repost will appear here'),
+          find.text(
+            "They haven't passed anything on yet. When they do, it'll show up here.",
+          ),
           findsOneWidget,
         );
       });

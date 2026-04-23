@@ -1,6 +1,7 @@
 // ABOUTME: Locale-aware wrapper around TimeFormatter.
 // ABOUTME: Maps TimeFormatter output to l10n strings from ARB.
 
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 
@@ -152,6 +153,37 @@ abstract class LocalizedTimeFormatter {
       return l10n.timeHoursAgo(duration.inHours);
     }
     return l10n.timeDaysAgo(duration.inDays);
+  }
+
+  /// Formats a [DateTime] as a notification-list timestamp.
+  ///
+  /// Returns [formatRelativeVerbose] for timestamps within the last 7
+  /// days, otherwise an absolute compact date.
+  ///
+  /// Prefers [MaterialLocalizations.formatCompactDate] when a
+  /// [context] is supplied (auto-respects in-app locale and honours
+  /// the framework's compact-date conventions). Falls back to
+  /// [DateFormat.yMd] with the passed [locale] otherwise.
+  static String formatNotificationTimestamp(
+    AppLocalizations l10n,
+    DateTime timestamp, {
+    String? locale,
+    BuildContext? context,
+  }) {
+    final now = DateTime.now();
+    final localTimestamp = timestamp.toLocal();
+    final difference = now.difference(localTimestamp);
+
+    if (difference.inDays < 7) {
+      final unixSeconds = localTimestamp.millisecondsSinceEpoch ~/ 1000;
+      return formatRelativeVerbose(l10n, unixSeconds);
+    }
+    if (context != null) {
+      return MaterialLocalizations.of(
+        context,
+      ).formatCompactDate(localTimestamp);
+    }
+    return DateFormat.yMd(locale).format(localTimestamp);
   }
 
   /// Formats a [Duration] into a localized draft age string.

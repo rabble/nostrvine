@@ -485,9 +485,9 @@ void main() {
         final iconButton = tester.widget<DiVineAppBarIconButton>(
           find.byType(DiVineAppBarIconButton),
         );
-        expect(iconButton.size, 48);
-        expect(iconButton.iconSize, 32);
-        expect(iconButton.borderRadius, 20);
+        expect(iconButton.size, 40);
+        expect(iconButton.iconSize, 24);
+        expect(iconButton.borderRadius, 16);
       });
 
       testWidgets('uses provided style for height and leadingWidth', (

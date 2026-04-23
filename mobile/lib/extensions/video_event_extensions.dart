@@ -1,6 +1,6 @@
 // ABOUTME: Extension methods for VideoEvent that have app-specific dependencies.
-// ABOUTME: These methods require services (ThumbnailApiService, M3u8ResolverService)
-// ABOUTME: or platform detection (dart:io) that don't belong in the pure data model.
+// ABOUTME: These methods require services (M3u8ResolverService) or platform
+// ABOUTME: detection (dart:io) that don't belong in the pure data model.
 
 import 'dart:developer' as developer;
 
@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
-import 'package:openvine/services/thumbnail_api_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
@@ -30,7 +29,7 @@ String _getBandwidthBasedQuality() {
 /// These methods are separated from the core VideoEvent model because they
 /// depend on:
 /// - Platform detection (dart:io)
-/// - App services (ThumbnailApiService, M3u8ResolverService)
+/// - App services (M3u8ResolverService)
 ///
 /// The core VideoEvent model in the models package remains pure and testable.
 extension VideoEventAppExtensions on VideoEvent {
@@ -114,56 +113,6 @@ extension VideoEventAppExtensions on VideoEvent {
   /// - AND is NOT an original Vine archive video (those show V Original badge)
   bool get shouldShowNotDivineBadge {
     return !isFromDivineServer && !hasProofMode && !isOriginalVine;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Thumbnail API Integration
-  // ---------------------------------------------------------------------------
-
-  /// Get thumbnail URL from API service with automatic generation.
-  ///
-  /// This method provides an async fallback that generates thumbnails
-  /// when the video doesn't have one set.
-  ///
-  /// Parameters:
-  /// - [timeSeconds]: Time offset in the video to capture (default 2.5s)
-  /// - [size]: Thumbnail size preset (default medium)
-  Future<String?> getApiThumbnailUrl({
-    double timeSeconds = 2.5,
-    ThumbnailSize size = ThumbnailSize.medium,
-  }) async {
-    // First check if we already have a thumbnail URL
-    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return thumbnailUrl;
-    }
-
-    // Use the thumbnail API service for automatic generation
-    return ThumbnailApiService.getThumbnailWithFallback(
-      id,
-      timeSeconds: timeSeconds,
-      size: size,
-    );
-  }
-
-  /// Get thumbnail URL synchronously from API service (no generation).
-  ///
-  /// This method provides immediate URL construction without async calls.
-  /// The URL may or may not exist, but provides a proper fallback.
-  String getApiThumbnailUrlSync({
-    double timeSeconds = 2.5,
-    ThumbnailSize size = ThumbnailSize.medium,
-  }) {
-    // First check if we already have a thumbnail URL
-    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return thumbnailUrl!;
-    }
-
-    // Generate API URL (may or may not exist, but provides proper fallback)
-    return ThumbnailApiService.getThumbnailUrl(
-      id,
-      timeSeconds: timeSeconds,
-      size: size,
-    );
   }
 
   // ---------------------------------------------------------------------------

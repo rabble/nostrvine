@@ -16,7 +16,7 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 class _TestClipEditorBloc extends ClipEditorBloc {
   _TestClipEditorBloc({
     ClipEditorState initialState = const ClipEditorState(),
-  }) {
+  }) : super(onFinalClipInvalidated: () {}) {
     emit(initialState);
   }
 }

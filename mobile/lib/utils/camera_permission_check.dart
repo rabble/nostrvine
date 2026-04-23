@@ -58,12 +58,17 @@ extension CameraPermissionNavigation on BuildContext {
     if (!permissionRequested || !mounted) return false;
 
     bloc.add(const CameraPermissionRequest());
-    final result = await bloc.stream.firstWhere(
-      (s) =>
-          s is CameraPermissionLoaded ||
-          s is CameraPermissionDenied ||
-          s is CameraPermissionError,
-    );
+    final result = await bloc.stream
+        .firstWhere(
+          (s) =>
+              s is CameraPermissionLoaded ||
+              s is CameraPermissionDenied ||
+              s is CameraPermissionError,
+        )
+        .timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => const CameraPermissionError(),
+        );
     if (!mounted) return false;
     if (result is CameraPermissionLoaded &&
         result.status == CameraPermissionStatus.authorized) {
@@ -82,17 +87,27 @@ Future<CameraPermissionStatus?> _resolvePermissionStatus(
   final current = bloc.state;
   if (current is CameraPermissionLoaded) return current.status;
 
-  // Not yet loaded — trigger refresh if idle and wait
+  // Already in a terminal state with no pending event — return
+  // immediately instead of waiting on a stream that will never emit.
+  if (current is CameraPermissionDenied) return null;
+  if (current is CameraPermissionError) return null;
+
+  // Not yet loaded — trigger refresh and wait for result.
   if (current is CameraPermissionInitial) {
     bloc.add(const CameraPermissionRefresh());
   }
 
-  final state = await bloc.stream.firstWhere(
-    (s) =>
-        s is CameraPermissionLoaded ||
-        s is CameraPermissionError ||
-        s is CameraPermissionDenied,
-  );
+  final state = await bloc.stream
+      .firstWhere(
+        (s) =>
+            s is CameraPermissionLoaded ||
+            s is CameraPermissionError ||
+            s is CameraPermissionDenied,
+      )
+      .timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => const CameraPermissionError(),
+      );
 
   if (state is CameraPermissionLoaded) return state.status;
   return null;

@@ -12,19 +12,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
+import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mocks/mock_camera_service.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
 /// Mock for CameraPermissionBloc
 class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
@@ -47,9 +52,12 @@ Widget buildTestWidget({List<Override> overrides = const []}) {
   when(
     () => mockDraftStorage.getDraftById(any()),
   ).thenAnswer((_) async => null);
+  final mockClipLibrary = _MockClipLibraryService();
+  when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
   return ProviderScope(
     overrides: [
       draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+      clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
       ...overrides,
     ],
     child: BlocProvider<CameraPermissionBloc>(
@@ -69,9 +77,12 @@ Widget buildTestWidgetWithOverrides(List<Override> overrides) {
   when(
     () => mockDraftStorage.getDraftById(any()),
   ).thenAnswer((_) async => null);
+  final mockClipLibrary = _MockClipLibraryService();
+  when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
   return ProviderScope(
     overrides: [
       draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+      clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
       ...overrides,
     ],
     child: BlocProvider<CameraPermissionBloc>(
@@ -100,20 +111,12 @@ void main() {
     });
 
     group('UI Components', () {
-      testWidgets('renders camera preview widget', (tester) async {
+      testWidgets('renders capture stack by default', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
-        expect(find.byType(VideoRecorderCameraPreview), findsOneWidget);
-      });
-
-      testWidgets('renders top bar widget', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-
-        await tester.pump();
-
-        expect(find.byType(VideoRecorderTopBar), findsOneWidget);
+        expect(find.byType(VideoRecorderCaptureStack), findsOneWidget);
       });
 
       testWidgets('renders bottom bar widget', (tester) async {
@@ -124,31 +127,23 @@ void main() {
         expect(find.byType(VideoRecorderBottomBar), findsOneWidget);
       });
 
-      testWidgets('renders countdown overlay widget', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-
-        await tester.pump();
-
-        expect(find.byType(VideoRecorderCountdownOverlay), findsOneWidget);
-      });
-
-      testWidgets('all widgets are rendered in correct order (z-index)', (
+      testWidgets('renders Column with Expanded and bottom bar', (
         tester,
       ) async {
         await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
-        final stackFinder = find.descendant(
+        // Body is a Column with an Expanded child and a Padding child
+        final columnFinder = find.descendant(
           of: find.byType(Scaffold),
-          matching: find.byType(Stack),
+          matching: find.byType(Column),
         );
+        expect(columnFinder, findsWidgets);
 
-        final stackChildren = tester.widget<Stack>(stackFinder.first).children;
-
-        // Check order: Column (with camera + controls), Countdown overlay
-        expect(stackChildren[0], isA<Column>());
-        expect(stackChildren[1], isA<VideoRecorderCountdownOverlay>());
+        final column = tester.widget<Column>(columnFinder.first);
+        expect(column.children.first, isA<Expanded>());
+        expect(column.children.last, isA<Padding>());
       });
     });
 
@@ -258,20 +253,16 @@ void main() {
     });
 
     group('Screen Layout', () {
-      testWidgets('uses StackFit.expand for full screen coverage', (
-        tester,
-      ) async {
+      testWidgets('uses Column layout for screen', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
-        final stackFinder = find.descendant(
+        final columnFinder = find.descendant(
           of: find.byType(Scaffold),
-          matching: find.byType(Stack),
+          matching: find.byType(Column),
         );
-        final stack = tester.widget<Stack>(stackFinder.first);
-
-        expect(stack.fit, equals(StackFit.expand));
+        expect(columnFinder, findsWidgets);
       });
 
       testWidgets('screen takes full available space', (tester) async {
@@ -312,44 +303,41 @@ void main() {
         await tester.pump();
 
         // All widgets should still be present
-        expect(find.byType(VideoRecorderCameraPreview), findsOneWidget);
-        expect(find.byType(VideoRecorderTopBar), findsOneWidget);
+        expect(find.byType(VideoRecorderCaptureStack), findsOneWidget);
         expect(find.byType(VideoRecorderBottomBar), findsOneWidget);
-        expect(find.byType(VideoRecorderCountdownOverlay), findsOneWidget);
       });
     });
 
     group('Widget Tree Structure', () {
-      testWidgets('camera preview is the bottom-most layer', (tester) async {
+      testWidgets('capture stack is within Expanded', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
-        final stackFinder = find.descendant(
-          of: find.byType(Scaffold),
-          matching: find.byType(Stack),
+        // Capture stack should be a descendant of Expanded
+        expect(
+          find.descendant(
+            of: find.byType(Expanded),
+            matching: find.byType(VideoRecorderCaptureStack),
+          ),
+          findsOneWidget,
         );
-        final stack = tester.widget<Stack>(stackFinder.first);
-
-        // The first child is now a Column containing the camera preview
-        expect(stack.children.first, isA<Column>());
-
-        // Verify camera preview exists within the Column
-        expect(find.byType(VideoRecorderCameraPreview), findsOneWidget);
       });
 
-      testWidgets('countdown overlay is the top-most layer', (tester) async {
+      testWidgets('bottom bar is below the capture stack', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
 
-        final stackFinder = find.descendant(
+        final columnFinder = find.descendant(
           of: find.byType(Scaffold),
-          matching: find.byType(Stack),
+          matching: find.byType(Column),
         );
-        final stack = tester.widget<Stack>(stackFinder.first);
+        final column = tester.widget<Column>(columnFinder.first);
 
-        expect(stack.children.last, isA<VideoRecorderCountdownOverlay>());
+        // First child is Expanded (capture stack), last is Padding (bottom bar)
+        expect(column.children.first, isA<Expanded>());
+        expect(column.children.last, isA<Padding>());
       });
     });
 
@@ -359,10 +347,13 @@ void main() {
         when(
           () => mockDraftStorage.getDraftById(any()),
         ).thenAnswer((_) async => null);
+        final mockClipLibrary = _MockClipLibraryService();
+        when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
               draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+              clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
             ],
             child: BlocProvider<CameraPermissionBloc>(
               create: (_) => MockCameraPermissionBloc(),
@@ -470,6 +461,190 @@ void main() {
           debugDefaultTargetPlatformOverride = null;
         }
       });
+    });
+
+    group('Autosave Restore Flow', () {
+      testWidgets(
+        'shows bottom sheet when autosaved draft has been edited',
+        (tester) async {
+          // Skip the "why six seconds" prompt
+          SharedPreferences.setMockInitialValues({
+            'why_six_seconds_shown': true,
+          });
+
+          final mockDraftStorage = _MockDraftStorageService();
+          final editedDraft = DivineVideoDraft(
+            id: 'autosave',
+            clips: [
+              DivineVideoClip(
+                id: 'clip_1',
+                video: EditorVideo.file('/tmp/test.mp4'),
+                duration: const Duration(seconds: 6),
+                recordedAt: DateTime(2025),
+                originalAspectRatio: 9 / 16,
+                targetAspectRatio: .vertical,
+              ),
+            ],
+            title: 'Edited Title',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'camera',
+            createdAt: DateTime(2025),
+            lastModified: DateTime(2025),
+            publishStatus: PublishStatus.draft,
+            publishAttempts: 0,
+          );
+          when(
+            () => mockDraftStorage.getDraftById(any()),
+          ).thenAnswer((_) async => editedDraft);
+
+          final mockClipLibrary = _MockClipLibraryService();
+          when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                draftStorageServiceProvider.overrideWithValue(
+                  mockDraftStorage,
+                ),
+                clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+              ],
+              child: BlocProvider<CameraPermissionBloc>(
+                create: (_) => MockCameraPermissionBloc(),
+                child: const MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: VideoRecorderScreen(),
+                ),
+              ),
+            ),
+          );
+
+          // Trigger post-frame callback
+          await tester.pump();
+          // Wait for async draft check
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pump();
+
+          // Bottom sheet should be visible
+          expect(find.text('We found work in progress'), findsOneWidget);
+          expect(find.text('Yes, continue'), findsOneWidget);
+          expect(
+            find.text('No, start a new video'),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'does not show bottom sheet when draft has no edits',
+        (tester) async {
+          SharedPreferences.setMockInitialValues({
+            'why_six_seconds_shown': true,
+          });
+
+          final mockDraftStorage = _MockDraftStorageService();
+          // Draft with clips but no metadata edits → hasBeenEdited = false
+          final uneditedDraft = DivineVideoDraft(
+            id: 'autosave',
+            clips: [
+              DivineVideoClip(
+                id: 'clip_1',
+                video: EditorVideo.file('/tmp/test.mp4'),
+                duration: const Duration(seconds: 6),
+                recordedAt: DateTime(2025),
+                originalAspectRatio: 9 / 16,
+                targetAspectRatio: .vertical,
+              ),
+            ],
+            title: '',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'camera',
+            createdAt: DateTime(2025),
+            lastModified: DateTime(2025),
+            publishStatus: PublishStatus.draft,
+            publishAttempts: 0,
+          );
+          when(
+            () => mockDraftStorage.getDraftById(any()),
+          ).thenAnswer((_) async => uneditedDraft);
+
+          final mockClipLibrary = _MockClipLibraryService();
+          when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                draftStorageServiceProvider.overrideWithValue(
+                  mockDraftStorage,
+                ),
+                clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+              ],
+              child: BlocProvider<CameraPermissionBloc>(
+                create: (_) => MockCameraPermissionBloc(),
+                child: const MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: VideoRecorderScreen(),
+                ),
+              ),
+            ),
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pump();
+
+          // Bottom sheet should NOT appear
+          expect(find.text('We found work in progress'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not show bottom sheet when no draft exists',
+        (tester) async {
+          SharedPreferences.setMockInitialValues({
+            'why_six_seconds_shown': true,
+          });
+
+          final mockDraftStorage = _MockDraftStorageService();
+          when(
+            () => mockDraftStorage.getDraftById(any()),
+          ).thenAnswer((_) async => null);
+
+          final mockClipLibrary = _MockClipLibraryService();
+          when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                draftStorageServiceProvider.overrideWithValue(
+                  mockDraftStorage,
+                ),
+                clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+              ],
+              child: BlocProvider<CameraPermissionBloc>(
+                create: (_) => MockCameraPermissionBloc(),
+                child: const MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: VideoRecorderScreen(),
+                ),
+              ),
+            ),
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pump();
+
+          expect(find.text('We found work in progress'), findsNothing);
+        },
+      );
     });
   });
 }

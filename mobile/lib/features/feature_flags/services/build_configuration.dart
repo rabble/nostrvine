@@ -43,6 +43,8 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_FEED_AUTO_ADVANCE');
       case FeatureFlag.hlsAuthWebPlayer:
         return const bool.fromEnvironment('FF_HLS_AUTH_WEB_PLAYER');
+      case FeatureFlag.peopleListSearch:
+        return const bool.fromEnvironment('FF_PEOPLE_LIST_SEARCH');
     }
   }
 
@@ -85,6 +87,8 @@ class BuildConfiguration {
         return 'FF_FEED_AUTO_ADVANCE';
       case FeatureFlag.hlsAuthWebPlayer:
         return 'FF_HLS_AUTH_WEB_PLAYER';
+      case FeatureFlag.peopleListSearch:
+        return 'FF_PEOPLE_LIST_SEARCH';
     }
   }
 }

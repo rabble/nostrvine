@@ -15,7 +15,11 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 /// on top of video content. It includes a gradient background
 /// that fades from semi-transparent black to transparent.
 class FeedModeSwitch extends StatelessWidget {
-  const FeedModeSwitch({super.key});
+  const FeedModeSwitch({this.isPreviewMode = false, super.key});
+
+  /// When true, displays a static "For You" label without requiring
+  /// [VideoFeedBloc] or feature-flag providers in the widget tree.
+  final bool isPreviewMode;
 
   /// Labels for each feed mode displayed in the UI.
   static const Map<FeedMode, String> feedModeLabels = {
@@ -31,13 +35,15 @@ class FeedModeSwitch extends StatelessWidget {
       left: 0,
       right: 0,
       child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [VineTheme.innerShadowPressed, VineTheme.transparent],
-          ),
-        ),
+        decoration: isPreviewMode
+            ? null
+            : const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [VineTheme.innerShadowPressed, VineTheme.transparent],
+                ),
+              ),
         child: SafeArea(
           bottom: false,
           child: Padding(
@@ -47,50 +53,19 @@ class FeedModeSwitch extends StatelessWidget {
               left: 20,
               right: 20,
             ),
-            child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
-              buildWhen: (prev, curr) => prev.mode != curr.mode,
-              builder: (context, state) {
-                return Row(
-                  children: [
-                    Semantics(
-                      label:
-                          'Feed mode: '
-                          '${feedModeLabels[state.mode] ?? state.mode.name}',
-                      button: true,
-                      child: GestureDetector(
-                        onTap: () =>
-                            _showFeedModeBottomSheet(context, state.mode),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          spacing: 12,
-                          children: [
-                            Text(
-                              feedModeLabels[state.mode] ?? state.mode.name,
-                              style: VineTheme.headlineSmallFont().copyWith(
-                                shadows: [
-                                  const Shadow(
-                                    color: VineTheme.innerShadow,
-                                    offset: Offset(1, 1),
-                                    blurRadius: 1,
-                                  ),
-                                  const Shadow(
-                                    color: VineTheme.innerShadow,
-                                    offset: Offset(0.4, 0.4),
-                                    blurRadius: 0.6,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const _FeedModeCaret(),
-                          ],
-                        ),
-                      ),
+            child: isPreviewMode
+                ? _FeedModeContent(
+                    label:
+                        feedModeLabels[FeedMode.forYou] ?? FeedMode.forYou.name,
+                  )
+                : BlocBuilder<VideoFeedBloc, VideoFeedState>(
+                    buildWhen: (prev, curr) => prev.mode != curr.mode,
+                    builder: (context, state) => _FeedModeContent(
+                      onTap: () =>
+                          _showFeedModeBottomSheet(context, state.mode),
+                      label: feedModeLabels[state.mode] ?? state.mode.name,
                     ),
-                    const Spacer(),
-                  ],
-                );
-              },
-            ),
+                  ),
           ),
         ),
       ),
@@ -121,6 +96,55 @@ class FeedModeSwitch extends StatelessWidget {
   }
 }
 
+/// Shared row rendering — label + caret — used for both the live
+/// [BlocBuilder]-driven label and the static preview-mode label.
+class _FeedModeContent extends StatelessWidget {
+  const _FeedModeContent({required this.label, this.onTap});
+
+  final VoidCallback? onTap;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Semantics(
+          label: 'Feed mode: $label',
+          button: true,
+          child: GestureDetector(
+            onTap: onTap,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 12,
+              children: [
+                Text(
+                  label,
+                  style: VineTheme.headlineSmallFont().copyWith(
+                    shadows: [
+                      const Shadow(
+                        color: VineTheme.innerShadow,
+                        offset: Offset(1, 1),
+                        blurRadius: 1,
+                      ),
+                      const Shadow(
+                        color: VineTheme.innerShadow,
+                        offset: Offset(0.4, 0.4),
+                        blurRadius: 0.6,
+                      ),
+                    ],
+                  ),
+                ),
+                const _FeedModeCaret(),
+              ],
+            ),
+          ),
+        ),
+        const Spacer(),
+      ],
+    );
+  }
+}
+
 /// Caret icon with the same two drop shadows applied to the feed-mode label
 /// text, so the icon matches the label's legibility over video content.
 class _FeedModeCaret extends StatelessWidget {
@@ -133,10 +157,7 @@ class _FeedModeCaret extends StatelessWidget {
       children: [
         _FeedModeCaretShadow(offset: Offset(1, 1), blurSigma: 1),
         _FeedModeCaretShadow(offset: Offset(0.4, 0.4), blurSigma: 0.6),
-        DivineIcon(
-          icon: DivineIconName.caretDown,
-          color: VineTheme.whiteText,
-        ),
+        DivineIcon(icon: DivineIconName.caretDown, color: VineTheme.whiteText),
       ],
     );
   }

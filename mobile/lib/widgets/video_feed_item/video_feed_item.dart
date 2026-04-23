@@ -1323,6 +1323,7 @@ class VideoOverlayActions extends ConsumerWidget {
     this.listSources,
     this.showListAttribution = false,
     this.isPreviewMode = false,
+    this.showBottomGradient = true,
     this.topOffset = 8.0,
     this.overlayOpacity = 1.0,
     this.showAutoButton = false,
@@ -1349,6 +1350,10 @@ class VideoOverlayActions extends ConsumerWidget {
 
   /// Whether to show the list attribution chip below the author info.
   final bool showListAttribution;
+
+  /// Whether to render the bottom darkening gradient behind the caption
+  /// block. Disabled in preview / editor flows that have their own chrome.
+  final bool showBottomGradient;
 
   /// Opacity for the entire overlay, driven by scroll position.
   ///
@@ -1392,31 +1397,32 @@ class VideoOverlayActions extends ConsumerWidget {
         child: Stack(
           children: [
             // Bottom gradient overlay (sits below UI elements, only overlays video)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: IgnorePointer(
-                child: FractionallySizedBox(
-                  widthFactor: 1.0,
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height / 4,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            VineTheme.backgroundColor.withValues(alpha: 0.0),
-                            VineTheme.backgroundColor.withValues(alpha: 0.5),
-                          ],
+            if (showBottomGradient)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: IgnorePointer(
+                  child: FractionallySizedBox(
+                    widthFactor: 1.0,
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height / 4,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              VineTheme.backgroundColor.withValues(alpha: 0.0),
+                              VineTheme.backgroundColor.withValues(alpha: 0.5),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
             // Content warning badge below back button area
             if (video.hasContentWarning &&
                 !shouldShowContentWarningOverlay(

@@ -403,14 +403,22 @@
     "videoGridEditVideo": "Modifica video",
     "videoGridEditVideoSubtitle": "Aggiorna titolo, descrizione e hashtag",
     "videoGridDeleteVideo": "Elimina video",
-    "videoGridDeleteVideoSubtitle": "Rimuovi questo video da Divine. Altri client Nostr potrebbero ancora mostrarlo.",
+    "videoGridDeleteVideoSubtitle": "Rimuovi definitivamente questo contenuto",
     "videoGridDeleteConfirmTitle": "Elimina video",
-    "videoGridDeleteConfirmMessage": "Questo video verrà eliminato definitivamente da Divine. Potrebbe ancora comparire su altri client Nostr che usano relay diversi.",
-    "videoGridDeleteConfirmNote": "Verrà inviata una richiesta di eliminazione ai relay. Nota: alcuni relay potrebbero avere ancora copie in cache.",
+    "videoGridDeleteConfirmMessage": "Sei sicuro di voler eliminare questo video?",
+    "videoGridDeleteConfirmNote": "Verrà inviata una richiesta di eliminazione (NIP-09) a tutti i relay. Alcuni relay potrebbero comunque conservare il contenuto.",
     "videoGridDeleteCancel": "Annulla",
     "videoGridDeleteConfirm": "Elimina",
     "videoGridDeletingContent": "Eliminazione contenuto...",
     "videoGridDeleteSuccess": "Richiesta di eliminazione inviata con successo",
+    "videoGridDeleteFailure": "Impossibile eliminare il contenuto: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
     "exploreTabClassics": "Classici",
     "exploreTabNew": "Nuovi",
     "exploreTabPopular": "Popolari",
@@ -462,6 +470,8 @@
     },
     "videoPlayerLoadingVideo": "Caricamento video...",
     "videoPlayerPlayVideo": "Riproduci video",
+    "videoPlayerMute": "Disattiva audio video",
+    "videoPlayerUnmute": "Riattiva audio video",
     "videoPlayerEditVideo": "Modifica video",
     "videoPlayerEditVideoTooltip": "Modifica video",
     "contentWarningLabel": "Avviso sui contenuti",
@@ -603,17 +613,6 @@
             }
         }
     },
-    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
-    "@videoFeedLoopCountLine": {
-        "placeholders": {
-            "compactCount": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Non Divine",
     "metadataBadgeHumanMade": "Fatto da umani",
     "metadataSoundsLabel": "Suoni",
@@ -625,14 +624,7 @@
     "metadataCollaboratorsLabel": "Collaboratori",
     "metadataInspiredByLabel": "Ispirato da",
     "metadataRepostedByLabel": "Ripubblicato da",
-    "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loop}}",
-    "@metadataLoopsLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
+    "metadataLoopsLabel": "Loop",
     "metadataLikesLabel": "Mi piace",
     "metadataCommentsLabel": "Commenti",
     "metadataRepostsLabel": "Repost",
@@ -1502,7 +1494,7 @@
     "shareMenuEditVideo": "Modifica video",
     "shareMenuEditVideoSubtitle": "Aggiorna titolo, descrizione e hashtag",
     "shareMenuDeleteVideo": "Elimina video",
-    "shareMenuDeleteVideoSubtitle": "Rimuovi questo video da Divine. Altri client Nostr potrebbero ancora mostrarlo.",
+    "shareMenuDeleteVideoSubtitle": "Rimuovi definitivamente questo contenuto",
     "shareMenuVideoInTheseLists": "Il video è in queste liste:",
     "shareMenuVideoCount": "{count} video",
     "@shareMenuVideoCount": {
@@ -1513,17 +1505,20 @@
         }
     },
     "shareMenuClose": "Chiudi",
-    "shareMenuDeleteConfirmation": "Questo video verrà eliminato definitivamente da Divine. Potrebbe ancora comparire su altri client Nostr che usano relay diversi.",
+    "shareMenuDeleteConfirmation": "Sei sicuro di voler eliminare questo video?",
+    "shareMenuDeleteWarning": "Verrà inviata una richiesta di eliminazione (NIP-09) a tutti i relay. Alcuni relay potrebbero comunque conservare il contenuto.",
     "shareMenuCancel": "Annulla",
     "shareMenuDelete": "Elimina",
     "shareMenuDeletingContent": "Eliminazione contenuto...",
-    "shareMenuDeleteRequestSent": "Video eliminato",
-    "shareMenuDeleteFailedNotInitialized": "L'eliminazione non è ancora pronta. Riprova tra un attimo.",
-    "shareMenuDeleteFailedNotOwner": "Puoi eliminare solo i tuoi video.",
-    "shareMenuDeleteFailedNotAuthenticated": "Accedi di nuovo, poi riprova a eliminare.",
-    "shareMenuDeleteFailedCouldNotSign": "Non è stato possibile firmare la richiesta di eliminazione. Riprova.",
-  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedGeneric": "Non è stato possibile eliminare questo video. Riprova.",
+    "shareMenuDeleteRequestSent": "Richiesta di eliminazione inviata con successo",
+    "shareMenuFailedToDeleteContent": "Impossibile eliminare il contenuto: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuFollowSetName": "Nome set di follow",
     "shareMenuFollowSetNameHint": "es. Content creator, Musicisti, ecc.",
     "shareMenuDescriptionOptional": "Descrizione (opzionale)",
@@ -1557,7 +1552,15 @@
     },
     "shareMenuDeleteVideoQuestion": "Eliminare il video?",
     "shareMenuDeleteRelayWarning": "Verrà inviata una richiesta di eliminazione ai relay. Nota: alcuni relay potrebbero avere ancora copie in cache.",
-    "shareMenuVideoDeletionRequested": "Video eliminato",
+    "shareMenuVideoDeletionRequested": "Eliminazione del video richiesta",
+    "shareMenuFailedToDeleteVideo": "Impossibile eliminare il video: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuContentLabels": "Etichette contenuto",
     "shareMenuAddContentLabels": "Aggiungi etichette contenuto",
     "shareMenuClearAll": "Cancella tutto",
@@ -1769,6 +1772,31 @@
     "userSearchPrompt": "Cerca utenti",
     "userSearchNoResults": "Nessun utente trovato",
     "userSearchFailed": "Ricerca fallita",
+    "userPickerSearchByName": "Cerca per nome",
+    "userPickerFilterByNameHint": "Filtra per nome...",
+    "userPickerSearchByNameHint": "Cerca per nome...",
+    "userPickerAlreadyAddedSemantics": "{name} già aggiunto",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerSelectSemantics": "Seleziona {name}",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "La tua crew è là fuori",
+    "userPickerEmptyFollowListBody": "Segui persone con cui vai d'accordo. Quando ti seguono a loro volta, potete collaborare.",
+    "userPickerGoBack": "Indietro",
+    "userPickerTypeNameToSearch": "Digita un nome per cercare",
+    "userPickerUnavailable": "La ricerca utenti non è disponibile. Riprova più tardi.",
+    "userPickerSearchFailedTryAgain": "Ricerca non riuscita. Riprova.",
     "forgotPasswordTitle": "Reimposta password",
     "forgotPasswordDescription": "Inserisci il tuo indirizzo email e ti manderemo un link per reimpostare la password.",
     "forgotPasswordEmailLabel": "Indirizzo email",
@@ -2153,6 +2181,7 @@
     "commonCancel": "Annulla",
     "commonDelete": "Elimina",
     "commonRetry": "Riprova",
+    "commonNext": "Avanti",
     "discoverListsFailedToUpdateSubscription": "Impossibile aggiornare l'abbonamento: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2191,6 +2220,32 @@
     "featureRequestCancel": "Annulla",
     "followersFailedToLoadList": "Impossibile caricare la lista dei follower",
     "followingFailedToLoadList": "Impossibile caricare la lista dei seguiti",
+    "inboxActionBlock": "Blocca {displayName}",
+    "@inboxActionBlock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionMute": "Silenzia conversazione",
+    "inboxActionRemove": "Rimuovi conversazione",
+    "inboxActionReport": "Segnala {displayName}",
+    "@inboxActionReport": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxActionUnblock": "Sblocca {displayName}",
+    "@inboxActionUnblock": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "inboxBlockedUser": "{displayName} bloccato/a",
     "@inboxBlockedUser": {
         "placeholders": {
@@ -2199,6 +2254,20 @@
             }
         }
     },
+    "inboxConversationMuted": "Conversazione silenziata",
+    "inboxConversationUnmuted": "Conversazione riattivata",
+    "inboxEmptySubtitle": "Il pulsante + non morde.",
+    "inboxEmptyTitle": "Ancora nessun messaggio",
+    "inboxRemoveConfirmBody": "Questo eliminerà la tua conversazione con {displayName}. Questa azione non può essere annullata.",
+    "@inboxRemoveConfirmBody": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxRemoveConfirmConfirm": "Rimuovi",
+    "inboxRemoveConfirmTitle": "Rimuovere la conversazione?",
     "inboxRemovedConversation": "Conversazione rimossa",
     "inboxReportedUser": "{displayName} segnalato/a",
     "@inboxReportedUser": {
@@ -2323,15 +2392,24 @@
     "reportDialogReport": "Segnala",
     "routerInvalidCreator": "Creatore non valido",
     "routerInvalidHashtagRoute": "Percorso hashtag non valido",
+    "searchDiscoverSomethingInteresting": "Scopri qualcosa di interessante",
+    "searchEnterQuery": "Inserisci una ricerca",
     "searchFindCuratedVideoLists": "Trova liste di video curate",
+  "searchListsSectionHeader": "Liste",
+  "searchListsLoadingLabel": "Caricamento risultati liste",
     "searchForLists": "Cerca liste",
     "searchSomethingWentWrong": "Qualcosa è andato storto",
     "searchTryAgain": "Riprova",
     "trendingTitle": "Di tendenza",
-    "videoEditorLayers": "Livelli",
     "videoEditorStickers": "Sticker",
     "videoMetadataContentWarnings": "Avvisi sui contenuti",
     "videoMetadataExpiration": "Scadenza",
+    "videoMetadataExpirationNotExpire": "Non scade",
+    "videoMetadataExpirationOneDay": "1 giorno",
+    "videoMetadataExpirationOneWeek": "1 settimana",
+    "videoMetadataExpirationOneMonth": "1 mese",
+    "videoMetadataExpirationOneYear": "1 anno",
+    "videoMetadataExpirationOneDecade": "1 decennio",
     "videoMetadataTags": "Tag",
     "contentLabelAiGenerated": "Generato dall'IA",
     "contentLabelAlcohol": "Alcol",
@@ -2526,5 +2604,327 @@
     "cameraPermissionAllowAccessTitle": "Consenti accesso a fotocamera e microfono",
     "cameraPermissionAllowAccessDescription": "Questo ti consente di registrare e modificare video direttamente nell'app, niente di più.",
     "cameraPermissionContinue": "Continua",
-    "cameraPermissionGoToSettings": "Vai alle impostazioni"
+    "cameraPermissionGoToSettings": "Vai alle impostazioni",
+    "videoRecorderWhySixSecondsTitle": "Perché sei secondi?",
+    "videoRecorderWhySixSecondsSubtitle": "I clip brevi lasciano spazio alla spontaneità. Il formato da 6 secondi ti aiuta a catturare momenti autentici mentre accadono.",
+    "videoRecorderWhySixSecondsButton": "Capito!",
+    "videoRecorderAutosaveFoundTitle": "Abbiamo trovato un lavoro in corso",
+    "videoRecorderAutosaveFoundSubtitle": "Vuoi continuare da dove avevi interrotto?",
+    "videoRecorderAutosaveContinueButton": "Sì, continua",
+    "videoRecorderAutosaveDiscardButton": "No, inizia un nuovo video",
+    "videoRecorderAutosaveRestoreFailure": "Impossibile ripristinare la tua bozza",
+    "videoRecorderStopRecordingTooltip": "Interrompi registrazione",
+    "videoRecorderStartRecordingTooltip": "Avvia registrazione",
+    "videoRecorderRecordingTapToStopLabel": "Registrazione in corso. Tocca ovunque per fermare",
+    "videoRecorderTapToStartLabel": "Tocca ovunque per avviare la registrazione",
+    "videoRecorderDeleteLastClipLabel": "Elimina ultimo clip",
+    "videoRecorderSwitchCameraLabel": "Cambia fotocamera",
+    "videoRecorderToggleGridLabel": "Mostra/nascondi griglia",
+    "videoRecorderToggleGhostFrameLabel": "Mostra/nascondi fotogramma fantasma",
+    "videoRecorderGhostFrameEnabled": "Fotogramma fantasma attivato",
+    "videoRecorderGhostFrameDisabled": "Fotogramma fantasma disattivato",
+    "videoRecorderClipDeletedMessage": "Clip eliminato",
+    "videoRecorderCloseLabel": "Chiudi registratore video",
+    "videoRecorderContinueToEditorLabel": "Continua all'editor video",
+    "videoRecorderCaptureCloseLabel": "Chiudi",
+    "videoRecorderCaptureNextLabel": "Avanti",
+    "videoRecorderToggleFlashLabel": "Attiva/disattiva flash",
+    "videoRecorderCycleTimerLabel": "Cambia timer",
+    "videoRecorderToggleAspectRatioLabel": "Cambia rapporto d'aspetto",
+    "videoRecorderLibraryEmptyLabel": "Libreria clip, nessun clip",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Apri libreria clip, 1 clip} other{Apri libreria clip, {clipCount} clip}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorClipsLabel": "Clip",
+    "videoEditorTextLabel": "Testo",
+    "videoEditorDrawLabel": "Disegna",
+    "videoEditorEffectsLabel": "Effetti",
+    "videoEditorAudioLabel": "Audio",
+    "videoEditorVolumeLabel": "Volume",
+    "videoEditorAddTitle": "Aggiungi",
+    "videoEditorOpenClipsSemanticLabel": "Apri editor clip",
+    "videoEditorOpenAudioSemanticLabel": "Apri editor audio",
+    "videoEditorOpenTextSemanticLabel": "Apri editor testo",
+    "videoEditorOpenDrawSemanticLabel": "Apri editor disegno",
+    "videoEditorOpenEffectsSemanticLabel": "Apri editor effetti",
+    "videoEditorSaveDraftTitle": "Salvare la bozza?",
+    "videoEditorSaveDraftSubtitle": "Conserva le modifiche per dopo, oppure scartale e lascia l'editor.",
+    "videoEditorSaveDraftButton": "Salva bozza",
+    "videoEditorDiscardChangesButton": "Scarta modifiche",
+    "videoEditorKeepEditingButton": "Continua a modificare",
+    "videoEditorDeleteLayerDropZone": "Area di rilascio per eliminare livello",
+    "videoEditorReleaseToDeleteLayer": "Rilascia per eliminare il livello",
+    "videoEditorDoneLabel": "Fatto",
+    "videoEditorPlayPauseSemanticLabel": "Riproduci o metti in pausa il video",
+    "videoEditorCropSemanticLabel": "Ritaglia",
+    "videoEditorCannotSplitProcessing": "Impossibile dividere il clip durante l'elaborazione. Attendi.",
+    "videoEditorSplitPositionInvalid": "Posizione di divisione non valida. Entrambi i clip devono durare almeno {minDurationMs} ms.",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorAddClipFromLibrary": "Aggiungi clip dalla libreria",
+    "videoEditorSaveSelectedClip": "Salva clip selezionato",
+    "videoEditorSplitClip": "Dividi clip",
+    "videoEditorSaveClip": "Salva clip",
+    "videoEditorDeleteClip": "Elimina clip",
+    "videoEditorClipSavedSuccess": "Clip salvato nella libreria",
+    "videoEditorClipSaveFailed": "Impossibile salvare il clip",
+    "videoEditorClipDeleted": "Clip eliminato",
+    "videoEditorColorPickerSemanticLabel": "Selettore colore",
+    "videoEditorUndoSemanticLabel": "Annulla",
+    "videoEditorRedoSemanticLabel": "Ripristina",
+    "videoEditorTextColorSemanticLabel": "Colore testo",
+    "videoEditorTextAlignmentSemanticLabel": "Allineamento testo",
+    "videoEditorTextBackgroundSemanticLabel": "Sfondo testo",
+    "videoEditorFontSemanticLabel": "Carattere",
+    "videoEditorNoStickersFound": "Nessuno sticker trovato",
+    "videoEditorNoStickersAvailable": "Nessuno sticker disponibile",
+    "videoEditorFailedLoadStickers": "Impossibile caricare gli sticker",
+    "videoEditorAdjustVolumeTitle": "Regola volume",
+    "videoEditorRecordedAudioLabel": "Audio registrato",
+    "videoEditorCustomAudioLabel": "Audio personalizzato",
+    "videoEditorPlaySemanticLabel": "Riproduci",
+    "videoEditorPauseSemanticLabel": "Pausa",
+    "videoEditorMuteAudioSemanticLabel": "Disattiva audio",
+    "videoEditorUnmuteAudioSemanticLabel": "Riattiva audio",
+    "videoEditorDeleteLabel": "Elimina",
+    "videoEditorDeleteSelectedItemSemanticLabel": "Elimina elemento selezionato",
+    "videoEditorEditLabel": "Modifica",
+    "videoEditorEditSelectedItemSemanticLabel": "Modifica elemento selezionato",
+    "videoEditorDuplicateLabel": "Duplica",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "Duplica elemento selezionato",
+    "videoEditorSplitLabel": "Dividi",
+    "videoEditorSplitSelectedClipSemanticLabel": "Dividi clip selezionato",
+    "videoEditorFinishTimelineEditingSemanticLabel": "Termina modifica timeline",
+    "videoEditorSortNewest": "Più recenti",
+    "videoEditorSortLongest": "Più lunghi",
+    "videoEditorSortShortest": "Più corti",
+    "videoEditorSortBySemanticLabel": "Ordina per {option}. Tocca per cambiare l'ordine",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorAudioPlayPreviewSemanticLabel": "Riproduci anteprima",
+    "videoEditorAudioPausePreviewSemanticLabel": "Metti in pausa anteprima",
+    "videoEditorAudioUntitledSound": "Suono senza titolo",
+    "videoEditorAudioSelectSoundSemanticLabel": "Seleziona suono",
+    "videoEditorAudioUntitled": "Senza titolo",
+    "videoEditorAudioAddAudio": "Aggiungi audio",
+    "videoEditorAudioNoSoundsAvailableTitle": "Nessun suono disponibile",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "I suoni appariranno qui quando i creator condivideranno audio",
+    "videoEditorAudioNoSoundsFoundTitle": "Nessun suono trovato",
+    "videoEditorAudioNoSoundsFoundSubtitle": "Prova con un termine di ricerca diverso",
+    "videoEditorAudioFailedToLoadTitle": "Impossibile caricare i suoni",
+    "videoEditorDrawToolArrowSemanticLabel": "Strumento freccia",
+    "videoEditorDrawToolEraserSemanticLabel": "Strumento gomma",
+    "videoEditorDrawToolMarkerSemanticLabel": "Strumento evidenziatore",
+    "videoEditorDrawToolPencilSemanticLabel": "Strumento matita",
+    "videoEditorLayerReorderLabel": "Riordina livello {index}",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLayerReorderHint": "Tieni premuto per riordinare",
+    "videoEditorShowTimelineSemanticLabel": "Mostra timeline",
+    "videoEditorHideTimelineSemanticLabel": "Nascondi timeline",
+    "videoEditorFeedPreviewContent": "Evita di posizionare contenuti dietro queste aree.",
+    "videoEditorStickerSearchHint": "Cerca sticker...",
+    "videoEditorSelectFontSemanticLabel": "Seleziona carattere",
+    "videoEditorFontUnknown": "Sconosciuto",
+    "videoEditorSplitPlayheadOutsideClip": "La testina di riproduzione deve essere all'interno del clip selezionato per dividerlo.",
+    "videoEditorTimelineTrimStartSemanticLabel": "Rifila inizio",
+    "videoEditorTimelineTrimEndSemanticLabel": "Rifila fine",
+    "videoEditorTimelineTrimClipSemanticLabel": "Rifila clip",
+    "videoEditorTimelineTrimClipHint": "Trascina le maniglie per regolare la durata del clip",
+    "videoEditorTimelineDraggingClipSemanticLabel": "Trascinamento clip {index}",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineClipSemanticLabel": "Clip {index} di {total}, {duration} secondi",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineClipReorderHint": "Tieni premuto per riordinare",
+    "videoEditorTimelineClipMoveLeft": "Sposta a sinistra",
+    "videoEditorTimelineClipMoveRight": "Sposta a destra",
+    "videoEditorTimelineLongPressToDragHint": "Tieni premuto per trascinare",
+    "videoEditorVideoTimelineSemanticLabel": "Timeline video",
+    "videoEditorTimelinePositionFormat": "{minutes} min {seconds} s",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorColorSelectedSemanticLabel": "{colorName}, selezionato",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorCloseColorPickerSemanticLabel": "Chiudi selettore colore",
+    "videoEditorPickColorTitle": "Scegli colore",
+    "videoEditorConfirmColorSemanticLabel": "Conferma colore",
+    "videoEditorSaturationBrightnessSemanticLabel": "Saturazione e luminosità",
+    "videoEditorSaturationBrightnessValue": "Saturazione {saturation} %, luminosità {brightness} %",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorHueSemanticLabel": "Tonalità",
+    "videoEditorAddElementSemanticLabel": "Aggiungi elemento",
+    "videoEditorCloseSemanticLabel": "Chiudi",
+    "videoEditorDoneSemanticLabel": "Fatto",
+    "videoEditorLevelSemanticLabel": "Livello",
+    "videoMetadataBackSemanticLabel": "Indietro",
+    "videoMetadataDismissHelpDialogSemanticLabel": "Chiudi finestra di aiuto",
+    "videoMetadataGotItButton": "Capito!",
+    "videoMetadataLimitReachedWarning": "Limite di 64 KB raggiunto. Rimuovi alcuni contenuti per continuare.",
+    "videoMetadataExpirationLabel": "Scadenza",
+    "videoMetadataSelectExpirationSemanticLabel": "Seleziona tempo di scadenza",
+    "videoMetadataTitleLabel": "Titolo",
+    "videoMetadataDescriptionLabel": "Descrizione",
+    "videoMetadataTagsLabel": "Tag",
+    "videoMetadataDeleteTagSemanticLabel": "Elimina",
+    "videoMetadataDeleteTagHint": "Elimina tag {tag}",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataContentWarningLabel": "Avviso contenuto",
+    "videoMetadataSelectContentWarningsSemanticLabel": "Seleziona avvisi contenuto",
+    "videoMetadataContentWarningSelectAllThatApply": "Seleziona tutto ciò che si applica ai tuoi contenuti",
+    "videoMetadataContentWarningDoneButton": "Fatto",
+    "videoMetadataCollaboratorsLabel": "Collaboratori",
+    "videoMetadataAddCollaboratorSemanticLabel": "Aggiungi collaboratore",
+    "videoMetadataCollaboratorsHelpTooltip": "Come funzionano i collaboratori",
+    "videoMetadataCollaboratorsCount": "{count}/{max} collaboratori",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataRemoveCollaboratorSemanticLabel": "Rimuovi collaboratore",
+    "videoMetadataCollaboratorsHelpMessage": "I collaboratori sono taggati come co-creatori in questo post. Puoi aggiungere solo persone che segui reciprocamente e appariranno nei metadati del post quando verrà pubblicato.",
+    "videoMetadataMutualFollowersSearchText": "Follower reciproci",
+    "videoMetadataMustMutuallyFollowSnackbar": "Devi seguire reciprocamente {name} per aggiungerlo come collaboratore.",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataInspiredByLabel": "Ispirato da",
+    "videoMetadataSetInspiredBySemanticLabel": "Imposta ispirato da",
+    "videoMetadataInspiredByHelpTooltip": "Come funzionano i crediti di ispirazione",
+    "videoMetadataInspiredByNone": "Nessuno",
+    "videoMetadataInspiredByHelpMessage": "Usa questo per dare attribuzione. Il credito \"ispirato da\" è diverso dai collaboratori: riconosce l'influenza, ma non tagga qualcuno come co-creatore.",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "Non è possibile fare riferimento a questo creator.",
+    "videoMetadataRemoveInspiredBySemanticLabel": "Rimuovi ispirato da",
+    "videoMetadataPostDetailsTitle": "Dettagli del post",
+    "videoMetadataSavedToLibrarySnackbar": "Salvato in libreria",
+    "videoMetadataFailedToSaveSnackbar": "Salvataggio non riuscito",
+    "videoMetadataGoToLibraryButton": "Vai alla libreria",
+    "videoMetadataSaveForLaterSemanticLabel": "Pulsante salva per dopo",
+    "videoMetadataRenderingVideoHint": "Rendering video...",
+    "videoMetadataSavingVideoHint": "Salvataggio video...",
+    "videoMetadataSaveToDraftsHint": "Salva video nelle bozze e {destination}",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveForLaterButton": "Salva per dopo",
+    "videoMetadataPostSemanticLabel": "Pulsante pubblica",
+    "videoMetadataPublishVideoHint": "Pubblica video nel feed",
+    "videoMetadataFormNotReadyHint": "Compila il modulo per abilitare",
+    "videoMetadataPostButton": "Pubblica",
+    "videoMetadataOpenPreviewSemanticLabel": "Apri schermata anteprima del post",
+    "videoMetadataShareTitle": "Condividi",
+    "videoMetadataVideoDetailsSubtitle": "Dettagli video",
+    "videoMetadataClassicDoneButton": "Fatto",
+    "videoMetadataPlayPreviewSemanticLabel": "Riproduci anteprima",
+    "videoMetadataPausePreviewSemanticLabel": "Metti in pausa anteprima",
+    "videoMetadataClosePreviewSemanticLabel": "Chiudi anteprima video",
+    "videoMetadataRemoveSemanticLabel": "Rimuovi",
+    "metadataCaptionsLabel": "Sottotitoli",
+    "metadataCaptionsEnabledSemantics": "Sottotitoli abilitati per tutti i video",
+    "metadataCaptionsDisabledSemantics": "Sottotitoli disabilitati per tutti i video",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuDeleteFailedCouldNotSign": "Non è stato possibile firmare la richiesta di eliminazione. Riprova.",
+    "shareMenuDeleteFailedGeneric": "Non è stato possibile eliminare questo video. Riprova.",
+    "shareMenuDeleteFailedNotAuthenticated": "Accedi di nuovo, poi riprova a eliminare.",
+    "shareMenuDeleteFailedNotInitialized": "L'eliminazione non è ancora pronta. Riprova tra un attimo.",
+    "shareMenuDeleteFailedNotOwner": "Puoi eliminare solo i tuoi video.",
+    "videoEditorLayers": "Livelli",
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
 }

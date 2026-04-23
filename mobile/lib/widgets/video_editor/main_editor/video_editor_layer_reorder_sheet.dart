@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -91,9 +92,13 @@ class _LayerTile extends StatelessWidget {
     return ListTile(
       minTileHeight: 56,
       tileColor: VineTheme.surfaceContainer,
-      leading: ReorderableDragStartListener(
-        index: index,
-        child: const DivineIcon(icon: .menu, color: VineTheme.primary),
+      leading: Semantics(
+        label: context.l10n.videoEditorLayerReorderLabel(index + 1),
+        hint: context.l10n.videoEditorLayerReorderHint,
+        child: ReorderableDragStartListener(
+          index: index,
+          child: const DivineIcon(icon: .menu, color: VineTheme.primary),
+        ),
       ),
       title: switch (layer) {
         final TextLayer layer => _TextLayerPreview(layer: layer),

@@ -225,3 +225,50 @@ class ClipEditorOriginalClipReplaced extends ClipEditorEvent {
 class ClipEditorSplitRequested extends ClipEditorEvent {
   const ClipEditorSplitRequested();
 }
+
+// === TRIM ===
+
+/// Update the trim boundaries of a clip.
+///
+/// Pushes an undo entry on the first change of a drag gesture
+/// (when [isStart] is true). Subsequent updates during the same
+/// gesture are applied without additional undo entries.
+class ClipEditorTrimUpdated extends ClipEditorEvent {
+  const ClipEditorTrimUpdated({
+    required this.clipId,
+    required this.trimStart,
+    required this.trimEnd,
+    this.isStart = false,
+  });
+
+  /// ID of the clip being trimmed.
+  final String clipId;
+
+  /// Offset from the beginning of the original clip.
+  final Duration trimStart;
+
+  /// Offset from the end of the original clip.
+  final Duration trimEnd;
+
+  /// `true` on the first update of a drag gesture — triggers an undo push.
+  final bool isStart;
+
+  @override
+  List<Object?> get props => [clipId, trimStart, trimEnd, isStart];
+}
+
+/// Signals that a trim handle drag gesture has started.
+class ClipEditorTrimDragStarted extends ClipEditorEvent {
+  const ClipEditorTrimDragStarted();
+
+  @override
+  List<Object?> get props => [];
+}
+
+/// Signals that a trim handle drag gesture has ended.
+class ClipEditorTrimDragEnded extends ClipEditorEvent {
+  const ClipEditorTrimDragEnded();
+
+  @override
+  List<Object?> get props => [];
+}

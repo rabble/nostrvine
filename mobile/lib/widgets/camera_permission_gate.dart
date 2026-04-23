@@ -282,10 +282,11 @@ class _PermissionScreen extends StatelessWidget {
                   ),
                 ),
 
-                const IgnorePointer(
-                  child: ColoredBox(
+                IgnorePointer(
+                  child: Container(
+                    padding: const .only(top: 8),
                     color: VineTheme.surfaceContainerHigh,
-                    child: Opacity(
+                    child: const Opacity(
                       opacity: 0.25,
                       child: VideoRecorderBottomBar(),
                     ),

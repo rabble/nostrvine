@@ -31,14 +31,14 @@ class ProfileFollowingStat extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
     final isCurrentUser = pubkey == nostrClient.publicKey;
 
     if (isCurrentUser) {
       return BlocProvider(
         create: (_) => MyFollowingBloc(
           followRepository: followRepository,
-          contentBlocklistService: blocklistService,
+          contentBlocklistRepository: blocklistRepository,
         )..add(const MyFollowingListLoadRequested()),
         child: _MyFollowingStatView(pubkey: pubkey, displayName: displayName),
       );
@@ -46,7 +46,7 @@ class ProfileFollowingStat extends ConsumerWidget {
       return BlocProvider(
         create: (_) => OthersFollowingBloc(
           nostrClient: nostrClient,
-          contentBlocklistService: blocklistService,
+          contentBlocklistRepository: blocklistRepository,
           currentUserPubkey: nostrClient.publicKey,
         )..add(OthersFollowingListLoadRequested(pubkey)),
         child: _OthersFollowingStatView(

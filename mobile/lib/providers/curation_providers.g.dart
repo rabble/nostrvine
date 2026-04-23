@@ -176,7 +176,7 @@ final class CurationProvider
   }
 }
 
-String _$curationHash() => r'f087b9f6e22d89d4943da5d76a894887b6f0b015';
+String _$curationHash() => r'ad00dcafab8d01dc071511cb8113aa32c985aef3';
 
 /// Main curation provider that manages curated content sets
 /// keepAlive ensures provider persists across tab navigation

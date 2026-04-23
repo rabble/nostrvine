@@ -201,6 +201,101 @@ emit(state.copyWith(
 
 ---
 
+## BlocProvider is lazy by default
+
+`BlocProvider(create:)` defaults to `lazy: true` (inherited from
+`provider`). The `create:` factory only runs the **first time** a
+descendant reads the bloc — via `context.read<X>()`, `context.watch<X>()`,
+`context.select((X b) => ...)`, `BlocBuilder<X, Y>`, `BlocListener<X, Y>`,
+`BlocConsumer<X, Y>`, or `BlocSelector<X, Y, S>`.
+
+**Consequence:** side effects inside the `create:` factory — a classic
+example being `..add(const LoadRequested())` to warm a cache — **do not
+run** unless something in the subtree consumes the bloc. A
+`BlocProvider` with no consumer in its subtree is dead code.
+
+**Bad — looks like cache warming, actually does nothing:**
+```dart
+// profile_grid.dart: there is no context.read<MyFollowersBloc> or
+// BlocBuilder<MyFollowersBloc, ...> anywhere under `content`, so the
+// factory — and therefore the load event — never fires.
+return BlocProvider<MyFollowersBloc>(
+  create: (_) => MyFollowersBloc(
+    followRepository: followRepository,
+  )..add(const MyFollowersListLoadRequested()),
+  child: content,
+);
+```
+
+**Before adding or keeping a `BlocProvider<X>`, verify a consumer
+exists.** A quick grep across the subtree's files:
+
+```
+grep -rn "context.read<X>\|context.watch<X>\|context.select((X\|BlocBuilder<X,\|BlocListener<X,\|BlocConsumer<X,\|BlocSelector<X,"
+```
+
+If the grep returns nothing, choose one:
+
+1. **Delete the wrapper.** If the work is "just cache warming," push it
+   to the repository layer where it belongs — the repository owns
+   composition, fallback, and pre-fetch strategies
+   (see `architecture.md`).
+2. **Add `lazy: false`** with a code comment justifying why the factory
+   must run eagerly, and add a test that covers the eager effect.
+
+This also applies to `MultiBlocProvider` and to nested providers — each
+bloc needs its own consumer; one consumer does not wake the others.
+
+---
+
+## Persisting state across shell-route transitions
+
+Screens inside a `ShellRoute` whose content is gated on the current URL
+(e.g. `_ProfileContentView` returning `SizedBox.shrink()` when
+`routeContext.type != RouteType.profile`) will **unmount** the content
+subtree whenever the URL briefly leaves the route — including during
+`context.push(...)` to a route defined outside the shell.
+
+Consequences:
+
+- `TabController`, `ScrollController`, animation controllers, and any
+  other state living in a widget `State` are **disposed** and
+  re-created on return.
+- The user sees the screen "reset" (e.g. selected tab → Videos, scroll
+  position → top) after closing the pushed route.
+
+**Fix:** persist the state externally, keyed by a stable identifier.
+For per-screen state like "active tab index," a simple
+`StateProvider<Map<String, int>>` keyed by `userIdHex` is enough:
+
+```dart
+// lib/providers/profile_tab_index_provider.dart
+import 'package:flutter_riverpod/legacy.dart';
+
+final profileTabIndexProvider = StateProvider<Map<String, int>>(
+  (ref) => <String, int>{},
+);
+```
+
+Read in `initState` to seed `TabController.initialIndex`; write in the
+tab listener. Lazy-sync side effects (e.g. loading a tab's data on
+first view) must also be re-dispatched when the restored index is not
+zero, since the controller's listener doesn't fire for the initial
+index.
+
+See `profile_grid.dart` + `profile_tab_index_provider.dart` for the
+pattern.
+
+### Riverpod 3.x gotcha
+
+`StateProvider` lives in **`package:flutter_riverpod/legacy.dart`** in
+Riverpod 3 — it's not exported from the main `flutter_riverpod.dart`
+entry. `StateProvider.family` type inference has sharp edges; prefer a
+plain `StateProvider<Map<K, V>>` for per-key state unless you
+specifically need independent cache scopes per key.
+
+---
+
 ## No Mutable Instance Variables in BLoC
 
 All mutable data must live in the BLoC's state object, never as private fields on the BLoC class. Private fields bypass the state stream, making them invisible to the UI, untestable via `blocTest`, and prone to desyncing from the actual state.

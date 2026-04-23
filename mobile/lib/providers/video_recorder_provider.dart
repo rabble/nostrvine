@@ -14,13 +14,16 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -30,6 +33,10 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// SharedPreferences key for storing the last used camera lens.
 const _kLastUsedCameraLensKey = 'camera_last_used_lens';
+
+/// SharedPreferences key for storing the last used recorder mode.
+@visibleForTesting
+const kLastUsedRecorderModeKey = 'camera_last_used_recorder_mode';
 
 /// Notifier that wraps VideoRecorderNotifier and provides reactive updates.
 ///
@@ -88,7 +95,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
                   : null,
             );
           },
-          onAutoStopped: stopRecording,
+          onAutoStopped: (video) {
+            if (state.recorderMode.hasRecordingLimit) {
+              stopRecording(video);
+            }
+          },
         );
 
     // Setup cleanup when provider is disposed
@@ -134,6 +145,18 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     // Load the last used camera lens from preferences
     final prefs = ref.read(sharedPreferencesProvider);
+
+    // Restore last used recorder mode
+    final savedModeName = prefs.getString(kLastUsedRecorderModeKey);
+    final savedMode = savedModeName != null
+        ? VideoRecorderMode.values.firstWhere(
+            (m) => m.name == savedModeName,
+            orElse: () => VideoRecorderMode.capture,
+          )
+        : VideoRecorderMode.capture;
+    if (savedMode != state.recorderMode) {
+      setRecorderMode(savedMode, keepAutosavedDraft: true);
+    }
     final savedLensString = prefs.getString(_kLastUsedCameraLensKey);
     final initialLens = savedLensString != null
         ? DivineCameraLens.fromNativeString(savedLensString)
@@ -560,7 +583,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         state.isRecording ||
         _isStartingRecording ||
         _isStoppingRecording ||
-        remainingDuration < const Duration(milliseconds: 30)) {
+        (remainingDuration < const Duration(milliseconds: 30) &&
+            state.recorderMode.hasRecordingLimit)) {
       return;
     }
 
@@ -654,7 +678,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     // Sound is already loaded — just hit play
     unawaited(_playSoundPlayback());
     final success = await _cameraService.startRecording(
-      maxDuration: remainingDuration,
+      maxDuration: state.recorderMode.hasRecordingLimit
+          ? remainingDuration
+          : null,
     );
 
     _isStartingRecording = false;
@@ -739,6 +765,19 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       originalAspectRatio: _cameraService.cameraAspectRatio,
       targetAspectRatio: state.aspectRatio,
       lensMetadata: _cameraService.currentLensMetadata,
+      limitClipDuration: state.recorderMode.hasRecordingLimit,
+    );
+    // Persist immediately so the clip is visible in the library right away.
+    unawaited(
+      clipProvider.saveClipToLibrary(clip).then((saved) {
+        if (!saved) {
+          Log.warning(
+            '⚠️ Initial clip save to library failed for ${clip.id}',
+            name: 'VideoRecorderNotifier',
+            category: .video,
+          );
+        }
+      }),
     );
 
     Log.debug(
@@ -851,6 +890,18 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       );
     }
 
+    // Re-save to library now that metadata (duration, thumbnail, ghost
+    // frame) is attached. The initial save above makes the clip visible
+    // immediately; this upsert adds the generated assets.
+    final updatedClip = clipProvider.clips.firstWhere((c) => c.id == clip.id);
+    final saved = await clipProvider.saveClipToLibrary(updatedClip);
+    if (!saved) {
+      Log.warning(
+        '⚠️ Metadata-enriched clip save to library failed for ${clip.id}',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+    }
     // Fire and forget. Clean up the working copy.
     try {
       await File(workCopyPath).delete();
@@ -992,19 +1043,53 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
-    await Future.wait([
-      context.push(VideoEditorScreen.path),
-      // We delay camera dispose so that the screen animation can finish
-      // before the editor open. Without that it will look weird to the user
-      // because the initialization screen will show up quickly.
-      Future.delayed(const Duration(milliseconds: 300), () {
-        return _cameraService.dispose();
-      }),
-    ]);
+    if (!state.recorderMode.hasVideoEditor) {
+      ref.read(videoEditorProvider.notifier).startRenderVideo();
+    }
+
+    final navigation = state.recorderMode.hasVideoEditor
+        ? context.push(VideoEditorScreen.path)
+        : context.push(VideoMetadataScreen.path);
+
+    // Wait for the push animation to finish before disposing the camera.
+    // Disposing immediately would flash the camera-init screen behind the
+    // transitioning route.
+    await _awaitPushTransition(context);
+    await _cameraService.dispose();
+
+    await navigation;
     if (!context.mounted) return;
 
     Log.info(
       '📹 Returned from editor - reinitializing camera',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
+    await initialize();
+  }
+
+  Future<void> openLibrary(BuildContext context) async {
+    Log.info(
+      '📹 Opening library - disposing camera',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
+
+    final navigation = context.pushNamed(
+      LibraryScreen.clipsNoSoundRouteName,
+    );
+
+    // Wait for the push animation to finish before disposing the camera.
+    // Disposing immediately would flash the camera-init screen behind the
+    // transitioning route.
+    await _awaitPushTransition(context);
+    await _cameraService.dispose();
+
+    await navigation;
+    if (!context.mounted) return;
+
+    Log.info(
+      '📹 Returned from library - reinitializing camera',
       name: 'VideoRecorderNotifier',
       category: .video,
     );
@@ -1035,6 +1120,42 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       hasFlash: _cameraService.hasFlash,
       canSwitchCamera: _cameraService.canSwitchCamera,
       showLastClipOverlay: state.showLastClipOverlay,
+      recorderMode: state.recorderMode,
+      showGridLines: state.showGridLines,
+    );
+  }
+
+  /// Set the recorder mode (capture / classic).
+  ///
+  /// When [keepAutosavedDraft] is true the autosaved draft in the database
+  /// is preserved. This is used during initialisation where the saved mode
+  /// is restored but the user may still want to recover an earlier session.
+  void setRecorderMode(
+    VideoRecorderMode mode, {
+    bool keepAutosavedDraft = false,
+  }) {
+    state = state.copyWith(
+      recorderMode: mode,
+      aspectRatio: mode.defaultAspectRatio,
+      showGridLines: mode.supportGridLines,
+    );
+    final prefs = ref.read(sharedPreferencesProvider);
+    prefs.setString(kLastUsedRecorderModeKey, mode.name);
+
+    ref
+        .read(clipManagerProvider.notifier)
+        .clearAll(
+          keepAutosavedDraft: keepAutosavedDraft,
+        );
+    ref
+        .read(videoEditorProvider.notifier)
+        .reset(
+          keepAutosavedDraft: keepAutosavedDraft,
+        );
+    Log.debug(
+      '🎬 Recorder mode changed to: ${mode.name}',
+      name: 'VideoRecorderNotifier',
+      category: .video,
     );
   }
 
@@ -1068,6 +1189,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     state = state.copyWith(
       showLastClipOverlay: !state.showLastClipOverlay,
     );
+  }
+
+  /// Toggle the rule-of-thirds grid overlay on the camera preview.
+  void toggleGridLines() {
+    state = state.copyWith(showGridLines: !state.showGridLines);
   }
 
   // === SOUND PLAYBACK DURING RECORDING ===
@@ -1172,6 +1298,42 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: LogCategory.video,
       );
     }
+  }
+
+  /// Waits for the current route's outgoing push transition to finish.
+  ///
+  /// When a new route is pushed on top, the previous route's
+  /// [TransitionRoute.secondaryAnimation] drives from 0→1. This method
+  /// completes when that animation reaches [AnimationStatus.completed],
+  /// meaning the pushed route fully covers the screen.
+  ///
+  /// Falls back immediately if the route has no animation (e.g.
+  /// NoTransitionPage) or the context is unmounted.
+  Future<void> _awaitPushTransition(BuildContext context) async {
+    // Yield one frame so the Navigator processes the push and starts
+    // the transition animation.
+    await WidgetsBinding.instance.endOfFrame;
+
+    if (!context.mounted) return;
+
+    final route = ModalRoute.of(context);
+    if (route == null) return;
+
+    final secondary = route.secondaryAnimation;
+    if (secondary == null || secondary.status == AnimationStatus.completed) {
+      return;
+    }
+
+    final completer = Completer<void>();
+    void onStatus(AnimationStatus status) {
+      if (status == AnimationStatus.completed && !completer.isCompleted) {
+        secondary.removeStatusListener(onStatus);
+        completer.complete();
+      }
+    }
+
+    secondary.addStatusListener(onStatus);
+    await completer.future;
   }
 }
 

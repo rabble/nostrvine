@@ -15,7 +15,7 @@ void main() {
     late ClipEditorBloc bloc;
 
     setUp(() {
-      bloc = ClipEditorBloc();
+      bloc = ClipEditorBloc(onFinalClipInvalidated: () {});
     });
 
     tearDown(() async {
@@ -140,7 +140,8 @@ void main() {
 }
 
 class _TestClipEditorBloc extends ClipEditorBloc {
-  _TestClipEditorBloc({required ClipEditorState initialState}) {
+  _TestClipEditorBloc({required ClipEditorState initialState})
+    : super(onFinalClipInvalidated: () {}) {
     emit(initialState);
   }
 }
