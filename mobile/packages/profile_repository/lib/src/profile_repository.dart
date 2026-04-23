@@ -487,10 +487,10 @@ class ProfileRepository {
     final profileContent = {
       if (currentProfile != null) ...currentProfile.rawData,
       'display_name': displayName,
-      'about': ?about,
+      'about': about,
       'nip05': ?resolvedNip05,
-      'picture': ?picture,
-      'banner': ?banner,
+      'picture': picture,
+      'banner': banner,
     };
 
     // When the user explicitly removes their NIP-05 (no username, no external
