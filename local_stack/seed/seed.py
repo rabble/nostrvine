@@ -672,6 +672,13 @@ def main() -> None:
         label = "popular" if i < NUM_POPULAR else "long-tail"
         print(f"  Author {i} ({label}, {persona}): {pubkey}")
 
+    # Accumulate *all* publish failures (relay-list, profiles, videos) so the
+    # exit status surfaces any rejection, not just video failures. A seed run
+    # where every kind 10002 or kind 0 is rejected must fail the container,
+    # otherwise docker-compose reports success while the indexer has no
+    # relay-lists and profiles are missing on FunnelCake/external.
+    total_fail = 0
+
     # 2. Publish kind 10002 relay list events (all authors → indexer)
     print(f"\nPublishing {NUM_AUTHORS} relay list events to indexer relay...")
     relay_list_events = []
@@ -679,6 +686,7 @@ def main() -> None:
         relay_list_events.append(build_relay_list_event(privkey, pubkey))
     ok, fail = publish_events_to_relay(relay_list_events, INDEXER_RELAY_URL)
     print(f"  Relay lists: {ok} ok, {fail} failed")
+    total_fail += fail
 
     # 3. Publish kind 0 profile events (routed by type)
     print(f"\nPublishing {NUM_AUTHORS} profile events...")
@@ -695,12 +703,15 @@ def main() -> None:
 
     ok, fail = publish_events_to_relay(indexer_profiles, INDEXER_RELAY_URL)
     print(f"  Indexer profiles: {ok} ok, {fail} failed")
+    total_fail += fail
     if funnelcake_profiles:
         ok, fail = publish_events_to_relay(funnelcake_profiles, RELAY_URL)
         print(f"  FunnelCake profiles: {ok} ok, {fail} failed")
+        total_fail += fail
     if external_profiles:
         ok, fail = publish_events_to_relay(external_profiles, EXTERNAL_RELAY_URL)
         print(f"  External profiles: {ok} ok, {fail} failed")
+        total_fail += fail
 
     # 4. Generate and upload unique videos + thumbnails + variants
     # Each video has a different noise seed so SHA-256 hashes differ,
@@ -769,13 +780,23 @@ def main() -> None:
         total_video_ok += ok
         total_video_fail += fail
 
+    total_fail += total_video_fail
+
     # 7. Summary
     print(f"\nSeeding complete: {total_video_ok} video events across relays")
     print(f"  {NUM_TYPE_A} Type A (Divine) authors, {NUM_TYPE_B} Type B (Nostr-native) authors")
     print(f"  {len(funnelcake_events)} targeted FunnelCake, {len(external_events)} targeted external")
 
-    if total_video_fail > 0:
-        print(f"\nERROR: {total_video_fail} video events failed to publish", file=sys.stderr)
+    if total_fail > 0:
+        # total_fail spans relay-list, profile, and video publish failures.
+        # Any rejection fails the container so docker-compose surfaces it
+        # instead of reporting success with partially seeded data.
+        print(
+            f"\nERROR: {total_fail} event(s) failed to publish "
+            f"(videos: {total_video_fail}, "
+            f"other: {total_fail - total_video_fail})",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
 
