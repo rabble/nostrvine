@@ -243,6 +243,34 @@ services:
       start_period: 10s
 
   # ---------------------------------------------------------------------------
+  # Indexer relay (stores kind 10002 + kind 0, simulates purplepag.es)
+  # ---------------------------------------------------------------------------
+  relay-indexer:
+    image: ghcr.io/verse-pbc/relay_builder:latest
+    pull_policy: always
+    ports:
+      - "47778:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8080'"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # External relay (stores kind 0 + videos for Nostr-native users, simulates damus)
+  # ---------------------------------------------------------------------------
+  relay-external:
+    image: ghcr.io/verse-pbc/relay_builder:latest
+    pull_policy: always
+    ports:
+      - "47779:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8080'"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
   # E2E seed data (runs once at startup)
   # ---------------------------------------------------------------------------
   e2e-seed:
@@ -254,6 +282,10 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      relay-indexer:
+        condition: service_healthy
+      relay-external:
+        condition: service_healthy
     environment:
       RELAY_URL: ws://funnelcake-relay:7777
       BLOSSOM_URL: http://blossom:7676
@@ -264,6 +296,10 @@ services:
       MINIO_SECRET_KEY: minioadmin
       NUM_VIDEOS: "100"
       NUM_UNIQUE_VIDEOS: ${NUM_UNIQUE_VIDEOS:-10}
+      INDEXER_RELAY_URL: ws://relay-indexer:8080
+      EXTERNAL_RELAY_URL: ws://relay-external:8080
+      RELAY_PUBLIC_URL: ws://10.0.2.2:47777
+      EXTERNAL_RELAY_PUBLIC_URL: ws://10.0.2.2:47779
     restart: "no"
 
 volumes:

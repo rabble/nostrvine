@@ -40,10 +40,19 @@ MINIO_BUCKET = os.environ.get("MINIO_BUCKET", "divine-blossom-local")
 MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "minioadmin")
 MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "minioadmin")
 
+INDEXER_RELAY_URL = os.environ.get("INDEXER_RELAY_URL", "ws://relay-indexer:8080")
+EXTERNAL_RELAY_URL = os.environ.get("EXTERNAL_RELAY_URL", "ws://relay-external:8080")
+RELAY_PUBLIC_URL = os.environ.get("RELAY_PUBLIC_URL", "ws://10.0.2.2:47777")
+EXTERNAL_RELAY_PUBLIC_URL = os.environ.get("EXTERNAL_RELAY_PUBLIC_URL", "ws://10.0.2.2:47779")
+
 SEED_PHRASE = "divine-e2e-seed-phrase-2026"
 NUM_AUTHORS = 20
 NUM_POPULAR = 5
 POPULAR_VIDEOS = 16  # each popular author gets ~16 videos
+
+# Author type split: first half are Type A (Divine), second half Type B (Nostr-native)
+NUM_TYPE_A = NUM_AUTHORS // 2  # 10
+NUM_TYPE_B = NUM_AUTHORS - NUM_TYPE_A  # 10
 
 POPULAR_HASHTAGS = ["music", "dance", "comedy", "art", "nature"]
 RARE_HASHTAGS = [
@@ -113,6 +122,55 @@ def sign_event(event: dict, privkey_bytes: bytes) -> dict:
     sig = privkey.sign_schnorr(event_id)
     event["sig"] = sig.hex()
     return event
+
+
+def author_is_type_a(author_idx: int) -> bool:
+    """Author 0..NUM_TYPE_A-1 are Type A (Divine), rest are Type B (Nostr-native)."""
+    return author_idx < NUM_TYPE_A
+
+
+def build_profile_event(
+    author_privkey: bytes,
+    author_pubkey: str,
+    author_idx: int,
+) -> dict:
+    """Build and sign a kind 0 profile metadata event."""
+    persona = "divine" if author_is_type_a(author_idx) else "nostr-native"
+    name = f"e2e-{persona}-{author_idx}"
+    content = json.dumps({
+        "name": name,
+        "display_name": f"E2E {persona.title()} User {author_idx}",
+        "about": f"Test {persona} user for E2E persona testing",
+    })
+    event = {
+        "kind": 0,
+        "pubkey": author_pubkey,
+        "created_at": int(time.time()),
+        "content": content,
+        "tags": [],
+    }
+    return sign_event(event, author_privkey)
+
+
+def build_relay_list_event(
+    author_privkey: bytes,
+    author_pubkey: str,
+) -> dict:
+    """Build and sign a kind 10002 relay list event.
+
+    Uses emulator-accessible public URLs, not Docker-internal hostnames.
+    """
+    event = {
+        "kind": 10002,
+        "pubkey": author_pubkey,
+        "created_at": int(time.time()),
+        "content": "",
+        "tags": [
+            ["r", RELAY_PUBLIC_URL],
+            ["r", EXTERNAL_RELAY_PUBLIC_URL],
+        ],
+    }
+    return sign_event(event, author_privkey)
 
 
 # ---------------------------------------------------------------------------
@@ -414,17 +472,19 @@ def build_event(
 # ---------------------------------------------------------------------------
 # Relay publishing
 # ---------------------------------------------------------------------------
-def publish_events(events: list[dict]) -> tuple[int, int]:
-    """Publish events to the relay via WebSocket. Returns (ok_count, fail_count)."""
+def publish_events_to_relay(events: list[dict], relay_url: str) -> tuple[int, int]:
+    """Publish events to the specified relay. Returns (ok_count, fail_count).
+
+    Throttles to ~9 events/s to stay under relay_builder's 10/s rate limit.
+    """
     ok_count = 0
     fail_count = 0
 
-    with websockets.sync.client.connect(RELAY_URL, close_timeout=10) as ws:
+    with websockets.sync.client.connect(relay_url, close_timeout=10) as ws:
         for i, event in enumerate(events):
             msg = json.dumps(["EVENT", event])
             ws.send(msg)
 
-            # Wait for OK response
             try:
                 raw = ws.recv(timeout=10)
                 response = json.loads(raw)
@@ -443,7 +503,6 @@ def publish_events(events: list[dict]) -> tuple[int, int]:
                             file=sys.stderr,
                         )
                 else:
-                    # Unexpected response; treat as failure
                     fail_count += 1
                     print(
                         f"  Unexpected response for event {i}: {raw}",
@@ -456,7 +515,15 @@ def publish_events(events: list[dict]) -> tuple[int, int]:
             if (i + 1) % 20 == 0:
                 print(f"  Published {i + 1}/{len(events)} events...")
 
+            # Stay under relay_builder's 10/s rate limit
+            time.sleep(0.12)
+
     return ok_count, fail_count
+
+
+def publish_events(events: list[dict]) -> tuple[int, int]:
+    """Publish events to the FunnelCake relay."""
+    return publish_events_to_relay(events, RELAY_URL)
 
 
 # ---------------------------------------------------------------------------
@@ -480,18 +547,23 @@ def wait_for_services(max_retries: int = 30, delay: float = 2.0) -> None:
                 sys.exit(1)
             time.sleep(delay)
 
-    # Check relay (WebSocket connect + disconnect)
-    for attempt in range(max_retries):
-        try:
-            with websockets.sync.client.connect(RELAY_URL, close_timeout=3):
-                pass
-            print(f"  Relay ready at {RELAY_URL}")
-            break
-        except (OSError, TimeoutError, websockets.exceptions.WebSocketException):
-            if attempt == max_retries - 1:
-                print(f"Relay not ready after {max_retries} attempts", file=sys.stderr)
-                sys.exit(1)
-            time.sleep(delay)
+    # Check relays (WebSocket connect + disconnect)
+    for label, url in [
+        ("Relay", RELAY_URL),
+        ("Indexer relay", INDEXER_RELAY_URL),
+        ("External relay", EXTERNAL_RELAY_URL),
+    ]:
+        for attempt in range(max_retries):
+            try:
+                with websockets.sync.client.connect(url, close_timeout=3):
+                    pass
+                print(f"  {label} ready at {url}")
+                break
+            except (OSError, TimeoutError, websockets.exceptions.WebSocketException):
+                if attempt == max_retries - 1:
+                    print(f"{label} not ready after {max_retries} attempts", file=sys.stderr)
+                    sys.exit(1)
+                time.sleep(delay)
 
     print("All services ready.")
 
@@ -581,6 +653,10 @@ def main() -> None:
         f"Config: RELAY_URL={RELAY_URL} BLOSSOM_URL={BLOSSOM_URL} "
         f"NUM_VIDEOS={NUM_VIDEOS} NUM_UNIQUE_VIDEOS={NUM_UNIQUE_VIDEOS}"
     )
+    print(
+        f"  INDEXER_RELAY_URL={INDEXER_RELAY_URL} "
+        f"EXTERNAL_RELAY_URL={EXTERNAL_RELAY_URL}"
+    )
 
     wait_for_services()
 
@@ -592,10 +668,41 @@ def main() -> None:
     print(f"\nGenerating {NUM_AUTHORS} author keypairs...")
     keypairs = [derive_keypair(i) for i in range(NUM_AUTHORS)]
     for i, (_, pubkey) in enumerate(keypairs):
+        persona = "type-A" if author_is_type_a(i) else "type-B"
         label = "popular" if i < NUM_POPULAR else "long-tail"
-        print(f"  Author {i} ({label}): {pubkey}")
+        print(f"  Author {i} ({label}, {persona}): {pubkey}")
 
-    # 2. Generate and upload unique videos + thumbnails + variants
+    # 2. Publish kind 10002 relay list events (all authors → indexer)
+    print(f"\nPublishing {NUM_AUTHORS} relay list events to indexer relay...")
+    relay_list_events = []
+    for privkey, pubkey in keypairs:
+        relay_list_events.append(build_relay_list_event(privkey, pubkey))
+    ok, fail = publish_events_to_relay(relay_list_events, INDEXER_RELAY_URL)
+    print(f"  Relay lists: {ok} ok, {fail} failed")
+
+    # 3. Publish kind 0 profile events (routed by type)
+    print(f"\nPublishing {NUM_AUTHORS} profile events...")
+    indexer_profiles = []
+    funnelcake_profiles = []
+    external_profiles = []
+    for i, (privkey, pubkey) in enumerate(keypairs):
+        profile = build_profile_event(privkey, pubkey, i)
+        indexer_profiles.append(profile)
+        if author_is_type_a(i):
+            funnelcake_profiles.append(profile)
+        else:
+            external_profiles.append(profile)
+
+    ok, fail = publish_events_to_relay(indexer_profiles, INDEXER_RELAY_URL)
+    print(f"  Indexer profiles: {ok} ok, {fail} failed")
+    if funnelcake_profiles:
+        ok, fail = publish_events_to_relay(funnelcake_profiles, RELAY_URL)
+        print(f"  FunnelCake profiles: {ok} ok, {fail} failed")
+    if external_profiles:
+        ok, fail = publish_events_to_relay(external_profiles, EXTERNAL_RELAY_URL)
+        print(f"  External profiles: {ok} ok, {fail} failed")
+
+    # 4. Generate and upload unique videos + thumbnails + variants
     # Each video has a different noise seed so SHA-256 hashes differ,
     # preventing HTTP cache from masking download time in perf tests.
     print(f"\nGenerating {NUM_UNIQUE_VIDEOS} unique test videos (1080x1920, ~15 Mbps each)...")
@@ -608,11 +715,14 @@ def main() -> None:
 
     print(f"All {NUM_UNIQUE_VIDEOS} videos uploaded successfully")
 
-    # 3. Build events (round-robin across unique videos)
+    # 5. Build and route video events
+    # Type A authors: all videos → FunnelCake
+    # Type B authors: odd-indexed → external, even-indexed → FunnelCake
     print(f"\nBuilding {NUM_VIDEOS} events...")
     rng = random.Random(42)
     author_assignments = build_author_video_map(rng)
-    events = []
+    funnelcake_events = []
+    external_events = []
 
     for i in range(NUM_VIDEOS):
         author_idx = author_assignments[i]
@@ -634,15 +744,38 @@ def main() -> None:
             hashtags=hashtags,
             rng=rng,
         )
-        events.append(event)
 
-    # 4. Publish to relay
-    print(f"\nPublishing {len(events)} events to {RELAY_URL}...")
-    ok_count, fail_count = publish_events(events)
+        if author_is_type_a(author_idx):
+            funnelcake_events.append(event)
+        elif i % 2 == 0:
+            funnelcake_events.append(event)
+        else:
+            external_events.append(event)
 
-    # 5. Summary
-    print(f"\nPublished {ok_count}/{NUM_VIDEOS} events ({fail_count} failed)")
-    if fail_count > 0:
+    # 6. Publish video events
+    total_video_ok = 0
+    total_video_fail = 0
+
+    print(f"\nPublishing {len(funnelcake_events)} videos to FunnelCake...")
+    ok, fail = publish_events(funnelcake_events)
+    print(f"  FunnelCake videos: {ok} ok, {fail} failed")
+    total_video_ok += ok
+    total_video_fail += fail
+
+    if external_events:
+        print(f"Publishing {len(external_events)} videos to external relay...")
+        ok, fail = publish_events_to_relay(external_events, EXTERNAL_RELAY_URL)
+        print(f"  External videos: {ok} ok, {fail} failed")
+        total_video_ok += ok
+        total_video_fail += fail
+
+    # 7. Summary
+    print(f"\nSeeding complete: {total_video_ok} video events across relays")
+    print(f"  {NUM_TYPE_A} Type A (Divine) authors, {NUM_TYPE_B} Type B (Nostr-native) authors")
+    print(f"  {len(funnelcake_events)} targeted FunnelCake, {len(external_events)} targeted external")
+
+    if total_video_fail > 0:
+        print(f"\nERROR: {total_video_fail} video events failed to publish", file=sys.stderr)
         sys.exit(1)
 
 

@@ -1,5 +1,5 @@
 // ABOUTME: Relay helpers for E2E integration tests
-// ABOUTME: Publish test Nostr events directly to the local FunnelCake relay
+// ABOUTME: Publish test Nostr events to local relays (FunnelCake, indexer, external)
 
 import 'dart:async';
 import 'dart:convert';
@@ -20,6 +20,43 @@ typedef PublishedVideo = ({String eventId, String pubkey, String privateKey});
 /// Result of publishing a test profile event.
 typedef PublishedProfile = ({String pubkey, String privateKey});
 
+/// Result of publishing a test relay list event.
+typedef PublishedRelayList = ({
+  String eventId,
+  String pubkey,
+  String privateKey,
+});
+
+/// Publish a kind 10002 relay list event to the indexer relay.
+///
+/// Creates a new keypair (or uses [privateKey] if provided), builds a NIP-65
+/// relay list event with the given relay URLs, signs it, and sends it to the
+/// indexer relay.
+///
+/// [relayUrls] are the relay URLs to include in the `r` tags. These must be
+/// emulator-accessible URLs (e.g., ws://10.0.2.2:47777), not Docker-internal.
+///
+/// Returns the event ID, pubkey, and private key.
+Future<PublishedRelayList> publishTestRelayListEvent({
+  required List<String> relayUrls,
+  String? privateKey,
+}) async {
+  final privKey = privateKey ?? generatePrivateKey();
+  final pubKey = getPublicKey(privKey);
+
+  final tags = relayUrls.map((url) => ['r', url]).toList();
+
+  final event = Event(pubKey, 10002, tags, '');
+  event.sign(privKey);
+
+  final eventId = await _publishEvent(
+    event,
+    relayPort: localIndexerRelayPort,
+  );
+  debugPrint('Published relay list event: $eventId (pubkey: $pubKey)');
+  return (eventId: eventId, pubkey: pubKey, privateKey: privKey);
+}
+
 /// Publish a kind 34236 video event to the local relay.
 ///
 /// Creates a new keypair (or uses [privateKey] if provided), builds a minimal
@@ -32,6 +69,7 @@ typedef PublishedProfile = ({String pubkey, String privateKey});
 Future<PublishedVideo> publishTestVideoEvent({
   required String title,
   String? privateKey,
+  int? relayPort,
 }) async {
   final privKey = privateKey ?? generatePrivateKey();
   final pubKey = getPublicKey(privKey);
@@ -62,7 +100,7 @@ Future<PublishedVideo> publishTestVideoEvent({
   );
   event.sign(privKey);
 
-  final eventId = await _publishEvent(event);
+  final eventId = await _publishEvent(event, relayPort: relayPort);
   debugPrint('Published test video event: $eventId (author: $pubKey)');
   return (eventId: eventId, pubkey: pubKey, privateKey: privKey);
 }
@@ -80,6 +118,7 @@ Future<PublishedProfile> publishTestProfileEvent({
   String? displayName,
   String? about,
   String? privateKey,
+  int? relayPort,
 }) async {
   final privKey = privateKey ?? generatePrivateKey();
   final pubKey = getPublicKey(privKey);
@@ -93,7 +132,7 @@ Future<PublishedProfile> publishTestProfileEvent({
   final event = Event(pubKey, 0, [], content);
   event.sign(privKey);
 
-  final eventId = await _publishEvent(event);
+  final eventId = await _publishEvent(event, relayPort: relayPort);
   debugPrint('Published test profile event: $eventId (pubkey: $pubKey)');
   return (pubkey: pubKey, privateKey: privKey);
 }
@@ -234,9 +273,13 @@ Future<Uint8List> _generateTestThumbnail() async {
 ///
 /// Opens a WebSocket, sends a REQ, collects EVENT messages until EOSE,
 /// then closes the connection. Returns all matching events.
-Future<List<Event>> queryRelay(Map<String, dynamic> filter) async {
+Future<List<Event>> queryRelay(
+  Map<String, dynamic> filter, {
+  int? relayPort,
+}) async {
+  final port = relayPort ?? localRelayPort;
   final channel = WebSocketChannel.connect(
-    Uri.parse('ws://$localHost:$localRelayPort'),
+    Uri.parse('ws://$localHost:$port'),
   );
 
   final subId = 'query-${DateTime.now().millisecondsSinceEpoch}';
@@ -263,6 +306,81 @@ Future<List<Event>> queryRelay(Map<String, dynamic> filter) async {
   }
 }
 
+/// Set up a Type A (Divine) user's relay presence.
+///
+/// Publishes kind 10002 (relay list) to the indexer relay and kind 0
+/// (profile) to both FunnelCake and the indexer relay.
+Future<void> setupTypeAPresence({
+  required String privateKey,
+  required String name,
+  String? displayName,
+  String? about,
+}) async {
+  // Kind 10002 → indexer, listing both relays
+  await publishTestRelayListEvent(
+    relayUrls: [
+      'ws://$localHost:$localRelayPort',
+      'ws://$localHost:$localExternalRelayPort',
+    ],
+    privateKey: privateKey,
+  );
+
+  // Kind 0 → FunnelCake
+  await publishTestProfileEvent(
+    name: name,
+    displayName: displayName,
+    about: about,
+    privateKey: privateKey,
+  );
+
+  // Kind 0 → indexer relay
+  await publishTestProfileEvent(
+    name: name,
+    displayName: displayName,
+    about: about,
+    privateKey: privateKey,
+    relayPort: localIndexerRelayPort,
+  );
+}
+
+/// Set up a Type B (Nostr-native) user's relay presence.
+///
+/// Publishes kind 10002 (relay list) to the indexer relay and kind 0
+/// (profile) to the external relay and indexer relay.
+Future<void> setupTypeBPresence({
+  required String privateKey,
+  required String name,
+  String? displayName,
+  String? about,
+}) async {
+  // Kind 10002 → indexer, listing both relays
+  await publishTestRelayListEvent(
+    relayUrls: [
+      'ws://$localHost:$localRelayPort',
+      'ws://$localHost:$localExternalRelayPort',
+    ],
+    privateKey: privateKey,
+  );
+
+  // Kind 0 → external relay
+  await publishTestProfileEvent(
+    name: name,
+    displayName: displayName,
+    about: about,
+    privateKey: privateKey,
+    relayPort: localExternalRelayPort,
+  );
+
+  // Kind 0 → indexer relay
+  await publishTestProfileEvent(
+    name: name,
+    displayName: displayName,
+    about: about,
+    privateKey: privateKey,
+    relayPort: localIndexerRelayPort,
+  );
+}
+
 /// Publish a NIP-09 kind 5 deletion event targeting [eventId].
 ///
 /// Signs with [privateKey] (must be the same author as the target event).
@@ -273,6 +391,7 @@ Future<String> publishDeleteEvent({
   required String eventId,
   required int kind,
   required String privateKey,
+  int? relayPort,
 }) async {
   final pubKey = getPublicKey(privateKey);
 
@@ -282,15 +401,39 @@ Future<String> publishDeleteEvent({
   ], '');
   deleteEvent.sign(privateKey);
 
-  final deletionId = await _publishEvent(deleteEvent);
+  final deletionId = await _publishEvent(deleteEvent, relayPort: relayPort);
   debugPrint('Published delete event: $deletionId (target: $eventId)');
   return deletionId;
 }
 
+/// Publish a kind 7 reaction event to the specified relay.
+///
+/// Creates a reaction ("+") from [privateKey] targeting [targetEventId]
+/// by [targetPubkey]. Used to seed notification data for testing.
+Future<String> publishTestReactionEvent({
+  required String targetEventId,
+  required String targetPubkey,
+  required String privateKey,
+  int? relayPort,
+}) async {
+  final pubKey = getPublicKey(privateKey);
+
+  final event = Event(pubKey, 7, [
+    ['e', targetEventId],
+    ['p', targetPubkey],
+  ], '+');
+  event.sign(privateKey);
+
+  final eventId = await _publishEvent(event, relayPort: relayPort);
+  debugPrint('Published reaction event: $eventId (target: $targetEventId)');
+  return eventId;
+}
+
 /// Send an event to the local relay and wait for OK confirmation.
-Future<String> _publishEvent(Event event) async {
+Future<String> _publishEvent(Event event, {int? relayPort}) async {
+  final port = relayPort ?? localRelayPort;
   final channel = WebSocketChannel.connect(
-    Uri.parse('ws://$localHost:$localRelayPort'),
+    Uri.parse('ws://$localHost:$port'),
   );
 
   final completer = Completer<String>();

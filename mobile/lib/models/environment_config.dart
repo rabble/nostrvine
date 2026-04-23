@@ -14,6 +14,8 @@ const int localApiPort = localRelayPort;
 const localBlossomPort = 43003;
 const localInvitePort = 43004;
 const productionApiBaseUrl = 'https://api.divine.video';
+const localIndexerRelayPort = 47778;
+const localExternalRelayPort = 47779;
 
 /// Build-time default environment
 /// Set via: --dart-define=DEFAULT_ENV=STAGING
@@ -104,7 +106,7 @@ class EnvironmentConfig {
   /// wasting time querying external indexers for test-created users.
   List<String> get indexerRelays {
     if (environment == AppEnvironment.local) {
-      return ['ws://$localHost:$localRelayPort'];
+      return ['ws://$localHost:$localIndexerRelayPort'];
     }
     return const [
       'wss://purplepag.es',

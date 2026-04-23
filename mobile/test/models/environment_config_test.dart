@@ -75,6 +75,22 @@ void main() {
       });
     });
 
+    group('indexerRelays', () {
+      test('local returns indexer relay on dedicated port', () {
+        const config = EnvironmentConfig(environment: AppEnvironment.local);
+        expect(config.indexerRelays, ['ws://10.0.2.2:47778']);
+      });
+
+      test('production returns public indexer relays', () {
+        const config = EnvironmentConfig(
+          environment: AppEnvironment.production,
+        );
+        expect(config.indexerRelays, contains('wss://purplepag.es'));
+        expect(config.indexerRelays, contains('wss://user.kindpag.es'));
+        expect(config.indexerRelays, contains('wss://relay.nos.social'));
+      });
+    });
+
     test('blossomUrl is same for all environments', () {
       const poc = EnvironmentConfig(environment: AppEnvironment.poc);
       const staging = EnvironmentConfig(environment: AppEnvironment.staging);

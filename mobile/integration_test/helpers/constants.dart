@@ -1,11 +1,13 @@
 // ABOUTME: Shared constants for E2E integration tests
-// ABOUTME: Re-exports environment config constants, adds test-only values
+// ABOUTME: Re-exports environment config constants (FunnelCake, indexer, external relay ports)
 
 export 'package:openvine/models/environment_config.dart'
     show
         localApiPort,
         localBlossomPort,
+        localExternalRelayPort,
         localHost,
+        localIndexerRelayPort,
         localInvitePort,
         localKeycastPort,
         localRelayPort;
