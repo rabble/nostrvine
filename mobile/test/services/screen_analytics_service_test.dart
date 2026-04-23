@@ -2,7 +2,6 @@
 // ABOUTME: Verifies sessions older than 60s are discarded and resetAllSessions
 // ABOUTME: clears all active sessions on app resume.
 
-@Tags(['skip_very_good_optimization'])
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 
@@ -11,6 +10,9 @@ void main() {
     late ScreenAnalyticsService service;
 
     setUp(() {
+      // Reset to discard any stale singleton left by a previous test or test
+      // file when running in a shared isolate (VGV optimized runner).
+      ScreenAnalyticsService.resetInstance();
       service = ScreenAnalyticsService.testInstance();
     });
 
