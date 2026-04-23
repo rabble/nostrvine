@@ -8,31 +8,21 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/router/routes/route_extras.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/user_avatar.dart';
-import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
-import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
-import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
-import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
@@ -239,7 +229,6 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                 child: _AuthorInfoSection(
                   video: video,
                   hasTextContent: hasTextContent,
-                  listSources: widget.listSources,
                   onInteracted: widget.onInteracted,
                 ),
               ),
@@ -267,13 +256,11 @@ class _AuthorInfoSection extends ConsumerWidget {
   const _AuthorInfoSection({
     required this.video,
     required this.hasTextContent,
-    this.listSources,
     this.onInteracted,
   });
 
   final VideoEvent video;
   final bool hasTextContent;
-  final Set<String>? listSources;
   final VoidCallback? onInteracted;
 
   /// Drop shadows applied to the video caption block (title + description +
@@ -305,11 +292,6 @@ class _AuthorInfoSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Repost banner
-        if (video.isRepost && video.reposterPubkey != null) ...[
-          VideoRepostHeader(reposterPubkey: video.reposterPubkey!),
-          const SizedBox(height: 8),
-        ],
         // Avatar and name row
         Row(
           children: [
@@ -334,24 +316,17 @@ class _AuthorInfoSection extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Semantics(
-                            identifier: 'video_author_name',
-                            container: true,
-                            explicitChildNodes: true,
-                            label: 'Video author: $displayName',
-                            child: Text(
-                              displayName,
-                              style: VineTheme.titleSmallFont(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                        _Nip05Badge(pubkey: video.pubkey),
-                      ],
+                    Semantics(
+                      identifier: 'video_author_name',
+                      container: true,
+                      explicitChildNodes: true,
+                      label: 'Video author: $displayName',
+                      child: Text(
+                        displayName,
+                        style: VineTheme.titleSmallFont(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     Text(
                       context.l10n.videoFeedLoopCountLine(
@@ -425,32 +400,6 @@ class _AuthorInfoSection extends ConsumerWidget {
                 ),
               ),
             ),
-          // Collaborator avatars
-          if (video.hasCollaborators) ...[
-            const SizedBox(height: 4),
-            CollaboratorAvatarRow(video: video),
-          ],
-          // Inspired-by attribution
-          if (video.hasInspiredBy) ...[
-            const SizedBox(height: 4),
-            InspiredByAttributionRow(video: video, isActive: true),
-          ],
-        ],
-        // Audio attribution — only when the video actually references
-        // shared audio. AudioAttributionRow itself would render
-        // SizedBox.shrink otherwise; gating here avoids the leading 4 px
-        // spacer becoming dead space.
-        if (video.hasAudioReference && video.audioEventId != null) ...[
-          const SizedBox(height: 4),
-          AudioAttributionRow(video: video),
-        ],
-        // List attribution (curated lists)
-        if (listSources != null && listSources!.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          _ListAttribution(
-            listSources: listSources!,
-            onInteracted: onInteracted,
-          ),
         ],
         // Bottom padding per Figma `video data` spec (always 4 px).
         const SizedBox(height: 4),
@@ -525,72 +474,6 @@ class _ActionButtons extends StatelessWidget {
     onAutoPressed: onAutoPressed,
     onInteracted: onInteracted,
   );
-}
-
-/// NIP-05 verification badge.
-class _Nip05Badge extends ConsumerWidget {
-  const _Nip05Badge({required this.pubkey});
-
-  final String pubkey;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final verificationAsync = ref.watch(nip05VerificationProvider(pubkey));
-
-    return verificationAsync.when(
-      data: (status) {
-        if (status != Nip05VerificationStatus.verified) {
-          return const SizedBox.shrink();
-        }
-        return Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: SvgPicture.asset(
-            DivineIconName.sealCheck.assetPath,
-            width: 16,
-            height: 16,
-            colorFilter: const ColorFilter.mode(
-              VineTheme.vineGreen,
-              BlendMode.srcIn,
-            ),
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-    );
-  }
-}
-
-/// Displays curated list attribution chips and handles navigation.
-class _ListAttribution extends ConsumerWidget {
-  const _ListAttribution({
-    required this.listSources,
-    this.onInteracted,
-  });
-
-  final Set<String> listSources;
-  final VoidCallback? onInteracted;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final curatedListRepository = ref.watch(curatedListRepositoryProvider);
-
-    return ListAttributionChip(
-      listIds: listSources,
-      listLookup: curatedListRepository.getListById,
-      onListTap: (listId, listName) {
-        onInteracted?.call();
-        final list = curatedListRepository.getListById(listId);
-        context.pushWithVideoPause(
-          CuratedListFeedScreen.pathForId(listId),
-          extra: CuratedListRouteExtra(
-            listName: listName,
-            videoIds: list?.videoEventIds,
-          ),
-        );
-      },
-    );
-  }
 }
 
 /// Streams the player position and renders subtitle text.
