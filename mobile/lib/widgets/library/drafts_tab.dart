@@ -25,7 +25,16 @@ import 'package:unified_logger/unified_logger.dart';
 /// (post, edit, delete) internally.
 class DraftsTab extends ConsumerWidget {
   /// Creates a drafts tab.
-  const DraftsTab({super.key});
+  const DraftsTab({
+    required this.showRecordButton,
+    this.showAutosavedDraft = true,
+    super.key,
+  });
+
+  final bool showRecordButton;
+
+  /// Whether to include the autosaved draft in the list.
+  final bool showAutosavedDraft;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -86,26 +95,34 @@ class DraftsTab extends ConsumerWidget {
           ),
           DraftsLibraryLoaded(:final drafts) ||
           DraftsLibraryDraftDeleted(:final drafts) ||
-          DraftsLibraryDeleteFailed(
-            :final drafts,
-          ) when drafts.isEmpty => EmptyLibraryState(
-            icon: DivineIconName.pencilSimple,
-            title: context.l10n.libraryNoDraftsYetTitle,
-            subtitle: context.l10n.libraryNoDraftsYetSubtitle,
-          ),
-          DraftsLibraryLoaded(:final drafts) ||
-          DraftsLibraryDraftDeleted(:final drafts) ||
-          DraftsLibraryDeleteFailed(:final drafts) => ListView.builder(
-            itemCount: drafts.length,
-            itemBuilder: (context, index) {
-              final draft = drafts[index];
-              return DraftListTile(
-                draft: draft,
-                onTap: () => _openDraft(context, ref, draft),
-                onOpenMore: () => _openDraftOptions(context, ref, draft),
+          DraftsLibraryDeleteFailed(:final drafts) => () {
+            final filtered = showAutosavedDraft
+                ? drafts
+                : drafts
+                      .where(
+                        (d) => d.id != VideoEditorConstants.autoSaveId,
+                      )
+                      .toList();
+            if (filtered.isEmpty) {
+              return EmptyLibraryState(
+                showRecordButton: showRecordButton,
+                icon: DivineIconName.pencilSimple,
+                title: context.l10n.libraryNoDraftsYetTitle,
+                subtitle: context.l10n.libraryNoDraftsYetSubtitle,
               );
-            },
-          ),
+            }
+            return ListView.builder(
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final draft = filtered[index];
+                return DraftListTile(
+                  draft: draft,
+                  onTap: () => _openDraft(context, ref, draft),
+                  onOpenMore: () => _openDraftOptions(context, ref, draft),
+                );
+              },
+            );
+          }(),
         };
       },
     );
@@ -206,20 +223,22 @@ class DraftsTab extends ConsumerWidget {
         backgroundColor: VineTheme.cardBackground,
         title: Text(
           context.l10n.libraryDeleteDraftTitle,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.titleSmallFont(),
         ),
         content: Text(
           context.l10n.libraryDeleteDraftMessage(
             draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
           ),
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.bodyMediumFont(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               context.l10n.commonCancel,
-              style: const TextStyle(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.secondaryText,
+              ),
             ),
           ),
           ElevatedButton(

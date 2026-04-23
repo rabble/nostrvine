@@ -209,14 +209,25 @@ class DivineVideoPlayerController {
   ///
   /// Replaces any previously loaded clips. The player must be
   /// [isInitialized] before calling this.
-  Future<void> setClips(List<VideoClip> clips) async {
+  ///
+  /// Pass [startPosition] to begin playback at a specific point on the
+  /// global timeline. ExoPlayer will start buffering at the matching
+  /// clip and local offset directly — no extra seekTo needed.
+  Future<void> setClips(
+    List<VideoClip> clips, {
+    Duration? startPosition,
+  }) async {
     _ensureInitialized();
     if (_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter = Completer<bool>();
     }
     await _methodChannel.invokeMethod<void>(
       'setClips',
-      {'clips': clips.map((c) => c.toMap()).toList()},
+      {
+        'clips': clips.map((c) => c.toMap()).toList(),
+        if (startPosition != null && startPosition > Duration.zero)
+          'startPositionMs': startPosition.inMilliseconds,
+      },
     );
   }
 

@@ -229,14 +229,15 @@
     "videoGridEditVideo": "영상 편집",
     "videoGridEditVideoSubtitle": "제목, 설명, 해시태그 수정",
     "videoGridDeleteVideo": "영상 삭제",
-    "videoGridDeleteVideoSubtitle": "이 영상을 Divine에서 지워요. 다른 Nostr 앱에서는 여전히 보일 수 있어요.",
+    "videoGridDeleteVideoSubtitle": "이 콘텐츠를 완전히 지워요",
     "videoGridDeleteConfirmTitle": "영상 삭제",
-    "videoGridDeleteConfirmMessage": "이 영상은 Divine에서 영구적으로 삭제돼요. 다른 릴레이를 쓰는 다른 Nostr 앱에서는 여전히 보일 수 있어요.",
-    "videoGridDeleteConfirmNote": "릴레이에 삭제 요청을 보내요. 참고: 일부 릴레이에는 캐시된 사본이 남아 있을 수 있어요.",
+    "videoGridDeleteConfirmMessage": "이 영상을 정말 삭제할까요?",
+    "videoGridDeleteConfirmNote": "모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.",
     "videoGridDeleteCancel": "취소",
     "videoGridDeleteConfirm": "삭제",
     "videoGridDeletingContent": "콘텐츠 삭제 중...",
     "videoGridDeleteSuccess": "삭제 요청을 보냈어요",
+    "videoGridDeleteFailure": "콘텐츠를 삭제하지 못했어요: {error}",
     "exploreTabClassics": "클래식",
     "exploreTabNew": "신규",
     "exploreTabPopular": "인기",
@@ -341,9 +342,6 @@
     "shareMessageHint": "메시지 추가 (선택)...",
     "videoActionUnlike": "좋아요 취소",
     "videoActionLike": "좋아요",
-    "videoActionAutoLabel": "자동",
-    "videoActionEnableAutoAdvance": "자동 넘김 켜기",
-    "videoActionDisableAutoAdvance": "자동 넘김 끄기",
     "videoActionRemoveRepost": "리포스트 취소",
     "videoActionRepost": "영상 리포스트",
     "videoActionViewComments": "댓글 보기",
@@ -351,17 +349,6 @@
     "videoActionHideSubtitles": "자막 숨기기",
     "videoActionShowSubtitles": "자막 표시",
     "videoDescriptionLoops": "루프 {count}회",
-    "videoFeedLoopCountLine": "{compactCount} {count, plural, other{루프}}",
-    "@videoFeedLoopCountLine": {
-        "placeholders": {
-            "compactCount": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Divine 아님",
     "metadataBadgeHumanMade": "사람 제작",
     "metadataSoundsLabel": "사운드",
@@ -373,14 +360,7 @@
     "metadataCollaboratorsLabel": "콜라보레이터",
     "metadataInspiredByLabel": "영감",
     "metadataRepostedByLabel": "리포스트",
-    "metadataLoopsLabel": "{count, plural, other{루프}}",
-    "@metadataLoopsLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
+    "metadataLoopsLabel": "루프",
     "metadataLikesLabel": "좋아요",
     "metadataCommentsLabel": "댓글",
     "metadataRepostsLabel": "리포스트",
@@ -863,21 +843,17 @@
     "shareMenuEditVideo": "영상 편집",
     "shareMenuEditVideoSubtitle": "제목, 설명, 해시태그 수정",
     "shareMenuDeleteVideo": "영상 삭제",
-    "shareMenuDeleteVideoSubtitle": "이 영상을 Divine에서 지워요. 다른 Nostr 앱에서는 여전히 보일 수 있어요.",
+    "shareMenuDeleteVideoSubtitle": "이 콘텐츠를 완전히 지워요",
     "shareMenuVideoInTheseLists": "영상이 다음 리스트에 있어요:",
     "shareMenuVideoCount": "영상 {count}개",
     "shareMenuClose": "닫기",
-    "shareMenuDeleteConfirmation": "이 영상은 Divine에서 영구적으로 삭제돼요. 다른 릴레이를 쓰는 다른 Nostr 앱에서는 여전히 보일 수 있어요.",
+    "shareMenuDeleteConfirmation": "이 영상을 정말 삭제할까요?",
+    "shareMenuDeleteWarning": "모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.",
     "shareMenuCancel": "취소",
     "shareMenuDelete": "삭제",
     "shareMenuDeletingContent": "콘텐츠 삭제 중...",
-    "shareMenuDeleteRequestSent": "영상을 삭제했어요",
-    "shareMenuDeleteFailedNotInitialized": "삭제 준비가 아직 안 됐어요. 잠시 뒤에 다시 시도해요.",
-    "shareMenuDeleteFailedNotOwner": "내가 올린 영상만 삭제할 수 있어요.",
-    "shareMenuDeleteFailedNotAuthenticated": "다시 로그인한 뒤 삭제를 시도해요.",
-    "shareMenuDeleteFailedCouldNotSign": "삭제 요청에 서명하지 못했어요. 다시 시도해요.",
-  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedGeneric": "이 영상을 삭제하지 못했어요. 다시 시도해요.",
+    "shareMenuDeleteRequestSent": "삭제 요청을 보냈어요",
+    "shareMenuFailedToDeleteContent": "콘텐츠 삭제에 실패했어요: {error}",
     "shareMenuFollowSetName": "팔로우 세트 이름",
     "shareMenuFollowSetNameHint": "예: 크리에이터, 뮤지션 등",
     "shareMenuDescriptionOptional": "설명 (선택)",
@@ -897,7 +873,8 @@
     "shareMenuFailedToUpdateVideo": "영상 업데이트에 실패했어요: {error}",
     "shareMenuDeleteVideoQuestion": "영상을 삭제할까요?",
     "shareMenuDeleteRelayWarning": "릴레이에 삭제 요청을 보내요. 참고: 일부 릴레이에는 캐시된 사본이 남아 있을 수 있어요.",
-    "shareMenuVideoDeletionRequested": "영상을 삭제했어요",
+    "shareMenuVideoDeletionRequested": "영상 삭제를 요청했어요",
+    "shareMenuFailedToDeleteVideo": "영상 삭제에 실패했어요: {error}",
     "shareMenuContentLabels": "콘텐츠 라벨",
     "shareMenuAddContentLabels": "콘텐츠 라벨 추가",
     "shareMenuClearAll": "모두 지우기",
@@ -1039,9 +1016,9 @@
     "feedFailedToLoadVideos": "영상을 불러오지 못했어요",
     "feedRetry": "다시 시도",
     "feedNoFollowedUsers": "팔로우한 사용자가 없어요.\n누군가를 팔로우하면 여기에 영상이 표시돼요.",
-    "feedForYouEmpty": "추천 피드가 비어 있어요.\n영상을 둘러보고 크리에이터를 팔로우해 피드를 채워보세요.",
-    "feedFollowingEmpty": "팔로우한 사용자의 영상이 아직 없어요.\n마음에 드는 크리에이터를 찾아 팔로우해 보세요.",
-    "feedLatestEmpty": "아직 새로운 영상이 없어요.\n잠시 후 다시 확인해 주세요.",
+    "feedForYouEmpty": "추천 피드가 비어 있어요.\n동영상을 탐색하고 크리에이터를 팔로우해 피드를 만들어보세요.",
+    "feedFollowingEmpty": "아직 팔로우한 사람들의 동영상이 없어요.\n마음에 드는 크리에이터를 찾아 팔로우해 보세요.",
+    "feedLatestEmpty": "아직 새로운 동영상이 없어요.\n잠시 후 다시 확인해 주세요.",
     "feedExploreVideos": "영상 둘러보기",
     "feedExternalVideoSlow": "외부 영상 로딩이 느려요",
     "feedSkip": "건너뛰기",
@@ -1081,6 +1058,31 @@
     "userSearchPrompt": "사용자 검색",
     "userSearchNoResults": "사용자를 찾을 수 없어요",
     "userSearchFailed": "검색에 실패했어요",
+    "userPickerSearchByName": "이름으로 검색",
+    "userPickerFilterByNameHint": "이름으로 필터링...",
+    "userPickerSearchByNameHint": "이름으로 검색...",
+    "userPickerAlreadyAddedSemantics": "{name} 이미 추가됨",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerSelectSemantics": "{name} 선택",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "네 크루는 밖에 있어",
+    "userPickerEmptyFollowListBody": "잘 맞는 사람들을 팔로우해 보세요. 서로 팔로우하면 함께 협업할 수 있어요.",
+    "userPickerGoBack": "뒤로 가기",
+    "userPickerTypeNameToSearch": "검색할 이름을 입력하세요",
+    "userPickerUnavailable": "사용자 검색을 사용할 수 없습니다. 나중에 다시 시도해 주세요.",
+    "userPickerSearchFailedTryAgain": "검색에 실패했어요. 다시 시도해 주세요.",
     "forgotPasswordTitle": "비밀번호 재설정",
     "forgotPasswordDescription": "이메일 주소를 입력하면 비밀번호 재설정 링크를 보내드려요.",
     "forgotPasswordEmailLabel": "이메일 주소",
@@ -1110,7 +1112,9 @@
     "navInbox": "받은편지함",
     "navProfile": "프로필",
     "navMyProfile": "내 프로필",
+    "navSearch": "검색",
     "navNotifications": "알림",
+    "navSearchTooltip": "검색",
     "navOpenCamera": "카메라 열기",
     "navUnknown": "알 수 없음",
     "navExploreClassics": "클래식",
@@ -1465,6 +1469,7 @@
     "commonCancel": "취소",
     "commonDelete": "삭제",
     "commonRetry": "다시 시도",
+    "commonNext": "다음",
     "discoverListsFailedToUpdateSubscription": "구독 업데이트에 실패했어요: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -1678,14 +1683,21 @@
     "searchDiscoverSomethingInteresting": "흥미로운 것을 발견해보세요",
     "searchEnterQuery": "검색어를 입력하세요",
     "searchFindCuratedVideoLists": "큐레이션된 동영상 목록 찾기",
+  "searchListsSectionHeader": "목록",
+  "searchListsLoadingLabel": "목록 결과 불러오는 중",
     "searchForLists": "목록 검색",
     "searchSomethingWentWrong": "문제가 발생했어요",
     "searchTryAgain": "다시 시도",
     "trendingTitle": "트렌딩",
-    "videoEditorLayers": "레이어",
     "videoEditorStickers": "스티커",
     "videoMetadataContentWarnings": "콘텐츠 경고",
     "videoMetadataExpiration": "만료",
+    "videoMetadataExpirationNotExpire": "만료되지 않음",
+    "videoMetadataExpirationOneDay": "1일",
+    "videoMetadataExpirationOneWeek": "1주",
+    "videoMetadataExpirationOneMonth": "1개월",
+    "videoMetadataExpirationOneYear": "1년",
+    "videoMetadataExpirationOneDecade": "10년",
     "videoMetadataTags": "태그",
     "contentLabelAiGenerated": "AI 생성",
     "contentLabelAlcohol": "음주",
@@ -1880,5 +1892,330 @@
     "cameraPermissionAllowAccessTitle": "카메라 및 마이크 접근 허용",
     "cameraPermissionAllowAccessDescription": "이렇게 하면 앱에서 바로 동영상을 촬영하고 편집할 수 있으며, 그 외 용도는 없습니다.",
     "cameraPermissionContinue": "계속",
-    "cameraPermissionGoToSettings": "설정으로 이동"
+    "cameraPermissionGoToSettings": "설정으로 이동",
+    "videoEditorAddClipFromLibrary": "보관함에서 클립 추가",
+    "videoEditorAddElementSemanticLabel": "요소 추가",
+    "videoEditorAddTitle": "추가",
+    "videoEditorAdjustVolumeTitle": "볼륨 조정",
+    "videoEditorAudioAddAudio": "오디오 추가",
+    "videoEditorAudioFailedToLoadTitle": "사운드 로드 실패",
+    "videoEditorAudioLabel": "오디오",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "크리에이터가 오디오를 공유하면 여기에 표시됩니다",
+    "videoEditorAudioNoSoundsAvailableTitle": "사용 가능한 사운드 없음",
+    "videoEditorAudioNoSoundsFoundSubtitle": "다른 검색어를 시도해 보세요",
+    "videoEditorAudioNoSoundsFoundTitle": "사운드를 찾을 수 없음",
+    "videoEditorAudioPausePreviewSemanticLabel": "미리보기 일시 정지",
+    "videoEditorAudioPlayPreviewSemanticLabel": "미리보기 재생",
+    "videoEditorAudioSelectSoundSemanticLabel": "사운드 선택",
+    "videoEditorAudioUntitled": "제목 없음",
+    "videoEditorAudioUntitledSound": "제목 없는 사운드",
+    "videoEditorCannotSplitProcessing": "처리 중에는 클립을 분할할 수 없습니다. 잠시 기다려 주세요.",
+    "videoEditorClipDeleted": "클립이 삭제되었습니다",
+    "videoEditorClipSaveFailed": "클립 저장 실패",
+    "videoEditorClipSavedSuccess": "클립이 보관함에 저장되었습니다",
+    "videoEditorClipsLabel": "클립",
+    "videoEditorCloseColorPickerSemanticLabel": "색상 선택기 닫기",
+    "videoEditorCloseSemanticLabel": "닫기",
+    "videoEditorColorPickerSemanticLabel": "색상 선택기",
+    "videoEditorColorSelectedSemanticLabel": "{colorName}, 선택됨",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorConfirmColorSemanticLabel": "색상 확인",
+    "videoEditorCropSemanticLabel": "자르기",
+    "videoEditorCustomAudioLabel": "커스텀 오디오",
+    "videoEditorDeleteClip": "클립 삭제",
+    "videoEditorDeleteLabel": "삭제",
+    "videoEditorDeleteLayerDropZone": "레이어 삭제 드롭 영역",
+    "videoEditorDeleteSelectedItemSemanticLabel": "선택한 항목 삭제",
+    "videoEditorDiscardChangesButton": "변경사항 버리기",
+    "videoEditorDoneLabel": "완료",
+    "videoEditorDoneSemanticLabel": "완료",
+    "videoEditorDrawLabel": "그리기",
+    "videoEditorDrawToolArrowSemanticLabel": "화살표 도구",
+    "videoEditorDrawToolEraserSemanticLabel": "지우개 도구",
+    "videoEditorDrawToolMarkerSemanticLabel": "마커 도구",
+    "videoEditorDrawToolPencilSemanticLabel": "연필 도구",
+    "videoEditorDuplicateLabel": "복제",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "선택한 항목 복제",
+    "videoEditorEditLabel": "편집",
+    "videoEditorEditSelectedItemSemanticLabel": "선택한 항목 편집",
+    "videoEditorEffectsLabel": "효과",
+    "videoEditorFailedLoadStickers": "스티커 로드 실패",
+    "videoEditorFeedPreviewContent": "이 영역 뒤에 콘텐츠를 배치하지 마세요.",
+    "videoEditorFinishTimelineEditingSemanticLabel": "타임라인 편집 완료",
+    "videoEditorFontSemanticLabel": "폰트",
+    "videoEditorFontUnknown": "알 수 없음",
+    "videoEditorHideTimelineSemanticLabel": "타임라인 숨기기",
+    "videoEditorHueSemanticLabel": "색조",
+    "videoEditorKeepEditingButton": "계속 편집",
+    "videoEditorLayerReorderHint": "길게 눌러 순서 변경",
+    "videoEditorLayerReorderLabel": "레이어 {index} 순서 변경",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLevelSemanticLabel": "레벨",
+    "videoEditorMuteAudioSemanticLabel": "오디오 음소거",
+    "videoEditorNoStickersAvailable": "사용 가능한 스티커 없음",
+    "videoEditorNoStickersFound": "스티커를 찾을 수 없음",
+    "videoEditorOpenAudioSemanticLabel": "오디오 편집기 열기",
+    "videoEditorOpenClipsSemanticLabel": "클립 편집기 열기",
+    "videoEditorOpenDrawSemanticLabel": "그리기 편집기 열기",
+    "videoEditorOpenEffectsSemanticLabel": "효과 편집기 열기",
+    "videoEditorOpenTextSemanticLabel": "텍스트 편집기 열기",
+    "videoEditorPauseSemanticLabel": "일시 정지",
+    "videoEditorPickColorTitle": "색상 선택",
+    "videoEditorPlayPauseSemanticLabel": "동영상 재생 또는 일시 정지",
+    "videoEditorPlaySemanticLabel": "재생",
+    "videoEditorRecordedAudioLabel": "녹음된 오디오",
+    "videoEditorRedoSemanticLabel": "다시 실행",
+    "videoEditorReleaseToDeleteLayer": "놓아서 레이어 삭제",
+    "videoEditorSaturationBrightnessSemanticLabel": "채도 및 밝기",
+    "videoEditorSaturationBrightnessValue": "채도 {saturation}%, 밝기 {brightness}%",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorSaveClip": "클립 저장",
+    "videoEditorSaveDraftButton": "임시저장",
+    "videoEditorSaveDraftSubtitle": "편집 내용을 나중에 저장하거나, 버리고 편집기를 나갑니다.",
+    "videoEditorSaveDraftTitle": "임시저장 하시겠어요?",
+    "videoEditorSaveSelectedClip": "선택한 클립 저장",
+    "videoEditorSelectFontSemanticLabel": "폰트 선택",
+    "videoEditorShowTimelineSemanticLabel": "타임라인 표시",
+    "videoEditorSortBySemanticLabel": "{option} 기준 정렬. 탭하여 정렬 순서 변경",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorSortLongest": "긴 순",
+    "videoEditorSortNewest": "최신순",
+    "videoEditorSortShortest": "짧은 순",
+    "videoEditorSplitClip": "클립 분할",
+    "videoEditorSplitLabel": "분할",
+    "videoEditorSplitPlayheadOutsideClip": "분할하려면 재생 헤드가 선택한 클립 안에 있어야 합니다.",
+    "videoEditorSplitPositionInvalid": "분할 위치가 유효하지 않습니다. 각 클립은 최소 {minDurationMs}ms 이상이어야 합니다.",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorSplitSelectedClipSemanticLabel": "선택한 클립 분할",
+    "videoEditorStickerSearchHint": "스티커 검색...",
+    "videoEditorTextAlignmentSemanticLabel": "텍스트 정렬",
+    "videoEditorTextBackgroundSemanticLabel": "텍스트 배경",
+    "videoEditorTextColorSemanticLabel": "텍스트 색상",
+    "videoEditorTextLabel": "텍스트",
+    "videoEditorTimelineClipMoveLeft": "왼쪽으로 이동",
+    "videoEditorTimelineClipMoveRight": "오른쪽으로 이동",
+    "videoEditorTimelineClipReorderHint": "길게 눌러 순서 변경",
+    "videoEditorTimelineClipSemanticLabel": "클립 {total}개 중 {index}번째, {duration}초",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineDraggingClipSemanticLabel": "클립 {index} 드래그 중",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineLongPressToDragHint": "길게 눌러 드래그",
+    "videoEditorTimelinePositionFormat": "{minutes}분 {seconds}초",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineTrimClipHint": "핸들을 드래그하여 클립 길이 조정",
+    "videoEditorTimelineTrimClipSemanticLabel": "클립 트림",
+    "videoEditorTimelineTrimEndSemanticLabel": "끝 트림",
+    "videoEditorTimelineTrimStartSemanticLabel": "시작 트림",
+    "videoEditorUndoSemanticLabel": "실행 취소",
+    "videoEditorUnmuteAudioSemanticLabel": "오디오 음소거 해제",
+    "videoEditorVideoTimelineSemanticLabel": "동영상 타임라인",
+    "videoEditorVolumeLabel": "볼륨",
+    "videoMetadataAddCollaboratorSemanticLabel": "협업자 추가",
+    "videoMetadataBackSemanticLabel": "뒤로",
+    "videoMetadataClassicDoneButton": "완료",
+    "videoMetadataClosePreviewSemanticLabel": "동영상 미리보기 닫기",
+    "videoMetadataCollaboratorsCount": "{count}/{max}명의 협업자",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataCollaboratorsHelpMessage": "협업자는 이 게시물의 공동 크리에이터로 태그됩니다. 서로 팔로우하는 사람만 추가할 수 있으며, 게시 시 게시물 메타데이터에 표시됩니다.",
+    "videoMetadataCollaboratorsHelpTooltip": "협업자 작동 방식",
+    "videoMetadataCollaboratorsLabel": "협업자",
+    "videoMetadataContentWarningDoneButton": "완료",
+    "videoMetadataContentWarningLabel": "콘텐츠 경고",
+    "videoMetadataContentWarningSelectAllThatApply": "콘텐츠에 해당하는 것을 모두 선택",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "이 크리에이터는 참조할 수 없습니다.",
+    "videoMetadataDeleteTagHint": "태그 {tag} 삭제",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataDeleteTagSemanticLabel": "삭제",
+    "videoMetadataDescriptionLabel": "설명",
+    "videoMetadataDismissHelpDialogSemanticLabel": "도움말 대화상자 닫기",
+    "videoMetadataExpirationLabel": "만료",
+    "videoMetadataFailedToSaveSnackbar": "저장 실패",
+    "videoMetadataFormNotReadyHint": "활성화하려면 양식을 작성하세요",
+    "videoMetadataGoToLibraryButton": "보관함으로 이동",
+    "videoMetadataGotItButton": "알겠어요!",
+    "videoMetadataInspiredByHelpMessage": "출처 표시를 위해 사용하세요. 영감 크레딧은 협업자와 다릅니다. 영향을 인정하지만 공동 크리에이터로 태그하지는 않습니다.",
+    "videoMetadataInspiredByHelpTooltip": "영감 크레딧 작동 방식",
+    "videoMetadataInspiredByLabel": "영감 출처",
+    "videoMetadataInspiredByNone": "없음",
+    "videoMetadataLimitReachedWarning": "64KB 제한에 도달했습니다. 계속하려면 일부 콘텐츠를 삭제하세요.",
+    "videoMetadataMustMutuallyFollowSnackbar": "{name}을(를) 협업자로 추가하려면 서로 팔로우해야 합니다.",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataMutualFollowersSearchText": "맞팔 팔로워",
+    "videoMetadataOpenPreviewSemanticLabel": "게시물 미리보기 화면 열기",
+    "videoMetadataPausePreviewSemanticLabel": "미리보기 일시 정지",
+    "videoMetadataPlayPreviewSemanticLabel": "미리보기 재생",
+    "videoMetadataPostButton": "게시",
+    "videoMetadataPostDetailsTitle": "게시물 세부 정보",
+    "videoMetadataPostSemanticLabel": "게시 버튼",
+    "videoMetadataPublishVideoHint": "피드에 동영상 게시",
+    "videoMetadataRemoveCollaboratorSemanticLabel": "협업자 삭제",
+    "videoMetadataRemoveInspiredBySemanticLabel": "영감 출처 삭제",
+    "videoMetadataRemoveSemanticLabel": "삭제",
+    "videoMetadataRenderingVideoHint": "동영상 렌더링 중...",
+    "videoMetadataSaveForLaterButton": "나중에 저장",
+    "videoMetadataSaveForLaterSemanticLabel": "나중에 저장 버튼",
+    "videoMetadataSaveToDraftsHint": "동영상을 임시저장 및 {destination}에 저장",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSavedToLibrarySnackbar": "보관함에 저장되었습니다",
+    "videoMetadataSavingVideoHint": "동영상 저장 중...",
+    "videoMetadataSelectContentWarningsSemanticLabel": "콘텐츠 경고 선택",
+    "videoMetadataSelectExpirationSemanticLabel": "만료 시간 선택",
+    "videoMetadataSetInspiredBySemanticLabel": "영감 출처 설정",
+    "videoMetadataShareTitle": "공유",
+    "videoMetadataTagsLabel": "태그",
+    "videoMetadataTitleLabel": "제목",
+    "videoMetadataVideoDetailsSubtitle": "동영상 세부 정보",
+    "videoRecorderAutosaveContinueButton": "네, 계속하기",
+    "videoRecorderAutosaveDiscardButton": "아니요, 새 동영상 시작",
+    "videoRecorderAutosaveFoundSubtitle": "중단한 부분에서 계속하시겠어요?",
+    "videoRecorderAutosaveFoundTitle": "작업 중인 항목을 찾았습니다",
+    "videoRecorderAutosaveRestoreFailure": "임시저장을 복원할 수 없습니다",
+    "videoRecorderCaptureCloseLabel": "닫기",
+    "videoRecorderCaptureNextLabel": "다음",
+    "videoRecorderClipDeletedMessage": "클립이 삭제되었습니다",
+    "videoRecorderCloseLabel": "동영상 녹화기 닫기",
+    "videoRecorderContinueToEditorLabel": "동영상 편집기로 계속",
+    "videoRecorderCycleTimerLabel": "타이머 전환",
+    "videoRecorderDeleteLastClipLabel": "마지막 클립 삭제",
+    "videoRecorderGhostFrameDisabled": "고스트 프레임 비활성화됨",
+    "videoRecorderGhostFrameEnabled": "고스트 프레임 활성화됨",
+    "videoRecorderLibraryEmptyLabel": "클립 보관함, 클립 없음",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, other{클립 보관함 열기, {clipCount}개 클립}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderRecordingTapToStopLabel": "녹화 중. 아무 곳이나 탭하여 중지",
+    "videoRecorderStartRecordingTooltip": "녹화 시작",
+    "videoRecorderStopRecordingTooltip": "녹화 중지",
+    "videoRecorderSwitchCameraLabel": "카메라 전환",
+    "videoRecorderTapToStartLabel": "아무 곳이나 탭하여 녹화 시작",
+    "videoRecorderToggleAspectRatioLabel": "화면 비율 전환",
+    "videoRecorderToggleFlashLabel": "플래시 전환",
+    "videoRecorderToggleGhostFrameLabel": "고스트 프레임 전환",
+    "videoRecorderToggleGridLabel": "그리드 전환",
+    "videoRecorderWhySixSecondsButton": "알겠어요!",
+    "videoRecorderWhySixSecondsSubtitle": "짧은 클립은 자발성을 위한 공간을 만듭니다. 6초 형식은 순간이 일어나는 그대로 진정성 있는 순간을 포착하는 데 도움이 됩니다.",
+    "videoRecorderWhySixSecondsTitle": "왜 6초인가요?",
+    "videoActionAutoLabel": "자동",
+    "videoActionEnableAutoAdvance": "자동 넘기기 활성화",
+    "videoActionDisableAutoAdvance": "자동 넘기기 비활성화",
+    "metadataCaptionsLabel": "자막",
+    "metadataCaptionsEnabledSemantics": "모든 동영상에서 자막이 활성화되었습니다",
+    "metadataCaptionsDisabledSemantics": "모든 동영상에서 자막이 비활성화되었습니다",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuDeleteFailedCouldNotSign": "삭제 요청에 서명하지 못했어요. 다시 시도해요.",
+    "shareMenuDeleteFailedGeneric": "이 영상을 삭제하지 못했어요. 다시 시도해요.",
+    "shareMenuDeleteFailedNotAuthenticated": "다시 로그인한 뒤 삭제를 시도해요.",
+    "shareMenuDeleteFailedNotInitialized": "삭제 준비가 아직 안 됐어요. 잠시 뒤에 다시 시도해요.",
+    "shareMenuDeleteFailedNotOwner": "내가 올린 영상만 삭제할 수 있어요.",
+    "videoEditorLayers": "레이어",
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, other{루프}}",
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
 }

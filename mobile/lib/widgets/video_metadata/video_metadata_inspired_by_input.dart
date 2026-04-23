@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -41,7 +42,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
     return Semantics(
       button: true,
       // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Set inspired by',
+      label: context.l10n.videoMetadataSetInspiredBySemanticLabel,
       child: InkWell(
         onTap: hasInspiredBy
             ? null
@@ -55,8 +56,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
               Row(
                 children: [
                   Text(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    'Inspired by',
+                    context.l10n.videoMetadataInspiredByLabel,
                     style: VineTheme.labelSmallFont(
                       color: VineTheme.onSurfaceVariant,
                     ),
@@ -64,8 +64,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
                   const SizedBox(width: 4),
                   VideoMetadataHelpButton(
                     onTap: () => _showHelpDialog(context),
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    tooltip: 'How inspiration credits work',
+                    tooltip: context.l10n.videoMetadataInspiredByHelpTooltip,
                   ),
                 ],
               ),
@@ -82,8 +81,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        // TODO(l10n): Replace with context.l10n when localization is added.
-                        'None',
+                        context.l10n.videoMetadataInspiredByNone,
                         style: VineTheme.titleMediumFont(
                           color: VineTheme.onSurface,
                         ),
@@ -119,13 +117,9 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
-      body: const VideoMetadataHelpSheet(
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        title: 'Inspired by',
-        message:
-            'Use this to give attribution. Inspired-by credit is different '
-            'from collaborators: it acknowledges influence, but does not tag '
-            'someone as a co-creator.',
+      body: VideoMetadataHelpSheet(
+        title: context.l10n.videoMetadataInspiredByLabel,
+        message: context.l10n.videoMetadataInspiredByHelpMessage,
         assetPath: 'assets/stickers/trail_sign.svg',
       ),
     );
@@ -139,9 +133,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
       context,
       filterMode: UserPickerFilterMode.allUsers,
       autoFocus: true,
-      // TODO(l10n): Replace with context.l10n
-      //   when localization is added.
-      title: 'Inspired by',
+      title: context.l10n.videoMetadataInspiredByLabel,
     );
 
     if (profile == null || !context.mounted) return;
@@ -151,13 +143,12 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
     if (blocklistRepository.hasMutedUs(profile.pubkey)) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           behavior: .floating,
-          // TODO(l10n): Replace with context.l10n when localization is added.
           content: DivineSnackbarContainer(
-            label: 'This creator cannot be referenced.',
+            label: context.l10n.videoMetadataCreatorCannotBeReferencedSnackbar,
           ),
         ),
       );
@@ -183,8 +174,7 @@ class _InspiredByDisplay extends ConsumerWidget {
     if (inspiredByVideo != null) {
       return VideoMetadataUserChip.fromPubkey(
         pubkey: inspiredByVideo!.creatorPubkey,
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        removeLabel: 'Remove inspired by',
+        removeLabel: context.l10n.videoMetadataRemoveInspiredBySemanticLabel,
         onRemove: () =>
             ref.read(videoEditorProvider.notifier).clearInspiredBy(),
       );
@@ -193,8 +183,7 @@ class _InspiredByDisplay extends ConsumerWidget {
     if (inspiredByNpub != null) {
       return VideoMetadataUserChip.fromNpub(
         npub: inspiredByNpub!,
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        removeLabel: 'Remove inspired by',
+        removeLabel: context.l10n.videoMetadataRemoveInspiredBySemanticLabel,
         onRemove: () =>
             ref.read(videoEditorProvider.notifier).clearInspiredBy(),
       );

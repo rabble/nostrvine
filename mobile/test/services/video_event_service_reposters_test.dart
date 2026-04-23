@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -255,28 +256,27 @@ void main() {
       skip: true,
     );
 
-    test('should handle timeout when relay does not respond', () async {
-      const videoId = 'abc123def456';
-      final eventStreamController = StreamController<Event>.broadcast();
+    test('should handle timeout when relay does not respond', () {
+      fakeAsync((async) {
+        const videoId = 'abc123def456';
+        final eventStreamController = StreamController<Event>.broadcast();
 
-      when(
-        () => mockNostrService.subscribe(any()),
-      ).thenAnswer((_) => eventStreamController.stream);
+        when(
+          () => mockNostrService.subscribe(any()),
+        ).thenAnswer((_) => eventStreamController.stream);
 
-      // Call the method
-      final resultFuture = videoEventService.getRepostersForVideo(videoId);
+        List<String>? result;
+        videoEventService.getRepostersForVideo(videoId).then((r) => result = r);
 
-      // Don't emit any events, just wait for timeout
-      // The implementation should have a timeout mechanism
+        // Advance past the method's internal timeout (~5s).
+        async.elapse(const Duration(seconds: 6));
+        async.flushMicrotasks();
 
-      // Wait for the expected timeout duration (assuming 5 seconds based on other methods)
-      await Future.delayed(const Duration(seconds: 6));
-      eventStreamController.close();
+        expect(result, isA<List<String>>());
 
-      final result = await resultFuture;
-
-      // Should return whatever was collected (empty in this case)
-      expect(result, isA<List<String>>());
+        eventStreamController.close();
+        async.flushMicrotasks();
+      });
     });
 
     test('should ignore non-Kind-6 events in stream', () async {

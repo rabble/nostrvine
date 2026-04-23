@@ -87,19 +87,17 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
 
         if (state.videoReplies.isEmpty && state.textComments.isEmpty) {
           return ProfileTabEmptyState(
-            icon: DivineIconName.chat,
-            iconColor: VineTheme.onSurfaceMuted,
             title: widget.isOwnProfile
                 ? context.l10n.profileNoCommentsOwnTitle
                 : context.l10n.profileNoCommentsOtherTitle,
             subtitle: widget.isOwnProfile
                 ? context.l10n.profileCommentsOwnEmpty
                 : context.l10n.profileCommentsOtherEmpty,
-            subtitleColor: VineTheme.onSurfaceMuted,
           );
         }
 
         return CustomScrollView(
+          physics: const ClampingScrollPhysics(),
           slivers: [
             if (state.videoReplies.isNotEmpty) ...[
               SliverToBoxAdapter(

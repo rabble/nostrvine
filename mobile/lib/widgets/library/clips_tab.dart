@@ -4,13 +4,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
-import 'package:openvine/widgets/masonary_grid.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 
@@ -21,20 +20,20 @@ import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 class ClipsTab extends StatelessWidget {
   /// Creates a clips tab.
   const ClipsTab({
-    required this.remainingDuration,
-    required this.isSelectionMode,
+    required this.showRecordButton,
     this.targetAspectRatio,
+    this.scrollController,
     super.key,
   });
 
-  /// Remaining duration available for selection.
-  final Duration remainingDuration;
-
   /// Whether in selection mode (adding to existing project).
-  final bool isSelectionMode;
+  final bool showRecordButton;
 
   /// Target aspect ratio for filtering compatible clips.
   final double? targetAspectRatio;
+
+  /// Optional scroll controller, e.g. from a parent bottom sheet.
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -85,14 +84,15 @@ class ClipsTab extends StatelessWidget {
             icon: DivineIconName.filmSlate,
             title: context.l10n.libraryNoClipsYetTitle,
             subtitle: context.l10n.libraryNoClipsYetSubtitle,
-            showRecordButton: !isSelectionMode,
+            showRecordButton: showRecordButton,
           );
         }
 
         return _MasonryLayout(
           clips: state.clips,
           selectedClipIds: state.selectedClipIds,
-          remainingDuration: remainingDuration,
+          disabledClipIds: state.disabledClipIds,
+          scrollController: scrollController,
           targetAspectRatio: targetAspectRatio,
           onTapClip: (clip) => context.read<ClipsLibraryBloc>().add(
             ClipsLibraryToggleSelection(clip),
@@ -134,18 +134,20 @@ class ClipsTab extends StatelessWidget {
         backgroundColor: VineTheme.cardBackground,
         title: Text(
           context.l10n.libraryDeleteClipTitle,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.titleSmallFont(),
         ),
         content: Text(
           context.l10n.libraryDeleteClipMessage,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.bodyMediumFont(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               context.l10n.commonCancel,
-              style: const TextStyle(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.secondaryText,
+              ),
             ),
           ),
           ElevatedButton(
@@ -172,15 +174,11 @@ class ClipSelectionHeader extends StatelessWidget {
   /// Creates a selection header.
   const ClipSelectionHeader({
     required this.onCreate,
-    required this.remainingDuration,
     super.key,
   });
 
   /// Callback when create button is tapped.
   final VoidCallback onCreate;
-
-  /// Remaining duration available for selection.
-  final Duration remainingDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +188,7 @@ class ClipSelectionHeader extends StatelessWidget {
         return Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(top: 8, bottom: 16),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 spacing: 4,
@@ -204,17 +202,6 @@ class ClipSelectionHeader extends StatelessWidget {
                         context.l10n.libraryClipSelectionTitle,
                         style: VineTheme.titleMediumFont(
                           color: VineTheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        context.l10n.librarySecondsRemaining(
-                          remainingDuration.toFormattedSeconds(),
-                        ),
-                        style: VineTheme.bodySmallFont(
-                          color: VineTheme.onSurfaceVariant,
-                          fontFeatures: [
-                            const FontFeature.tabularFigures(),
-                          ],
                         ),
                       ),
                     ],
@@ -249,44 +236,63 @@ class _MasonryLayout extends StatelessWidget {
   const _MasonryLayout({
     required this.clips,
     required this.selectedClipIds,
-    required this.remainingDuration,
     required this.onTapClip,
     required this.onLongPressClip,
+    this.disabledClipIds = const {},
+    this.scrollController,
     this.targetAspectRatio,
   });
 
   final List<DivineVideoClip> clips;
   final Set<String> selectedClipIds;
-  final Duration remainingDuration;
+  final Set<String> disabledClipIds;
+  final ScrollController? scrollController;
   final ValueChanged<DivineVideoClip> onTapClip;
   final ValueChanged<DivineVideoClip> onLongPressClip;
   final double? targetAspectRatio;
 
+  static const _columnCount = 3;
+  static const _radius = Radius.circular(32);
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: MasonryGrid(
-        columnCount: 2,
-        rowGap: 4,
-        columnGap: 4,
-        itemAspectRatios: clips
-            .map((clip) => clip.targetAspectRatio.value)
-            .toList(),
-        children: clips.map((clip) {
-          final isSelected = selectedClipIds.contains(clip.id);
-          return VideoClipThumbnailCard(
+    final selectionIndexById = <String, int>{
+      for (var i = 0; i < selectedClipIds.length; i++)
+        selectedClipIds.elementAt(i): i + 1,
+    };
+    return MasonryGridView.count(
+      controller: scrollController,
+      padding: .fromSTEB(8, 0, 8, MediaQuery.viewPaddingOf(context).bottom),
+      crossAxisCount: _columnCount,
+      mainAxisSpacing: 4,
+      crossAxisSpacing: 4,
+      cacheExtent: MediaQuery.sizeOf(context).height * 2,
+      itemCount: clips.length,
+      itemBuilder: (context, index) {
+        final clip = clips[index];
+        final selectionIndex = selectionIndexById[clip.id] ?? -1;
+        final firstRowLastIndex = clips.length < _columnCount
+            ? clips.length - 1
+            : _columnCount - 1;
+        final isLastInFirstRow = index == firstRowLastIndex;
+        final borderRadius = BorderRadius.only(
+          topLeft: index == 0 ? _radius : Radius.zero,
+          topRight: isLastInFirstRow ? _radius : Radius.zero,
+        );
+        return ClipRRect(
+          borderRadius: borderRadius,
+          child: VideoClipThumbnailCard(
             clip: clip,
-            isSelected: isSelected,
+            selectionIndex: selectionIndex,
             disabled:
+                disabledClipIds.contains(clip.id) ||
                 (targetAspectRatio != null &&
-                    targetAspectRatio != clip.targetAspectRatio.value) ||
-                (!isSelected && clip.duration > remainingDuration),
+                    targetAspectRatio != clip.targetAspectRatio.value),
             onTap: () => onTapClip(clip),
             onLongPress: () => onLongPressClip(clip),
-          );
-        }).toList(),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -301,7 +307,8 @@ class _AddClipButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: context.l10n.libraryAddClips,
+      // TODO(l10n): Replace with context.l10n when localization is added.
+      label: 'Select',
       child: GestureDetector(
         onTap: enable ? onTap : null,
         child: Opacity(
@@ -316,16 +323,11 @@ class _AddClipButton extends StatelessWidget {
               ),
             ),
             child: Text(
-              context.l10n.libraryAddClips,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: VineTheme.onPrimary,
-                fontSize: 18,
-                fontFamily: VineTheme.fontFamilyBricolage,
-                fontWeight: FontWeight.w800,
-                height: 1.33,
-                letterSpacing: 0.15,
-              ),
+              // TODO(l10n): Replace with context.l10n when localization
+              // is added.
+              'Select',
+              textAlign: .center,
+              style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
             ),
           ),
         ),

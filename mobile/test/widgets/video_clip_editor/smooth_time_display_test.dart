@@ -104,7 +104,7 @@ void main() {
 class _TestClipEditorBloc extends ClipEditorBloc {
   _TestClipEditorBloc({
     ClipEditorState initialState = const ClipEditorState(),
-  }) {
+  }) : super(onFinalClipInvalidated: () {}) {
     emit(initialState);
   }
 }

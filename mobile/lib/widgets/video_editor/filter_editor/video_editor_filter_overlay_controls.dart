@@ -119,7 +119,7 @@ class _TopBarContent extends StatelessWidget {
           scope.filterEditor?.close();
         },
         onDone: () {
-          bloc.add(const VideoEditorFilterCancelled());
+          bloc.add(const VideoEditorFilterConfirmed());
           scope.filterEditor?.done();
         },
       ),

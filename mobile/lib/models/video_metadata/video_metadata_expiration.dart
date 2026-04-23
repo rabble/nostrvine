@@ -37,18 +37,6 @@ enum VideoMetadataExpiration {
     .oneDecade => const Duration(days: 3_650),
   };
 
-  /// Returns a human-readable description of this expiration option.
-  ///
-  /// Used for display in UI elements like dropdowns and labels.
-  String get description => switch (this) {
-    .notExpire => 'Does not expire',
-    .oneDay => '1 day',
-    .oneWeek => '1 week',
-    .oneMonth => '1 month',
-    .oneYear => '1 year',
-    .oneDecade => '1 decade',
-  };
-
   /// Returns the expiration option matching the given [duration].
   ///
   /// Returns [notExpire] if duration is zero or no exact match is found.

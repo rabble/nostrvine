@@ -12,17 +12,18 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
@@ -126,9 +127,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   /// Notifier to trigger refresh of profile BLoCs (likes, reposts).
   final _refreshNotifier = ValueNotifier<int>(0);
 
-  /// Whether a refresh is currently in progress.
-  bool _isRefreshing = false;
-
   /// Whether the profile feed load has been tracked.
   bool _hasTrackedFeedLoad = false;
 
@@ -150,45 +148,51 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     super.dispose();
   }
 
-  Future<void> _refreshProfile() async {
-    if (_isRefreshing) return;
+  void _messageUser() {
+    context.push(
+      ConversationPage.pathForId(widget.pubkey),
+      extra: [widget.pubkey],
+    );
+  }
 
-    setState(() => _isRefreshing = true);
+  Future<void> _shareProfile() async {
+    final l10n = context.l10n;
+    final shareTextFn = l10n.profileShareText;
+    final shareSubjectFn = l10n.profileShareSubject;
+    final fallbackName = l10n.profileUserFallback;
 
     try {
-      // Run refresh operations and minimum duration in parallel
-      // This ensures the spinner shows for at least 500ms for visual feedback
-      await Future.wait([
-        _doRefresh(),
-        Future<void>.delayed(const Duration(milliseconds: 500)),
-      ]);
+      final profile = await ref
+          .read(profileRepositoryProvider)
+          ?.getCachedProfile(pubkey: widget.pubkey);
+      final displayName = profile?.bestDisplayName ?? fallbackName;
+      final npub = NostrKeyUtils.encodePubKey(widget.pubkey);
+      final shareText = shareTextFn(displayName, npub);
 
-      Log.info(
-        '🔄 Profile refreshed for ${widget.pubkey}',
+      await SharePlus.instance.share(
+        ShareParams(
+          text: shareText,
+          subject: shareSubjectFn(displayName),
+        ),
+      );
+    } catch (e) {
+      Log.error(
+        'Error sharing profile: $e',
         name: 'OtherProfileView',
         category: LogCategory.ui,
       );
-    } finally {
+
       if (mounted) {
-        setState(() => _isRefreshing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.profileShareFailed(e))),
+        );
       }
     }
   }
 
-  Future<void> _doRefresh() async {
-    // Refresh videos from provider
-    await ref.read(profileFeedProvider(widget.pubkey).notifier).refresh();
-
-    if (!mounted) return;
-
-    // Refresh user profile info
-    context.read<OtherProfileBloc>().add(const OtherProfileRefreshRequested());
-
-    // Trigger BLoC refresh for likes/reposts via notifier
-    _refreshNotifier.value++;
-  }
-
   Future<void> _more() async {
+    final l10n = context.l10n;
+    final fallbackName = l10n.profileUserFallback;
     final otherProfileBloc = context.read<OtherProfileBloc>();
     final isBlocked = otherProfileBloc.isBlocked;
     final isFollowing = otherProfileBloc.isFollowing;
@@ -196,7 +200,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     // Get display name for actions (match pattern from build())
     final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
     final displayName =
-        profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
+        profile?.bestDisplayName ?? widget.displayNameHint ?? fallbackName;
 
     final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
@@ -231,12 +235,14 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               .read(userProfileReactiveProvider(widget.pubkey))
               .value;
           final name =
-              profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+              profile?.bestDisplayName ??
+              widget.displayNameHint ??
+              fallbackName;
           // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(
-            SnackBar(content: Text(context.l10n.profileBlockedUser(name))),
+            SnackBar(content: Text(l10n.profileBlockedUser(name))),
           );
           context.pop();
         }
@@ -249,13 +255,15 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               .read(userProfileReactiveProvider(widget.pubkey))
               .value;
           final name =
-              profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+              profile?.bestDisplayName ??
+              widget.displayNameHint ??
+              fallbackName;
           // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(
             SnackBar(
-              content: Text(context.l10n.profileUnblockedUser(name)),
+              content: Text(l10n.profileUnblockedUser(name)),
             ),
           );
         }
@@ -263,9 +271,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   }
 
   Future<void> _unfollowUser() async {
+    final fallbackName = context.l10n.profileUserFallback;
     final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
     final displayName =
-        profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
+        profile?.bestDisplayName ?? widget.displayNameHint ?? fallbackName;
 
     final followRepository = ref.read(followRepositoryProvider);
     await followRepository.toggleFollow(widget.pubkey);
@@ -282,9 +291,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   }
 
   Future<void> _showUnblockConfirmation() async {
+    final fallbackName = context.l10n.profileUserFallback;
     final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
     final displayName =
-        profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
+        profile?.bestDisplayName ?? widget.displayNameHint ?? fallbackName;
 
     final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
@@ -347,38 +357,18 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           OtherProfileLoaded(:final profile) => profile,
           OtherProfileError(:final profile) => profile,
         };
-        final profileColor = headerProfile?.profileBackgroundColor;
+        final statsAsync = ref.watch(
+          userProfileStatsReactiveProvider(widget.pubkey),
+        );
+        final headerStats = statsAsync.value;
 
         final displayName =
             headerProfile?.bestDisplayName ??
             widget.displayNameHint ??
-            'Profile';
+            context.l10n.profileTitle;
 
         return Scaffold(
-          backgroundColor: VineTheme.backgroundColor,
-          appBar: DiVineAppBar(
-            title: displayName,
-            showBackButton: true,
-            onBackPressed: context.pop,
-            backgroundColor: profileColor ?? VineTheme.navGreen,
-            actions: [
-              DiVineAppBarAction(
-                icon: _isRefreshing
-                    ? const MaterialIconSource(Icons.refresh)
-                    : SvgIconSource(
-                        DivineIconName.arrowsCounterClockwise.assetPath,
-                      ),
-                onPressed: _isRefreshing ? null : _refreshProfile,
-                tooltip: context.l10n.profileRefresh,
-                semanticLabel: context.l10n.profileRefreshLabel,
-              ),
-              DiVineAppBarAction(
-                icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
-                onPressed: _more,
-                semanticLabel: context.l10n.profileMoreOptions,
-              ),
-            ],
-          ),
+          backgroundColor: VineTheme.surfaceBackground,
           body: switch (videosAsync) {
             AsyncLoading() => const ProfileLoadingView(),
             AsyncError(:final error) => Center(
@@ -391,11 +381,14 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               userIdHex: widget.pubkey,
               isOwnProfile: false,
               profile: headerProfile,
+              profileStats: headerStats,
               displayName: displayName,
               videos: value.videos,
-              totalVideoCount: value.totalVideoCount,
-              isLoadingVideos: value.isFetchingTotalCount,
               scrollController: _scrollController,
+              onBack: context.pop,
+              onMore: _more,
+              onMessageUser: _messageUser,
+              onShareProfile: _shareProfile,
               onBlockedTap: _showUnblockConfirmation,
               displayNameHint: widget.displayNameHint,
               avatarUrlHint: widget.avatarUrlHint,

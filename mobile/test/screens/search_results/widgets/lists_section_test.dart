@@ -76,7 +76,7 @@ void main() {
             ListSearchState(
               status: ListSearchStatus.success,
               query: 'test',
-              results: [testList],
+              videoResults: [testList],
             ),
           );
 

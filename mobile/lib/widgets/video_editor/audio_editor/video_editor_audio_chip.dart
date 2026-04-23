@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 
@@ -127,9 +128,10 @@ class VideoEditorAudioChip extends StatelessWidget {
                             TextSpan(
                               style: VineTheme.labelLargeFont(),
                               children: [
-                                // TODO(l10n): Replace with context.l10n when localization is added.
                                 TextSpan(
-                                  text: selectedSound?.title ?? 'Untitled',
+                                  text:
+                                      selectedSound?.title ??
+                                      context.l10n.videoEditorAudioUntitled,
                                 ),
                                 if (selectedSound?.source != null) ...[
                                   const TextSpan(text: ' ∙ '),
@@ -145,8 +147,7 @@ class VideoEditorAudioChip extends StatelessWidget {
                             overflow: .ellipsis,
                           )
                         : Text(
-                            // TODO(l10n): Replace with context.l10n when localization is added.
-                            'Add audio',
+                            context.l10n.videoEditorAudioAddAudio,
                             textAlign: .center,
                             textScaler: TextScaler.noScaling,
                             style: VineTheme.titleMediumFont(),

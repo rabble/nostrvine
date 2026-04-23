@@ -34,9 +34,8 @@ class VideoRecorderCameraPlaceholder extends StatelessWidget {
                 child: Text(
                   errorMessage!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xB3FFFFFF),
-                    fontSize: 14,
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.onSurfaceVariant,
                   ),
                 ),
               ),

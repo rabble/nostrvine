@@ -1,6 +1,7 @@
 // ABOUTME: Reusable video prefetch mixin for PageView-based video feeds
 // ABOUTME: Handles both file caching and controller pre-initialization for instant playback
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_cache/media_cache.dart';
@@ -73,7 +74,7 @@ mixin VideoPrefetchMixin {
     }
 
     // Throttle prefetch calls to avoid excessive network activity
-    final now = DateTime.now();
+    final now = clock.now();
     if (_lastPrefetchCall != null &&
         now.difference(_lastPrefetchCall!).inSeconds <
             prefetchThrottleSeconds) {

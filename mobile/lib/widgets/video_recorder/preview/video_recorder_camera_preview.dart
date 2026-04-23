@@ -18,7 +18,14 @@ import 'package:openvine/widgets/video_recorder/video_recorder_ghost_frame.dart'
 /// functionality.
 class VideoRecorderCameraPreview extends ConsumerStatefulWidget {
   /// Creates a camera preview widget.
-  const VideoRecorderCameraPreview({super.key});
+  const VideoRecorderCameraPreview({
+    this.enableTapToFocus = true,
+    this.borderRadius = .zero,
+    super.key,
+  });
+
+  final BorderRadius borderRadius;
+  final bool enableTapToFocus;
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
@@ -29,49 +36,47 @@ class _VideoRecorderCameraPreviewState
     extends ConsumerState<VideoRecorderCameraPreview> {
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const .only(top: 8),
-        child: LayoutBuilder(
-          builder: (_, constraints) {
-            final aspectRatio = ref.watch(
-              videoRecorderProvider.select((s) => s.aspectRatio),
-            );
-            // In vertical mode, we use the full available screen size,
-            // even if it's not exactly 16:9.
-            final aspectRatioValue = aspectRatio == .vertical
-                ? isDesktopPlatform
-                      ? 9 / 16
-                      : constraints.biggest.aspectRatio
-                : 1.0;
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        final aspectRatio = ref.watch(
+          videoRecorderProvider.select((s) => s.aspectRatio),
+        );
+        // In vertical mode, we use the full available screen size,
+        // even if it's not exactly 16:9.
+        final aspectRatioValue = aspectRatio == .vertical
+            ? isDesktopPlatform
+                  ? 9 / 16
+                  : constraints.biggest.aspectRatio
+            : 1.0;
 
-            return Center(
-              child: TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeInOut,
-                tween: Tween(begin: aspectRatioValue, end: aspectRatioValue),
-                builder: (context, aspectRatio, _) {
-                  return AspectRatio(
-                    aspectRatio: aspectRatio,
-                    child: ClipRRect(
-                      clipBehavior: .hardEdge,
-                      borderRadius: .circular(16),
-                      child: const _StackItems(),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ),
+        return Center(
+          child: TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            tween: Tween(begin: aspectRatioValue, end: aspectRatioValue),
+            builder: (context, aspectRatio, _) {
+              return AspectRatio(
+                aspectRatio: aspectRatio,
+                child: ClipRRect(
+                  clipBehavior: .hardEdge,
+                  borderRadius: widget.borderRadius,
+                  child: _StackItems(
+                    enableTapToFocus: widget.enableTapToFocus,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
 
 class _StackItems extends ConsumerWidget {
-  const _StackItems();
+  const _StackItems({required this.enableTapToFocus});
+
+  final bool enableTapToFocus;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,21 +94,23 @@ class _StackItems extends ConsumerWidget {
       key: ValueKey('Camera-Count-${state.cameraRebuildCount}'),
       children: [
         if (state.isCameraInitialized)
-          const _CameraPreview()
+          _CameraPreview(enableTapToFocus: enableTapToFocus)
         else
           VideoRecorderCameraPlaceholder(
             errorMessage: state.initializationErrorMessage,
           ),
         const VideoRecorderGhostFrame(),
         const _OverlayGrid(),
-        const VideoRecorderFocusPoint(),
+        if (enableTapToFocus) const VideoRecorderFocusPoint(),
       ],
     );
   }
 }
 
 class _CameraPreview extends ConsumerWidget {
-  const _CameraPreview();
+  const _CameraPreview({required this.enableTapToFocus});
+
+  final bool enableTapToFocus;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -124,7 +131,9 @@ class _CameraPreview extends ConsumerWidget {
             if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux)
               const SizedBox.shrink()
             else
-              const VideoRecorderMobilePreview(),
+              VideoRecorderMobilePreview(
+                enableTapToFocus: enableTapToFocus,
+              ),
           ],
         ),
       ),
@@ -137,13 +146,15 @@ class _OverlayGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isRecording = ref.watch(
-      videoRecorderProvider.select((s) => s.isRecording),
+    final (:isRecording, :showGridLines) = ref.watch(
+      videoRecorderProvider.select(
+        (s) => (isRecording: s.isRecording, showGridLines: s.showGridLines),
+      ),
     );
 
     return IgnorePointer(
       child: AnimatedOpacity(
-        opacity: isRecording ? 0.0 : 1.0,
+        opacity: (isRecording || !showGridLines) ? 0.0 : 1.0,
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeInOut,
         child: CustomPaint(painter: _GridPainter()),

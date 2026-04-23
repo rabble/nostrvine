@@ -22,9 +22,9 @@ class DiVineAppBarStyle extends Equatable {
   const DiVineAppBarStyle({
     this.height = 72,
     this.leadingWidth = 80,
-    this.iconButtonSize = 48,
-    this.iconSize = 32,
-    this.iconButtonBorderRadius = 20,
+    this.iconButtonSize = 40,
+    this.iconSize = 24,
+    this.iconButtonBorderRadius = 16,
     this.iconButtonBackgroundColor,
     this.iconButtonBorderSide,
     this.iconColor,

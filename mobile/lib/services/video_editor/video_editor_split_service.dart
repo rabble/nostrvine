@@ -31,13 +31,14 @@ class VideoEditorSplitService {
 
   /// Validates if the split position is valid for the given clip.
   ///
+  /// [splitPosition] is relative to the trimmed clip (0 to trimmedDuration).
   /// Both resulting clips must meet the minimum duration requirement.
   static bool isValidSplitPosition(
     DivineVideoClip clip,
     Duration splitPosition,
   ) {
     return splitPosition >= minClipDuration &&
-        clip.duration - splitPosition >= minClipDuration;
+        clip.trimmedDuration - splitPosition >= minClipDuration;
   }
 
   /// Splits a clip at the specified position and returns both resulting clips
@@ -63,7 +64,7 @@ class VideoEditorSplitService {
     if (!isValidSplitPosition(sourceClip, splitPosition)) {
       Log.error(
         '❌ Invalid split position: ${splitPosition.inSeconds}s '
-        '(clip: ${sourceClip.duration.inSeconds}s, '
+        '(clip: ${sourceClip.trimmedDuration.inSeconds}s, '
         'min: ${minClipDuration.inMilliseconds}ms)',
         name: 'VideoEditorSplitService',
         category: .video,
@@ -74,9 +75,14 @@ class VideoEditorSplitService {
       );
     }
 
+    // splitPosition is relative to the trimmed clip (0 to trimmedDuration).
+    // Convert to an absolute position within the full clip for rendering.
+    final absoluteSplitPos = sourceClip.trimStart + splitPosition;
+
     Log.info(
       '✂️ Starting clip split at ${splitPosition.inSeconds}s '
-      '(total: ${sourceClip.duration.inSeconds}s)',
+      '(absolute: ${absoluteSplitPos.inSeconds}s, '
+      'total: ${sourceClip.duration.inSeconds}s)',
       name: 'VideoEditorSplitService',
       category: .video,
     );
@@ -86,14 +92,20 @@ class VideoEditorSplitService {
     final startClipId = '${timestampMs}_start';
     final endClipId = '${timestampMs}_end';
 
+    // Start clip: keeps the original trimStart, no trimEnd needed
+    // (the split point is the new end).
     final startClip = sourceClip.copyWith(
       id: startClipId,
-      duration: splitPosition,
+      duration: absoluteSplitPos,
+      trimEnd: Duration.zero,
       processingCompleter: Completer<bool>(),
     );
+    // End clip: no trimStart needed (the split point is the new start),
+    // keeps the original trimEnd.
     final endClip = sourceClip.copyWith(
       id: endClipId,
-      duration: sourceClip.duration - splitPosition,
+      duration: sourceClip.duration - absoluteSplitPos,
+      trimStart: Duration.zero,
       processingCompleter: Completer<bool>(),
     );
 
@@ -112,10 +124,10 @@ class VideoEditorSplitService {
     // rendering)
     onClipsCreated?.call(startClip, endClip);
 
-    // Extract thumbnail for the end clip
+    // Extract thumbnail for the end clip at the absolute split position
     await _extractThumbnailForClip(
       sourceClip,
-      splitPosition,
+      absoluteSplitPos,
       endClip,
       onThumbnailExtracted,
     );
@@ -125,7 +137,7 @@ class VideoEditorSplitService {
       name: 'VideoEditorSplitService',
       category: .video,
     );
-    // Render both clips in parallel
+    // Render both clips in parallel using absolute positions
     await Future.wait([
       _renderSplitClip(
         clip: startClip,
@@ -134,7 +146,7 @@ class VideoEditorSplitService {
         renderData: VideoRenderData(
           id: startClip.id,
           videoSegments: [VideoSegment(video: sourceClip.video)],
-          endTime: splitPosition,
+          endTime: absoluteSplitPos,
         ),
         onClipRendered: onClipRendered,
       ),
@@ -145,7 +157,7 @@ class VideoEditorSplitService {
         renderData: VideoRenderData(
           id: endClip.id,
           videoSegments: [VideoSegment(video: sourceClip.video)],
-          startTime: splitPosition,
+          startTime: absoluteSplitPos,
         ),
         onClipRendered: onClipRendered,
       ),

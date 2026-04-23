@@ -65,7 +65,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   DraftStorageService get _draftService =>
       ref.read(draftStorageServiceProvider);
 
-  bool get isAutosavedDraft => draftId == VideoEditorConstants.autoSaveId;
+  bool get isAutosavedDraft => state.isAutosavedDraft;
 
   int _renderGeneration = 0;
 
@@ -149,6 +149,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       }
     }
     this.draftId = draftId ?? VideoEditorConstants.autoSaveId;
+    state = state.copyWith(
+      isAutosavedDraft: this.draftId == VideoEditorConstants.autoSaveId,
+    );
   }
 
   /// Reset editor state and metadata to defaults.
@@ -197,7 +200,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     // Trim for storage (but after hashtag extraction)
     final cleanedTitle = rawTitle.trim();
     final cleanedDescription = rawDescription.trim();
-    final tagLimit = VideoEditorConstants.tagLimit;
+    const tagLimit = VideoEditorConstants.tagLimit;
 
     // Only extract hashtags when text changes, not when tags are manually edited
     final Set<String> allTags;
@@ -460,7 +463,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// already set.
   DivineVideoDraft getActiveDraft({
     bool isAutosave = false,
-    bool enforceSeparatedClips = false,
     String? draftId,
   }) {
     // Read selected sound from local state
@@ -480,10 +482,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       id:
           draftId ??
           (isAutosave ? VideoEditorConstants.autoSaveId : this.draftId),
-      clips:
-          state.finalRenderedClip == null || isAutosave || enforceSeparatedClips
-          ? _clips
-          : [state.finalRenderedClip!],
+      clips: _clips,
       title: state.title,
       description: state.description,
       hashtags: state.tags,
@@ -497,7 +496,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       inspiredByNpub: state.inspiredByNpub,
       selectedSound: selectedSound,
       contentWarning: ContentLabel.toCsv(state.contentWarnings),
-      finalRenderedClip: isAutosave ? state.finalRenderedClip : null,
+      finalRenderedClip: state.finalRenderedClip,
       proofManifestJson: state.proofManifestJson,
       originalAudioVolume: state.originalAudioVolume,
       customAudioVolume: state.customAudioVolume,
@@ -568,6 +567,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       category: .video,
     );
     draftId = id;
+    state = state.copyWith(
+      isAutosavedDraft: id == VideoEditorConstants.autoSaveId,
+    );
   }
 
   /// Trigger autosave with debounce to prevent excessive saves.
@@ -646,9 +648,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
-      await _draftService.saveDraft(
-        getActiveDraft(enforceSeparatedClips: true, draftId: draftId),
-      );
+      await _draftService.saveDraft(getActiveDraft(draftId: draftId));
 
       // Remove the autosaved draft
       await removeAutosavedDraft();
@@ -680,7 +680,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// restores from [autoSaveId] to recover an autosaved session.
   /// Invalid clips (missing video files) are automatically filtered out,
   /// and missing thumbnails are regenerated.
-  Future<void> restoreDraft([String? draftId]) async {
+  ///
+  /// Returns `true` if the draft was restored successfully with at least
+  /// one clip, `false` if the draft was not found or had no valid clips.
+  Future<bool> restoreDraft([String? draftId]) async {
     draftId ??= VideoEditorConstants.autoSaveId;
     Log.info(
       '🎬 Restoring draft: $draftId',
@@ -695,7 +698,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         name: 'VideoEditorNotifier',
         category: LogCategory.video,
       );
-      return;
+      return false;
     }
 
     // Regenerate missing thumbnails
@@ -783,7 +786,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         name: 'VideoEditorNotifier',
         category: LogCategory.video,
       );
-      return;
+      return false;
     }
 
     // We set the aspect ratio in the video recorder to match the clips,
@@ -796,6 +799,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       name: 'VideoEditorNotifier',
       category: LogCategory.video,
     );
+    return true;
   }
 
   /// Delete the autosaved draft from local storage.
@@ -947,19 +951,40 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     final baseParams =
         state.editorEditingParameters ?? CompleteParameters.fromMap({});
 
-    if (soundTrack == null) return baseParams;
+    final audioTracks = baseParams.audioTracksFromMeta;
 
     return baseParams.copyWith(
-      customAudioTrack: AudioTrack(
-        id: soundTrack.id,
-        title: soundTrack.title ?? '',
-        subtitle: soundTrack.source ?? '',
-        duration: Duration(seconds: soundTrack.duration?.toInt() ?? 0),
-        audio: soundTrack.isBundled
-            ? EditorAudio.asset(soundTrack.assetPath!)
-            : EditorAudio.network(soundTrack.url!),
-        startTime: soundTrack.startOffset,
-      ),
+      audioTracks: [
+        for (final track in audioTracks)
+          AudioTrack(
+            id: track.id,
+            title: track.title ?? '',
+            subtitle: track.source ?? '',
+            duration: Duration(seconds: track.duration?.toInt() ?? 0),
+            audio: track.isBundled
+                ? EditorAudio.asset(track.assetPath!)
+                : EditorAudio.network(track.url!),
+            startTime: track.startTime,
+            endTime: track.endTime,
+            audioStartTime: track.startOffset,
+            audioEndTime:
+                track.startOffset +
+                Duration(milliseconds: ((track.duration ?? 0) * 1000).toInt()),
+            volume: track.volume,
+          ),
+
+        if (soundTrack != null)
+          AudioTrack(
+            id: soundTrack.id,
+            title: soundTrack.title ?? '',
+            subtitle: soundTrack.source ?? '',
+            duration: Duration(seconds: soundTrack.duration?.toInt() ?? 0),
+            audio: soundTrack.isBundled
+                ? EditorAudio.asset(soundTrack.assetPath!)
+                : EditorAudio.network(soundTrack.url!),
+            startTime: soundTrack.startOffset,
+          ),
+      ],
     );
   }
 }

@@ -6,6 +6,8 @@ import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/search_results/view/search_results_view.dart';
 import 'package:openvine/screens/search_results/widgets/search_results_app_bar.dart';
@@ -52,6 +54,9 @@ class SearchResultsPage extends ConsumerWidget {
         BlocProvider(
           create: (_) => ListSearchBloc(
             curatedListRepository: ref.read(curatedListRepositoryProvider),
+            peopleListSearchEnabled: ref.read(
+              isFeatureEnabledProvider(FeatureFlag.peopleListSearch),
+            ),
           ),
         ),
       ],

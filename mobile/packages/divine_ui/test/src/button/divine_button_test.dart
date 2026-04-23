@@ -173,7 +173,7 @@ void main() {
         expect(divineIcon.size, 24);
       });
 
-      testWidgets('small size renders 20px icon', (tester) async {
+      testWidgets('small size renders 24px icon', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
             size: DivineButtonSize.small,
@@ -185,7 +185,7 @@ void main() {
         final divineIcon = tester.widget<DivineIcon>(
           find.byType(DivineIcon),
         );
-        expect(divineIcon.size, 20);
+        expect(divineIcon.size, 24);
       });
     });
 
@@ -500,6 +500,53 @@ void main() {
           expect(animatedOpacity.opacity, lessThan(1.0));
         });
       }
+    });
+
+    group('icon-only mode (empty label)', () {
+      testWidgets('small size uses DivineIconButton padding', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: '',
+            leadingIcon: DivineIconName.heart,
+            size: DivineButtonSize.small,
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(DivineButton), findsOneWidget);
+        expect(find.byType(DivineIcon), findsOneWidget);
+        expect(find.text(''), findsNothing);
+      });
+
+      testWidgets('base size uses DivineIconButton padding', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: '',
+            leadingIcon: DivineIconName.heart,
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(DivineButton), findsOneWidget);
+        expect(find.byType(DivineIcon), findsOneWidget);
+      });
+
+      testWidgets('hides icon-to-label spacer', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: '',
+            leadingIcon: DivineIconName.heart,
+            onPressed: () {},
+          ),
+        );
+
+        // Should have no SizedBox(width: 8) spacers between icon and label
+        final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
+        final spacers = sizedBoxes.where(
+          (sb) => sb.width == 8 && sb.height == null,
+        );
+        expect(spacers, isEmpty);
+      });
     });
   });
 

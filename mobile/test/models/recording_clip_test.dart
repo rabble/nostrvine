@@ -54,6 +54,152 @@ void main() {
       expect(clip.durationInSeconds, equals(2.5));
     });
 
+    group('trimming', () {
+      test('trimmedDuration subtracts trimStart and trimEnd', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          trimStart: const Duration(seconds: 2),
+          trimEnd: const Duration(seconds: 3),
+        );
+
+        expect(clip.trimmedDuration, equals(const Duration(seconds: 5)));
+      });
+
+      test('trimmedDuration defaults to full duration with no trim', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 5),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(clip.trimmedDuration, equals(const Duration(seconds: 5)));
+      });
+
+      test('trimmedDuration clamps to zero for corrupt data', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          trimStart: const Duration(seconds: 5),
+          trimEnd: const Duration(seconds: 5),
+        );
+
+        expect(clip.trimmedDuration, equals(Duration.zero));
+      });
+
+      test('trimmedDurationInSeconds returns correct value', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(milliseconds: 5000),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          trimStart: const Duration(milliseconds: 1500),
+        );
+
+        expect(clip.trimmedDurationInSeconds, equals(3.5));
+      });
+
+      test('copyWith preserves trim values', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          trimStart: const Duration(seconds: 1),
+          trimEnd: const Duration(seconds: 2),
+        );
+
+        final copied = clip.copyWith(id: 'clip_002');
+        expect(copied.trimStart, equals(const Duration(seconds: 1)));
+        expect(copied.trimEnd, equals(const Duration(seconds: 2)));
+      });
+
+      test('copyWith updates trim values', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final trimmed = clip.copyWith(
+          trimStart: const Duration(seconds: 3),
+          trimEnd: const Duration(seconds: 2),
+        );
+        expect(trimmed.trimStart, equals(const Duration(seconds: 3)));
+        expect(trimmed.trimEnd, equals(const Duration(seconds: 2)));
+        expect(trimmed.trimmedDuration, equals(const Duration(seconds: 5)));
+      });
+
+      test('toJson includes trim values', () {
+        final clip = DivineVideoClip(
+          id: 'clip_001',
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime(2025),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          trimStart: const Duration(milliseconds: 1500),
+          trimEnd: const Duration(milliseconds: 2500),
+        );
+
+        final json = clip.toJson();
+        expect(json['trimStartMs'], equals(1500));
+        expect(json['trimEndMs'], equals(2500));
+      });
+
+      test('fromJson parses trim values', () {
+        final clip = DivineVideoClip.fromJson({
+          'id': 'clip_001',
+          'filePath': 'video.mp4',
+          'durationMs': 10000,
+          'recordedAt': '2025-01-01T00:00:00.000',
+          'targetAspectRatio': 'vertical',
+          'trimStartMs': 1500,
+          'trimEndMs': 2500,
+        }, '/documents');
+
+        expect(
+          clip.trimStart,
+          equals(const Duration(milliseconds: 1500)),
+        );
+        expect(
+          clip.trimEnd,
+          equals(const Duration(milliseconds: 2500)),
+        );
+      });
+
+      test('fromJson defaults trim to zero when missing', () {
+        final clip = DivineVideoClip.fromJson({
+          'id': 'clip_001',
+          'filePath': 'video.mp4',
+          'durationMs': 10000,
+          'recordedAt': '2025-01-01T00:00:00.000',
+          'targetAspectRatio': 'vertical',
+        }, '/documents');
+
+        expect(clip.trimStart, equals(Duration.zero));
+        expect(clip.trimEnd, equals(Duration.zero));
+      });
+    });
+
     test('copyWith creates new instance with updated id', () {
       final clip = DivineVideoClip(
         id: 'clip_001',

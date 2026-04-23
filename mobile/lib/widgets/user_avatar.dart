@@ -29,6 +29,7 @@ class UserAvatar extends StatelessWidget {
     this.onTap,
     this.semanticLabel,
     this.placeholderTone = UserAvatarPlaceholderTone.auto,
+    this.cornerRadius,
   });
 
   final String? imageUrl;
@@ -38,6 +39,12 @@ class UserAvatar extends StatelessWidget {
   final VoidCallback? onTap;
   final String? semanticLabel;
   final UserAvatarPlaceholderTone placeholderTone;
+
+  /// Optional override for the avatar's corner radius. When null the radius
+  /// is computed from [size] (see [_cornerRadius] default). Used by the
+  /// profile avatar lightbox to render the maximized avatar at 112px
+  /// instead of the size-derived default.
+  final double? cornerRadius;
 
   static const List<UserAvatarPlaceholderTone> _paletteOrder = [
     UserAvatarPlaceholderTone.yellow,
@@ -120,7 +127,8 @@ class UserAvatar extends StatelessWidget {
     );
   }
 
-  double get _cornerRadius => size <= 24 ? size / 3 : math.min(size * 0.4, 56);
+  double get _cornerRadius =>
+      cornerRadius ?? (size <= 24 ? size / 3 : math.min(size * 0.4, 56));
 
   double get _borderWidth => size >= 120 ? 3 : 1;
 

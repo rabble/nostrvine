@@ -384,6 +384,9 @@ void main() {
               trendingSoundsProvider.overrideWith(
                 () => MockTrendingSoundsNotifier(sounds: []),
               ),
+              soundLibraryServiceProvider.overrideWith(
+                (_) async => SoundLibraryService(),
+              ),
             ],
           ),
         );

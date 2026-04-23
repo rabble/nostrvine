@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -29,9 +30,11 @@ Future<UserProfile?> showUserPickerSheet(
   required UserPickerFilterMode filterMode,
   required String title,
   bool autoFocus = false,
-  String searchText = 'Search by name',
+  String? searchText,
   Set<String> excludePubkeys = const {},
 }) {
+  final resolvedSearchText = searchText ?? context.l10n.userPickerSearchByName;
+
   return VineBottomSheet.show<UserProfile>(
     context: context,
     initialChildSize: 1,
@@ -41,7 +44,7 @@ Future<UserProfile?> showUserPickerSheet(
       spacing: 2,
       children: [
         Text(title, style: VineTheme.titleMediumFont()),
-        Text(searchText, style: VineTheme.bodySmallFont()),
+        Text(resolvedSearchText, style: VineTheme.bodySmallFont()),
       ],
     ),
     buildScrollBody: (scrollController) => UserPickerSheet(
@@ -194,8 +197,8 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
 
     final hintText = _useLocalSearch
-        ? 'Filter by name...'
-        : 'Search by name...';
+        ? context.l10n.userPickerFilterByNameHint
+        : context.l10n.userPickerSearchByNameHint;
 
     return Column(
       children: [
@@ -325,8 +328,12 @@ class _UserSearchTile extends StatelessWidget {
           Semantics(
             button: !isDisabled,
             label: isDisabled
-                ? '${profile.bestDisplayName} already added'
-                : 'Select ${profile.bestDisplayName}',
+                ? context.l10n.userPickerAlreadyAddedSemantics(
+                    profile.bestDisplayName,
+                  )
+                : context.l10n.userPickerSelectSemantics(
+                    profile.bestDisplayName,
+                  ),
             child: InkWell(
               onTap: isDisabled ? null : onTap,
               child: Container(
@@ -363,21 +370,20 @@ class _EmptyFollowList extends StatelessWidget {
         mainAxisAlignment: .center,
         children: [
           Text(
-            'Your crew is out there',
+            context.l10n.userPickerEmptyFollowListTitle,
             style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
             textAlign: .center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Follow people you vibe with. '
-            'When they follow back, you can collab.',
+            context.l10n.userPickerEmptyFollowListBody,
             style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
             textAlign: .center,
           ),
           const SizedBox(height: 32),
           Semantics(
             button: true,
-            label: 'Go back',
+            label: context.l10n.userPickerGoBack,
             child: InkWell(
               onTap: context.pop,
               borderRadius: BorderRadius.circular(20),
@@ -394,7 +400,7 @@ class _EmptyFollowList extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'Go back',
+                  context.l10n.userPickerGoBack,
                   textAlign: TextAlign.center,
                   style: VineTheme.titleMediumFont(color: VineTheme.primary),
                 ),
@@ -416,7 +422,7 @@ class _EmptyHint extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Text(
-          'Type a name to search',
+          context.l10n.userPickerTypeNameToSearch,
           style: VineTheme.bodyMediumFont(
             color: VineTheme.onSurfaceMuted,
           ),
@@ -435,7 +441,7 @@ class _ProfileRepoUnavailable extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Text(
-          'User search is unavailable. Please try again later.',
+          context.l10n.userPickerUnavailable,
           style: VineTheme.bodyMediumFont(
             color: VineTheme.onSurfaceMuted,
           ),
@@ -455,7 +461,7 @@ class _ErrorState extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Text(
-          'Search failed. Please try again.',
+          context.l10n.userPickerSearchFailedTryAgain,
           style: VineTheme.bodyMediumFont(
             color: VineTheme.onSurfaceMuted,
           ),
@@ -474,7 +480,7 @@ class _NoResults extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Text(
-          'No users found',
+          context.l10n.userSearchNoResults,
           style: VineTheme.bodyMediumFont(
             color: VineTheme.onSurfaceMuted,
           ),

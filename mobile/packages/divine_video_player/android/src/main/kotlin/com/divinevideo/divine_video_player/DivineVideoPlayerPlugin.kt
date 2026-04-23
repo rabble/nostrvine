@@ -203,6 +203,7 @@ internal object PlayerRegistry {
     fun forAll(action: (DivineVideoPlayerInstance) -> Unit) {
         players.values.forEach(action)
     }
+    val size: Int get() = players.size
     fun disposeAll() {
         players.values.forEach { it.dispose() }
         players.clear()

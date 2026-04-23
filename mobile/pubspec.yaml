@@ -82,6 +82,10 @@ dependencies:
 
   blossom_upload_service:
 
+  # Testable time source — wraps DateTime.now/Stopwatch so fakeAsync can
+  # virtualize them in tests.
+  clock: ^1.1.2
+
   # State management
   flutter_riverpod: ^3.0.0
   riverpod_annotation: ^3.0.0
@@ -251,9 +255,8 @@ dependencies:
   firebase_messaging: ^16.1.1
   convert: ^3.1.2
   audio_session: ^0.2.2
-  pro_video_editor: ^1.14.2
-  pro_image_editor: ^12.0.13
-  linked_scroll_controller: ^0.2.0
+  pro_video_editor: ^1.15.0
+  pro_image_editor: ^12.4.3
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
   sensors_plus: ^7.0.0
@@ -299,7 +302,9 @@ dev_dependencies:
   bloc_test: ^10.0.0
 
   # Code generation
-  build_runner: ^2.7.1
+  # TODO(#3142): Unpin after build_runner >2.11.0 fixes InvalidTypeException
+  # with riverpod_generator. See https://github.com/dart-lang/build/issues
+  build_runner: ">=2.7.1 <2.11.0"
   hive_ce_generator: ^1.6.0
 
   # Integration test utilities

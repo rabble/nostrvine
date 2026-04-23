@@ -8,23 +8,30 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart' show StickerData;
+import 'package:models/models.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/video_editor_history_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
 import 'package:openvine/widgets/video_editor/video_editor_scaffold.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// The main video editor screen for adding layers (text, stickers, effects).
@@ -69,8 +76,19 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   /// [VineBottomSheet.show]).
   late final VideoEditorStickerBloc _stickerBloc;
 
+  /// Manually managed so we can dispatch [ClipEditorInitialized] after the
+  /// video editor provider finishes loading (especially for drafts).
+  late final ClipEditorBloc _clipEditorBloc;
+
+  /// Manually managed so [_extractWaveform] can dispatch events without
+  /// needing a child context below [MultiBlocProvider].
+  late final TimelineOverlayBloc _timelineOverlayBloc;
+
   /// Body size notifier, updated by [_CanvasFitter].
   final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
+
+  /// Tracks the previous audio tracks to detect offset changes.
+  List<AudioEvent> _previousAudioTracks = const [];
 
   ProImageEditorState? get _editor => _editorKey.currentState;
 
@@ -92,6 +110,31 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     );
     _stickerBloc = VideoEditorStickerBloc(onPrecacheStickers: _precacheStickers)
       ..add(const VideoEditorStickerLoad());
+    _clipEditorBloc = ClipEditorBloc(
+      onFinalClipInvalidated: () {
+        ref.read(videoEditorProvider.notifier).invalidateFinalRenderedClip();
+
+        if (_editor != null) {
+          _editor!.addHistory(
+            meta: {
+              ..._editor!.stateManager.activeMeta,
+              VideoEditorConstants.clipsStateHistoryKey: _clipEditorBloc
+                  .state
+                  .clips
+                  .map((e) => e.toJson())
+                  .toList(),
+            },
+          );
+        }
+      },
+    );
+    _timelineOverlayBloc = TimelineOverlayBloc();
+
+    // For non-draft flows clips are already available.
+    final initialClips = ref.read(clipManagerProvider).clips;
+    if (initialClips.isNotEmpty) {
+      _clipEditorBloc.add(ClipEditorInitialized(initialClips));
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -113,6 +156,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       );
 
       if (mounted) {
+        // Clips are now loaded — initialize the clip editor BLoC.
+        final clips = ref.read(clipManagerProvider).clips;
+        _clipEditorBloc.add(ClipEditorInitialized(clips));
+
         _isLoadingDraft.value = false;
       }
     });
@@ -126,6 +173,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       category: LogCategory.video,
     );
     _stickerBloc.close();
+    _clipEditorBloc.close();
+    _timelineOverlayBloc.close();
     _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
     super.dispose();
@@ -159,33 +208,53 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   Future<void> _openClipsEditor({
     required VideoEditorMainBloc mainBloc,
+    required ClipEditorBloc clipEditorBloc,
   }) async {
-    // Pause playback while the clip editor is open.
+    // Pause playback while the library is open.
     mainBloc
       ..add(const VideoEditorMainOpenSubEditor(.clips))
       ..add(const VideoEditorExternalPauseRequested(isPaused: true));
-    final initialClips = ref.read(clipManagerProvider).clips;
+    final currentClips = ref.read(clipManagerProvider).clips;
 
-    final clips = await Navigator.push<List<DivineVideoClip>>(
-      context,
-      _FadeUpPageRoute<List<DivineVideoClip>>(
-        child: VideoClipEditorScreen(
-          initialClips: initialClips.map((e) => e.copyWith()).toList(),
-        ),
+    final newClips = await VineBottomSheet.show<List<DivineVideoClip>>(
+      context: context,
+      maxChildSize: 1,
+      initialChildSize: 1,
+      minChildSize: 0.9,
+      buildScrollBody: (scrollController) => LibraryScreen(
+        initialTabIndex: 1,
+        selectionMode: true,
+        editorClips: currentClips,
+        scrollController: scrollController,
       ),
     );
 
     mainBloc.add(const VideoEditorMainSubEditorClosed());
 
-    if (clips != null) {
+    if (newClips != null && newClips.isNotEmpty) {
       Log.info(
-        '🎬 Clips changed after clip editor',
+        '🎬 Adding ${newClips.length} new clips from library',
         name: 'VideoEditorScreen',
         category: LogCategory.video,
       );
 
       final clipManager = ref.read(clipManagerProvider.notifier);
-      clipManager.replaceClips(clips);
+      clipManager.addMultipleClips(newClips);
+
+      // Sync the updated clip list into the editor BLoC.
+      final updatedClips = ref.read(clipManagerProvider).clips;
+      clipEditorBloc.add(ClipEditorInitialized(updatedClips));
+
+      if (_editor != null) {
+        _editor!.addHistory(
+          meta: {
+            ..._editor!.stateManager.activeMeta,
+            VideoEditorConstants.clipsStateHistoryKey: updatedClips
+                .map((e) => e.toJson())
+                .toList(),
+          },
+        );
+      }
     }
   }
 
@@ -199,8 +268,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
     final sticker = await VineBottomSheet.show<StickerData>(
       context: context,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      title: const Text('Stickers'),
+      title: Text(context.l10n.videoEditorStickers),
       maxChildSize: 1,
       initialChildSize: 1,
       minChildSize: 0.8,
@@ -314,6 +382,89 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     return result.copyWith(scale: 1 / _fittedBoxScale);
   }
 
+  Future<void> _openMusicLibrary() async {
+    var result = await VineBottomSheet.show<AudioEvent>(
+      context: context,
+      maxChildSize: 1,
+      initialChildSize: 1,
+      minChildSize: 0.8,
+      buildScrollBody: (scrollController) =>
+          AudioSelectionBottomSheet(scrollController: scrollController),
+    );
+
+    final editor = _editorKey.currentState;
+
+    if (!mounted || editor == null || result == null) return;
+
+    final audioDuration = Duration(
+      milliseconds: ((result.duration ?? 0) * 1000).toInt(),
+    );
+    final clipDuration = _clipEditorBloc.state.totalDuration;
+    const maxDuration = VideoEditorConstants.maxDuration;
+    final endTime = [audioDuration, clipDuration, maxDuration].reduce(
+      (a, b) => a < b ? a : b,
+    );
+
+    result = result.copyWith(
+      id: '${result.id}-${DateTime.now().millisecondsSinceEpoch}',
+      startTime: .zero,
+      endTime: endTime,
+    );
+    editor.addHistory(
+      meta: {
+        ...editor.stateManager.activeMeta,
+        VideoEditorConstants.audioStateHistoryKey: [
+          ...editor.stateManager.audioTracks.map((e) => e.toJson()),
+          result.toJson(),
+        ],
+      },
+    );
+  }
+
+  /// Extracts waveform data for an audio track and updates the timeline
+  /// overlay with the samples.
+  Future<void> _extractWaveform(AudioEvent audio) async {
+    final path = audio.isBundled ? audio.assetPath : audio.url;
+    if (path == null) return;
+
+    try {
+      final video = audio.isBundled
+          ? EditorVideo.asset(path)
+          : EditorVideo.network(path);
+      final data = await ProVideoEditor.instance.getWaveform(
+        WaveformConfigs(
+          video: video,
+          startTime: audio.startOffset,
+          endTime:
+              audio.startOffset +
+              Duration(
+                milliseconds:
+                    ((audio.duration ??
+                                VideoEditorConstants.maxDuration.inSeconds) *
+                            1000)
+                        .toInt(),
+              ),
+        ),
+      );
+      if (!mounted) return;
+      _timelineOverlayBloc.add(
+        TimelineOverlayWaveformLoaded(
+          itemId: audio.id,
+          leftChannel: data.leftChannel,
+          rightChannel: data.rightChannel,
+        ),
+      );
+    } catch (e, s) {
+      Log.error(
+        'Failed to extract timeline waveform: $e',
+        name: 'VideoEditorScreen',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: s,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -323,85 +474,75 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         BlocProvider(create: (_) => VideoEditorFilterBloc()),
         BlocProvider(create: (_) => VideoEditorDrawBloc()),
         BlocProvider(create: (_) => VideoEditorTextBloc()),
+        BlocProvider.value(value: _timelineOverlayBloc),
+        BlocProvider.value(value: _clipEditorBloc),
       ],
-      child: Builder(
-        builder: (context) {
-          final clip = ref.watch(
-            clipManagerProvider.select((s) => s.firstClipOrNull),
-          );
-          return VideoEditorScope(
-            editorKey: _editorKey,
-            removeAreaKey: _removeAreaKey,
-            originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
-            bodySizeNotifier: _bodySizeNotifier,
-            fromLibrary: widget.fromLibrary,
-            onOpenClipsEditor: () {
-              final mainBloc = context.read<VideoEditorMainBloc>();
-              _openClipsEditor(mainBloc: mainBloc);
-            },
-            onAddStickers: _addStickers,
-            onAdjustVolume: _adjustVolume,
-            onAddEditTextLayer: ([layer]) {
-              final mainBloc = context.read<VideoEditorMainBloc>();
-              final textBloc = context.read<VideoEditorTextBloc>();
+      child: BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+        listenWhen: (previous, current) =>
+            previous.audioTracks != current.audioTracks,
+        listener: (context, state) {
+          final previousById = {
+            for (final a in _previousAudioTracks) a.id: a,
+          };
+          _previousAudioTracks = state.audioTracks;
 
-              return _addEditTextLayer(
-                mainBloc: mainBloc,
-                textBloc: textBloc,
-                layer: layer,
-              );
-            },
-            child: ValueListenableBuilder<bool>(
-              valueListenable: _isLoadingDraft,
-              builder: (_, isLoading, _) =>
-                  VideoEditorScaffold(isLoading: isLoading),
-            ),
-          );
+          final existingWaveformIds = state.items
+              .where((i) => i.waveformLeftChannel != null)
+              .map((i) => i.id)
+              .toSet();
+
+          for (final audio in state.audioTracks) {
+            final hadWaveform = existingWaveformIds.contains(audio.id);
+            final prev = previousById[audio.id];
+            final offsetChanged =
+                prev != null && prev.startOffset != audio.startOffset;
+
+            if (!hadWaveform || offsetChanged) {
+              unawaited(_extractWaveform(audio));
+            }
+          }
         },
+        child: Builder(
+          builder: (context) {
+            final clip = ref.watch(
+              clipManagerProvider.select((s) => s.firstClipOrNull),
+            );
+            return VideoEditorScope(
+              editorKey: _editorKey,
+              removeAreaKey: _removeAreaKey,
+              originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
+              bodySizeNotifier: _bodySizeNotifier,
+              fromLibrary: widget.fromLibrary,
+              onOpenClipsEditor: () {
+                final mainBloc = context.read<VideoEditorMainBloc>();
+                final clipEditorBloc = context.read<ClipEditorBloc>();
+                _openClipsEditor(
+                  mainBloc: mainBloc,
+                  clipEditorBloc: clipEditorBloc,
+                );
+              },
+              onAddStickers: _addStickers,
+              onAdjustVolume: _adjustVolume,
+              onAddEditTextLayer: ([layer]) {
+                final mainBloc = context.read<VideoEditorMainBloc>();
+                final textBloc = context.read<VideoEditorTextBloc>();
+
+                return _addEditTextLayer(
+                  mainBloc: mainBloc,
+                  textBloc: textBloc,
+                  layer: layer,
+                );
+              },
+              onOpenMusicLibrary: _openMusicLibrary,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: _isLoadingDraft,
+                builder: (_, isLoading, _) =>
+                    VideoEditorScaffold(isLoading: isLoading),
+              ),
+            );
+          },
+        ),
       ),
-    );
-  }
-}
-
-class _FadeUpPageRoute<T> extends PageRoute<T> {
-  _FadeUpPageRoute({required this.child});
-
-  final Widget child;
-
-  @override
-  Color? get barrierColor => null;
-
-  @override
-  String? get barrierLabel => null;
-
-  @override
-  bool get maintainState => true;
-
-  @override
-  Duration get transitionDuration => const Duration(milliseconds: 300);
-
-  @override
-  Widget buildPage(
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-  ) {
-    return child;
-  }
-
-  @override
-  Widget buildTransitions(
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-    Widget child,
-  ) {
-    return const FadeUpwardsPageTransitionsBuilder().buildTransitions(
-      this,
-      context,
-      animation,
-      secondaryAnimation,
-      child,
     );
   }
 }

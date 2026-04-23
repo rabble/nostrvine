@@ -24,6 +24,7 @@ class VideoEditorScope extends InheritedWidget {
     required this.onAdjustVolume,
     required this.onOpenClipsEditor,
     required this.onAddEditTextLayer,
+    required this.onOpenMusicLibrary,
     required this.originalClipAspectRatio,
     required this.bodySizeNotifier,
     required this.fromLibrary,
@@ -45,6 +46,9 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Callback to open the clips editor.
   final VoidCallback onOpenClipsEditor;
+
+  /// Callback to open the music library.
+  final VoidCallback onOpenMusicLibrary;
 
   /// Original aspect ratio of the clip being edited.
   final double originalClipAspectRatio;
@@ -75,6 +79,21 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Returns the [ProImageEditorState] if available.
   ProImageEditorState? get editor => editorKey.currentState;
+
+  /// Returns the [ProImageEditorState], throwing a descriptive error if null.
+  ///
+  /// Use this in gesture handlers and callbacks where the editor is expected
+  /// to exist. Provides a clear message instead of a bare null-check failure.
+  ProImageEditorState get requireEditor {
+    final state = editorKey.currentState;
+    assert(
+      state != null,
+      'VideoEditorScope.requireEditor called but '
+      'ProImageEditorState is not mounted. '
+      'This can happen if a gesture resolves after a route pop.',
+    );
+    return state!;
+  }
 
   /// Returns the [FilterEditorState] if available.
   FilterEditorState? get filterEditor => editor?.filterEditor.currentState;

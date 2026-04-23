@@ -23,6 +23,9 @@ class DivineVideoClip {
     this.processingCompleter,
     this.lensMetadata,
     this.ghostFramePath,
+    this.trimStart = Duration.zero,
+    this.trimEnd = Duration.zero,
+    this.volume = 1,
     this.proofManifestJson,
   }) : _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
@@ -50,10 +53,29 @@ class DivineVideoClip {
   /// File path to the last frame of this clip (used for ghost frame overlay).
   final String? ghostFramePath;
 
+  /// How much has been trimmed from the start of the clip.
+  final Duration trimStart;
+
+  /// How much has been trimmed from the end of the clip.
+  final Duration trimEnd;
+
+  /// Playback volume for this clip, between 0 (muted) and 1 (full volume).
+  final double volume;
+
   /// JSON-encoded ProofMode / C2PA attestation data for this individual clip.
   final String? proofManifestJson;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
+
+  /// Effective duration after trimming (clamped to zero).
+  Duration get trimmedDuration {
+    final result = duration - trimStart - trimEnd;
+    return result.isNegative ? Duration.zero : result;
+  }
+
+  /// Effective duration in seconds after trimming.
+  double get trimmedDurationInSeconds =>
+      trimmedDuration.inMilliseconds / 1000.0;
   bool get isProcessing =>
       processingCompleter != null && !processingCompleter!.isCompleted;
 
@@ -85,6 +107,9 @@ class DivineVideoClip {
     Completer<bool>? processingCompleter,
     CameraLensMetadata? lensMetadata,
     String? ghostFramePath,
+    Duration? trimStart,
+    Duration? trimEnd,
+    double? volume,
     String? proofManifestJson,
     bool clearProofManifestJson = false,
   }) {
@@ -100,6 +125,9 @@ class DivineVideoClip {
       processingCompleter: processingCompleter ?? this.processingCompleter,
       lensMetadata: lensMetadata ?? this.lensMetadata,
       ghostFramePath: ghostFramePath ?? this.ghostFramePath,
+      trimStart: trimStart ?? this.trimStart,
+      trimEnd: trimEnd ?? this.trimEnd,
+      volume: volume ?? this.volume,
       proofManifestJson: clearProofManifestJson
           ? null
           : (proofManifestJson ?? this.proofManifestJson),
@@ -122,6 +150,12 @@ class DivineVideoClip {
       'originalAspectRatio': _originalAspectRatio,
       'targetAspectRatio': targetAspectRatio.name,
       'lensMetadata': lensMetadata?.toMap(),
+      'ghostFramePath': ghostFramePath != null
+          ? p.basename(ghostFramePath!)
+          : null,
+      'trimStartMs': trimStart.inMilliseconds,
+      'trimEndMs': trimEnd.inMilliseconds,
+      'volume': volume,
       if (proofManifestJson != null) 'proofManifestJson': proofManifestJson,
     };
   }
@@ -166,6 +200,18 @@ class DivineVideoClip {
               json['lensMetadata'] as Map<String, dynamic>,
             )
           : null,
+      ghostFramePath: resolvePath(
+        json['ghostFramePath'] as String?,
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
+      trimStart: Duration(
+        milliseconds: (json['trimStartMs'] as int?) ?? 0,
+      ),
+      trimEnd: Duration(
+        milliseconds: (json['trimEndMs'] as int?) ?? 0,
+      ),
+      volume: (json['volume'] as num?)?.toDouble() ?? 1,
       proofManifestJson: json['proofManifestJson'] as String?,
     );
   }

@@ -4,23 +4,32 @@
 @Tags(['skip_very_good_optimization'])
 import 'dart:io';
 
-import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;
+import 'package:divine_camera/divine_camera.dart'
+    show DivineCameraLens, DivineVideoQuality;
+import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mocks/mock_camera_service.dart';
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 /// Helper to set up haptic feedback mock and track calls.
 class HapticFeedbackTracker {
@@ -59,6 +68,7 @@ class _MockProVideoEditor extends ProVideoEditor {
   Future<VideoMetadata> getMetadata(
     EditorVideo value, {
     bool checkStreamingOptimization = false,
+    NativeLogLevel? nativeLogLevel,
   }) async {
     return VideoMetadata(
       duration: const Duration(seconds: 3),
@@ -85,6 +95,36 @@ class _SpyGallerySaveService implements GallerySaveService {
   }) async {
     saveVideoToGalleryCalled = true;
     return const GallerySaveSuccess();
+  }
+}
+
+class _SpyCameraService extends MockCameraService {
+  _SpyCameraService.create({
+    required super.onUpdateState,
+    required super.onAutoStopped,
+  }) : super.create();
+
+  int initializeCalls = 0;
+  int disposeCalls = 0;
+
+  @override
+  Future<void> initialize({
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    DivineCameraLens initialLens = DivineCameraLens.front,
+    bool enableAutoLensSwitch = false,
+  }) async {
+    initializeCalls++;
+    await super.initialize(
+      videoQuality: videoQuality,
+      initialLens: initialLens,
+      enableAutoLensSwitch: enableAutoLensSwitch,
+    );
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposeCalls++;
+    await super.dispose();
   }
 }
 
@@ -780,6 +820,161 @@ void main() {
     );
   });
 
+  group('setRecorderMode', () {
+    test('updates recorder mode and persists to shared preferences', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockDraftStorage = _MockDraftStorageService();
+      when(
+        () => mockDraftStorage.deleteDraft(any()),
+      ).thenAnswer((_) async {});
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+      await mockCamera.initialize();
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+          draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+      final notifier = container.read(videoRecorderProvider.notifier);
+
+      notifier.setRecorderMode(VideoRecorderMode.classic);
+
+      final state = container.read(videoRecorderProvider);
+      expect(state.recorderMode, equals(VideoRecorderMode.classic));
+
+      final savedMode = prefs.getString(
+        kLastUsedRecorderModeKey,
+      );
+      expect(savedMode, equals('classic'));
+    });
+
+    test('switching to capture persists capture mode', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockDraftStorage = _MockDraftStorageService();
+      when(
+        () => mockDraftStorage.deleteDraft(any()),
+      ).thenAnswer((_) async {});
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+      await mockCamera.initialize();
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+          draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+      final notifier = container.read(videoRecorderProvider.notifier);
+
+      // Switch to classic first, then back to capture
+      notifier.setRecorderMode(VideoRecorderMode.classic);
+      notifier.setRecorderMode(VideoRecorderMode.capture);
+
+      final state = container.read(videoRecorderProvider);
+      expect(state.recorderMode, equals(VideoRecorderMode.capture));
+
+      final savedMode = prefs.getString(
+        kLastUsedRecorderModeKey,
+      );
+      expect(savedMode, equals('capture'));
+    });
+
+    test('updates aspect ratio to mode default', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockDraftStorage = _MockDraftStorageService();
+      when(
+        () => mockDraftStorage.deleteDraft(any()),
+      ).thenAnswer((_) async {});
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+      await mockCamera.initialize();
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+          draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+      final notifier = container.read(videoRecorderProvider.notifier);
+
+      notifier.setRecorderMode(VideoRecorderMode.classic);
+
+      final state = container.read(videoRecorderProvider);
+      expect(
+        state.aspectRatio,
+        equals(VideoRecorderMode.classic.defaultAspectRatio),
+      );
+    });
+
+    test(
+      'initialize restores saved mode with keepAutosavedDraft true',
+      () async {
+        // Simulate a previously saved "classic" mode in preferences
+        SharedPreferences.setMockInitialValues({
+          kLastUsedRecorderModeKey: 'classic',
+        });
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockCamera = MockCameraService.create(
+          onUpdateState: ({forceCameraRebuild}) {},
+          onAutoStopped: (_) {},
+        );
+        await mockCamera.initialize();
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(mockCamera),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(videoRecorderProvider.notifier).initialize();
+
+        // After initialize, the mode should be restored to classic
+        final state = container.read(videoRecorderProvider);
+        expect(state.recorderMode, equals(VideoRecorderMode.classic));
+      },
+    );
+  });
+
   group('VideoRecorderNotifier - Work Copy Lifecycle', () {
     test(
       'stopRecording cleans up work copy file',
@@ -886,6 +1081,87 @@ void main() {
               const MethodChannel('divine_video_player'),
               null,
             );
+      },
+    );
+  });
+
+  group('VideoRecorderNotifier - Library Navigation', () {
+    testWidgets(
+      'openLibrary navigates to clips-no-sound and reinitializes camera on return',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final spyCamera = _SpyCameraService.create(
+          onUpdateState: ({forceCameraRebuild}) {},
+          onAutoStopped: (_) {},
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(spyCamera),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(videoRecorderProvider.notifier).initialize();
+        expect(spyCamera.initializeCalls, equals(1));
+        expect(spyCamera.disposeCalls, equals(0));
+
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      container
+                          .read(videoRecorderProvider.notifier)
+                          .openLibrary(context);
+                    },
+                    child: const Text('Open library'),
+                  ),
+                ),
+              ),
+            ),
+            GoRoute(
+              name: LibraryScreen.clipsNoSoundRouteName,
+              path: LibraryScreen.clipsNoSoundPath,
+              builder: (context, state) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: context.pop,
+                    child: const Text('Close library'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open library'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Close library'), findsOneWidget);
+        expect(spyCamera.disposeCalls, equals(1));
+
+        await tester.tap(find.text('Close library'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Open library'), findsOneWidget);
+        expect(spyCamera.initializeCalls, equals(2));
       },
     );
   });

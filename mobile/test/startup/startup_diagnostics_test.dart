@@ -2,6 +2,8 @@
 // ABOUTME: Validates timing logs, breadcrumbs, and timeout detection
 
 import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
@@ -199,55 +201,55 @@ void main() {
       expect(report, contains('DeferredService'));
     });
 
-    test('should detect and warn about slow initialization', () async {
-      // Arrange
-      final completer = Completer<void>();
-      final warnings = <String>[];
-      Timer? timeoutTimer;
+    test('should detect and warn about slow initialization', () {
+      fakeAsync((async) {
+        final completer = Completer<void>();
+        final warnings = <String>[];
+        Timer? timeoutTimer;
 
-      coordinator.registerService(
-        name: 'SlowService',
-        phase: StartupPhase.critical,
-        initialize: () async {
-          // Start timeout detection
-          timeoutTimer = Timer(const Duration(seconds: 2), () {
-            warnings.add(
-              'WARNING: SlowService initialization taking > 2 seconds',
-            );
-            CrashReportingService.instance.log(
-              'Startup timeout detected for SlowService',
-            );
-          });
+        coordinator.registerService(
+          name: 'SlowService',
+          phase: StartupPhase.critical,
+          initialize: () async {
+            // Start timeout detection
+            timeoutTimer = Timer(const Duration(seconds: 2), () {
+              warnings.add(
+                'WARNING: SlowService initialization taking > 2 seconds',
+              );
+              CrashReportingService.instance.log(
+                'Startup timeout detected for SlowService',
+              );
+            });
 
-          // Simulate slow initialization
-          await Future.delayed(const Duration(seconds: 3));
-          timeoutTimer?.cancel();
-          completer.complete();
-        },
-      );
+            // Simulate slow initialization
+            await Future.delayed(const Duration(seconds: 3));
+            timeoutTimer?.cancel();
+            completer.complete();
+          },
+        );
 
-      // Act
-      final initFuture = coordinator.initialize();
+        // Kick off initialization (fire-and-forget; we'll elapse past it).
+        unawaited(coordinator.initialize());
 
-      // Wait for timeout warning
-      await Future.delayed(const Duration(seconds: 2, milliseconds: 100));
+        // After 2.1s, the 2s Timer should have fired.
+        async.elapse(const Duration(seconds: 2, milliseconds: 100));
+        expect(
+          warnings,
+          contains('WARNING: SlowService initialization taking > 2 seconds'),
+        );
 
-      // Assert - should have timeout warning
-      expect(
-        warnings,
-        contains('WARNING: SlowService initialization taking > 2 seconds'),
-      );
+        // Elapse past the 3s simulated work so the service — and the
+        // whole coordinator — complete.
+        async.elapse(const Duration(seconds: 1));
+        async.flushMicrotasks();
 
-      // Wait for completion
-      await initFuture;
-      await completer.future;
-
-      // Service should still complete
-      final metrics = coordinator.metrics;
-      expect(
-        metrics.serviceTimings['SlowService']!.inMilliseconds,
-        greaterThanOrEqualTo(3000),
-      );
+        expect(completer.isCompleted, isTrue);
+        final metrics = coordinator.metrics;
+        expect(
+          metrics.serviceTimings['SlowService']!.inMilliseconds,
+          greaterThanOrEqualTo(3000),
+        );
+      });
     });
 
     test('should handle initialization failures with proper logging', () async {

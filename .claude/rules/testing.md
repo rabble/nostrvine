@@ -360,3 +360,46 @@ Aim for 100% coverage. Use:
 ```bash
 flutter test --coverage
 ```
+
+### Strict-coverage packages
+
+Some packages enforce **100% line coverage as a CI gate** — not a
+target, a gate. The PR fails with a very specific message:
+
+> `Expected coverage >= 100.00% but actual is 99.xx%.`
+> `Lines not covered: lib/…: N, M, …`
+
+Current strict-coverage packages in this repo:
+
+- `mobile/packages/divine_ui`
+
+When adding a new public method / getter / constructor on a strict
+package (e.g. a new `VineTheme.xxxFont()` helper, a new enum case
+surfaced by a public method, a new widget variant), **add a matching
+test in the same PR**. Mirror the style of neighbouring tests —
+typically an assertion on the returned style / computed size.
+
+If a line is genuinely unreachable, exclude it from coverage with a
+justified `// coverage:ignore-line` (or block) comment rather than
+leaving the gate red.
+
+---
+
+## Widget tests that use `context.l10n`
+
+Any widget test that pumps a widget which calls `context.l10n.xxx` (or
+its generated getters) must include the localization delegates on the
+test's `MaterialApp`, or the l10n lookup fails at runtime:
+
+```dart
+MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: ...
+)
+```
+
+A common symptom of the missing setup is an assertion that passes when
+the string is hardcoded but fails after an l10n migration with
+`Found 0 widgets with text "…"`. The widget tree built correctly; only
+the text child failed to resolve.

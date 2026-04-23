@@ -9,6 +9,12 @@ import UIKit
 /// Handles camera initialization, preview, video recording, and camera controls.
 class CameraController: NSObject {
     private var captureSession: AVCaptureSession?
+    /// Separate AVCaptureSession used solely for audio capture during recording.
+    /// flutter's camera_avfoundation plugin uses this two-session pattern to
+    /// avoid reconfiguring the running video session when audio is added,
+    /// which would otherwise cause a black-frame stall and a Main-thread
+    /// freeze (~200-500ms) on the first record tap.
+    private var audioCaptureSession: AVCaptureSession?
     private var videoDevice: AVCaptureDevice?
     private var audioDevice: AVCaptureDevice?
     private var videoInput: AVCaptureDeviceInput?
@@ -537,26 +543,13 @@ class CameraController: NSObject {
             return
         }
         
-        // Configure audio session BEFORE adding audio input
-        // Without this, iOS defaults to speaker output when audio capture is active
-        // because it assumes you want to hear yourself during recording.
-        // We need to explicitly allow Bluetooth A2DP to keep headphone routing.
-        configureAudioSessionForRecording()
-        
-        // Setup audio input
-        if let audioDevice = AVCaptureDevice.default(for: .audio) {
-            self.audioDevice = audioDevice
-            do {
-                let audioInput = try AVCaptureDeviceInput(device: audioDevice)
-                if session.canAddInput(audioInput) {
-                    session.addInput(audioInput)
-                    self.audioInput = audioInput
-                }
-            } catch {
-                // Audio is optional, continue without it
-                print("Failed to add audio input: \(error.localizedDescription)")
-            }
-        }
+        // NOTE: Audio input/output are intentionally NOT added here.
+        // AudioToolbox + AVAudioSession.setCategory trigger dyld image-load
+        // notifications + an XPC roundtrip to mediaserverd, which freezes the
+        // main thread on the first camera open. We add them lazily in
+        // startRecording() instead, mirroring flutter's camera_avfoundation
+        // plugin (setUpCaptureSessionForAudioIfNeeded). The session preset
+        // remains video-only, audio gets attached when the user actually records.
         
         // Setup video output for preview
         let videoOutput = AVCaptureVideoDataOutput()
@@ -592,17 +585,7 @@ class CameraController: NSObject {
             print("DivineCamera: ERROR - Cannot add video output to session!")
         }
         
-        // Setup audio output for recording
-        let audioOutput = AVCaptureAudioDataOutput()
-        audioOutput.setSampleBufferDelegate(self, queue: videoOutputQueue)
-        
-        if session.canAddOutput(audioOutput) {
-            session.addOutput(audioOutput)
-            self.audioOutput = audioOutput
-            print("DivineCamera: Audio output added successfully")
-        } else {
-            print("DivineCamera: WARNING - Cannot add audio output to session")
-        }
+        // NOTE: AVCaptureAudioDataOutput is also added lazily in startRecording().
         
         // NOTE: MovieOutput is intentionally NOT added here during initialization.
         // AVCaptureMovieFileOutput conflicts with AVCaptureVideoDataOutput on some devices,
@@ -674,8 +657,15 @@ class CameraController: NSObject {
         textureId = textureRegistry.register(self)
         print("DivineCamera: Registered texture with ID: \(textureId)")
         
-        // Pre-warm AVAssetWriter in background to avoid lag on first recording
-        self.preWarmAssetWriter()
+        // NOTE: AVAssetWriter (VideoToolbox) and audio stack (AudioToolbox)
+        // pre-warming used to live here, but doing dlopen() on a background
+        // queue while Main is still wiring up the camera page causes dyld to
+        // post process-wide image-load notifications that block Main on its
+        // next lazy symbol bind — that was the original 1s freeze on open.
+        //
+        // Both pre-warms now run from AppDelegate at app launch instead, so
+        // by the time the user reaches the camera page everything is warm
+        // and Main is not blocked.
         
         // Store completion handler to call when first frame arrives
         // This ensures the camera is truly delivering frames before we report success
@@ -689,37 +679,94 @@ class CameraController: NSObject {
         }
     }
     
-    /// Pre-warms the AVAssetWriter to avoid cold-start lag on first recording.
-    /// This loads the video encoder framework into memory.
-    private func preWarmAssetWriter() {
-        DispatchQueue.global(qos: .background).async {
-            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("prewarm.mp4")
-            try? FileManager.default.removeItem(at: tempURL)
-            
+    /// Lazily sets up a SEPARATE AVCaptureSession for audio capture and starts
+    /// it. This is the two-session pattern used by flutter's camera_avfoundation
+    /// plugin. Why two sessions:
+    ///
+    /// - Adding an audio input to the running video session causes a pipeline
+    ///   reconfiguration → black-frame stall on the preview + Main-thread
+    ///   freeze (~200-500ms) the first time it happens.
+    /// - A dedicated audio session runs in parallel and only does audio work,
+    ///   so attaching/starting it never disturbs the video preview.
+    /// - The audio sample buffer delegate routes samples to the AVAssetWriter
+    ///   exactly like before — so the recording output is unchanged.
+    ///
+    /// Both sessions have automaticallyConfiguresApplicationAudioSession = false
+    /// and we manage AVAudioSession ourselves via configureAudioSessionForRecording().
+    ///
+    /// Returns true if audio is available, false if the user denied permission
+    /// or no audio device exists. Returning false is non-fatal — recording
+    /// continues without audio (matches the previous behaviour).
+    private func attachAudioToSessionIfNeeded() -> Bool {
+        // Already set up and running? Nothing to do.
+        if let existing = self.audioCaptureSession,
+           self.audioInput != nil,
+           self.audioOutput != nil {
+            if !existing.isRunning {
+                existing.startRunning()
+            }
+            return true
+        }
+        
+        // Make sure the AVAudioSession category is set.
+        // DivineCameraPlugin.preWarmFrameworks() runs at plugin registration
+        // and should already have done this; calling it again is cheap when warm.
+        configureAudioSessionForRecording()
+        
+        let session = self.audioCaptureSession ?? AVCaptureSession()
+        session.automaticallyConfiguresApplicationAudioSession = false
+        session.beginConfiguration()
+        
+        // Audio input
+        if self.audioInput == nil {
+            let device = self.audioDevice ?? AVCaptureDevice.default(for: .audio)
+            guard let audioDevice = device else {
+                print("DivineCamera: No audio device available, recording without audio")
+                session.commitConfiguration()
+                return false
+            }
+            self.audioDevice = audioDevice
             do {
-                let writer = try AVAssetWriter(outputURL: tempURL, fileType: .mp4)
-                let videoSettings: [String: Any] = [
-                    AVVideoCodecKey: AVVideoCodecType.h264,
-                    AVVideoWidthKey: 1080,
-                    AVVideoHeightKey: 1920
-                ]
-                let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
-                videoInput.expectsMediaDataInRealTime = true
-                
-                if writer.canAdd(videoInput) {
-                    writer.add(videoInput)
+                let input = try AVCaptureDeviceInput(device: audioDevice)
+                if session.canAddInput(input) {
+                    session.addInput(input)
+                    self.audioInput = input
+                } else {
+                    print("DivineCamera: Cannot add audio input to audio session")
+                    session.commitConfiguration()
+                    return false
                 }
-                
-                // Start and immediately cancel - this loads the encoder
-                writer.startWriting()
-                writer.cancelWriting()
-                
-                try? FileManager.default.removeItem(at: tempURL)
-                print("DivineCamera: AVAssetWriter pre-warmed successfully")
             } catch {
-                print("DivineCamera: Pre-warm failed (non-critical): \(error.localizedDescription)")
+                print("DivineCamera: Failed to create audio input: \(error.localizedDescription)")
+                session.commitConfiguration()
+                return false
             }
         }
+        
+        // Audio output
+        if self.audioOutput == nil {
+            let output = AVCaptureAudioDataOutput()
+            output.setSampleBufferDelegate(self, queue: videoOutputQueue)
+            if session.canAddOutput(output) {
+                session.addOutput(output)
+                self.audioOutput = output
+            } else {
+                print("DivineCamera: Cannot add audio output to audio session")
+                session.commitConfiguration()
+                return false
+            }
+        }
+        
+        session.commitConfiguration()
+        self.audioCaptureSession = session
+        
+        // Start the audio session. This does NOT touch the video session and
+        // therefore does NOT cause a preview reconfiguration / black frame.
+        if !session.isRunning {
+            session.startRunning()
+        }
+        
+        return true
     }
     
     /// Completes initialization when first frame is received or timeout occurs.
@@ -1295,120 +1342,141 @@ class CameraController: NSObject {
         
         self.maxDurationMs = maxDurationMs
         
-        videoOutputQueue.async { [weak self] in
+        // Build and start the dedicated audio capture session on first record.
+        // The AV frameworks were already dlopen'd at plugin registration via
+        // DivineCameraPlugin.preWarmFrameworks(), so this is fast.
+        sessionQueue.async { [weak self] in
             guard let self = self else { return }
+            _ = self.attachAudioToSessionIfNeeded()
             
-            // Create output file - use cache, provided directory, or default to documents directory
-            let outputDir: URL
-            if let customDir = outputDirectory {
-                outputDir = URL(fileURLWithPath: customDir)
-            } else if useCache {
-                outputDir = FileManager.default.temporaryDirectory
-            } else {
-                let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-                outputDir = paths[0]
-            }
-            // Use milliseconds timestamp for shorter, sortable, and unique filenames
-            let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
-            let outputURL = outputDir.appendingPathComponent("VID_\(timestamp).mp4")
-            self.currentRecordingURL = outputURL
-            
-            // Remove existing file if any
-            try? FileManager.default.removeItem(at: outputURL)
-            
-            // Setup AVAssetWriter
-            do {
-                let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
-                
-                // Get video dimensions from the current format
-                guard let device = self.videoDevice else {
-                    DispatchQueue.main.async { completion("Video device not available") }
-                    return
-                }
-                
-                let dimensions = CMVideoFormatDescriptionGetDimensions(device.activeFormat.formatDescription)
-                // The video connection is set to .portrait orientation, so frames come in portrait
-                // dimensions.width is the longer side (1920), dimensions.height is shorter (1080)
-                // After portrait orientation, the frame is 1080 wide x 1920 tall
-                let videoWidth = Int(dimensions.height)  // 1080 (portrait width)
-                let videoHeight = Int(dimensions.width)  // 1920 (portrait height)
-                
-                // Video input settings
-                let videoSettings: [String: Any] = [
-                    AVVideoCodecKey: AVVideoCodecType.h264,
-                    AVVideoWidthKey: videoWidth,
-                    AVVideoHeightKey: videoHeight,
-                    AVVideoCompressionPropertiesKey: [
-                        AVVideoAverageBitRateKey: 6000000,
-                        AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel
-                    ]
-                ]
-                
-                let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
-                videoInput.expectsMediaDataInRealTime = true
-                
-                // Create pixel buffer adaptor - use the actual frame dimensions (before portrait rotation)
-                let sourcePixelBufferAttributes: [String: Any] = [
-                    kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-                    kCVPixelBufferWidthKey as String: dimensions.height,  // Portrait width
-                    kCVPixelBufferHeightKey as String: dimensions.width   // Portrait height
-                ]
-                let adaptor = AVAssetWriterInputPixelBufferAdaptor(
-                    assetWriterInput: videoInput,
-                    sourcePixelBufferAttributes: sourcePixelBufferAttributes
+            self.videoOutputQueue.async { [weak self] in
+                guard let self = self else { return }
+                self.startRecordingAfterAudioReady(
+                    useCache: useCache,
+                    outputDirectory: outputDirectory,
+                    completion: completion
                 )
-                
-                // Audio input settings
-                let audioSettings: [String: Any] = [
-                    AVFormatIDKey: kAudioFormatMPEG4AAC,
-                    AVSampleRateKey: 44100.0,
-                    AVNumberOfChannelsKey: 1,
-                    AVEncoderBitRateKey: 64000
-                ]
-                let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
-                audioInput.expectsMediaDataInRealTime = true
-                
-                if writer.canAdd(videoInput) {
-                    writer.add(videoInput)
-                }
-                if writer.canAdd(audioInput) {
-                    writer.add(audioInput)
-                }
-                
-                self.assetWriter = writer
-                self.videoWriterInput = videoInput
-                self.audioWriterInput = audioInput
-                self.pixelBufferAdaptor = adaptor
-                
-                // Start writing
-                writer.startWriting()
-                
-                self.isRecording = true
-                self.isWriterSessionStarted = false  // Will be set to true when first frame is received
-                self.recordingStartTime = Date()
-                
-                // Check and enable auto-flash if needed
-                self.checkAndEnableAutoFlash()
-                
-                print("DivineCamera: Recording started to \(outputURL.path)")
-                
-                // Schedule max duration timer if specified
-                if let maxMs = maxDurationMs, maxMs > 0 {
-                    DispatchQueue.main.async { [weak self] in
-                        self?.maxDurationTimer = Timer.scheduledTimer(withTimeInterval: Double(maxMs) / 1000.0, repeats: false) { [weak self] _ in
-                            self?.autoStopRecording()
-                        }
+            }
+        }
+    }
+    
+    /// Continues startRecording on the videoOutputQueue after audio has been
+    /// attached to the session. Split out for readability.
+    private func startRecordingAfterAudioReady(
+        useCache: Bool,
+        outputDirectory: String?,
+        completion: @escaping (String?) -> Void
+    ) {
+        // Create output file - use cache, provided directory, or default to documents directory
+        let outputDir: URL
+        if let customDir = outputDirectory {
+            outputDir = URL(fileURLWithPath: customDir)
+        } else if useCache {
+            outputDir = FileManager.default.temporaryDirectory
+        } else {
+            let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            outputDir = paths[0]
+        }
+        // Use milliseconds timestamp for shorter, sortable, and unique filenames
+        let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
+        let outputURL = outputDir.appendingPathComponent("VID_\(timestamp).mp4")
+        self.currentRecordingURL = outputURL
+
+        // Remove existing file if any
+        try? FileManager.default.removeItem(at: outputURL)
+
+        // Setup AVAssetWriter
+        do {
+            let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
+
+            // Get video dimensions from the current format
+            guard let device = self.videoDevice else {
+                DispatchQueue.main.async { completion("Video device not available") }
+                return
+            }
+
+            let dimensions = CMVideoFormatDescriptionGetDimensions(device.activeFormat.formatDescription)
+            // The video connection is set to .portrait orientation, so frames come in portrait
+            // dimensions.width is the longer side (1920), dimensions.height is shorter (1080)
+            // After portrait orientation, the frame is 1080 wide x 1920 tall
+            let videoWidth = Int(dimensions.height)  // 1080 (portrait width)
+            let videoHeight = Int(dimensions.width)  // 1920 (portrait height)
+
+            // Video input settings
+            let videoSettings: [String: Any] = [
+                AVVideoCodecKey: AVVideoCodecType.h264,
+                AVVideoWidthKey: videoWidth,
+                AVVideoHeightKey: videoHeight,
+                AVVideoCompressionPropertiesKey: [
+                    AVVideoAverageBitRateKey: 6000000,
+                    AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
+                ],
+            ]
+
+            let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
+            videoInput.expectsMediaDataInRealTime = true
+
+            // Create pixel buffer adaptor - use the actual frame dimensions (before portrait rotation)
+            let sourcePixelBufferAttributes: [String: Any] = [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+                kCVPixelBufferWidthKey as String: dimensions.height,  // Portrait width
+                kCVPixelBufferHeightKey as String: dimensions.width,  // Portrait height
+            ]
+            let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+                assetWriterInput: videoInput,
+                sourcePixelBufferAttributes: sourcePixelBufferAttributes
+            )
+
+            // Audio input settings
+            let audioSettings: [String: Any] = [
+                AVFormatIDKey: kAudioFormatMPEG4AAC,
+                AVSampleRateKey: 44100.0,
+                AVNumberOfChannelsKey: 1,
+                AVEncoderBitRateKey: 64000,
+            ]
+            let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
+            audioInput.expectsMediaDataInRealTime = true
+
+            if writer.canAdd(videoInput) {
+                writer.add(videoInput)
+            }
+            if writer.canAdd(audioInput) {
+                writer.add(audioInput)
+            }
+
+            self.assetWriter = writer
+            self.videoWriterInput = videoInput
+            self.audioWriterInput = audioInput
+            self.pixelBufferAdaptor = adaptor
+
+            // Start writing
+            writer.startWriting()
+
+            self.isRecording = true
+            self.isWriterSessionStarted = false  // Will be set to true when first frame is received
+            self.recordingStartTime = Date()
+
+            // Check and enable auto-flash if needed
+            self.checkAndEnableAutoFlash()
+
+            print("DivineCamera: Recording started to \(outputURL.path)")
+
+            // Schedule max duration timer if specified
+            if let maxMs = self.maxDurationMs, maxMs > 0 {
+                DispatchQueue.main.async { [weak self] in
+                    self?.maxDurationTimer = Timer.scheduledTimer(withTimeInterval: Double(maxMs) / 1000.0, repeats: false) { [weak self] _ in
+                        self?.autoStopRecording()
                     }
                 }
-                
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
-                
-            } catch {
-                DispatchQueue.main.async {
-                    completion("Failed to create asset writer: \(error.localizedDescription)")
-                }
+            }
+
+            DispatchQueue.main.async {
+                completion(nil)
+            }
+
+        } catch {
+            DispatchQueue.main.async {
+                completion("Failed to create asset writer: \(error.localizedDescription)")
             }
         }
     }
@@ -1607,6 +1675,8 @@ class CameraController: NSObject {
             
             self.captureSession?.stopRunning()
             self.captureSession = nil
+            self.audioCaptureSession?.stopRunning()
+            self.audioCaptureSession = nil
             self.videoDevice = nil
             self.audioDevice = nil
             self.videoInput = nil

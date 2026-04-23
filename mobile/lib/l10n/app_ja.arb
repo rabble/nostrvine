@@ -403,14 +403,22 @@
     "videoGridEditVideo": "動画を編集",
     "videoGridEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
     "videoGridDeleteVideo": "動画を削除",
-    "videoGridDeleteVideoSubtitle": "この動画を Divine から削除します。他の Nostr クライアントでは表示されることがあります。",
+    "videoGridDeleteVideoSubtitle": "このコンテンツを完全に削除する",
     "videoGridDeleteConfirmTitle": "動画を削除",
-    "videoGridDeleteConfirmMessage": "この動画は Divine から完全に削除されます。別のリレーを使うほかの Nostr クライアントでは表示されることがあります。",
-    "videoGridDeleteConfirmNote": "リレーに削除リクエストを送るよ。注意: 一部のリレーにはキャッシュが残ることもあるよ。",
+    "videoGridDeleteConfirmMessage": "この動画を本当に削除する?",
+    "videoGridDeleteConfirmNote": "すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではコンテンツが残ることもあるよ。",
     "videoGridDeleteCancel": "キャンセル",
     "videoGridDeleteConfirm": "削除",
     "videoGridDeletingContent": "コンテンツを削除中...",
     "videoGridDeleteSuccess": "削除リクエストを送ったよ",
+    "videoGridDeleteFailure": "コンテンツの削除がうまくいかなかった: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
     "exploreTabClassics": "クラシック",
     "exploreTabNew": "新着",
     "exploreTabPopular": "人気",
@@ -588,9 +596,6 @@
     "shareMessageHint": "メッセージを追加 (任意)...",
     "videoActionUnlike": "いいねを取り消す",
     "videoActionLike": "いいね",
-    "videoActionAutoLabel": "自動",
-    "videoActionEnableAutoAdvance": "自動送りをオンにする",
-    "videoActionDisableAutoAdvance": "自動送りをオフにする",
     "videoActionRemoveRepost": "リポストを取り消す",
     "videoActionRepost": "リポスト",
     "videoActionViewComments": "コメントを見る",
@@ -605,17 +610,6 @@
             }
         }
     },
-    "videoFeedLoopCountLine": "{compactCount}{count, plural, other{ループ}}",
-    "@videoFeedLoopCountLine": {
-        "placeholders": {
-            "compactCount": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Divine 以外",
     "metadataBadgeHumanMade": "人間が制作",
     "metadataSoundsLabel": "サウンド",
@@ -627,14 +621,7 @@
     "metadataCollaboratorsLabel": "コラボレーター",
     "metadataInspiredByLabel": "インスパイア元",
     "metadataRepostedByLabel": "リポスト元",
-    "metadataLoopsLabel": "{count, plural, other{ループ}}",
-    "@metadataLoopsLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
+    "metadataLoopsLabel": "ループ",
     "metadataLikesLabel": "いいね",
     "metadataCommentsLabel": "コメント",
     "metadataRepostsLabel": "リポスト",
@@ -1504,7 +1491,7 @@
     "shareMenuEditVideo": "動画を編集",
     "shareMenuEditVideoSubtitle": "タイトル、説明、ハッシュタグを更新",
     "shareMenuDeleteVideo": "動画を削除",
-    "shareMenuDeleteVideoSubtitle": "この動画を Divine から削除します。他の Nostr クライアントでは表示されることがあります。",
+    "shareMenuDeleteVideoSubtitle": "このコンテンツを完全に削除",
     "shareMenuVideoInTheseLists": "この動画が入ってるリスト:",
     "shareMenuVideoCount": "{count}本の動画",
     "@shareMenuVideoCount": {
@@ -1515,17 +1502,20 @@
         }
     },
     "shareMenuClose": "閉じる",
-    "shareMenuDeleteConfirmation": "この動画は Divine から完全に削除されます。別のリレーを使うほかの Nostr クライアントでは表示されることがあります。",
+    "shareMenuDeleteConfirmation": "この動画を本当に削除する?",
+    "shareMenuDeleteWarning": "すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではキャッシュが残ることもあるよ。",
     "shareMenuCancel": "キャンセル",
     "shareMenuDelete": "削除",
     "shareMenuDeletingContent": "コンテンツを削除中...",
-    "shareMenuDeleteRequestSent": "動画を削除したよ",
-    "shareMenuDeleteFailedNotInitialized": "削除の準備がまだだよ。少し待ってからもう一度試してね。",
-    "shareMenuDeleteFailedNotOwner": "自分の動画だけ削除できるよ。",
-    "shareMenuDeleteFailedNotAuthenticated": "もう一度ログインしてから削除してね。",
-    "shareMenuDeleteFailedCouldNotSign": "削除リクエストに署名できなかったよ。もう一度試してね。",
-  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedGeneric": "この動画を削除できなかったよ。もう一度試してね。",
+    "shareMenuDeleteRequestSent": "削除リクエストを送ったよ",
+    "shareMenuFailedToDeleteContent": "コンテンツの削除がうまくいかなかった: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuFollowSetName": "フォローセット名",
     "shareMenuFollowSetNameHint": "例: クリエイター、ミュージシャンなど",
     "shareMenuDescriptionOptional": "説明 (任意)",
@@ -1559,7 +1549,15 @@
     },
     "shareMenuDeleteVideoQuestion": "動画を削除する?",
     "shareMenuDeleteRelayWarning": "リレーに削除リクエストを送るよ。注意: 一部のリレーにはキャッシュが残ることもあるよ。",
-    "shareMenuVideoDeletionRequested": "動画を削除したよ",
+    "shareMenuVideoDeletionRequested": "動画の削除をリクエストしたよ",
+    "shareMenuFailedToDeleteVideo": "動画の削除がうまくいかなかった: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuContentLabels": "コンテンツラベル",
     "shareMenuAddContentLabels": "コンテンツラベルを追加",
     "shareMenuClearAll": "すべてクリア",
@@ -1729,9 +1727,9 @@
     "feedFailedToLoadVideos": "動画の読み込みがうまくいかなかった",
     "feedRetry": "もう一回",
     "feedNoFollowedUsers": "まだ誰もフォローしてないよ。\n誰かをフォローすると、ここに動画が出るよ。",
-    "feedForYouEmpty": "おすすめフィードはまだ空っぽ。\n動画を見たりクリエイターをフォローしてカスタマイズしよう。",
-    "feedFollowingEmpty": "フォロー中の人の動画はまだないよ。\n好きなクリエイターを見つけてフォローしよう。",
-    "feedLatestEmpty": "新しい動画はまだないよ。\nまた後でチェックしてね。",
+    "feedForYouEmpty": "おすすめフィードはまだ空です。\n動画を見つけてクリエイターをフォローし、あなた向けに育てましょう。",
+    "feedFollowingEmpty": "フォロー中の人の動画はまだありません。\n気に入ったクリエイターを見つけてフォローしましょう。",
+    "feedLatestEmpty": "新しい動画はまだありません。\nしばらくしてからもう一度確認してください。",
     "feedExploreVideos": "動画を探しに行こう",
     "feedExternalVideoSlow": "外部動画の読み込みに時間がかかってる",
     "feedSkip": "スキップ",
@@ -1771,6 +1769,31 @@
     "userSearchPrompt": "ユーザーを検索",
     "userSearchNoResults": "ユーザーが見つからない",
     "userSearchFailed": "検索がうまくいかなかった",
+    "userPickerSearchByName": "名前で検索",
+    "userPickerFilterByNameHint": "名前で絞り込み...",
+    "userPickerSearchByNameHint": "名前で検索...",
+    "userPickerAlreadyAddedSemantics": "{name} はすでに追加済みです",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerSelectSemantics": "{name} を選択",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "あなたの仲間は外にいる",
+    "userPickerEmptyFollowListBody": "気の合う人をフォローしよう。相互フォローになればコラボできます。",
+    "userPickerGoBack": "戻る",
+    "userPickerTypeNameToSearch": "検索する名前を入力",
+    "userPickerUnavailable": "ユーザー検索は現在利用できません。後でもう一度お試しください。",
+    "userPickerSearchFailedTryAgain": "検索に失敗しました。もう一度お試しください。",
     "forgotPasswordTitle": "パスワードをリセット",
     "forgotPasswordDescription": "メールアドレスを入れてね。パスワードをリセットするリンクを送るよ。",
     "forgotPasswordEmailLabel": "メールアドレス",
@@ -1800,7 +1823,9 @@
     "navInbox": "受信箱",
     "navProfile": "プロフィール",
     "navMyProfile": "マイプロフィール",
+    "navSearch": "検索",
     "navNotifications": "通知",
+    "navSearchTooltip": "検索",
     "navOpenCamera": "カメラを開く",
     "navUnknown": "不明",
     "navExploreClassics": "クラシック",
@@ -2155,6 +2180,7 @@
     "commonCancel": "キャンセル",
     "commonDelete": "削除",
     "commonRetry": "もう一回",
+    "commonNext": "次へ",
     "discoverListsFailedToUpdateSubscription": "サブスクリプションの更新がうまくいかなかった: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2267,7 +2293,7 @@
             }
         }
     },
-"libraryAddClips": "追加",
+    "libraryAddClips": "追加",
     "libraryClipSelectionTitle": "クリップ",
     "libraryClipsDeletedCount": "{count, plural, other{{count}件のクリップを削除しました}}",
     "@libraryClipsDeletedCount": {
@@ -2368,14 +2394,21 @@
     "searchDiscoverSomethingInteresting": "面白いものを見つけよう",
     "searchEnterQuery": "検索キーワードを入力",
     "searchFindCuratedVideoLists": "キュレーションされた動画リストを探そう",
+  "searchListsSectionHeader": "リスト",
+  "searchListsLoadingLabel": "リスト結果を読み込み中",
     "searchForLists": "リストを検索",
     "searchSomethingWentWrong": "なんかうまくいかなかった",
     "searchTryAgain": "もう一回",
     "trendingTitle": "トレンド",
-    "videoEditorLayers": "レイヤー",
     "videoEditorStickers": "ステッカー",
     "videoMetadataContentWarnings": "コンテンツ警告",
     "videoMetadataExpiration": "有効期限",
+    "videoMetadataExpirationNotExpire": "期限なし",
+    "videoMetadataExpirationOneDay": "1日",
+    "videoMetadataExpirationOneWeek": "1週間",
+    "videoMetadataExpirationOneMonth": "1か月",
+    "videoMetadataExpirationOneYear": "1年",
+    "videoMetadataExpirationOneDecade": "10年",
     "videoMetadataTags": "タグ",
     "contentLabelAiGenerated": "AI生成",
     "contentLabelAlcohol": "アルコール",
@@ -2570,5 +2603,330 @@
     "cameraPermissionAllowAccessTitle": "カメラとマイクへのアクセスを許可",
     "cameraPermissionAllowAccessDescription": "これにより、アプリ内で動画の撮影と編集ができるようになります。それ以外の用途はありません。",
     "cameraPermissionContinue": "続行",
-    "cameraPermissionGoToSettings": "設定に移動"
+    "cameraPermissionGoToSettings": "設定に移動",
+    "videoEditorAddClipFromLibrary": "ライブラリからクリップを追加",
+    "videoEditorAddElementSemanticLabel": "要素を追加",
+    "videoEditorAddTitle": "追加",
+    "videoEditorAdjustVolumeTitle": "音量を調整",
+    "videoEditorAudioAddAudio": "オーディオを追加",
+    "videoEditorAudioFailedToLoadTitle": "サウンドの読み込みに失敗",
+    "videoEditorAudioLabel": "オーディオ",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "クリエイターがオーディオを共有するとここに表示されます",
+    "videoEditorAudioNoSoundsAvailableTitle": "利用可能なサウンドなし",
+    "videoEditorAudioNoSoundsFoundSubtitle": "別の検索ワードをお試しください",
+    "videoEditorAudioNoSoundsFoundTitle": "サウンドが見つかりません",
+    "videoEditorAudioPausePreviewSemanticLabel": "プレビューを一時停止",
+    "videoEditorAudioPlayPreviewSemanticLabel": "プレビューを再生",
+    "videoEditorAudioSelectSoundSemanticLabel": "サウンドを選択",
+    "videoEditorAudioUntitled": "タイトルなし",
+    "videoEditorAudioUntitledSound": "タイトルなしのサウンド",
+    "videoEditorCannotSplitProcessing": "処理中はクリップを分割できません。しばらくお待ちください。",
+    "videoEditorClipDeleted": "クリップを削除しました",
+    "videoEditorClipSaveFailed": "クリップの保存に失敗しました",
+    "videoEditorClipSavedSuccess": "クリップをライブラリに保存しました",
+    "videoEditorClipsLabel": "クリップ",
+    "videoEditorCloseColorPickerSemanticLabel": "カラーピッカーを閉じる",
+    "videoEditorCloseSemanticLabel": "閉じる",
+    "videoEditorColorPickerSemanticLabel": "カラーピッカー",
+    "videoEditorColorSelectedSemanticLabel": "{colorName}、選択済み",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorConfirmColorSemanticLabel": "色を確定",
+    "videoEditorCropSemanticLabel": "トリミング",
+    "videoEditorCustomAudioLabel": "カスタムオーディオ",
+    "videoEditorDeleteClip": "クリップを削除",
+    "videoEditorDeleteLabel": "削除",
+    "videoEditorDeleteLayerDropZone": "レイヤー削除のドロップゾーン",
+    "videoEditorDeleteSelectedItemSemanticLabel": "選択したアイテムを削除",
+    "videoEditorDiscardChangesButton": "変更を破棄",
+    "videoEditorDoneLabel": "完了",
+    "videoEditorDoneSemanticLabel": "完了",
+    "videoEditorDrawLabel": "描画",
+    "videoEditorDrawToolArrowSemanticLabel": "矢印ツール",
+    "videoEditorDrawToolEraserSemanticLabel": "消しゴムツール",
+    "videoEditorDrawToolMarkerSemanticLabel": "マーカーツール",
+    "videoEditorDrawToolPencilSemanticLabel": "鉛筆ツール",
+    "videoEditorDuplicateLabel": "複製",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "選択したアイテムを複製",
+    "videoEditorEditLabel": "編集",
+    "videoEditorEditSelectedItemSemanticLabel": "選択したアイテムを編集",
+    "videoEditorEffectsLabel": "エフェクト",
+    "videoEditorFailedLoadStickers": "ステッカーの読み込みに失敗しました",
+    "videoEditorFeedPreviewContent": "これらのエリアの後ろにコンテンツを配置しないでください。",
+    "videoEditorFinishTimelineEditingSemanticLabel": "タイムライン編集を終了",
+    "videoEditorFontSemanticLabel": "フォント",
+    "videoEditorFontUnknown": "不明",
+    "videoEditorHideTimelineSemanticLabel": "タイムラインを非表示",
+    "videoEditorHueSemanticLabel": "色相",
+    "videoEditorKeepEditingButton": "編集を続ける",
+    "videoEditorLayerReorderHint": "長押しして並べ替え",
+    "videoEditorLayerReorderLabel": "レイヤー{index}を並べ替え",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLevelSemanticLabel": "レベル",
+    "videoEditorMuteAudioSemanticLabel": "音声をミュート",
+    "videoEditorNoStickersAvailable": "ステッカーがありません",
+    "videoEditorNoStickersFound": "ステッカーが見つかりません",
+    "videoEditorOpenAudioSemanticLabel": "オーディオエディタを開く",
+    "videoEditorOpenClipsSemanticLabel": "クリップエディタを開く",
+    "videoEditorOpenDrawSemanticLabel": "描画エディタを開く",
+    "videoEditorOpenEffectsSemanticLabel": "エフェクトエディタを開く",
+    "videoEditorOpenTextSemanticLabel": "テキストエディタを開く",
+    "videoEditorPauseSemanticLabel": "一時停止",
+    "videoEditorPickColorTitle": "色を選択",
+    "videoEditorPlayPauseSemanticLabel": "動画を再生または一時停止",
+    "videoEditorPlaySemanticLabel": "再生",
+    "videoEditorRecordedAudioLabel": "録音済みオーディオ",
+    "videoEditorRedoSemanticLabel": "やり直し",
+    "videoEditorReleaseToDeleteLayer": "離してレイヤーを削除",
+    "videoEditorSaturationBrightnessSemanticLabel": "彩度と明度",
+    "videoEditorSaturationBrightnessValue": "彩度 {saturation}%、明度 {brightness}%",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorSaveClip": "クリップを保存",
+    "videoEditorSaveDraftButton": "下書きを保存",
+    "videoEditorSaveDraftSubtitle": "編集内容を後で保存するか、破棄してエディタを終了します。",
+    "videoEditorSaveDraftTitle": "下書きを保存しますか？",
+    "videoEditorSaveSelectedClip": "選択したクリップを保存",
+    "videoEditorSelectFontSemanticLabel": "フォントを選択",
+    "videoEditorShowTimelineSemanticLabel": "タイムラインを表示",
+    "videoEditorSortBySemanticLabel": "{option}で並べ替え。タップして並べ替え順を変更",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorSortLongest": "長い順",
+    "videoEditorSortNewest": "新しい順",
+    "videoEditorSortShortest": "短い順",
+    "videoEditorSplitClip": "クリップを分割",
+    "videoEditorSplitLabel": "分割",
+    "videoEditorSplitPlayheadOutsideClip": "分割するには再生ヘッドを選択したクリップ内に置いてください。",
+    "videoEditorSplitPositionInvalid": "分割位置が無効です。各クリップは最低{minDurationMs}ms必要です。",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorSplitSelectedClipSemanticLabel": "選択したクリップを分割",
+    "videoEditorStickerSearchHint": "ステッカーを検索...",
+    "videoEditorTextAlignmentSemanticLabel": "テキストの配置",
+    "videoEditorTextBackgroundSemanticLabel": "テキストの背景",
+    "videoEditorTextColorSemanticLabel": "テキストの色",
+    "videoEditorTextLabel": "テキスト",
+    "videoEditorTimelineClipMoveLeft": "左に移動",
+    "videoEditorTimelineClipMoveRight": "右に移動",
+    "videoEditorTimelineClipReorderHint": "長押しして並べ替え",
+    "videoEditorTimelineClipSemanticLabel": "{total}個中{index}番目のクリップ、{duration}秒",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineDraggingClipSemanticLabel": "クリップ{index}をドラッグ中",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineLongPressToDragHint": "長押しでドラッグ",
+    "videoEditorTimelinePositionFormat": "{minutes}分{seconds}秒",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineTrimClipHint": "ハンドルをドラッグしてクリップの長さを調整",
+    "videoEditorTimelineTrimClipSemanticLabel": "クリップをトリム",
+    "videoEditorTimelineTrimEndSemanticLabel": "終端をトリム",
+    "videoEditorTimelineTrimStartSemanticLabel": "始端をトリム",
+    "videoEditorUndoSemanticLabel": "元に戻す",
+    "videoEditorUnmuteAudioSemanticLabel": "音声のミュートを解除",
+    "videoEditorVideoTimelineSemanticLabel": "動画タイムライン",
+    "videoEditorVolumeLabel": "音量",
+    "videoMetadataAddCollaboratorSemanticLabel": "コラボレーターを追加",
+    "videoMetadataBackSemanticLabel": "戻る",
+    "videoMetadataClassicDoneButton": "完了",
+    "videoMetadataClosePreviewSemanticLabel": "動画プレビューを閉じる",
+    "videoMetadataCollaboratorsCount": "{count}/{max}人のコラボレーター",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataCollaboratorsHelpMessage": "コラボレーターはこの投稿の共同クリエイターとしてタグ付けされます。相互フォローしている人のみ追加でき、公開時に投稿メタデータに表示されます。",
+    "videoMetadataCollaboratorsHelpTooltip": "コラボレーターの仕組み",
+    "videoMetadataCollaboratorsLabel": "コラボレーター",
+    "videoMetadataContentWarningDoneButton": "完了",
+    "videoMetadataContentWarningLabel": "コンテンツ警告",
+    "videoMetadataContentWarningSelectAllThatApply": "コンテンツに該当するものをすべて選択",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "このクリエイターは参照できません。",
+    "videoMetadataDeleteTagHint": "タグ{tag}を削除",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataDeleteTagSemanticLabel": "削除",
+    "videoMetadataDescriptionLabel": "説明",
+    "videoMetadataDismissHelpDialogSemanticLabel": "ヘルプダイアログを閉じる",
+    "videoMetadataExpirationLabel": "有効期限",
+    "videoMetadataFailedToSaveSnackbar": "保存に失敗しました",
+    "videoMetadataFormNotReadyHint": "有効にするにはフォームを入力してください",
+    "videoMetadataGoToLibraryButton": "ライブラリへ",
+    "videoMetadataGotItButton": "わかりました！",
+    "videoMetadataInspiredByHelpMessage": "帰属のために使用します。インスパイアクレジットはコラボレーターとは異なります。影響を認めますが、共同クリエイターとしてタグ付けはしません。",
+    "videoMetadataInspiredByHelpTooltip": "インスピレーションクレジットの仕組み",
+    "videoMetadataInspiredByLabel": "インスパイア元",
+    "videoMetadataInspiredByNone": "なし",
+    "videoMetadataLimitReachedWarning": "64KBの上限に達しました。続けるにはコンテンツを削除してください。",
+    "videoMetadataMustMutuallyFollowSnackbar": "{name}をコラボレーターとして追加するには、相互フォローが必要です。",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataMutualFollowersSearchText": "相互フォロワー",
+    "videoMetadataOpenPreviewSemanticLabel": "投稿プレビュー画面を開く",
+    "videoMetadataPausePreviewSemanticLabel": "プレビューを一時停止",
+    "videoMetadataPlayPreviewSemanticLabel": "プレビューを再生",
+    "videoMetadataPostButton": "投稿",
+    "videoMetadataPostDetailsTitle": "投稿の詳細",
+    "videoMetadataPostSemanticLabel": "投稿ボタン",
+    "videoMetadataPublishVideoHint": "フィードに動画を公開",
+    "videoMetadataRemoveCollaboratorSemanticLabel": "コラボレーターを削除",
+    "videoMetadataRemoveInspiredBySemanticLabel": "インスパイア元を削除",
+    "videoMetadataRemoveSemanticLabel": "削除",
+    "videoMetadataRenderingVideoHint": "動画をレンダリング中...",
+    "videoMetadataSaveForLaterButton": "後で保存",
+    "videoMetadataSaveForLaterSemanticLabel": "後で保存ボタン",
+    "videoMetadataSaveToDraftsHint": "動画を下書きと{destination}に保存",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSavedToLibrarySnackbar": "ライブラリに保存しました",
+    "videoMetadataSavingVideoHint": "動画を保存中...",
+    "videoMetadataSelectContentWarningsSemanticLabel": "コンテンツ警告を選択",
+    "videoMetadataSelectExpirationSemanticLabel": "有効期限を選択",
+    "videoMetadataSetInspiredBySemanticLabel": "インスパイア元を設定",
+    "videoMetadataShareTitle": "シェア",
+    "videoMetadataTagsLabel": "タグ",
+    "videoMetadataTitleLabel": "タイトル",
+    "videoMetadataVideoDetailsSubtitle": "動画の詳細",
+    "videoRecorderAutosaveContinueButton": "はい、続ける",
+    "videoRecorderAutosaveDiscardButton": "いいえ、新しい動画を開始",
+    "videoRecorderAutosaveFoundSubtitle": "続きから再開しますか？",
+    "videoRecorderAutosaveFoundTitle": "作業中のものが見つかりました",
+    "videoRecorderAutosaveRestoreFailure": "下書きを復元できませんでした",
+    "videoRecorderCaptureCloseLabel": "閉じる",
+    "videoRecorderCaptureNextLabel": "次へ",
+    "videoRecorderClipDeletedMessage": "クリップを削除しました",
+    "videoRecorderCloseLabel": "動画レコーダーを閉じる",
+    "videoRecorderContinueToEditorLabel": "動画エディタへ進む",
+    "videoRecorderCycleTimerLabel": "タイマーを切り替え",
+    "videoRecorderDeleteLastClipLabel": "最後のクリップを削除",
+    "videoRecorderGhostFrameDisabled": "ゴーストフレームを無効化",
+    "videoRecorderGhostFrameEnabled": "ゴーストフレームを有効化",
+    "videoRecorderLibraryEmptyLabel": "クリップライブラリ、クリップなし",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, other{クリップライブラリを開く、{clipCount}クリップ}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoRecorderRecordingTapToStopLabel": "録画中。どこかタップして停止",
+    "videoRecorderStartRecordingTooltip": "録画を開始",
+    "videoRecorderStopRecordingTooltip": "録画を停止",
+    "videoRecorderSwitchCameraLabel": "カメラを切り替え",
+    "videoRecorderTapToStartLabel": "どこかタップして録画を開始",
+    "videoRecorderToggleAspectRatioLabel": "アスペクト比を切り替え",
+    "videoRecorderToggleFlashLabel": "フラッシュを切り替え",
+    "videoRecorderToggleGhostFrameLabel": "ゴーストフレームを切り替え",
+    "videoRecorderToggleGridLabel": "グリッドを切り替え",
+    "videoRecorderWhySixSecondsButton": "わかりました！",
+    "videoRecorderWhySixSecondsSubtitle": "短いクリップは自発性のための空間を作ります。6秒フォーマットは起きた瞬間の本物の瞬間を捉えるのに役立ちます。",
+    "videoRecorderWhySixSecondsTitle": "なぜ6秒なの？",
+    "videoActionAutoLabel": "自動",
+    "videoActionEnableAutoAdvance": "自動送りを有効にする",
+    "videoActionDisableAutoAdvance": "自動送りを無効にする",
+    "metadataCaptionsLabel": "字幕",
+    "metadataCaptionsEnabledSemantics": "すべての動画で字幕が有効になっています",
+    "metadataCaptionsDisabledSemantics": "すべての動画で字幕が無効になっています",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuDeleteFailedCouldNotSign": "削除リクエストに署名できなかったよ。もう一度試してね。",
+    "shareMenuDeleteFailedGeneric": "この動画を削除できなかったよ。もう一度試してね。",
+    "shareMenuDeleteFailedNotAuthenticated": "もう一度ログインしてから削除してね。",
+    "shareMenuDeleteFailedNotInitialized": "削除の準備がまだだよ。少し待ってからもう一度試してね。",
+    "shareMenuDeleteFailedNotOwner": "自分の動画だけ削除できるよ。",
+    "videoEditorLayers": "レイヤー",
+    "videoFeedLoopCountLine": "{compactCount}{count, plural, other{ループ}}",
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
 }

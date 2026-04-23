@@ -1,6 +1,7 @@
 // ABOUTME: Profiles actual startup times and identifies bottlenecks
 // ABOUTME: Analyzes provider initialization to optimize startup sequence
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:openvine/features/app/startup/startup_metrics.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
@@ -79,12 +80,12 @@ class ProviderInitTracker {
     isProxy = name.contains('Proxy');
   }
   final String name;
-  final DateTime startTime = DateTime.now();
+  final DateTime startTime = clock.now();
   DateTime? endTime;
   bool isProxy = false;
 
   void complete() {
-    endTime = DateTime.now();
+    endTime = clock.now();
   }
 
   Duration? get duration => endTime?.difference(startTime);
@@ -102,7 +103,7 @@ class StartupProfiler {
 
   /// Mark app start
   void markAppStart() {
-    _appStartTime = DateTime.now();
+    _appStartTime = clock.now();
     Log.info('📱 App startup initiated', name: 'StartupProfiler');
     CrashReportingService.instance.logInitializationStep(
       'App startup initiated',
@@ -121,7 +122,7 @@ class StartupProfiler {
 
   /// Mark app ready (UI responsive)
   void markAppReady() {
-    _appReadyTime = DateTime.now();
+    _appReadyTime = clock.now();
     Log.info('✅ App ready for interaction', name: 'StartupProfiler');
 
     final startupTime = _appReadyTime!

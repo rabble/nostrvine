@@ -403,14 +403,22 @@
     "videoGridEditVideo": "Redigera video",
     "videoGridEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
     "videoGridDeleteVideo": "Ta bort video",
-    "videoGridDeleteVideoSubtitle": "Ta bort videon från Divine. Andra Nostr-klienter kan fortfarande visa den.",
+    "videoGridDeleteVideoSubtitle": "Ta bort det här innehållet permanent",
     "videoGridDeleteConfirmTitle": "Ta bort video",
-    "videoGridDeleteConfirmMessage": "Den här videon raderas permanent från Divine. Den kan fortfarande synas i andra Nostr-klienter som använder andra reläer.",
-    "videoGridDeleteConfirmNote": "Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.",
+    "videoGridDeleteConfirmMessage": "Är du säker på att du vill ta bort den här videon?",
+    "videoGridDeleteConfirmNote": "Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.",
     "videoGridDeleteCancel": "Avbryt",
     "videoGridDeleteConfirm": "Ta bort",
     "videoGridDeletingContent": "Tar bort innehåll...",
     "videoGridDeleteSuccess": "Borttagningsbegäran skickad",
+    "videoGridDeleteFailure": "Kunde inte ta bort innehåll: {error}",
+    "@videoGridDeleteFailure": {
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
     "exploreTabClassics": "Klassiker",
     "exploreTabNew": "Nytt",
     "exploreTabPopular": "Populärt",
@@ -605,17 +613,6 @@
             }
         }
     },
-    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loopar}}",
-    "@videoFeedLoopCountLine": {
-        "placeholders": {
-            "compactCount": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
     "metadataBadgeNotDivine": "Inte Divine",
     "metadataBadgeHumanMade": "Gjord av människa",
     "metadataSoundsLabel": "Ljud",
@@ -627,14 +624,7 @@
     "metadataCollaboratorsLabel": "Samarbetspartner",
     "metadataInspiredByLabel": "Inspirerad av",
     "metadataRepostedByLabel": "Återpublicerad av",
-    "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loopar}}",
-    "@metadataLoopsLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
+    "metadataLoopsLabel": "Loopar",
     "metadataLikesLabel": "Gillamarkeringar",
     "metadataCommentsLabel": "Kommentarer",
     "metadataRepostsLabel": "Återpubliceringar",
@@ -1504,7 +1494,7 @@
     "shareMenuEditVideo": "Redigera video",
     "shareMenuEditVideoSubtitle": "Uppdatera titel, beskrivning och hashtags",
     "shareMenuDeleteVideo": "Ta bort video",
-    "shareMenuDeleteVideoSubtitle": "Ta bort videon från Divine. Andra Nostr-klienter kan fortfarande visa den.",
+    "shareMenuDeleteVideoSubtitle": "Ta bort det här innehållet permanent",
     "shareMenuVideoInTheseLists": "Videon finns i de här listorna:",
     "shareMenuVideoCount": "{count} videor",
     "@shareMenuVideoCount": {
@@ -1515,17 +1505,20 @@
         }
     },
     "shareMenuClose": "Stäng",
-    "shareMenuDeleteConfirmation": "Den här videon raderas permanent från Divine. Den kan fortfarande synas i andra Nostr-klienter som använder andra reläer.",
+    "shareMenuDeleteConfirmation": "Är du säker på att du vill ta bort den här videon?",
+    "shareMenuDeleteWarning": "Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.",
     "shareMenuCancel": "Avbryt",
     "shareMenuDelete": "Ta bort",
     "shareMenuDeletingContent": "Tar bort innehåll...",
-    "shareMenuDeleteRequestSent": "Videon borttagen",
-    "shareMenuDeleteFailedNotInitialized": "Borttagningen är inte redo än. Försök igen om en stund.",
-    "shareMenuDeleteFailedNotOwner": "Du kan bara ta bort dina egna videor.",
-    "shareMenuDeleteFailedNotAuthenticated": "Logga in igen och försök ta bort.",
-    "shareMenuDeleteFailedCouldNotSign": "Kunde inte signera borttagningsbegäran. Försök igen.",
-  "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedGeneric": "Kunde inte ta bort den här videon. Försök igen.",
+    "shareMenuDeleteRequestSent": "Borttagningsbegäran skickad",
+    "shareMenuFailedToDeleteContent": "Kunde inte ta bort innehåll: {error}",
+    "@shareMenuFailedToDeleteContent": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuFollowSetName": "Namn på följsamling",
     "shareMenuFollowSetNameHint": "t.ex. Kreatörer, Musiker osv.",
     "shareMenuDescriptionOptional": "Beskrivning (valfritt)",
@@ -1559,7 +1552,15 @@
     },
     "shareMenuDeleteVideoQuestion": "Ta bort video?",
     "shareMenuDeleteRelayWarning": "Detta skickar en borttagningsbegäran till reler. Obs: Vissa reler kan fortfarande ha cachade kopior.",
-    "shareMenuVideoDeletionRequested": "Videon borttagen",
+    "shareMenuVideoDeletionRequested": "Videoborttagning begärd",
+    "shareMenuFailedToDeleteVideo": "Kunde inte ta bort videon: {error}",
+    "@shareMenuFailedToDeleteVideo": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "shareMenuContentLabels": "Innehållsetiketter",
     "shareMenuAddContentLabels": "Lägg till innehållsetiketter",
     "shareMenuClearAll": "Rensa alla",
@@ -1771,6 +1772,31 @@
     "userSearchPrompt": "Sök efter användare",
     "userSearchNoResults": "Inga användare hittades",
     "userSearchFailed": "Sökning misslyckades",
+    "userPickerSearchByName": "Sök efter namn",
+    "userPickerFilterByNameHint": "Filtrera efter namn...",
+    "userPickerSearchByNameHint": "Sök efter namn...",
+    "userPickerAlreadyAddedSemantics": "{name} har redan lagts till",
+    "@userPickerAlreadyAddedSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerSelectSemantics": "Välj {name}",
+    "@userPickerSelectSemantics": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "userPickerEmptyFollowListTitle": "Ditt crew finns där ute",
+    "userPickerEmptyFollowListBody": "Följ personer du vibbar med. När de följer tillbaka kan ni samarbeta.",
+    "userPickerGoBack": "Gå tillbaka",
+    "userPickerTypeNameToSearch": "Skriv ett namn för att söka",
+    "userPickerUnavailable": "Användarsökning är inte tillgänglig. Försök igen senare.",
+    "userPickerSearchFailedTryAgain": "Sökningen misslyckades. Försök igen.",
     "forgotPasswordTitle": "Återställ lösenord",
     "forgotPasswordDescription": "Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord.",
     "forgotPasswordEmailLabel": "E-postadress",
@@ -2155,6 +2181,7 @@
     "commonCancel": "Avbryt",
     "commonDelete": "Radera",
     "commonRetry": "Försök igen",
+    "commonNext": "Nästa",
     "discoverListsFailedToUpdateSubscription": "Kunde inte uppdatera prenumerationen: {error}",
     "@discoverListsFailedToUpdateSubscription": {
         "placeholders": {
@@ -2368,14 +2395,21 @@
     "searchDiscoverSomethingInteresting": "Upptäck något intressant",
     "searchEnterQuery": "Skriv en sökterm",
     "searchFindCuratedVideoLists": "Hitta kurerade videolistor",
+  "searchListsSectionHeader": "Listor",
+  "searchListsLoadingLabel": "Laddar listresultat",
     "searchForLists": "Sök efter listor",
     "searchSomethingWentWrong": "Något gick fel",
     "searchTryAgain": "Försök igen",
     "trendingTitle": "Trendande",
-    "videoEditorLayers": "Lager",
     "videoEditorStickers": "Klistermärken",
     "videoMetadataContentWarnings": "Innehållsvarningar",
     "videoMetadataExpiration": "Utgångsdatum",
+    "videoMetadataExpirationNotExpire": "Löper inte ut",
+    "videoMetadataExpirationOneDay": "1 dag",
+    "videoMetadataExpirationOneWeek": "1 vecka",
+    "videoMetadataExpirationOneMonth": "1 månad",
+    "videoMetadataExpirationOneYear": "1 år",
+    "videoMetadataExpirationOneDecade": "1 decennium",
     "videoMetadataTags": "Taggar",
     "contentLabelAiGenerated": "AI-genererat",
     "contentLabelAlcohol": "Alkohol",
@@ -2570,5 +2604,327 @@
     "cameraPermissionAllowAccessTitle": "Tillåt åtkomst till kamera och mikrofon",
     "cameraPermissionAllowAccessDescription": "Detta låter dig spela in och redigera videor direkt i appen, inget mer.",
     "cameraPermissionContinue": "Fortsätt",
-    "cameraPermissionGoToSettings": "Gå till inställningar"
+    "cameraPermissionGoToSettings": "Gå till inställningar",
+    "videoRecorderWhySixSecondsTitle": "Varför sex sekunder?",
+    "videoRecorderWhySixSecondsSubtitle": "Snabba klipp skapar utrymme för spontanitet. Formatet på 6 sekunder hjälper dig att fånga äkta ögonblick när de händer.",
+    "videoRecorderWhySixSecondsButton": "Jag fattar!",
+    "videoRecorderAutosaveFoundTitle": "Vi hittade ett pågående arbete",
+    "videoRecorderAutosaveFoundSubtitle": "Vill du fortsätta där du slutade?",
+    "videoRecorderAutosaveContinueButton": "Ja, fortsätt",
+    "videoRecorderAutosaveDiscardButton": "Nej, starta en ny video",
+    "videoRecorderAutosaveRestoreFailure": "Det gick inte att återställa ditt utkast",
+    "videoRecorderStopRecordingTooltip": "Stoppa inspelning",
+    "videoRecorderStartRecordingTooltip": "Starta inspelning",
+    "videoRecorderRecordingTapToStopLabel": "Spelar in. Tryck var som helst för att stoppa",
+    "videoRecorderTapToStartLabel": "Tryck var som helst för att starta inspelningen",
+    "videoRecorderDeleteLastClipLabel": "Ta bort senaste klippet",
+    "videoRecorderSwitchCameraLabel": "Byt kamera",
+    "videoRecorderToggleGridLabel": "Växla rutnät",
+    "videoRecorderToggleGhostFrameLabel": "Växla spökram",
+    "videoRecorderGhostFrameEnabled": "Spökram aktiverad",
+    "videoRecorderGhostFrameDisabled": "Spökram inaktiverad",
+    "videoRecorderClipDeletedMessage": "Klipp borttaget",
+    "videoRecorderCloseLabel": "Stäng videoinspelaren",
+    "videoRecorderContinueToEditorLabel": "Fortsätt till videoredigeraren",
+    "videoRecorderCaptureCloseLabel": "Stäng",
+    "videoRecorderCaptureNextLabel": "Nästa",
+    "videoRecorderToggleFlashLabel": "Växla blixt",
+    "videoRecorderCycleTimerLabel": "Växla timer",
+    "videoRecorderToggleAspectRatioLabel": "Växla bildförhållande",
+    "videoRecorderLibraryEmptyLabel": "Klippbibliotek, inga klipp",
+    "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Öppna klippbibliotek, 1 klipp} other{Öppna klippbibliotek, {clipCount} klipp}}",
+    "@videoRecorderLibraryOpenLabel": {
+        "placeholders": {
+            "clipCount": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorClipsLabel": "Klipp",
+    "videoEditorTextLabel": "Text",
+    "videoEditorDrawLabel": "Rita",
+    "videoEditorEffectsLabel": "Effekter",
+    "videoEditorAudioLabel": "Ljud",
+    "videoEditorVolumeLabel": "Volym",
+    "videoEditorAddTitle": "Lägg till",
+    "videoEditorOpenClipsSemanticLabel": "Öppna klippredigerare",
+    "videoEditorOpenAudioSemanticLabel": "Öppna ljudredigerare",
+    "videoEditorOpenTextSemanticLabel": "Öppna textredigerare",
+    "videoEditorOpenDrawSemanticLabel": "Öppna ritredigerare",
+    "videoEditorOpenEffectsSemanticLabel": "Öppna effektredigerare",
+    "videoEditorSaveDraftTitle": "Spara ditt utkast?",
+    "videoEditorSaveDraftSubtitle": "Spara dina redigeringar till senare, eller kasta dem och lämna redigeraren.",
+    "videoEditorSaveDraftButton": "Spara utkast",
+    "videoEditorDiscardChangesButton": "Kasta ändringar",
+    "videoEditorKeepEditingButton": "Fortsätt redigera",
+    "videoEditorDeleteLayerDropZone": "Släppzon för att ta bort lager",
+    "videoEditorReleaseToDeleteLayer": "Släpp för att ta bort lager",
+    "videoEditorDoneLabel": "Klar",
+    "videoEditorPlayPauseSemanticLabel": "Spela upp eller pausa video",
+    "videoEditorCropSemanticLabel": "Beskär",
+    "videoEditorCannotSplitProcessing": "Kan inte dela klipp medan det bearbetas. Vänta.",
+    "videoEditorSplitPositionInvalid": "Ogiltig delningsposition. Båda klippen måste vara minst {minDurationMs} ms långa.",
+    "@videoEditorSplitPositionInvalid": {
+        "placeholders": {
+            "minDurationMs": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorAddClipFromLibrary": "Lägg till klipp från bibliotek",
+    "videoEditorSaveSelectedClip": "Spara valt klipp",
+    "videoEditorSplitClip": "Dela klipp",
+    "videoEditorSaveClip": "Spara klipp",
+    "videoEditorDeleteClip": "Ta bort klipp",
+    "videoEditorClipSavedSuccess": "Klipp sparat i bibliotek",
+    "videoEditorClipSaveFailed": "Det gick inte att spara klipp",
+    "videoEditorClipDeleted": "Klipp borttaget",
+    "videoEditorColorPickerSemanticLabel": "Färgväljare",
+    "videoEditorUndoSemanticLabel": "Ångra",
+    "videoEditorRedoSemanticLabel": "Gör om",
+    "videoEditorTextColorSemanticLabel": "Textfärg",
+    "videoEditorTextAlignmentSemanticLabel": "Textjustering",
+    "videoEditorTextBackgroundSemanticLabel": "Textbakgrund",
+    "videoEditorFontSemanticLabel": "Typsnitt",
+    "videoEditorNoStickersFound": "Inga stickers hittades",
+    "videoEditorNoStickersAvailable": "Inga stickers tillgängliga",
+    "videoEditorFailedLoadStickers": "Det gick inte att ladda stickers",
+    "videoEditorAdjustVolumeTitle": "Justera volym",
+    "videoEditorRecordedAudioLabel": "Inspelat ljud",
+    "videoEditorCustomAudioLabel": "Eget ljud",
+    "videoEditorPlaySemanticLabel": "Spela",
+    "videoEditorPauseSemanticLabel": "Pausa",
+    "videoEditorMuteAudioSemanticLabel": "Stäng av ljud",
+    "videoEditorUnmuteAudioSemanticLabel": "Sätt på ljud",
+    "videoEditorDeleteLabel": "Ta bort",
+    "videoEditorDeleteSelectedItemSemanticLabel": "Ta bort valt objekt",
+    "videoEditorEditLabel": "Redigera",
+    "videoEditorEditSelectedItemSemanticLabel": "Redigera valt objekt",
+    "videoEditorDuplicateLabel": "Duplicera",
+    "videoEditorDuplicateSelectedItemSemanticLabel": "Duplicera valt objekt",
+    "videoEditorSplitLabel": "Dela",
+    "videoEditorSplitSelectedClipSemanticLabel": "Dela valt klipp",
+    "videoEditorFinishTimelineEditingSemanticLabel": "Avsluta redigering av tidslinje",
+    "videoEditorSortNewest": "Nyaste",
+    "videoEditorSortLongest": "Längsta",
+    "videoEditorSortShortest": "Kortaste",
+    "videoEditorSortBySemanticLabel": "Sortera efter {option}. Tryck för att ändra sorteringsordning",
+    "@videoEditorSortBySemanticLabel": {
+        "placeholders": {
+            "option": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorAudioPlayPreviewSemanticLabel": "Spela förhandsvisning",
+    "videoEditorAudioPausePreviewSemanticLabel": "Pausa förhandsvisning",
+    "videoEditorAudioUntitledSound": "Namnlöst ljud",
+    "videoEditorAudioSelectSoundSemanticLabel": "Välj ljud",
+    "videoEditorAudioUntitled": "Namnlös",
+    "videoEditorAudioAddAudio": "Lägg till ljud",
+    "videoEditorAudioNoSoundsAvailableTitle": "Inga ljud tillgängliga",
+    "videoEditorAudioNoSoundsAvailableSubtitle": "Ljud visas här när skapare delar ljud",
+    "videoEditorAudioNoSoundsFoundTitle": "Inga ljud hittades",
+    "videoEditorAudioNoSoundsFoundSubtitle": "Prova ett annat sökord",
+    "videoEditorAudioFailedToLoadTitle": "Det gick inte att ladda ljud",
+    "videoEditorDrawToolArrowSemanticLabel": "Pilverktyg",
+    "videoEditorDrawToolEraserSemanticLabel": "Suddverktyg",
+    "videoEditorDrawToolMarkerSemanticLabel": "Markeringsverktyg",
+    "videoEditorDrawToolPencilSemanticLabel": "Pennverktyg",
+    "videoEditorLayerReorderLabel": "Ordna om lager {index}",
+    "@videoEditorLayerReorderLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorLayerReorderHint": "Håll ned för att ordna om",
+    "videoEditorShowTimelineSemanticLabel": "Visa tidslinje",
+    "videoEditorHideTimelineSemanticLabel": "Dölj tidslinje",
+    "videoEditorFeedPreviewContent": "Undvik att placera innehåll bakom dessa områden.",
+    "videoEditorStickerSearchHint": "Sök stickers...",
+    "videoEditorSelectFontSemanticLabel": "Välj typsnitt",
+    "videoEditorFontUnknown": "Okänt",
+    "videoEditorSplitPlayheadOutsideClip": "Uppspelningshuvudet måste vara inom det valda klippet för att dela.",
+    "videoEditorTimelineTrimStartSemanticLabel": "Trimma start",
+    "videoEditorTimelineTrimEndSemanticLabel": "Trimma slut",
+    "videoEditorTimelineTrimClipSemanticLabel": "Trimma klipp",
+    "videoEditorTimelineTrimClipHint": "Dra handtagen för att justera klippets längd",
+    "videoEditorTimelineDraggingClipSemanticLabel": "Drar klipp {index}",
+    "@videoEditorTimelineDraggingClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineClipSemanticLabel": "Klipp {index} av {total}, {duration} sekunder",
+    "@videoEditorTimelineClipSemanticLabel": {
+        "placeholders": {
+            "index": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorTimelineClipReorderHint": "Håll ned för att ordna om",
+    "videoEditorTimelineClipMoveLeft": "Flytta vänster",
+    "videoEditorTimelineClipMoveRight": "Flytta höger",
+    "videoEditorTimelineLongPressToDragHint": "Håll ned för att dra",
+    "videoEditorVideoTimelineSemanticLabel": "Videotidslinje",
+    "videoEditorTimelinePositionFormat": "{minutes}m {seconds}s",
+    "@videoEditorTimelinePositionFormat": {
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            },
+            "seconds": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorColorSelectedSemanticLabel": "{colorName}, vald",
+    "@videoEditorColorSelectedSemanticLabel": {
+        "placeholders": {
+            "colorName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoEditorCloseColorPickerSemanticLabel": "Stäng färgväljare",
+    "videoEditorPickColorTitle": "Välj färg",
+    "videoEditorConfirmColorSemanticLabel": "Bekräfta färg",
+    "videoEditorSaturationBrightnessSemanticLabel": "Mättnad och ljusstyrka",
+    "videoEditorSaturationBrightnessValue": "Mättnad {saturation}%, Ljusstyrka {brightness}%",
+    "@videoEditorSaturationBrightnessValue": {
+        "placeholders": {
+            "saturation": {
+                "type": "int"
+            },
+            "brightness": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorHueSemanticLabel": "Nyans",
+    "videoEditorAddElementSemanticLabel": "Lägg till element",
+    "videoEditorCloseSemanticLabel": "Stäng",
+    "videoEditorDoneSemanticLabel": "Klar",
+    "videoEditorLevelSemanticLabel": "Nivå",
+    "videoMetadataBackSemanticLabel": "Tillbaka",
+    "videoMetadataDismissHelpDialogSemanticLabel": "Stäng hjälpdialog",
+    "videoMetadataGotItButton": "Jag fattar!",
+    "videoMetadataLimitReachedWarning": "Gränsen på 64KB är nådd. Ta bort innehåll för att fortsätta.",
+    "videoMetadataExpirationLabel": "Utgång",
+    "videoMetadataSelectExpirationSemanticLabel": "Välj utgångstid",
+    "videoMetadataTitleLabel": "Titel",
+    "videoMetadataDescriptionLabel": "Beskrivning",
+    "videoMetadataTagsLabel": "Taggar",
+    "videoMetadataDeleteTagSemanticLabel": "Ta bort",
+    "videoMetadataDeleteTagHint": "Ta bort tagg {tag}",
+    "@videoMetadataDeleteTagHint": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataContentWarningLabel": "Innehållsvarning",
+    "videoMetadataSelectContentWarningsSemanticLabel": "Välj innehållsvarningar",
+    "videoMetadataContentWarningSelectAllThatApply": "Välj allt som gäller för ditt innehåll",
+    "videoMetadataContentWarningDoneButton": "Klar",
+    "videoMetadataCollaboratorsLabel": "Samarbetspartners",
+    "videoMetadataAddCollaboratorSemanticLabel": "Lägg till samarbetspartner",
+    "videoMetadataCollaboratorsHelpTooltip": "Så fungerar samarbetspartners",
+    "videoMetadataCollaboratorsCount": "{count}/{max} samarbetspartners",
+    "@videoMetadataCollaboratorsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "videoMetadataRemoveCollaboratorSemanticLabel": "Ta bort samarbetspartner",
+    "videoMetadataCollaboratorsHelpMessage": "Samarbetspartners taggas som medskapare i det här inlägget. Du kan bara lägga till personer som ni följer varandra ömsesidigt, och de visas i inläggets metadata när det publiceras.",
+    "videoMetadataMutualFollowersSearchText": "Ömsesidiga följare",
+    "videoMetadataMustMutuallyFollowSnackbar": "Ni måste följa varandra ömsesidigt för att lägga till {name} som samarbetspartner.",
+    "@videoMetadataMustMutuallyFollowSnackbar": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataInspiredByLabel": "Inspirerad av",
+    "videoMetadataSetInspiredBySemanticLabel": "Ange inspirerad av",
+    "videoMetadataInspiredByHelpTooltip": "Så fungerar inspirationskrediter",
+    "videoMetadataInspiredByNone": "Ingen",
+    "videoMetadataInspiredByHelpMessage": "Använd detta för att ge erkännande. Inspirerad av skiljer sig från samarbetspartners: det erkänner påverkan, men taggar inte någon som medskapare.",
+    "videoMetadataCreatorCannotBeReferencedSnackbar": "Den här skaparen kan inte refereras.",
+    "videoMetadataRemoveInspiredBySemanticLabel": "Ta bort inspirerad av",
+    "videoMetadataPostDetailsTitle": "Inläggsdetaljer",
+    "videoMetadataSavedToLibrarySnackbar": "Sparad i bibliotek",
+    "videoMetadataFailedToSaveSnackbar": "Det gick inte att spara",
+    "videoMetadataGoToLibraryButton": "Gå till bibliotek",
+    "videoMetadataSaveForLaterSemanticLabel": "Knapp spara till senare",
+    "videoMetadataRenderingVideoHint": "Renderar video...",
+    "videoMetadataSavingVideoHint": "Sparar video...",
+    "videoMetadataSaveToDraftsHint": "Spara video till utkast och {destination}",
+    "@videoMetadataSaveToDraftsHint": {
+        "placeholders": {
+            "destination": {
+                "type": "String"
+            }
+        }
+    },
+    "videoMetadataSaveForLaterButton": "Spara till senare",
+    "videoMetadataPostSemanticLabel": "Knapp publicera",
+    "videoMetadataPublishVideoHint": "Publicera video i flödet",
+    "videoMetadataFormNotReadyHint": "Fyll i formuläret för att aktivera",
+    "videoMetadataPostButton": "Publicera",
+    "videoMetadataOpenPreviewSemanticLabel": "Öppna förhandsgranskningsskärm för inlägg",
+    "videoMetadataShareTitle": "Dela",
+    "videoMetadataVideoDetailsSubtitle": "Videodetaljer",
+    "videoMetadataClassicDoneButton": "Klar",
+    "videoMetadataPlayPreviewSemanticLabel": "Spela förhandsvisning",
+    "videoMetadataPausePreviewSemanticLabel": "Pausa förhandsvisning",
+    "videoMetadataClosePreviewSemanticLabel": "Stäng videoförhandsvisning",
+    "videoMetadataRemoveSemanticLabel": "Ta bort",
+    "metadataCaptionsLabel": "Undertexter",
+    "metadataCaptionsEnabledSemantics": "Undertexter aktiverade för alla videor",
+    "metadataCaptionsDisabledSemantics": "Undertexter inaktiverade för alla videor",
+    "@metadataLoopsLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "@videoFeedLoopCountLine": {
+        "placeholders": {
+            "compactCount": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "shareMenuDeleteFailedCouldNotSign": "Kunde inte signera borttagningsbegäran. Försök igen.",
+    "shareMenuDeleteFailedGeneric": "Kunde inte ta bort den här videon. Försök igen.",
+    "shareMenuDeleteFailedNotAuthenticated": "Logga in igen och försök ta bort.",
+    "shareMenuDeleteFailedNotInitialized": "Borttagningen är inte redo än. Försök igen om en stund.",
+    "shareMenuDeleteFailedNotOwner": "Du kan bara ta bort dina egna videor.",
+    "videoEditorLayers": "Lager",
+    "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loopar}}",
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
 }

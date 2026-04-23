@@ -1,5 +1,5 @@
 // ABOUTME: State class for the ListSearchBloc.
-// ABOUTME: Holds status, query, and curated video list search results.
+// ABOUTME: Holds status, query, curated video list results, and people list results.
 
 part of 'list_search_bloc.dart';
 
@@ -23,7 +23,8 @@ final class ListSearchState extends Equatable {
   const ListSearchState({
     this.status = ListSearchStatus.initial,
     this.query = '',
-    this.results = const [],
+    this.videoResults = const [],
+    this.peopleResults = const [],
   });
 
   /// The current status of the search.
@@ -32,23 +33,27 @@ final class ListSearchState extends Equatable {
   /// The current search query.
   final String query;
 
-  /// Curated video lists matching the search.
-  // TODO(#2853): Add people list results field.
-  final List<CuratedList> results;
+  /// Curated video lists (kind 30005) matching the search.
+  final List<CuratedList> videoResults;
+
+  /// People lists (kind 30000) matching the search.
+  final List<UserList> peopleResults;
 
   /// Create a copy with updated values.
   ListSearchState copyWith({
     ListSearchStatus? status,
     String? query,
-    List<CuratedList>? results,
+    List<CuratedList>? videoResults,
+    List<UserList>? peopleResults,
   }) {
     return ListSearchState(
       status: status ?? this.status,
       query: query ?? this.query,
-      results: results ?? this.results,
+      videoResults: videoResults ?? this.videoResults,
+      peopleResults: peopleResults ?? this.peopleResults,
     );
   }
 
   @override
-  List<Object> get props => [status, query, results];
+  List<Object> get props => [status, query, videoResults, peopleResults];
 }

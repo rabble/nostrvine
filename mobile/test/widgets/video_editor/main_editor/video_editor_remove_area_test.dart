@@ -15,7 +15,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_remove_area.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
-class MockVideoEditorMainBloc
+class _MockVideoEditorMainBloc
     extends MockBloc<VideoEditorMainEvent, VideoEditorMainState>
     implements VideoEditorMainBloc {}
 
@@ -23,10 +23,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VideoEditorRemoveArea', () {
-    late MockVideoEditorMainBloc mockBloc;
+    late _MockVideoEditorMainBloc mockBloc;
 
     setUp(() {
-      mockBloc = MockVideoEditorMainBloc();
+      mockBloc = _MockVideoEditorMainBloc();
 
       when(() => mockBloc.state).thenReturn(const VideoEditorMainState());
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -52,6 +52,7 @@ void main() {
               onAddStickers: () {},
               onAdjustVolume: () {},
               onAddEditTextLayer: ([layer]) async => null,
+              onOpenMusicLibrary: () {},
               child: BlocProvider<VideoEditorMainBloc>.value(
                 value: mockBloc,
                 child: const VideoEditorRemoveArea(),
