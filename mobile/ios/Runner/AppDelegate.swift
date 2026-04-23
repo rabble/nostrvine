@@ -315,6 +315,7 @@ import SupportProvidersSDK
         let tags = args["tags"] as? [String] ?? []
         let ticketFormId = args["ticketFormId"] as? NSNumber
         let customFieldsData = args["customFields"] as? [[String: Any]] ?? []
+        let attachmentPaths = args["attachmentPaths"] as? [String] ?? []
 
         // Build create request object using ZDK API
         let createRequest = ZDKCreateRequest()
@@ -334,7 +335,6 @@ import SupportProvidersSDK
           for fieldData in customFieldsData {
             if let fieldId = fieldData["id"] as? NSNumber,
                let fieldValue = fieldData["value"] {
-              // CustomField uses dictionary-based initializer in modern SDK
               let customField = CustomField(dictionary: ["id": fieldId, "value": fieldValue])
               customFields.append(customField)
               NSLog("🎫 Zendesk: Custom field \(fieldId) = \(fieldValue)")
@@ -343,25 +343,40 @@ import SupportProvidersSDK
           createRequest.customFields = customFields
         }
 
-        NSLog("🎫 Zendesk: Submitting ticket - subject: '\(subject)', tags: \(tags)")
+        NSLog("🎫 Zendesk: Submitting ticket - subject: '\(subject)', tags: \(tags), attachments: \(attachmentPaths.count)")
 
-        // Submit ticket asynchronously using ZDKRequestProvider
-        ZDKRequestProvider().createRequest(createRequest) { (request, error) in
-          DispatchQueue.main.async {
-            if let error = error {
-              NSLog("❌ Zendesk: Failed to create ticket - \(error.localizedDescription)")
-              result(FlutterError(code: "CREATE_FAILED",
-                                message: error.localizedDescription,
-                                details: nil))
-            } else if let request = request as? ZDKRequest {
-              NSLog("✅ Zendesk: Ticket created successfully - ID: \(request.requestId)")
-              result(true)
-            } else {
-              // No error means the ticket was created — the response type may differ
-              // under JWT auth vs anonymous auth. Treat as success to avoid duplicate
-              // ticket creation via REST API fallback.
-              NSLog("✅ Zendesk: Ticket created (no error, response type: \(type(of: request)))")
-              result(true)
+        let submitRequest = {
+          ZDKRequestProvider().createRequest(createRequest) { (request, error) in
+            DispatchQueue.main.async {
+              if let error = error {
+                NSLog("❌ Zendesk: Failed to create ticket - \(error.localizedDescription)")
+                result(FlutterError(code: "CREATE_FAILED",
+                                  message: error.localizedDescription,
+                                  details: nil))
+              } else if let request = request as? ZDKRequest {
+                NSLog("✅ Zendesk: Ticket created successfully - ID: \(request.requestId)")
+                result(true)
+              } else {
+                NSLog("✅ Zendesk: Ticket created (no error, response type: \(type(of: request)))")
+                result(true)
+              }
+            }
+          }
+        }
+
+        if attachmentPaths.isEmpty {
+          submitRequest()
+        } else {
+          self.uploadAttachments(attachmentPaths) { uploadResult in
+            switch uploadResult {
+            case .success(let uploadResponses):
+              createRequest.attachments = uploadResponses
+              NSLog("🎫 Zendesk: All \(uploadResponses.count) attachments uploaded, creating ticket")
+              submitRequest()
+            case .failure(let error):
+              DispatchQueue.main.async {
+                result(error)
+              }
             }
           }
         }
@@ -372,5 +387,61 @@ import SupportProvidersSDK
     }
 
     NSLog("✅ Zendesk: Platform channel registered")
+  }
+
+  private func uploadAttachments(
+    _ paths: [String],
+    completion: @escaping (Result<[ZDKUploadResponse], FlutterError>) -> Void
+  ) {
+    var responses: [ZDKUploadResponse] = []
+    let uploadProvider = ZDKUploadProvider()
+
+    func uploadNext(index: Int) {
+      guard index < paths.count else {
+        completion(.success(responses))
+        return
+      }
+
+      let path = paths[index]
+      guard let data = FileManager.default.contents(atPath: path) else {
+        completion(.failure(FlutterError(
+          code: "UPLOAD_FAILED",
+          message: "Could not read file at \(path)",
+          details: nil
+        )))
+        return
+      }
+
+      let filename = (path as NSString).lastPathComponent
+      let contentType = filename.hasSuffix(".png") ? "image/png" : "image/jpeg"
+
+      uploadProvider.uploadAttachment(data, withFilename: filename, andContentType: contentType) {
+        uploadResponse, error in
+        if let error = error {
+          NSLog("❌ Zendesk: Upload failed for \(filename) - \(error.localizedDescription)")
+          completion(.failure(FlutterError(
+            code: "UPLOAD_FAILED",
+            message: "Failed to upload \(filename): \(error.localizedDescription)",
+            details: nil
+          )))
+          return
+        }
+
+        guard let response = uploadResponse else {
+          completion(.failure(FlutterError(
+            code: "UPLOAD_FAILED",
+            message: "No upload response for \(filename)",
+            details: nil
+          )))
+          return
+        }
+
+        NSLog("✅ Zendesk: Uploaded \(filename) - token: \(response.uploadToken ?? "nil")")
+        responses.append(response)
+        uploadNext(index: index + 1)
+      }
+    }
+
+    uploadNext(index: 0)
   }
 }
