@@ -2,8 +2,6 @@
 // ABOUTME: Verifies that seeded Type A (Divine) and Type B (Nostr-native) users
 // ABOUTME: are discoverable and displayable across different relay configurations
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,29 +78,33 @@ Future<String> _registerAndVerify(WidgetTester tester) async {
   return testEmail;
 }
 
-/// Verify the FunnelCake REST API is reachable via the relay proxy.
+/// Verify the FunnelCake notifications route is reachable via the relay
+/// proxy.
 ///
-/// Returns true if `/api/videos` responds with HTTP 200. This is a
-/// smoke test for the local stack's nginx routing — it confirms the
-/// funnelcake-proxy routes `/api/*` requests to the REST API correctly.
+/// Probes `GET /api/users/{pubkey}/notifications?limit=1` through the
+/// funnelcake-proxy and returns true if the response proves the route
+/// exists. A generic `/api/videos` probe would not catch a regression
+/// specific to the notifications routing path; probing the actual
+/// notifications endpoint does.
+///
+/// Acceptable responses: 200 OK, 401 Unauthorized, 403 Forbidden. All of
+/// these prove the route exists and is wired to the upstream notifications
+/// handler — the test harness doesn't construct a NIP-98 auth header, so a
+/// 401 from an auth-required endpoint is expected and fine.
+///
+/// Rejected: 404 (route missing from nginx/upstream), 5xx (upstream error).
+/// Network failures return false as well.
 ///
 /// Note: this calls the endpoint directly from the test harness, so it
-/// does NOT exercise the app's own API/relay resolution path.
-Future<bool> _verifyFunnelcakeApiReachable() async {
-  final client = HttpClient();
-  try {
-    final uri = Uri.parse(
-      'http://$localHost:$localRelayPort/api/videos?limit=1',
-    );
-    final request = await client.getUrl(uri);
-    final response = await request.close();
-    await response.drain<void>();
-    return response.statusCode == 200;
-  } on Exception {
-    return false;
-  } finally {
-    client.close();
-  }
+/// does NOT exercise the app's own URL-resolution path.
+Future<bool> _verifyFunnelcakeNotificationsRouteReachable(
+  String pubkey,
+) async {
+  final status = await probeFunnelcakeNotificationsStatus(pubkey);
+  // -1 = network/exception
+  // 404 = route missing
+  // 5xx = upstream failure
+  return status == 200 || status == 401 || status == 403;
 }
 
 void main() {
@@ -225,15 +227,24 @@ void main() {
           );
         }
 
-        // Check if the display name resolved from the external relay
+        // The profile was published to the external relay and the kind 10002
+        // relay-list event was published to the indexer relay. This assertion
+        // is the core of the test: the app must resolve the author's relay
+        // list from the indexer, then fetch the kind 0 from the external
+        // relay, and render the display name. Without this expect(), the
+        // test passes even if external-relay profile resolution is broken.
         final foundDisplayName = await waitForText(
           tester,
           'Nostr Native Browse Test',
           maxSeconds: 10,
         );
-        logPhase(
-          'Type B display name resolved: $foundDisplayName '
-          '(profile discovery ${foundDisplayName ? "succeeded" : "pending"})',
+        expect(
+          foundDisplayName,
+          isTrue,
+          reason:
+              'Type B display name must resolve from the external relay via '
+              'the indexer. Failure indicates outbox-routing or external '
+              'relay profile fetch is broken.',
         );
 
         // Verify the video grid shows the published video
@@ -304,11 +315,22 @@ void main() {
           relayPort: localExternalRelayPort,
         );
 
-        // Wait for FunnelCake to index the videos
-        final videoIndexed = await waitForFunnelcakeVideo(typeBPubkey);
-        expect(videoIndexed, isTrue);
+        // Wait until BOTH FunnelCake videos are indexed. A bare
+        // waitForFunnelcakeVideo returns on the first indexed video and the
+        // follow-up `>= 2` assertion would flake under indexer load.
+        final bothVideosIndexed = await waitForFunnelcakeVideoCount(
+          typeBPubkey,
+          minCount: 2,
+        );
+        expect(
+          bothVideosIndexed,
+          isTrue,
+          reason:
+              "FunnelCake should index both of the Type B author's videos "
+              'within the poll window.',
+        );
 
-        // Verify FunnelCake API returns at least 2 videos
+        // Confirm the post-wait query still sees both videos.
         final fcVideos = await queryFunnelcakeVideos(typeBPubkey);
         expect(
           fcVideos.length,
@@ -356,17 +378,47 @@ void main() {
           reason: 'Profile grid should show video thumbnails',
         );
 
-        // Verify at least 2 thumbnails rendered (FunnelCake videos)
+        // The profile grid must show all three videos: 2 FunnelCake +
+        // 1 external. Asserting on `video_thumbnail_2` (the third position)
+        // is what binds the external-relay video to a UI assertion —
+        // without it the earlier `video_thumbnail_0` / `_1` checks could be
+        // satisfied entirely by the two FunnelCake videos, and a regression
+        // that silently dropped the external relay from the fetch path
+        // would still pass this test.
         final thumb1 = find.byWidgetPredicate(
           (widget) =>
               widget is Semantics &&
               widget.properties.identifier == 'video_thumbnail_1',
         );
-        final hasSecondThumb = thumb1.evaluate().isNotEmpty;
         expect(
-          hasSecondThumb,
+          thumb1,
+          findsOneWidget,
+          reason:
+              'Profile grid should show the second FunnelCake video '
+              '(video_thumbnail_1).',
+        );
+
+        // Wait for the external-relay video to appear in the grid. This
+        // explicitly verifies cross-relay video aggregation — the video
+        // was published to the external relay only, so the app had to
+        // follow the author's kind 10002 relay list and fetch from there.
+        final foundExternalVideoInGrid = await waitForWidget(
+          tester,
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                widget.properties.identifier == 'video_thumbnail_2',
+          ),
+          maxSeconds: 20,
+        );
+        expect(
+          foundExternalVideoInGrid,
           isTrue,
-          reason: 'Profile grid should show at least 2 video thumbnails',
+          reason:
+              'Profile grid should show the external-relay video '
+              '(video_thumbnail_2). Missing third thumbnail indicates the '
+              'app failed to aggregate from the external relay despite the '
+              'kind 10002 relay list advertising it.',
         );
 
         logPhase('Persona Test 2 complete');
@@ -394,24 +446,33 @@ void main() {
         logPhase('── Persona Test 3: Register + verify ──');
         final testEmail = await _registerAndVerify(tester);
 
-        // ── Phase 2: Smoke-test FunnelCake API routing ──
-        logPhase('── Persona Test 3: Checking FunnelCake API routing ──');
+        // ── Phase 2: Smoke-test FunnelCake notifications routing ──
+        logPhase(
+          '── Persona Test 3: Checking FunnelCake notifications routing ──',
+        );
 
-        // Get the logged-in user's pubkey from the database
+        // Get the logged-in user's pubkey from the database. The
+        // notifications probe is keyed by pubkey, so we need the real one.
         final userPubkey = await getUserPubkeyByEmail(testEmail);
         expect(userPubkey, isNotNull, reason: 'Should find user in DB');
 
-        // Verify the FunnelCake REST API endpoint is reachable through
-        // the local stack's nginx proxy. This is a direct HTTP call from
-        // the test harness — it confirms the proxy routes /api/* to the
-        // REST API, but does NOT exercise the app's own URL resolution.
-        final notificationsApiOk = await _verifyFunnelcakeApiReachable();
+        // Verify the notifications endpoint itself is reachable through
+        // the local stack's nginx proxy. Probing a generic videos endpoint
+        // would pass even if notifications routing were broken; probing
+        // `/api/users/{pubkey}/notifications` specifically catches
+        // regressions in the notifications routing path. This is still a
+        // direct HTTP call from the test harness — it does NOT exercise
+        // the app's own URL resolution path.
+        final notificationsRouteOk =
+            await _verifyFunnelcakeNotificationsRouteReachable(userPubkey!);
         expect(
-          notificationsApiOk,
+          notificationsRouteOk,
           isTrue,
           reason:
-              'FunnelCake REST API should return 200 via the relay proxy. '
-              'Failure indicates a local stack routing problem.',
+              'FunnelCake notifications route should be reachable via the '
+              'relay proxy (accepting 200 / 401 / 403 — anything that proves '
+              'the endpoint exists). A 404 or 5xx indicates the route is '
+              'missing or the upstream is broken.',
         );
 
         // ── Phase 3: Navigate to inbox/notifications in the UI ──
@@ -439,17 +500,24 @@ void main() {
         await tester.tap(notificationsTab);
         await pumpUntilSettled(tester);
 
-        // For a fresh user with no authored content, empty state is expected.
-        // The key assertion is that the tab renders (API resolved correctly)
-        // and the API returned 200 (verified above).
-        final hasEmptyState = find
-            .text('No notifications yet')
-            .evaluate()
-            .isNotEmpty;
-        logPhase(
-          'Notifications tab rendered. '
-          'Empty state: $hasEmptyState (expected for fresh user). '
-          'FunnelCake API returned 200 via proxy.',
+        // A fresh user has no notifications, so the notifications tab body
+        // must render the empty-state placeholder. Without this expect(),
+        // an error widget or a blank screen would still pass as long as
+        // the 'Notifications' label existed in the tab bar, and the test
+        // would give almost no signal about the notifications surface.
+        final hasEmptyState = await waitForText(
+          tester,
+          'No notifications yet',
+          maxSeconds: 10,
+        );
+        expect(
+          hasEmptyState,
+          isTrue,
+          reason:
+              'Notifications tab body should render the empty-state '
+              'placeholder for a fresh user. An error widget or blank body '
+              'here indicates the notifications UI is broken even though '
+              'the tab label renders.',
         );
 
         logPhase('Persona Test 3 complete');

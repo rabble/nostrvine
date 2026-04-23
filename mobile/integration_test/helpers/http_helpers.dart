@@ -77,6 +77,61 @@ Future<bool> waitForFunnelcakeVideo(
   return false;
 }
 
+/// Wait for at least [minCount] videos by [pubkey] to appear in the
+/// Funnelcake REST API.
+///
+/// Polls every second until `queryFunnelcakeVideos(pubkey).length >= minCount`
+/// or [maxSeconds] elapses. Use this instead of [waitForFunnelcakeVideo]
+/// when the caller has published more than one video and must assert on a
+/// specific count — [waitForFunnelcakeVideo] returns on the first indexed
+/// video and does NOT guarantee subsequent ones are indexed yet, so a
+/// follow-up `expect(videos.length, >= N)` flakes under indexer load.
+///
+/// Returns true if at least [minCount] videos were found, false on timeout.
+Future<bool> waitForFunnelcakeVideoCount(
+  String pubkey, {
+  required int minCount,
+  int maxSeconds = 30,
+}) async {
+  for (var i = 0; i < maxSeconds; i++) {
+    final videos = await queryFunnelcakeVideos(pubkey);
+    if (videos.length >= minCount) return true;
+    await Future<void>.delayed(const Duration(seconds: 1));
+  }
+  return false;
+}
+
+/// Probe the Funnelcake notifications endpoint for a given [pubkey].
+///
+/// Hits `GET /api/users/{pubkey}/notifications?limit=1` through the relay
+/// proxy and returns the HTTP status code (or -1 on network failure).
+///
+/// Use this in place of a generic `/api/videos` probe when the goal is to
+/// catch a regression in the *notifications* routing path specifically. A
+/// generic videos probe would pass even if `/api/users/.../notifications`
+/// were broken or missing from the upstream router.
+///
+/// Accepted as "routing works" by callers: any status code that proves the
+/// endpoint exists and responded — 200, 401 (auth required), 403. Reject
+/// 404 (route missing) and 5xx (upstream failure).
+Future<int> probeFunnelcakeNotificationsStatus(String pubkey) async {
+  final client = HttpClient();
+  try {
+    final uri = Uri.parse(
+      'http://$localHost:$localRelayPort'
+      '/api/users/$pubkey/notifications?limit=1',
+    );
+    final request = await client.getUrl(uri);
+    final response = await request.close();
+    await response.drain<void>();
+    return response.statusCode;
+  } on Exception {
+    return -1;
+  } finally {
+    client.close();
+  }
+}
+
 /// Wait for videos by [pubkey] to disappear from the Funnelcake REST API.
 ///
 /// Polls every second until the API returns an empty list or [maxSeconds]
