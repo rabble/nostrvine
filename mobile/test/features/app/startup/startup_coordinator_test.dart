@@ -95,15 +95,17 @@ void main() {
       await coordinator.initialize();
 
       final metrics = coordinator.metrics;
+      final fastMs = metrics.serviceTimings['FastService']!.inMilliseconds;
+      final slowMs = metrics.serviceTimings['SlowService']!.inMilliseconds;
       expect(metrics.totalDuration.inMilliseconds, greaterThanOrEqualTo(200));
-      expect(
-        metrics.serviceTimings['FastService']!.inMilliseconds,
-        lessThan(100),
-      );
-      expect(
-        metrics.serviceTimings['SlowService']!.inMilliseconds,
-        greaterThanOrEqualTo(200),
-      );
+      // Use a relative comparison rather than an absolute <100 ms bound.
+      // `Future.delayed(50 ms)` guarantees at least 50 ms but can run much
+      // longer under scheduler pressure — a CI run has been observed at
+      // 114 ms for FastService, which flaked the old absolute assertion.
+      // Relative ordering (FastService finished before SlowService) is
+      // what this benchmark really cares about.
+      expect(fastMs, lessThan(slowMs));
+      expect(slowMs, greaterThanOrEqualTo(200));
     });
 
     test('should handle service dependencies', () async {
