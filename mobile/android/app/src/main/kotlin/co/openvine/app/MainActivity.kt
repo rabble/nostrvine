@@ -24,6 +24,8 @@ import zendesk.support.Support
 import zendesk.support.requestlist.RequestListActivity
 import zendesk.support.request.RequestActivity
 import zendesk.support.RequestProvider
+import zendesk.support.UploadProvider
+import zendesk.support.UploadResponse
 import zendesk.support.CreateRequest
 import zendesk.support.Request
 import zendesk.support.CustomField
@@ -430,6 +432,7 @@ class MainActivity : FlutterActivity() {
                     val tags = (args?.get("tags") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
                     val ticketFormId = (args?.get("ticketFormId") as? Number)?.toLong()
                     val customFieldsData = (args?.get("customFields") as? List<*>)?.filterIsInstance<Map<*, *>>() ?: emptyList()
+                    val attachmentPaths = (args?.get("attachmentPaths") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
 
                     if (subject == null || description == null) {
                         result.error("INVALID_ARGUMENT", "subject and description are required", null)
@@ -474,29 +477,58 @@ class MainActivity : FlutterActivity() {
                         // but Flutter platform channels require the main thread.
                         // Without this dispatch the app crashes (issue #1679).
                         val mainHandler = Handler(Looper.getMainLooper())
-                        provider.createRequest(createRequest, object : ZendeskCallback<Request>() {
-                            override fun onSuccess(request: Request?) {
-                                mainHandler.post {
-                                    if (isActivityDestroyed || isFinishing) {
-                                        Log.w(ZENDESK_TAG, "Dropped ticket result: activity destroyed")
-                                        return@post
-                                    }
-                                    Log.d(ZENDESK_TAG, "Ticket created successfully - ID: ${request?.id}")
-                                    result.success(true)
-                                }
-                            }
 
-                            override fun onError(error: ErrorResponse?) {
-                                mainHandler.post {
-                                    if (isActivityDestroyed || isFinishing) {
-                                        Log.w(ZENDESK_TAG, "Dropped ticket error: activity destroyed")
-                                        return@post
+                        val submitRequest = {
+                            provider.createRequest(createRequest, object : ZendeskCallback<Request>() {
+                                override fun onSuccess(request: Request?) {
+                                    mainHandler.post {
+                                        if (isActivityDestroyed || isFinishing) {
+                                            Log.w(ZENDESK_TAG, "Dropped ticket result: activity destroyed")
+                                            return@post
+                                        }
+                                        Log.d(ZENDESK_TAG, "Ticket created successfully - ID: ${request?.id}")
+                                        result.success(true)
                                     }
-                                    Log.e(ZENDESK_TAG, "Failed to create ticket: ${error?.reason}")
-                                    result.success(false)
                                 }
+
+                                override fun onError(error: ErrorResponse?) {
+                                    mainHandler.post {
+                                        if (isActivityDestroyed || isFinishing) {
+                                            Log.w(ZENDESK_TAG, "Dropped ticket error: activity destroyed")
+                                            return@post
+                                        }
+                                        Log.e(ZENDESK_TAG, "Failed to create ticket: ${error?.reason}")
+                                        result.success(false)
+                                    }
+                                }
+                            })
+                        }
+
+                        if (attachmentPaths.isEmpty()) {
+                            submitRequest()
+                        } else {
+                            Log.d(ZENDESK_TAG, "Uploading ${attachmentPaths.size} attachments before ticket creation")
+                            val uploadProvider: UploadProvider = providerStore.uploadProvider()
+                            uploadAttachments(uploadProvider, attachmentPaths, mainHandler) { uploadResult ->
+                                uploadResult.fold(
+                                    onSuccess = { tokens ->
+                                        createRequest.attachments = tokens
+                                        Log.d(ZENDESK_TAG, "All ${tokens.size} attachments uploaded, creating ticket")
+                                        submitRequest()
+                                    },
+                                    onFailure = { error ->
+                                        mainHandler.post {
+                                            if (isActivityDestroyed || isFinishing) {
+                                                Log.w(ZENDESK_TAG, "Dropped upload error: activity destroyed")
+                                                return@post
+                                            }
+                                            Log.e(ZENDESK_TAG, "Attachment upload failed: ${error.message}")
+                                            result.error("UPLOAD_FAILED", error.message, null)
+                                        }
+                                    }
+                                )
                             }
-                        })
+                        }
                     } catch (e: Exception) {
                         Log.e(ZENDESK_TAG, "Failed to create ticket", e)
                         result.error("CREATE_TICKET_FAILED", e.message, null)
@@ -510,6 +542,56 @@ class MainActivity : FlutterActivity() {
         }
 
         Log.d(ZENDESK_TAG, "Zendesk platform channel registered")
+    }
+
+    private fun uploadAttachments(
+        uploadProvider: UploadProvider,
+        paths: List<String>,
+        mainHandler: Handler,
+        onComplete: (Result<List<String>>) -> Unit
+    ) {
+        val tokens = mutableListOf<String>()
+
+        fun uploadNext(index: Int) {
+            if (index >= paths.size) {
+                onComplete(Result.success(tokens))
+                return
+            }
+
+            val path = paths[index]
+            val file = File(path)
+            if (!file.exists()) {
+                onComplete(Result.failure(Exception("File not found: $path")))
+                return
+            }
+
+            val filename = file.name
+            val contentType = if (filename.endsWith(".png")) "image/png" else "image/jpeg"
+
+            uploadProvider.uploadAttachment(filename, file, contentType, object : ZendeskCallback<UploadResponse>() {
+                override fun onSuccess(response: UploadResponse?) {
+                    val token = response?.token
+                    if (token != null) {
+                        Log.d(ZENDESK_TAG, "Uploaded $filename - token: $token")
+                        tokens.add(token)
+                        uploadNext(index + 1)
+                    } else {
+                        mainHandler.post {
+                            onComplete(Result.failure(Exception("No upload token for $filename")))
+                        }
+                    }
+                }
+
+                override fun onError(error: ErrorResponse?) {
+                    Log.e(ZENDESK_TAG, "Upload failed for $filename: ${error?.reason}")
+                    mainHandler.post {
+                        onComplete(Result.failure(Exception("Upload failed for $filename: ${error?.reason}")))
+                    }
+                }
+            })
+        }
+
+        uploadNext(0)
     }
 }
 
