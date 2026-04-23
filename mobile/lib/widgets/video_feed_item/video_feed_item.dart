@@ -1743,10 +1743,17 @@ class VideoOverlayActionColumn extends ConsumerWidget {
     // render, it's not included as a child at all. A `SizedBox.shrink` child
     // under `Column(spacing: 24)` would still pick up the inter-child gap
     // and inject 24 px of dead space above whichever button ends up first.
+    //
+    // Mirrors the gates previously inside `_VideoEditButton.build`: the
+    // editor feature flag must be on, and the viewer must own the video.
+    final editorEnabled = ref
+        .watch(featureFlagServiceProvider)
+        .isEnabled(FeatureFlag.enableVideoEditorV1);
+    final currentUserPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+    final isOwnVideo =
+        currentUserPubkey != null && currentUserPubkey == video.pubkey;
     final showEditButton =
-        !isFullscreen &&
-        !isPreviewMode &&
-        _shouldShowEditButton(ref, video);
+        !isFullscreen && !isPreviewMode && editorEnabled && isOwnVideo;
 
     return Column(
       spacing: 24,
@@ -1777,26 +1784,13 @@ class VideoOverlayActionColumn extends ConsumerWidget {
       ],
     );
   }
-
-  /// Whether the editor affordance should appear in the column. Mirrors the
-  /// gates previously inside [_VideoEditButton.build]: the editor feature
-  /// flag must be on and the viewer must own the video.
-  static bool _shouldShowEditButton(WidgetRef ref, VideoEvent video) {
-    final featureFlagService = ref.watch(featureFlagServiceProvider);
-    if (!featureFlagService.isEnabled(FeatureFlag.enableVideoEditorV1)) {
-      return false;
-    }
-    final authService = ref.watch(authServiceProvider);
-    final currentUserPubkey = authService.currentPublicKeyHex;
-    return currentUserPubkey != null && currentUserPubkey == video.pubkey;
-  }
 }
 
 /// Edit button slot for owned videos when the editor feature flag is on.
 ///
-/// Visibility is decided by [VideoOverlayActionColumn._shouldShowEditButton]
-/// before this widget is ever instantiated, so `build` assumes the button
-/// should render and no longer performs feature-flag / ownership checks.
+/// Visibility is decided by [VideoOverlayActionColumn.build] (feature-flag
+/// + ownership gate) before this widget is ever instantiated, so `build`
+/// assumes the button should render and no longer performs those checks.
 class _VideoEditButton extends StatelessWidget {
   const _VideoEditButton({required this.video});
 

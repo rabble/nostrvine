@@ -10,6 +10,14 @@ enum CenterPlaybackControlState {
 }
 
 /// Shared Figma-matched center control used for transient play/pause states.
+///
+/// Visually equivalent to a [DivineIconButton] in ghost style (scrim65
+/// background + white glyph) but sized 64×64 with a 32 icon instead of
+/// DivineIconButton's 40×40 (small) / 56×56 (base) presets, because the
+/// Figma spec for the paused-video affordance (node 15314:53971) calls for
+/// a larger tap target than any standard DivineIconButton size. Kept as a
+/// bespoke widget rather than extending DivineIconButton with a third
+/// size enum that only this surface would use.
 class CenterPlaybackControl extends StatelessWidget {
   const CenterPlaybackControl({
     required this.state,

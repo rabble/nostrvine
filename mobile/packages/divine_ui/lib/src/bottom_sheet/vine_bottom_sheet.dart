@@ -107,13 +107,6 @@ class VineBottomSheet extends StatelessWidget {
   /// true when the sheet must appear above a nested navigator such as the
   /// tab shell.
   ///
-  /// [initialChildSizeBuilder] takes precedence over [initialChildSize]
-  /// when provided and [scrollable] is true. It is evaluated once inside
-  /// the modal's builder, giving callers access to the modal's
-  /// [BuildContext] (and therefore the current [MediaQuery]) so the
-  /// initial sheet size can depend on runtime conditions such as whether
-  /// the keyboard is open.
-  ///
   /// [tapOutsideToDismiss], when true (the default) and [scrollable] is
   /// true, wraps the sheet so that taps on the scrim above the sheet
   /// dismiss the modal. This compensates for
@@ -122,6 +115,11 @@ class VineBottomSheet extends StatelessWidget {
   /// original layout semantics (full-viewport draggable area, no outer
   /// tap-catcher). Has no effect in fixed mode — the standard modal
   /// barrier already dismisses on tap there.
+  ///
+  /// [contentWrapper] wraps the entire sheet subtree once. Useful for
+  /// injecting a single `BlocProvider` / `InheritedWidget` above every
+  /// slot (title, trailing, bottomInput, body, buildScrollBody) without
+  /// having to re-wrap each slot individually at the call site.
   static Future<T?> show<T>({
     required BuildContext context,
     List<Widget>? children,
@@ -139,11 +137,11 @@ class VineBottomSheet extends StatelessWidget {
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
     double maxChildSize = 0.9,
-    double Function(BuildContext modalContext)? initialChildSizeBuilder,
     bool snap = false,
     List<double>? snapSizes,
     bool useRootNavigator = false,
     bool tapOutsideToDismiss = true,
+    Widget Function(BuildContext context, Widget child)? contentWrapper,
     VoidCallback? onShow,
     VoidCallback? onDismiss,
     bool isDismissible = true,
@@ -181,11 +179,8 @@ class VineBottomSheet extends StatelessWidget {
         backgroundColor: VineTheme.transparent,
         elevation: 0,
         builder: (modalContext) {
-          final resolvedInitialChildSize =
-              initialChildSizeBuilder?.call(modalContext) ?? initialChildSize;
-
-          VineBottomSheet buildSheet(ScrollController scrollController) {
-            return VineBottomSheet(
+          Widget buildSheet(ScrollController scrollController) {
+            final Widget sheet = VineBottomSheet(
               showHeader: showHeader,
               title: title,
               contentTitle: contentTitle,
@@ -198,13 +193,14 @@ class VineBottomSheet extends StatelessWidget {
               body: body,
               children: children,
             );
+            return contentWrapper?.call(modalContext, sheet) ?? sheet;
           }
 
           // Default path preserves the original layout semantics
           // (`expand: true`, no outer tap-catcher).
           if (!tapOutsideToDismiss) {
             return DraggableScrollableSheet(
-              initialChildSize: resolvedInitialChildSize,
+              initialChildSize: initialChildSize,
               minChildSize: minChildSize,
               maxChildSize: maxChildSize,
               snap: snap,
@@ -232,7 +228,7 @@ class VineBottomSheet extends StatelessWidget {
             onTap: () => Navigator.of(modalContext).pop(),
             child: DraggableScrollableSheet(
               expand: false,
-              initialChildSize: resolvedInitialChildSize,
+              initialChildSize: initialChildSize,
               minChildSize: minChildSize,
               maxChildSize: maxChildSize,
               snap: snap,
@@ -259,18 +255,21 @@ class VineBottomSheet extends StatelessWidget {
         enableDrag: enableDrag,
         backgroundColor: VineTheme.transparent,
         elevation: 0,
-        builder: (_) => VineBottomSheet(
-          scrollable: false,
-          showHeader: showHeader,
-          title: title,
-          contentTitle: contentTitle,
-          trailing: trailing,
-          bottomInput: bottomInput,
-          expanded: expanded,
-          showHeaderDivider: showHeaderDivider,
-          body: body,
-          children: children,
-        ),
+        builder: (modalContext) {
+          final Widget sheet = VineBottomSheet(
+            scrollable: false,
+            showHeader: showHeader,
+            title: title,
+            contentTitle: contentTitle,
+            trailing: trailing,
+            bottomInput: bottomInput,
+            expanded: expanded,
+            showHeaderDivider: showHeaderDivider,
+            body: body,
+            children: children,
+          );
+          return contentWrapper?.call(modalContext, sheet) ?? sheet;
+        },
       ).whenComplete(() => onDismiss?.call());
     }
   }

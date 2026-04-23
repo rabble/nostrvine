@@ -71,26 +71,8 @@ class VideoActionButton extends StatelessWidget {
   /// slot stays empty at zero count.
   final String? labelWhenZero;
 
-  /// Drop shadows per the Figma `button` effect spec
-  /// (`effects/shadow-10`, 10% black): applied to both icon glyph and
-  /// label so they stay legible over bright video frames.
-  static const _shadows = [
-    Shadow(
-      color: VineTheme.innerShadow,
-      offset: Offset(0.4, 0.4),
-      blurRadius: 0.6,
-    ),
-    Shadow(
-      color: VineTheme.innerShadow,
-      offset: Offset(1, 1),
-      blurRadius: 1,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final captionWidget = isLoading ? null : _buildCaption();
-
     return Semantics(
       identifier: semanticIdentifier,
       container: true,
@@ -117,10 +99,12 @@ class VideoActionButton extends StatelessWidget {
                   )
                 else
                   _ShadowedIcon(icon: icon, color: iconColor),
-                if (captionWidget != null) ...[
-                  const SizedBox(height: 8),
-                  captionWidget,
-                ],
+                if (!isLoading)
+                  _VideoActionCaption(
+                    caption: caption,
+                    count: count,
+                    labelWhenZero: labelWhenZero,
+                  ),
               ],
             ),
           ),
@@ -128,14 +112,31 @@ class VideoActionButton extends StatelessWidget {
       ),
     );
   }
+}
 
-  /// Resolves the caption-slot text in priority order:
-  /// 1. [caption] — fixed override from the caller.
-  /// 2. The formatted [count] — once there's at least one interaction.
-  /// 3. [labelWhenZero] — placeholder word like "Like" / "Reply" when no
-  ///    interactions have landed yet.
-  /// Returns null when the slot should collapse entirely.
-  Widget? _buildCaption() {
+/// Caption slot beneath a [VideoActionButton] icon.
+///
+/// Resolves the displayed text in priority order:
+/// 1. [caption] — fixed override from the caller.
+/// 2. The formatted [count] — once there's at least one interaction.
+/// 3. [labelWhenZero] — placeholder word like "Like" / "Reply" when no
+///    interactions have landed yet.
+///
+/// Returns [SizedBox.shrink] when none of the three apply, so the Column
+/// above collapses the slot without the 8 px leading gap.
+class _VideoActionCaption extends StatelessWidget {
+  const _VideoActionCaption({
+    required this.caption,
+    required this.count,
+    required this.labelWhenZero,
+  });
+
+  final String? caption;
+  final int count;
+  final String? labelWhenZero;
+
+  @override
+  Widget build(BuildContext context) {
     final text = switch ((caption, count, labelWhenZero)) {
       (final String c, _, _) => c,
       (_, final int n, _) when n > 0 => StringUtils.formatCompactNumber(n),
@@ -143,14 +144,19 @@ class VideoActionButton extends StatelessWidget {
       _ => null,
     };
 
-    if (text == null) return null;
+    if (text == null) return const SizedBox.shrink();
 
-    return Text(
-      text,
-      style: VineTheme.labelSmallFont().copyWith(shadows: _shadows),
-      textAlign: TextAlign.center,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        text,
+        style: VineTheme.labelSmallFont().copyWith(
+          shadows: VineTheme.buttonShadows,
+        ),
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 }

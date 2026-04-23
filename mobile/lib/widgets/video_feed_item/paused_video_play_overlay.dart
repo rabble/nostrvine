@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -117,13 +118,13 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
       }
 
       if (!isPlaying && wasPlaying) {
-        _pausedAt = DateTime.now();
+        _pausedAt = clock.now();
       } else if (isPlaying &&
           !wasPlaying &&
           _hasStartedPlayback &&
           widget.isVisible) {
         final pauseDuration = _pausedAt != null
-            ? DateTime.now().difference(_pausedAt!)
+            ? clock.now().difference(_pausedAt!)
             : Duration.zero;
         _pausedAt = null;
         if (pauseDuration >= _minPauseForFeedback) {
@@ -209,84 +210,15 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
                   initialData: widget.player.state.playing,
                   builder: (context, playingSnapshot) {
                     final isPlaying = playingSnapshot.data ?? false;
-                    final shouldShowPlay =
-                        _hasStartedPlayback && !isPlaying && !isBuffering;
-                    final shouldShowUnpauseFeedback =
-                        _showUnpauseFeedback && isPlaying && !shouldShowPlay;
-
-                    final Widget child;
-                    if (shouldShowPlay) {
-                      child = Center(
-                        key: const ValueKey('paused-play'),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          spacing: 16,
-                          children: [
-                            if (!kIsWeb)
-                              DivineIconButton(
-                                icon: isMuted
-                                    ? DivineIconName.speakerSimpleX
-                                    : DivineIconName.speakerHigh,
-                                size: DivineIconButtonSize.small,
-                                type: DivineIconButtonType.ghost,
-                                semanticLabel: isMuted
-                                    ? context.l10n.videoPlayerUnmute
-                                    : context.l10n.videoPlayerMute,
-                                onPressed: () {
-                                  widget.onToggleMuteState();
-                                  SemanticsService.sendAnnouncement(
-                                    View.of(context),
-                                    isMuted
-                                        ? context.l10n.videoPlayerUnmute
-                                        : context.l10n.videoPlayerMute,
-                                    Directionality.of(context),
-                                  );
-                                },
-                              ),
-                            IgnorePointer(
-                              child: CenterPlaybackControl(
-                                state: CenterPlaybackControlState.play,
-                                semanticsLabel:
-                                    context.l10n.videoPlayerPlayVideo,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else if (shouldShowUnpauseFeedback) {
-                      child = IgnorePointer(
-                        key: const ValueKey('unpause-feedback'),
-                        child: AnimatedOpacity(
-                          opacity: _unpauseFeedbackOpacity,
-                          duration: _unpauseFadeDuration,
-                          child: const CenterPlaybackControl(
-                            state: CenterPlaybackControlState.pause,
-                          ),
-                        ),
-                      );
-                    } else {
-                      child = const SizedBox.shrink(
-                        key: ValueKey('paused-hidden'),
-                      );
-                    }
-
-                    return AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: ScaleTransition(
-                            scale: Tween<double>(
-                              begin: 0.92,
-                              end: 1,
-                            ).animate(animation),
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: child,
+                    return _PlaybackChrome(
+                      isPlaying: isPlaying,
+                      isBuffering: isBuffering,
+                      isMuted: isMuted,
+                      hasStartedPlayback: _hasStartedPlayback,
+                      showUnpauseFeedback: _showUnpauseFeedback,
+                      unpauseFeedbackOpacity: _unpauseFeedbackOpacity,
+                      unpauseFadeDuration: _unpauseFadeDuration,
+                      onToggleMuteState: widget.onToggleMuteState,
                     );
                   },
                 );
@@ -295,6 +227,133 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
           },
         );
       },
+    );
+  }
+}
+
+/// Renders the active child of the paused-video overlay (play affordance,
+/// transient unpause pause icon, or nothing) with the shared fade-and-scale
+/// [AnimatedSwitcher] transition.
+///
+/// Pure/stateless: all decisions derive from the props passed in by
+/// [PausedVideoPlayOverlay], so this widget can be tested in isolation
+/// without spinning up a [Player].
+class _PlaybackChrome extends StatelessWidget {
+  const _PlaybackChrome({
+    required this.isPlaying,
+    required this.isBuffering,
+    required this.isMuted,
+    required this.hasStartedPlayback,
+    required this.showUnpauseFeedback,
+    required this.unpauseFeedbackOpacity,
+    required this.unpauseFadeDuration,
+    required this.onToggleMuteState,
+  });
+
+  final bool isPlaying;
+  final bool isBuffering;
+  final bool isMuted;
+  final bool hasStartedPlayback;
+  final bool showUnpauseFeedback;
+  final double unpauseFeedbackOpacity;
+  final Duration unpauseFadeDuration;
+  final VoidCallback onToggleMuteState;
+
+  @override
+  Widget build(BuildContext context) {
+    final shouldShowPlay = hasStartedPlayback && !isPlaying && !isBuffering;
+    final shouldShowUnpauseFeedback =
+        showUnpauseFeedback && isPlaying && !shouldShowPlay;
+
+    final Widget child;
+    if (shouldShowPlay) {
+      child = _PausedAffordance(
+        key: const ValueKey('paused-play'),
+        isMuted: isMuted,
+        onToggleMuteState: onToggleMuteState,
+      );
+    } else if (shouldShowUnpauseFeedback) {
+      // No ValueKey: AnimatedSwitcher already differentiates this
+      // IgnorePointer from the Center-rooted play affordance and the
+      // SizedBox.shrink hidden branch by runtime type.
+      child = IgnorePointer(
+        child: AnimatedOpacity(
+          opacity: unpauseFeedbackOpacity,
+          duration: unpauseFadeDuration,
+          child: const CenterPlaybackControl(
+            state: CenterPlaybackControlState.pause,
+          ),
+        ),
+      );
+    } else {
+      child = const SizedBox.shrink();
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.92, end: 1).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+/// The paused-state stack: mute toggle (non-web) above the large play icon.
+class _PausedAffordance extends StatelessWidget {
+  const _PausedAffordance({
+    required this.isMuted,
+    required this.onToggleMuteState,
+    super.key,
+  });
+
+  final bool isMuted;
+  final VoidCallback onToggleMuteState;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 16,
+        children: [
+          if (!kIsWeb)
+            DivineIconButton(
+              icon: isMuted
+                  ? DivineIconName.speakerSimpleX
+                  : DivineIconName.speakerHigh,
+              size: DivineIconButtonSize.small,
+              type: DivineIconButtonType.ghost,
+              semanticLabel: isMuted
+                  ? context.l10n.videoPlayerUnmute
+                  : context.l10n.videoPlayerMute,
+              onPressed: () {
+                onToggleMuteState();
+                SemanticsService.sendAnnouncement(
+                  View.of(context),
+                  isMuted
+                      ? context.l10n.videoPlayerUnmute
+                      : context.l10n.videoPlayerMute,
+                  Directionality.of(context),
+                );
+              },
+            ),
+          IgnorePointer(
+            child: CenterPlaybackControl(
+              state: CenterPlaybackControlState.play,
+              semanticsLabel: context.l10n.videoPlayerPlayVideo,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -489,41 +489,6 @@ void main() {
     });
 
     group('new parameters', () {
-      testWidgets('initialChildSizeBuilder overrides initialChildSize', (
-        tester,
-      ) async {
-        var builderInvocations = 0;
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () async {
-                    await VineBottomSheet.show<void>(
-                      context: context,
-                      initialChildSize: 0.4,
-                      initialChildSizeBuilder: (modalContext) {
-                        builderInvocations++;
-                        return 0.8;
-                      },
-                      title: const Text('Dynamic Sheet'),
-                      children: const [Text('Body')],
-                    );
-                  },
-                  child: const Text('Open'),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.tap(find.text('Open'));
-        await tester.pumpAndSettle();
-
-        expect(builderInvocations, greaterThan(0));
-        expect(find.text('Body'), findsOneWidget);
-      });
-
       test('snap without scrollable fails an assertion', () {
         expect(
           () => VineBottomSheet.show<void>(
@@ -546,8 +511,52 @@ void main() {
           throwsAssertionError,
         );
       });
+
+      testWidgets(
+        'contentWrapper is applied around the sheet and is inside the modal route',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        title: const Text('Wrapped'),
+                        children: const [Text('Body')],
+                        contentWrapper: (wrapperContext, child) =>
+                            _WrapperMarker(child: child),
+                      );
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          // Wrapper wraps the real sheet content.
+          expect(find.byType(_WrapperMarker), findsOneWidget);
+          expect(find.text('Body'), findsOneWidget);
+        },
+      );
     });
   });
+}
+
+/// Marker widget used to verify that `contentWrapper` wraps the sheet
+/// in the widget tree exactly once.
+class _WrapperMarker extends StatelessWidget {
+  const _WrapperMarker({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => child;
 }
 
 /// Minimal BuildContext stand-in used for constructor-time assertion tests

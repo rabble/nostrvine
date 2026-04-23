@@ -469,6 +469,28 @@ class VineTheme {
   /// Pressed-state inner shadow for buttons (24% black).
   static const Color innerShadowPressed = Color(0x3D000000);
 
+  /// Figma `effects/shadow-10` drop-shadow pair, for use in
+  /// [TextStyle.shadows] on text overlaid on video content or other
+  /// bright surfaces (caption block, action-button labels, feed-mode
+  /// label, etc.). Paired with [buttonBoxShadows] for the BoxShadow
+  /// equivalent on Container/DecoratedBox surfaces.
+  static const List<Shadow> buttonShadows = [
+    Shadow(color: innerShadow, offset: Offset(0.4, 0.4), blurRadius: 0.6),
+    Shadow(color: innerShadow, offset: Offset(1, 1), blurRadius: 1),
+  ];
+
+  /// Figma `effects/shadow-10` drop-shadow pair, for use in
+  /// [BoxDecoration.boxShadow]. Same offsets/blur as [buttonShadows]
+  /// but as [BoxShadow] instead of [Shadow].
+  static const List<BoxShadow> buttonBoxShadows = [
+    BoxShadow(
+      color: innerShadow,
+      offset: Offset(0.4, 0.4),
+      blurRadius: 0.6,
+    ),
+    BoxShadow(color: innerShadow, offset: Offset(1, 1), blurRadius: 1),
+  ];
+
   // --------------------------------------------------------------------------
   // Additional scrims
   // --------------------------------------------------------------------------

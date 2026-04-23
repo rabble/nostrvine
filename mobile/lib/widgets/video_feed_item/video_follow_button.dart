@@ -94,22 +94,6 @@ class VideoFollowButtonView extends StatelessWidget {
 
   final String pubkey;
 
-  /// Matches the Figma `follow button` drop shadow spec (node 4630:69768):
-  /// two 10 %-black shadows in `effects/shadow-10` to lift the button off
-  /// the avatar it overlaps.
-  static const _boxShadows = [
-    BoxShadow(
-      color: VineTheme.innerShadow,
-      offset: Offset(0.4, 0.4),
-      blurRadius: 0.6,
-    ),
-    BoxShadow(
-      color: VineTheme.innerShadow,
-      offset: Offset(1, 1),
-      blurRadius: 1,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return BlocSelector<
@@ -156,7 +140,7 @@ class VideoFollowButtonView extends StatelessWidget {
               decoration: const BoxDecoration(
                 color: VineTheme.cameraButtonGreen,
                 shape: BoxShape.circle,
-                boxShadow: _boxShadows,
+                boxShadow: VineTheme.buttonBoxShadows,
               ),
               child: Center(
                 child: SvgPicture.asset(

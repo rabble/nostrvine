@@ -95,15 +95,14 @@ abstract final class CommentsScreen {
   ///
   /// Flows through [VineBottomSheet.show] (via
   /// `showVideoPausingVineBottomSheet`) so the sheet inherits the
-  /// tap-outside-to-dismiss behaviour, snap support, keyboard-aware
-  /// initial size, and overlay-visibility integration shared with other
-  /// Vine bottom sheets.
+  /// tap-outside-to-dismiss behaviour, snap support, and
+  /// overlay-visibility integration shared with other Vine bottom sheets.
   static Future<void> show(
     BuildContext context,
     VideoEvent video, {
     int? initialCommentCount,
     ValueChanged<int>? onCommentCountChanged,
-  }) async {
+  }) {
     final container = ProviderScope.containerOf(context, listen: false);
 
     // Synchronously available repositories / services.
@@ -120,75 +119,69 @@ abstract final class CommentsScreen {
     final profileRepository = container.read(profileRepositoryProvider);
     final followRepository = container.read(followRepositoryProvider);
 
-    final bloc = CommentsBloc(
-      commentsRepository: commentsRepository,
-      authService: authService,
-      likesRepository: likesRepository,
-      contentReportingServiceFuture: contentReportingServiceFuture,
-      contentBlocklistRepository: contentBlocklistRepository,
-      rootEventId: video.id,
-      rootEventKind: NIP71VideoKinds.addressableShortVideo,
-      rootAuthorPubkey: video.pubkey,
-      rootAddressableId: video.addressableId,
-      initialTotalCount: video.originalComments,
-      profileRepository: profileRepository,
-      followRepository: followRepository,
-    )..add(const CommentsLoadRequested());
-
     // The draggable scroll controller is created inside buildScrollBody but
     // is also needed by the title's "new comments" pill (which lives above
     // the scrollable region). Share it through a closure-captured holder.
     ScrollController? activeScrollController;
 
-    Widget withBloc(Widget child) =>
-        BlocProvider<CommentsBloc>.value(value: bloc, child: child);
-
-    try {
-      await context.showVideoPausingVineBottomSheet<void>(
-        snap: true,
-        snapSizes: const [0.7, 0.93],
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.93,
-        initialChildSizeBuilder: (modalContext) =>
-            MediaQuery.viewInsetsOf(modalContext).bottom > 0 ? 0.93 : 0.7,
-        title: withBloc(
-          _CommentsTitle(
-            initialCount: initialCommentCount ?? video.originalComments ?? 0,
-            onNewCommentsPillTap: () {
-              final controller = activeScrollController;
-              if (controller != null && controller.hasClients) {
-                controller.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                );
-              }
-            },
-          ),
+    return context.showVideoPausingVineBottomSheet<void>(
+      snap: true,
+      snapSizes: const [0.7, 0.93],
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.93,
+      // Wrap the whole sheet subtree in a single BlocProvider so every
+      // slot (title, trailing, bottomInput, buildScrollBody) shares the
+      // same CommentsBloc. BlocProvider owns lifecycle — it closes the
+      // BLoC automatically when the sheet is disposed, so we don't need
+      // a manual try/finally around the await.
+      contentWrapper: (context, child) => BlocProvider<CommentsBloc>(
+        create: (_) => CommentsBloc(
+          commentsRepository: commentsRepository,
+          authService: authService,
+          likesRepository: likesRepository,
+          contentReportingServiceFuture: contentReportingServiceFuture,
+          contentBlocklistRepository: contentBlocklistRepository,
+          rootEventId: video.id,
+          rootEventKind: NIP71VideoKinds.addressableShortVideo,
+          rootAuthorPubkey: video.pubkey,
+          rootAddressableId: video.addressableId,
+          initialTotalCount: video.originalComments,
+          profileRepository: profileRepository,
+          followRepository: followRepository,
+        )..add(const CommentsLoadRequested()),
+        child: BlocListener<CommentsBloc, CommentsState>(
+          listenWhen: (prev, next) =>
+              prev.commentsById.length != next.commentsById.length,
+          listener: (_, state) {
+            onCommentCountChanged?.call(state.commentsById.length);
+          },
+          child: child,
         ),
-        trailing: withBloc(const _CommentsSortToggle()),
-        bottomInput: withBloc(const _MainCommentInput()),
-        buildScrollBody: (scrollController) {
-          activeScrollController = scrollController;
-          return withBloc(
-            BlocListener<CommentsBloc, CommentsState>(
-              listenWhen: (prev, next) =>
-                  prev.commentsById.length != next.commentsById.length,
-              listener: (_, state) {
-                onCommentCountChanged?.call(state.commentsById.length);
-              },
-              child: _CommentsScreenBody(
-                videoEvent: video,
-                sheetScrollController: scrollController,
-              ),
-            ),
-          );
+      ),
+      title: _CommentsTitle(
+        initialCount: initialCommentCount ?? video.originalComments ?? 0,
+        onNewCommentsPillTap: () {
+          final controller = activeScrollController;
+          if (controller != null && controller.hasClients) {
+            controller.animateTo(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
         },
-      );
-    } finally {
-      await bloc.close();
-    }
+      ),
+      trailing: const _CommentsSortToggle(),
+      bottomInput: const _MainCommentInput(),
+      buildScrollBody: (scrollController) {
+        activeScrollController = scrollController;
+        return _CommentsScreenBody(
+          videoEvent: video,
+          sheetScrollController: scrollController,
+        );
+      },
+    );
   }
 }
 

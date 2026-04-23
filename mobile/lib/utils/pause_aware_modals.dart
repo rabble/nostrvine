@@ -114,7 +114,6 @@ extension PauseAwareModals on BuildContext {
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
     double maxChildSize = 0.9,
-    double Function(BuildContext modalContext)? initialChildSizeBuilder,
     bool snap = false,
     List<double>? snapSizes,
     // Defaults to true because video-pausing sheets are inherently
@@ -123,6 +122,7 @@ extension PauseAwareModals on BuildContext {
     // sibling showVideoPausingDialog.
     bool useRootNavigator = true,
     bool tapOutsideToDismiss = true,
+    Widget Function(BuildContext context, Widget child)? contentWrapper,
   }) {
     final container = ProviderScope.containerOf(this, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
@@ -167,11 +167,11 @@ extension PauseAwareModals on BuildContext {
       initialChildSize: initialChildSize,
       minChildSize: minChildSize,
       maxChildSize: maxChildSize,
-      initialChildSizeBuilder: initialChildSizeBuilder,
       snap: snap,
       snapSizes: snapSizes,
       useRootNavigator: useRootNavigator,
       tapOutsideToDismiss: tapOutsideToDismiss,
+      contentWrapper: contentWrapper,
       onShow: () => overlayNotifier.setBottomSheetOpen(true),
       onDismiss: () => overlayNotifier.setBottomSheetOpen(false),
     );

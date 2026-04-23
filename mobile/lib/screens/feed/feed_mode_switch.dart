@@ -120,18 +120,7 @@ class _FeedModeContent extends StatelessWidget {
                 Text(
                   label,
                   style: VineTheme.headlineSmallFont().copyWith(
-                    shadows: [
-                      const Shadow(
-                        color: VineTheme.innerShadow,
-                        offset: Offset(1, 1),
-                        blurRadius: 1,
-                      ),
-                      const Shadow(
-                        color: VineTheme.innerShadow,
-                        offset: Offset(0.4, 0.4),
-                        blurRadius: 0.6,
-                      ),
-                    ],
+                    shadows: VineTheme.buttonShadows,
                   ),
                 ),
                 const _FeedModeCaret(),

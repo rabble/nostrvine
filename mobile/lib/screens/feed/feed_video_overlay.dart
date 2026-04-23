@@ -266,22 +266,6 @@ class _AuthorInfoSection extends ConsumerWidget {
   final bool hasTextContent;
   final VoidCallback? onInteracted;
 
-  /// Drop shadows applied to the video caption block (title + description +
-  /// hashtags). Matches the Figma `video info` spec so the text stays legible
-  /// over bright video frames even without the bottom gradient.
-  static const _captionShadows = [
-    Shadow(
-      color: VineTheme.innerShadow,
-      offset: Offset(1, 1),
-      blurRadius: 1,
-    ),
-    Shadow(
-      color: VineTheme.innerShadow,
-      offset: Offset(0.4, 0.4),
-      blurRadius: 0.6,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileReactiveProvider(video.pubkey)).value;
@@ -363,7 +347,7 @@ class _AuthorInfoSection extends ConsumerWidget {
                 child: Text(
                   video.title!.trim(),
                   style: VineTheme.labelMediumFont().copyWith(
-                    shadows: _captionShadows,
+                    shadows: VineTheme.buttonShadows,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -393,10 +377,10 @@ class _AuthorInfoSection extends ConsumerWidget {
                 child: ClickableHashtagText(
                   text: video.content.trim(),
                   style: VineTheme.bodySmallFont().copyWith(
-                    shadows: _captionShadows,
+                    shadows: VineTheme.buttonShadows,
                   ),
                   hashtagStyle: VineTheme.bodySmallFont().copyWith(
-                    shadows: _captionShadows,
+                    shadows: VineTheme.buttonShadows,
                   ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
