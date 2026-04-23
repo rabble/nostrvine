@@ -21,6 +21,8 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart' show Intl;
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
@@ -760,6 +762,8 @@ Future<void> _startOpenVineApp() async {
   );
   StartupPerformanceService.instance.checkpoint('pre_app_launch');
 
+  await initializeDateFormatting();
+
   runApp(
     UncontrolledProviderScope(
       container: container,
@@ -1484,6 +1488,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // The BlocBuilder is used because the cubit is provided further down
     // in the widget tree by MultiBlocProvider.
     Widget buildApp(Locale? locale) {
+      if (locale != null) {
+        Intl.defaultLocale = locale.toLanguageTag();
+      }
       if (!kIsWeb && io.Platform.isAndroid) {
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: VineTheme.statusBarStyle,

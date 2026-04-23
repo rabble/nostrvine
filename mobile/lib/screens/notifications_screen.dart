@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -23,7 +24,6 @@ import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
-import 'package:time_formatter/time_formatter.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -412,9 +412,13 @@ class _NotificationTabContentState
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                             child: Text(
-                              TimeFormatter.formatDateLabel(
+                              LocalizedTimeFormatter.formatDateLabel(
+                                context.l10n,
                                 notification.timestamp.millisecondsSinceEpoch ~/
                                     1000,
+                                locale: Localizations.localeOf(
+                                  context,
+                                ).toLanguageTag(),
                               ),
                               style: const TextStyle(
                                 fontSize: 14,
