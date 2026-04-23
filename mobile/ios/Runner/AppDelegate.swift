@@ -6,6 +6,8 @@ import ZendeskCoreSDK
 import SupportSDK
 import SupportProvidersSDK
 
+extension FlutterError: @retroactive Error {}
+
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   override func application(
