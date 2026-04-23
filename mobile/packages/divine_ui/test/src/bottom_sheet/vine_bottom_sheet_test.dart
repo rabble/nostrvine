@@ -544,6 +544,39 @@ void main() {
           expect(find.text('Body'), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'contentWrapper is applied in fixed (non-scrollable) mode too',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        scrollable: false,
+                        title: const Text('Wrapped Fixed'),
+                        children: const [Text('Fixed Body')],
+                        contentWrapper: (wrapperContext, child) =>
+                            _WrapperMarker(child: child),
+                      );
+                    },
+                    child: const Text('Open Fixed'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open Fixed'));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(_WrapperMarker), findsOneWidget);
+          expect(find.text('Fixed Body'), findsOneWidget);
+        },
+      );
     });
   });
 }

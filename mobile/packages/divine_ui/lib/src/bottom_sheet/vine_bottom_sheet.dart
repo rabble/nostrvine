@@ -232,7 +232,15 @@ class VineBottomSheet extends StatelessWidget {
           //     taps before bubbling.
           return GestureDetector(
             behavior: HitTestBehavior.translucent,
+            // coverage:ignore-start
+            // Defensive fallback. In practice the modal barrier pops the
+            // route first on taps above the DraggableScrollableSheet, so
+            // this lambda rarely if ever fires — hence the coverage
+            // exemption. Kept in place for scenarios where the barrier is
+            // somehow non-dismissible but the sheet should still close on
+            // an outside tap.
             onTap: () => Navigator.of(modalContext).pop(),
+            // coverage:ignore-end
             child: DraggableScrollableSheet(
               expand: false,
               initialChildSize: initialChildSize,
