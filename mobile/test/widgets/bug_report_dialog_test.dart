@@ -274,5 +274,34 @@ void main() {
 
       expect(dialogClosed, isTrue);
     });
+
+    testWidgets('submits successfully with zero attachments', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BugReportDialog(bugReportService: mockBugReportService),
+          ),
+        ),
+      );
+
+      // Fill required fields
+      await tester.enterText(find.byType(TextField).at(0), 'Test subject');
+      await tester.enterText(
+        find.byType(TextField).at(1),
+        'Test description',
+      );
+      await tester.pump();
+
+      // Verify Send button is enabled with zero attachments
+      final sendButton = find.text('Send Report');
+      final button = tester.widget<ElevatedButton>(
+        find.ancestor(of: sendButton, matching: find.byType(ElevatedButton)),
+      );
+      expect(button.onPressed, isNotNull);
+    });
   });
 }
