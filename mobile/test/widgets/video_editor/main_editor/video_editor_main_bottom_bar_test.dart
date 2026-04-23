@@ -15,7 +15,7 @@ void main() {
     testWidgets('renders core action labels', (tester) async {
       await tester.pumpWidget(_buildWidget());
 
-      expect(find.text(l10n.videoEditorClipsLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorLibraryLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorTextLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorDrawLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorVolumeLabel), findsOneWidget);
@@ -29,7 +29,7 @@ void main() {
         _buildWidget(onOpenClipsEditor: () => clipsTapped = true),
       );
 
-      await tester.tap(find.bySemanticsLabel(l10n.videoEditorClipsLabel));
+      await tester.tap(find.bySemanticsLabel(l10n.videoEditorLibraryLabel));
       await tester.pump();
 
       expect(clipsTapped, isTrue);

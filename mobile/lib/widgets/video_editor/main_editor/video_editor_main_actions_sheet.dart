@@ -10,11 +10,17 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 ///
 /// Uses [_ItemButton] for each action and closes the sheet after
 /// an action is selected.
+
 class VideoEditorMainActionsSheet extends StatelessWidget {
   const VideoEditorMainActionsSheet({
     required this.scope,
     super.key,
   });
+
+  static const _maxItemWidth = 72.0;
+  static const _itemHeight = 112.0;
+  static const _itemMainSpacing = 16.0;
+  static const _itemCrossSpacing = 24.0;
 
   /// The editor scope captured before opening the sheet.
   final VideoEditorScope scope;
@@ -39,13 +45,15 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: .stretch,
         children: [
-          GridView.extent(
+          GridView(
             primary: false,
             shrinkWrap: true,
-            maxCrossAxisExtent: 72,
-            childAspectRatio: 0.7,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 24,
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: _maxItemWidth,
+              mainAxisExtent: _itemHeight,
+              mainAxisSpacing: _itemMainSpacing,
+              crossAxisSpacing: _itemCrossSpacing,
+            ),
             children: [
               _ItemButton(
                 icon: .camera,

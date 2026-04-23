@@ -16,7 +16,7 @@ void main() {
       await tester.pumpWidget(_buildWidget());
 
       expect(find.text(l10n.videoEditorCameraLabel), findsOneWidget);
-      expect(find.text(l10n.videoEditorClipsLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorLibraryLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorAudioLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorTextLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorDrawLabel), findsOneWidget);
@@ -31,7 +31,7 @@ void main() {
       );
 
       await tester.tap(
-        find.bySemanticsLabel(l10n.videoEditorOpenClipsSemanticLabel),
+        find.bySemanticsLabel(l10n.videoEditorOpenLibrarySemanticLabel),
       );
       await tester.pumpAndSettle();
 
