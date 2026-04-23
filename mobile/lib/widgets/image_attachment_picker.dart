@@ -19,15 +19,15 @@ class ImageAttachmentPicker extends StatefulWidget {
   final ValueChanged<List<XFile>> onChanged;
   final bool enabled;
 
+  @visibleForTesting
+  static ImagePicker imagePicker = ImagePicker();
+
   @override
   State<ImageAttachmentPicker> createState() => _ImageAttachmentPickerState();
 }
 
 class _ImageAttachmentPickerState extends State<ImageAttachmentPicker> {
   final List<XFile> _images = [];
-
-  @visibleForTesting
-  static ImagePicker imagePicker = ImagePicker();
 
   bool get _isMobile =>
       defaultTargetPlatform == TargetPlatform.iOS ||
@@ -39,7 +39,7 @@ class _ImageAttachmentPickerState extends State<ImageAttachmentPicker> {
     final remaining = widget.maxImages - _images.length;
     if (remaining <= 0) return;
 
-    final picked = await imagePicker.pickMultiImage(
+    final picked = await ImageAttachmentPicker.imagePicker.pickMultiImage(
       maxWidth: 1920,
       imageQuality: 80,
     );
