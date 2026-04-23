@@ -248,6 +248,98 @@ bloc needs its own consumer; one consumer does not wake the others.
 
 ---
 
+## Scoping `BlocProvider` to a modal route
+
+When a modal (bottom sheet, dialog, pushed route) needs a bloc that
+should live only for the duration of that modal, put the
+`BlocProvider` **inside** the modal's widget subtree. Do **not**:
+
+1. Instantiate the bloc at the call site, push the modal, and
+   `await`-then-`close()` the bloc in a `try/finally`.
+2. Wrap the modal's returned widget in a builder closure at the call
+   site.
+
+Option (1) duplicates lifecycle management that `BlocProvider` already
+does, and goes wrong any time the modal's build throws mid-flight or
+the route is popped by a different path than `await` returning.
+Option (2) hides an ancestor inside a single-use closure (see
+[`code_style.md` → "Don't Hide Ancestors Inside a One-Off `Widget
+Function` Closure"](code_style.md#dont-hide-ancestors-inside-a-one-off-widget-function-closure)).
+
+**The right shape:** expose a `contentWrapper` (or similarly named)
+parameter on the modal utility, and pass a `BlocProvider` through it.
+`BlocProvider(create:)` owns the close automatically when its subtree
+unmounts on route pop.
+
+**Bad — lifecycle managed at the call site:**
+
+```dart
+Future<void> show(BuildContext context, ...) async {
+  final bloc = CommentsBloc(...)..add(const CommentsLoadRequested());
+  try {
+    await context.showVideoPausingVineBottomSheet<void>(
+      // Manual wiring of a builder closure that injects the bloc into
+      // only one slot — easy to miss the others.
+      title: BlocProvider<CommentsBloc>.value(
+        value: bloc,
+        child: _CommentsTitle(...),
+      ),
+      bottomInput: BlocProvider<CommentsBloc>.value(
+        value: bloc,
+        child: const _MainCommentInput(),
+      ),
+      buildScrollBody: (controller) => BlocProvider<CommentsBloc>.value(
+        value: bloc,
+        child: _CommentsScreenBody(...),
+      ),
+    );
+  } finally {
+    await bloc.close(); // Duplicates what BlocProvider would do.
+  }
+}
+```
+
+**Good — `contentWrapper` scopes the provider to the whole sheet,
+and `BlocProvider` owns the close:**
+
+```dart
+Future<void> show(BuildContext context, ...) {
+  // Reads are synchronous; the bloc is created inside the modal
+  // subtree when the sheet builds.
+  final container = ProviderScope.containerOf(context, listen: false);
+  final repo = container.read(commentsRepositoryProvider);
+  // ... other captured deps ...
+
+  return context.showVideoPausingVineBottomSheet<void>(
+    contentWrapper: (context, child) => BlocProvider<CommentsBloc>(
+      create: (_) => CommentsBloc(repo: repo, ...)
+        ..add(const CommentsLoadRequested()),
+      child: child,
+    ),
+    title: _CommentsTitle(...),
+    bottomInput: const _MainCommentInput(),
+    buildScrollBody: (controller) => _CommentsScreenBody(...),
+  );
+}
+```
+
+Benefits:
+
+- **One provider, every slot.** The wrapper sits above `title`,
+  `trailing`, `bottomInput`, `body`, `buildScrollBody` — you can't
+  accidentally drop it from one of them.
+- **No manual `close()`.** `BlocProvider` disposes the bloc on unmount.
+- **No `try/finally` around a `Future` that may never complete via the
+  `await` path.** The sheet gets popped, the subtree unmounts, the
+  bloc is disposed — regardless of which code path popped it.
+
+If the reusable widget/utility doesn't yet accept a `contentWrapper`,
+**add one** instead of working around it at the call site. (See
+[`code_style.md`](code_style.md#dont-hide-ancestors-inside-a-one-off-widget-function-closure)
+for the corresponding widget-API rule.)
+
+---
+
 ## Persisting state across shell-route transitions
 
 Screens inside a `ShellRoute` whose content is gated on the current URL
