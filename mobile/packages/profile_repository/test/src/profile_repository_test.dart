@@ -1310,11 +1310,13 @@ void main() {
       test('omits nip05 when neither username nor nip05 is provided', () async {
         await profileRepository.saveProfileEvent(displayName: 'Only Name');
 
-        final captured = verify(
-          () => mockNostrClient.sendProfile(
-            profileContent: captureAny(named: 'profileContent'),
-          ),
-        ).captured.single as Map<String, dynamic>;
+        final captured =
+            verify(
+                  () => mockNostrClient.sendProfile(
+                    profileContent: captureAny(named: 'profileContent'),
+                  ),
+                ).captured.single
+                as Map<String, dynamic>;
         expect(captured.containsKey('nip05'), isFalse);
       });
 
