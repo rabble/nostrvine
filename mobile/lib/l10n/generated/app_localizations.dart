@@ -8444,6 +8444,18 @@ abstract class AppLocalizations {
   /// **'Discover something interesting'**
   String get searchDiscoverSomethingInteresting;
 
+  /// No description provided for @searchListsSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get searchListsSectionHeader;
+
+  /// No description provided for @searchListsLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading list results'**
+  String get searchListsLoadingLabel;
+
   /// No description provided for @cameraAgeRestriction.
   ///
   /// In en, this message translates to:

@@ -2394,6 +2394,8 @@
     "searchDiscoverSomethingInteresting": "Temukan sesuatu yang menarik",
     "searchEnterQuery": "Masukkan kata pencarian",
     "searchFindCuratedVideoLists": "Temukan daftar video pilihan",
+  "searchListsSectionHeader": "Daftar",
+  "searchListsLoadingLabel": "Memuat hasil daftar",
     "searchForLists": "Cari daftar",
     "searchSomethingWentWrong": "Terjadi kesalahan",
     "searchTryAgain": "Coba lagi",

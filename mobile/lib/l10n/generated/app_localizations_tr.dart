@@ -4740,6 +4740,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'İlginç bir şey keşfet';
 
   @override
+  String get searchListsSectionHeader => 'Listeler';
+
+  @override
+  String get searchListsLoadingLabel => 'Liste sonuçları yükleniyor';
+
+  @override
   String get cameraAgeRestriction =>
       'İçerik oluşturmak için 16 yaşında veya daha büyük olmalısın';
 

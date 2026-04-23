@@ -2395,6 +2395,8 @@
     "searchDiscoverSomethingInteresting": "Ontdek iets interessants",
     "searchEnterQuery": "Voer een zoekopdracht in",
     "searchFindCuratedVideoLists": "Vind samengestelde videolijsten",
+  "searchListsSectionHeader": "Lijsten",
+  "searchListsLoadingLabel": "Lijstresultaten laden",
     "searchForLists": "Zoek naar lijsten",
     "searchSomethingWentWrong": "Er ging iets mis",
     "searchTryAgain": "Opnieuw proberen",

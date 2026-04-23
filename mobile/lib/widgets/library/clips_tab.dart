@@ -134,18 +134,20 @@ class ClipsTab extends StatelessWidget {
         backgroundColor: VineTheme.cardBackground,
         title: Text(
           context.l10n.libraryDeleteClipTitle,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.titleSmallFont(),
         ),
         content: Text(
           context.l10n.libraryDeleteClipMessage,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.bodyMediumFont(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               context.l10n.commonCancel,
-              style: const TextStyle(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.secondaryText,
+              ),
             ),
           ),
           ElevatedButton(

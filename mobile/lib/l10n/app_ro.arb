@@ -2395,6 +2395,8 @@
     "searchDiscoverSomethingInteresting": "Descoperă ceva interesant",
     "searchEnterQuery": "Introdu un termen de căutare",
     "searchFindCuratedVideoLists": "Găsește liste de videoclipuri selectate",
+  "searchListsSectionHeader": "Liste",
+  "searchListsLoadingLabel": "Se încarcă rezultatele listelor",
     "searchForLists": "Caută liste",
     "searchSomethingWentWrong": "Ceva nu a mers bine",
     "searchTryAgain": "Încearcă din nou",

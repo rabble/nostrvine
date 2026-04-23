@@ -2445,6 +2445,8 @@
   "@searchDiscoverSomethingInteresting": {
     "description": "Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query."
   },
+  "searchListsSectionHeader": "Lists",
+  "searchListsLoadingLabel": "Loading list results",
 
   "contentWarningViewAnyway": "View Anyway",
 

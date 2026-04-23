@@ -4732,6 +4732,12 @@ class AppLocalizationsId extends AppLocalizations {
       'Temukan sesuatu yang menarik';
 
   @override
+  String get searchListsSectionHeader => 'Daftar';
+
+  @override
+  String get searchListsLoadingLabel => 'Memuat hasil daftar';
+
+  @override
   String get cameraAgeRestriction =>
       'Kamu harus berusia 16 tahun atau lebih untuk membuat konten';
 

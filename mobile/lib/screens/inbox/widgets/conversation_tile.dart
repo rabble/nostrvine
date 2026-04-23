@@ -6,10 +6,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
-import 'package:time_formatter/time_formatter.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// A single conversation row in the DM conversation list.
@@ -58,8 +59,10 @@ class ConversationTile extends ConsumerWidget {
     );
 
     final relativeTime = conversation.lastMessageTimestamp != null
-        ? TimeFormatter.formatConversationTimestamp(
+        ? LocalizedTimeFormatter.formatConversationTimestamp(
+            context.l10n,
             conversation.lastMessageTimestamp!,
+            locale: Localizations.localeOf(context).toLanguageTag(),
           )
         : '';
 

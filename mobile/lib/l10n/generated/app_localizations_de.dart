@@ -4817,6 +4817,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Entdecke etwas Interessantes';
 
   @override
+  String get searchListsSectionHeader => 'Listen';
+
+  @override
+  String get searchListsLoadingLabel => 'Listenergebnisse werden geladen';
+
+  @override
   String get cameraAgeRestriction =>
       'Du musst mindestens 16 Jahre alt sein, um Inhalte zu erstellen';
 

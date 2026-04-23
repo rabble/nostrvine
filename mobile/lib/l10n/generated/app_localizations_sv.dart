@@ -4750,6 +4750,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Upptäck något intressant';
 
   @override
+  String get searchListsSectionHeader => 'Listor';
+
+  @override
+  String get searchListsLoadingLabel => 'Laddar listresultat';
+
+  @override
   String get cameraAgeRestriction =>
       'Du måste vara 16 år eller äldre för att skapa innehåll';
 

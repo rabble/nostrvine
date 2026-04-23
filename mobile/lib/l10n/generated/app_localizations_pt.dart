@@ -4790,6 +4790,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Descubra algo interessante';
 
   @override
+  String get searchListsSectionHeader => 'Listas';
+
+  @override
+  String get searchListsLoadingLabel => 'Carregando resultados de listas';
+
+  @override
   String get cameraAgeRestriction =>
       'Você precisa ter 16 anos ou mais para criar conteúdo';
 

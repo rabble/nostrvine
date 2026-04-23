@@ -4891,6 +4891,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Descoperă ceva interesant';
 
   @override
+  String get searchListsSectionHeader => 'Liste';
+
+  @override
+  String get searchListsLoadingLabel => 'Se încarcă rezultatele listelor';
+
+  @override
   String get cameraAgeRestriction =>
       'Trebuie să ai cel puțin 16 ani pentru a crea conținut';
 

@@ -1,5 +1,8 @@
 // ABOUTME: Lists section for search results, used in both "All" preview
 // ABOUTME: and the dedicated "Lists" tab (showAll: true).
+// ABOUTME: Shows curated video lists (kind 30005) and, when the
+// ABOUTME: peopleListSearch feature flag is enabled (injected via BLoC),
+// ABOUTME: people lists (kind 30000).
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -7,12 +10,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/list_search/list_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
 import 'package:openvine/widgets/list_search_card.dart';
+import 'package:openvine/widgets/people_list_search_card.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 /// Always-visible Lists section with a "Lists" header.
@@ -34,12 +39,17 @@ class ListsSection extends StatelessWidget {
     final status = context.select(
       (ListSearchBloc bloc) => bloc.state.status,
     );
-    final results = context.select(
-      (ListSearchBloc bloc) => bloc.state.results,
+    final videoResults = context.select(
+      (ListSearchBloc bloc) => bloc.state.videoResults,
+    );
+    final peopleResults = context.select(
+      (ListSearchBloc bloc) => bloc.state.peopleResults,
     );
 
+    final hasAnyResults = videoResults.isNotEmpty || peopleResults.isNotEmpty;
+
     // In the All tab, hide entire section when results are empty and loaded.
-    if (!showAll && status == .success && results.isEmpty) {
+    if (!showAll && status == .success && !hasAnyResults) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
@@ -47,7 +57,10 @@ class ListsSection extends StatelessWidget {
       slivers: [
         if (!showAll)
           SliverToBoxAdapter(
-            child: SectionHeader(title: 'Lists', onTap: onSeeAll),
+            child: SectionHeader(
+              title: context.l10n.searchListsSectionHeader,
+              onTap: onSeeAll,
+            ),
           ),
         _ListsContent(showAll: showAll),
       ],
@@ -63,10 +76,21 @@ class _ListsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = context.select((ListSearchBloc bloc) => bloc.state.status);
-    final results = context.select((ListSearchBloc bloc) => bloc.state.results);
+    final videoResults = context.select(
+      (ListSearchBloc bloc) => bloc.state.videoResults,
+    );
+    final peopleResults = context.select(
+      (ListSearchBloc bloc) => bloc.state.peopleResults,
+    );
     final query = context.select((ListSearchBloc bloc) => bloc.state.query);
 
-    if ((status == .initial || status == .loading) && results.isEmpty) {
+    if (status == .initial && showAll) {
+      return const _InitialState();
+    }
+
+    if ((status == .initial || status == .loading) &&
+        videoResults.isEmpty &&
+        peopleResults.isEmpty) {
       return const _LoadingState();
     }
 
@@ -78,38 +102,39 @@ class _ListsContent extends StatelessWidget {
       );
     }
 
-    if (results.isEmpty) {
+    final hasAnyResults = videoResults.isNotEmpty || peopleResults.isNotEmpty;
+
+    if (!hasAnyResults) {
       if (showAll && status == .success) {
         return SearchSectionEmptyState(query: query);
       }
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
-    final displayCount = showAll ? results.length : results.take(2).length;
-
     return _ResultsGrid(
-      results: results,
-      displayCount: displayCount,
+      videoResults: videoResults,
+      peopleResults: peopleResults,
       showAll: showAll,
     );
   }
 }
 
-// TODO(#2853): Display both video and people list cards in the grid.
 class _ResultsGrid extends StatelessWidget {
   const _ResultsGrid({
-    required this.results,
-    required this.displayCount,
+    required this.videoResults,
+    required this.peopleResults,
     required this.showAll,
   });
 
-  final List<CuratedList> results;
-  final int displayCount;
+  final List<CuratedList> videoResults;
+  final List<UserList> peopleResults;
   final bool showAll;
 
   @override
   Widget build(BuildContext context) {
     if (showAll) {
+      // In the full grid, show all video results followed by all people results.
+      final totalCount = videoResults.length + peopleResults.length;
       return SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         sliver: SliverGrid(
@@ -120,17 +145,28 @@ class _ResultsGrid extends StatelessWidget {
             childAspectRatio: 0.85,
           ),
           delegate: SliverChildBuilderDelegate((context, index) {
-            final list = results[index];
-            return CuratedListSearchCard(
-              curatedList: list,
-              onTap: () => _navigateToCuratedList(context, list),
+            if (index < videoResults.length) {
+              final list = videoResults[index];
+              return _ListCard(
+                curatedList: list,
+                onTap: () => _navigateToCuratedList(context, list),
+              );
+            }
+            final peopleList = peopleResults[index - videoResults.length];
+            return _PeopleListCard(
+              userList: peopleList,
+              // TODO(#2853-view): Navigate to people list detail screen.
+              onTap: () {},
             );
-          }, childCount: displayCount),
+          }, childCount: totalCount),
         ),
       );
     }
-
-    final displayResults = results.take(displayCount).toList();
+    // In the preview (All tab), show at most 1 video card + 1 people card.
+    final previewVideo = videoResults.isNotEmpty ? videoResults.first : null;
+    final previewPeople = peopleResults.isNotEmpty ? peopleResults.first : null;
+    final previewCount =
+        (previewVideo != null ? 1 : 0) + (previewPeople != null ? 1 : 0);
 
     return SliverToBoxAdapter(
       child: Padding(
@@ -139,14 +175,80 @@ class _ResultsGrid extends StatelessWidget {
           spacing: 12,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final list in displayResults)
+            if (previewVideo != null)
               Expanded(
-                child: CuratedListSearchCard(
-                  curatedList: list,
-                  onTap: () => _navigateToCuratedList(context, list),
+                child: _ListCard(
+                  curatedList: previewVideo,
+                  onTap: () => _navigateToCuratedList(context, previewVideo),
                 ),
               ),
-            if (displayResults.length == 1) const Expanded(child: SizedBox()),
+            if (previewPeople != null)
+              Expanded(
+                child: _PeopleListCard(
+                  userList: previewPeople,
+                  onTap: () {},
+                ),
+              ),
+            // If only one item, fill the second slot with empty space.
+            if (previewCount == 1) const Expanded(child: SizedBox()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Card widget for a curated video list result.
+class _ListCard extends StatelessWidget {
+  const _ListCard({required this.curatedList, required this.onTap});
+
+  final CuratedList curatedList;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return CuratedListSearchCard(curatedList: curatedList, onTap: onTap);
+  }
+}
+
+/// Card widget for a people list result.
+class _PeopleListCard extends StatelessWidget {
+  const _PeopleListCard({required this.userList, required this.onTap});
+
+  final UserList userList;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PeopleListSearchCard(userList: userList, onTap: onTap);
+  }
+}
+
+class _InitialState extends StatelessWidget {
+  const _InitialState();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const DivineIcon(
+              icon: DivineIconName.search,
+              color: VineTheme.secondaryText,
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              context.l10n.searchForLists,
+              style: VineTheme.titleSmallFont(),
+            ),
+            Text(
+              context.l10n.searchFindCuratedVideoLists,
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            ),
           ],
         ),
       ),
@@ -170,7 +272,7 @@ class _ListsSkeletonLoader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       identifier: 'lists_loading_indicator',
-      label: 'Loading list results',
+      label: context.l10n.searchListsLoadingLabel,
       child: const Skeletonizer(
         effect: vineSkeletonEffect,
         child: Padding(

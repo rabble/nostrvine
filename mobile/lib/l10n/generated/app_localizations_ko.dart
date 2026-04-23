@@ -4574,6 +4574,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => '흥미로운 것을 발견해보세요';
 
   @override
+  String get searchListsSectionHeader => '목록';
+
+  @override
+  String get searchListsLoadingLabel => '목록 결과 불러오는 중';
+
+  @override
   String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';
 
   @override

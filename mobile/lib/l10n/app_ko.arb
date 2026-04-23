@@ -1683,6 +1683,8 @@
     "searchDiscoverSomethingInteresting": "흥미로운 것을 발견해보세요",
     "searchEnterQuery": "검색어를 입력하세요",
     "searchFindCuratedVideoLists": "큐레이션된 동영상 목록 찾기",
+  "searchListsSectionHeader": "목록",
+  "searchListsLoadingLabel": "목록 결과 불러오는 중",
     "searchForLists": "목록 검색",
     "searchSomethingWentWrong": "문제가 발생했어요",
     "searchTryAgain": "다시 시도",

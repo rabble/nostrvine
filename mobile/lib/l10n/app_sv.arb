@@ -2395,6 +2395,8 @@
     "searchDiscoverSomethingInteresting": "Upptäck något intressant",
     "searchEnterQuery": "Skriv en sökterm",
     "searchFindCuratedVideoLists": "Hitta kurerade videolistor",
+  "searchListsSectionHeader": "Listor",
+  "searchListsLoadingLabel": "Laddar listresultat",
     "searchForLists": "Sök efter listor",
     "searchSomethingWentWrong": "Något gick fel",
     "searchTryAgain": "Försök igen",

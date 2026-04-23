@@ -2395,6 +2395,8 @@
     "searchDiscoverSomethingInteresting": "Odkryj coś ciekawego",
     "searchEnterQuery": "Wpisz zapytanie",
     "searchFindCuratedVideoLists": "Znajdź wyselekcjonowane listy filmów",
+  "searchListsSectionHeader": "Listy",
+  "searchListsLoadingLabel": "Ładowanie wyników list",
     "searchForLists": "Szukaj list",
     "searchSomethingWentWrong": "Coś poszło nie tak",
     "searchTryAgain": "Spróbuj ponownie",

@@ -4552,6 +4552,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => '面白いものを見つけよう';
 
   @override
+  String get searchListsSectionHeader => 'リスト';
+
+  @override
+  String get searchListsLoadingLabel => 'リスト結果を読み込み中';
+
+  @override
   String get cameraAgeRestriction => 'コンテンツを作るには16歳以上である必要があるよ';
 
   @override

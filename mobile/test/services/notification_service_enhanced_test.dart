@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 
-@Tags(['skip_very_good_optimization'])
 void main() {
   group('NotificationServiceEnhanced Race Condition Tests', () {
     late NotificationServiceEnhanced service;

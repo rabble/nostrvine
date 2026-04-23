@@ -4712,6 +4712,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'اكتشف شيئًا مثيرًا للاهتمام';
 
   @override
+  String get searchListsSectionHeader => 'القوائم';
+
+  @override
+  String get searchListsLoadingLabel => 'جارٍ تحميل نتائج القوائم';
+
+  @override
   String get cameraAgeRestriction =>
       'يجب أن يكون عمرك 16 عامًا أو أكثر لإنشاء محتوى';
 

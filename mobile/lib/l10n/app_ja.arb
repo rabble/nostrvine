@@ -2394,6 +2394,8 @@
     "searchDiscoverSomethingInteresting": "面白いものを見つけよう",
     "searchEnterQuery": "検索キーワードを入力",
     "searchFindCuratedVideoLists": "キュレーションされた動画リストを探そう",
+  "searchListsSectionHeader": "リスト",
+  "searchListsLoadingLabel": "リスト結果を読み込み中",
     "searchForLists": "リストを検索",
     "searchSomethingWentWrong": "なんかうまくいかなかった",
     "searchTryAgain": "もう一回",

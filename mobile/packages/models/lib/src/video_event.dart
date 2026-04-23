@@ -1095,33 +1095,6 @@ class VideoEvent {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
-  /// Get relative time string (e.g., "2 hours ago")
-  String get relativeTime {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp.toLocal());
-
-    if (difference.inMinutes < 1) {
-      return 'now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inDays < 60) {
-      // Less than ~2 months: show weeks
-      return '${difference.inDays ~/ 7}w ago';
-    } else if (difference.inDays < 365) {
-      // Less than 1 year: show months
-      final months = difference.inDays ~/ 30;
-      return '${months}mo ago';
-    } else {
-      // 1 year or more: show years
-      final years = difference.inDays ~/ 365;
-      return '${years}y ago';
-    }
-  }
-
   /// Get pubkey for display
   String get displayPubkey {
     return pubkey;
@@ -1305,7 +1278,7 @@ class VideoEvent {
       'pubkey: $displayPubkey, '
       'title: $title, '
       'duration: $formattedDuration, '
-      'time: $relativeTime'
+      'createdAt: $createdAt'
       ')';
 
   /// Serialize VideoEvent to JSON map (auto-generated)

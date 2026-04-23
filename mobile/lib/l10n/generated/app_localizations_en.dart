@@ -4764,6 +4764,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Discover something interesting';
 
   @override
+  String get searchListsSectionHeader => 'Lists';
+
+  @override
+  String get searchListsLoadingLabel => 'Loading list results';
+
+  @override
   String get cameraAgeRestriction =>
       'You must be 16 or older to create content';
 

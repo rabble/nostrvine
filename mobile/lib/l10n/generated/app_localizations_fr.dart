@@ -4825,6 +4825,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Découvre quelque chose d\'intéressant';
 
   @override
+  String get searchListsSectionHeader => 'Listes';
+
+  @override
+  String get searchListsLoadingLabel => 'Chargement des résultats de listes';
+
+  @override
   String get cameraAgeRestriction =>
       'Tu dois avoir 16 ans ou plus pour créer du contenu';
 
