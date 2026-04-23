@@ -1734,7 +1734,7 @@ class VideoOverlayActionColumn extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
-      spacing: 4,
+      spacing: 24,
       children: [
         if (!isFullscreen && !isPreviewMode) _VideoEditButton(video: video),
         if (showAutoButton && onAutoPressed != null)

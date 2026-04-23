@@ -61,10 +61,17 @@ void main() {
         expect(divineIcon.color, equals(Colors.red));
       });
 
-      testWidgets('$IconButton', (tester) async {
+      testWidgets('$GestureDetector fills the 48x48 tap target', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildSubject());
 
-        expect(find.byType(IconButton), findsOneWidget);
+        // One GestureDetector wraps the whole tap target.
+        expect(find.byType(GestureDetector), findsOneWidget);
+
+        // Tap target is exactly 48x48 regardless of child content.
+        final size = tester.getSize(find.byType(GestureDetector));
+        expect(size, equals(const Size(48, 48)));
       });
     });
 
@@ -157,7 +164,7 @@ void main() {
           buildSubject(isLoading: true, onPressed: () => tapped = true),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         expect(tapped, isFalse);
       });
     });
@@ -169,16 +176,34 @@ void main() {
           buildSubject(onPressed: () => tapped = true),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         expect(tapped, isTrue);
       });
 
       testWidgets('does not throw when onPressed is null', (tester) async {
         await tester.pumpWidget(buildSubject());
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         // No assertion needed — just verifying no exception is thrown
       });
+
+      testWidgets(
+        'captures taps on the caption area, not just the icon',
+        (tester) async {
+          var tapped = false;
+          await tester.pumpWidget(
+            buildSubject(
+              labelWhenZero: 'Like',
+              onPressed: () => tapped = true,
+            ),
+          );
+
+          // The caption sits in the lower half of the 48x48 box. Tapping
+          // on it should still fire the action.
+          await tester.tap(find.text('Like'));
+          expect(tapped, isTrue);
+        },
+      );
     });
 
     group('accessibility', () {
