@@ -31,8 +31,6 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
-const _userAvatarHeroTag = 'user_profile_avatar';
-
 /// Profile header widget displaying avatar, stats, name, and bio.
 class ProfileHeaderWidget extends ConsumerStatefulWidget {
   const ProfileHeaderWidget({
@@ -766,7 +764,7 @@ class _ProfileAvatarWithColor extends StatelessWidget {
     final avatar = hasAvatar
         ? GestureDetector(
             onTap: () => _showAvatarLightbox(context, imageUrl),
-            child: Hero(tag: _userAvatarHeroTag, child: avatarWidget),
+            child: avatarWidget,
           )
         : avatarWidget;
 
@@ -921,13 +919,10 @@ class _AvatarLightbox extends StatelessWidget {
               child: Stack(
                 children: [
                   Center(
-                    child: Hero(
-                      tag: _userAvatarHeroTag,
-                      child: UserAvatar(
-                        imageUrl: imageUrl,
-                        size: 288,
-                        cornerRadius: 112,
-                      ),
+                    child: UserAvatar(
+                      imageUrl: imageUrl,
+                      size: 288,
+                      cornerRadius: 112,
                     ),
                   ),
                   Positioned(
