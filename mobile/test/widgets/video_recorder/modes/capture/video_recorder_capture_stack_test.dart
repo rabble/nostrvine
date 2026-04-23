@@ -172,8 +172,9 @@ void main() {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        final stackRect =
-            tester.getRect(find.byType(VideoRecorderCaptureStack));
+        final stackRect = tester.getRect(
+          find.byType(VideoRecorderCaptureStack),
+        );
         final recordButtonRect = tester.getRect(find.byType(RecordButton));
 
         expect(
