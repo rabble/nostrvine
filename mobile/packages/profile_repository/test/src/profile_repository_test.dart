@@ -1196,6 +1196,7 @@ void main() {
               'about': 'New bio',
               'nip05': '_@newuser.divine.video',
               'picture': 'https://example.com/new.png',
+              'banner': null,
             },
           ),
         ).called(1);
@@ -1212,7 +1213,10 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
+              'about': null,
               'nip05': '_@alice.divine.video',
+              'picture': null,
+              'banner': null,
             },
           ),
         ).called(1);
@@ -1228,7 +1232,10 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
+              'about': null,
               'nip05': '_@alice.divine.video',
+              'picture': null,
+              'banner': null,
             },
           ),
         ).called(1);
@@ -1248,7 +1255,10 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
+              'about': null,
               'nip05': 'alice@example.com',
+              'picture': null,
+              'banner': null,
             },
           ),
         ).called(1);
@@ -1269,20 +1279,43 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
+              'about': null,
               'nip05': 'alice@example.com',
+              'picture': null,
+              'banner': null,
             },
           ),
         ).called(1);
       });
 
-      test('omits null optional fields', () async {
+      test(
+        'sends explicit nulls for unset about/picture/banner '
+        'so relays clear them',
+        () async {
+          await profileRepository.saveProfileEvent(displayName: 'Only Name');
+
+          verify(
+            () => mockNostrClient.sendProfile(
+              profileContent: {
+                'display_name': 'Only Name',
+                'about': null,
+                'picture': null,
+                'banner': null,
+              },
+            ),
+          ).called(1);
+        },
+      );
+
+      test('omits nip05 when neither username nor nip05 is provided', () async {
         await profileRepository.saveProfileEvent(displayName: 'Only Name');
 
-        verify(
+        final captured = verify(
           () => mockNostrClient.sendProfile(
-            profileContent: {'display_name': 'Only Name'},
+            profileContent: captureAny(named: 'profileContent'),
           ),
-        ).called(1);
+        ).captured.single as Map<String, dynamic>;
+        expect(captured.containsKey('nip05'), isFalse);
       });
 
       test('includes banner when provided', () async {
@@ -1297,7 +1330,12 @@ void main() {
 
         verify(
           () => mockNostrClient.sendProfile(
-            profileContent: {'display_name': 'Test User', 'banner': '0x33ccbf'},
+            profileContent: {
+              'display_name': 'Test User',
+              'about': null,
+              'picture': null,
+              'banner': '0x33ccbf',
+            },
           ),
         ).called(1);
       });
@@ -1340,6 +1378,9 @@ void main() {
                 'website': 'https://old.com',
                 'lud16': 'user@wallet.com',
                 'custom_field': 'preserved',
+                'about': null,
+                'picture': null,
+                'banner': null,
               },
             ),
           ).called(1);
@@ -1365,17 +1406,27 @@ void main() {
                 'display_name': 'New Name',
                 'nip05': '_@newuser.divine.video',
                 'about': 'New bio',
+                'picture': null,
+                'banner': null,
               },
             ),
           ).called(1);
         });
 
         test(
-          'preserves rawData fields when optional params are null',
+          'clears about/picture/banner from rawData '
+          'when null is explicitly passed',
           () async {
+            // The editor surface fills its form fields from the current
+            // profile and then sends them as-is. A user clearing their bio,
+            // avatar, or banner shows up here as `about: null` /
+            // `picture: null` / `banner: null`. The repository must overwrite
+            // the rawData spread so the cleared values reach the relays.
             final currentProfile = await createCurrentProfile({
               'display_name': 'Old Name',
-              'about': 'Preserved bio',
+              'about': 'Old bio',
+              'picture': 'https://example.com/old.png',
+              'banner': '0xff0000',
             });
 
             await profileRepository.saveProfileEvent(
@@ -1387,7 +1438,9 @@ void main() {
               () => mockNostrClient.sendProfile(
                 profileContent: {
                   'display_name': 'New Name',
-                  'about': 'Preserved bio',
+                  'about': null,
+                  'picture': null,
+                  'banner': null,
                 },
               ),
             ).called(1);
@@ -1412,6 +1465,9 @@ void main() {
                 profileContent: {
                   'display_name': 'New Name',
                   'nip05': 'alice@example.com',
+                  'about': null,
+                  'picture': null,
+                  'banner': null,
                 },
               ),
             ).called(1);
@@ -1427,13 +1483,19 @@ void main() {
 
           await profileRepository.saveProfileEvent(
             displayName: 'New Name',
+            about: 'Bio',
             clearNip05: true,
             currentProfile: currentProfile,
           );
 
           verify(
             () => mockNostrClient.sendProfile(
-              profileContent: {'display_name': 'New Name', 'about': 'Bio'},
+              profileContent: {
+                'display_name': 'New Name',
+                'about': 'Bio',
+                'picture': null,
+                'banner': null,
+              },
             ),
           ).called(1);
         });
@@ -1465,6 +1527,9 @@ void main() {
                 profileContent: {
                   'display_name': 'New Name',
                   'nip05': 'new@example.com',
+                  'about': null,
+                  'picture': null,
+                  'banner': null,
                 },
               ),
             ).called(1);
