@@ -45,7 +45,7 @@ void main() {
   });
 
   group(MoreActionButton, () {
-    testWidgets('renders three-dots icon button', (tester) async {
+    testWidgets('renders caret-down icon button', (tester) async {
       await tester.pumpWidget(
         testMaterialApp(
           additionalOverrides: [
@@ -64,9 +64,9 @@ void main() {
           .widgetList<DivineIcon>(find.byType(DivineIcon))
           .toList();
       expect(
-        divineIcons.any((icon) => icon.icon == DivineIconName.dotsThree),
+        divineIcons.any((icon) => icon.icon == DivineIconName.caretDown),
         isTrue,
-        reason: 'Should render dotsThree DivineIcon',
+        reason: 'Should render caretDown DivineIcon',
       );
     });
 
@@ -107,7 +107,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(GestureDetector).first);
+      await tester.tap(find.byType(IconButton));
       await tester.pump();
 
       expect(interacted, isTrue);
