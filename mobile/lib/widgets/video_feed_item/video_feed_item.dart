@@ -1771,13 +1771,7 @@ class VideoOverlayActionColumn extends ConsumerWidget {
           onInteracted: onInteracted,
         ),
         ShareActionButton(video: video, onInteracted: onInteracted),
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: MoreActionButton(
-            video: video,
-            onInteracted: onInteracted,
-          ),
-        ),
+        MoreActionButton(video: video, onInteracted: onInteracted),
       ],
     );
   }
