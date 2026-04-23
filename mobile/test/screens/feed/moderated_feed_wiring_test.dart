@@ -148,7 +148,7 @@ void main() {
 
         // Report forbidden for the active video.
         cubit.report(_testVideoId, PlaybackStatus.forbidden);
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         // Moderated overlay takes over — the normal chrome (author
         // description, action buttons) is gone.

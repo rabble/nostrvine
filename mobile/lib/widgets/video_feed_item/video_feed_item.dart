@@ -96,7 +96,6 @@ class VideoFeedItem extends ConsumerStatefulWidget {
     this.isFullscreen = false,
     this.listSources,
     this.showListAttribution = false,
-    this.hideFollowButtonIfFollowing = false,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
   });
@@ -126,11 +125,6 @@ class VideoFeedItem extends ConsumerStatefulWidget {
 
   /// Whether to show the list attribution chip below the author info.
   final bool showListAttribution;
-
-  /// When true, hides the follow button if already following the author.
-  /// Useful for Home feed (all videos are from followed users) and
-  /// Profile views of followed users.
-  final bool hideFollowButtonIfFollowing;
 
   /// Traffic source for view event analytics (home, discovery, profile, etc.)
   final ViewTrafficSource trafficSource;
@@ -1235,7 +1229,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                 isFullscreen: widget.isFullscreen,
                 listSources: widget.listSources,
                 showListAttribution: widget.showListAttribution,
-                hideFollowButtonIfFollowing: widget.hideFollowButtonIfFollowing,
               ),
             ),
 
@@ -1330,7 +1323,6 @@ class VideoOverlayActions extends ConsumerWidget {
     this.listSources,
     this.showListAttribution = false,
     this.isPreviewMode = false,
-    this.hideFollowButtonIfFollowing = false,
     this.topOffset = 8.0,
     this.overlayOpacity = 1.0,
     this.showAutoButton = false,
@@ -1357,9 +1349,6 @@ class VideoOverlayActions extends ConsumerWidget {
 
   /// Whether to show the list attribution chip below the author info.
   final bool showListAttribution;
-
-  /// When true, hides the follow button if already following the author.
-  final bool hideFollowButtonIfFollowing;
 
   /// Opacity for the entire overlay, driven by scroll position.
   ///
@@ -1519,8 +1508,6 @@ class VideoOverlayActions extends ConsumerWidget {
                                     top: 31,
                                     child: VideoFollowButton(
                                       pubkey: video.pubkey,
-                                      hideIfFollowing:
-                                          hideFollowButtonIfFollowing,
                                     ),
                                   ),
                                 ],
@@ -1875,12 +1862,10 @@ class VideoAuthorRow extends ConsumerWidget {
     required this.video,
     super.key,
     this.isFullscreen = false,
-    this.hideFollowButtonIfFollowing = false,
   });
 
   final VideoEvent video;
   final bool isFullscreen;
-  final bool hideFollowButtonIfFollowing;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1931,10 +1916,7 @@ class VideoAuthorRow extends ConsumerWidget {
         ),
         // Follow button (handles own video check internally)
         const SizedBox(width: 8),
-        VideoFollowButton(
-          pubkey: video.pubkey,
-          hideIfFollowing: hideFollowButtonIfFollowing,
-        ),
+        VideoFollowButton(pubkey: video.pubkey),
       ],
     );
   }

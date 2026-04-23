@@ -443,7 +443,7 @@ class _AuthorAvatar extends StatelessWidget {
           PositionedDirectional(
             start: 31,
             top: 31,
-            child: VideoFollowButton(pubkey: pubkey, hideIfFollowing: true),
+            child: VideoFollowButton(pubkey: pubkey),
           ),
         ],
       ),
