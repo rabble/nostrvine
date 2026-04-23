@@ -1714,7 +1714,6 @@ class VideoOverlayActions extends ConsumerWidget {
       builder: (context) => _ContentWarningDetailsSheet(labels: labels),
     );
   }
-
 }
 
 class VideoOverlayActionColumn extends ConsumerWidget {
@@ -1749,7 +1748,9 @@ class VideoOverlayActionColumn extends ConsumerWidget {
     final editorEnabled = ref
         .watch(featureFlagServiceProvider)
         .isEnabled(FeatureFlag.enableVideoEditorV1);
-    final currentUserPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+    final currentUserPubkey = ref
+        .watch(authServiceProvider)
+        .currentPublicKeyHex;
     final isOwnVideo =
         currentUserPubkey != null && currentUserPubkey == video.pubkey;
     final showEditButton =

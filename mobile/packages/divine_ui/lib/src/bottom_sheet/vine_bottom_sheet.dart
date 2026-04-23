@@ -167,6 +167,13 @@ class VineBottomSheet extends StatelessWidget {
       'snapSizes requires snap: true',
     );
 
+    // When `tapOutsideToDismiss` is explicitly disabled, also disable
+    // Flutter's modal barrier dismissal so the two outside-tap mechanisms
+    // stay consistent. Otherwise a caller that set `tapOutsideToDismiss:
+    // false` would still see the sheet dismissed by barrier taps above the
+    // DraggableScrollableSheet's content area.
+    final effectiveIsDismissible = isDismissible && tapOutsideToDismiss;
+
     if (scrollable) {
       // Draggable/scrollable mode
       return showModalBottomSheet<T>(
@@ -174,7 +181,7 @@ class VineBottomSheet extends StatelessWidget {
         isScrollControlled: true,
         useSafeArea: true,
         useRootNavigator: useRootNavigator,
-        isDismissible: isDismissible,
+        isDismissible: effectiveIsDismissible,
         enableDrag: enableDrag,
         backgroundColor: VineTheme.transparent,
         elevation: 0,
@@ -251,7 +258,7 @@ class VineBottomSheet extends StatelessWidget {
         isScrollControlled: isScrollControlled ?? expanded,
         useSafeArea: true,
         useRootNavigator: useRootNavigator,
-        isDismissible: isDismissible,
+        isDismissible: effectiveIsDismissible,
         enableDrag: enableDrag,
         backgroundColor: VineTheme.transparent,
         elevation: 0,

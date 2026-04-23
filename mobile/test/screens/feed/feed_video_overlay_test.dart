@@ -210,8 +210,8 @@ void main() {
           expect(find.text('View Anyway'), findsNothing);
           expect(find.text('Hide all content like this'), findsNothing);
           // ProofMode/Vine labels are no longer shown on the overlay; they
-// live in the Metadata expanded sheet.
-expect(find.byType(ProofModeBadgeRow), findsNothing);
+          // live in the Metadata expanded sheet.
+          expect(find.byType(ProofModeBadgeRow), findsNothing);
         },
       );
 
@@ -276,8 +276,8 @@ expect(find.byType(ProofModeBadgeRow), findsNothing);
         await tester.pump();
 
         // ProofMode/Vine labels are no longer shown on the overlay; they
-// live in the Metadata expanded sheet.
-expect(find.byType(ProofModeBadgeRow), findsNothing);
+        // live in the Metadata expanded sheet.
+        expect(find.byType(ProofModeBadgeRow), findsNothing);
       });
 
       testWidgets(

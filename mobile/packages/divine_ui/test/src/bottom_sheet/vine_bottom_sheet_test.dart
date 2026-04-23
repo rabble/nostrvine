@@ -513,7 +513,7 @@ void main() {
       });
 
       testWidgets(
-        'contentWrapper is applied around the sheet and is inside the modal route',
+        'contentWrapper is applied around the sheet inside the modal route',
         (tester) async {
           await tester.pumpWidget(
             MaterialApp(
