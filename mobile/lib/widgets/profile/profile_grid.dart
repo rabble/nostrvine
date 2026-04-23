@@ -664,28 +664,3 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) =>
       topInset != oldDelegate.topInset || _tabBar != oldDelegate._tabBar;
 }
-
-/// Fixed-height pinned header used as a top spacer in the profile
-/// [NestedScrollView].
-class _FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
-  _FixedHeightHeaderDelegate({required this.height});
-
-  final double height;
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) => const SizedBox.shrink();
-
-  @override
-  bool shouldRebuild(_FixedHeightHeaderDelegate oldDelegate) =>
-      height != oldDelegate.height;
-}
