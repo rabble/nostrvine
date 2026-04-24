@@ -9,12 +9,14 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:followed_hashtags_repository/followed_hashtags_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -24,6 +26,9 @@ class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockCuratedListRepository extends Mock
     implements CuratedListRepository {}
+
+class _MockFollowedHashtagsRepository extends Mock
+    implements FollowedHashtagsRepository {}
 
 class _MockFeedPerformanceTracker extends Mock
     implements FeedPerformanceTracker {}
@@ -199,6 +204,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: authors,
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -338,6 +344,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -395,6 +402,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -425,6 +433,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -452,6 +461,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -481,6 +491,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -504,6 +515,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: [],
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: 'user-pubkey',
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -638,6 +650,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -668,6 +681,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -734,6 +748,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -769,6 +784,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -810,6 +826,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -841,6 +858,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -869,6 +887,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -909,6 +928,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -947,6 +967,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -975,6 +996,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -994,6 +1016,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1028,6 +1051,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1089,6 +1113,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1130,6 +1155,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1175,6 +1201,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1211,6 +1238,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1269,6 +1297,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1306,6 +1335,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1329,6 +1359,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1352,6 +1383,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1389,6 +1421,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1411,6 +1444,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1437,12 +1471,257 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
           ).called(2);
+        },
+      );
+    });
+
+    group('VideoFeedFollowedHashtagsChanged', () {
+      late _MockFollowedHashtagsRepository mockHashtagRepo;
+      late BehaviorSubject<List<String>> hashtagSubject;
+
+      setUp(() {
+        mockHashtagRepo = _MockFollowedHashtagsRepository();
+        hashtagSubject = BehaviorSubject<List<String>>.seeded(
+          const ['seed-tag'],
+          sync: true,
+        );
+        when(
+          () => mockHashtagRepo.followingFeedHashtagLabelsStream,
+        ).thenAnswer((_) => hashtagSubject.stream);
+        when(() => mockHashtagRepo.followingFeedHashtagLabels).thenAnswer(
+          (_) => List<String>.unmodifiable(hashtagSubject.value),
+        );
+      });
+
+      tearDown(() async {
+        await hashtagSubject.close();
+      });
+
+      VideoFeedBloc buildBloc() => VideoFeedBloc(
+        videosRepository: mockVideosRepository,
+        followRepository: mockFollowRepository,
+        curatedListRepository: mockCuratedListRepository,
+        followedHashtagsRepository: mockHashtagRepo,
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'silently refreshes following feed when followed hashtags change',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['author']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+        },
+        build: buildBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.following,
+          videos: createTestVideos(3),
+        ),
+        act: (bloc) => bloc.add(
+          const VideoFeedFollowedHashtagsChanged(['seed-tag', 'new-tag']),
+        ),
+        expect: () => [
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize)
+              .having((s) => s.mode, 'mode', FeedMode.following),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'hashtag stream emission refreshes feed after feed started',
+        setUp: () {
+          var loadCount = 0;
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['author']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async {
+            loadCount++;
+            return HomeFeedResult(
+              videos: createTestVideos(pageSize, idPrefix: 'h$loadCount'),
+            );
+          });
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
+          await Future<void>.delayed(Duration.zero);
+          hashtagSubject.add(['seed-tag', 'new-tag']);
+        },
+        skip: 2,
+        expect: () => [
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize)
+              .having((s) => s.videos.first.id, 'first id', startsWith('h2-')),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when mode is not following',
+        setUp: () {
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(videos: createTestVideos(pageSize)),
+          );
+        },
+        build: buildBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.latest,
+          videos: createTestVideos(5),
+        ),
+        act: (bloc) => hashtagSubject.add(['x']),
+        expect: () => <VideoFeedState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when feed is still loading',
+        build: buildBloc,
+        seed: () => const VideoFeedState(mode: FeedMode.following),
+        act: (bloc) => hashtagSubject.add(['x']),
+        expect: () => <VideoFeedState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'shows noFollowedUsers when follows and hashtags are empty after '
+        'refresh',
+        setUp: () {
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((invocation) async {
+            final labels =
+                invocation.namedArguments[#followedHashtagLabels]
+                    as List<String>;
+            if (labels.isEmpty) {
+              return const HomeFeedResult(videos: []);
+            }
+            return HomeFeedResult(videos: createTestVideos(pageSize));
+          });
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
+          await Future<void>.delayed(Duration.zero);
+          hashtagSubject.add([]);
+        },
+        skip: 2,
+        expect: () => [
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos, 'videos', isEmpty)
+              .having((s) => s.error, 'error', isNull),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos, 'videos', isEmpty)
+              .having(
+                (s) => s.error,
+                'error',
+                VideoFeedError.noFollowedUsers,
+              ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'skips initial hashtag stream replay to avoid redundant API call',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['author']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+        },
+        build: buildBloc,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
+          await Future<void>.delayed(Duration.zero);
+        },
+        skip: 2,
+        expect: () => <VideoFeedState>[],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).called(1);
         },
       );
     });
@@ -1460,6 +1739,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1515,6 +1795,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1555,6 +1836,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1604,6 +1886,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1684,6 +1967,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1708,6 +1992,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1734,6 +2019,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1849,6 +2135,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1892,6 +2179,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1930,6 +2218,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1964,6 +2253,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -1997,6 +2287,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -2091,6 +2382,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -2129,6 +2421,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -2192,6 +2485,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -2284,6 +2578,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -2348,6 +2643,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -2443,6 +2739,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),

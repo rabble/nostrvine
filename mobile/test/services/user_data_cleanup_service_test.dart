@@ -2,6 +2,7 @@
 // ABOUTME: Validates that user-specific data is cleared when switching accounts
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:followed_hashtags_repository/followed_hashtags_repository.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -300,6 +301,11 @@ void main() {
         expect(keys, contains('curated_lists'));
         expect(keys, contains('subscribed_list_ids'));
         expect(keys, contains('user_lists'));
+        expect(keys, contains(FollowedHashtagsRepository.preferencesKey));
+        expect(
+          keys,
+          contains(FollowedHashtagsRepository.followingFeedPreferencesKey),
+        );
 
         // Bookmark-related
         expect(keys, contains('bookmark_sets'));

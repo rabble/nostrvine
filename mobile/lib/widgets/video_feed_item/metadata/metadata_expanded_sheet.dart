@@ -166,6 +166,10 @@ class _TitleSection extends StatelessWidget {
                       style: VineTheme.bodyLargeFont(
                         color: VineTheme.onSurfaceVariant,
                       ),
+                      showHashtagMoreButton: true,
+                      hashtagMoreLabelStyle: VineTheme.titleMediumFont(
+                        color: VineTheme.onSurface,
+                      ),
                     ),
                 ],
               ),

@@ -1030,6 +1030,126 @@ abstract class AppLocalizations {
   /// **'Error loading liked videos'**
   String get profileErrorLoadingLiked;
 
+  /// No description provided for @profileNoFollowedTagsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No tags saved yet'**
+  String get profileNoFollowedTagsTitle;
+
+  /// No description provided for @profileNoFollowedTagsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a hashtag from its page to jump back here anytime'**
+  String get profileNoFollowedTagsSubtitle;
+
+  /// No description provided for @profileTabSavedSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get profileTabSavedSemantic;
+
+  /// No description provided for @profileSavedFilterVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos'**
+  String get profileSavedFilterVideos;
+
+  /// No description provided for @profileSavedFilterTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get profileSavedFilterTags;
+
+  /// No description provided for @hashtagFavoriteSaveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save hashtag'**
+  String get hashtagFavoriteSaveTooltip;
+
+  /// No description provided for @hashtagFavoriteRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from saved hashtags'**
+  String get hashtagFavoriteRemoveTooltip;
+
+  /// No description provided for @hashtagOptionsMoreTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hashtag options'**
+  String get hashtagOptionsMoreTooltip;
+
+  /// No description provided for @hashtagMenuVideoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 video} other{{count} videos}}'**
+  String hashtagMenuVideoCount(int count);
+
+  /// No description provided for @hashtagOptionSaveToProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to profile'**
+  String get hashtagOptionSaveToProfile;
+
+  /// No description provided for @hashtagOptionRemoveFromProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from saved tags'**
+  String get hashtagOptionRemoveFromProfile;
+
+  /// No description provided for @hashtagSavedToProfileSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to your profile'**
+  String get hashtagSavedToProfileSnackbar;
+
+  /// No description provided for @hashtagRemovedFromProfileSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from saved tags'**
+  String get hashtagRemovedFromProfileSnackbar;
+
+  /// No description provided for @hashtagOptionAddToFollowingFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Following feed'**
+  String get hashtagOptionAddToFollowingFeed;
+
+  /// No description provided for @hashtagOptionRemoveFromFollowingFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from Following feed'**
+  String get hashtagOptionRemoveFromFollowingFeed;
+
+  /// No description provided for @hashtagAddedToFollowingFeedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to your Following feed'**
+  String get hashtagAddedToFollowingFeedSnackbar;
+
+  /// No description provided for @hashtagRemovedFromFollowingFeedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from your Following feed'**
+  String get hashtagRemovedFromFollowingFeedSnackbar;
+
+  /// No description provided for @profileFollowedTagRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this tag?'**
+  String get profileFollowedTagRemoveTitle;
+
+  /// No description provided for @profileFollowedTagRemoveMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {displayTag} from your saved tags? You can add it again anytime from that hashtag page.'**
+  String profileFollowedTagRemoveMessage(String displayTag);
+
+  /// No description provided for @profileFollowedTagRemoveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get profileFollowedTagRemoveConfirm;
+
   /// No description provided for @profileNoRepostsTitle.
   ///
   /// In en, this message translates to:
@@ -1905,6 +2025,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Categories'**
   String get exploreTabCategories;
+
+  /// No description provided for @exploreTabTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get exploreTabTags;
+
+  /// No description provided for @exploreTagsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tags...'**
+  String get exploreTagsSearchHint;
+
+  /// No description provided for @exploreTagsEmptyFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No tags match your search'**
+  String get exploreTagsEmptyFilter;
+
+  /// No description provided for @exploreTagsTrackedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on your profile'**
+  String get exploreTagsTrackedTooltip;
+
+  /// No description provided for @explorePopularTagsSearchCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Search all tags'**
+  String get explorePopularTagsSearchCta;
 
   /// No description provided for @exploreTabForYou.
   ///
@@ -10729,6 +10879,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading list results'**
   String get searchListsLoadingLabel;
+
+  /// Search results filter label: show previews for every category.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get searchResultsCategoryAll;
+
+  /// Search results filter and section title for user profiles.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get searchResultsCategoryPeople;
+
+  /// Search results filter and section title for curated lists.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get searchResultsCategoryLists;
+
+  /// Search results filter and section title for hashtags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get searchResultsCategoryTags;
+
+  /// Search results filter and section title for videos.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos'**
+  String get searchResultsCategoryVideos;
+
+  /// Accessibility label for the search category filter control.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter: {category}'**
+  String searchResultsFilterSemantic(String category);
+
+  /// Empty state when a search subsection has no matches for the current query.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found for \"{query}\"'**
+  String searchResultsNoMatchesForQuery(String query);
+
+  /// Hint below the empty search subsection state.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different search term'**
+  String get searchResultsTryDifferentTerm;
+
+  /// Accessibility label for the tags search results skeleton loader.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading tag results'**
+  String get searchResultsTagsLoadingSemantic;
+
+  /// Shown while the hashtag video grid is loading (no leading # in the placeholder).
+  ///
+  /// In en, this message translates to:
+  /// **'Loading videos about #{hashtag}...'**
+  String hashtagFeedLoadingMessage(String hashtag);
+
+  /// Secondary line under the hashtag feed loading message.
+  ///
+  /// In en, this message translates to:
+  /// **'This may take a few moments'**
+  String get hashtagFeedLoadingSubtitle;
+
+  /// Empty state title on the hashtag video screen.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos found for #{hashtag}'**
+  String hashtagFeedEmptyTitle(String hashtag);
+
+  /// Empty state subtitle on the hashtag video screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Be the first to post a video with this hashtag!'**
+  String get hashtagFeedEmptySubtitle;
 
   /// No description provided for @cameraAgeRestriction.
   ///

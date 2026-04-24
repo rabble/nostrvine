@@ -121,6 +121,9 @@ class VideosRepository {
   /// - [videoRefs]: Map of listId → video references from subscribed
   ///   curated lists. References can be 64-char hex event IDs or
   ///   addressable coordinates (`kind:pubkey:d-tag`). Defaults to empty.
+  /// - [followedHashtagLabels]: Canonical hashtag labels (lowercase, no `#`)
+  ///   to merge in via [getVideosByHashtag] (Funnelcake). Empty by default.
+  ///   Per-tag failures yield an empty list for that tag only.
   /// - [userPubkey]: The current user's pubkey for Funnelcake API lookups.
   ///   Required for API-first path; when null, goes directly to Nostr.
   /// - [limit]: Maximum number of videos to return (default 5)
@@ -129,49 +132,201 @@ class VideosRepository {
   ///
   /// Returns a [HomeFeedResult] containing videos sorted by creation time
   /// (newest first) plus attribution metadata mapping videos to their
-  /// source curated lists. Returns empty result if both [authors] is empty
-  /// and [userPubkey] is null. When [userPubkey] is provided, the Funnelcake
-  /// API is attempted even with an empty [authors] list (fast-path startup).
+  /// source curated lists. Returns empty result if [authors] is empty,
+  /// [userPubkey] is null, and [followedHashtagLabels] is empty. When
+  /// [userPubkey] is provided, the Funnelcake API is attempted even with an
+  /// empty [authors] list (fast-path startup). Non-empty
+  /// [followedHashtagLabels] enables hashtag-only pages when the user has no
+  /// follows and no pubkey (via Funnelcake [getVideosByHashtag]).
   Future<HomeFeedResult> getHomeFeedVideos({
     required List<String> authors,
     Map<String, List<String>> videoRefs = const {},
+    List<String> followedHashtagLabels = const [],
     String? userPubkey,
     int limit = _defaultLimit,
     int? until,
     bool skipCache = false,
   }) async {
-    if (authors.isEmpty && userPubkey == null) {
+    final hashtagLabels = _dedupeHashtagLabelsForHome(followedHashtagLabels);
+    final cacheKey = _homeFeedInMemoryCacheKey(hashtagLabels);
+
+    if (authors.isEmpty && userPubkey == null && hashtagLabels.isEmpty) {
       return const HomeFeedResult(videos: []);
     }
 
     // Return in-memory cached result when available (initial page only).
     if (!skipCache && until == null) {
-      final cached = _inMemoryFeedCache?.get('home');
+      final cached = _inMemoryFeedCache?.get(cacheKey);
       if (cached != null) return cached;
     }
 
-    // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
-    final (:videos, :rawBody) = await _fetchFollowingVideos(
+    // 1. Following + followed hashtags in parallel (Funnelcake / Nostr).
+    final followingFuture = _fetchFollowingVideos(
       authors: authors,
       userPubkey: userPubkey,
       limit: limit,
       until: until,
     );
+    final hashtagFuture = hashtagLabels.isEmpty
+        ? Future.value((
+            videos: <VideoEvent>[],
+            videoHashtagSources: <String, Set<String>>{},
+          ))
+        : _fetchFollowedHashtagVideosForHome(
+            hashtagLabels: hashtagLabels,
+            limit: limit,
+            until: until,
+          );
 
-    // 2. If no list refs, return following-only result
+    final followingFetched = await followingFuture;
+    final videos = followingFetched.videos;
+    final rawBody = followingFetched.rawBody;
+
+    final hashtagFetched = await hashtagFuture;
+    final hashtagVideos = hashtagFetched.videos;
+    final videoHashtagSources = hashtagFetched.videoHashtagSources;
+
+    final mergedFollowing = _mergeVideoEventsDedupedNewestFirst([
+      ...videos,
+      ...hashtagVideos,
+    ]);
+    final canonicalHashtagSources = _canonicalizeVideoHashtagKeys(
+      mergedFollowing,
+      videoHashtagSources,
+    );
+
+    // 2. If no list refs, return following (+ hashtags) result
     if (videoRefs.isEmpty) {
-      final result = HomeFeedResult(videos: videos, rawResponseBody: rawBody);
-      if (until == null) _inMemoryFeedCache?.set('home', result);
+      final result = HomeFeedResult(
+        videos: mergedFollowing,
+        videoHashtagSources: canonicalHashtagSources,
+        rawResponseBody: rawBody,
+      );
+      if (until == null) _inMemoryFeedCache?.set(cacheKey, result);
       return result;
     }
 
-    // 3. Merge list videos with following videos
+    // 3. Merge list videos with following (+ hashtags)
     final result = await _mergeListVideos(
-      followingVideos: videos,
+      followingVideos: mergedFollowing,
       videoRefs: videoRefs,
+      videoHashtagSources: canonicalHashtagSources,
     );
-    if (until == null) _inMemoryFeedCache?.set('home', result);
+    if (until == null) _inMemoryFeedCache?.set(cacheKey, result);
     return result;
+  }
+
+  /// In-memory cache key for the home / following feed so different followed
+  /// hashtag sets do not reuse each other's cached page.
+  String _homeFeedInMemoryCacheKey(List<String> hashtagLabels) {
+    if (hashtagLabels.isEmpty) return 'home';
+    final sorted = List<String>.from(hashtagLabels)..sort();
+    return 'home|${sorted.join('|')}';
+  }
+
+  /// Dedupes non-empty labels case-insensitively; preserves first-seen casing.
+  List<String> _dedupeHashtagLabelsForHome(List<String> labels) {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final raw in labels) {
+      final t = raw.trim();
+      if (t.isEmpty) continue;
+      if (seen.add(t.toLowerCase())) {
+        out.add(t);
+      }
+    }
+    return out;
+  }
+
+  /// Rewrites [sources] keys to match the canonical [VideoEvent.id] used in
+  /// [mergedVideos] after case-insensitive deduplication.
+  Map<String, Set<String>> _canonicalizeVideoHashtagKeys(
+    List<VideoEvent> mergedVideos,
+    Map<String, Set<String>> sources,
+  ) {
+    if (sources.isEmpty) return const {};
+    final lowerToId = <String, String>{};
+    for (final v in mergedVideos) {
+      lowerToId[v.id.toLowerCase()] = v.id;
+    }
+    final out = <String, Set<String>>{};
+    for (final e in sources.entries) {
+      final id = lowerToId[e.key.toLowerCase()];
+      if (id != null) {
+        out.putIfAbsent(id, () => <String>{}).addAll(e.value);
+      }
+    }
+    return out;
+  }
+
+  /// Merges [videos] by event id (case-insensitive), newest
+  /// [VideoEvent.createdAt] first.
+  List<VideoEvent> _mergeVideoEventsDedupedNewestFirst(
+    List<VideoEvent> videos,
+  ) {
+    final seen = <String>{};
+    final out = <VideoEvent>[];
+    for (final v in videos) {
+      if (seen.add(v.id.toLowerCase())) {
+        out.add(v);
+      }
+    }
+    out.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return out;
+  }
+
+  /// Fetches [getVideosByHashtag] per label in parallel; swallows per-tag
+  /// errors. Dedupes across tags and sorts by [VideoEvent.createdAt] desc.
+  ///
+  /// videoHashtagSources maps each video id to the tag label(s) whose
+  /// API response included that video.
+  Future<
+    ({List<VideoEvent> videos, Map<String, Set<String>> videoHashtagSources})
+  >
+  _fetchFollowedHashtagVideosForHome({
+    required List<String> hashtagLabels,
+    int limit = _defaultLimit,
+    int? until,
+  }) async {
+    final results = await Future.wait(
+      hashtagLabels.map((tag) async {
+        try {
+          return await getVideosByHashtag(
+            hashtag: tag,
+            limit: limit,
+            before: until,
+          );
+        } on Exception catch (e, stackTrace) {
+          developer.log(
+            'getVideosByHashtag failed for followed tag "$tag"',
+            name: 'VideosRepository',
+            error: e,
+            stackTrace: stackTrace,
+          );
+          return <VideoEvent>[];
+        }
+      }),
+    );
+
+    final videoHashtagSources = <String, Set<String>>{};
+    for (var i = 0; i < results.length; i++) {
+      final tag = hashtagLabels[i];
+      for (final v in results[i]) {
+        videoHashtagSources.putIfAbsent(v.id, () => <String>{}).add(tag);
+      }
+    }
+
+    final seen = <String>{};
+    final merged = <VideoEvent>[];
+    for (final list in results) {
+      for (final v in list) {
+        if (seen.add(v.id.toLowerCase())) {
+          merged.add(v);
+        }
+      }
+    }
+    merged.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return (videos: merged, videoHashtagSources: videoHashtagSources);
   }
 
   /// Fetches videos from followed users via Funnelcake API or Nostr relays.
@@ -372,6 +527,7 @@ class VideosRepository {
   Future<HomeFeedResult> _mergeListVideos({
     required List<VideoEvent> followingVideos,
     required Map<String, List<String>> videoRefs,
+    Map<String, Set<String>> videoHashtagSources = const {},
   }) async {
     // Build set of following video IDs for dedup (case-insensitive)
     final followingVideoIds = <String>{
@@ -468,6 +624,7 @@ class VideosRepository {
       videos: merged,
       videoListSources: videoListSources,
       listOnlyVideoIds: listOnlyVideoIds,
+      videoHashtagSources: videoHashtagSources,
     );
   }
 

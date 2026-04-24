@@ -20,9 +20,10 @@ void main() {
       ).build();
 
       expect(spans, hasLength(1));
-      expect(spans.single.text, equals('plain bio text'));
-      expect(spans.single.style, equals(defaultStyle));
-      expect(spans.single.recognizer, isNull);
+      final span = spans.single as TextSpan;
+      expect(span.text, equals('plain bio text'));
+      expect(span.style, equals(defaultStyle));
+      expect(span.recognizer, isNull);
     });
 
     test('creates tappable spans for bare domains and emails', () {
@@ -53,17 +54,17 @@ void main() {
       ).build();
 
       expect(
-        spans.map((span) => span.text).join(),
+        spans.textSpanTexts.join(),
         equals('Visit violetblue.com.! More: https://example.com/path?:;'),
       );
       expect(
         spans.tappableSpans.map((span) => span.text),
         equals(['violetblue.com', 'https://example.com/path']),
       );
-      expect(spans[2].text, startsWith('.!'));
-      expect(spans.last.text, equals('?:;'));
-      expect(spans[2].recognizer, isNull);
-      expect(spans.last.recognizer, isNull);
+      expect((spans[2] as TextSpan).text, startsWith('.!'));
+      expect((spans.last as TextSpan).text, equals('?:;'));
+      expect((spans[2] as TextSpan).recognizer, isNull);
+      expect((spans.last as TextSpan).recognizer, isNull);
     });
 
     test('preserves token precedence across supported token types', () {
@@ -244,16 +245,26 @@ void main() {
       ).build();
 
       expect(spans, hasLength(1));
-      expect(spans.single.text, equals(invalidNpub));
-      expect(spans.single.style, equals(linkStyle));
-      expect(spans.single.recognizer, isNull);
+      final span = spans.single as TextSpan;
+      expect(span.text, equals(invalidNpub));
+      expect(span.style, equals(linkStyle));
+      expect(span.recognizer, isNull);
     });
   });
 }
 
-extension on List<TextSpan> {
-  List<TextSpan> get tappableSpans =>
-      where((span) => span.recognizer is TapGestureRecognizer).toList();
+extension on List<InlineSpan> {
+  Iterable<String> get textSpanTexts sync* {
+    for (final span in this) {
+      if (span is TextSpan) {
+        yield span.text ?? '';
+      }
+    }
+  }
+
+  List<TextSpan> get tappableSpans => whereType<TextSpan>()
+      .where((span) => span.recognizer is TapGestureRecognizer)
+      .toList();
 }
 
 extension on TextSpan {

@@ -49,19 +49,4 @@ void main() {
       expect: () => const [SearchResultsFilter.people, SearchResultsFilter.all],
     );
   });
-
-  group(SearchResultsFilter, () {
-    test('each value has a non-empty label', () {
-      for (final filter in SearchResultsFilter.values) {
-        expect(filter.label, isNotEmpty);
-      }
-    });
-
-    test('labels match expected values', () {
-      expect(SearchResultsFilter.all.label, equals('All'));
-      expect(SearchResultsFilter.people.label, equals('People'));
-      expect(SearchResultsFilter.tags.label, equals('Tags'));
-      expect(SearchResultsFilter.videos.label, equals('Videos'));
-    });
-  });
 }

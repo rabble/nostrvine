@@ -5,7 +5,7 @@ import 'dart:developer' as developer;
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/src/hashtag_extractor.dart';
-import 'package:models/models.dart';
+import 'package:models/trending_hashtag.dart';
 
 /// Callback for searching locally cached hashtags.
 typedef LocalHashtagSearch = List<String> Function(String query, int limit);

@@ -16,10 +16,13 @@ import 'package:openvine/screens/search_results/widgets/search_results_app_bar.d
 /// Page that creates and wires the search BLoCs, then renders
 /// [SearchResultsView].
 class SearchResultsPage extends ConsumerWidget {
-  const SearchResultsPage({this.initialQuery, super.key});
+  const SearchResultsPage({this.initialQuery, this.initialFilter, super.key});
 
   /// Optional pre-filled search query from the route.
   final String? initialQuery;
+
+  /// Optional initial category filter (e.g. from `?filter=tags` deep link).
+  final SearchResultsFilter? initialFilter;
 
   /// Base path prefix (used for route matching and normalization skips).
   static const pathPrefix = '/search-results';
@@ -28,8 +31,22 @@ class SearchResultsPage extends ConsumerWidget {
   static const path = '$pathPrefix/:query';
 
   /// Build a path with the given query.
-  static String pathForQuery(String query) =>
-      '$pathPrefix/${Uri.encodeComponent(query)}';
+  static String pathForQuery(String query, {SearchResultsFilter? filter}) {
+    final encoded = Uri.encodeComponent(query);
+    if (filter == null || filter == SearchResultsFilter.all) {
+      return '$pathPrefix/$encoded';
+    }
+    return '$pathPrefix/$encoded?filter=${filter.name}';
+  }
+
+  /// Parses `?filter=tags` (etc.) from the search-results route.
+  static SearchResultsFilter? filterFromQueryParam(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    for (final f in SearchResultsFilter.values) {
+      if (f.name == raw) return f;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,7 +63,11 @@ class SearchResultsPage extends ConsumerWidget {
         BlocProvider(
           create: (_) => UserSearchBloc(profileRepository: profileRepository),
         ),
-        BlocProvider(create: (_) => SearchResultsFilterCubit()),
+        BlocProvider(
+          create: (_) => SearchResultsFilterCubit(
+            initial: initialFilter ?? SearchResultsFilter.all,
+          ),
+        ),
         BlocProvider(
           create: (_) => HashtagSearchBloc(
             hashtagRepository: ref.read(hashtagRepositoryProvider),

@@ -2390,6 +2390,388 @@ void main() {
           expect(cached.videos.first.id, equals('h1'));
         });
       });
+
+      group('followedHashtagLabels', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        });
+
+        test('merges hashtag videos with Funnelcake home feed', () async {
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'from-follow',
+                  pubkey: 'p1',
+                  dTag: 'd1',
+                  videoUrl: 'https://example.com/a.mp4',
+                  createdAt: 1704067000,
+                ),
+              ],
+            ),
+          );
+
+          when(
+            () => mockFunnelcakeClient.getVideosByHashtag(
+              hashtag: 'cats',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'from-tag',
+                pubkey: 'p2',
+                dTag: 'd2',
+                videoUrl: 'https://example.com/b.mp4',
+                createdAt: 1704068000,
+              ),
+            ],
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getHomeFeedVideos(
+            authors: ['p1'],
+            userPubkey: 'me',
+            followedHashtagLabels: ['cats'],
+          );
+
+          expect(result.videos, hasLength(2));
+          expect(result.videos.first.id, equals('from-tag'));
+          expect(result.videos.last.id, equals('from-follow'));
+          expect(
+            result.videoHashtagSources['from-tag'],
+            contains('cats'),
+          );
+          expect(
+            result.videoHashtagSources.containsKey('from-follow'),
+            isFalse,
+          );
+        });
+
+        test(
+          'returns hashtag-only videos when no authors or user pubkey',
+          () async {
+            when(
+              () => mockFunnelcakeClient.getVideosByHashtag(
+                hashtag: 'solo',
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _createVideoStats(
+                  id: 'tag-only',
+                  pubkey: 'p9',
+                  dTag: 'd9',
+                  videoUrl: 'https://example.com/solo.mp4',
+                ),
+              ],
+            );
+
+            final repo = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo.getHomeFeedVideos(
+              authors: [],
+              followedHashtagLabels: ['solo'],
+            );
+
+            expect(result.videos, hasLength(1));
+            expect(result.videos.first.id, equals('tag-only'));
+            expect(
+              result.videoHashtagSources['tag-only'],
+              contains('solo'),
+            );
+            verifyNever(
+              () => mockFunnelcakeClient.getHomeFeed(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            );
+          },
+        );
+
+        test('dedupes same video from home and hashtag', () async {
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'SHARED',
+                  pubkey: 'p1',
+                  dTag: 'd1',
+                  videoUrl: 'https://example.com/x.mp4',
+                ),
+              ],
+            ),
+          );
+
+          when(
+            () => mockFunnelcakeClient.getVideosByHashtag(
+              hashtag: 'dup',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'shared',
+                pubkey: 'p1',
+                dTag: 'd1',
+                videoUrl: 'https://example.com/x.mp4',
+              ),
+            ],
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getHomeFeedVideos(
+            authors: ['p1'],
+            userPubkey: 'me',
+            followedHashtagLabels: ['dup'],
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videoHashtagSources['SHARED'], contains('dup'));
+        });
+
+        test('ignores failing hashtag fetch but keeps others', () async {
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => const HomeFeedResponse(videos: []));
+
+          when(
+            () => mockFunnelcakeClient.getVideosByHashtag(
+              hashtag: 'bad',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('x'));
+
+          when(
+            () => mockFunnelcakeClient.getVideosByHashtag(
+              hashtag: 'good',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'ok',
+                pubkey: 'p1',
+                dTag: 'd1',
+                videoUrl: 'https://example.com/ok.mp4',
+              ),
+            ],
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getHomeFeedVideos(
+            authors: ['p1'],
+            userPubkey: 'me',
+            followedHashtagLabels: ['bad', 'good'],
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, equals('ok'));
+        });
+
+        test('uses separate in-memory cache entries per hashtag set', () async {
+          final feedCache = InMemoryFeedCache();
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'home-v',
+                  pubkey: 'p1',
+                  dTag: 'd1',
+                  videoUrl: 'https://example.com/a.mp4',
+                ),
+              ],
+            ),
+          );
+          when(
+            () => mockFunnelcakeClient.getVideosByHashtag(
+              hashtag: 'x',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'vx',
+                pubkey: 'p1',
+                dTag: 'x',
+                videoUrl: 'https://example.com/x.mp4',
+              ),
+            ],
+          );
+          when(
+            () => mockFunnelcakeClient.getVideosByHashtag(
+              hashtag: 'y',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'vy',
+                pubkey: 'p1',
+                dTag: 'y',
+                videoUrl: 'https://example.com/y.mp4',
+              ),
+            ],
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: feedCache,
+          );
+
+          await repo.getHomeFeedVideos(
+            authors: ['p1'],
+            userPubkey: 'u',
+            followedHashtagLabels: ['x'],
+          );
+          await repo.getHomeFeedVideos(
+            authors: ['p1'],
+            userPubkey: 'u',
+            followedHashtagLabels: ['y'],
+          );
+
+          verify(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(2);
+          verify(
+            () => mockFunnelcakeClient.getVideosByHashtag(
+              hashtag: 'x',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+          verify(
+            () => mockFunnelcakeClient.getVideosByHashtag(
+              hashtag: 'y',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+        });
+
+        test('second load with same hashtag set hits cache', () async {
+          final feedCache = InMemoryFeedCache();
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'a',
+                  pubkey: 'p1',
+                  dTag: 'd1',
+                  videoUrl: 'https://example.com/a.mp4',
+                ),
+              ],
+            ),
+          );
+          when(
+            () => mockFunnelcakeClient.getVideosByHashtag(
+              hashtag: 't1',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'tag-v',
+                pubkey: 'p2',
+                dTag: 'dt',
+                videoUrl: 'https://example.com/t.mp4',
+              ),
+            ],
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: feedCache,
+          );
+
+          await repo.getHomeFeedVideos(
+            authors: ['p1'],
+            userPubkey: 'u',
+            followedHashtagLabels: ['t1'],
+          );
+          await repo.getHomeFeedVideos(
+            authors: ['p1'],
+            userPubkey: 'u',
+            followedHashtagLabels: ['t1'],
+          );
+
+          verify(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+          verify(
+            () => mockFunnelcakeClient.getVideosByHashtag(
+              hashtag: 't1',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+        });
+      });
     });
 
     group('getHomeFeedVideos with videoRefs', () {

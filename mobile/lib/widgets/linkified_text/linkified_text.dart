@@ -25,6 +25,8 @@ class LinkifiedText extends ConsumerStatefulWidget {
     this.overflow,
     this.onVideoStateChange,
     this.onUrlTap,
+    this.showHashtagMoreButton = false,
+    this.hashtagMoreLabelStyle,
   });
 
   final String text;
@@ -35,13 +37,15 @@ class LinkifiedText extends ConsumerStatefulWidget {
   final TextOverflow? overflow;
   final VoidCallback? onVideoStateChange;
   final Future<void> Function(String rawUrl)? onUrlTap;
+  final bool showHashtagMoreButton;
+  final TextStyle? hashtagMoreLabelStyle;
 
   @override
   ConsumerState<LinkifiedText> createState() => _LinkifiedTextState();
 }
 
 class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
-  List<TextSpan> _currentSpans = const [];
+  List<InlineSpan> _currentSpans = const [];
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +82,10 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
       onVideoTap: (routeReference) => _navigateToVideo(context, routeReference),
       onMentionTap: (username) => _navigateToSearch(context, username),
       onUrlTap: _handleUrlTap,
-    ).build();
+      showHashtagMoreButton: widget.showHashtagMoreButton,
+      hashtagMoreLabelStyle: widget.hashtagMoreLabelStyle,
+      onVideoStateChange: widget.onVideoStateChange,
+    ).build(context, ref);
 
     if (!_hasClickableOrStylableToken(spans, defaultStyle)) {
       _replaceCurrentSpans(const []);
@@ -161,21 +168,47 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
     return Uri.tryParse(normalizedUrl);
   }
 
-  bool _hasClickableOrStylableToken(List<TextSpan> spans, TextStyle style) =>
-      spans.any((span) => span.recognizer != null || span.style != style);
+  bool _hasClickableOrStylableToken(List<InlineSpan> spans, TextStyle style) {
+    for (final span in spans) {
+      if (span is WidgetSpan) return true;
+      if (span is TextSpan) {
+        if (span.recognizer != null || span.style != style) return true;
+        final children = span.children;
+        if (children != null && _hasNestedClickableOrStyled(children, style)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
-  void _replaceCurrentSpans(List<TextSpan> spans) {
+  bool _hasNestedClickableOrStyled(List<InlineSpan> spans, TextStyle style) {
+    for (final span in spans) {
+      if (span is WidgetSpan) return true;
+      if (span is TextSpan) {
+        if (span.recognizer != null || span.style != style) return true;
+        final children = span.children;
+        if (children != null && _hasNestedClickableOrStyled(children, style)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  void _replaceCurrentSpans(List<InlineSpan> spans) {
     final previousSpans = _currentSpans;
     _currentSpans = spans;
     _disposeSpans(previousSpans);
   }
 
-  void _disposeSpans(List<TextSpan> spans) {
+  void _disposeSpans(List<InlineSpan> spans) {
     for (final span in spans) {
-      span.recognizer?.dispose();
-      final children = span.children;
-      if (children == null) continue;
-      _disposeInlineSpans(children);
+      if (span is TextSpan) {
+        span.recognizer?.dispose();
+        final children = span.children;
+        if (children != null) _disposeInlineSpans(children);
+      }
     }
   }
 

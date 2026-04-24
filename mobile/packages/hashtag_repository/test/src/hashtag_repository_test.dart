@@ -1,11 +1,11 @@
 // ABOUTME: Tests for HashtagRepository.
 // ABOUTME: Tests remote search with local fallback and exception handling.
 
+import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart';
-import 'package:test/test.dart';
+import 'package:models/trending_hashtag.dart';
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 

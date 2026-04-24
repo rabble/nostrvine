@@ -1,6 +1,7 @@
 // ABOUTME: Service to clear user-specific cached data when identity changes
 // ABOUTME: Prevents data leakage between different Nostr accounts after reinstall
 
+import 'package:followed_hashtags_repository/followed_hashtags_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -40,6 +41,9 @@ class UserDataCleanupService {
     'curated_lists',
     'subscribed_list_ids',
     'user_lists',
+    // Hashtag services
+    FollowedHashtagsRepository.preferencesKey,
+    FollowedHashtagsRepository.followingFeedPreferencesKey,
     // Bookmark services
     'bookmark_sets',
     'global_bookmarks',

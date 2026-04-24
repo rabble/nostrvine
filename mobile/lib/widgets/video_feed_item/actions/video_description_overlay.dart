@@ -64,6 +64,7 @@ class VideoDescriptionOverlay extends StatelessWidget {
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
+                showHashtagMoreButton: true,
               ),
             ),
           ),

@@ -43,6 +43,7 @@ workspace:
   - packages/divine_video_player
   - packages/infinite_video_feed
   - packages/follow_repository
+  - packages/followed_hashtags_repository
   - packages/funnelcake_api_client
   - packages/hashtag_repository
   - packages/hls_auth_web_player
@@ -210,6 +211,8 @@ dependencies:
 
   # Follow Repository - Follow relationship management
   follow_repository:
+
+  followed_hashtags_repository:
 
   # Hashtag Repository - Hashtag search data layer
   hashtag_repository:

@@ -8,12 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/widgets/hashtag_more_menu.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -45,6 +47,9 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
   /// Stream controller for pushing video list updates to the fullscreen feed.
   late final StreamController<List<VideoEvent>> _videosStreamController;
+
+  /// Shown in the hashtag more sheet; synced from the grid’s combined list.
+  int _hashtagMenuVideoCount = 0;
 
   @override
   void initState() {
@@ -288,6 +293,15 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         );
         final videos = _combineAndSortVideos(webSocketVideos);
 
+        if (_hashtagMenuVideoCount != videos.length) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            setState(() {
+              _hashtagMenuVideoCount = videos.length;
+            });
+          });
+        }
+
         // Push updated video list to stream so any open fullscreen feed
         // receives the latest ordering (keeps grid and feed in sync).
         if (videos.isNotEmpty) {
@@ -306,6 +320,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         final shouldShowLoading = !_subscriptionAttempted;
 
         if (shouldShowLoading && videos.isEmpty) {
+          final l10n = context.l10n;
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -313,7 +328,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 const CircularProgressIndicator(color: VineTheme.vineGreen),
                 const SizedBox(height: 24),
                 Text(
-                  'Loading videos about #${widget.hashtag}...',
+                  l10n.hashtagFeedLoadingMessage(widget.hashtag),
                   style: const TextStyle(
                     color: VineTheme.primaryText,
                     fontSize: 18,
@@ -321,9 +336,9 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'This may take a few moments',
-                  style: TextStyle(
+                Text(
+                  l10n.hashtagFeedLoadingSubtitle,
+                  style: const TextStyle(
                     color: VineTheme.secondaryText,
                     fontSize: 14,
                   ),
@@ -334,6 +349,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         }
 
         if (videos.isEmpty) {
+          final l10n = context.l10n;
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -341,7 +357,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 const Icon(Icons.tag, size: 64, color: VineTheme.secondaryText),
                 const SizedBox(height: 16),
                 Text(
-                  'No videos found for #${widget.hashtag}',
+                  l10n.hashtagFeedEmptyTitle(widget.hashtag),
                   style: const TextStyle(
                     color: VineTheme.primaryText,
                     fontSize: 18,
@@ -349,9 +365,9 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Be the first to post a video with this hashtag!',
-                  style: TextStyle(
+                Text(
+                  l10n.hashtagFeedEmptySubtitle,
+                  style: const TextStyle(
                     color: VineTheme.secondaryText,
                     fontSize: 14,
                   ),
@@ -374,19 +390,116 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
       },
     );
 
-    // If embedded, return body only; otherwise wrap with Scaffold
     if (widget.embedded) {
-      return body;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _HashtagFavoriteToolbar(
+            hashtag: widget.hashtag,
+            videoCount: _hashtagMenuVideoCount,
+          ),
+          Expanded(child: body),
+        ],
+      );
     }
 
-    return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
-      appBar: DiVineAppBar(
-        title: '#${widget.hashtag}',
-        showBackButton: true,
-        onBackPressed: context.pop,
-      ),
-      body: body,
+    final repo = ref.watch(followedHashtagsRepositoryProvider);
+    return StreamBuilder<List<String>>(
+      stream: repo.profileSavedHashtagsStream,
+      initialData: repo.profileSavedHashtags,
+      builder: (context, _) {
+        return StreamBuilder<List<String>>(
+          stream: repo.followingFeedHashtagLabelsStream,
+          initialData: repo.followingFeedHashtagLabels,
+          builder: (context, _) {
+            final l10n = context.l10n;
+            return Scaffold(
+              backgroundColor: VineTheme.backgroundColor,
+              appBar: DiVineAppBar(
+                title: '#${widget.hashtag}',
+                showBackButton: true,
+                onBackPressed: context.pop,
+                actions: [
+                  DiVineAppBarAction(
+                    icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
+                    tooltip: l10n.hashtagOptionsMoreTooltip,
+                    semanticLabel: l10n.hashtagOptionsMoreTooltip,
+                    onPressed: () => showHashtagMoreMenu(
+                      context,
+                      ref,
+                      hashtag: widget.hashtag,
+                      videoCount: _hashtagMenuVideoCount,
+                    ),
+                  ),
+                ],
+              ),
+              body: body,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// More menu (save/remove) for embedded hashtag views — matches full-screen app bar.
+class _HashtagFavoriteToolbar extends ConsumerWidget {
+  const _HashtagFavoriteToolbar({
+    required this.hashtag,
+    required this.videoCount,
+  });
+
+  final String hashtag;
+  final int videoCount;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(followedHashtagsRepositoryProvider);
+    const style = DiVineAppBarStyle.solidStyle;
+    return StreamBuilder<List<String>>(
+      stream: repo.profileSavedHashtagsStream,
+      initialData: repo.profileSavedHashtags,
+      builder: (context, _) {
+        return StreamBuilder<List<String>>(
+          stream: repo.followingFeedHashtagLabelsStream,
+          initialData: repo.followingFeedHashtagLabels,
+          builder: (context, _) {
+            final l10n = context.l10n;
+            return Material(
+              color: VineTheme.surfaceContainerHigh,
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(
+                  end: 8,
+                  top: 4,
+                  bottom: 4,
+                ),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    DiVineAppBarIconButton(
+                      icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
+                      tooltip: l10n.hashtagOptionsMoreTooltip,
+                      semanticLabel: l10n.hashtagOptionsMoreTooltip,
+                      onPressed: () => showHashtagMoreMenu(
+                        context,
+                        ref,
+                        hashtag: hashtag,
+                        videoCount: videoCount,
+                      ),
+                      backgroundColor: style.iconButtonBackgroundColor,
+                      borderSide: style.iconButtonBorderSide,
+                      iconColor: style.iconColor,
+                      size: style.iconButtonSize,
+                      iconSize: style.iconSize,
+                      borderRadius: style.iconButtonBorderRadius,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

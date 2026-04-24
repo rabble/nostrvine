@@ -504,6 +504,77 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileErrorLoadingLiked => '좋아요한 영상을 불러오지 못했어요';
 
   @override
+  String get profileNoFollowedTagsTitle => '저장한 태그가 아직 없어요';
+
+  @override
+  String get profileNoFollowedTagsSubtitle =>
+      '해시태그 페이지에서 저장하면 여기서 바로 다시 올 수 있어요';
+
+  @override
+  String get profileTabSavedSemantic => '저장';
+
+  @override
+  String get profileSavedFilterVideos => '동영상';
+
+  @override
+  String get profileSavedFilterTags => '태그';
+
+  @override
+  String get hashtagFavoriteSaveTooltip => '태그 저장';
+
+  @override
+  String get hashtagFavoriteRemoveTooltip => '저장한 태그에서 제거';
+
+  @override
+  String get hashtagOptionsMoreTooltip => '해시태그 옵션';
+
+  @override
+  String hashtagMenuVideoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hashtagOptionSaveToProfile => '프로필에 저장';
+
+  @override
+  String get hashtagOptionRemoveFromProfile => '저장한 태그에서 제거';
+
+  @override
+  String get hashtagSavedToProfileSnackbar => '프로필에 저장했어요';
+
+  @override
+  String get hashtagRemovedFromProfileSnackbar => '저장한 태그에서 뺐어요';
+
+  @override
+  String get hashtagOptionAddToFollowingFeed => 'Following 피드에 추가';
+
+  @override
+  String get hashtagOptionRemoveFromFollowingFeed => 'Following 피드에서 제거';
+
+  @override
+  String get hashtagAddedToFollowingFeedSnackbar => 'Following 피드에 추가했어요';
+
+  @override
+  String get hashtagRemovedFromFollowingFeedSnackbar => 'Following 피드에서 뺐어요';
+
+  @override
+  String get profileFollowedTagRemoveTitle => '이 태그를 지울까요?';
+
+  @override
+  String profileFollowedTagRemoveMessage(String displayTag) {
+    return '저장한 태그에서 $displayTag를 지울까요? 해시태그 페이지에서 언제든 다시 추가할 수 있어요.';
+  }
+
+  @override
+  String get profileFollowedTagRemoveConfirm => '제거';
+
+  @override
   String get profileNoRepostsTitle => '아직 리포스트 없음';
 
   @override
@@ -972,6 +1043,21 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get exploreTabCategories => '카테고리';
+
+  @override
+  String get exploreTabTags => '태그';
+
+  @override
+  String get exploreTagsSearchHint => '태그 검색...';
+
+  @override
+  String get exploreTagsEmptyFilter => '검색과 일치하는 태그가 없어요';
+
+  @override
+  String get exploreTagsTrackedTooltip => '프로필에 저장됨';
+
+  @override
+  String get explorePopularTagsSearchCta => '모든 태그 검색';
 
   @override
   String get exploreTabForYou => '추천';
@@ -5845,6 +5931,54 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get searchListsLoadingLabel => '목록 결과 불러오는 중';
+
+  @override
+  String get searchResultsCategoryAll => 'All';
+
+  @override
+  String get searchResultsCategoryPeople => 'People';
+
+  @override
+  String get searchResultsCategoryLists => 'Lists';
+
+  @override
+  String get searchResultsCategoryTags => 'Tags';
+
+  @override
+  String get searchResultsCategoryVideos => 'Videos';
+
+  @override
+  String searchResultsFilterSemantic(String category) {
+    return 'Filter: $category';
+  }
+
+  @override
+  String searchResultsNoMatchesForQuery(String query) {
+    return 'No results found for \"$query\"';
+  }
+
+  @override
+  String get searchResultsTryDifferentTerm => 'Try a different search term';
+
+  @override
+  String get searchResultsTagsLoadingSemantic => 'Loading tag results';
+
+  @override
+  String hashtagFeedLoadingMessage(String hashtag) {
+    return 'Loading videos about #$hashtag...';
+  }
+
+  @override
+  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+
+  @override
+  String hashtagFeedEmptyTitle(String hashtag) {
+    return 'No videos found for #$hashtag';
+  }
+
+  @override
+  String get hashtagFeedEmptySubtitle =>
+      'Be the first to post a video with this hashtag!';
 
   @override
   String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';

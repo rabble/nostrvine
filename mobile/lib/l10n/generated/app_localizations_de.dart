@@ -554,6 +554,83 @@ class AppLocalizationsDe extends AppLocalizations {
       'Fehler beim Laden der gelikten Videos';
 
   @override
+  String get profileNoFollowedTagsTitle => 'Noch keine Tags gespeichert';
+
+  @override
+  String get profileNoFollowedTagsSubtitle =>
+      'Speicher einen Hashtag auf seiner Seite und finde ihn hier wieder';
+
+  @override
+  String get profileTabSavedSemantic => 'Gespeichert';
+
+  @override
+  String get profileSavedFilterVideos => 'Videos';
+
+  @override
+  String get profileSavedFilterTags => 'Tags';
+
+  @override
+  String get hashtagFavoriteSaveTooltip => 'Hashtag speichern';
+
+  @override
+  String get hashtagFavoriteRemoveTooltip =>
+      'Aus gespeicherten Hashtags entfernen';
+
+  @override
+  String get hashtagOptionsMoreTooltip => 'Hashtag-Optionen';
+
+  @override
+  String hashtagMenuVideoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hashtagOptionSaveToProfile => 'Im Profil speichern';
+
+  @override
+  String get hashtagOptionRemoveFromProfile =>
+      'Aus gespeicherten Tags entfernen';
+
+  @override
+  String get hashtagSavedToProfileSnackbar => 'In deinem Profil gespeichert';
+
+  @override
+  String get hashtagRemovedFromProfileSnackbar =>
+      'Aus gespeicherten Tags entfernt';
+
+  @override
+  String get hashtagOptionAddToFollowingFeed => 'Zum Following-Feed hinzufügen';
+
+  @override
+  String get hashtagOptionRemoveFromFollowingFeed =>
+      'Aus Following-Feed entfernen';
+
+  @override
+  String get hashtagAddedToFollowingFeedSnackbar =>
+      'Zum Following-Feed hinzugefügt';
+
+  @override
+  String get hashtagRemovedFromFollowingFeedSnackbar =>
+      'Aus Following-Feed entfernt';
+
+  @override
+  String get profileFollowedTagRemoveTitle => 'Diesen Tag entfernen?';
+
+  @override
+  String profileFollowedTagRemoveMessage(String displayTag) {
+    return '$displayTag aus deinen gespeicherten Tags entfernen? Du kannst ihn jederzeit wieder auf der Hashtag-Seite hinzufügen.';
+  }
+
+  @override
+  String get profileFollowedTagRemoveConfirm => 'Entfernen';
+
+  @override
   String get profileNoRepostsTitle => 'Noch keine Reposts';
 
   @override
@@ -1050,6 +1127,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get exploreTabCategories => 'Kategorien';
+
+  @override
+  String get exploreTabTags => 'Tags';
+
+  @override
+  String get exploreTagsSearchHint => 'Tags suchen...';
+
+  @override
+  String get exploreTagsEmptyFilter => 'Keine Tags passen zu deiner Suche';
+
+  @override
+  String get exploreTagsTrackedTooltip => 'In deinem Profil gespeichert';
+
+  @override
+  String get explorePopularTagsSearchCta => 'Alle Tags durchsuchen';
 
   @override
   String get exploreTabForYou => 'Für dich';
@@ -6156,6 +6248,54 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get searchListsLoadingLabel => 'Listenergebnisse werden geladen';
+
+  @override
+  String get searchResultsCategoryAll => 'All';
+
+  @override
+  String get searchResultsCategoryPeople => 'People';
+
+  @override
+  String get searchResultsCategoryLists => 'Lists';
+
+  @override
+  String get searchResultsCategoryTags => 'Tags';
+
+  @override
+  String get searchResultsCategoryVideos => 'Videos';
+
+  @override
+  String searchResultsFilterSemantic(String category) {
+    return 'Filter: $category';
+  }
+
+  @override
+  String searchResultsNoMatchesForQuery(String query) {
+    return 'No results found for \"$query\"';
+  }
+
+  @override
+  String get searchResultsTryDifferentTerm => 'Try a different search term';
+
+  @override
+  String get searchResultsTagsLoadingSemantic => 'Loading tag results';
+
+  @override
+  String hashtagFeedLoadingMessage(String hashtag) {
+    return 'Loading videos about #$hashtag...';
+  }
+
+  @override
+  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+
+  @override
+  String hashtagFeedEmptyTitle(String hashtag) {
+    return 'No videos found for #$hashtag';
+  }
+
+  @override
+  String get hashtagFeedEmptySubtitle =>
+      'Be the first to post a video with this hashtag!';
 
   @override
   String get cameraAgeRestriction =>

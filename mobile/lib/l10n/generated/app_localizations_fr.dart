@@ -562,6 +562,79 @@ class AppLocalizationsFr extends AppLocalizations {
       'Erreur de chargement des vidéos aimées';
 
   @override
+  String get profileNoFollowedTagsTitle => 'Pas encore de tags enregistrés';
+
+  @override
+  String get profileNoFollowedTagsSubtitle =>
+      'Enregistre un hashtag depuis sa page pour le retrouver ici';
+
+  @override
+  String get profileTabSavedSemantic => 'Enregistrements';
+
+  @override
+  String get profileSavedFilterVideos => 'Vidéos';
+
+  @override
+  String get profileSavedFilterTags => 'Hashtags';
+
+  @override
+  String get hashtagFavoriteSaveTooltip => 'Enregistrer le hashtag';
+
+  @override
+  String get hashtagFavoriteRemoveTooltip => 'Retirer des hashtags enregistrés';
+
+  @override
+  String get hashtagOptionsMoreTooltip => 'Options du hashtag';
+
+  @override
+  String hashtagMenuVideoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hashtagOptionSaveToProfile => 'Enregistrer sur le profil';
+
+  @override
+  String get hashtagOptionRemoveFromProfile => 'Retirer des tags enregistrés';
+
+  @override
+  String get hashtagSavedToProfileSnackbar => 'Enregistré sur ton profil';
+
+  @override
+  String get hashtagRemovedFromProfileSnackbar => 'Retiré des tags enregistrés';
+
+  @override
+  String get hashtagOptionAddToFollowingFeed => 'Ajouter au fil Following';
+
+  @override
+  String get hashtagOptionRemoveFromFollowingFeed => 'Retirer du fil Following';
+
+  @override
+  String get hashtagAddedToFollowingFeedSnackbar =>
+      'Ajouté à ton fil Following';
+
+  @override
+  String get hashtagRemovedFromFollowingFeedSnackbar =>
+      'Retiré du fil Following';
+
+  @override
+  String get profileFollowedTagRemoveTitle => 'Retirer ce tag ?';
+
+  @override
+  String profileFollowedTagRemoveMessage(String displayTag) {
+    return 'Retirer $displayTag de tes tags enregistrés ? Tu pourras l’ajouter à nouveau depuis la page du hashtag.';
+  }
+
+  @override
+  String get profileFollowedTagRemoveConfirm => 'Retirer';
+
+  @override
   String get profileNoRepostsTitle => 'Pas encore de reposts';
 
   @override
@@ -1061,6 +1134,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get exploreTabCategories => 'Catégories';
+
+  @override
+  String get exploreTabTags => 'Tags';
+
+  @override
+  String get exploreTagsSearchHint => 'Rechercher des tags...';
+
+  @override
+  String get exploreTagsEmptyFilter => 'Aucun tag ne correspond à ta recherche';
+
+  @override
+  String get exploreTagsTrackedTooltip => 'Enregistré sur ton profil';
+
+  @override
+  String get explorePopularTagsSearchCta => 'Rechercher tous les tags';
 
   @override
   String get exploreTabForYou => 'Pour toi';
@@ -6168,6 +6256,54 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get searchListsLoadingLabel => 'Chargement des résultats de listes';
+
+  @override
+  String get searchResultsCategoryAll => 'All';
+
+  @override
+  String get searchResultsCategoryPeople => 'People';
+
+  @override
+  String get searchResultsCategoryLists => 'Lists';
+
+  @override
+  String get searchResultsCategoryTags => 'Tags';
+
+  @override
+  String get searchResultsCategoryVideos => 'Videos';
+
+  @override
+  String searchResultsFilterSemantic(String category) {
+    return 'Filter: $category';
+  }
+
+  @override
+  String searchResultsNoMatchesForQuery(String query) {
+    return 'No results found for \"$query\"';
+  }
+
+  @override
+  String get searchResultsTryDifferentTerm => 'Try a different search term';
+
+  @override
+  String get searchResultsTagsLoadingSemantic => 'Loading tag results';
+
+  @override
+  String hashtagFeedLoadingMessage(String hashtag) {
+    return 'Loading videos about #$hashtag...';
+  }
+
+  @override
+  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+
+  @override
+  String hashtagFeedEmptyTitle(String hashtag) {
+    return 'No videos found for #$hashtag';
+  }
+
+  @override
+  String get hashtagFeedEmptySubtitle =>
+      'Be the first to post a video with this hashtag!';
 
   @override
   String get cameraAgeRestriction =>

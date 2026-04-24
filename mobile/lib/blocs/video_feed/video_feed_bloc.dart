@@ -10,6 +10,7 @@ import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:followed_hashtags_repository/followed_hashtags_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -39,6 +40,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     required VideosRepository videosRepository,
     required FollowRepository followRepository,
     required CuratedListRepository curatedListRepository,
+    FollowedHashtagsRepository? followedHashtagsRepository,
     ProfileRepository? profileRepository,
     ContentBlocklistRepository? contentBlocklistRepository,
     String? userPubkey,
@@ -50,6 +52,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   }) : _videosRepository = videosRepository,
        _followRepository = followRepository,
        _curatedListRepository = curatedListRepository,
+       _followedHashtagsRepository = followedHashtagsRepository,
        _profileRepository = profileRepository,
        _blocklistRepository = contentBlocklistRepository,
        _userPubkey = userPubkey,
@@ -69,12 +72,14 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     on<VideoFeedAutoRefreshRequested>(_onAutoRefreshRequested);
     on<VideoFeedFollowingListChanged>(_onFollowingListChanged);
     on<VideoFeedCuratedListsChanged>(_onCuratedListsChanged);
+    on<VideoFeedFollowedHashtagsChanged>(_onFollowedHashtagsChanged);
     on<VideoFeedBlocklistChanged>(_onBlocklistChanged);
   }
 
   final VideosRepository _videosRepository;
   final FollowRepository _followRepository;
   final CuratedListRepository _curatedListRepository;
+  final FollowedHashtagsRepository? _followedHashtagsRepository;
   final ProfileRepository? _profileRepository;
   final ContentBlocklistRepository? _blocklistRepository;
   final String? _userPubkey;
@@ -109,8 +114,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// Also subscribes to [CuratedListRepository.subscribedListsStream]
   /// (skipping the first replay) so curated list changes refresh the feed.
   ///
-  /// Both subscriptions use `unawaited` on the first so neither blocks the
-  /// other — `emit.onEach` never completes for BehaviorSubject streams.
+  /// When [FollowedHashtagsRepository] is provided, subscribes to
+  /// [FollowedHashtagsRepository.followingFeedHashtagLabelsStream] with `skip(1)` so
+  /// runtime hashtag add/remove refreshes the following feed without
+  /// duplicating the initial load.
+  ///
+  /// Following and hashtag subscriptions use `unawaited` so neither blocks
+  /// the curated-list `emit.onEach` — those streams do not complete.
   ///
   /// If a feed mode was previously saved to SharedPreferences, that mode is
   /// restored. Otherwise [event.mode] is used.
@@ -135,9 +145,17 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     // After the initial load, check for the "no follows" CTA. Needed for
     // BLoC re-creation (e.g. navigating back to home) when the follow repo
     // is already initialized — .skip(1) would skip the only replay.
+    //
+    // Following mode: do not show the CTA when the user has followed
+    // hashtags (home feed can still be filled from hashtag sources).
     if (mode == FeedMode.following) {
       final currentFollowing = _followRepository.followingPubkeys;
-      if (currentFollowing.isEmpty && state.videos.isEmpty) {
+      final hasFollowedHashtags =
+          _followedHashtagsRepository?.followingFeedHashtagLabels.isNotEmpty ??
+          false;
+      if (currentFollowing.isEmpty &&
+          state.videos.isEmpty &&
+          !hasFollowedHashtags) {
         emit(
           state.copyWith(
             status: VideoFeedStatus.success,
@@ -146,6 +164,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
             error: VideoFeedError.noFollowedUsers,
             videoListSources: const {},
             listOnlyVideoIds: const {},
+            videoHashtagSources: const {},
           ),
         );
       }
@@ -160,6 +179,16 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
         onData: (pubkeys) => add(VideoFeedFollowingListChanged(pubkeys)),
       ),
     );
+
+    final hashtagsRepo = _followedHashtagsRepository;
+    if (hashtagsRepo != null) {
+      unawaited(
+        emit.onEach<List<String>>(
+          hashtagsRepo.followingFeedHashtagLabelsStream.skip(1),
+          onData: (hashtags) => add(VideoFeedFollowedHashtagsChanged(hashtags)),
+        ),
+      );
+    }
 
     // Subscribe to curated list changes.
     await emit.onEach<List<CuratedList>>(
@@ -250,6 +279,15 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       final mergedListOnly = {...state.listOnlyVideoIds}
         ..addAll(result.listOnlyVideoIds);
 
+      final mergedHashtagSources = Map<String, Set<String>>.from(
+        state.videoHashtagSources,
+      );
+      for (final entry in result.videoHashtagSources.entries) {
+        mergedHashtagSources
+            .putIfAbsent(entry.key, () => <String>{})
+            .addAll(entry.value);
+      }
+
       emit(
         state.copyWith(
           videos: updatedVideos,
@@ -259,6 +297,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           isLoadingMore: false,
           videoListSources: mergedSources,
           listOnlyVideoIds: mergedListOnly,
+          videoHashtagSources: mergedHashtagSources,
         ),
       );
 
@@ -327,7 +366,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// skipped). Performs a silent refresh — keeps current videos visible and
   /// replaces when done.
   ///
-  /// - **Empty list** → show `noFollowedUsers` CTA immediately.
+  /// - **Empty list** → show `noFollowedUsers` CTA immediately, unless the
+  ///   user has followed hashtags (then refresh so tag-only home feed works).
   /// - **Non-empty list** → silent refresh via [_loadVideos]. Old content
   ///   stays visible briefly, then replaced with updated feed (no loading
   ///   flash).
@@ -338,8 +378,16 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     if (state.mode != FeedMode.following) return;
     if (state.status == VideoFeedStatus.loading) return;
 
-    // Empty follow list → show "follow someone" CTA.
+    // Empty follow list → show "follow someone" CTA, except when followed
+    // hashtags can still supply the home feed.
     if (event.followingPubkeys.isEmpty) {
+      final hasFollowedHashtags =
+          _followedHashtagsRepository?.followingFeedHashtagLabels.isNotEmpty ??
+          false;
+      if (hasFollowedHashtags) {
+        await _loadVideos(FeedMode.following, emit, skipCache: true);
+        return;
+      }
       emit(
         state.copyWith(
           status: VideoFeedStatus.success,
@@ -348,6 +396,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           error: VideoFeedError.noFollowedUsers,
           videoListSources: const {},
           listOnlyVideoIds: const {},
+          videoHashtagSources: const {},
         ),
       );
       return;
@@ -378,6 +427,39 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     );
 
     await _loadVideos(FeedMode.following, emit, skipCache: true);
+  }
+
+  /// Handle followed hashtag list changes from [FollowedHashtagsRepository].
+  ///
+  /// Mirrors [VideoFeedFollowingListChanged]: silent refresh with
+  /// [skipCache] so in-memory home cache cannot serve a stale hashtag set.
+  /// When the user has no follows and no followed hashtags and the feed is
+  /// empty afterward, shows [VideoFeedError.noFollowedUsers].
+  Future<void> _onFollowedHashtagsChanged(
+    VideoFeedFollowedHashtagsChanged event,
+    Emitter<VideoFeedState> emit,
+  ) async {
+    if (_followedHashtagsRepository == null) return;
+    if (state.mode != FeedMode.following) return;
+    if (state.status == VideoFeedStatus.loading) return;
+
+    await _loadVideos(FeedMode.following, emit, skipCache: true);
+
+    final followingEmpty = _followRepository.followingPubkeys.isEmpty;
+    final hashtagsEmpty = event.hashtags.isEmpty;
+    if (followingEmpty && hashtagsEmpty && state.videos.isEmpty) {
+      emit(
+        state.copyWith(
+          status: VideoFeedStatus.success,
+          videos: [],
+          hasMore: false,
+          error: VideoFeedError.noFollowedUsers,
+          videoListSources: const {},
+          listOnlyVideoIds: const {},
+          videoHashtagSources: const {},
+        ),
+      );
+    }
   }
 
   /// Handle blocklist changes.
@@ -478,6 +560,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           clearError: true,
           videoListSources: result.videoListSources,
           listOnlyVideoIds: result.listOnlyVideoIds,
+          videoHashtagSources: result.videoHashtagSources,
         ),
       );
 
@@ -542,6 +625,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     FeedMode.following => _videosRepository.getHomeFeedVideos(
       authors: _followRepository.followingPubkeys,
       videoRefs: _curatedListRepository.getSubscribedListVideoRefs(),
+      followedHashtagLabels:
+          _followedHashtagsRepository?.followingFeedHashtagLabels ?? const [],
       userPubkey: _userPubkey,
       until: until,
       skipCache: skipCache,

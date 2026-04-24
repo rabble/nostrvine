@@ -15,7 +15,11 @@ import 'package:models/models.dart';
 ///
 /// When no list video refs are provided, [videoListSources] and
 /// [listOnlyVideoIds] are empty — the result contains only following
-/// videos with no attribution data.
+/// videos with no list attribution.
+///
+/// When the home feed merges followed hashtags, [videoHashtagSources]
+/// maps each video id to the canonical hashtag label(s) that contributed
+/// that video via getVideosByHashtag.
 /// {@endtemplate}
 class HomeFeedResult extends Equatable {
   /// {@macro home_feed_result}
@@ -23,6 +27,7 @@ class HomeFeedResult extends Equatable {
     required this.videos,
     this.videoListSources = const {},
     this.listOnlyVideoIds = const {},
+    this.videoHashtagSources = const {},
     this.rawResponseBody,
   });
 
@@ -43,6 +48,14 @@ class HomeFeedResult extends Equatable {
   /// visual attribution since the user didn't follow the author.
   final Set<String> listOnlyVideoIds;
 
+  /// Maps videoId → canonical hashtag label(s) that surfaced this video
+  /// from followed-hashtag fetches (Funnelcake).
+  ///
+  /// Empty when this fetch did not merge followed hashtags.
+  /// A video from a followed author can still appear here if it was also
+  /// returned under a followed tag.
+  final Map<String, Set<String>> videoHashtagSources;
+
   /// The raw JSON response body from the API, if available.
   ///
   /// Populated on initial (non-paginated) home feed fetches so the
@@ -51,5 +64,10 @@ class HomeFeedResult extends Equatable {
   final String? rawResponseBody;
 
   @override
-  List<Object?> get props => [videos, videoListSources, listOnlyVideoIds];
+  List<Object?> get props => [
+    videos,
+    videoListSources,
+    listOnlyVideoIds,
+    videoHashtagSources,
+  ];
 }

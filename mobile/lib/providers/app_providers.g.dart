@@ -3292,6 +3292,60 @@ final class HashtagRepositoryProvider
 
 String _$hashtagRepositoryHash() => r'fe5341fcbbd62c6418fd00154f9ea24112476251';
 
+/// Locally persisted followed hashtag labels (normalized; device storage only).
+
+@ProviderFor(followedHashtagsRepository)
+const followedHashtagsRepositoryProvider =
+    FollowedHashtagsRepositoryProvider._();
+
+/// Locally persisted followed hashtag labels (normalized; device storage only).
+
+final class FollowedHashtagsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          FollowedHashtagsRepository,
+          FollowedHashtagsRepository,
+          FollowedHashtagsRepository
+        >
+    with $Provider<FollowedHashtagsRepository> {
+  /// Locally persisted followed hashtag labels (normalized; device storage only).
+  const FollowedHashtagsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'followedHashtagsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$followedHashtagsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<FollowedHashtagsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  FollowedHashtagsRepository create(Ref ref) {
+    return followedHashtagsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FollowedHashtagsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FollowedHashtagsRepository>(value),
+    );
+  }
+}
+
+String _$followedHashtagsRepositoryHash() =>
+    r'67856a2460036bbcd528d16b568e3af2c8793e34';
+
 /// Provider for CategoriesRepository instance.
 ///
 /// Keep-alive so the categories cache survives tab and screen transitions.

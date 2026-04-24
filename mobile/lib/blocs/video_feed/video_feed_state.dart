@@ -55,6 +55,7 @@ final class VideoFeedState extends Equatable {
     this.error,
     this.videoListSources = const {},
     this.listOnlyVideoIds = const {},
+    this.videoHashtagSources = const {},
     this.creatorProfiles = const {},
   });
 
@@ -88,6 +89,12 @@ final class VideoFeedState extends Equatable {
   /// list attribution for them (Phase 4).
   final Set<String> listOnlyVideoIds;
 
+  /// Maps videoId → followed hashtag label(s) that contributed this video.
+  ///
+  /// Populated for [FeedMode.following] when the repository merges followed
+  /// hashtags. Used to show a top-of-screen tag strip on those clips.
+  final Map<String, Set<String>> videoHashtagSources;
+
   /// Creator profiles keyed by pubkey.
   ///
   /// Populated by batch-fetching profiles for video creators after
@@ -115,6 +122,7 @@ final class VideoFeedState extends Equatable {
     bool clearError = false,
     Map<String, Set<String>>? videoListSources,
     Set<String>? listOnlyVideoIds,
+    Map<String, Set<String>>? videoHashtagSources,
     Map<String, UserProfile>? creatorProfiles,
   }) {
     return VideoFeedState(
@@ -126,6 +134,7 @@ final class VideoFeedState extends Equatable {
       error: clearError ? null : (error ?? this.error),
       videoListSources: videoListSources ?? this.videoListSources,
       listOnlyVideoIds: listOnlyVideoIds ?? this.listOnlyVideoIds,
+      videoHashtagSources: videoHashtagSources ?? this.videoHashtagSources,
       creatorProfiles: creatorProfiles ?? this.creatorProfiles,
     );
   }
@@ -140,6 +149,7 @@ final class VideoFeedState extends Equatable {
     error,
     videoListSources,
     listOnlyVideoIds,
+    videoHashtagSources,
     creatorProfiles,
   ];
 }

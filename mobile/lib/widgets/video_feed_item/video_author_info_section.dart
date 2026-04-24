@@ -188,6 +188,7 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                   ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
+                  showHashtagMoreButton: true,
                 ),
               ),
             ),

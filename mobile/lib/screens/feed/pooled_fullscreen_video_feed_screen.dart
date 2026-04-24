@@ -37,6 +37,7 @@ import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/hashtag_more_menu.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
@@ -79,6 +80,25 @@ double fullscreenContainedVideoTopInset({
   // down to avoid overlapping with it.
   if (hasHeader) return 0;
   return isPortrait ? 0 : safeAreaTop + DiVineAppBarStyle.defaultStyle.height;
+}
+
+/// When fullscreen was opened from a hashtag context ([HashtagFeedScreen]
+/// uses `contextTitle: '#foo'` and [sourceDetail]: canonical label), returns
+/// the tag for [showHashtagMoreMenu]. Returns null for e.g. "Search Results"
+/// (even if [sourceDetail] is a search query string).
+String? _hashtagLabelForFullscreenAppBar({
+  required String? contextTitle,
+  required String? sourceDetail,
+}) {
+  final title = contextTitle;
+  if (title == null || !title.startsWith('#')) return null;
+  if (sourceDetail != null && sourceDetail.isNotEmpty) {
+    return sourceDetail;
+  }
+  if (title.length > 1) {
+    return title.substring(1);
+  }
+  return null;
 }
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
@@ -678,6 +698,25 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         ],
         child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
           builder: (context, state) {
+            final hashtagForMenu = _hashtagLabelForFullscreenAppBar(
+              contextTitle: widget.contextTitle,
+              sourceDetail: widget.sourceDetail,
+            );
+            final l10n = context.l10n;
+            final hashtagMoreAction = hashtagForMenu == null
+                ? null
+                : DiVineAppBarAction(
+                    icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
+                    tooltip: l10n.hashtagOptionsMoreTooltip,
+                    semanticLabel: l10n.hashtagOptionsMoreTooltip,
+                    onPressed: () => showHashtagMoreMenu(
+                      context,
+                      ref,
+                      hashtag: hashtagForMenu,
+                      videoCount: state.videos.length,
+                    ),
+                  );
+
             // The BlocListener above tries to pop on this status; when
             // it can (parent route exists) the route is gone before this
             // branch renders. When `maybePop` is a no-op, we land here
@@ -716,6 +755,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   onBackPressed: () => _handleBack(context),
                   backgroundMode: DiVineAppBarBackgroundMode.transparent,
                   forceMaterialTransparency: true,
+                  actions: [?hashtagMoreAction],
                 ),
                 body: const Center(child: BrandedLoadingIndicator(size: 60)),
               );
@@ -730,6 +770,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   onBackPressed: () => _handleBack(context),
                   backgroundMode: DiVineAppBarBackgroundMode.transparent,
                   forceMaterialTransparency: true,
+                  actions: [?hashtagMoreAction],
                 ),
                 body: const Center(
                   child: Text(
@@ -793,6 +834,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 onBackPressed: () => _handleBack(context),
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 forceMaterialTransparency: true,
+                actions: [?hashtagMoreAction],
                 // Back button sits 8 px from the left edge of the screen
                 // (4 px tighter than the previous 12). The More popover on
                 // the trailing side keeps its 12 px gap by wrapping the

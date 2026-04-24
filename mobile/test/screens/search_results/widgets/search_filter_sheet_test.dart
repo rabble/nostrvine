@@ -57,6 +57,7 @@ void main() {
 
       expect(find.text('All'), findsOneWidget);
       expect(find.text('People'), findsOneWidget);
+      expect(find.text('Lists'), findsOneWidget);
       expect(find.text('Tags'), findsOneWidget);
       expect(find.text('Videos'), findsOneWidget);
     });

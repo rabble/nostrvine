@@ -11,5 +11,8 @@ Test locally:
 
 ```bash
 cd mobile/packages/hashtag_repository
-dart test
+flutter test
 ```
+
+(`dart test` is not supported here: `funnelcake_api_client` depends on `models`, which
+transitively pulls Flutter via `nostr_sdk`.)

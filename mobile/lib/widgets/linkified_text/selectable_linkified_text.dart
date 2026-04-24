@@ -35,7 +35,7 @@ class SelectableLinkifiedText extends ConsumerStatefulWidget {
 
 class _SelectableLinkifiedTextState
     extends ConsumerState<SelectableLinkifiedText> {
-  List<TextSpan> _currentSpans = const [];
+  List<InlineSpan> _currentSpans = const [];
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +72,7 @@ class _SelectableLinkifiedTextState
       onVideoTap: (routeReference) => _navigateToVideo(context, routeReference),
       onMentionTap: (username) => _navigateToSearch(context, username),
       onUrlTap: _handleUrlTap,
-    ).build();
+    ).build(context, ref);
 
     if (!_hasClickableOrStylableToken(spans, defaultStyle)) {
       _replaceCurrentSpans(const []);
@@ -141,21 +141,47 @@ class _SelectableLinkifiedTextState
     return Uri.tryParse(normalizedUrl);
   }
 
-  bool _hasClickableOrStylableToken(List<TextSpan> spans, TextStyle style) =>
-      spans.any((span) => span.recognizer != null || span.style != style);
+  bool _hasClickableOrStylableToken(List<InlineSpan> spans, TextStyle style) {
+    for (final span in spans) {
+      if (span is WidgetSpan) return true;
+      if (span is TextSpan) {
+        if (span.recognizer != null || span.style != style) return true;
+        final children = span.children;
+        if (children != null && _hasNestedClickableOrStyled(children, style)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
-  void _replaceCurrentSpans(List<TextSpan> spans) {
+  bool _hasNestedClickableOrStyled(List<InlineSpan> spans, TextStyle style) {
+    for (final span in spans) {
+      if (span is WidgetSpan) return true;
+      if (span is TextSpan) {
+        if (span.recognizer != null || span.style != style) return true;
+        final children = span.children;
+        if (children != null && _hasNestedClickableOrStyled(children, style)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  void _replaceCurrentSpans(List<InlineSpan> spans) {
     final previousSpans = _currentSpans;
     _currentSpans = spans;
     _disposeSpans(previousSpans);
   }
 
-  void _disposeSpans(List<TextSpan> spans) {
+  void _disposeSpans(List<InlineSpan> spans) {
     for (final span in spans) {
-      span.recognizer?.dispose();
-      final children = span.children;
-      if (children == null) continue;
-      _disposeInlineSpans(children);
+      if (span is TextSpan) {
+        span.recognizer?.dispose();
+        final children = span.children;
+        if (children != null) _disposeInlineSpans(children);
+      }
     }
   }
 

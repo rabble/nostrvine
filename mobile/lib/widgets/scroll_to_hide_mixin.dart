@@ -35,14 +35,20 @@ mixin ScrollToHideMixin<T extends StatefulWidget> on State<T> {
   bool _isScrollingDown = true;
 
   /// Call this in `build()` to measure the header after layout.
+  ///
+  /// Re-runs when the header's intrinsic height changes (e.g. compact vs tall
+  /// tag UI) so the video grid [padding] and hide animation stay in sync.
   void measureHeaderHeight() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final box = headerKey.currentContext?.findRenderObject() as RenderBox?;
-      if (box != null && _headerHeight == 0) {
-        setState(() {
-          _headerHeight = box.size.height;
-        });
-      }
+      if (box == null) return;
+      final h = box.size.height;
+      if (h == _headerHeight) return;
+      setState(() {
+        _headerHeight = h;
+        _headerOffset = _headerOffset.clamp(-_headerHeight, 0);
+      });
     });
   }
 

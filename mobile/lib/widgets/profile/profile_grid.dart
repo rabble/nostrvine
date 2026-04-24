@@ -24,7 +24,7 @@ import 'package:openvine/widgets/profile/profile_comments_grid.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
-import 'package:openvine/widgets/profile/profile_saved_grid.dart';
+import 'package:openvine/widgets/profile/profile_saved_tab.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 
 /// Profile grid view showing header, stats, action buttons, and tabbed content.
@@ -120,6 +120,14 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
+  int get _tabCount => 5;
+
+  int get _repostsTabIndex => 2;
+
+  int get _collabsTabIndex => 3;
+
+  int get _commentsTabIndex => 4;
+
   /// Direct references to BLoCs for refresh capability.
   ProfileLikedVideosBloc? _likedVideosBloc;
   ProfileRepostedVideosBloc? _repostedVideosBloc;
@@ -150,7 +158,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final restoredIndex =
         ref.read(profileTabIndexProvider)[widget.userIdHex] ?? 0;
     _tabController = TabController(
-      length: 5,
+      length: _tabCount,
       vsync: this,
       initialIndex: restoredIndex,
     );
@@ -161,6 +169,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   @override
   void didUpdateWidget(ProfileGridView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.isOwnProfile != widget.isOwnProfile) {
+      _tabController.removeListener(_onTabChanged);
+      _tabController.dispose();
+      _tabController = TabController(length: _tabCount, vsync: this)
+        ..addListener(_onTabChanged);
+    }
     if (oldWidget.refreshNotifier != widget.refreshNotifier) {
       oldWidget.refreshNotifier?.removeListener(_onRefreshRequested);
       widget.refreshNotifier?.addListener(_onRefreshRequested);
@@ -192,12 +206,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     if (index == 1 && !_likedTabSynced && _likedVideosBloc != null) {
       _likedTabSynced = true;
       _likedVideosBloc!.add(const ProfileLikedVideosSyncRequested());
-    } else if (index == 2 &&
+    } else if (index == _repostsTabIndex &&
         !_repostsTabSynced &&
         _repostedVideosBloc != null) {
       _repostsTabSynced = true;
       _repostedVideosBloc!.add(const ProfileRepostedVideosSyncRequested());
-    } else if (index == 3) {
+    } else if (index == _collabsTabIndex) {
       // Own profile: 4th tab is Saved (bookmarks). Other profile: Collabs.
       if (widget.isOwnProfile) {
         if (!_savedTabSynced && _savedVideosBloc != null) {
@@ -210,7 +224,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           _collabVideosBloc!.add(const ProfileCollabVideosFetchRequested());
         }
       }
-    } else if (index == 4 && !_commentsTabSynced && _commentsBloc != null) {
+    } else if (index == _commentsTabIndex &&
+        !_commentsTabSynced &&
+        _commentsBloc != null) {
       _commentsTabSynced = true;
       _commentsBloc!.add(const ProfileCommentsSyncRequested());
     }
@@ -291,7 +307,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         currentUserPubkey: currentUserPubkey,
         targetUserPubkey: widget.userIdHex,
       )..add(const ProfileLikedVideosSubscriptionRequested());
-      // Sync deferred until user views Liked tab
+      // Sync deferred until user views Saved (Videos) on own profile or Liked tab
 
       _repostedVideosBloc = ProfileRepostedVideosBloc(
         repostsRepository: repostsRepository,
@@ -370,7 +386,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
             ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
             ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
             if (widget.isOwnProfile)
-              const ProfileSavedGrid()
+              const ProfileOwnSavedTab()
             else
               ProfileCollabsGrid(isOwnProfile: widget.isOwnProfile),
             ProfileCommentsGrid(isOwnProfile: widget.isOwnProfile),

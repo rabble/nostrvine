@@ -100,6 +100,21 @@ final class VideoFeedCuratedListsChanged extends VideoFeedEvent {
   List<Object?> get props => [];
 }
 
+/// Followed hashtag subscriptions changed (local list).
+///
+/// Dispatched when the followed-hashtags repository stream emits
+/// after the initial replay (skipped). Refreshes the [FeedMode.following] feed
+/// so merged hashtag results stay in sync.
+final class VideoFeedFollowedHashtagsChanged extends VideoFeedEvent {
+  const VideoFeedFollowedHashtagsChanged(this.hashtags);
+
+  /// Canonical labels after the change (same order as in the repository).
+  final List<String> hashtags;
+
+  @override
+  List<Object?> get props => [hashtags];
+}
+
 /// A user was blocked or the blocklist changed.
 ///
 /// When [blockedPubkey] is provided, the handler removes that user's videos

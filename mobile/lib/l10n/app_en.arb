@@ -302,6 +302,40 @@
   "profileLikedOwnEmpty": "When something catches your eye, tap the heart. Your likes will show up here.",
   "profileLikedOtherEmpty": "Nothing caught their eye yet. Give it time.",
   "profileErrorLoadingLiked": "Error loading liked videos",
+  "profileNoFollowedTagsTitle": "No tags saved yet",
+  "profileNoFollowedTagsSubtitle": "Save a hashtag from its page to jump back here anytime",
+  "profileTabSavedSemantic": "Saved",
+  "profileSavedFilterVideos": "Videos",
+  "profileSavedFilterTags": "Tags",
+  "hashtagFavoriteSaveTooltip": "Save hashtag",
+  "hashtagFavoriteRemoveTooltip": "Remove from saved hashtags",
+  "hashtagOptionsMoreTooltip": "Hashtag options",
+  "hashtagMenuVideoCount": "{count, plural, =1{1 video} other{{count} videos}}",
+  "@hashtagMenuVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hashtagOptionSaveToProfile": "Save to profile",
+  "hashtagOptionRemoveFromProfile": "Remove from saved tags",
+  "hashtagSavedToProfileSnackbar": "Saved to your profile",
+  "hashtagRemovedFromProfileSnackbar": "Removed from saved tags",
+  "hashtagOptionAddToFollowingFeed": "Add to Following feed",
+  "hashtagOptionRemoveFromFollowingFeed": "Remove from Following feed",
+  "hashtagAddedToFollowingFeedSnackbar": "Added to your Following feed",
+  "hashtagRemovedFromFollowingFeedSnackbar": "Removed from your Following feed",
+  "profileFollowedTagRemoveTitle": "Remove this tag?",
+  "profileFollowedTagRemoveMessage": "Remove {displayTag} from your saved tags? You can add it again anytime from that hashtag page.",
+  "@profileFollowedTagRemoveMessage": {
+    "placeholders": {
+      "displayTag": {
+        "type": "String"
+      }
+    }
+  },
+  "profileFollowedTagRemoveConfirm": "Remove",
   "profileNoRepostsTitle": "No reposts yet",
   "profileRepostsOwnEmpty": "See something worth sharing? Repost it and it'll appear here.",
   "profileRepostsOtherEmpty": "They haven't passed anything on yet. When they do, it'll show up here.",
@@ -498,6 +532,11 @@
   "exploreTabNew": "New",
   "exploreTabPopular": "Popular",
   "exploreTabCategories": "Categories",
+  "exploreTabTags": "Tags",
+  "exploreTagsSearchHint": "Search tags...",
+  "exploreTagsEmptyFilter": "No tags match your search",
+  "exploreTagsTrackedTooltip": "Saved on your profile",
+  "explorePopularTagsSearchCta": "Search all tags",
   "exploreTabForYou": "For You",
   "exploreTabLists": "Lists",
   "exploreTabIntegratedApps": "Integrated Apps",
@@ -3292,6 +3331,79 @@
   "searchVideosLoadingLabel": "Loading video results",
   "searchListsSectionHeader": "Lists",
   "searchListsLoadingLabel": "Loading list results",
+  "searchResultsCategoryAll": "All",
+  "@searchResultsCategoryAll": {
+    "description": "Search results filter label: show previews for every category."
+  },
+  "searchResultsCategoryPeople": "People",
+  "@searchResultsCategoryPeople": {
+    "description": "Search results filter and section title for user profiles."
+  },
+  "searchResultsCategoryLists": "Lists",
+  "@searchResultsCategoryLists": {
+    "description": "Search results filter and section title for curated lists."
+  },
+  "searchResultsCategoryTags": "Tags",
+  "@searchResultsCategoryTags": {
+    "description": "Search results filter and section title for hashtags."
+  },
+  "searchResultsCategoryVideos": "Videos",
+  "@searchResultsCategoryVideos": {
+    "description": "Search results filter and section title for videos."
+  },
+  "searchResultsFilterSemantic": "Filter: {category}",
+  "@searchResultsFilterSemantic": {
+    "description": "Accessibility label for the search category filter control.",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsNoMatchesForQuery": "No results found for \"{query}\"",
+  "@searchResultsNoMatchesForQuery": {
+    "description": "Empty state when a search subsection has no matches for the current query.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsTryDifferentTerm": "Try a different search term",
+  "@searchResultsTryDifferentTerm": {
+    "description": "Hint below the empty search subsection state."
+  },
+  "searchResultsTagsLoadingSemantic": "Loading tag results",
+  "@searchResultsTagsLoadingSemantic": {
+    "description": "Accessibility label for the tags search results skeleton loader."
+  },
+
+  "hashtagFeedLoadingMessage": "Loading videos about #{hashtag}...",
+  "@hashtagFeedLoadingMessage": {
+    "description": "Shown while the hashtag video grid is loading (no leading # in the placeholder).",
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedLoadingSubtitle": "This may take a few moments",
+  "@hashtagFeedLoadingSubtitle": {
+    "description": "Secondary line under the hashtag feed loading message."
+  },
+  "hashtagFeedEmptyTitle": "No videos found for #{hashtag}",
+  "@hashtagFeedEmptyTitle": {
+    "description": "Empty state title on the hashtag video screen.",
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedEmptySubtitle": "Be the first to post a video with this hashtag!",
+  "@hashtagFeedEmptySubtitle": {
+    "description": "Empty state subtitle on the hashtag video screen."
+  },
   "cameraAgeRestriction": "You must be 16 or older to create content",
   "featureRequestCancel": "Cancel",
   "keyImportError": "Error: {error}",

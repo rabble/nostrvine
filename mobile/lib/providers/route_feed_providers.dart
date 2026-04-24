@@ -45,7 +45,8 @@ final exploreTabIndexProvider = StateProvider<int>((ref) => 1);
 /// Provider to force a specific tab by NAME on next ExploreScreen init.
 /// Uses tab name instead of index because indices shift when Classics/ForYou
 /// tabs become available asynchronously.
-/// Valid values: 'classics', 'new', 'popular', 'for_you', 'lists', 'apps'
+/// Valid values: 'classics', 'new', 'popular', 'categories', 'for_you',
+/// 'lists', 'apps'. ('tags' is accepted as an alias for 'popular'.)
 final forceExploreTabNameProvider = StateProvider<String?>((ref) => null);
 
 /// Explore feed state (discovery/all videos)

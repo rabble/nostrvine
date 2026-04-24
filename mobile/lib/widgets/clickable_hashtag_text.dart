@@ -17,6 +17,8 @@ class ClickableHashtagText extends StatelessWidget {
     this.overflow,
     this.onVideoStateChange,
     this.onUrlTap,
+    this.showHashtagMoreButton = false,
+    this.hashtagMoreLabelStyle,
   });
 
   final String text;
@@ -25,8 +27,10 @@ class ClickableHashtagText extends StatelessWidget {
   final TextStyle? mentionStyle;
   final int? maxLines;
   final TextOverflow? overflow;
-  final Function()? onVideoStateChange;
+  final VoidCallback? onVideoStateChange;
   final Future<void> Function(String rawUrl)? onUrlTap;
+  final bool showHashtagMoreButton;
+  final TextStyle? hashtagMoreLabelStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +43,8 @@ class ClickableHashtagText extends StatelessWidget {
       overflow: overflow,
       onVideoStateChange: onVideoStateChange,
       onUrlTap: onUrlTap,
+      showHashtagMoreButton: showHashtagMoreButton,
+      hashtagMoreLabelStyle: hashtagMoreLabelStyle,
     );
   }
 }

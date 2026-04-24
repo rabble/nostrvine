@@ -1,0 +1,22 @@
+name: followed_hashtags_repository
+description: Local persistence and reactive stream for user-followed hashtag labels.
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ^3.41.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  hashtag_repository:
+    path: ../hashtag_repository
+  rxdart: ^0.28.0
+  shared_preferences: ^2.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^10.0.0

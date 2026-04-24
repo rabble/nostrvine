@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/utils/hashtag_chip_accent.dart';
 
 /// A section displaying trending hashtags in a horizontal scrollable list.
 ///
@@ -97,7 +98,6 @@ class _HashtagChipList extends StatelessWidget {
           final hashtag = hashtags[index - 1];
           return _HashtagChip(
             hashtag: hashtag,
-            colorIndex: index - 1,
             onTap: () {
               if (onHashtagTap != null) {
                 onHashtagTap!(hashtag);
@@ -112,32 +112,19 @@ class _HashtagChipList extends StatelessWidget {
   }
 }
 
-/// Accent colors used for hashtag chip backgrounds.
-const List<Color> _accentColors = [
-  VineTheme.accentYellow,
-  VineTheme.accentLime,
-  VineTheme.accentPink,
-  VineTheme.accentOrange,
-  VineTheme.accentViolet,
-  VineTheme.accentPurple,
-  VineTheme.accentBlue,
-];
-
 /// Individual hashtag chip with tap behavior.
 class _HashtagChip extends StatelessWidget {
   const _HashtagChip({
     required this.hashtag,
     required this.onTap,
-    required this.colorIndex,
   });
 
   final String hashtag;
   final VoidCallback onTap;
-  final int colorIndex;
 
   @override
   Widget build(BuildContext context) {
-    final color = _accentColors[colorIndex % _accentColors.length];
+    final color = hashtagTileBackgroundForLabel(hashtag);
 
     return Padding(
       padding: const EdgeInsetsDirectional.only(end: 8),

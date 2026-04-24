@@ -135,7 +135,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   /// Base: New Videos, Trending, Categories, Lists = 4
   /// +1 if Classics available, +1 if For You available, +1 if Apps enabled
   int get _tabCount {
-    int count = 4; // Base tabs: New Videos, Trending, Categories, Lists
+    int count = 4; // Base: New, Popular, Categories, Lists
     if (_classicsAvailable) count++;
     if (_forYouAvailable) count++;
     if (_appsAvailable) count++;
@@ -155,7 +155,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   /// Convert a tab name to index based on current availability
   int _tabNameToIndex(String name) {
-    final index = _tabNames.indexOf(name);
+    // #1602: Tags moved under Popular; deep links may still request `tags`.
+    final resolved = name == 'tags' ? 'popular' : name;
+    final index = _tabNames.indexOf(resolved);
     if (index >= 0) {
       return index;
     }

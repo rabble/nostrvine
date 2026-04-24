@@ -20,6 +20,7 @@ void main() {
       expect(result.videos, hasLength(1));
       expect(result.videoListSources, isEmpty);
       expect(result.listOnlyVideoIds, isEmpty);
+      expect(result.videoHashtagSources, isEmpty);
     });
 
     test('can be instantiated with all fields', () {
@@ -34,6 +35,7 @@ void main() {
       expect(result.videos, hasLength(1));
       expect(result.videoListSources, hasLength(1));
       expect(result.listOnlyVideoIds, contains('v1'));
+      expect(result.videoHashtagSources, isEmpty);
     });
 
     test('empty constructor defaults', () {
@@ -42,6 +44,7 @@ void main() {
       expect(result.videos, isEmpty);
       expect(result.videoListSources, isEmpty);
       expect(result.listOnlyVideoIds, isEmpty);
+      expect(result.videoHashtagSources, isEmpty);
     });
 
     test('supports equality via Equatable', () {
@@ -106,6 +109,26 @@ void main() {
       expect(result1, isNot(equals(result2)));
     });
 
+    test('inequality when videoHashtagSources differ', () {
+      final video = createVideo(id: 'v1');
+
+      final result1 = HomeFeedResult(
+        videos: [video],
+        videoHashtagSources: const {
+          'v1': {'tag-a'},
+        },
+      );
+
+      final result2 = HomeFeedResult(
+        videos: [video],
+        videoHashtagSources: const {
+          'v1': {'tag-b'},
+        },
+      );
+
+      expect(result1, isNot(equals(result2)));
+    });
+
     test('rawResponseBody defaults to null', () {
       const result = HomeFeedResult(videos: []);
 
@@ -144,18 +167,23 @@ void main() {
         'v1': {'list-a'},
       };
       const listOnly = {'v1'};
+      const hashtagSources = {
+        'v1': {'cats'},
+      };
 
       final result = HomeFeedResult(
         videos: [video],
         videoListSources: sources,
         listOnlyVideoIds: listOnly,
+        videoHashtagSources: hashtagSources,
         rawResponseBody: '{"videos":[]}',
       );
 
-      expect(result.props, hasLength(3));
+      expect(result.props, hasLength(4));
       expect(result.props[0], equals([video]));
       expect(result.props[1], equals(sources));
       expect(result.props[2], equals(listOnly));
+      expect(result.props[3], equals(hashtagSources));
     });
   });
 }

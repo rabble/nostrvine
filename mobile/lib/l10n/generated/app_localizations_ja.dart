@@ -503,6 +503,76 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileErrorLoadingLiked => 'いいね動画の読み込みに失敗';
 
   @override
+  String get profileNoFollowedTagsTitle => '保存したタグはまだありません';
+
+  @override
+  String get profileNoFollowedTagsSubtitle => 'ハッシュタグページから保存すると、いつでもここから戻れるよ';
+
+  @override
+  String get profileTabSavedSemantic => '保存';
+
+  @override
+  String get profileSavedFilterVideos => '動画';
+
+  @override
+  String get profileSavedFilterTags => 'タグ';
+
+  @override
+  String get hashtagFavoriteSaveTooltip => 'ハッシュタグを保存';
+
+  @override
+  String get hashtagFavoriteRemoveTooltip => '保存済みから削除';
+
+  @override
+  String get hashtagOptionsMoreTooltip => 'ハッシュタグのオプション';
+
+  @override
+  String hashtagMenuVideoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hashtagOptionSaveToProfile => 'プロフィールに保存';
+
+  @override
+  String get hashtagOptionRemoveFromProfile => '保存済みタグから削除';
+
+  @override
+  String get hashtagSavedToProfileSnackbar => 'プロフィールに保存しました';
+
+  @override
+  String get hashtagRemovedFromProfileSnackbar => '保存済みタグから削除しました';
+
+  @override
+  String get hashtagOptionAddToFollowingFeed => 'Followingフィードに追加';
+
+  @override
+  String get hashtagOptionRemoveFromFollowingFeed => 'Followingフィードから削除';
+
+  @override
+  String get hashtagAddedToFollowingFeedSnackbar => 'Followingフィードに追加したよ';
+
+  @override
+  String get hashtagRemovedFromFollowingFeedSnackbar => 'Followingフィードから削除したよ';
+
+  @override
+  String get profileFollowedTagRemoveTitle => 'このタグを削除する？';
+
+  @override
+  String profileFollowedTagRemoveMessage(String displayTag) {
+    return '保存済みから$displayTagを削除する？ハッシュタグページからいつでも追加し直せるよ。';
+  }
+
+  @override
+  String get profileFollowedTagRemoveConfirm => '削除';
+
+  @override
   String get profileNoRepostsTitle => 'リポストはまだないよ';
 
   @override
@@ -969,6 +1039,21 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get exploreTabCategories => 'カテゴリ';
+
+  @override
+  String get exploreTabTags => 'タグ';
+
+  @override
+  String get exploreTagsSearchHint => 'タグを検索...';
+
+  @override
+  String get exploreTagsEmptyFilter => '検索に一致するタグはありません';
+
+  @override
+  String get exploreTagsTrackedTooltip => 'プロフィールに保存済み';
+
+  @override
+  String get explorePopularTagsSearchCta => 'すべてのタグを検索';
 
   @override
   String get exploreTabForYou => 'おすすめ';
@@ -5822,6 +5907,54 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get searchListsLoadingLabel => 'リスト結果を読み込み中';
+
+  @override
+  String get searchResultsCategoryAll => 'All';
+
+  @override
+  String get searchResultsCategoryPeople => 'People';
+
+  @override
+  String get searchResultsCategoryLists => 'Lists';
+
+  @override
+  String get searchResultsCategoryTags => 'Tags';
+
+  @override
+  String get searchResultsCategoryVideos => 'Videos';
+
+  @override
+  String searchResultsFilterSemantic(String category) {
+    return 'Filter: $category';
+  }
+
+  @override
+  String searchResultsNoMatchesForQuery(String query) {
+    return 'No results found for \"$query\"';
+  }
+
+  @override
+  String get searchResultsTryDifferentTerm => 'Try a different search term';
+
+  @override
+  String get searchResultsTagsLoadingSemantic => 'Loading tag results';
+
+  @override
+  String hashtagFeedLoadingMessage(String hashtag) {
+    return 'Loading videos about #$hashtag...';
+  }
+
+  @override
+  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+
+  @override
+  String hashtagFeedEmptyTitle(String hashtag) {
+    return 'No videos found for #$hashtag';
+  }
+
+  @override
+  String get hashtagFeedEmptySubtitle =>
+      'Be the first to post a video with this hashtag!';
 
   @override
   String get cameraAgeRestriction => 'コンテンツを作るには16歳以上である必要があるよ';

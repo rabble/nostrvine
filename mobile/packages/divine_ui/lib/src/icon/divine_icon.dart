@@ -101,6 +101,7 @@ enum DivineIconName {
   globe('Globe'),
   graph('graph'),
   gridNine('GridNine'),
+  hashtag('hashtag'),
   handPointing('hand_pointing'),
   headphones('headphones'),
   heart('heart'),

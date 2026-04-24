@@ -19,6 +19,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:followed_hashtags_repository/followed_hashtags_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:hive_ce/hive_ce.dart';
@@ -1794,6 +1795,17 @@ HashtagRepository hashtagRepository(Ref ref) {
       return results;
     },
   );
+}
+
+/// Locally persisted followed hashtag labels (normalized; device storage only).
+@Riverpod(keepAlive: true)
+FollowedHashtagsRepository followedHashtagsRepository(Ref ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final repo = FollowedHashtagsRepository(prefs: prefs);
+  ref.onDispose(() {
+    unawaited(repo.dispose());
+  });
+  return repo;
 }
 
 /// Provider for CategoriesRepository instance.

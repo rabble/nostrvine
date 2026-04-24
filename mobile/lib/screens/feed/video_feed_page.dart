@@ -30,6 +30,7 @@ import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
+import 'package:openvine/screens/feed/following_hashtag_page_title.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/pooled_player_logger.dart';
@@ -74,6 +75,9 @@ class VideoFeedPage extends ConsumerWidget {
     final videosRepository = ref.watch(videosRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final curatedListRepository = ref.watch(curatedListRepositoryProvider);
+    final followedHashtagsRepository = ref.watch(
+      followedHashtagsRepositoryProvider,
+    );
     final profileRepository = ref.watch(profileRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
     final sharedPreferences = ref.watch(sharedPreferencesProvider);
@@ -91,6 +95,7 @@ class VideoFeedPage extends ConsumerWidget {
             videosRepository: videosRepository,
             followRepository: followRepository,
             curatedListRepository: curatedListRepository,
+            followedHashtagsRepository: followedHashtagsRepository,
             profileRepository: profileRepository,
             contentBlocklistRepository: blocklistRepository,
             userPubkey: authService.currentPublicKeyHex,
@@ -579,6 +584,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   children: [
                     FeedEmptyWidget(state: state),
                     const FeedModeSwitch(),
+                    FollowingHashtagPageTitle(pagePosition: _pagePosition),
                   ],
                 );
               }
@@ -802,6 +808,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                         ),
                       ),
                     const FeedModeSwitch(),
+                    FollowingHashtagPageTitle(pagePosition: _pagePosition),
                   ],
                 ),
               );

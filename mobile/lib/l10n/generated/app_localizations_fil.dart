@@ -557,6 +557,80 @@ class AppLocalizationsFil extends AppLocalizations {
       'May error sa pag-load ng mga liked video';
 
   @override
+  String get profileNoFollowedTagsTitle => 'No tags saved yet';
+
+  @override
+  String get profileNoFollowedTagsSubtitle =>
+      'Save a hashtag from its page to jump back here anytime';
+
+  @override
+  String get profileTabSavedSemantic => 'Saved';
+
+  @override
+  String get profileSavedFilterVideos => 'Videos';
+
+  @override
+  String get profileSavedFilterTags => 'Tags';
+
+  @override
+  String get hashtagFavoriteSaveTooltip => 'Save hashtag';
+
+  @override
+  String get hashtagFavoriteRemoveTooltip => 'Remove from saved hashtags';
+
+  @override
+  String get hashtagOptionsMoreTooltip => 'Hashtag options';
+
+  @override
+  String hashtagMenuVideoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hashtagOptionSaveToProfile => 'Save to profile';
+
+  @override
+  String get hashtagOptionRemoveFromProfile => 'Remove from saved tags';
+
+  @override
+  String get hashtagSavedToProfileSnackbar => 'Saved to your profile';
+
+  @override
+  String get hashtagRemovedFromProfileSnackbar => 'Removed from saved tags';
+
+  @override
+  String get hashtagOptionAddToFollowingFeed => 'Add to Following feed';
+
+  @override
+  String get hashtagOptionRemoveFromFollowingFeed =>
+      'Remove from Following feed';
+
+  @override
+  String get hashtagAddedToFollowingFeedSnackbar =>
+      'Added to your Following feed';
+
+  @override
+  String get hashtagRemovedFromFollowingFeedSnackbar =>
+      'Removed from your Following feed';
+
+  @override
+  String get profileFollowedTagRemoveTitle => 'Remove this tag?';
+
+  @override
+  String profileFollowedTagRemoveMessage(String displayTag) {
+    return 'Remove $displayTag from your saved tags? You can add it again anytime from that hashtag page.';
+  }
+
+  @override
+  String get profileFollowedTagRemoveConfirm => 'Remove';
+
+  @override
   String get profileNoRepostsTitle => 'Wala pang repost';
 
   @override
@@ -1054,6 +1128,21 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get exploreTabCategories => 'Mga Category';
+
+  @override
+  String get exploreTabTags => 'Tags';
+
+  @override
+  String get exploreTagsSearchHint => 'Search tags...';
+
+  @override
+  String get exploreTagsEmptyFilter => 'No tags match your search';
+
+  @override
+  String get exploreTagsTrackedTooltip => 'Saved on your profile';
+
+  @override
+  String get explorePopularTagsSearchCta => 'Search all tags';
 
   @override
   String get exploreTabForYou => 'Para sa Iyo';
@@ -6160,6 +6249,54 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get searchListsLoadingLabel =>
       'Naglo-load ng mga resulta para sa list';
+
+  @override
+  String get searchResultsCategoryAll => 'All';
+
+  @override
+  String get searchResultsCategoryPeople => 'People';
+
+  @override
+  String get searchResultsCategoryLists => 'Lists';
+
+  @override
+  String get searchResultsCategoryTags => 'Tags';
+
+  @override
+  String get searchResultsCategoryVideos => 'Videos';
+
+  @override
+  String searchResultsFilterSemantic(String category) {
+    return 'Filter: $category';
+  }
+
+  @override
+  String searchResultsNoMatchesForQuery(String query) {
+    return 'No results found for \"$query\"';
+  }
+
+  @override
+  String get searchResultsTryDifferentTerm => 'Try a different search term';
+
+  @override
+  String get searchResultsTagsLoadingSemantic => 'Loading tag results';
+
+  @override
+  String hashtagFeedLoadingMessage(String hashtag) {
+    return 'Loading videos about #$hashtag...';
+  }
+
+  @override
+  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+
+  @override
+  String hashtagFeedEmptyTitle(String hashtag) {
+    return 'No videos found for #$hashtag';
+  }
+
+  @override
+  String get hashtagFeedEmptySubtitle =>
+      'Be the first to post a video with this hashtag!';
 
   @override
   String get cameraAgeRestriction =>

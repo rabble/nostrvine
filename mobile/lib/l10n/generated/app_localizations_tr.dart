@@ -530,6 +530,80 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileErrorLoadingLiked => 'Beğenilen videolar yüklenirken hata';
 
   @override
+  String get profileNoFollowedTagsTitle => 'Henüz kayıtlı etiket yok';
+
+  @override
+  String get profileNoFollowedTagsSubtitle =>
+      'Bir etiketi sayfasından kaydet; buradan hemen dön';
+
+  @override
+  String get profileTabSavedSemantic => 'Kaydedilenler';
+
+  @override
+  String get profileSavedFilterVideos => 'Videolar';
+
+  @override
+  String get profileSavedFilterTags => 'Etiketler';
+
+  @override
+  String get hashtagFavoriteSaveTooltip => 'Etiketi kaydet';
+
+  @override
+  String get hashtagFavoriteRemoveTooltip => 'Kayıtlı etiketlerden kaldır';
+
+  @override
+  String get hashtagOptionsMoreTooltip => 'Hashtag seçenekleri';
+
+  @override
+  String hashtagMenuVideoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '1 video',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hashtagOptionSaveToProfile => 'Profile kaydet';
+
+  @override
+  String get hashtagOptionRemoveFromProfile => 'Kayıtlı etiketlerden kaldır';
+
+  @override
+  String get hashtagSavedToProfileSnackbar => 'Profiline kaydedildi';
+
+  @override
+  String get hashtagRemovedFromProfileSnackbar =>
+      'Kayıtlı etiketlerden kaldırıldı';
+
+  @override
+  String get hashtagOptionAddToFollowingFeed => 'Following akışına ekle';
+
+  @override
+  String get hashtagOptionRemoveFromFollowingFeed =>
+      'Following akışından kaldır';
+
+  @override
+  String get hashtagAddedToFollowingFeedSnackbar => 'Following akışına eklendi';
+
+  @override
+  String get hashtagRemovedFromFollowingFeedSnackbar =>
+      'Following akışından kaldırıldı';
+
+  @override
+  String get profileFollowedTagRemoveTitle => 'Bu etiket kaldırılsın mı?';
+
+  @override
+  String profileFollowedTagRemoveMessage(String displayTag) {
+    return '$displayTag kayıtlı etiketlerinden kaldırılsın mı? İstediğin zaman hashtag sayfasından yeniden ekleyebilirsin.';
+  }
+
+  @override
+  String get profileFollowedTagRemoveConfirm => 'Kaldır';
+
+  @override
   String get profileNoRepostsTitle => 'Henüz Yeniden Paylaşım Yok';
 
   @override
@@ -1021,6 +1095,21 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get exploreTabCategories => 'Kategoriler';
+
+  @override
+  String get exploreTabTags => 'Etiketler';
+
+  @override
+  String get exploreTagsSearchHint => 'Etiket ara...';
+
+  @override
+  String get exploreTagsEmptyFilter => 'Aramanla eşleşen etiket yok';
+
+  @override
+  String get exploreTagsTrackedTooltip => 'Profilinde kayıtlı';
+
+  @override
+  String get explorePopularTagsSearchCta => 'Tüm etiketleri ara';
 
   @override
   String get exploreTabForYou => 'Sana Özel';
@@ -6054,6 +6143,54 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get searchListsLoadingLabel => 'Liste sonuçları yükleniyor';
+
+  @override
+  String get searchResultsCategoryAll => 'All';
+
+  @override
+  String get searchResultsCategoryPeople => 'People';
+
+  @override
+  String get searchResultsCategoryLists => 'Lists';
+
+  @override
+  String get searchResultsCategoryTags => 'Tags';
+
+  @override
+  String get searchResultsCategoryVideos => 'Videos';
+
+  @override
+  String searchResultsFilterSemantic(String category) {
+    return 'Filter: $category';
+  }
+
+  @override
+  String searchResultsNoMatchesForQuery(String query) {
+    return 'No results found for \"$query\"';
+  }
+
+  @override
+  String get searchResultsTryDifferentTerm => 'Try a different search term';
+
+  @override
+  String get searchResultsTagsLoadingSemantic => 'Loading tag results';
+
+  @override
+  String hashtagFeedLoadingMessage(String hashtag) {
+    return 'Loading videos about #$hashtag...';
+  }
+
+  @override
+  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+
+  @override
+  String hashtagFeedEmptyTitle(String hashtag) {
+    return 'No videos found for #$hashtag';
+  }
+
+  @override
+  String get hashtagFeedEmptySubtitle =>
+      'Be the first to post a video with this hashtag!';
 
   @override
   String get cameraAgeRestriction =>

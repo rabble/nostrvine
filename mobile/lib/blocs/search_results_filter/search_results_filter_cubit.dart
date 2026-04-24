@@ -5,19 +5,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// Each value corresponds to a content category shown in the search results
 /// screen. [all] shows preview sections for every category; the rest show
 /// a single category in full.
+///
+/// Localized labels: `SearchResultsFilterL10n.categoryLabel` in
+/// `lib/l10n/search_results_filter_l10n.dart`.
 enum SearchResultsFilter {
-  all('All'),
-  people('People'),
-
-  lists('Lists'),
-  tags('Tags'),
-  videos('Videos')
-  ;
-
-  const SearchResultsFilter(this.label);
-
-  /// Human-readable display label used in the filter pill and bottom sheet.
-  final String label;
+  all,
+  people,
+  lists,
+  tags,
+  videos,
 }
 
 /// Cubit that holds the active [SearchResultsFilter].
@@ -25,7 +21,9 @@ enum SearchResultsFilter {
 /// Provided at the [SearchResultsPage] level so all child widgets can read
 /// and react to filter changes.
 class SearchResultsFilterCubit extends Cubit<SearchResultsFilter> {
-  SearchResultsFilterCubit() : super(SearchResultsFilter.all);
+  SearchResultsFilterCubit({
+    SearchResultsFilter initial = SearchResultsFilter.all,
+  }) : super(initial);
 
   /// Update the active filter.
   void filterChanged(SearchResultsFilter filter) => emit(filter);

@@ -1,10 +1,14 @@
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/painting.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_sdk/nip19/nip19.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/widgets/hashtag_more_menu.dart';
 
 /// Called when a profile reference is tapped.
 typedef LinkifiedProfileTap = void Function(String hexPubkey);
@@ -21,7 +25,7 @@ typedef LinkifiedMentionTap = void Function(String username);
 /// Called when a URL or email address is tapped.
 typedef LinkifiedUrlTap = Future<void> Function(String rawUrl);
 
-/// Builds linkified [TextSpan]s without owning navigation or data lookup.
+/// Builds linkified [InlineSpan]s without owning navigation or data lookup.
 class LinkifiedTextSpanBuilder {
   /// Creates a span builder for [text].
   const LinkifiedTextSpanBuilder({
@@ -36,6 +40,9 @@ class LinkifiedTextSpanBuilder {
     this.onUrlTap,
     this.profileLabelForHex,
     this.videoLabel,
+    this.showHashtagMoreButton = false,
+    this.hashtagMoreLabelStyle,
+    this.onVideoStateChange,
   });
 
   static final _combinedRegex = RegExp(
@@ -78,9 +85,27 @@ class LinkifiedTextSpanBuilder {
   /// Display label for video/event references.
   final String? videoLabel;
 
+  /// When true, each hashtag is rendered as `#tag` plus an app-bar-style
+  /// overflow control that opens [showHashtagMoreMenu].
+  final bool showHashtagMoreButton;
+
+  /// Label style for `#tag` when [showHashtagMoreButton] is true.
+  final TextStyle? hashtagMoreLabelStyle;
+
+  /// Notified before hashtag navigation or opening the hashtag overflow menu.
+  final VoidCallback? onVideoStateChange;
+
   /// Builds spans preserving the token precedence from [ClickableHashtagText].
-  List<TextSpan> build() {
-    final spans = <TextSpan>[];
+  ///
+  /// When [showHashtagMoreButton] is true, [context] and [ref] must be
+  /// provided (typically from a [ConsumerStatefulWidget]).
+  List<InlineSpan> build([BuildContext? context, WidgetRef? ref]) {
+    assert(
+      !showHashtagMoreButton || (context != null && ref != null),
+      'BuildContext and WidgetRef are required when showHashtagMoreButton is true.',
+    );
+
+    final spans = <InlineSpan>[];
     var lastEnd = 0;
 
     for (final match in _combinedRegex.allMatches(text)) {
@@ -97,7 +122,7 @@ class LinkifiedTextSpanBuilder {
       if (matchedUrl != null) {
         spans.addAll(_buildUrlSpans(matchedUrl));
       } else if (hashtag != null) {
-        spans.add(_buildHashtagSpan(hashtag));
+        spans.add(_buildHashtagSpan(hashtag, context, ref));
       } else if (nostrId != null) {
         spans.add(_buildNostrReferenceSpan(nostrId));
       } else if (hexReference != null) {
@@ -120,7 +145,7 @@ class LinkifiedTextSpanBuilder {
   TextSpan _plainSpan(String value) =>
       TextSpan(text: value, style: defaultStyle);
 
-  List<TextSpan> _buildUrlSpans(String matchedUrl) {
+  List<InlineSpan> _buildUrlSpans(String matchedUrl) {
     final linkText = _trimTrailingUrlPunctuation(matchedUrl);
     final trailingText = matchedUrl.substring(linkText.length);
     return [
@@ -137,12 +162,30 @@ class LinkifiedTextSpanBuilder {
     ];
   }
 
-  TextSpan _buildHashtagSpan(String hashtag) => TextSpan(
-    text: '#$hashtag',
-    style: linkStyle,
-    recognizer: TapGestureRecognizer()
-      ..onTap = () => onHashtagTap?.call(hashtag),
-  );
+  InlineSpan _buildHashtagSpan(
+    String hashtag,
+    BuildContext? context,
+    WidgetRef? ref,
+  ) {
+    if (!showHashtagMoreButton) {
+      return TextSpan(
+        text: '#$hashtag',
+        style: linkStyle,
+        recognizer: TapGestureRecognizer()
+          ..onTap = () => onHashtagTap?.call(hashtag),
+      );
+    }
+    final labelStyle = hashtagMoreLabelStyle ?? VineTheme.titleMediumFont();
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: _HashtagWithMoreButton(
+        hashtag: hashtag,
+        labelStyle: labelStyle,
+        onTagTap: () => onHashtagTap?.call(hashtag),
+        onVideoStateChange: onVideoStateChange,
+      ),
+    );
+  }
 
   TextSpan _buildNostrReferenceSpan(String nostrId) {
     final normalized = _stripNostrScheme(nostrId);
@@ -254,5 +297,56 @@ class LinkifiedTextSpanBuilder {
       end--;
     }
     return url.substring(0, end);
+  }
+}
+
+/// `#tag` + More control aligned with [HashtagFeedScreen] app bar actions.
+class _HashtagWithMoreButton extends ConsumerWidget {
+  const _HashtagWithMoreButton({
+    required this.hashtag,
+    required this.labelStyle,
+    required this.onTagTap,
+    this.onVideoStateChange,
+  });
+
+  final String hashtag;
+  final TextStyle labelStyle;
+  final VoidCallback onTagTap;
+  final VoidCallback? onVideoStateChange;
+
+  static const DiVineAppBarStyle _appBarActionStyle =
+      DiVineAppBarStyle.defaultStyle;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: onTagTap,
+          child: Text(
+            '#$hashtag',
+            style: labelStyle,
+          ),
+        ),
+        const SizedBox(width: 2),
+        DiVineAppBarIconButton(
+          icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
+          onPressed: () {
+            onVideoStateChange?.call();
+            showHashtagMoreMenu(context, ref, hashtag: hashtag);
+          },
+          tooltip: l10n.hashtagOptionsMoreTooltip,
+          semanticLabel: l10n.hashtagOptionsMoreTooltip,
+          backgroundColor: _appBarActionStyle.iconButtonBackgroundColor,
+          borderSide: _appBarActionStyle.iconButtonBorderSide,
+          iconColor: _appBarActionStyle.iconColor,
+          size: _appBarActionStyle.iconButtonSize,
+          iconSize: _appBarActionStyle.iconSize,
+          borderRadius: _appBarActionStyle.iconButtonBorderRadius,
+        ),
+      ],
+    );
   }
 }
