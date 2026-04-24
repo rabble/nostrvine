@@ -892,6 +892,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'Richiesta di eliminazione inviata con successo';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Impossibile eliminare il contenuto: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Classici';
 
   @override
@@ -3050,6 +3055,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Rimuovi definitivamente questo contenuto';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Verrà inviata una richiesta di eliminazione (NIP-09) a tutti i relay. Alcuni relay potrebbero comunque conservare il contenuto.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Il video è in queste liste:';
 
   @override
@@ -3072,6 +3081,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Eliminazione contenuto...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Impossibile eliminare il contenuto: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent =>
@@ -3157,6 +3171,11 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Impossibile aggiornare il video: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Impossibile eliminare il video: $error';
   }
 
   @override
@@ -3683,6 +3702,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get navProfile => 'Profilo';
+
+  @override
+  String get navSearch => 'Cerca';
+
+  @override
+  String get navSearchTooltip => 'Cerca';
 
   @override
   String get navMyProfile => 'Il mio profilo';
@@ -5408,6 +5433,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile caricare i suoni';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Seleziona il segmento audio per il tuo video';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Strumento freccia';
 
   @override
@@ -5481,6 +5510,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Tieni premuto per riordinare';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Tocca per modificare. Tieni premuto e trascina per riordinare.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Sposta a sinistra';

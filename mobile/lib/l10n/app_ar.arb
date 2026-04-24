@@ -2928,7 +2928,8 @@
     "shareMenuDeleteFailedNotAuthenticated": "سجّل الدخول مرة أخرى، ثم حاول الحذف.",
     "shareMenuDeleteFailedNotInitialized": "الحذف غير جاهز بعد. حاول مرة أخرى بعد لحظة.",
     "shareMenuDeleteFailedNotOwner": "يمكنك حذف مقاطع الفيديو الخاصة بك فقط.",
-    "videoEditorLayers": "الطبقات",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{تكرار} other{تكرارات}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "حدّد مقطع الصوت لفيديوك",
+  "videoEditorClipGalleryInstruction": "اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب."
 }

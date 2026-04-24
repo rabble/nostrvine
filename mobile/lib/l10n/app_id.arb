@@ -2928,7 +2928,8 @@
     "shareMenuDeleteFailedNotAuthenticated": "Masuk lagi, lalu coba hapus.",
     "shareMenuDeleteFailedNotInitialized": "Penghapusan belum siap. Coba lagi sebentar lagi.",
     "shareMenuDeleteFailedNotOwner": "Kamu cuma bisa menghapus video milikmu sendiri.",
-    "videoEditorLayers": "Lapisan",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "Pilih segmen audio untuk videomu",
+  "videoEditorClipGalleryInstruction": "Ketuk untuk mengedit. Tekan lama dan seret untuk mengurutkan ulang."
 }

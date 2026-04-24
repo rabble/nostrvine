@@ -2217,7 +2217,8 @@
     "shareMenuDeleteFailedNotAuthenticated": "다시 로그인한 뒤 삭제를 시도해요.",
     "shareMenuDeleteFailedNotInitialized": "삭제 준비가 아직 안 됐어요. 잠시 뒤에 다시 시도해요.",
     "shareMenuDeleteFailedNotOwner": "내가 올린 영상만 삭제할 수 있어요.",
-    "videoEditorLayers": "레이어",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, other{루프}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "동영상에 사용할 오디오 구간을 선택하세요",
+  "videoEditorClipGalleryInstruction": "탭해서 편집하세요. 길게 누르고 드래그해 순서를 바꾸세요."
 }

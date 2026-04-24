@@ -1612,6 +1612,12 @@ abstract class AppLocalizations {
   /// **'Delete request sent successfully'**
   String get videoGridDeleteSuccess;
 
+  /// No description provided for @videoGridDeleteFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete content: {error}'**
+  String videoGridDeleteFailure(Object error);
+
   /// No description provided for @exploreTabClassics.
   ///
   /// In en, this message translates to:
@@ -5318,6 +5324,12 @@ abstract class AppLocalizations {
   /// **'Remove this video from Divine. It may still appear on other Nostr clients.'**
   String get shareMenuDeleteVideoSubtitle;
 
+  /// No description provided for @shareMenuDeleteWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.'**
+  String get shareMenuDeleteWarning;
+
   /// No description provided for @shareMenuVideoInTheseLists.
   ///
   /// In en, this message translates to:
@@ -5359,6 +5371,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deleting content...'**
   String get shareMenuDeletingContent;
+
+  /// No description provided for @shareMenuFailedToDeleteContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete content: {error}'**
+  String shareMenuFailedToDeleteContent(String error);
 
   /// No description provided for @shareMenuDeleteRequestSent.
   ///
@@ -5503,6 +5521,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to update video: {error}'**
   String shareMenuFailedToUpdateVideo(String error);
+
+  /// No description provided for @shareMenuFailedToDeleteVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete video: {error}'**
+  String shareMenuFailedToDeleteVideo(String error);
 
   /// No description provided for @shareMenuDeleteVideoQuestion.
   ///
@@ -6433,6 +6457,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile'**
   String get navProfile;
+
+  /// No description provided for @navSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get navSearch;
+
+  /// No description provided for @navSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get navSearchTooltip;
 
   /// No description provided for @navMyProfile.
   ///
@@ -9500,6 +9536,12 @@ abstract class AppLocalizations {
   /// **'Failed to load sounds'**
   String get videoEditorAudioFailedToLoadTitle;
 
+  /// No description provided for @videoEditorAudioSegmentInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the audio segment for your video'**
+  String get videoEditorAudioSegmentInstruction;
+
   /// No description provided for @videoEditorDrawToolArrowSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -9623,6 +9665,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Long press to reorder'**
   String get videoEditorTimelineClipReorderHint;
+
+  /// No description provided for @videoEditorClipGalleryInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to edit. Hold and drag to reorder.'**
+  String get videoEditorClipGalleryInstruction;
 
   /// No description provided for @videoEditorTimelineClipMoveLeft.
   ///

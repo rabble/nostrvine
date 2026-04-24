@@ -2926,7 +2926,10 @@
     "shareMenuDeleteFailedNotAuthenticated": "Autentifică-te din nou, apoi încearcă să ștergi.",
     "shareMenuDeleteFailedNotInitialized": "Ștergerea nu e încă gata. Încearcă din nou peste un moment.",
     "shareMenuDeleteFailedNotOwner": "Poți șterge doar propriile videoclipuri.",
-    "videoEditorLayers": "Straturi",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{buclă} other{bucle}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "Alege segmentul audio pentru videoclipul tău",
+  "videoEditorClipGalleryInstruction": "Atinge pentru editare. Ține apăsat și trage pentru reordonare.",
+  "navSearch": "Caută",
+  "navSearchTooltip": "Caută"
 }

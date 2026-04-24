@@ -10,10 +10,15 @@ class ProfileTabLoadingMoreSliver extends StatelessWidget {
   const ProfileTabLoadingMoreSliver({super.key});
 
   @override
-  Widget build(BuildContext context) => const SliverToBoxAdapter(
+  Widget build(BuildContext context) => SliverToBoxAdapter(
     child: Padding(
-      padding: .all(16),
-      child: Center(
+      padding: .fromLTRB(
+        16,
+        4,
+        16,
+        16 + MediaQuery.viewPaddingOf(context).bottom,
+      ),
+      child: const Center(
         child: CircularProgressIndicator(color: VineTheme.primary),
       ),
     ),

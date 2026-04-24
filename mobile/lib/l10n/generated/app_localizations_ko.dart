@@ -817,6 +817,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteSuccess => '삭제 요청을 보냈어요';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return '콘텐츠를 삭제하지 못했어요: $error';
+  }
+
+  @override
   String get exploreTabClassics => '클래식';
 
   @override
@@ -2873,6 +2878,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
 
   @override
+  String get shareMenuDeleteWarning =>
+      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
+
+  @override
   String get shareMenuVideoInTheseLists => '영상이 다음 리스트에 있어요:';
 
   @override
@@ -2894,6 +2903,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => '콘텐츠 삭제 중...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return '콘텐츠 삭제에 실패했어요: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => '삭제 요청을 보냈어요';
@@ -2972,6 +2986,11 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return '영상 업데이트에 실패했어요: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return '영상 삭제에 실패했어요: $error';
   }
 
   @override
@@ -3478,6 +3497,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get navProfile => '프로필';
+
+  @override
+  String get navSearch => '검색';
+
+  @override
+  String get navSearchTooltip => '검색';
 
   @override
   String get navMyProfile => '내 프로필';
@@ -5150,6 +5175,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioFailedToLoadTitle => '사운드 로드 실패';
 
   @override
+  String get videoEditorAudioSegmentInstruction => '동영상에 사용할 오디오 구간을 선택하세요';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => '화살표 도구';
 
   @override
@@ -5219,6 +5247,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => '길게 눌러 순서 변경';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      '탭해서 편집하세요. 길게 누르고 드래그해 순서를 바꾸세요.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => '왼쪽으로 이동';

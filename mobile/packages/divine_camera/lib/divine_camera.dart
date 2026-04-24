@@ -269,10 +269,12 @@ class DivineCamera {
   /// Returns the recorded video result, or null if recording failed.
   Future<VideoRecordingResult?> stopRecording() async {
     if (!_state.isRecording) return null;
-    final result = await _platform.stopRecording();
-    _state = _state.copyWith(isRecording: false);
-    _notifyStateChanged();
-    return result;
+    try {
+      return await _platform.stopRecording();
+    } finally {
+      _state = _state.copyWith(isRecording: false);
+      _notifyStateChanged();
+    }
   }
 
   /// Handles app lifecycle changes (pause, resume, etc.).

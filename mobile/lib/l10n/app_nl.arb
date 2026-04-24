@@ -2926,7 +2926,10 @@
     "shareMenuDeleteFailedNotAuthenticated": "Log opnieuw in en probeer te verwijderen.",
     "shareMenuDeleteFailedNotInitialized": "Verwijderen is nog niet klaar. Probeer het zo meteen opnieuw.",
     "shareMenuDeleteFailedNotOwner": "Je kunt alleen je eigen video's verwijderen.",
-    "videoEditorLayers": "Lagen",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "Selecteer het audiofragment voor je video",
+  "videoEditorClipGalleryInstruction": "Tik om te bewerken. Houd vast en sleep om te herordenen.",
+  "navSearch": "Zoeken",
+  "navSearchTooltip": "Zoeken"
 }

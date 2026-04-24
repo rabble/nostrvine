@@ -854,6 +854,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoGridDeleteSuccess => 'تم إرسال طلب الحذف بنجاح';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'فشل حذف المحتوى: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'الكلاسيكيات';
 
   @override
@@ -2984,6 +2989,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'إزالة هذا المحتوى نهائيًا';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'الفيديو في هذه القوائم:';
 
   @override
@@ -3006,6 +3015,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'جاري حذف المحتوى...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'فشل حذف المحتوى: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'تم إرسال طلب الحذف بنجاح';
@@ -3088,6 +3102,11 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'فشل تحديث الفيديو: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'فشل حذف الفيديو: $error';
   }
 
   @override
@@ -3605,6 +3624,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get navProfile => 'الملف الشخصي';
+
+  @override
+  String get navSearch => 'بحث';
+
+  @override
+  String get navSearchTooltip => 'بحث';
 
   @override
   String get navMyProfile => 'ملفي الشخصي';
@@ -5301,6 +5326,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAudioFailedToLoadTitle => 'فشل تحميل الأصوات';
 
   @override
+  String get videoEditorAudioSegmentInstruction => 'حدّد مقطع الصوت لفيديوك';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'أداة السهم';
 
   @override
@@ -5371,6 +5399,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => 'اضغط مطولاً لإعادة الترتيب';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'تحريك لليسار';

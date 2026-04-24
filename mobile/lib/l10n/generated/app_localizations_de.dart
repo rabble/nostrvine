@@ -890,6 +890,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Löschanfrage erfolgreich gesendet';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Inhalt konnte nicht gelöscht werden: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Klassiker';
 
   @override
@@ -3055,6 +3060,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diesen Inhalt dauerhaft entfernen';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Damit wird eine Löschanfrage (NIP-09) an alle Relays gesendet. Manche Relays behalten die Inhalte möglicherweise trotzdem.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Video ist in diesen Listen:';
 
   @override
@@ -3077,6 +3086,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Inhalt wird gelöscht...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Inhalt konnte nicht gelöscht werden: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'Löschanfrage erfolgreich gesendet';
@@ -3159,6 +3173,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Video konnte nicht aktualisiert werden: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Video konnte nicht gelöscht werden: $error';
   }
 
   @override
@@ -3688,6 +3707,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get navProfile => 'Profil';
+
+  @override
+  String get navSearch => 'Suche';
+
+  @override
+  String get navSearchTooltip => 'Suchen';
 
   @override
   String get navMyProfile => 'Mein Profil';
@@ -5417,6 +5442,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Sounds konnten nicht geladen werden';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Wähle den Audiobereich für dein Video aus';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pfeil-Werkzeug';
 
   @override
@@ -5489,6 +5518,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Lange drücken zum Neuordnen';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Tippen zum Bearbeiten. Halten und ziehen zum Neuordnen.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Nach links verschieben';

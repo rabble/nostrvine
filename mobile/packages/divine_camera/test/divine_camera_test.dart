@@ -11,6 +11,7 @@ class MockDivineCameraPlatform
     implements DivineCameraPlatform {
   CameraState _state = const CameraState();
   bool _isRecording = false;
+  bool throwOnStopRecording = false;
   void Function(VideoRecordingResult result)? _onRecordingAutoStopped;
   void Function(RemoteRecordTrigger trigger)? _onRemoteRecordTrigger;
 
@@ -133,6 +134,10 @@ class MockDivineCameraPlatform
   @override
   Future<VideoRecordingResult?> stopRecording() async {
     if (!_isRecording) return null;
+    if (throwOnStopRecording) {
+      _isRecording = false;
+      throw PlatformException(code: 'RECORD_STOP_ERROR');
+    }
     _isRecording = false;
     return const VideoRecordingResult(
       filePath: '/test/video.mp4',
@@ -507,6 +512,20 @@ void main() {
         expect(result.width, 1080);
         expect(result.height, 1920);
         expect(DivineCamera.instance.isRecording, isFalse);
+      });
+
+      test('clears recording state when native stop fails', () async {
+        await DivineCamera.instance.initialize();
+        await DivineCamera.instance.startRecording();
+        mockPlatform.throwOnStopRecording = true;
+
+        await expectLater(
+          DivineCamera.instance.stopRecording(),
+          throwsA(isA<PlatformException>()),
+        );
+
+        expect(DivineCamera.instance.isRecording, isFalse);
+        expect(DivineCamera.instance.canRecord, isTrue);
       });
 
       test('canRecord returns true when initialized', () async {

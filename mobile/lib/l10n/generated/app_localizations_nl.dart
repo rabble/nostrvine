@@ -883,6 +883,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Verwijderverzoek succesvol verstuurd';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Inhoud verwijderen mislukt: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Klassiekers';
 
   @override
@@ -3027,6 +3032,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze inhoud definitief verwijderen';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Dit stuurt een verwijderverzoek (NIP-09) naar alle relays. Sommige relays kunnen de inhoud alsnog bewaren.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Video staat in deze lijsten:';
 
   @override
@@ -3049,6 +3058,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Inhoud verwijderen...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Inhoud verwijderen mislukt: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent =>
@@ -3133,6 +3147,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Video bijwerken mislukt: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Video verwijderen mislukt: $error';
   }
 
   @override
@@ -3657,6 +3676,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get navProfile => 'Profiel';
+
+  @override
+  String get navSearch => 'Zoeken';
+
+  @override
+  String get navSearchTooltip => 'Zoeken';
 
   @override
   String get navMyProfile => 'Mijn profiel';
@@ -5376,6 +5401,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorAudioFailedToLoadTitle => 'Geluiden laden mislukt';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Selecteer het audiofragment voor je video';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pijlgereedschap';
 
   @override
@@ -5448,6 +5477,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Lang indrukken om te slepen';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Tik om te bewerken. Houd vast en sleep om te herordenen.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Naar links verplaatsen';

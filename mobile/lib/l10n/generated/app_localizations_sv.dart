@@ -869,6 +869,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Borttagningsbegäran skickad';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Kunde inte ta bort innehåll: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Klassiker';
 
   @override
@@ -3012,6 +3017,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ta bort det här innehållet permanent';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Videon finns i de här listorna:';
 
   @override
@@ -3034,6 +3043,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Tar bort innehåll...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Kunde inte ta bort innehåll: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'Borttagningsbegäran skickad';
@@ -3116,6 +3130,11 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Kunde inte uppdatera videon: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Kunde inte ta bort videon: $error';
   }
 
   @override
@@ -3638,6 +3657,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get navProfile => 'Profil';
+
+  @override
+  String get navSearch => 'Sök';
+
+  @override
+  String get navSearchTooltip => 'Sök';
 
   @override
   String get navMyProfile => 'Min profil';
@@ -5345,6 +5370,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att ladda ljud';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Välj ljudsegmentet för din video';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pilverktyg';
 
   @override
@@ -5416,6 +5445,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => 'Håll ned för att ordna om';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Tryck för att redigera. Håll ned och dra för att ändra ordning.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Flytta vänster';

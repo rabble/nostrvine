@@ -1196,6 +1196,7 @@ void main() {
               'about': 'New bio',
               'nip05': '_@newuser.divine.video',
               'picture': 'https://example.com/new.png',
+              'banner': null,
             },
           ),
         ).called(1);
@@ -1212,7 +1213,10 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
+              'about': null,
               'nip05': '_@alice.divine.video',
+              'picture': null,
+              'banner': null,
             },
           ),
         ).called(1);
@@ -1228,7 +1232,10 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
+              'about': null,
               'nip05': '_@alice.divine.video',
+              'picture': null,
+              'banner': null,
             },
           ),
         ).called(1);
@@ -1248,7 +1255,10 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
+              'about': null,
               'nip05': 'alice@example.com',
+              'picture': null,
+              'banner': null,
             },
           ),
         ).called(1);
@@ -1269,20 +1279,45 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
+              'about': null,
               'nip05': 'alice@example.com',
+              'picture': null,
+              'banner': null,
             },
           ),
         ).called(1);
       });
 
-      test('omits null optional fields', () async {
+      test(
+        'sends explicit nulls for unset about/picture/banner '
+        'so relays clear them',
+        () async {
+          await profileRepository.saveProfileEvent(displayName: 'Only Name');
+
+          verify(
+            () => mockNostrClient.sendProfile(
+              profileContent: {
+                'display_name': 'Only Name',
+                'about': null,
+                'picture': null,
+                'banner': null,
+              },
+            ),
+          ).called(1);
+        },
+      );
+
+      test('omits nip05 when neither username nor nip05 is provided', () async {
         await profileRepository.saveProfileEvent(displayName: 'Only Name');
 
-        verify(
-          () => mockNostrClient.sendProfile(
-            profileContent: {'display_name': 'Only Name'},
-          ),
-        ).called(1);
+        final captured =
+            verify(
+                  () => mockNostrClient.sendProfile(
+                    profileContent: captureAny(named: 'profileContent'),
+                  ),
+                ).captured.single
+                as Map<String, dynamic>;
+        expect(captured.containsKey('nip05'), isFalse);
       });
 
       test('includes banner when provided', () async {
@@ -1297,7 +1332,12 @@ void main() {
 
         verify(
           () => mockNostrClient.sendProfile(
-            profileContent: {'display_name': 'Test User', 'banner': '0x33ccbf'},
+            profileContent: {
+              'display_name': 'Test User',
+              'about': null,
+              'picture': null,
+              'banner': '0x33ccbf',
+            },
           ),
         ).called(1);
       });
@@ -1340,6 +1380,9 @@ void main() {
                 'website': 'https://old.com',
                 'lud16': 'user@wallet.com',
                 'custom_field': 'preserved',
+                'about': null,
+                'picture': null,
+                'banner': null,
               },
             ),
           ).called(1);
@@ -1365,17 +1408,27 @@ void main() {
                 'display_name': 'New Name',
                 'nip05': '_@newuser.divine.video',
                 'about': 'New bio',
+                'picture': null,
+                'banner': null,
               },
             ),
           ).called(1);
         });
 
         test(
-          'preserves rawData fields when optional params are null',
+          'clears about/picture/banner from rawData '
+          'when null is explicitly passed',
           () async {
+            // The editor surface fills its form fields from the current
+            // profile and then sends them as-is. A user clearing their bio,
+            // avatar, or banner shows up here as `about: null` /
+            // `picture: null` / `banner: null`. The repository must overwrite
+            // the rawData spread so the cleared values reach the relays.
             final currentProfile = await createCurrentProfile({
               'display_name': 'Old Name',
-              'about': 'Preserved bio',
+              'about': 'Old bio',
+              'picture': 'https://example.com/old.png',
+              'banner': '0xff0000',
             });
 
             await profileRepository.saveProfileEvent(
@@ -1387,7 +1440,9 @@ void main() {
               () => mockNostrClient.sendProfile(
                 profileContent: {
                   'display_name': 'New Name',
-                  'about': 'Preserved bio',
+                  'about': null,
+                  'picture': null,
+                  'banner': null,
                 },
               ),
             ).called(1);
@@ -1412,6 +1467,9 @@ void main() {
                 profileContent: {
                   'display_name': 'New Name',
                   'nip05': 'alice@example.com',
+                  'about': null,
+                  'picture': null,
+                  'banner': null,
                 },
               ),
             ).called(1);
@@ -1427,13 +1485,19 @@ void main() {
 
           await profileRepository.saveProfileEvent(
             displayName: 'New Name',
+            about: 'Bio',
             clearNip05: true,
             currentProfile: currentProfile,
           );
 
           verify(
             () => mockNostrClient.sendProfile(
-              profileContent: {'display_name': 'New Name', 'about': 'Bio'},
+              profileContent: {
+                'display_name': 'New Name',
+                'about': 'Bio',
+                'picture': null,
+                'banner': null,
+              },
             ),
           ).called(1);
         });
@@ -1465,6 +1529,9 @@ void main() {
                 profileContent: {
                   'display_name': 'New Name',
                   'nip05': 'new@example.com',
+                  'about': null,
+                  'picture': null,
+                  'banner': null,
                 },
               ),
             ).called(1);
@@ -2670,6 +2737,236 @@ void main() {
             expect(result, hasLength(1));
             expect(result.first.displayName, equals('Alice REST'));
             expect(finalYieldFilterCalled, isFalse);
+          },
+        );
+      });
+
+      group('with boostPubkeys', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+        // Three distinct 64-char hex pubkeys.
+        final pubA = 'a' * 64;
+        final pubB = 'b' * 64;
+        final pubC = 'c' * 64;
+
+        ProfileSearchResult restResult(String pubkey, String name) {
+          return ProfileSearchResult(
+            pubkey: pubkey,
+            displayName: name,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+          );
+        }
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockUserProfilesDao.getAllProfiles(),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
+          ).thenAnswer((_) async => []);
+        });
+
+        test(
+          'promotes boosted pubkeys to the front on the initial page',
+          () async {
+            when(
+              () => mockFunnelcakeClient.searchProfiles(
+                query: 'liz',
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                sortBy: any(named: 'sortBy'),
+                hasVideos: any(named: 'hasVideos'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                restResult(pubA, 'Zoe'),
+                restResult(pubB, 'Liz'),
+                restResult(pubC, 'Maya'),
+              ],
+            );
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo
+                .searchUsersProgressive(
+                  query: 'liz',
+                  sortBy: 'followers',
+                  boostPubkeys: {pubB},
+                )
+                .last;
+
+            expect(
+              result.map((p) => p.displayName).toList(),
+              equals(['Liz', 'Zoe', 'Maya']),
+            );
+          },
+        );
+
+        test(
+          'preserves server-relative order within each boost group',
+          () async {
+            when(
+              () => mockFunnelcakeClient.searchProfiles(
+                query: 'test',
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                sortBy: any(named: 'sortBy'),
+                hasVideos: any(named: 'hasVideos'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                restResult(pubA, 'A'), // boosted
+                restResult(pubB, 'B'), // not boosted
+                restResult(pubC, 'C'), // boosted
+                restResult('d' * 64, 'D'), // not boosted
+              ],
+            );
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo
+                .searchUsersProgressive(
+                  query: 'test',
+                  sortBy: 'followers',
+                  boostPubkeys: {pubA, pubC},
+                )
+                .last;
+
+            expect(
+              result.map((p) => p.displayName).toList(),
+              equals(['A', 'C', 'B', 'D']),
+            );
+          },
+        );
+
+        test(
+          'is a no-op when the boost set is empty',
+          () async {
+            when(
+              () => mockFunnelcakeClient.searchProfiles(
+                query: 'test',
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                sortBy: any(named: 'sortBy'),
+                hasVideos: any(named: 'hasVideos'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                restResult(pubA, 'Zoe'),
+                restResult(pubB, 'Maya'),
+              ],
+            );
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo
+                .searchUsersProgressive(
+                  query: 'test',
+                  sortBy: 'followers',
+                  boostPubkeys: const <String>{},
+                )
+                .last;
+
+            expect(
+              result.map((p) => p.displayName).toList(),
+              equals(['Zoe', 'Maya']),
+            );
+          },
+        );
+
+        test(
+          'is a no-op when boostPubkeys is null',
+          () async {
+            when(
+              () => mockFunnelcakeClient.searchProfiles(
+                query: 'test',
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                sortBy: any(named: 'sortBy'),
+                hasVideos: any(named: 'hasVideos'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                restResult(pubA, 'Zoe'),
+                restResult(pubB, 'Maya'),
+              ],
+            );
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo
+                .searchUsersProgressive(
+                  query: 'test',
+                  sortBy: 'followers',
+                )
+                .last;
+
+            expect(
+              result.map((p) => p.displayName).toList(),
+              equals(['Zoe', 'Maya']),
+            );
+          },
+        );
+
+        test(
+          'is a no-op when no result is in the boost set',
+          () async {
+            when(
+              () => mockFunnelcakeClient.searchProfiles(
+                query: 'test',
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                sortBy: any(named: 'sortBy'),
+                hasVideos: any(named: 'hasVideos'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                restResult(pubA, 'Zoe'),
+                restResult(pubB, 'Maya'),
+              ],
+            );
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo
+                .searchUsersProgressive(
+                  query: 'test',
+                  sortBy: 'followers',
+                  boostPubkeys: {'f' * 64},
+                )
+                .last;
+
+            expect(
+              result.map((p) => p.displayName).toList(),
+              equals(['Zoe', 'Maya']),
+            );
           },
         );
       });

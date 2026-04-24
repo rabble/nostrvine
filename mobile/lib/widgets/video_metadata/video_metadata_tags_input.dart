@@ -183,7 +183,6 @@ class _VideoMetadataTagsInputState
                   DivineTextField(
                     controller: _controller,
                     focusNode: _focusNode,
-                    // TODO(l10n): Replace with context.l10n when localization is added.
                     labelText: tags.isEmpty
                         ? context.l10n.videoMetadataTagsLabel
                         : null,

@@ -2926,7 +2926,10 @@
     "shareMenuDeleteFailedNotAuthenticated": "Reconnecte-toi, puis réessaie de supprimer.",
     "shareMenuDeleteFailedNotInitialized": "La suppression n'est pas prête. Réessaie dans un instant.",
     "shareMenuDeleteFailedNotOwner": "Tu peux supprimer uniquement tes propres vidéos.",
-    "videoEditorLayers": "Calques",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{boucle} other{boucles}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "Sélectionne le segment audio de ta vidéo",
+  "videoEditorClipGalleryInstruction": "Appuie pour modifier. Maintiens appuyé et fais glisser pour réorganiser.",
+  "navSearch": "Recherche",
+  "navSearchTooltip": "Rechercher"
 }

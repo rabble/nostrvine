@@ -881,6 +881,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Delete request sent successfully';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Failed to delete content: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Classics';
 
   @override
@@ -3018,6 +3023,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove this video from Divine. It may still appear on other Nostr clients.';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Video is in these lists:';
 
   @override
@@ -3040,6 +3049,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Deleting content...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Failed to delete content: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'Video deleted';
@@ -3123,6 +3137,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Failed to update video: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Failed to delete video: $error';
   }
 
   @override
@@ -3647,6 +3666,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navProfile => 'Profile';
+
+  @override
+  String get navSearch => 'Search';
+
+  @override
+  String get navSearchTooltip => 'Search';
 
   @override
   String get navMyProfile => 'My Profile';
@@ -5353,6 +5378,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorAudioFailedToLoadTitle => 'Failed to load sounds';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Select the audio segment for your video';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Arrow tool';
 
   @override
@@ -5424,6 +5453,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => 'Long press to reorder';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Tap to edit. Hold and drag to reorder.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Move left';

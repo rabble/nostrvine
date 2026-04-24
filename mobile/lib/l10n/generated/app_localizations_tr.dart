@@ -863,6 +863,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Silme isteği başarıyla gönderildi';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'İçerik silinemedi: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Klasikler';
 
   @override
@@ -3000,6 +3005,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Video şu listelerde:';
 
   @override
@@ -3022,6 +3031,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'İçerik siliniyor...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'İçerik silinemedi: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'Silme isteği başarıyla gönderildi';
@@ -3105,6 +3119,11 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Video güncellenemedi: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Video silinemedi: $error';
   }
 
   @override
@@ -3629,6 +3648,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get navProfile => 'Profil';
+
+  @override
+  String get navSearch => 'Ara';
+
+  @override
+  String get navSearchTooltip => 'Ara';
 
   @override
   String get navMyProfile => 'Profilim';
@@ -5330,6 +5355,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAudioFailedToLoadTitle => 'Sesler yüklenemedi';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Videon için ses bölümünü seç';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Ok aracı';
 
   @override
@@ -5402,6 +5431,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Yeniden sıralamak için uzun basın';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Düzenlemek için dokun. Yeniden sıralamak için basılı tutup sürükle.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Sola taşı';

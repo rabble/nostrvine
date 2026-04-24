@@ -27,6 +27,16 @@ extension CameraController {
         videoOutputQueue.async { [weak self] in
             guard let self = self else { return }
 
+            guard self.hasReceivedPreviewFrame() else {
+                self.disableAutoFlash()
+                DispatchQueue.main.async {
+                    completion(
+                        "Camera preview has not produced a video frame yet"
+                    )
+                }
+                return
+            }
+
             let outputDir: URL
             if let customDir = outputDirectory {
                 outputDir = URL(fileURLWithPath: customDir)
@@ -108,19 +118,44 @@ extension CameraController {
                 )
                 audioInput.expectsMediaDataInRealTime = true
 
-                if writer.canAdd(videoInput) {
-                    writer.add(videoInput)
+                guard writer.canAdd(videoInput) else {
+                    self.cleanupRecordingState(deleteOutputFile: true)
+                    DispatchQueue.main.async {
+                        completion("Cannot add video input to asset writer")
+                    }
+                    return
                 }
+                writer.add(videoInput)
+
+                let addedAudioInput: AVAssetWriterInput?
                 if writer.canAdd(audioInput) {
                     writer.add(audioInput)
+                    addedAudioInput = audioInput
+                } else {
+                    addedAudioInput = nil
+                    print(
+                        "DivineCamera macOS: Cannot add audio input "
+                            + "to asset writer"
+                    )
                 }
 
                 self.assetWriter = writer
                 self.videoWriterInput = videoInput
-                self.audioWriterInput = audioInput
+                self.audioWriterInput = addedAudioInput
                 self.pixelBufferAdaptor = adaptor
 
-                writer.startWriting()
+                guard writer.startWriting() else {
+                    let message =
+                        writer.error?.localizedDescription ?? "Unknown error"
+                    writer.cancelWriting()
+                    self.cleanupRecordingState(deleteOutputFile: true)
+                    DispatchQueue.main.async {
+                        completion(
+                            "Failed to start asset writer: \(message)"
+                        )
+                    }
+                    return
+                }
 
                 // Switch to the preferred audio device if specified.
                 // The audio input/output stay in the session for its
@@ -201,6 +236,18 @@ extension CameraController {
         videoOutputQueue.async { [weak self] in
             guard let self = self else { return }
 
+            if !self.isWriterSessionStarted {
+                writer.cancelWriting()
+                self.cleanupRecordingState(deleteOutputFile: true)
+                DispatchQueue.main.async {
+                    completion(
+                        nil,
+                        "Recording stopped before first video frame"
+                    )
+                }
+                return
+            }
+
             self.videoWriterInput?.markAsFinished()
             self.audioWriterInput?.markAsFinished()
 
@@ -273,5 +320,23 @@ extension CameraController {
                 }
             }
         }
+    }
+
+    /// Clears recording-only state after completion, cancellation, or failure.
+    func cleanupRecordingState(deleteOutputFile: Bool) {
+        disableAutoFlash()
+
+        if deleteOutputFile, let outputURL = currentRecordingURL {
+            try? FileManager.default.removeItem(at: outputURL)
+        }
+
+        assetWriter = nil
+        videoWriterInput = nil
+        audioWriterInput = nil
+        pixelBufferAdaptor = nil
+        currentRecordingURL = nil
+        recordingStartTime = nil
+        isWriterSessionStarted = false
+        isRecording = false
     }
 }

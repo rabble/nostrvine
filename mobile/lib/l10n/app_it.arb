@@ -2926,7 +2926,10 @@
     "shareMenuDeleteFailedNotAuthenticated": "Accedi di nuovo, poi riprova a eliminare.",
     "shareMenuDeleteFailedNotInitialized": "L'eliminazione non è ancora pronta. Riprova tra un attimo.",
     "shareMenuDeleteFailedNotOwner": "Puoi eliminare solo i tuoi video.",
-    "videoEditorLayers": "Livelli",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "Seleziona il segmento audio per il tuo video",
+  "videoEditorClipGalleryInstruction": "Tocca per modificare. Tieni premuto e trascina per riordinare.",
+  "navSearch": "Cerca",
+  "navSearchTooltip": "Cerca"
 }

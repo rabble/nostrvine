@@ -2926,7 +2926,10 @@
     "shareMenuDeleteFailedNotAuthenticated": "Volvé a iniciar sesión y probá borrar de nuevo.",
     "shareMenuDeleteFailedNotInitialized": "El borrado no está listo todavía. Probá de nuevo en un momento.",
     "shareMenuDeleteFailedNotOwner": "Solo podés borrar tus propios videos.",
-    "videoEditorLayers": "Capas",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{bucle} other{bucles}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "Selecciona el segmento de audio para tu video",
+  "videoEditorClipGalleryInstruction": "Toca para editar. Mantén presionado y arrastra para reordenar.",
+  "navSearch": "Buscar",
+  "navSearchTooltip": "Buscar"
 }

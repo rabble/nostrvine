@@ -2926,7 +2926,10 @@
     "shareMenuDeleteFailedNotAuthenticated": "Melde dich erneut an und versuch es nochmal.",
     "shareMenuDeleteFailedNotInitialized": "Löschen ist noch nicht bereit. Versuch es gleich noch einmal.",
     "shareMenuDeleteFailedNotOwner": "Du kannst nur deine eigenen Videos löschen.",
-    "videoEditorLayers": "Ebenen",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{Loop} other{Loops}}",
-    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again."
+    "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
+  "videoEditorAudioSegmentInstruction": "Wähle den Audiobereich für dein Video aus",
+  "videoEditorClipGalleryInstruction": "Tippen zum Bearbeiten. Halten und ziehen zum Neuordnen.",
+  "navSearch": "Suche",
+  "navSearchTooltip": "Suchen"
 }

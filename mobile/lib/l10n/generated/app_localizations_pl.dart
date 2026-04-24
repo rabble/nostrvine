@@ -893,6 +893,11 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Żądanie usunięcia wysłane pomyślnie';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Nie udało się usunąć treści: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Klasyki';
 
   @override
@@ -3104,6 +3109,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Trwale usuń tę treść';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Film jest na tych listach:';
 
   @override
@@ -3133,6 +3142,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Usuwanie treści...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Nie udało się usunąć treści: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent =>
@@ -3216,6 +3230,11 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Nie udało się zaktualizować filmu: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Nie udało się usunąć filmu: $error';
   }
 
   @override
@@ -3748,6 +3767,12 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get navProfile => 'Profil';
+
+  @override
+  String get navSearch => 'Szukaj';
+
+  @override
+  String get navSearchTooltip => 'Szukaj';
 
   @override
   String get navMyProfile => 'Mój profil';
@@ -5491,6 +5516,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się wczytać dźwięków';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Wybierz fragment audio dla swojego filmu';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Narzędzie strzałki';
 
   @override
@@ -5564,6 +5593,10 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Przytrzymaj, aby zmienić kolejność';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Dotknij, aby edytować. Przytrzymaj i przeciągnij, aby zmienić kolejność.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Przesuń w lewo';

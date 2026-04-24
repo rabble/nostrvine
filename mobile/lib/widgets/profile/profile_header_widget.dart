@@ -24,6 +24,7 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
+import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -31,7 +32,7 @@ import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Profile header widget displaying avatar, stats, name, and bio.
-class ProfileHeaderWidget extends ConsumerWidget {
+class ProfileHeaderWidget extends ConsumerStatefulWidget {
   const ProfileHeaderWidget({
     required this.userIdHex,
     required this.isOwnProfile,
@@ -43,6 +44,11 @@ class ProfileHeaderWidget extends ConsumerWidget {
     this.onMore,
     this.displayNameHint,
     this.avatarUrlHint,
+    this.displayName,
+    this.onOpenClips,
+    this.onMessageUser,
+    this.onShareProfile,
+    this.onBlockedTap,
     super.key,
   });
 
@@ -77,30 +83,74 @@ class ProfileHeaderWidget extends ConsumerWidget {
   /// Optional avatar URL hint for users without Kind 0 profiles.
   final String? avatarUrlHint;
 
+  /// Display name for unfollow confirmation (only used for other profiles).
+  final String? displayName;
+
+  /// Callback when "Clips" button is tapped (own profile only).
+  final VoidCallback? onOpenClips;
+
+  /// Callback when "Message" button is tapped (other profiles only).
+  final VoidCallback? onMessageUser;
+
+  /// Callback when share button is tapped.
+  final VoidCallback? onShareProfile;
+
+  /// Callback when the Blocked button is tapped (other profiles only).
+  final VoidCallback? onBlockedTap;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileHeaderWidget> createState() =>
+      _ProfileHeaderWidgetState();
+}
+
+class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
+  /// Whether the profile content has been revealed.
+  /// Flips to true once profile data arrives and never resets.
+  bool _profileVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _profileVisible = true;
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Restore widget fields via `widget.` — same logic as before.
     final UserProfile? effectiveProfile;
-    if (isOwnProfile) {
+    if (widget.isOwnProfile) {
       final state = context.watch<MyProfileBloc>().state;
-      effectiveProfile = switch (state) {
-        MyProfileUpdated(:final profile) => profile,
-        _ => null,
-      };
-    } else if (profile != null) {
-      effectiveProfile = profile;
+      effectiveProfile =
+          switch (state) {
+            MyProfileUpdated(:final profile) => profile,
+            MyProfileLoaded(:final profile) => profile,
+            MyProfileLoading(:final profile) => profile,
+            _ => null,
+          } ??
+          widget.profile;
+    } else if (widget.profile != null) {
+      effectiveProfile = widget.profile;
     } else {
-      effectiveProfile = ref.watch(fetchUserProfileProvider(userIdHex)).value;
+      effectiveProfile = ref
+          .watch(fetchUserProfileProvider(widget.userIdHex))
+          .value;
     }
 
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
     // Check for both null AND empty string - some profiles have empty picture field
     final profilePictureUrl = (effectiveProfile?.picture?.isNotEmpty == true)
         ? effectiveProfile!.picture
-        : avatarUrlHint;
+        : widget.avatarUrlHint;
     final hasCustomName =
         effectiveProfile?.name?.isNotEmpty == true ||
         effectiveProfile?.displayName?.isNotEmpty == true ||
-        displayNameHint?.isNotEmpty == true;
+        widget.displayNameHint?.isNotEmpty == true;
     final hasAnyProfileInfo =
         hasCustomName ||
         effectiveProfile?.picture?.isNotEmpty == true ||
@@ -119,24 +169,24 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final prefs = ref.watch(sharedPreferencesProvider);
     final isDivineLoginBannerHidden = isDivineLoginBannerDismissed(
       prefs,
-      userIdHex,
+      widget.userIdHex,
     );
 
     // Show session expired bottom sheet for non-anonymous users
-    if (isOwnProfile &&
+    if (widget.isOwnProfile &&
         !isAnonymous &&
         hasExpiredSession &&
         !isDivineLoginBannerHidden) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
-          _showSessionExpiredSheet(context, ref, userIdHex);
+          _showSessionExpiredSheet(context, ref, widget.userIdHex);
         }
       });
     }
 
     // Compute pending profile actions for the avatar badge
     final pendingActions = ProfileActionType.pending(
-      isOwnProfile: isOwnProfile,
+      isOwnProfile: widget.isOwnProfile,
       isAnonymous: isAnonymous,
       hasExpiredSession: hasExpiredSession,
       hasAnyProfileInfo: hasAnyProfileInfo,
@@ -155,70 +205,93 @@ class ProfileHeaderWidget extends ConsumerWidget {
     return Padding(
       padding: EdgeInsets.only(top: safeAreaTop),
       child: Column(
+        mainAxisSize: .min,
         children: [
-          // Navigation buttons
+          // Navigation buttons — always visible immediately.
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (isOwnProfile)
+                if (widget.isOwnProfile)
                   DivineIconButton(
                     icon: DivineIconName.gear,
                     type: DivineIconButtonType.ghostSecondary,
                     size: DivineIconButtonSize.small,
                     onPressed: () => context.push(SettingsScreen.path),
                   )
-                else if (onBack != null)
+                else if (widget.onBack != null)
                   DivineIconButton(
                     icon: DivineIconName.caretLeft,
                     type: DivineIconButtonType.ghostSecondary,
                     size: DivineIconButtonSize.small,
-                    onPressed: onBack,
+                    onPressed: widget.onBack,
                   ),
-                if (onMore != null)
+                if (widget.onMore != null)
                   DivineIconButton(
                     icon: DivineIconName.dotsThree,
                     type: DivineIconButtonType.ghostSecondary,
                     size: DivineIconButtonSize.small,
-                    onPressed: onMore,
+                    onPressed: widget.onMore,
                   ),
               ],
             ),
           ),
 
-          // Centered avatar with action label pill
-          Center(
-            child: _ProfileAvatarWithColor(
-              imageUrl: profilePictureUrl,
-              profileColor: profileColor,
-              pendingActions: pendingActions,
-              onActionTap: pendingActions.isNotEmpty
-                  ? () => _showActionsSheet(context, pendingActions)
-                  : null,
-            ),
-          ),
+          // Profile content fades in once data arrives for the first time.
+          AnimatedOpacity(
+            opacity: effectiveProfile != null || _profileVisible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 80),
+            curve: Curves.easeInOut,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Centered avatar with action label pill
+                Center(
+                  child: _ProfileAvatarWithColor(
+                    imageUrl: profilePictureUrl,
+                    profileColor: profileColor,
+                    pendingActions: pendingActions,
+                    onActionTap: pendingActions.isNotEmpty
+                        ? () => _showActionsSheet(context, pendingActions)
+                        : null,
+                  ),
+                ),
 
-          // Name, NIP-05, and bio
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-            child: _ProfileNameAndBio(
-              profile: effectiveProfile,
-              userIdHex: userIdHex,
-              nip05: nip05,
-              about: about,
-              displayNameHint: displayNameHint,
-              accentColor: profileColor,
-              isOwnProfile: isOwnProfile,
-            ),
-          ),
+                // Name, NIP-05, and bio
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+                  child: _ProfileNameAndBio(
+                    profile: effectiveProfile,
+                    userIdHex: widget.userIdHex,
+                    nip05: nip05,
+                    about: about,
+                    displayNameHint: widget.displayNameHint,
+                    accentColor: profileColor,
+                    isOwnProfile: widget.isOwnProfile,
+                  ),
+                ),
 
-          // Stats row: Followers | Following | Likes | Loops
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: _ProfileStatsRow(
-              userIdHex: userIdHex,
-              profileStats: profileStats,
+                // Stats row: Followers | Following | Likes | Loops
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _ProfileStatsRow(
+                    userIdHex: widget.userIdHex,
+                    profileStats: widget.profileStats,
+                  ),
+                ),
+
+                ProfileActionButtons(
+                  userIdHex: widget.userIdHex,
+                  isOwnProfile: widget.isOwnProfile,
+                  displayName: widget.displayName,
+                  onEditProfile: widget.onEditProfile,
+                  onOpenClips: widget.onOpenClips,
+                  onMessageUser: widget.onMessageUser,
+                  onShareProfile: widget.onShareProfile,
+                  onBlockedTap: widget.onBlockedTap,
+                ),
+              ],
             ),
           ),
         ],
@@ -226,12 +299,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
     );
   }
 
-  /// Get the profile color for this user (can be used by parent widgets for app bar)
-  static Color? getProfileColor(UserProfile? profile) {
-    return profile?.profileBackgroundColor;
-  }
-
-  static void _showSessionExpiredSheet(
+  void _showSessionExpiredSheet(
     BuildContext context,
     WidgetRef ref,
     String userIdHex,
@@ -260,7 +328,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
     );
   }
 
-  static void _showActionsSheet(
+  void _showActionsSheet(
     BuildContext context,
     List<ProfileActionType> actions,
   ) {
@@ -638,16 +706,14 @@ class _ProfileStatsRow extends StatelessWidget {
         ),
     ];
 
-    return IntrinsicHeight(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          for (int i = 0; i < columns.length; i++) ...[
-            if (i > 0) const _StatDivider(),
-            columns[i],
-          ],
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        for (int i = 0; i < columns.length; i++) ...[
+          if (i > 0) const _StatDivider(),
+          columns[i],
         ],
-      ),
+      ],
     );
   }
 }

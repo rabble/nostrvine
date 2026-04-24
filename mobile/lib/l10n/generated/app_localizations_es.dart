@@ -892,6 +892,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pedido de eliminación enviado con éxito';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'No se pudo eliminar el contenido: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Clásicos';
 
   @override
@@ -3054,6 +3059,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Sacá este contenido para siempre';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Esto envía un pedido de eliminación (NIP-09) a todos los relays. Algunos relays todavía pueden mantener el contenido.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'El video está en estas listas:';
 
   @override
@@ -3076,6 +3085,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Eliminando contenido...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'No se pudo eliminar el contenido: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent =>
@@ -3160,6 +3174,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'No se pudo actualizar el video: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'No se pudo eliminar el video: $error';
   }
 
   @override
@@ -3685,6 +3704,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get navProfile => 'Perfil';
+
+  @override
+  String get navSearch => 'Buscar';
+
+  @override
+  String get navSearchTooltip => 'Buscar';
 
   @override
   String get navMyProfile => 'Mi perfil';
@@ -5413,6 +5438,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudieron cargar los sonidos';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Selecciona el segmento de audio para tu video';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Herramienta flecha';
 
   @override
@@ -5485,6 +5514,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Mantén presionado para reordenar';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Toca para editar. Mantén presionado y arrastra para reordenar.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Mover a la izquierda';

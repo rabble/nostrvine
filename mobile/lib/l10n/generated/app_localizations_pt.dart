@@ -895,6 +895,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Solicitação de exclusão enviada com sucesso';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Falha ao excluir conteúdo: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Clássicos';
 
   @override
@@ -3039,6 +3044,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Remover este conteúdo permanentemente';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'O vídeo está nestas listas:';
 
   @override
@@ -3061,6 +3070,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Excluindo conteúdo...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Falha ao excluir conteúdo: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent =>
@@ -3145,6 +3159,11 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Falha ao atualizar vídeo: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Falha ao excluir vídeo: $error';
   }
 
   @override
@@ -3667,6 +3686,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get navProfile => 'Perfil';
+
+  @override
+  String get navSearch => 'Pesquisar';
+
+  @override
+  String get navSearchTooltip => 'Pesquisar';
 
   @override
   String get navMyProfile => 'Meu perfil';
@@ -5386,6 +5411,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorAudioFailedToLoadTitle => 'Falha ao carregar sons';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Selecione o trecho de áudio para seu vídeo';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Ferramenta seta';
 
   @override
@@ -5458,6 +5487,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Pressione e segure para reordenar';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Toque para editar. Pressione e arraste para reordenar.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Mover para a esquerda';

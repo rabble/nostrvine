@@ -13,6 +13,7 @@ import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/blocs/video_editor/audio_timing/audio_timing_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
@@ -325,8 +326,7 @@ class _BottomControls extends StatelessWidget {
         Padding(
           padding: const .symmetric(horizontal: 16),
           child: Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Select the audio segment for your video',
+            context.l10n.videoEditorAudioSegmentInstruction,
             style: VineTheme.bodySmallFont(),
             textAlign: .center,
           ),

@@ -16,7 +16,6 @@ import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.da
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_tab_index_provider.dart';
-import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_banner_layer.dart';
 import 'package:openvine/widgets/profile/profile_collabs_grid.dart';
 import 'package:openvine/widgets/profile/profile_comments_grid.dart';
@@ -137,26 +136,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   bool _commentsTabSynced = false;
 
   /// Key attached to the ProfileHeaderWidget so we can measure its height
-  /// and position the action buttons layer accordingly.
+  /// and compute the tab bar top inset accordingly.
   final GlobalKey _headerKey = GlobalKey();
-
-  /// Measured height of the profile header (variable based on bio length,
-  /// name, nip-05 presence, etc.). Updated after each build.
-  double _headerHeight = 0;
-
-  /// Screen-space Y position of the action buttons layer's top edge.
-  /// Drives the ProfileActionButtonsLayer's Positioned widget.
-  final ValueNotifier<double> _actionButtonsTop = ValueNotifier<double>(0);
-
-  /// Fixed height of the action buttons row (matches the spacer inside the
-  /// NestedScrollView).
-  static const double _actionButtonsHeight = 80;
-
-  /// Dynamic top inset for the pinned tab bar, grows from 0 to safeAreaTop
-  /// as the action buttons row's bottom edge scrolls past the safe area.
-  /// At rest: 0 (no gap between action buttons and tab icons).
-  /// When pinned: safeAreaTop (tab icons stay below the status bar).
-  double _tabBarTopInset = 0;
 
   @override
   void initState() {
@@ -172,7 +153,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     );
     _tabController.addListener(_onTabChanged);
     widget.refreshNotifier?.addListener(_onRefreshRequested);
-    widget.scrollController?.addListener(_onScroll);
   }
 
   @override
@@ -181,42 +161,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     if (oldWidget.refreshNotifier != widget.refreshNotifier) {
       oldWidget.refreshNotifier?.removeListener(_onRefreshRequested);
       widget.refreshNotifier?.addListener(_onRefreshRequested);
-    }
-    if (oldWidget.scrollController != widget.scrollController) {
-      oldWidget.scrollController?.removeListener(_onScroll);
-      widget.scrollController?.addListener(_onScroll);
-    }
-  }
-
-  /// Recompute the action buttons layer's screen Y on scroll or resize.
-  ///
-  /// The overlay sits at `_headerHeight - scrollOffset` (at rest, right at
-  /// the header's bottom — no gap above). The overlay's container is
-  /// [_actionButtonsHeight] + safeAreaTop tall: the top 80px hold the
-  /// ProfileActionButtons widget, and the bottom safeAreaTop covers the
-  /// tab bar's top safeAreaTop padding area (CSS z-index equivalent).
-  void _onScroll() {
-    final offset = widget.scrollController?.offset ?? 0;
-
-    // Clamp the action buttons overlay so its bottom edge stops at the
-    // screen top (Y=0). Flutter's NestedScrollView includes the pinned
-    // tab bar's height in the outer scroll extent, so the outer can
-    // continue past the natural "action buttons off screen" point — let
-    // it, so the inner scroll (tab content) can take over properly. We
-    // just freeze the overlay visually at its minimum position.
-    final rawTop = _headerHeight - offset;
-    final top = rawTop.clamp(-_actionButtonsHeight, double.infinity);
-    _actionButtonsTop.value = top;
-
-    // Dynamic tab bar top inset. Grows from 0 to safeAreaTop as the
-    // action buttons row's bottom edge scrolls past the safe area.
-    final safeAreaTop = MediaQuery.paddingOf(context).top;
-    final triggerScroll = _headerHeight + _actionButtonsHeight - safeAreaTop;
-    final newInset = (offset - triggerScroll).clamp(0.0, safeAreaTop);
-    if (newInset != _tabBarTopInset) {
-      setState(() {
-        _tabBarTopInset = newInset;
-      });
     }
   }
 
@@ -294,8 +238,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     widget.refreshNotifier?.removeListener(_onRefreshRequested);
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
-    widget.scrollController?.removeListener(_onScroll);
-    _actionButtonsTop.dispose();
     // Close the BLoCs we created
     _likedVideosBloc?.close();
     _repostedVideosBloc?.close();
@@ -428,202 +370,57 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       ),
     );
 
-    Widget content = DefaultTabController(
-      length: 5,
-      child: NestedScrollView(
-        controller: widget.scrollController,
-        physics: const ClampingScrollPhysics(),
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          // Profile Header (GlobalKey for measuring height)
-          SliverToBoxAdapter(
-            child: ProfileHeaderWidget(
-              key: _headerKey,
-              userIdHex: widget.userIdHex,
-              isOwnProfile: widget.isOwnProfile,
-              videoCount: widget.videos.length,
-              profile: widget.profile,
-              profileStats: widget.profileStats,
-              onEditProfile: widget.onEditProfile,
-              onBack: widget.onBack,
-              onMore: widget.onMore,
-              displayNameHint: widget.displayNameHint,
-              avatarUrlHint: widget.avatarUrlHint,
-            ),
-          ),
-
-          // Action Buttons spacer: preserves scroll extent while the actual
-          // action buttons are rendered in the outer Stack (so they can
-          // paint on top of the tab bar's top safeAreaTop padding area).
-          const SliverToBoxAdapter(
-            child: SizedBox(height: _actionButtonsHeight),
-          ),
-
-          // Sticky Tab Bar
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SliverAppBarDelegate(
-              topInset: _tabBarTopInset,
-              TabBar(
-                controller: _tabController,
-                indicatorColor: VineTheme.tabIndicatorGreen,
-                indicatorWeight: 4,
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: VineTheme.transparent,
-                tabs: [
-                  Tab(
-                    icon: Semantics(
-                      label: 'videos_tab',
-                      child: SvgPicture.asset(
-                        DivineIconName.play.assetPath,
-                        width: 28,
-                        height: 28,
-                        colorFilter: ColorFilter.mode(
-                          _tabController.index == 0
-                              ? VineTheme.whiteText
-                              : VineTheme.onSurfaceMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Tab(
-                    icon: Semantics(
-                      label: 'liked_tab',
-                      child: SvgPicture.asset(
-                        DivineIconName.heart.assetPath,
-                        width: 28,
-                        height: 28,
-                        colorFilter: ColorFilter.mode(
-                          _tabController.index == 1
-                              ? VineTheme.whiteText
-                              : VineTheme.onSurfaceMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Tab(
-                    icon: Semantics(
-                      label: 'reposted_tab',
-                      child: SvgPicture.asset(
-                        DivineIconName.repeat.assetPath,
-                        width: 28,
-                        height: 28,
-                        colorFilter: ColorFilter.mode(
-                          _tabController.index == 2
-                              ? VineTheme.whiteText
-                              : VineTheme.onSurfaceMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Tab(
-                    icon: Semantics(
-                      label: widget.isOwnProfile ? 'saved_tab' : 'collabs_tab',
-                      child: SvgPicture.asset(
-                        (widget.isOwnProfile
-                                ? DivineIconName.bookmarkSimple
-                                : DivineIconName.user)
-                            .assetPath,
-                        width: 28,
-                        height: 28,
-                        colorFilter: ColorFilter.mode(
-                          _tabController.index == 3
-                              ? VineTheme.whiteText
-                              : VineTheme.onSurfaceMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Tab(
-                    icon: Semantics(
-                      label: 'comments_tab',
-                      child: SvgPicture.asset(
-                        DivineIconName.chatCircle.assetPath,
-                        width: 28,
-                        height: 28,
-                        colorFilter: ColorFilter.mode(
-                          _tabController.index == 4
-                              ? VineTheme.whiteText
-                              : VineTheme.onSurfaceMuted,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-        body: tabContent,
-      ),
-    );
-
-    // Measure the header height after each build so we can position the
-    // action buttons layer correctly. The header height is variable
-    // (depends on bio length, name wrapping, etc.).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final renderObject = _headerKey.currentContext?.findRenderObject();
-      if (renderObject is RenderBox && renderObject.hasSize) {
-        final newHeight = renderObject.size.height;
-        if (newHeight != _headerHeight) {
-          _headerHeight = newHeight;
-          _onScroll();
-        }
-      }
-    });
-
-    // Wrap in a Stack with:
-    // - surfaceBackground covering the entire screen (visible in the status
-    //   bar area once the banner scrolls offscreen)
-    // - ProfileBannerLayer edge-to-edge at the top, scroll-driven
-    // - NestedScrollView edge-to-edge so content can scroll behind the
-    //   status bar without being clipped by a SafeArea boundary
-    // - ProfileActionButtons as a separate layer on top of the NestedScrollView
-    //   so it can paint over the tab bar's top safeAreaTop padding area
-    //   (CSS z-index equivalent — the action buttons row overlaps the tabs
-    //   group by safeAreaTop).
-    content = ClipRRect(
-      borderRadius: const BorderRadius.vertical(
-        bottom: Radius.circular(VineTheme.shellCornerRadius),
-      ),
+    final content = ClipRRect(
+      borderRadius: const .vertical(bottom: .circular(30)),
       child: ColoredBox(
         color: VineTheme.surfaceBackground,
-        child: Stack(
-          children: [
-            ProfileBannerLayer(
-              userIdHex: widget.userIdHex,
-              isOwnProfile: widget.isOwnProfile,
-              profile: widget.profile,
-              scrollController: widget.scrollController,
-            ),
-            content,
-            // Action buttons overlay — painted above the NestedScrollView.
-            ValueListenableBuilder<double>(
-              valueListenable: _actionButtonsTop,
-              builder: (_, top, child) => Positioned(
-                top: top,
-                left: 0,
-                right: 0,
-                height: _actionButtonsHeight,
-                child: child!,
+        child: DefaultTabController(
+          length: 5,
+          child: NestedScrollView(
+            controller: widget.scrollController,
+            physics: const ClampingScrollPhysics(),
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              // Profile Header (GlobalKey for measuring height)
+              SliverToBoxAdapter(
+                child: Stack(
+                  children: [
+                    ProfileBannerLayer(
+                      userIdHex: widget.userIdHex,
+                      isOwnProfile: widget.isOwnProfile,
+                      profile: widget.profile,
+                    ),
+                    ProfileHeaderWidget(
+                      key: _headerKey,
+                      userIdHex: widget.userIdHex,
+                      isOwnProfile: widget.isOwnProfile,
+                      videoCount: widget.videos.length,
+                      profile: widget.profile,
+                      profileStats: widget.profileStats,
+                      onEditProfile: widget.onEditProfile,
+                      onBack: widget.onBack,
+                      onMore: widget.onMore,
+                      displayNameHint: widget.displayNameHint,
+                      avatarUrlHint: widget.avatarUrlHint,
+                      displayName: widget.displayName,
+                      onOpenClips: widget.onOpenClips,
+                      onMessageUser: widget.onMessageUser,
+                      onShareProfile: widget.onShareProfile,
+                      onBlockedTap: widget.onBlockedTap,
+                    ),
+                  ],
+                ),
               ),
-              child: ProfileActionButtons(
-                userIdHex: widget.userIdHex,
+
+              // Sticky Tab Bar
+              _ProfileTabBar(
+                controller: _tabController,
+                scrollController: widget.scrollController,
                 isOwnProfile: widget.isOwnProfile,
-                displayName: widget.displayName,
-                onEditProfile: widget.onEditProfile,
-                onOpenClips: widget.onOpenClips,
-                onMessageUser: widget.onMessageUser,
-                onShareProfile: widget.onShareProfile,
-                onBlockedTap: widget.onBlockedTap,
+                headerKey: _headerKey,
               ),
-            ),
-          ],
+            ],
+            body: tabContent,
+          ),
         ),
       ),
     );
@@ -646,6 +443,169 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   }
 }
 
+/// Tab bar with 5 profile tabs (Videos, Liked, Reposts, Saved/Collabs, Comments).
+class _ProfileTabBar extends StatefulWidget {
+  const _ProfileTabBar({
+    required this.controller,
+    required this.scrollController,
+    required this.isOwnProfile,
+    required this.headerKey,
+  });
+
+  final TabController controller;
+  final ScrollController? scrollController;
+  final bool isOwnProfile;
+  final GlobalKey headerKey;
+
+  @override
+  State<_ProfileTabBar> createState() => _ProfileTabBarState();
+}
+
+class _ProfileTabBarState extends State<_ProfileTabBar> {
+  double _tabBarTopInset = 0;
+
+  /// Cached safe area top. Refreshed in [didChangeDependencies] when the
+  /// surrounding [MediaQuery] changes (rotation, multi-window resize).
+  double _safeAreaTop = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.scrollController?.addListener(_onScroll);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _safeAreaTop = MediaQuery.paddingOf(context).top;
+  }
+
+  @override
+  void didUpdateWidget(_ProfileTabBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.scrollController != widget.scrollController) {
+      oldWidget.scrollController?.removeListener(_onScroll);
+      widget.scrollController?.addListener(_onScroll);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.scrollController?.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Re-measure every tick so that async header updates (profile data
+    // arriving, _profileVisible flip) are always reflected in the trigger
+    // threshold. findRenderObject().size is O(1) on a mounted widget.
+    final headerHeight =
+        (widget.headerKey.currentContext?.findRenderObject() as RenderBox?)
+            ?.size
+            .height;
+    if (headerHeight == null || headerHeight == 0) return;
+
+    final triggerScroll = headerHeight - _safeAreaTop;
+    final offset = widget.scrollController?.offset ?? 0;
+
+    // Outside the trigger zone the inset is either 0 (above) or the full
+    // safe-area top (below). Skip the clamp/setState work when nothing
+    // would change.
+    if (offset <= triggerScroll) {
+      if (_tabBarTopInset != 0) setState(() => _tabBarTopInset = 0);
+      return;
+    }
+    if (offset >= triggerScroll + _safeAreaTop) {
+      if (_tabBarTopInset != _safeAreaTop) {
+        setState(() => _tabBarTopInset = _safeAreaTop);
+      }
+      return;
+    }
+
+    final newInset = offset - triggerScroll;
+    if (newInset != _tabBarTopInset) {
+      setState(() => _tabBarTopInset = newInset);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPersistentHeader(
+      pinned: true,
+      delegate: _SliverAppBarDelegate(
+        topInset: _tabBarTopInset,
+        TabBar(
+          controller: widget.controller,
+          indicatorColor: VineTheme.tabIndicatorGreen,
+          indicatorWeight: 4,
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: VineTheme.transparent,
+          tabs: [
+            _ProfileTab(
+              label: 'videos_tab',
+              icon: DivineIconName.play,
+              isSelected: widget.controller.index == 0,
+            ),
+            _ProfileTab(
+              label: 'liked_tab',
+              icon: DivineIconName.heart,
+              isSelected: widget.controller.index == 1,
+            ),
+            _ProfileTab(
+              label: 'reposted_tab',
+              icon: DivineIconName.repeat,
+              isSelected: widget.controller.index == 2,
+            ),
+            _ProfileTab(
+              label: widget.isOwnProfile ? 'saved_tab' : 'collabs_tab',
+              icon: widget.isOwnProfile
+                  ? DivineIconName.bookmarkSimple
+                  : DivineIconName.user,
+              isSelected: widget.controller.index == 3,
+            ),
+            _ProfileTab(
+              label: 'comments_tab',
+              icon: DivineIconName.chatCircle,
+              isSelected: widget.controller.index == 4,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Single icon tab for [_ProfileTabBar].
+class _ProfileTab extends StatelessWidget {
+  const _ProfileTab({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+  });
+
+  final String label;
+  final DivineIconName icon;
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tab(
+      icon: Semantics(
+        label: label,
+        child: SvgPicture.asset(
+          icon.assetPath,
+          width: 28,
+          height: 28,
+          colorFilter: ColorFilter.mode(
+            isSelected ? VineTheme.whiteText : VineTheme.onSurfaceMuted,
+            BlendMode.srcIn,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Sticky tab bar delegate.
 ///
 /// Adds a [topInset] (typically the safe area top) so that when pinned
@@ -658,7 +618,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   _SliverAppBarDelegate(this._tabBar, {required this.topInset});
 
-  final TabBar _tabBar;
+  final PreferredSizeWidget _tabBar;
   final double topInset;
 
   /// Height of the divider line painted between the tab bar and the tile

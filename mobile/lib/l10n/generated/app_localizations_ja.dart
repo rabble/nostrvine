@@ -815,6 +815,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoGridDeleteSuccess => '削除リクエストを送ったよ';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'コンテンツの削除がうまくいかなかった: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'クラシック';
 
   @override
@@ -2861,6 +2866,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'このコンテンツを完全に削除';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではキャッシュが残ることもあるよ。';
+
+  @override
   String get shareMenuVideoInTheseLists => 'この動画が入ってるリスト:';
 
   @override
@@ -2882,6 +2891,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'コンテンツを削除中...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'コンテンツの削除がうまくいかなかった: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => '削除リクエストを送ったよ';
@@ -2959,6 +2973,11 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return '動画の更新がうまくいかなかった: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return '動画の削除がうまくいかなかった: $error';
   }
 
   @override
@@ -3465,6 +3484,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get navProfile => 'プロフィール';
+
+  @override
+  String get navSearch => '検索';
+
+  @override
+  String get navSearchTooltip => '検索';
 
   @override
   String get navMyProfile => 'マイプロフィール';
@@ -5128,6 +5153,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAudioFailedToLoadTitle => 'サウンドの読み込みに失敗';
 
   @override
+  String get videoEditorAudioSegmentInstruction => '動画に使うオーディオ範囲を選択';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => '矢印ツール';
 
   @override
@@ -5197,6 +5225,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => '長押しして並べ替え';
+
+  @override
+  String get videoEditorClipGalleryInstruction => 'タップして編集。長押ししてドラッグで並べ替え。';
 
   @override
   String get videoEditorTimelineClipMoveLeft => '左に移動';
