@@ -588,16 +588,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSavedFilterVideos => 'Videoclipuri';
 
   @override
-  String get profileSavedFilterTags => 'Taguri';
+  String get profileSavedFilterTags => 'Etichete';
 
   @override
-  String get hashtagFavoriteSaveTooltip => 'Salvează hashtag';
+  String get hashtagFavoriteSaveTooltip => 'Salvează eticheta';
 
   @override
-  String get hashtagFavoriteRemoveTooltip => 'Elimină din hashtaguri salvate';
+  String get hashtagFavoriteRemoveTooltip => 'Elimină din etichetele salvate';
 
   @override
-  String get hashtagOptionsMoreTooltip => 'Opțiuni hashtag';
+  String get hashtagOptionsMoreTooltip => 'Opțiuni etichetă';
 
   @override
   String hashtagMenuVideoCount(int count) {
@@ -611,10 +611,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get hashtagOptionSaveToProfile => 'Salvează în profil';
+  String get hashtagOptionSaveToProfile => 'Salvează eticheta în profil';
 
   @override
-  String get hashtagOptionRemoveFromProfile => 'Elimină din tagurile salvate';
+  String get hashtagOptionRemoveFromProfile => 'Elimină din etichetele salvate';
 
   @override
   String get hashtagSavedToProfileSnackbar => 'Salvat în profil';
@@ -1159,7 +1159,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get exploreTagsTrackedTooltip => 'Salvat în profilul tău';
 
   @override
-  String get explorePopularTagsSearchCta => 'Caută toate tagurile';
+  String get explorePopularTagsSearchCta => 'Caută toate etichetele';
 
   @override
   String get exploreTabForYou => 'Pentru tine';

@@ -280,7 +280,7 @@
     "hashtagAddedToFollowingFeedSnackbar": "Añadido a tu feed Following",
     "hashtagRemovedFromFollowingFeedSnackbar": "Quitado de tu feed Following",
     "profileFollowedTagRemoveTitle": "¿Quitar este tag?",
-    "profileFollowedTagRemoveMessage": "¿Quitar {displayTag} de tus tags guardados? Puedes volver a añadirlo cuando quieras desde la página del hashtag.",
+    "profileFollowedTagRemoveMessage": "¿Quitar {displayTag} de tus tags guardados? Podés volver a agregarlo cuando quieras desde la página del hashtag.",
     "@profileFollowedTagRemoveMessage": {
         "placeholders": {
             "displayTag": {

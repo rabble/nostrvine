@@ -2508,57 +2508,60 @@ void main() {
           },
         );
 
-        test('dedupes same video from home and hashtag', () async {
-          when(
-            () => mockFunnelcakeClient.getHomeFeed(
-              pubkey: any(named: 'pubkey'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => HomeFeedResponse(
-              videos: [
+        test(
+          'dedupes same video from home and hashtag (case-insensitive)',
+          () async {
+            when(
+              () => mockFunnelcakeClient.getHomeFeed(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => HomeFeedResponse(
+                videos: [
+                  _createVideoStats(
+                    id: 'SHARED',
+                    pubkey: 'p1',
+                    dTag: 'd1',
+                    videoUrl: 'https://example.com/x.mp4',
+                  ),
+                ],
+              ),
+            );
+
+            when(
+              () => mockFunnelcakeClient.getVideosByHashtag(
+                hashtag: 'dup',
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => [
                 _createVideoStats(
-                  id: 'SHARED',
+                  id: 'shared',
                   pubkey: 'p1',
                   dTag: 'd1',
                   videoUrl: 'https://example.com/x.mp4',
                 ),
               ],
-            ),
-          );
+            );
 
-          when(
-            () => mockFunnelcakeClient.getVideosByHashtag(
-              hashtag: 'dup',
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              _createVideoStats(
-                id: 'shared',
-                pubkey: 'p1',
-                dTag: 'd1',
-                videoUrl: 'https://example.com/x.mp4',
-              ),
-            ],
-          );
+            final repo = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
 
-          final repo = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+            final result = await repo.getHomeFeedVideos(
+              authors: ['p1'],
+              userPubkey: 'me',
+              followedHashtagLabels: ['dup'],
+            );
 
-          final result = await repo.getHomeFeedVideos(
-            authors: ['p1'],
-            userPubkey: 'me',
-            followedHashtagLabels: ['dup'],
-          );
-
-          expect(result.videos, hasLength(1));
-          expect(result.videoHashtagSources['SHARED'], contains('dup'));
-        });
+            expect(result.videos, hasLength(1));
+            expect(result.videoHashtagSources['SHARED'], contains('dup'));
+          },
+        );
 
         test('ignores failing hashtag fetch but keeps others', () async {
           when(

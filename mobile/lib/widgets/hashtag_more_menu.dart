@@ -118,9 +118,9 @@ void showHashtagMoreMenu(
           : l10n.hashtagOptionSaveToProfile,
       isDestructive: isProfileSaved,
       onTap: () {
-        final wasSaved = isProfileSaved;
+        final r = ref.read(followedHashtagsRepositoryProvider);
+        final wasSaved = r.hasProfileSavedHashtag(hashtag);
         unawaited(() async {
-          final r = ref.read(followedHashtagsRepositoryProvider);
           if (wasSaved) {
             await r.removeProfileSavedHashtag(hashtag);
           } else {

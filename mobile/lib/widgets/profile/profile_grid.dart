@@ -170,10 +170,17 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   void didUpdateWidget(ProfileGridView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isOwnProfile != widget.isOwnProfile) {
+      final currentIndex = _tabController.index.clamp(0, _tabCount - 1);
       _tabController.removeListener(_onTabChanged);
       _tabController.dispose();
-      _tabController = TabController(length: _tabCount, vsync: this)
-        ..addListener(_onTabChanged);
+      _tabController = TabController(
+        length: _tabCount,
+        vsync: this,
+        initialIndex: currentIndex,
+      )..addListener(_onTabChanged);
+
+      // Reset lazy sync flags and force BLoC recreation
+      _blocsUserIdHex = null;
     }
     if (oldWidget.refreshNotifier != widget.refreshNotifier) {
       oldWidget.refreshNotifier?.removeListener(_onRefreshRequested);

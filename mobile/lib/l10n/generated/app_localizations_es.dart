@@ -623,7 +623,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String profileFollowedTagRemoveMessage(String displayTag) {
-    return '¿Quitar $displayTag de tus tags guardados? Puedes volver a añadirlo cuando quieras desde la página del hashtag.';
+    return '¿Quitar $displayTag de tus tags guardados? Podés volver a agregarlo cuando quieras desde la página del hashtag.';
   }
 
   @override
