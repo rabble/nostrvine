@@ -121,6 +121,9 @@ void main() {
 
       expect(session.id, 'session-abc');
       expect(session.roomId, 'room-abc');
+      expect(session.hostPubkey, hostPubkey);
+      expect(session.roomAddress, '30312:$hostPubkey:room-abc');
+      expect(session.address, '30313:$hostPubkey:session-abc');
       expect(session.status, LiveSessionStatus.live);
       expect(session.startedAt, _dateTimeFromSeconds(1700000000));
       expect(session.endedAt, _dateTimeFromSeconds(1700003600));
@@ -146,6 +149,8 @@ void main() {
       final presence = codec.parsePresence(event);
 
       expect(presence.sessionId, 'session-abc');
+      expect(presence.sessionHostPubkey, hostPubkey);
+      expect(presence.sessionAddress, '30313:$hostPubkey:session-abc');
       expect(presence.pubkey, speakerPubkey);
       expect(presence.role, LiveRole.speaker);
       expect(presence.handRaised, isTrue);

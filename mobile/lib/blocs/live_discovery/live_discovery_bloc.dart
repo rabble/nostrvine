@@ -44,13 +44,13 @@ class LiveDiscoveryBloc extends Bloc<LiveDiscoveryEvent, LiveDiscoveryState> {
           .where((session) => session.status == LiveSessionStatus.live)
           .toList(growable: false);
       final activeRoomIds = activeSessions
-          .map((session) => session.roomId)
+          .map((session) => session.roomAddressKey)
           .toSet();
       final upcomingSessions = sessions
           .where(
             (session) =>
                 session.status == LiveSessionStatus.planned &&
-                !activeRoomIds.contains(session.roomId),
+                !activeRoomIds.contains(session.roomAddressKey),
           )
           .toList(growable: false);
 

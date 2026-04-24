@@ -182,6 +182,7 @@ class LiveNostrCodec {
     return LiveSession(
       id: sessionId,
       roomId: _dTagFromAddress(roomAddress),
+      hostPubkey: event.pubkey,
       status: LiveSessionStatus.fromTagValue(
         _firstTagValue(event.tags, 'status'),
       ),
@@ -207,6 +208,7 @@ class LiveNostrCodec {
 
     return LivePresence(
       sessionId: _dTagFromAddress(sessionAddress),
+      sessionHostPubkey: _authorFromAddress(sessionAddress),
       pubkey: event.pubkey,
       role: LiveRole.fromNostrRole(_firstTagValue(event.tags, 'role')),
       handRaised: _isRaisedHand(_firstTagValue(event.tags, 'hand')),
@@ -306,6 +308,11 @@ class LiveNostrCodec {
   String _dTagFromAddress(String address) {
     final parts = address.split(':');
     return parts.length > 2 ? parts[2] : '';
+  }
+
+  String _authorFromAddress(String address) {
+    final parts = address.split(':');
+    return parts.length > 1 ? parts[1] : '';
   }
 
   bool _isRaisedHand(String? rawValue) {

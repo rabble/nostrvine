@@ -97,6 +97,7 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     LiveRoomJoinRequested event,
     Emitter<LiveRoomState> emit,
   ) async {
+    await _disconnectActiveLiveSessionIfNeeded();
     await _sessionsSubscription?.cancel();
     await _presenceSubscription?.cancel();
     _presenceSessionAddress = null;
@@ -172,6 +173,7 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
     if (nextSession == null || currentRoom == null || nextRole == null) {
       await _presenceSubscription?.cancel();
       _presenceSessionAddress = null;
+      await _disconnectActiveLiveSessionIfNeeded();
       return;
     }
 
@@ -757,6 +759,17 @@ class LiveRoomBloc extends Bloc<LiveRoomEvent, LiveRoomState> {
         ),
       );
     }
+  }
+
+  Future<void> _disconnectActiveLiveSessionIfNeeded() async {
+    final shouldDisconnect =
+        _connectedSessionKey != null ||
+        state.mediaState.status != LiveMediaConnectionStatus.disconnected;
+    _connectedSessionKey = null;
+    if (!shouldDisconnect) {
+      return;
+    }
+    await _liveKitRoomService.disconnect();
   }
 
   LiveSession? _selectSession(List<LiveSession> sessions) {

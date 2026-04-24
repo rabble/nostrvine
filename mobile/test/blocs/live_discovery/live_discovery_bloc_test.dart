@@ -44,6 +44,7 @@ void main() {
     final plannedSession = LiveSession(
       id: 'session-planned',
       roomId: roomTwo.id,
+      hostPubkey: roomTwo.hostPubkey,
       status: LiveSessionStatus.planned,
       startedAt: DateTime.utc(2026, 4, 7, 12),
       endedAt: null,
@@ -90,6 +91,78 @@ void main() {
         verify(() => mockRepository.fetchPublicRooms()).called(1);
         verify(() => mockRepository.fetchSessions()).called(1);
       },
+    );
+
+    blocTest<LiveDiscoveryBloc, LiveDiscoveryState>(
+      'matches active and upcoming rooms by full room address when hosts reuse the same room id',
+      setUp: () {
+        const sharedRoomOne = LiveRoom(
+          id: 'shared-room',
+          hostPubkey: hostPubkey,
+          title: 'Host one',
+          summary: 'First host room',
+          imageUrl: null,
+          relays: <String>[],
+          visibility: LiveRoomVisibility.public,
+        );
+        const sharedRoomTwo = LiveRoom(
+          id: 'shared-room',
+          hostPubkey:
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          title: 'Host two',
+          summary: 'Second host room',
+          imageUrl: null,
+          relays: <String>[],
+          visibility: LiveRoomVisibility.public,
+        );
+        final sharedLiveSession = LiveSession(
+          id: 'session-live-shared',
+          roomId: sharedRoomOne.id,
+          hostPubkey: sharedRoomOne.hostPubkey,
+          status: LiveSessionStatus.live,
+          startedAt: DateTime.utc(2026, 4, 6, 13),
+          endedAt: null,
+          speakerPubkeys: const <String>[hostPubkey],
+          audienceCount: 11,
+        );
+        final sharedPlannedSession = LiveSession(
+          id: 'session-planned-shared',
+          roomId: sharedRoomTwo.id,
+          hostPubkey: sharedRoomTwo.hostPubkey,
+          status: LiveSessionStatus.planned,
+          startedAt: DateTime.utc(2026, 4, 7, 13),
+          endedAt: null,
+          speakerPubkeys: <String>[sharedRoomTwo.hostPubkey],
+          audienceCount: 0,
+        );
+
+        when(
+          () => mockRepository.fetchPublicRooms(),
+        ).thenAnswer(
+          (_) async => const <LiveRoom>[sharedRoomOne, sharedRoomTwo],
+        );
+        when(
+          () => mockRepository.fetchSessions(),
+        ).thenAnswer(
+          (_) async => <LiveSession>[sharedLiveSession, sharedPlannedSession],
+        );
+      },
+      build: () => LiveDiscoveryBloc(liveRepository: mockRepository),
+      act: (bloc) => bloc.add(const LiveDiscoveryRequested()),
+      expect: () => <dynamic>[
+        const LiveDiscoveryState(status: LiveDiscoveryStatus.loading),
+        isA<LiveDiscoveryState>()
+            .having(
+              (state) => state.activeRooms.map((room) => room.title).toList(),
+              'activeRooms',
+              const <String>['Host one'],
+            )
+            .having(
+              (state) => state.upcomingRooms.map((room) => room.title).toList(),
+              'upcomingRooms',
+              const <String>['Host two'],
+            ),
+      ],
     );
 
     blocTest<LiveDiscoveryBloc, LiveDiscoveryState>(

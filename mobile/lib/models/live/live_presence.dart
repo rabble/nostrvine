@@ -6,6 +6,7 @@ import 'package:openvine/models/live/live_role.dart';
 class LivePresence extends Equatable {
   const LivePresence({
     required this.sessionId,
+    this.sessionHostPubkey,
     required this.pubkey,
     required this.role,
     required this.handRaised,
@@ -13,13 +14,21 @@ class LivePresence extends Equatable {
   });
 
   final String sessionId;
+  final String? sessionHostPubkey;
   final String pubkey;
   final LiveRole role;
   final bool handRaised;
   final DateTime updatedAt;
 
+  String get sessionAddress =>
+      _hasSessionHostPubkey ? '30313:$sessionHostPubkey:$sessionId' : sessionId;
+
+  String get sessionAddressKey =>
+      _hasSessionHostPubkey ? sessionAddress : sessionId;
+
   LivePresence copyWith({
     String? sessionId,
+    String? sessionHostPubkey,
     String? pubkey,
     LiveRole? role,
     bool? handRaised,
@@ -27,6 +36,7 @@ class LivePresence extends Equatable {
   }) {
     return LivePresence(
       sessionId: sessionId ?? this.sessionId,
+      sessionHostPubkey: sessionHostPubkey ?? this.sessionHostPubkey,
       pubkey: pubkey ?? this.pubkey,
       role: role ?? this.role,
       handRaised: handRaised ?? this.handRaised,
@@ -34,6 +44,16 @@ class LivePresence extends Equatable {
     );
   }
 
+  bool get _hasSessionHostPubkey =>
+      sessionHostPubkey != null && sessionHostPubkey!.isNotEmpty;
+
   @override
-  List<Object?> get props => [sessionId, pubkey, role, handRaised, updatedAt];
+  List<Object?> get props => [
+    sessionId,
+    sessionHostPubkey,
+    pubkey,
+    role,
+    handRaised,
+    updatedAt,
+  ];
 }

@@ -35,7 +35,7 @@ class LiveRepository {
         continue;
       }
       if (room.visibility == LiveRoomVisibility.public) {
-        rooms[room.id] = room;
+        rooms[room.address] = room;
       }
     }
 
@@ -51,7 +51,7 @@ class LiveRepository {
         Filter(kinds: const <int>[30312], limit: limit),
       ],
       parse: _tryParseRoom,
-      keyOf: (room) => room.id,
+      keyOf: (room) => room.address,
       shouldInclude: (room) => room.visibility == LiveRoomVisibility.public,
       sort: _sortedRooms,
       subscriptionPrefix: 'live_rooms',
@@ -74,7 +74,7 @@ class LiveRepository {
     for (final event in events) {
       final session = _tryParseSession(event);
       if (session != null) {
-        sessions[session.id] = session;
+        sessions[session.addressKey] = session;
       }
     }
 
@@ -97,7 +97,7 @@ class LiveRepository {
       queryFilters: filters,
       subscribeFilters: filters,
       parse: _tryParseSession,
-      keyOf: (session) => session.id,
+      keyOf: (session) => session.addressKey,
       sort: _sortedSessions,
       subscriptionPrefix: 'live_sessions',
     );
@@ -119,7 +119,7 @@ class LiveRepository {
       queryFilters: filters,
       subscribeFilters: filters,
       parse: _tryParsePresence,
-      keyOf: (presence) => '${presence.sessionId}:${presence.pubkey}',
+      keyOf: (presence) => '${presence.sessionAddressKey}:${presence.pubkey}',
       sort: _sortedPresence,
       subscriptionPrefix: 'live_presence',
     );

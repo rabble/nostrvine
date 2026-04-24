@@ -1075,6 +1075,162 @@ void main() {
       },
     );
 
+    test(
+      'joining a second live room disconnects the previous audience connection before reconnecting',
+      () async {
+        const secondHostPubkey =
+            'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+        const secondRoom = LiveRoom(
+          id: 'room-two',
+          hostPubkey: secondHostPubkey,
+          title: 'Second room',
+          summary: 'Another live room',
+          imageUrl: null,
+          relays: <String>[],
+          visibility: LiveRoomVisibility.public,
+        );
+        final secondSession = LiveSession(
+          id: 'session-two',
+          roomId: secondRoom.id,
+          hostPubkey: secondRoom.hostPubkey,
+          status: LiveSessionStatus.live,
+          startedAt: DateTime.utc(2026, 4, 6, 12, 30),
+          endedAt: null,
+          speakerPubkeys: const <String>[secondHostPubkey],
+          audienceCount: 18,
+        );
+        const secondAudienceJoinToken = LiveRoomToken(
+          token: 'audience-jwt-token-room-two',
+          roomName: 'room-two',
+          participantIdentity: audiencePubkey,
+          serverUrl: 'wss://livekit.example.com',
+          canPublish: false,
+        );
+        final secondSessionsController =
+            StreamController<List<LiveSession>>.broadcast(sync: true);
+        final secondPresenceController =
+            StreamController<List<LivePresence>>.broadcast(sync: true);
+        addTearDown(secondSessionsController.close);
+        addTearDown(secondPresenceController.close);
+
+        when(
+          () => mockRepository.watchSessions(roomAddress: secondRoom.address),
+        ).thenAnswer((_) => secondSessionsController.stream);
+        when(
+          () => mockRepository.watchPresence(
+            sessionAddress: '30313:$secondHostPubkey:${secondSession.id}',
+          ),
+        ).thenAnswer((_) => secondPresenceController.stream);
+        when(
+          () => mockApiService.fetchJoinToken(
+            roomId: secondRoom.id,
+            role: LiveRole.audience,
+          ),
+        ).thenAnswer((_) async => secondAudienceJoinToken);
+        when(
+          () => mockMediaService.connect(secondAudienceJoinToken),
+        ).thenAnswer((_) async {});
+
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+          currentUserPubkey: audiencePubkey,
+        );
+
+        bloc.add(
+          const LiveRoomJoinRequested(room: room, role: LiveRole.audience),
+        );
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        verify(() => mockMediaService.connect(audienceJoinToken)).called(1);
+
+        bloc.add(
+          const LiveRoomJoinRequested(
+            room: secondRoom,
+            role: LiveRole.audience,
+          ),
+        );
+        await _flush();
+
+        secondSessionsController.add(<LiveSession>[secondSession]);
+        await _flush();
+
+        verify(() => mockMediaService.disconnect()).called(1);
+        verify(
+          () => mockMediaService.connect(secondAudienceJoinToken),
+        ).called(1);
+        expect(bloc.state.room, secondRoom);
+        expect(bloc.state.session, secondSession);
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'joining a room with no live session disconnects any previous audience connection',
+      () async {
+        const secondHostPubkey =
+            'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+        const quietRoom = LiveRoom(
+          id: 'room-quiet',
+          hostPubkey: secondHostPubkey,
+          title: 'Quiet room',
+          summary: 'No one is live here yet',
+          imageUrl: null,
+          relays: <String>[],
+          visibility: LiveRoomVisibility.public,
+        );
+        final quietSessionsController =
+            StreamController<List<LiveSession>>.broadcast(sync: true);
+        addTearDown(quietSessionsController.close);
+
+        when(
+          () => mockRepository.watchSessions(roomAddress: quietRoom.address),
+        ).thenAnswer((_) => quietSessionsController.stream);
+
+        final bloc = LiveRoomBloc(
+          liveRepository: mockRepository,
+          liveApiService: mockApiService,
+          liveKitRoomService: mockMediaService,
+          currentUserPubkey: audiencePubkey,
+        );
+
+        bloc.add(
+          const LiveRoomJoinRequested(room: room, role: LiveRole.audience),
+        );
+        await _flush();
+
+        sessionsController.add(<LiveSession>[liveSession]);
+        await _flush();
+
+        verify(() => mockMediaService.connect(audienceJoinToken)).called(1);
+
+        bloc.add(
+          const LiveRoomJoinRequested(room: quietRoom, role: LiveRole.audience),
+        );
+        await _flush();
+
+        quietSessionsController.add(const <LiveSession>[]);
+        await _flush();
+
+        verify(() => mockMediaService.disconnect()).called(1);
+        verifyNever(
+          () => mockApiService.fetchJoinToken(
+            roomId: quietRoom.id,
+            role: LiveRole.audience,
+          ),
+        );
+        expect(bloc.state.room, quietRoom);
+        expect(bloc.state.session, isNull);
+
+        await bloc.close();
+      },
+    );
+
     test('host can end the live session', () async {
       final bloc = LiveRoomBloc(
         liveRepository: mockRepository,

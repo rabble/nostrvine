@@ -43,12 +43,19 @@ class LiveDiscoveryState extends Equatable {
   }
 
   List<LiveRoom> _roomsFor(List<LiveSession> sessions) {
+    final roomsByAddress = <String, LiveRoom>{
+      for (final room in rooms) room.address: room,
+    };
     final roomsById = <String, LiveRoom>{
       for (final room in rooms) room.id: room,
     };
 
     return sessions
-        .map((session) => roomsById[session.roomId])
+        .map(
+          (session) =>
+              roomsByAddress[session.roomAddressKey] ??
+              roomsById[session.roomId],
+        )
         .whereType<LiveRoom>()
         .toList(growable: false);
   }

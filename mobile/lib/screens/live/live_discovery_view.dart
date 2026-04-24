@@ -226,7 +226,11 @@ class _DiscoverySection extends StatelessWidget {
           ),
           ...rooms.map((room) {
             final session = sessions
-                .where((item) => item.roomId == room.id)
+                .where(
+                  (item) =>
+                      item.roomAddressKey == room.address ||
+                      item.roomId == room.id,
+                )
                 .fold(
                   null,
                   (LiveSession? previous, LiveSession next) {
@@ -291,7 +295,11 @@ class _FeaturedHostsSection extends StatelessWidget {
               itemBuilder: (context, index) {
                 final room = rooms[index];
                 final session = sessions
-                    .where((item) => item.roomId == room.id)
+                    .where(
+                      (item) =>
+                          item.roomAddressKey == room.address ||
+                          item.roomId == room.id,
+                    )
                     .fold(
                       null,
                       (LiveSession? previous, LiveSession next) {

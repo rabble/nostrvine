@@ -343,6 +343,143 @@ void main() {
     );
 
     test(
+      'fetchPublicRooms keeps rooms distinct by full address when hosts reuse the same room id',
+      () async {
+        final firstRoomEvent = Event.fromJson(
+          _eventJson(
+            idChar: 'p',
+            kind: 30312,
+            content: 'First host room',
+            tags: const <List<String>>[
+              <String>['d', roomId],
+              <String>['title', 'First host room'],
+              <String>['status', 'open'],
+            ],
+          ),
+        );
+        final secondRoomEvent = Event.fromJson(
+          _eventJson(
+            idChar: 'q',
+            pubkey: speakerPubkey,
+            kind: 30312,
+            content: 'Second host room',
+            tags: const <List<String>>[
+              <String>['d', roomId],
+              <String>['title', 'Second host room'],
+              <String>['status', 'open'],
+            ],
+          ),
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            useCache: any(named: 'useCache'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => <Event>[firstRoomEvent, secondRoomEvent]);
+        when(() => mockCodec.parseRoom(any())).thenAnswer((invocation) {
+          final event = invocation.positionalArguments.first as Event;
+          return LiveRoom(
+            id: roomId,
+            hostPubkey: event.pubkey,
+            title: event.pubkey == hostPubkey
+                ? 'First host room'
+                : 'Second host room',
+            summary: event.content,
+            imageUrl: null,
+            relays: const <String>[],
+            visibility: LiveRoomVisibility.public,
+          );
+        });
+
+        final rooms = await repository.fetchPublicRooms();
+
+        expect(rooms, hasLength(2));
+        expect(
+          rooms.map((room) => room.address),
+          containsAll(<String>[
+            '30312:$hostPubkey:$roomId',
+            '30312:$speakerPubkey:$roomId',
+          ]),
+        );
+      },
+    );
+
+    test(
+      'fetchSessions keeps sessions distinct by full address when hosts reuse the same session id',
+      () async {
+        final firstSessionEvent = Event.fromJson(
+          _eventJson(
+            idChar: 'r',
+            kind: 30313,
+            tags: const <List<String>>[
+              <String>['d', sessionId],
+              <String>['a', roomAddress],
+              <String>['status', 'live'],
+            ],
+          ),
+        );
+        final secondSessionEvent = Event.fromJson(
+          _eventJson(
+            idChar: 's',
+            pubkey: speakerPubkey,
+            kind: 30313,
+            tags: <List<String>>[
+              const <String>['d', sessionId],
+              <String>['a', '30312:$speakerPubkey:$roomId'],
+              const <String>['status', 'planned'],
+            ],
+          ),
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            useCache: any(named: 'useCache'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (_) async => <Event>[firstSessionEvent, secondSessionEvent],
+        );
+        when(() => mockCodec.parseSession(any())).thenAnswer((invocation) {
+          final event = invocation.positionalArguments.first as Event;
+          return LiveSession(
+            id: sessionId,
+            roomId: roomId,
+            hostPubkey: event.pubkey,
+            status: event.pubkey == hostPubkey
+                ? LiveSessionStatus.live
+                : LiveSessionStatus.planned,
+            startedAt: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+            endedAt: null,
+            speakerPubkeys: <String>[event.pubkey],
+            audienceCount: event.pubkey == hostPubkey ? 21 : 0,
+          );
+        });
+
+        final sessions = await repository.fetchSessions();
+
+        expect(sessions, hasLength(2));
+        expect(
+          sessions.map((session) => session.address),
+          containsAll(<String>[
+            '30313:$hostPubkey:$sessionId',
+            '30313:$speakerPubkey:$sessionId',
+          ]),
+        );
+      },
+    );
+
+    test(
       'publishRoom signs with the client signer and sends the event',
       () async {
         const room = LiveRoom(
