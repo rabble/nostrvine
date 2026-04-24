@@ -333,21 +333,18 @@ class _AuthorInfoSection extends ConsumerWidget {
           const SizedBox(height: 2),
           // Title (when present)
           if (video.title != null && video.title!.trim().isNotEmpty)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                onInteracted?.call();
-                MetadataExpandedSheet.show(context, video);
-              },
-              child: Semantics(
-                identifier: 'video_title',
-                container: true,
-                explicitChildNodes: true,
-                button: true,
-                // Action-oriented label — the title text itself is read
-                // aloud by the child Text widget. This label describes
-                // what tapping does, not what the tap target shows.
-                label: context.l10n.videoOverlayOpenMetadataFromTitle,
+            Semantics(
+              identifier: 'video_title',
+              container: true,
+              explicitChildNodes: true,
+              button: true,
+              label: context.l10n.videoOverlayOpenMetadataFromTitle,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  onInteracted?.call();
+                  MetadataExpandedSheet.show(context, video);
+                },
                 child: Text(
                   video.title!.trim(),
                   style: VineTheme.labelMediumFont().copyWith(
@@ -367,21 +364,18 @@ class _AuthorInfoSection extends ConsumerWidget {
           // Description (only when actual content exists — no title fallback,
           // the title has its own row above).
           if (video.content.trim().isNotEmpty)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                onInteracted?.call();
-                MetadataExpandedSheet.show(context, video);
-              },
-              child: Semantics(
-                identifier: 'video_description',
-                container: true,
-                explicitChildNodes: true,
-                button: true,
-                // Action-oriented label — the description text itself
-                // is read aloud by the child widget. This label
-                // describes what tapping does.
-                label: context.l10n.videoOverlayOpenMetadataFromDescription,
+            Semantics(
+              identifier: 'video_description',
+              container: true,
+              explicitChildNodes: true,
+              button: true,
+              label: context.l10n.videoOverlayOpenMetadataFromDescription,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  onInteracted?.call();
+                  MetadataExpandedSheet.show(context, video);
+                },
                 child: ClickableHashtagText(
                   text: video.content.trim(),
                   style: VineTheme.bodySmallFont().copyWith(
