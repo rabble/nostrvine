@@ -456,7 +456,6 @@ void main() {
                 home: Scaffold(
                   body: UserPickerSheet(
                     filterMode: UserPickerFilterMode.allUsers,
-                    searchTimeout: null,
                   ),
                 ),
               ),
@@ -519,7 +518,6 @@ void main() {
                 home: Scaffold(
                   body: UserPickerSheet(
                     filterMode: UserPickerFilterMode.allUsers,
-                    searchTimeout: null,
                   ),
                 ),
               ),
@@ -639,7 +637,6 @@ void main() {
                 home: Scaffold(
                   body: UserPickerSheet(
                     filterMode: UserPickerFilterMode.allUsers,
-                    searchTimeout: null,
                   ),
                 ),
               ),

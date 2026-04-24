@@ -64,7 +64,6 @@ class UserPickerSheet extends ConsumerStatefulWidget {
     this.scrollController,
     this.autoFocus = false,
     this.excludePubkeys = const {},
-    this.searchTimeout = const Duration(seconds: 20),
     super.key,
   });
 
@@ -78,10 +77,6 @@ class UserPickerSheet extends ConsumerStatefulWidget {
 
   /// Pubkeys to exclude from search results (already selected users).
   final Set<String> excludePubkeys;
-
-  /// Optional timeout forwarded to the internally created [UserSearchBloc].
-  /// Pass `null` in tests that use `pumpAndSettle` to avoid pending timers.
-  final Duration? searchTimeout;
 
   @override
   ConsumerState<UserPickerSheet> createState() => _UserPickerSheetState();
@@ -113,7 +108,6 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     _searchBloc = UserSearchBloc(
       profileRepository: profileRepo,
       followRepository: ref.read(followRepositoryProvider),
-      searchTimeout: widget.searchTimeout,
     );
 
     if (_useLocalSearch) {
