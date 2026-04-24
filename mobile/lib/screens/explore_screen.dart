@@ -455,12 +455,13 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               ),
             ),
           ),
-          // Keep the existing 32px top radius on the tabs container.
+          // Inner top radius is 2 px larger than the outer shell corners
+          // (30) so the tabs container visibly sits inside the
+          // nav-rounded shell.
           Expanded(
             child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(32),
-                topRight: Radius.circular(32),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(VineTheme.shellInnerCornerRadius),
               ),
               child: ColoredBox(
                 color: VineTheme.surfaceContainerHigh,
