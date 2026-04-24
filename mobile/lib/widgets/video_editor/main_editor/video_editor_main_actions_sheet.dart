@@ -10,7 +10,6 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 ///
 /// Uses [_ItemButton] for each action and closes the sheet after
 /// an action is selected.
-
 class VideoEditorMainActionsSheet extends StatelessWidget {
   const VideoEditorMainActionsSheet({
     required this.scope,
@@ -168,6 +167,7 @@ class _ItemButton extends StatelessWidget {
           excludeSemantics: true,
           child: Text(
             label,
+            maxLines: 1,
             textAlign: .center,
             style: VineTheme.bodySmallFont(),
           ),
