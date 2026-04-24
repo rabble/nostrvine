@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
@@ -42,6 +43,7 @@ void main() {
     Future<void> pumpBody(
       WidgetTester tester, {
       bool isReordering = false,
+      Duration totalDuration = const Duration(seconds: 12),
     }) async {
       when(
         () => mainBloc.state,
@@ -64,7 +66,7 @@ void main() {
             child: SizedBox(
               height: 120000,
               child: VideoEditorTimelineBody(
-                totalDuration: const Duration(seconds: 12),
+                totalDuration: totalDuration,
                 pixelsPerSecond: 80,
                 scrollController: scrollController,
                 scrollPadding: 16,
@@ -156,6 +158,61 @@ void main() {
                   VineTheme.surfaceContainerHigh.withValues(alpha: 0.3),
         ),
         findsNothing,
+      );
+    });
+
+    testWidgets(
+      'hides outside-area overlays when duration does not exceed max',
+      (tester) async {
+        await pumpBody(
+          tester,
+          totalDuration: VideoEditorConstants.maxDuration,
+        );
+
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is CustomPaint &&
+                widget.painter.runtimeType.toString() ==
+                    '_TimelineOutsideAreaPainter',
+          ),
+          findsNothing,
+        );
+
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is ColoredBox &&
+                widget.color ==
+                    VineTheme.surfaceContainerHigh.withValues(alpha: 0.3),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('extends overlay by half screen width', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1000, 1200);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await pumpBody(tester);
+
+      final expectedLeft =
+          VideoEditorConstants.maxDuration.inMilliseconds / 1000 * 80;
+      const expectedRight = -500.0;
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Positioned &&
+              widget.top == 0 &&
+              widget.bottom == 0 &&
+              widget.left == expectedLeft &&
+              widget.right == expectedRight,
+        ),
+        findsNWidgets(2),
       );
     });
 

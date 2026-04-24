@@ -101,6 +101,8 @@ class VideoEditorTimelineBody extends StatelessWidget {
     final trimExpand = clipTrimExpand > overlayTrimExpand
         ? clipTrimExpand
         : overlayTrimExpand;
+    final showMaxDurationOverlays =
+        !isReordering && totalDuration > VideoEditorConstants.maxDuration;
 
     return HitExpandedBox(
       expandLeft: trimExpand,
@@ -112,7 +114,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
           // Keep stack slots stable during drag-reorder to avoid gesture drops.
           _TimelineMaxDurationStripeOverlay(
             pixelsPerSecond: pixelsPerSecond,
-            visible: !isReordering,
+            visible: showMaxDurationOverlays,
           ),
 
           Column(
@@ -187,7 +189,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
           ),
           _TimelineMaxDurationDimOverlay(
             pixelsPerSecond: pixelsPerSecond,
-            visible: !isReordering,
+            visible: showMaxDurationOverlays,
           ),
         ],
       ),
@@ -201,13 +203,13 @@ class _TimelineMaxDurationStripeOverlay extends StatelessWidget {
     required this.visible,
   });
 
-  static const _outsideExtendWidth = 200.0;
-
   final double pixelsPerSecond;
   final bool visible;
 
   @override
   Widget build(BuildContext context) {
+    final outsideExtendWidth = MediaQuery.sizeOf(context).width / 2;
+
     return Positioned(
       left:
           VideoEditorConstants.maxDuration.inMilliseconds /
@@ -215,7 +217,7 @@ class _TimelineMaxDurationStripeOverlay extends StatelessWidget {
           pixelsPerSecond,
       top: 0,
       bottom: 0,
-      right: -_outsideExtendWidth,
+      right: -outsideExtendWidth,
       child: IgnorePointer(
         child: Visibility(
           visible: visible,
@@ -238,13 +240,13 @@ class _TimelineMaxDurationDimOverlay extends StatelessWidget {
     required this.visible,
   });
 
-  static const _outsideExtendWidth = 200.0;
-
   final double pixelsPerSecond;
   final bool visible;
 
   @override
   Widget build(BuildContext context) {
+    final outsideExtendWidth = MediaQuery.sizeOf(context).width / 2;
+
     return Positioned(
       left:
           VideoEditorConstants.maxDuration.inMilliseconds /
@@ -252,7 +254,7 @@ class _TimelineMaxDurationDimOverlay extends StatelessWidget {
           pixelsPerSecond,
       top: 0,
       bottom: 0,
-      right: -_outsideExtendWidth,
+      right: -outsideExtendWidth,
       child: IgnorePointer(
         child: Visibility(
           visible: visible,
