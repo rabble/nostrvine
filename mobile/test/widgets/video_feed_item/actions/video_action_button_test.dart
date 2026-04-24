@@ -44,9 +44,13 @@ void main() {
       testWidgets('$DivineIcon with specified icon', (tester) async {
         await tester.pumpWidget(buildSubject(icon: DivineIconName.chat));
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        // Three DivineIcons render per button: two shadow copies +
+        // the foreground glyph. The foreground is always last in the
+        // stack, and is the only one with the caller-supplied color
+        // (shadows use VineTheme.innerShadow).
+        final divineIcon = tester
+            .widgetList<DivineIcon>(find.byType(DivineIcon))
+            .last;
         expect(divineIcon.icon, equals(DivineIconName.chat));
       });
 
@@ -55,9 +59,9 @@ void main() {
           buildSubject(iconColor: Colors.red),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester
+            .widgetList<DivineIcon>(find.byType(DivineIcon))
+            .last;
         expect(divineIcon.color, equals(Colors.red));
       });
 

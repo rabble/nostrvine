@@ -5,7 +5,6 @@ import 'dart:ui';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/utils/string_utils.dart';
 
 /// Base widget for video overlay action buttons (like, comment, repost, share).
@@ -162,9 +161,10 @@ class _VideoActionCaption extends StatelessWidget {
 }
 
 /// 24x24 icon with two layered glyph drop shadows matching the Figma
-/// button spec. Uses [SvgPicture] directly for the shadow copies (rather
-/// than nested [DivineIcon]s) so consumers that query `find.byType(
-/// DivineIcon)` in widget tests still see a single match.
+/// button spec. The shadow layers are [DivineIcon]s tinted in
+/// [VineTheme.innerShadow] and wrapped in [ExcludeSemantics] so they
+/// don't pollute the accessibility tree with duplicate icon nodes —
+/// only the foreground glyph is read by screen readers.
 class _ShadowedIcon extends StatelessWidget {
   const _ShadowedIcon({required this.icon, required this.color});
 
@@ -189,7 +189,7 @@ class _ShadowedIcon extends StatelessWidget {
 }
 
 /// One of the two stacked drop shadows behind [_ShadowedIcon]'s glyph.
-/// Renders the icon tinted in [VineTheme.innerShadow], offset, and
+/// Renders a [DivineIcon] tinted in [VineTheme.innerShadow], offset, and
 /// blurred via [ImageFiltered] so the shadow follows the glyph silhouette
 /// rather than the bounding rect.
 class _IconShadow extends StatelessWidget {
@@ -209,14 +209,12 @@ class _IconShadow extends StatelessWidget {
       offset: offset,
       child: ImageFiltered(
         imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: SvgPicture.asset(
-          icon.assetPath,
-          width: 24,
-          height: 24,
-          colorFilter: const ColorFilter.mode(
-            VineTheme.innerShadow,
-            BlendMode.srcIn,
-          ),
+        // Defensive ExcludeSemantics — DivineIcon is currently just a
+        // thin SvgPicture wrapper with no Semantics of its own, but if
+        // it ever gains one, the two shadow copies should stay out of
+        // the accessibility tree.
+        child: ExcludeSemantics(
+          child: DivineIcon(icon: icon, color: VineTheme.innerShadow),
         ),
       ),
     );

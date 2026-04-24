@@ -7,7 +7,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -142,15 +141,11 @@ class VideoFollowButtonView extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: VineTheme.buttonBoxShadows,
               ),
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/icon/Icon-Follow.svg',
-                  width: 13,
-                  height: 13,
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.whiteText,
-                    BlendMode.srcIn,
-                  ),
+              child: const Center(
+                child: DivineIcon(
+                  icon: DivineIconName.follow,
+                  size: 13,
+                  color: VineTheme.whiteText,
                 ),
               ),
             ),

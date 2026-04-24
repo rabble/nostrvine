@@ -89,6 +89,7 @@ enum DivineIconName {
   filmSlate('FilmSlate'),
   fingerprint('fingerprint'),
   flag('flag'),
+  follow('Icon-Follow'),
   folderOpen('folder_open'),
   funnelSimple('funnel_simple'),
   gear('gear'),
