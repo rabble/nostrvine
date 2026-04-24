@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:followed_hashtags_repository/followed_hashtags_repository.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -11,12 +12,15 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockHashtagService extends Mock implements HashtagService {}
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUpAll(() {
     registerFallbackValue(<String>[]);
   });
@@ -32,18 +36,33 @@ void main() {
       when(() => mockHashtagService.getVideosByHashtags(any())).thenReturn([]);
     });
 
-    Widget buildTestWidget(String hashtag) {
-      return ProviderScope(
-        overrides: [
-          hashtagServiceProvider.overrideWith((ref) => mockHashtagService),
-          funnelcakeApiClientProvider.overrideWithValue(
-            mockFunnelcakeApiClient,
+    Future<void> pumpHashtagFeed(WidgetTester tester, String hashtag) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final followedRepo = FollowedHashtagsRepository(
+        prefs: prefs,
+        profileStorageKey: 'hashtag_feed_startup_contract_profile',
+        followingFeedStorageKey: 'hashtag_feed_startup_contract_feed',
+      );
+      addTearDown(() async {
+        await followedRepo.dispose();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            hashtagServiceProvider.overrideWith((ref) => mockHashtagService),
+            funnelcakeApiClientProvider.overrideWithValue(
+              mockFunnelcakeApiClient,
+            ),
+            followedHashtagsRepositoryProvider.overrideWithValue(followedRepo),
+          ],
+          child: MaterialApp(
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: HashtagFeedScreen(hashtag: hashtag),
           ),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: HashtagFeedScreen(hashtag: hashtag),
         ),
       );
     }
@@ -78,10 +97,14 @@ void main() {
           ),
         ).thenAnswer((_) => classicCompleter.future);
         when(
-          () => mockHashtagService.subscribeToHashtagVideos(any()),
+          () => mockHashtagService.subscribeToHashtagVideos(
+            any(),
+            limit: any(named: 'limit'),
+            until: any(named: 'until'),
+          ),
         ).thenAnswer((_) => subscribeCompleter.future);
 
-        await tester.pumpWidget(buildTestWidget('nostr'));
+        await pumpHashtagFeed(tester, 'nostr');
 
         expect(find.text('Loading videos about #nostr...'), findsOneWidget);
 

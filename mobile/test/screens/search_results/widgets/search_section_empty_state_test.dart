@@ -1,12 +1,17 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 
 void main() {
   group(SearchSectionEmptyState, () {
     Widget buildSubject({required String query}) {
       return MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: VineTheme.theme,
         home: Scaffold(
           body: CustomScrollView(
             slivers: [SearchSectionEmptyState(query: query)],
