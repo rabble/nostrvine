@@ -141,7 +141,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
       Log.debug(
         '🎬 Initializing video editor provider',
-        name: 'VideoClipEditorScreen',
+        name: 'VideoEditorScreen',
         category: LogCategory.video,
       );
 
@@ -151,7 +151,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
       Log.info(
         '🎬 Video editor initialized successfully',
-        name: 'VideoClipEditorScreen',
+        name: 'VideoEditorScreen',
         category: LogCategory.video,
       );
 

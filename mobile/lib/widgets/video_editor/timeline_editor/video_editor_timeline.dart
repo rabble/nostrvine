@@ -13,6 +13,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_control_bar.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
@@ -294,14 +295,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     required String clipId,
     required Duration trimStart,
     required Duration trimEnd,
-    required bool isStart,
   }) {
     context.read<ClipEditorBloc>().add(
       ClipEditorTrimUpdated(
         clipId: clipId,
         trimStart: trimStart,
         trimEnd: trimEnd,
-        isStart: isStart,
       ),
     );
   }
@@ -822,13 +821,7 @@ class _TimelineInteractiveBody extends StatelessWidget {
   final void Function(List<DivineVideoClip>) onReorder;
   final ValueChanged<bool> onReorderChanged;
   final String? trimmingClipId;
-  final void Function({
-    required String clipId,
-    required Duration trimStart,
-    required Duration trimEnd,
-    required bool isStart,
-  })
-  onTrimChanged;
+  final ClipTrimCallback onTrimChanged;
   final ValueChanged<bool> onTrimDragChanged;
   final ValueChanged<int> onClipTapped;
   final OverlayMoveCallback onOverlayItemMoved;

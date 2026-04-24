@@ -264,7 +264,7 @@ void main() {
 
     group('ClipEditorEditingStopped', () {
       blocTest<ClipEditorBloc, ClipEditorState>(
-        'exits editing mode and pauses playback',
+        'exits editing mode',
         build: buildBloc,
         seed: () => const ClipEditorState(isEditing: true),
         act: (bloc) => bloc.add(const ClipEditorEditingStopped()),
@@ -591,7 +591,6 @@ void main() {
             clipId: 'a',
             trimStart: Duration(milliseconds: 500),
             trimEnd: Duration(milliseconds: 300),
-            isStart: true,
           ),
         ),
         expect: () => [
@@ -618,7 +617,6 @@ void main() {
             clipId: 'unknown',
             trimStart: Duration(seconds: 1),
             trimEnd: Duration.zero,
-            isStart: true,
           ),
         ),
         expect: () => <ClipEditorState>[],
@@ -633,7 +631,6 @@ void main() {
             clipId: 'a',
             trimStart: Duration(milliseconds: 500),
             trimEnd: Duration.zero,
-            isStart: true,
           ),
         ),
         verify: (bloc) {
@@ -656,7 +653,6 @@ void main() {
             clipId: 'a',
             trimStart: Duration(seconds: 1),
             trimEnd: Duration.zero,
-            isStart: true,
           ),
         ),
         verify: (bloc) {

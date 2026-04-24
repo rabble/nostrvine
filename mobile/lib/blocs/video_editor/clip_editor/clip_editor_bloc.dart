@@ -15,6 +15,7 @@ part 'clip_editor_state.dart';
 /// trim, split) happen in-memory without touching the Riverpod
 /// [ClipManagerProvider]. The parent screen syncs the final clip list
 /// back to the provider when the editor closes.
+///
 /// **Transition seam**: This BLoC receives its initial clip list from the
 /// Riverpod [ClipManagerProvider] via [ClipEditorInitialized] dispatched in
 /// the widget layer. This is an intentional migration boundary — the target
@@ -108,8 +109,6 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final newClips = List<DivineVideoClip>.of(state.clips)
       ..[index] = event.clip;
 
-    // Clip updates (thumbnail, video render) are not undoable — they are
-    // async refinements of a previous mutation that was already recorded.
     emit(state.copyWith(clips: List.unmodifiable(newClips)));
   }
 
@@ -122,12 +121,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final clips = state.clips;
     if (event.index < 0 || event.index >= clips.length) return;
 
-    final offset = clips
-        .take(event.index)
-        .fold(Duration.zero, (sum, clip) => sum + clip.trimmedDuration);
-
     Log.debug(
-      '🎯 Selected clip ${event.index} (offset: ${offset.inSeconds}s)',
+      '🎯 Selected clip ${event.index}',
       name: 'ClipEditorBloc',
       category: LogCategory.video,
     );
@@ -288,7 +283,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           );
           Log.debug(
             '\u2705 Clip rendered: ${clip.id}',
-            name: 'VideoClipEditorScreen',
+            name: 'ClipEditorBloc',
             category: LogCategory.video,
           );
         },
