@@ -511,6 +511,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, state) => InviteGateScreen(
               initialCode: state.uri.queryParameters['code'],
               initialError: state.uri.queryParameters['error'],
+              initialSourceSlug: state.uri.queryParameters['sourceSlug'],
             ),
           ),
           GoRoute(

@@ -28,6 +28,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     required PendingVerificationService pendingVerificationService,
     InviteApiClient? inviteApiClient,
     String? inviteCode,
+    String? inviteSourceSlug,
   }) : _oauthClient = oauthClient,
        _authService = authService,
        _pendingVerificationService = pendingVerificationService,
@@ -35,6 +36,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
        _inviteCode = inviteCode == null
            ? null
            : InviteApiClient.normalizeCode(inviteCode),
+       _inviteSourceSlug = inviteSourceSlug,
        super(const DivineAuthInitial());
 
   final KeycastOAuth _oauthClient;
@@ -42,6 +44,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
   final PendingVerificationService _pendingVerificationService;
   final InviteApiClient? _inviteApiClient;
   final String? _inviteCode;
+  final String? _inviteSourceSlug;
 
   /// Initialize form with default state (sign up mode)
   void initialize({bool isSignIn = false, String? initialEmail}) {
@@ -282,6 +285,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
             generalError: InviteErrorUtils.activationFailureMessage(e),
             showInviteGateRecovery: true,
             inviteRecoveryCode: _inviteCode,
+            inviteRecoverySourceSlug: _inviteSourceSlug,
           ),
         );
       }
@@ -400,6 +404,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
             generalError: InviteErrorUtils.activationFailureMessage(e),
             showInviteGateRecovery: true,
             inviteRecoveryCode: _inviteCode,
+            inviteRecoverySourceSlug: _inviteSourceSlug,
           ),
         );
       }

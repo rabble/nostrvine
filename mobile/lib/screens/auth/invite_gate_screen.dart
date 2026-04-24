@@ -20,13 +20,19 @@ import 'package:openvine/widgets/rounded_icon_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class InviteGateScreen extends StatefulWidget {
-  const InviteGateScreen({super.key, this.initialCode, this.initialError});
+  const InviteGateScreen({
+    super.key,
+    this.initialCode,
+    this.initialError,
+    this.initialSourceSlug,
+  });
 
   static const String routeName = 'invite-gate';
   static const String path = '/invite';
 
   final String? initialCode;
   final String? initialError;
+  final String? initialSourceSlug;
 
   @override
   State<InviteGateScreen> createState() => _InviteGateScreenState();
@@ -70,6 +76,9 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
   }
 
   Future<void> _showWaitlistSheet(InviteClientConfig config) async {
+    final sourceSlug =
+        context.read<InviteGateBloc>().state.accessGrant?.creatorSlug ??
+        widget.initialSourceSlug;
     final joinedEmail = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -77,6 +86,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
       builder: (_) => _WaitlistEntrySheet(
         inviteApiClient: context.read<InviteApiClient>(),
         supportEmail: config.supportEmail,
+        sourceSlug: sourceSlug,
       ),
     );
 
@@ -589,10 +599,12 @@ class _WaitlistEntrySheet extends StatefulWidget {
   const _WaitlistEntrySheet({
     required this.inviteApiClient,
     required this.supportEmail,
+    this.sourceSlug,
   });
 
   final InviteApiClient inviteApiClient;
   final String supportEmail;
+  final String? sourceSlug;
 
   @override
   State<_WaitlistEntrySheet> createState() => _WaitlistEntrySheetState();
@@ -629,7 +641,10 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
     });
 
     try {
-      await widget.inviteApiClient.joinWaitlist(contact: email);
+      await widget.inviteApiClient.joinWaitlist(
+        contact: email,
+        sourceSlug: widget.sourceSlug,
+      );
       if (!mounted) return;
       Navigator.of(context).pop(email);
     } on InviteApiException catch (error) {

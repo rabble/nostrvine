@@ -140,11 +140,15 @@ class InviteApiClient {
   Future<WaitlistJoinResult> joinWaitlist({
     required String contact,
     String? pubkey,
+    String? sourceSlug,
   }) async {
     final uri = Uri.parse('$_baseUrl/v1/waitlist');
     final payload = <String, dynamic>{'contact': contact};
     if (pubkey != null && pubkey.isNotEmpty) {
       payload['pubkey'] = pubkey;
+    }
+    if (sourceSlug != null && sourceSlug.isNotEmpty) {
+      payload['source_slug'] = sourceSlug;
     }
 
     try {
@@ -233,6 +237,15 @@ class InviteApiClient {
           .timeout(_defaultTimeout);
 
       if (response.statusCode != 200) {
+        final alreadyJoined =
+            _parseErrorCode(response.body) == 'user_already_joined';
+        if (alreadyJoined) {
+          return InviteConsumeResult.fromJson({
+            'result': 'user_already_joined',
+            'code': normalizedCode,
+          });
+        }
+
         throw _requestFailed(
           message: 'Failed to activate invite code',
           response: response,
@@ -394,10 +407,23 @@ class InviteApiClient {
     required String message,
     required http.Response response,
   }) {
+    final errorCode = _parseErrorCode(response.body);
+    final creatorSlug = _extractString(response.body, [
+      'creatorSlug',
+      'creator_slug',
+    ]);
+    final creatorDisplayName = _extractString(response.body, [
+      'creatorDisplayName',
+      'creator_display_name',
+    ]);
+
     return InviteApiException(
       _extractErrorMessage(response.body) ?? message,
       statusCode: response.statusCode,
       responseBody: response.body,
+      code: errorCode,
+      creatorSlug: creatorSlug,
+      creatorDisplayName: creatorDisplayName,
     );
   }
 
@@ -418,7 +444,13 @@ class InviteApiClient {
         return InviteValidationResult.fromJson({
           'valid': decoded['valid'] ?? false,
           'used': decoded['used'] ?? false,
+          'available': decoded['available'],
           'code': decoded['code'] ?? fallbackCode,
+          'errorCode': decoded['errorCode'] ?? decoded['code'],
+          'creatorSlug': decoded['creatorSlug'] ?? decoded['creator_slug'],
+          'creatorDisplayName':
+              decoded['creatorDisplayName'] ?? decoded['creator_display_name'],
+          'remaining': decoded['remaining'],
         });
       }
     } on Object catch (_) {
@@ -440,6 +472,27 @@ class InviteApiClient {
       }
     } on Object catch (_) {
       // Ignore malformed bodies and fall back to the caller's default message.
+    }
+    return null;
+  }
+
+  String? _parseErrorCode(String body) {
+    return _extractString(body, ['code', 'errorCode', 'error_code']);
+  }
+
+  String? _extractString(String body, List<String> keys) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        for (final key in keys) {
+          final value = decoded[key];
+          if (value is String && value.isNotEmpty) {
+            return value;
+          }
+        }
+      }
+    } on Object catch (_) {
+      // Ignore malformed bodies and fall back to null.
     }
     return null;
   }

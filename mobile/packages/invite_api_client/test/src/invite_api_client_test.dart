@@ -45,6 +45,7 @@ void main() {
     test('recognizes full invite code format', () {
       expect(InviteApiClient.looksLikeInviteCode('AB12-EF34'), isTrue);
       expect(InviteApiClient.looksLikeInviteCode('abcd1234'), isTrue);
+      expect(InviteApiClient.looksLikeInviteCode('LELE-PONS'), isTrue);
       expect(InviteApiClient.looksLikeInviteCode('AB12'), isFalse);
       expect(InviteApiClient.looksLikeInviteCode(''), isFalse);
     });
@@ -111,6 +112,40 @@ void main() {
       expect(result.canContinue, isTrue);
       expect(result.code, 'AB12-EF34');
     });
+
+    test(
+      'validates reusable creator invite codes with creator metadata',
+      () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(200);
+        when(() => response.body).thenReturn(
+          jsonEncode({
+            'valid': true,
+            'available': true,
+            'used': true,
+            'code': 'LELE-PONS',
+            'creatorSlug': 'lele-pons',
+            'creatorDisplayName': 'Lele Pons',
+            'remaining': 842,
+          }),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await client.validateCode('lele-pons');
+
+        expect(result.canContinue, isTrue);
+        expect(result.code, 'LELE-PONS');
+        expect(result.creatorSlug, 'lele-pons');
+        expect(result.creatorDisplayName, 'Lele Pons');
+        expect(result.remaining, 842);
+      },
+    );
 
     test('maps validation rejection responses to an invalid result', () async {
       final rejectionStatuses = [400, 403, 404, 409];
@@ -225,6 +260,37 @@ void main() {
       expect(result.message, 'You are on the waitlist');
     });
 
+    test('joins waitlist with creator source slug when provided', () async {
+      final waitlistClient = InviteApiClient(
+        baseUrl: 'https://invites.divine.video',
+        client: MockClient((request) async {
+          expect(request.method, 'POST');
+          expect(request.url.path, contains('/v1/waitlist'));
+          expect(
+            jsonDecode(request.body),
+            {
+              'contact': 'test@example.com',
+              'source_slug': 'lele-pons',
+            },
+          );
+          return http.Response(
+            jsonEncode({
+              'id': 'waitlist-entry-1',
+              'message': 'You are on the waitlist',
+            }),
+            201,
+          );
+        }),
+      );
+
+      final result = await waitlistClient.joinWaitlist(
+        contact: 'test@example.com',
+        sourceSlug: 'lele-pons',
+      );
+
+      expect(result.id, 'waitlist-entry-1');
+    });
+
     test('returns invite status on 200', () async {
       final statusClient = InviteApiClient(
         baseUrl: 'https://invites.divine.video',
@@ -306,6 +372,92 @@ void main() {
       ).called(1);
 
       keyContainer.dispose();
+    });
+
+    test(
+      'parses already consumed invite responses as successful consumption',
+      () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(200);
+        when(() => response.body).thenReturn(
+          jsonEncode({
+            'result': 'already_consumed',
+            'code': 'LELE-PONS',
+            'codesAllocated': 0,
+            'creatorSlug': 'lele-pons',
+            'creatorDisplayName': 'Lele Pons',
+          }),
+        );
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await client.consumeInvite('lele-pons');
+
+        expect(result.isSuccess, isTrue);
+        expect(result.result, InviteConsumeStatus.alreadyConsumed);
+        expect(result.code, 'LELE-PONS');
+        expect(result.creatorSlug, 'lele-pons');
+        expect(result.creatorDisplayName, 'Lele Pons');
+      },
+    );
+
+    test('surfaces creator page full as structured invite API error', () async {
+      final response = _MockResponse();
+      when(() => response.statusCode).thenReturn(409);
+      when(() => response.body).thenReturn(
+        jsonEncode({
+          'code': 'creator_page_full',
+          'error': "This creator's invites are full",
+          'creatorSlug': 'lele-pons',
+          'creatorDisplayName': 'Lele Pons',
+        }),
+      );
+      when(
+        () => mockClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async => response);
+
+      await expectLater(
+        client.consumeInvite('lele-pons'),
+        throwsA(
+          isA<InviteApiException>()
+              .having((e) => e.statusCode, 'statusCode', 409)
+              .having((e) => e.code, 'code', 'creator_page_full')
+              .having((e) => e.creatorSlug, 'creatorSlug', 'lele-pons'),
+        ),
+      );
+    });
+
+    test('treats user already joined consume errors as success', () async {
+      final response = _MockResponse();
+      when(() => response.statusCode).thenReturn(409);
+      when(() => response.body).thenReturn(
+        jsonEncode({
+          'code': 'user_already_joined',
+          'error': 'User has already joined',
+        }),
+      );
+      when(
+        () => mockClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async => response);
+
+      final result = await client.consumeInvite('lele-pons');
+
+      expect(result.isSuccess, isTrue);
+      expect(result.result, InviteConsumeStatus.userAlreadyJoined);
+      expect(result.code, 'LELE-PONS');
     });
 
     test('surfaces server errors as InviteApiException', () async {
