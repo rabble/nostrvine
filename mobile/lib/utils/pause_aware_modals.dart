@@ -114,12 +114,26 @@ extension PauseAwareModals on BuildContext {
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
     double maxChildSize = 0.9,
+    bool snap = false,
+    List<double>? snapSizes,
+    // Defaults to true because video-pausing sheets are inherently
+    // full-takeover interactions that should cover the tab bar. Callers on
+    // screens without a shell/tab bar can opt out with false. Matches the
+    // sibling showVideoPausingDialog.
+    bool useRootNavigator = true,
+    bool tapOutsideToDismiss = true,
+    Widget Function(BuildContext context, Widget child)? contentWrapper,
   }) {
     final container = ProviderScope.containerOf(this, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
 
     // Custom builder path: raw modal bottom sheet with video pause integration
     // Uses setBottomSheetOpen to retain current player for instant resume.
+    //
+    // The custom-builder path is an escape hatch for sheets that do not fit
+    // the VineBottomSheet structure (e.g. Share's custom Material header).
+    // New VineBottomSheet-specific parameters are intentionally NOT forwarded
+    // here — the caller owns the full sheet layout in this mode.
     if (builder != null) {
       overlayNotifier.setBottomSheetOpen(true);
       return showModalBottomSheet<T>(
@@ -127,6 +141,7 @@ extension PauseAwareModals on BuildContext {
         builder: builder,
         isScrollControlled: true,
         useSafeArea: true,
+        useRootNavigator: useRootNavigator,
         backgroundColor: VineTheme.transparent,
       ).whenComplete(() {
         overlayNotifier.setBottomSheetOpen(false);
@@ -152,6 +167,11 @@ extension PauseAwareModals on BuildContext {
       initialChildSize: initialChildSize,
       minChildSize: minChildSize,
       maxChildSize: maxChildSize,
+      snap: snap,
+      snapSizes: snapSizes,
+      useRootNavigator: useRootNavigator,
+      tapOutsideToDismiss: tapOutsideToDismiss,
+      contentWrapper: contentWrapper,
       onShow: () => overlayNotifier.setBottomSheetOpen(true),
       onDismiss: () => overlayNotifier.setBottomSheetOpen(false),
     );

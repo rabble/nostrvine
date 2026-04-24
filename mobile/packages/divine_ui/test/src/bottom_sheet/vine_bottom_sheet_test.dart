@@ -340,5 +340,267 @@ void main() {
         expect(find.text('Body Content'), findsOneWidget);
       });
     });
+
+    group('tapOutsideToDismiss', () {
+      Future<void> showDraggable(
+        WidgetTester tester, {
+        required bool tapOutsideToDismiss,
+      }) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      tapOutsideToDismiss: tapOutsideToDismiss,
+                      initialChildSize: 0.5,
+                      title: const Text('Draggable Sheet'),
+                      children: const [Text('Sheet Body')],
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+        expect(find.text('Sheet Body'), findsOneWidget);
+      }
+
+      testWidgets(
+        'dismisses on tap above the sheet when tapOutsideToDismiss is true',
+        (tester) async {
+          await showDraggable(tester, tapOutsideToDismiss: true);
+
+          // Tap near the top of the screen, above the sheet.
+          await tester.tapAt(const Offset(200, 20));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Sheet Body'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not dismiss on tap above the sheet when tapOutsideToDismiss '
+        'is false',
+        (tester) async {
+          await showDraggable(tester, tapOutsideToDismiss: false);
+
+          await tester.tapAt(const Offset(200, 20));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Sheet Body'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'does not dismiss on tap on non-interactive sheet body',
+        (tester) async {
+          await showDraggable(tester, tapOutsideToDismiss: true);
+
+          // Tap directly on the sheet's body text — a non-interactive area.
+          await tester.tap(find.text('Sheet Body'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Sheet Body'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'interactive children inside the sheet still receive taps',
+        (tester) async {
+          var tapped = false;
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        initialChildSize: 0.5,
+                        title: const Text('Interactive Sheet'),
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => tapped = true,
+                            child: const Text('Inner Button'),
+                          ),
+                        ],
+                      );
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Inner Button'));
+          await tester.pumpAndSettle();
+
+          expect(tapped, isTrue);
+          // Sheet should still be visible after tapping an inner button.
+          expect(find.text('Inner Button'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'fixed mode still dismisses on barrier tap (unchanged)',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        scrollable: false,
+                        title: const Text('Fixed Sheet'),
+                        children: const [Text('Fixed Body')],
+                      );
+                    },
+                    child: const Text('Open Fixed'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open Fixed'));
+          await tester.pumpAndSettle();
+          expect(find.text('Fixed Body'), findsOneWidget);
+
+          // Tap well above the fixed sheet — hits the modal scrim.
+          await tester.tapAt(const Offset(200, 20));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Fixed Body'), findsNothing);
+        },
+      );
+    });
+
+    group('new parameters', () {
+      test('snap without scrollable fails an assertion', () {
+        expect(
+          () => VineBottomSheet.show<void>(
+            context: _FakeContext(),
+            scrollable: false,
+            snap: true,
+            children: const [Text('x')],
+          ),
+          throwsAssertionError,
+        );
+      });
+
+      test('snapSizes without snap fails an assertion', () {
+        expect(
+          () => VineBottomSheet.show<void>(
+            context: _FakeContext(),
+            snapSizes: const [0.5, 0.9],
+            children: const [Text('x')],
+          ),
+          throwsAssertionError,
+        );
+      });
+
+      testWidgets(
+        'contentWrapper is applied around the sheet inside the modal route',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        title: const Text('Wrapped'),
+                        children: const [Text('Body')],
+                        contentWrapper: (wrapperContext, child) =>
+                            _WrapperMarker(child: child),
+                      );
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          // Wrapper wraps the real sheet content.
+          expect(find.byType(_WrapperMarker), findsOneWidget);
+          expect(find.text('Body'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'contentWrapper is applied in fixed (non-scrollable) mode too',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        scrollable: false,
+                        title: const Text('Wrapped Fixed'),
+                        children: const [Text('Fixed Body')],
+                        contentWrapper: (wrapperContext, child) =>
+                            _WrapperMarker(child: child),
+                      );
+                    },
+                    child: const Text('Open Fixed'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open Fixed'));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(_WrapperMarker), findsOneWidget);
+          expect(find.text('Fixed Body'), findsOneWidget);
+        },
+      );
+    });
   });
+}
+
+/// Marker widget used to verify that `contentWrapper` wraps the sheet
+/// in the widget tree exactly once.
+class _WrapperMarker extends StatelessWidget {
+  const _WrapperMarker({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => child;
+}
+
+/// Minimal BuildContext stand-in used for constructor-time assertion tests
+/// that never reach actual widget inflation.
+class _FakeContext extends StatelessElement {
+  _FakeContext() : super(const _FakeWidget());
+}
+
+class _FakeWidget extends StatelessWidget {
+  const _FakeWidget();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

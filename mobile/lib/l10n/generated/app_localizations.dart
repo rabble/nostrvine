@@ -2242,6 +2242,36 @@ abstract class AppLocalizations {
   /// **'Auto'**
   String get videoActionAutoLabel;
 
+  /// No description provided for @videoActionLikeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Like'**
+  String get videoActionLikeLabel;
+
+  /// No description provided for @videoActionReplyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get videoActionReplyLabel;
+
+  /// No description provided for @videoActionRepostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repost'**
+  String get videoActionRepostLabel;
+
+  /// No description provided for @videoActionShareLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get videoActionShareLabel;
+
+  /// No description provided for @videoActionAboutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get videoActionAboutLabel;
+
   /// No description provided for @videoActionEnableAutoAdvance.
   ///
   /// In en, this message translates to:
@@ -2289,6 +2319,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show subtitles'**
   String get videoActionShowSubtitles;
+
+  /// Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video details'**
+  String get videoOverlayOpenMetadataFromTitle;
+
+  /// Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video details'**
+  String get videoOverlayOpenMetadataFromDescription;
 
   /// No description provided for @videoDescriptionLoops.
   ///
@@ -9008,11 +9050,23 @@ abstract class AppLocalizations {
   /// **'{clipCount, plural, one{Open clip library, 1 clip} other{Open clip library, {clipCount} clips}}'**
   String videoRecorderLibraryOpenLabel(int clipCount);
 
-  /// No description provided for @videoEditorClipsLabel.
+  /// No description provided for @videoEditorCameraLabel.
   ///
   /// In en, this message translates to:
-  /// **'Clips'**
-  String get videoEditorClipsLabel;
+  /// **'Camera'**
+  String get videoEditorCameraLabel;
+
+  /// No description provided for @videoEditorOpenCameraSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open camera'**
+  String get videoEditorOpenCameraSemanticLabel;
+
+  /// No description provided for @videoEditorLibraryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Library'**
+  String get videoEditorLibraryLabel;
 
   /// No description provided for @videoEditorTextLabel.
   ///
@@ -9026,11 +9080,11 @@ abstract class AppLocalizations {
   /// **'Draw'**
   String get videoEditorDrawLabel;
 
-  /// No description provided for @videoEditorEffectsLabel.
+  /// No description provided for @videoEditorFilterLabel.
   ///
   /// In en, this message translates to:
-  /// **'Effects'**
-  String get videoEditorEffectsLabel;
+  /// **'Filter'**
+  String get videoEditorFilterLabel;
 
   /// No description provided for @videoEditorAudioLabel.
   ///
@@ -9050,11 +9104,11 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get videoEditorAddTitle;
 
-  /// No description provided for @videoEditorOpenClipsSemanticLabel.
+  /// No description provided for @videoEditorOpenLibrarySemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Open clips editor'**
-  String get videoEditorOpenClipsSemanticLabel;
+  /// **'Open Library'**
+  String get videoEditorOpenLibrarySemanticLabel;
 
   /// No description provided for @videoEditorOpenAudioSemanticLabel.
   ///
@@ -9074,11 +9128,11 @@ abstract class AppLocalizations {
   /// **'Open draw editor'**
   String get videoEditorOpenDrawSemanticLabel;
 
-  /// No description provided for @videoEditorOpenEffectsSemanticLabel.
+  /// No description provided for @videoEditorOpenFilterSemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Open effects editor'**
-  String get videoEditorOpenEffectsSemanticLabel;
+  /// **'Open filter editor'**
+  String get videoEditorOpenFilterSemanticLabel;
 
   /// No description provided for @videoEditorSaveDraftTitle.
   ///

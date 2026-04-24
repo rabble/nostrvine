@@ -464,11 +464,6 @@ class _ProfileTabBar extends StatefulWidget {
 class _ProfileTabBarState extends State<_ProfileTabBar> {
   double _tabBarTopInset = 0;
 
-  /// Cached header height. The header is laid out once and then doesn't
-  /// resize during scrolling, so we can avoid a [RenderBox] lookup on
-  /// every scroll tick.
-  double? _cachedHeaderHeight;
-
   /// Cached safe area top. Refreshed in [didChangeDependencies] when the
   /// surrounding [MediaQuery] changes (rotation, multi-window resize).
   double _safeAreaTop = 0;
@@ -501,14 +496,14 @@ class _ProfileTabBarState extends State<_ProfileTabBar> {
   }
 
   void _onScroll() {
-    final headerHeight = _cachedHeaderHeight ??=
+    // Re-measure every tick so that async header updates (profile data
+    // arriving, _profileVisible flip) are always reflected in the trigger
+    // threshold. findRenderObject().size is O(1) on a mounted widget.
+    final headerHeight =
         (widget.headerKey.currentContext?.findRenderObject() as RenderBox?)
             ?.size
             .height;
-    if (headerHeight == null || headerHeight == 0) {
-      _cachedHeaderHeight = null; // retry on next tick
-      return;
-    }
+    if (headerHeight == null || headerHeight == 0) return;
 
     final triggerScroll = headerHeight - _safeAreaTop;
     final offset = widget.scrollController?.offset ?? 0;

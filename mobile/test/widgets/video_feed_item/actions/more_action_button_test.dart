@@ -45,7 +45,7 @@ void main() {
   });
 
   group(MoreActionButton, () {
-    testWidgets('renders three-dots icon button', (tester) async {
+    testWidgets('renders info icon with About caption', (tester) async {
       await tester.pumpWidget(
         testMaterialApp(
           additionalOverrides: [
@@ -64,10 +64,11 @@ void main() {
           .widgetList<DivineIcon>(find.byType(DivineIcon))
           .toList();
       expect(
-        divineIcons.any((icon) => icon.icon == DivineIconName.dotsThree),
+        divineIcons.any((icon) => icon.icon == DivineIconName.info),
         isTrue,
-        reason: 'Should render dotsThree DivineIcon',
+        reason: 'Should render the info DivineIcon',
       );
+      expect(find.text('About'), findsOneWidget);
     });
 
     testWidgets('has correct accessibility semantics', (tester) async {
@@ -107,7 +108,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(GestureDetector).first);
+      await tester.tap(find.byType(GestureDetector));
       await tester.pump();
 
       expect(interacted, isTrue);

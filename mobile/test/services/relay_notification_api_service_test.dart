@@ -259,6 +259,60 @@ void main() {
       });
     });
 
+    group('getNotifications cursor format', () {
+      final mockAuthToken = Nip98Token(
+        token: 'mock_token_base64',
+        signedEvent: _createMockEvent(),
+        createdAt: DateTime.now(),
+        expiresAt: DateTime.now().add(const Duration(minutes: 10)),
+      );
+
+      setUp(() {
+        when(
+          () => mockNip98AuthService.createAuthToken(
+            url: any(named: 'url'),
+            method: HttpMethod.get,
+          ),
+        ).thenAnswer((_) async => mockAuthToken);
+
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({'notifications': [], 'unread_count': 0}),
+            200,
+          ),
+        );
+      });
+
+      test(
+        'default before cursor uses Unix seconds not milliseconds',
+        () async {
+          // Server (funnelcake) binds `before` into ClickHouse `toDateTime(?)`
+          // against a DateTime column whose max is 2106-02-07. A 13-digit ms
+          // value is ~55,700 years out of range. Sibling bug was fixed by
+          // PR #3009 on the BLoC path (FunnelcakeApiClient.notificationsUri);
+          // this test prevents the legacy path from regressing the same way.
+          await service.getNotifications(pubkey: testPubkey);
+
+          final captured =
+              verify(
+                    () => mockHttpClient.get(
+                      captureAny(),
+                      headers: any(named: 'headers'),
+                    ),
+                  ).captured.first
+                  as Uri;
+
+          final before = int.parse(captured.queryParameters['before']!);
+          // Unix seconds should be ~10 digits (1.7 billion in 2026).
+          // Milliseconds would be ~13 digits (1.7 trillion).
+          expect(before, lessThan(10000000000));
+          expect(before, greaterThan(1700000000)); // sanity: post-2023-11
+        },
+      );
+    });
+
     group('markAsRead', () {
       final mockAuthToken = Nip98Token(
         token: 'mock_token_base64',

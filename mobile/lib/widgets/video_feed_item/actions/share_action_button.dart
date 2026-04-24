@@ -81,6 +81,7 @@ class ShareActionButton extends StatelessWidget {
       icon: .shareFatDuo,
       semanticIdentifier: 'share_button',
       semanticLabel: context.l10n.shareVideoLabel,
+      labelWhenZero: context.l10n.videoActionShareLabel,
       onPressed: () {
         onInteracted?.call();
         Log.info(

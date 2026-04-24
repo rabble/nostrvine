@@ -446,7 +446,9 @@ class _CategorySortSheet extends StatelessWidget {
         key: const Key('category-sort-sheet'),
         decoration: const BoxDecoration(
           color: VineTheme.navGreen,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(VineTheme.bottomSheetBorderRadius),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

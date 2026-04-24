@@ -2746,7 +2746,49 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       );
       _profileController.add(_currentProfile);
 
-      final keyContainer = SecureKeyContainer.fromPublicKey(publicKeyHex);
+      // Load the locally-stored nsec matching publicKeyHex so
+      // _buildIdentity can attach a LocalKeySigner to the KeycastNostrIdentity.
+      // Without this, every signEvent / nip44Decrypt round-trips through
+      // Keycast RPC (200-500ms) even though the nsec is on device. Mirrors
+      // the local-first restore path used during cold start.
+      final npub = NostrKeyUtils.encodePubKey(publicKeyHex);
+      SecureKeyContainer? localKey;
+      try {
+        localKey = await _keyStorage.getIdentityKeyContainer(npub);
+        if (localKey == null && await _keyStorage.hasKeys()) {
+          final primary = await _keyStorage.getKeyContainer();
+          if (primary != null &&
+              primary.hasPrivateKey &&
+              primary.publicKeyHex == publicKeyHex) {
+            localKey = primary;
+          }
+        }
+      } catch (e) {
+        Log.warning(
+          'signInWithDivineOAuth: local key lookup failed: $e',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+
+      final SecureKeyContainer keyContainer;
+      if (localKey != null && localKey.hasPrivateKey) {
+        keyContainer = localKey;
+        Log.info(
+          'signInWithDivineOAuth: using local nsec for fast signing '
+          '(pubkey=$publicKeyHex)',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      } else {
+        keyContainer = SecureKeyContainer.fromPublicKey(publicKeyHex);
+        Log.info(
+          'signInWithDivineOAuth: no matching local nsec — '
+          'signing via RPC (pubkey=$publicKeyHex)',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
       await _setupUserSession(keyContainer, AuthenticationSource.divineOAuth);
       _setRpcCapability(AuthRpcCapability.rpcReady);
 

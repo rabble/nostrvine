@@ -9,8 +9,8 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:pro_video_editor/core/models/video/progress_model.dart';
 import 'package:pro_video_editor/core/platform/platform_interface.dart';
 
-class VideoClipEditorProcessingOverlay extends ConsumerWidget {
-  const VideoClipEditorProcessingOverlay({
+class VideoEditorProcessingOverlay extends ConsumerWidget {
+  const VideoEditorProcessingOverlay({
     required this.clip,
     super.key,
     this.inactivePlaceholder,

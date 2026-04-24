@@ -52,7 +52,9 @@ class RequestPreviewView extends ConsumerWidget {
         onBackPressed: context.pop,
       ),
       body: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(VineTheme.bottomSheetBorderRadius),
+        ),
         child: ColoredBox(
           color: VineTheme.surfaceContainerHigh,
           child: Column(

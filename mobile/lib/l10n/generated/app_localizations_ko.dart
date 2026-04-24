@@ -1169,6 +1169,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionAutoLabel => '자동';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => '자동 넘기기 활성화';
 
   @override
@@ -1191,6 +1206,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => '자막 표시';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -4898,7 +4919,13 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => '클립';
+  String get videoEditorCameraLabel => '카메라';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => '카메라 열기';
+
+  @override
+  String get videoEditorLibraryLabel => '라이브러리';
 
   @override
   String get videoEditorTextLabel => '텍스트';
@@ -4907,7 +4934,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorDrawLabel => '그리기';
 
   @override
-  String get videoEditorEffectsLabel => '효과';
+  String get videoEditorFilterLabel => '필터';
 
   @override
   String get videoEditorAudioLabel => '오디오';
@@ -4919,7 +4946,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAddTitle => '추가';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => '클립 편집기 열기';
+  String get videoEditorOpenLibrarySemanticLabel => '라이브러리 열기';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => '오디오 편집기 열기';
@@ -4931,7 +4958,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => '그리기 편집기 열기';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => '효과 편집기 열기';
+  String get videoEditorOpenFilterSemanticLabel => '필터 편집기 열기';
 
   @override
   String get videoEditorSaveDraftTitle => '임시저장 하시겠어요?';

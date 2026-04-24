@@ -47,6 +47,7 @@ void main() {
                 const Size(400, 600),
               ),
               fromLibrary: false,
+              onOpenCamera: () {},
               onOpenClipsEditor: () {},
               onAddStickers: () {},
               onAdjustVolume: () {},

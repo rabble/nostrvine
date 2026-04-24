@@ -18,6 +18,7 @@ void main() {
     int count = 0,
     bool isLoading = false,
     String? caption,
+    String? labelWhenZero,
   }) {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -32,6 +33,7 @@ void main() {
           count: count,
           isLoading: isLoading,
           caption: caption,
+          labelWhenZero: labelWhenZero,
         ),
       ),
     );
@@ -42,9 +44,13 @@ void main() {
       testWidgets('$DivineIcon with specified icon', (tester) async {
         await tester.pumpWidget(buildSubject(icon: DivineIconName.chat));
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        // Three DivineIcons render per button: two shadow copies +
+        // the foreground glyph. The foreground is always last in the
+        // stack, and is the only one with the caller-supplied color
+        // (shadows use VineTheme.innerShadow).
+        final divineIcon = tester
+            .widgetList<DivineIcon>(find.byType(DivineIcon))
+            .last;
         expect(divineIcon.icon, equals(DivineIconName.chat));
       });
 
@@ -53,16 +59,23 @@ void main() {
           buildSubject(iconColor: Colors.red),
         );
 
-        final divineIcon = tester.widget<DivineIcon>(
-          find.byType(DivineIcon),
-        );
+        final divineIcon = tester
+            .widgetList<DivineIcon>(find.byType(DivineIcon))
+            .last;
         expect(divineIcon.color, equals(Colors.red));
       });
 
-      testWidgets('$IconButton', (tester) async {
+      testWidgets('$GestureDetector fills the 48x48 tap target', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildSubject());
 
-        expect(find.byType(IconButton), findsOneWidget);
+        // One GestureDetector wraps the whole tap target.
+        expect(find.byType(GestureDetector), findsOneWidget);
+
+        // Tap target is exactly 48x48 regardless of child content.
+        final size = tester.getSize(find.byType(GestureDetector));
+        expect(size, equals(const Size(48, 48)));
       });
     });
 
@@ -90,6 +103,39 @@ void main() {
 
         expect(find.text('Auto'), findsOneWidget);
       });
+
+      testWidgets(
+        'renders labelWhenZero as a placeholder when count is 0',
+        (tester) async {
+          await tester.pumpWidget(buildSubject(labelWhenZero: 'Like'));
+
+          expect(find.text('Like'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hides labelWhenZero once count goes above 0',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(count: 12, labelWhenZero: 'Like'),
+          );
+
+          expect(find.text('12'), findsOneWidget);
+          expect(find.text('Like'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'caption takes precedence over labelWhenZero',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(caption: 'Auto', labelWhenZero: 'Like'),
+          );
+
+          expect(find.text('Auto'), findsOneWidget);
+          expect(find.text('Like'), findsNothing);
+        },
+      );
     });
 
     group('loading state', () {
@@ -108,13 +154,21 @@ void main() {
         expect(find.text('10'), findsNothing);
       });
 
+      testWidgets('hides labelWhenZero when loading', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(isLoading: true, labelWhenZero: 'Like'),
+        );
+
+        expect(find.text('Like'), findsNothing);
+      });
+
       testWidgets('disables tap when loading', (tester) async {
         var tapped = false;
         await tester.pumpWidget(
           buildSubject(isLoading: true, onPressed: () => tapped = true),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         expect(tapped, isFalse);
       });
     });
@@ -126,16 +180,34 @@ void main() {
           buildSubject(onPressed: () => tapped = true),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         expect(tapped, isTrue);
       });
 
       testWidgets('does not throw when onPressed is null', (tester) async {
         await tester.pumpWidget(buildSubject());
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         // No assertion needed — just verifying no exception is thrown
       });
+
+      testWidgets(
+        'captures taps on the caption area, not just the icon',
+        (tester) async {
+          var tapped = false;
+          await tester.pumpWidget(
+            buildSubject(
+              labelWhenZero: 'Like',
+              onPressed: () => tapped = true,
+            ),
+          );
+
+          // The caption sits in the lower half of the 48x48 box. Tapping
+          // on it should still fire the action.
+          await tester.tap(find.text('Like'));
+          expect(tapped, isTrue);
+        },
+      );
     });
 
     group('accessibility', () {

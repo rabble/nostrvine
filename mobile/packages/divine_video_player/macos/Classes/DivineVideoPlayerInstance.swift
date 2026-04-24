@@ -134,9 +134,19 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 self.firstFrameRendered = false
 
                 let playerItem = AVPlayerItem(asset: composition)
-                playerItem.videoComposition = AVVideoComposition(
-                    propertiesOf: composition
-                )
+                // `AVVideoComposition(propertiesOf:)` derives `renderSize`
+                // from the composition's video tracks. If the composition
+                // has no video segments (e.g. caller passed an empty
+                // clip list during teardown), `renderSize` is `.zero` and
+                // the setter throws `NSInvalidArgumentException`
+                // ("video composition must have a positive renderSize"),
+                // which terminates the app from a Swift Task.
+                let avComposition = AVVideoComposition(propertiesOf: composition)
+                if avComposition.renderSize.width > 0,
+                    avComposition.renderSize.height > 0
+                {
+                    playerItem.videoComposition = avComposition
+                }
                 self.textureOutput?.attach(to: playerItem)
 
                 if let existing = self.player {

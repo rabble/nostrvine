@@ -31,9 +31,6 @@ class VideoEditorConstants {
   /// Maximum recording duration for videos.
   static const maxDuration = Duration(seconds: 6, milliseconds: 300);
 
-  /// Maximum number of undo steps to keep in memory.
-  static const maxUndoSteps = 30;
-
   /// Default time offset for extracting video thumbnails.
   static const defaultThumbnailExtractTime = Duration(milliseconds: 200);
 
@@ -303,54 +300,4 @@ class VideoEditorConstants {
       filters: [ColorFilterAddons.addictiveColor(0, 30, 60)],
     ),
   ];
-}
-
-/// Constants for the video editor clip gallery layout and animations.
-class VideoEditorGalleryConstants {
-  /// Viewport fraction for the PageView (80% of screen width).
-  static double viewportFraction = 0.8;
-
-  /// Minimum scale for non-centered clips.
-  static double minScale = 0.85;
-
-  /// Maximum scale for the centered clip.
-  static double maxScale = 1;
-
-  /// Minimum threshold for triggering reorder (pixels).
-  static double reorderThresholdMin = 30;
-
-  /// Maximum threshold for triggering reorder (pixels).
-  static double reorderThresholdMax = 120;
-
-  /// Factor for clamping drag offset relative to width.
-  static double dragClampFactor = 0.3;
-
-  /// Maximum upward Y clamp (pixels) during drag — prevents clip from
-  /// leaving the gallery area upward. Downward movement is unclamped so
-  /// the clip can always reach the delete zone.
-  static double dragYClampUp = 40;
-
-  /// Scale factor when in reorder mode.
-  static double reorderScale = 0.5;
-
-  /// Threshold for showing center overlay based on page difference.
-  static double centerOverlayThreshold = 0.2;
-
-  /// Padding around clip area for detecting leave events.
-  static double clipAreaPadding = 20;
-
-  /// Start point for offset effect (0-1 range).
-  static double offsetStart = 0.4;
-
-  /// Multiplier for falloff range calculation.
-  static double falloffRangeMultiplier = 0.25;
-
-  /// Duration for drag reset animation.
-  static Duration dragResetDuration = const Duration(milliseconds: 200);
-
-  /// Duration for page navigation animation.
-  static Duration pageAnimationDuration = const Duration(milliseconds: 300);
-
-  /// Duration for scale animations.
-  static Duration scaleAnimationDuration = const Duration(milliseconds: 280);
 }
