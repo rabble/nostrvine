@@ -684,6 +684,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         if (listEquals(previous, current)) return;
 
         final clips = ref.read(clipManagerProvider).clips;
+        // Skip when there are no clips left (e.g. clearAll during
+        // teardown). Sending `setClips([])` to the native player
+        // builds a composition with `renderSize == .zero` on iOS,
+        // which crashes `AVPlayerItem.setVideoComposition:`.
+        if (clips.isEmpty) return;
         final currentPosition = context
             .read<VideoEditorMainBloc>()
             .state
@@ -764,6 +769,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               return false;
             },
             listener: (context, state) {
+              // See note on the trim-times listener above: skip empty
+              // clip lists to avoid crashing the iOS native player.
+              if (state.clips.isEmpty) return;
               final currentPosition = context
                   .read<VideoEditorMainBloc>()
                   .state
