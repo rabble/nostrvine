@@ -104,6 +104,24 @@ void main() {
         expect(draft.hasBeenEdited, isTrue);
       });
 
+      test('returns false when editorStateHistory position is -1', () {
+        final draft = _minimalDraft().copyWith(
+          editorStateHistory: const {'position': -1},
+          skipUpdateLastModified: true,
+        );
+
+        expect(draft.hasBeenEdited, isFalse);
+      });
+
+      test('returns true when editorStateHistory position is not -1', () {
+        final draft = _minimalDraft().copyWith(
+          editorStateHistory: const {'position': 0},
+          skipUpdateLastModified: true,
+        );
+
+        expect(draft.hasBeenEdited, isTrue);
+      });
+
       test('returns false when draft has editorEditingParameters only', () {
         final draft = _minimalDraft().copyWith(
           editorEditingParameters: const {'param': 'value'},
