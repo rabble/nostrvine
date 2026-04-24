@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -110,12 +111,14 @@ class VineBottomNav extends ConsumerWidget {
           children: [
             _IconTabButton(
               semanticIdentifier: 'home_tab',
+              semanticLabel: context.l10n.navHome,
               icon: DivineIconName.houseSimple,
               isSelected: currentIndex == 0,
               onTap: () => _handleTabTap(context, ref, 0),
             ),
             _IconTabButton(
               semanticIdentifier: 'explore_tab',
+              semanticLabel: context.l10n.navExplore,
               icon: DivineIconName.search,
               isSelected: currentIndex == 1,
               onTap: () => _handleTabTap(context, ref, 1),
@@ -135,12 +138,14 @@ class VineBottomNav extends ConsumerWidget {
               count: _inboxUnreadCount(context, ref),
               child: _IconTabButton(
                 semanticIdentifier: 'inbox_tab',
+                semanticLabel: context.l10n.navInbox,
                 icon: DivineIconName.chat,
                 isSelected: currentIndex == 2,
                 onTap: () => _handleTabTap(context, ref, 2),
               ),
             ),
             _ProfileTabButton(
+              semanticLabel: context.l10n.navProfile,
               isSelected: currentIndex == 3,
               onTap: () => _handleTabTap(context, ref, 3),
             ),
@@ -160,9 +165,10 @@ class VineBottomNav extends ConsumerWidget {
 //     selected = full opacity + shadow-10 drop shadows on the glyph,
 //     unselected = 32 % opacity, no shadow.
 //   * **Profile tab** — 48×48 tap target, 24×24 rounded-8 box,
-//     lime fill + avatar rendered with `BlendMode.luminosity`,
-//     selected = 2 px white border + inset scrim-65 shadow,
-//     unselected = 1 px onSurfaceDisabled border.
+//     lime fallback fill with the user's avatar on top. Selected and
+//     unselected differ only in the outer border (2 px white vs 1 px
+//     `onSurfaceDisabled`); no filter / opacity / shadow on the avatar
+//     itself.
 
 /// Tap target + Semantics wrapper shared by the three icon tabs.
 ///
@@ -171,12 +177,14 @@ class VineBottomNav extends ConsumerWidget {
 class _IconTabButton extends StatelessWidget {
   const _IconTabButton({
     required this.semanticIdentifier,
+    required this.semanticLabel,
     required this.icon,
     required this.isSelected,
     required this.onTap,
   });
 
   final String semanticIdentifier;
+  final String semanticLabel;
   final DivineIconName icon;
   final bool isSelected;
   final VoidCallback onTap;
@@ -185,6 +193,8 @@ class _IconTabButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       identifier: semanticIdentifier,
+      button: true,
+      label: semanticLabel,
       child: GestureDetector(
         onTap: onTap,
         child: SizedBox(
@@ -264,16 +274,22 @@ class _NavIconShadow extends StatelessWidget {
   }
 }
 
-/// Profile tab: 24×24 rounded-8 box with a lime background, the
-/// currently-signed-in user's avatar rendered with [BlendMode.luminosity],
-/// and a state-dependent border (1 px disabled / 2 px white).
+/// Profile tab: 24×24 rounded-8 box with a lime fallback background and
+/// the currently-signed-in user's avatar on top. Selection state is
+/// communicated only by the outer border (1 px `onSurfaceDisabled` →
+/// 2 px white).
 ///
 /// Falls back to the standard icon-tab treatment with [DivineIconName.userCircle]
 /// when no user is signed in (e.g. during sign-out) or while the profile
 /// is still loading.
 class _ProfileTabButton extends ConsumerWidget {
-  const _ProfileTabButton({required this.isSelected, required this.onTap});
+  const _ProfileTabButton({
+    required this.semanticLabel,
+    required this.isSelected,
+    required this.onTap,
+  });
 
+  final String semanticLabel;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -289,6 +305,8 @@ class _ProfileTabButton extends ConsumerWidget {
 
     return Semantics(
       identifier: 'profile_tab',
+      button: true,
+      label: semanticLabel,
       child: GestureDetector(
         onTap: onTap,
         child: SizedBox(
@@ -390,7 +408,7 @@ class _CameraButton extends StatelessWidget {
     return Semantics(
       identifier: 'camera_button',
       button: true,
-      label: 'Open camera',
+      label: context.l10n.navOpenCamera,
       child: GestureDetector(
         onTap: onTap,
         child: Container(
