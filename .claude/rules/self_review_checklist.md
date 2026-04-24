@@ -93,6 +93,11 @@ Composition and style:
   [`code_style.md`](code_style.md#dont-hide-ancestors-inside-a-one-off-widget-function-closure)
   and
   [`state_management.md`](state_management.md#scoping-blocprovider-to-a-modal-route).
+- [ ] No multi-line design-rationale inline comments. If the
+  explanation is longer than a sentence, move it to the PR
+  description or a rule file and leave at most a one-line pointer in
+  the code. Paragraph-length comments drift and get cited by LLMs as
+  bad authority. See [`code_style.md`](code_style.md#comments).
 
 Scroll and navigation:
 

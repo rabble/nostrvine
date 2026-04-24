@@ -576,6 +576,46 @@ if (user == null) return; // return if user is null
 if (user == null) return;
 ```
 
+**Don't write long design-rationale comments just for Claude.** AI
+tools happily cite inline comments as if they were specs — and when
+the code changes and the comment doesn't, the stale citation carries
+forward as bad authority. A reviewer on #3202 described seeing Claude
+refer to "a comment of nonsense" as its source when asked for
+references. Two corollaries:
+
+1. **Document design decisions in the code, not around it.** A
+   well-named widget, a named constant, a typed enum, or a focused
+   doc under `.claude/rules/` or `docs/` survives rename refactors
+   and grep; an inline paragraph doesn't.
+2. **Use inline comments as pointers, not homes.** If you need more
+   than a sentence to explain a design decision, write the full
+   explanation in the PR description (or a rule file) and leave a
+   brief `// See PR #N / rules/foo.md` pointer inline — not a
+   paragraph the next change will quietly outdate.
+
+```dart
+// Bad — design rationale as a paragraph above the code. Will drift
+// the first time the 30 or 32 changes.
+// ┌────────────────────────────────────────────────────────────────┐
+// │ The outer shell uses 30 px bottom corners and the inner tabs  │
+// │ container uses 32 px top corners so that the inner surface    │
+// │ visibly nests inside the outer shell. We picked these values  │
+// │ from Figma node 12345:67 and they should stay in sync …       │
+// └────────────────────────────────────────────────────────────────┘
+ClipRRect(borderRadius: .vertical(bottom: .circular(30)), ...);
+
+// Good — the rationale is carried by the named constants.
+// (If you still need a pointer, one line is enough.)
+// Inner radius is 2 px larger so the tabs container visibly nests
+// inside the nav-rounded shell.
+ClipRRect(
+  borderRadius: .vertical(
+    bottom: .circular(VineTheme.shellCornerRadius),
+  ),
+  ...
+);
+```
+
 ---
 
 ## Logging
