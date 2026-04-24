@@ -71,9 +71,6 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     // the search to get stuck in loading/empty-success states with no recovery
     // path (the user could never re-trigger the same query).
 
-    // Keep the previous query's results visible while the new search loads,
-    // so a rapid re-trigger (e.g. iOS autocorrect rewriting "liz" to "Liz")
-    // never blanks the list. Pagination cursors reset for the new query.
     emit(
       state.copyWith(
         status: UserSearchStatus.loading,
