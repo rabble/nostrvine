@@ -15,6 +15,7 @@ class VineBottomSheetHeader extends StatelessWidget {
     this.title,
     this.trailing,
     this.showDivider = true,
+    this.padding,
     super.key,
   });
 
@@ -29,6 +30,11 @@ class VineBottomSheetHeader extends StatelessWidget {
   /// Defaults to true.
   final bool showDivider;
 
+  /// Optional padding override for the inner content area.
+  ///
+  /// Defaults to `EdgeInsetsDirectional.only(start: 24, end: 24, top: 8)`.
+  final EdgeInsetsGeometry? padding;
+
   @override
   Widget build(BuildContext context) {
     final hasTitle = title != null && title is! SizedBox;
@@ -37,11 +43,13 @@ class VineBottomSheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsetsDirectional.only(
-            start: 24,
-            end: 24,
-            top: 8,
-          ),
+          padding:
+              padding ??
+              const EdgeInsetsDirectional.only(
+                start: 24,
+                end: 24,
+                top: 8,
+              ),
           child: Column(
             children: [
               // Drag handle

@@ -5319,20 +5319,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Avsluta redigering av tidslinje';
 
   @override
-  String get videoEditorSortNewest => 'Nyaste';
-
-  @override
-  String get videoEditorSortLongest => 'Längsta';
-
-  @override
-  String get videoEditorSortShortest => 'Kortaste';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Sortera efter $option. Tryck för att ändra sorteringsordning';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel =>
       'Spela förhandsvisning';
 
@@ -5342,9 +5328,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Namnlöst ljud';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Välj ljud';
 
   @override
   String get videoEditorAudioUntitled => 'Namnlös';
@@ -5360,18 +5343,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ljud visas här när skapare delar ljud';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'Inga ljud hittades';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle => 'Prova ett annat sökord';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle =>
       'Det gick inte att ladda ljud';
 
   @override
   String get videoEditorAudioSegmentInstruction =>
       'Välj ljudsegmentet för din video';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Gemenskap';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pilverktyg';

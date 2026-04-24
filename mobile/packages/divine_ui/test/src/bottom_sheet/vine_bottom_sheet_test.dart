@@ -339,6 +339,83 @@ void main() {
 
         expect(find.text('Body Content'), findsOneWidget);
       });
+
+      testWidgets('forwards headerPadding to header in scrollable mode', (
+        tester,
+      ) async {
+        const customPadding = EdgeInsetsDirectional.only(
+          start: 12,
+          end: 12,
+          top: 8,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      title: const Text('Padded Sheet'),
+                      headerPadding: customPadding,
+                      children: const [Text('Content')],
+                    );
+                  },
+                  child: const Text('Show'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show'));
+        await tester.pumpAndSettle();
+
+        final header = tester.widget<VineBottomSheetHeader>(
+          find.byType(VineBottomSheetHeader),
+        );
+        expect(header.padding, customPadding);
+      });
+
+      testWidgets('forwards headerPadding to header in fixed mode', (
+        tester,
+      ) async {
+        const customPadding = EdgeInsetsDirectional.only(
+          start: 16,
+          end: 16,
+          top: 4,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      title: const Text('Fixed Padded Sheet'),
+                      headerPadding: customPadding,
+                      children: const [Text('Content')],
+                    );
+                  },
+                  child: const Text('Show'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show'));
+        await tester.pumpAndSettle();
+
+        final header = tester.widget<VineBottomSheetHeader>(
+          find.byType(VineBottomSheetHeader),
+        );
+        expect(header.padding, customPadding);
+      });
     });
 
     group('tapOutsideToDismiss', () {
