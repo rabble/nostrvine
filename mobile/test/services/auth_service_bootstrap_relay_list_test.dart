@@ -133,7 +133,9 @@ void main() {
           recorder: recorder,
         );
 
+        final beforeCall = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         await authService.debugDiscoverUserRelays(testNpub);
+        final afterCall = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
         expect(recorder.invocations, hasLength(1));
         final invocation = recorder.invocations.single;
@@ -148,6 +150,10 @@ void main() {
           ]),
         );
         expect(invocation.event.sig, isNotEmpty);
+        // NIP-65 consumers replace strictly by created_at, so a stale or
+        // zero timestamp would let a later real publish be silently ignored.
+        expect(invocation.event.createdAt, greaterThanOrEqualTo(beforeCall));
+        expect(invocation.event.createdAt, lessThanOrEqualTo(afterCall));
 
         // Target relays include Divine relay + the three indexers.
         expect(
@@ -356,12 +362,12 @@ void main() {
           // Signer timed out → callback never invoked → flag not set.
           expect(recorder.invocations, isEmpty);
 
-          bool? flagValue;
+          late bool flagValue;
           SharedPreferences.getInstance().then((prefs) {
-            flagValue = prefs.getBool(flagKey);
+            flagValue = prefs.getBool(flagKey) ?? false;
           });
           async.flushMicrotasks();
-          expect(flagValue ?? false, isFalse);
+          expect(flagValue, isFalse);
         });
       },
     );
