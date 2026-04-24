@@ -791,9 +791,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final KeycastSession? refreshed;
       try {
         refreshed = await _oauthCoordinator
-            .refreshSession(
-              expectedOwnerPubkey: session?.userPubkey,
-            )
+            .refreshSession(expectedOwnerPubkey: session?.userPubkey)
             .timeout(_startupNetworkOperationTimeout);
       } on TimeoutException {
         Log.warning(
@@ -3281,15 +3279,82 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
-  /// Export nsec for backup purposes
+  /// Export nsec for backup purposes.
+  ///
+  /// Returns null when the nsec cannot be produced. This happens in three
+  /// distinct shapes, each of which is logged so future user reports tell us
+  /// which branch hit (see issue #2092):
+  ///
+  /// 1. `not_authenticated` — caller hit this before the session finished
+  ///    restoring.
+  /// 2. `unsupported_source` — the active auth source (bunker, amber,
+  ///    divineOAuth) does not have a local nsec to export.
+  /// 3. `inmemory_failed` / `storage_returned_null` /
+  ///    `storage_threw` — the in-memory container or the secure-storage
+  ///    fallback failed.
   Future<String?> exportNsec({String? biometricPrompt}) async {
-    if (!isAuthenticated) return null;
+    if (!isAuthenticated) {
+      Log.warning(
+        'exportNsec: not authenticated — returning null '
+        '(reason=not_authenticated)',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
 
     if (authenticationSource != AuthenticationSource.automatic &&
         authenticationSource != AuthenticationSource.importedKeys &&
         authenticationSource != AuthenticationSource.divineOAuth) {
       Log.warning(
-        'Exporting nsec for $authenticationSource not supported',
+        'exportNsec: source ${authenticationSource.name} does not have a '
+        'local nsec to export — returning null (reason=unsupported_source)',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
+
+    Log.warning(
+      'exportNsec: exporting nsec - ensure secure handling '
+      '(source=${authenticationSource.name}, '
+      'hasContainer=${_currentKeyContainer != null}, '
+      'containerHasPrivateKey='
+      '${_currentKeyContainer?.hasPrivateKey ?? false})',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    // Use the in-memory key container when available to avoid re-reading
+    // from platform storage. iOS keychain can fail transiently, causing
+    // "Unable to access your keys" errors even though the key is in RAM.
+    // Falls back to storage read if the container isn't loaded yet.
+    final container = _currentKeyContainer;
+    if (container != null && container.hasPrivateKey) {
+      try {
+        return container.withNsec((nsec) => nsec);
+      } catch (e) {
+        // If the in-memory path fails (e.g. the container was disposed
+        // concurrently), fall through to the storage path instead of
+        // returning null immediately. That gives the secure-account flow
+        // a second chance rather than surfacing the generic "Unable to
+        // access your keys" banner.
+        Log.warning(
+          'exportNsec: in-memory withNsec threw, falling back to storage '
+          '(reason=inmemory_failed, error=$e)',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+    }
+
+    // divineOAuth has no nsec in secure storage; the in-memory container is
+    // its only source. If we reach here the container was absent or failed,
+    // so there is nothing left to fall back to.
+    if (authenticationSource == AuthenticationSource.divineOAuth) {
+      Log.warning(
+        'exportNsec: divineOAuth requires a local private key — returning '
+        'null (reason=divineoauth_no_storage)',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -3297,34 +3362,22 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
 
     try {
-      Log.warning(
-        'Exporting nsec - ensure secure handling',
-        name: 'AuthService',
-        category: LogCategory.auth,
+      final nsec = await _keyStorage.exportNsec(
+        biometricPrompt: biometricPrompt,
       );
-
-      // Use the in-memory key container when available to avoid re-reading
-      // from platform storage. iOS keychain can fail transiently, causing
-      // "Unable to access your keys" errors even though the key is in RAM.
-      // Falls back to storage read if the container isn't loaded yet.
-      final container = _currentKeyContainer;
-      if (container != null && container.hasPrivateKey) {
-        return container.withNsec((nsec) => nsec);
-      }
-
-      if (authenticationSource == AuthenticationSource.divineOAuth) {
-        Log.warning(
-          'Exporting nsec for divineOAuth requires a local private key',
+      if (nsec == null) {
+        Log.error(
+          'exportNsec: storage returned null '
+          '(reason=storage_returned_null)',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        return null;
       }
-
-      return await _keyStorage.exportNsec(biometricPrompt: biometricPrompt);
+      return nsec;
     } catch (e) {
       Log.error(
-        'Failed to export nsec: $e',
+        'exportNsec: storage threw — returning null '
+        '(reason=storage_threw, error=$e)',
         name: 'AuthService',
         category: LogCategory.auth,
       );
