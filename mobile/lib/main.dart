@@ -1189,6 +1189,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
                 try {
+                  // GoRouter's universal-link redirect may have already
+                  // navigated here; skip the duplicate go() to avoid a
+                  // second navigation frame on the same target.
+                  if (currentLocation == targetPath) break;
                   router.go(targetPath);
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
@@ -1220,6 +1224,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
                 try {
+                  // GoRouter's universal-link redirect may have already
+                  // navigated here; skip the duplicate go() to avoid a
+                  // second navigation frame on the same target.
+                  if (currentLocation == targetPath) break;
                   router.go(targetPath);
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
@@ -1240,8 +1248,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
-            // TODO(#3032): Currently unreachable — GoRouter intercepts
-            // deep links before DeepLinkService can parse them.
             case DeepLinkType.search:
               if (deepLink.searchTerm != null) {
                 final targetPath = SearchResultsPage.pathForQuery(
@@ -1253,6 +1259,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
                 try {
+                  // GoRouter's universal-link redirect may have already
+                  // navigated here; skip the duplicate go() to avoid a
+                  // second navigation frame on the same target.
+                  if (currentLocation == targetPath) break;
                   router.go(targetPath);
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
