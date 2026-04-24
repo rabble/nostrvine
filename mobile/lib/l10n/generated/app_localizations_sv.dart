@@ -1280,6 +1280,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoActionShowSubtitles => 'Visa undertexter';
 
   @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
+
+  @override
   String videoDescriptionLoops(String count) {
     return '$count loopar';
   }

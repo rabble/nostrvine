@@ -343,7 +343,11 @@ class _AuthorInfoSection extends ConsumerWidget {
                 identifier: 'video_title',
                 container: true,
                 explicitChildNodes: true,
-                label: 'Video title: ${video.title!.trim()}',
+                button: true,
+                // Action-oriented label — the title text itself is read
+                // aloud by the child Text widget. This label describes
+                // what tapping does, not what the tap target shows.
+                label: context.l10n.videoOverlayOpenMetadataFromTitle,
                 child: Text(
                   video.title!.trim(),
                   style: VineTheme.labelMediumFont().copyWith(
@@ -373,7 +377,11 @@ class _AuthorInfoSection extends ConsumerWidget {
                 identifier: 'video_description',
                 container: true,
                 explicitChildNodes: true,
-                label: 'Video description: ${video.content.trim()}',
+                button: true,
+                // Action-oriented label — the description text itself
+                // is read aloud by the child widget. This label
+                // describes what tapping does.
+                label: context.l10n.videoOverlayOpenMetadataFromDescription,
                 child: ClickableHashtagText(
                   text: video.content.trim(),
                   style: VineTheme.bodySmallFont().copyWith(

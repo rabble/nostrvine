@@ -2320,6 +2320,18 @@ abstract class AppLocalizations {
   /// **'Show subtitles'**
   String get videoActionShowSubtitles;
 
+  /// Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video details'**
+  String get videoOverlayOpenMetadataFromTitle;
+
+  /// Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video details'**
+  String get videoOverlayOpenMetadataFromDescription;
+
   /// No description provided for @videoDescriptionLoops.
   ///
   /// In en, this message translates to:

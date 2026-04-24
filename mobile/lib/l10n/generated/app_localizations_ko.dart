@@ -1208,6 +1208,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionShowSubtitles => '자막 표시';
 
   @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
+
+  @override
   String videoDescriptionLoops(String count) {
     return '루프 $count회';
   }

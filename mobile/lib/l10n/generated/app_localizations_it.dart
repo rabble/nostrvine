@@ -1305,6 +1305,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoActionShowSubtitles => 'Mostra sottotitoli';
 
   @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
+
+  @override
   String videoDescriptionLoops(String count) {
     return '$count loop';
   }

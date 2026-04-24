@@ -7,7 +7,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -1799,19 +1798,18 @@ class _VideoEditButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Outer Semantics carries the test identifier only; DivineIconButton
+    // already emits its own `button: true, label: ...` inner semantics,
+    // which `explicitChildNodes: true` keeps as a sibling node so both
+    // the test identifier and the button role are available to callers.
     return Semantics(
       identifier: 'edit_button',
       container: true,
       explicitChildNodes: true,
-      button: true,
-      label: context.l10n.videoPlayerEditVideo,
-      child: IconButton(
-        padding: const EdgeInsets.all(8),
-        constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-        style: IconButton.styleFrom(
-          highlightColor: VineTheme.transparent,
-          splashFactory: NoSplash.splashFactory,
-        ),
+      child: DivineIconButton(
+        icon: DivineIconName.pencilSimpleLineDuo,
+        type: DivineIconButtonType.ghost,
+        semanticLabel: context.l10n.videoPlayerEditVideo,
         onPressed: () {
           Log.info(
             '✏️ Edit button tapped for ${video.id}',
@@ -1822,27 +1820,6 @@ class _VideoEditButton extends StatelessWidget {
           // Show edit dialog directly (works on all platforms)
           showEditDialogForVideo(context, video);
         },
-        tooltip: context.l10n.videoPlayerEditVideoTooltip,
-        icon: DecoratedBox(
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: VineTheme.backgroundColor.withValues(alpha: 0.15),
-                blurRadius: 15,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: SvgPicture.asset(
-            DivineIconName.pencilSimpleLineDuo.assetPath,
-            width: 32,
-            height: 32,
-            colorFilter: const ColorFilter.mode(
-              VineTheme.whiteText,
-              BlendMode.srcIn,
-            ),
-          ),
-        ),
       ),
     );
   }

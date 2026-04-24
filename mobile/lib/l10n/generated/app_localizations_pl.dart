@@ -1306,6 +1306,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoActionShowSubtitles => 'Pokaż napisy';
 
   @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
+
+  @override
   String videoDescriptionLoops(String count) {
     return '$count pętli';
   }

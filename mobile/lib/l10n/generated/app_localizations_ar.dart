@@ -1268,6 +1268,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionShowSubtitles => 'عرض الترجمات';
 
   @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
+
+  @override
   String videoDescriptionLoops(String count) {
     return '$count تكرار';
   }
