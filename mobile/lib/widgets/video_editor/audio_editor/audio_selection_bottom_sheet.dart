@@ -44,12 +44,16 @@ class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
 
           Flexible(child: Text(context.l10n.videoEditorAudioAddAudio)),
 
-          Opacity(
-            opacity: 0,
-            child: DivineIconButton(
-              icon: .x,
-              onPressed: context.pop,
-              size: .small,
+          const IgnorePointer(
+            child: ExcludeSemantics(
+              child: Opacity(
+                opacity: 0,
+                child: DivineIconButton(
+                  icon: .x,
+                  onPressed: null,
+                  size: .small,
+                ),
+              ),
             ),
           ),
         ],
@@ -150,6 +154,8 @@ class _AudioSelectionBottomSheetState
           _selectedItem = sound;
         });
       }
+      // Blocks here for the entire duration of playback — only
+      // releases once the song finishes playing to the end or was paused.
       await _audioService.play();
     } catch (e) {
       Log.error(
@@ -166,7 +172,7 @@ class _AudioSelectionBottomSheetState
   }
 
   Future<void> _selectSound(AudioEvent sound) async {
-    if (_selectedItem == sound) return;
+    if (_selectedItem?.id == sound.id) return;
     Log.info(
       'Sound selected: ${sound.title ?? 'Untitled'} (${sound.id})',
       name: 'AudioSelectionBottomSheet',
@@ -226,12 +232,7 @@ class _AudioSelectionBottomSheetState
         bundledSoundsAsync.whenOrNull(
           data: (service) {
             return service.sounds.indexed
-                .map(
-                  (e) => AudioEvent.fromBundledSound(
-                    e.$2,
-                    index: e.$1,
-                  ),
-                )
+                .map((e) => AudioEvent.fromBundledSound(e.$2, index: e.$1))
                 .toList();
           },
         ) ??
@@ -242,10 +243,7 @@ class _AudioSelectionBottomSheetState
         Column(
           crossAxisAlignment: .stretch,
           children: [
-            AudioCategoryBar(
-              category: _category,
-              onSelect: _selectCategory,
-            ),
+            AudioCategoryBar(category: _category, onSelect: _selectCategory),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -333,7 +331,7 @@ class _SoundsContent extends StatelessWidget {
               const Divider(height: 1, color: VineTheme.outlineDisabled),
           itemBuilder: (context, index) {
             final audio = sounds[index];
-            final isSelected = audio == selectedSound;
+            final isSelected = audio.id == selectedSound?.id;
             if (!isSelected) {
               return AudioListTile(
                 audio: audio,
@@ -380,9 +378,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.secondaryText,
-            ),
+            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             textAlign: TextAlign.center,
           ),
         ],
@@ -413,9 +409,7 @@ class _ErrorState extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: VineTheme.bodySmallFont(
-                color: VineTheme.secondaryText,
-              ),
+              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
