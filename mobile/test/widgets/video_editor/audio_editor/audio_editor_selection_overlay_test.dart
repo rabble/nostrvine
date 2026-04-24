@@ -35,15 +35,15 @@ void main() {
 
   setUp(() {
     audioService = _MockAudioPlaybackService();
-    when(() => audioService.playingStream).thenAnswer(
-      (_) => const Stream<bool>.empty(),
-    );
-    when(() => audioService.durationStream).thenAnswer(
-      (_) => const Stream<Duration?>.empty(),
-    );
-    when(() => audioService.positionStream).thenAnswer(
-      (_) => const Stream<Duration>.empty(),
-    );
+    when(
+      () => audioService.playingStream,
+    ).thenAnswer((_) => const Stream<bool>.empty());
+    when(
+      () => audioService.durationStream,
+    ).thenAnswer((_) => const Stream<Duration?>.empty());
+    when(
+      () => audioService.positionStream,
+    ).thenAnswer((_) => const Stream<Duration>.empty());
     when(() => audioService.isPlaying).thenReturn(false);
     when(() => audioService.duration).thenReturn(null);
   });
@@ -122,9 +122,7 @@ void main() {
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         await tester.tap(
-          find.bySemanticsLabel(
-            l10n.videoEditorAudioPlayPreviewSemanticLabel,
-          ),
+          find.bySemanticsLabel(l10n.videoEditorAudioPlayPreviewSemanticLabel),
         );
         await tester.pump();
 
@@ -154,9 +152,9 @@ void main() {
     group('Playing state', () {
       testWidgets('shows pause semantic label when playing', (tester) async {
         when(() => audioService.isPlaying).thenReturn(true);
-        when(() => audioService.playingStream).thenAnswer(
-          (_) => Stream<bool>.value(true),
-        );
+        when(
+          () => audioService.playingStream,
+        ).thenAnswer((_) => Stream<bool>.value(true));
 
         await tester.pumpWidget(
           buildWidget(audio: _createTestAudio(title: 'Track')),
@@ -165,9 +163,7 @@ void main() {
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
-          find.bySemanticsLabel(
-            l10n.videoEditorAudioPausePreviewSemanticLabel,
-          ),
+          find.bySemanticsLabel(l10n.videoEditorAudioPausePreviewSemanticLabel),
           findsOneWidget,
         );
       });

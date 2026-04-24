@@ -45,11 +45,7 @@ class VineBottomSheetHeader extends StatelessWidget {
         Padding(
           padding:
               padding ??
-              const EdgeInsetsDirectional.only(
-                start: 24,
-                end: 24,
-                top: 8,
-              ),
+              const EdgeInsetsDirectional.only(start: 24, end: 24, top: 8),
           child: Column(
             children: [
               // Drag handle
@@ -81,10 +77,7 @@ class VineBottomSheetHeader extends StatelessWidget {
 
                       // Trailing widget positioned on the right
                       if (trailing != null)
-                        Positioned(
-                          right: 0,
-                          child: trailing!,
-                        ),
+                        Positioned(right: 0, child: trailing!),
                     ],
                   ),
                 ),

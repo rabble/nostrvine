@@ -167,10 +167,7 @@ class VineBottomSheet extends StatelessWidget {
       scrollable || !snap,
       'snap can only be used when scrollable is true',
     );
-    assert(
-      snapSizes == null || snap,
-      'snapSizes requires snap: true',
-    );
+    assert(snapSizes == null || snap, 'snapSizes requires snap: true');
 
     // When `tapOutsideToDismiss` is explicitly disabled, also disable
     // Flutter's modal barrier dismissal so the two outside-tap mechanisms
@@ -468,11 +465,7 @@ class _FixedContent extends StatelessWidget {
               showDivider: showHeaderDivider,
               padding:
                   headerPadding ??
-                  const EdgeInsetsDirectional.only(
-                    start: 24,
-                    end: 24,
-                    top: 8,
-                  ),
+                  const EdgeInsetsDirectional.only(start: 24, end: 24, top: 8),
             )
           else
             // Drag handle only

@@ -183,9 +183,7 @@ class _CircularProgressBorderPainter extends CustomPainter {
       ..strokeCap = .round;
 
     final rect = Offset.zero & size;
-    final insetRect = rect.deflate(
-      (strokePaint.strokeWidth / 2) + _innerInset,
-    );
+    final insetRect = rect.deflate((strokePaint.strokeWidth / 2) + _innerInset);
     final radius = borderRadius.clamp(0.0, insetRect.shortestSide / 2);
 
     // Build the rounded-rect path manually starting at top-center going
@@ -201,10 +199,7 @@ class _CircularProgressBorderPainter extends CustomPainter {
       // Top edge: top-center -> top-right corner start.
       ..lineTo(right - radius, top)
       // Top-right corner.
-      ..arcToPoint(
-        Offset(right, top + radius),
-        radius: Radius.circular(radius),
-      )
+      ..arcToPoint(Offset(right, top + radius), radius: Radius.circular(radius))
       // Right edge.
       ..lineTo(right, bottom - radius)
       // Bottom-right corner.
@@ -222,10 +217,7 @@ class _CircularProgressBorderPainter extends CustomPainter {
       // Left edge.
       ..lineTo(left, top + radius)
       // Top-left corner.
-      ..arcToPoint(
-        Offset(left + radius, top),
-        radius: Radius.circular(radius),
-      )
+      ..arcToPoint(Offset(left + radius, top), radius: Radius.circular(radius))
       // Back to top-center to close the loop.
       ..lineTo(centerX, top);
 

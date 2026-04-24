@@ -18,10 +18,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: AudioCategoryBar(
-            category: category,
-            onSelect: onSelect,
-          ),
+          body: AudioCategoryBar(category: category, onSelect: onSelect),
         ),
       );
     }

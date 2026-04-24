@@ -51,9 +51,7 @@ void main() {
       scrollController.dispose();
     });
 
-    Widget buildWidget({
-      AsyncValue<List<AudioEvent>>? trendingSoundsAsync,
-    }) {
+    Widget buildWidget({AsyncValue<List<AudioEvent>>? trendingSoundsAsync}) {
       return ProviderScope(
         overrides: [
           soundLibraryServiceProvider.overrideWith(
@@ -68,9 +66,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: AudioSelectionBottomSheet(
-              scrollController: scrollController,
-            ),
+            body: AudioSelectionBottomSheet(scrollController: scrollController),
           ),
         ),
       );
@@ -102,14 +98,8 @@ void main() {
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.byType(AudioCategoryBar), findsOneWidget);
-        expect(
-          find.text(l10n.videoEditorAudioCategoryDivine),
-          findsWidgets,
-        );
-        expect(
-          find.text(l10n.videoEditorAudioCategoryCommunity),
-          findsWidgets,
-        );
+        expect(find.text(l10n.videoEditorAudioCategoryDivine), findsWidgets);
+        expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsWidgets);
       });
     });
 
@@ -123,9 +113,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(
-          find.text(l10n.videoEditorAudioCategoryCommunity),
-        );
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
 
@@ -164,9 +152,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(
-          find.text(l10n.videoEditorAudioCategoryCommunity),
-        );
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
         await tester.pumpAndSettle();
 
         expect(
@@ -188,9 +174,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(
-          find.text(l10n.videoEditorAudioCategoryCommunity),
-        );
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
         await tester.pumpAndSettle();
 
         expect(find.text(l10n.commonRetry), findsOneWidget);
