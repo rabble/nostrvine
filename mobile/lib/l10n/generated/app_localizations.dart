@@ -5366,6 +5366,12 @@ abstract class AppLocalizations {
   /// **'New list'**
   String get peopleListsNewListTitle;
 
+  /// AppBar title for the people-list members route when it is reached with a missing or empty list id (e.g., via a malformed deep link).
+  ///
+  /// In en, this message translates to:
+  /// **'People list'**
+  String get peopleListsRouteTitle;
+
   /// No description provided for @peopleListsListNameLabel.
   ///
   /// In en, this message translates to:

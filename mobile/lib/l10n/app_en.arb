@@ -1563,6 +1563,10 @@
   "peopleListsEmptySubtitle": "Create a list to start grouping people.",
   "peopleListsCreateList": "Create list",
   "peopleListsNewListTitle": "New list",
+  "peopleListsRouteTitle": "People list",
+  "@peopleListsRouteTitle": {
+    "description": "AppBar title for the people-list members route when it is reached with a missing or empty list id (e.g., via a malformed deep link)."
+  },
   "peopleListsListNameLabel": "List name",
   "peopleListsListNameHint": "Close friends",
   "peopleListsCreateButton": "Create",

@@ -3045,6 +3045,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get peopleListsNewListTitle => 'New list';
 
   @override
+  String get peopleListsRouteTitle => 'People list';
+
+  @override
   String get peopleListsListNameLabel => 'List name';
 
   @override
