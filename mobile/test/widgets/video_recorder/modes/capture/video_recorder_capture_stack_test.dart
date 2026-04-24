@@ -167,6 +167,21 @@ void main() {
 
         expect(find.byType(Stack), findsWidgets);
       });
+
+      testWidgets('$RecordButton is horizontally centered', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final stackRect = tester.getRect(
+          find.byType(VideoRecorderCaptureStack),
+        );
+        final recordButtonRect = tester.getRect(find.byType(RecordButton));
+
+        expect(
+          recordButtonRect.center.dx,
+          closeTo(stackRect.center.dx, 2.0),
+        );
+      });
     });
   });
 }

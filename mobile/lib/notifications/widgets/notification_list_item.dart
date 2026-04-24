@@ -7,8 +7,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
-import 'package:time_formatter/time_formatter.dart';
 
 /// Displays a single notification row in the notifications list.
 ///
@@ -414,7 +414,7 @@ class _Timestamp extends StatelessWidget {
   Widget build(BuildContext context) {
     final unixSeconds = timestamp.millisecondsSinceEpoch ~/ 1000;
     return Text(
-      TimeFormatter.formatRelativeVerbose(unixSeconds),
+      LocalizedTimeFormatter.formatRelativeVerbose(context.l10n, unixSeconds),
       style: VineTheme.bodySmallFont(color: VineTheme.lightText),
     );
   }
