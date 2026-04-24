@@ -244,9 +244,10 @@ class _PopularVideosTrendingContentState
             child: ComposableVideoGrid(
               videos: widget.videos,
               useMasonryLayout: true,
+              // Explore grids are edge-to-edge; the 4px gap between columns
+              // comes from `crossAxisSpacing` inside ComposableVideoGrid, not
+              // from outer side padding.
               padding: EdgeInsets.only(
-                left: 4,
-                right: 4,
                 bottom: 4,
                 top: headerHeight > 0 ? headerHeight + 4 : 4,
               ),

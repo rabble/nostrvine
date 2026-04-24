@@ -4891,7 +4891,13 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'クリップ';
+  String get videoEditorCameraLabel => 'カメラ';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'カメラを開く';
+
+  @override
+  String get videoEditorLibraryLabel => 'ライブラリ';
 
   @override
   String get videoEditorTextLabel => 'テキスト';
@@ -4900,7 +4906,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorDrawLabel => '描画';
 
   @override
-  String get videoEditorEffectsLabel => 'エフェクト';
+  String get videoEditorFilterLabel => 'フィルター';
 
   @override
   String get videoEditorAudioLabel => 'オーディオ';
@@ -4912,7 +4918,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAddTitle => '追加';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'クリップエディタを開く';
+  String get videoEditorOpenLibrarySemanticLabel => 'ライブラリを開く';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'オーディオエディタを開く';
@@ -4924,7 +4930,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => '描画エディタを開く';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'エフェクトエディタを開く';
+  String get videoEditorOpenFilterSemanticLabel => 'フィルターエディタを開く';
 
   @override
   String get videoEditorSaveDraftTitle => '下書きを保存しますか？';

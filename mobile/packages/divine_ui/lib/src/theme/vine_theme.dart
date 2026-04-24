@@ -278,6 +278,15 @@ class VineTheme {
   /// Background color for surfaces like bottom sheets.
   static const Color surfaceBackground = Color(0xFF00150D);
 
+  /// Border radius for shell-level bottom corners (outer edge of the
+  /// rounded region painted over the nav).
+  static const double shellCornerRadius = 30;
+
+  /// Border radius for the top of a tab container nested inside a shell
+  /// — 2 px larger than [shellCornerRadius] so the inner surface
+  /// visibly sits within the nav-rounded outer shell.
+  static const double shellInnerCornerRadius = 32;
+
   /// Border radius for bottom sheets.
   static const double bottomSheetBorderRadius = 32;
 

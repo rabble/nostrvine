@@ -12,8 +12,12 @@ import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_pr
 import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
 
+/// Capture-mode stack with viewfinder, controls, and top bar.
 class VideoRecorderCaptureStack extends ConsumerWidget {
-  const VideoRecorderCaptureStack({super.key});
+  const VideoRecorderCaptureStack({required this.fromEditor, super.key});
+
+  /// Whether the recorder was opened from the video editor.
+  final bool fromEditor;
 
   void _deleteLastClip(
     BuildContext context,
@@ -71,7 +75,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                 children: [
                   AnimatedOpacity(
                     duration: const Duration(milliseconds: 220),
-                    opacity: hasClips && !isRecording ? 1 : 0,
+                    opacity: hasClips && !isRecording && !fromEditor ? 1 : 0,
                     child: DivineIconButton(
                       icon: .arrowCounterClockwise,
                       semanticLabel:
@@ -102,9 +106,9 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
           ),
 
           // Top bar with close-button and confirm-button
-          const Align(
+          Align(
             alignment: .topCenter,
-            child: VideoRecorderCaptureTopBar(),
+            child: VideoRecorderCaptureTopBar(fromEditor: fromEditor),
           ),
 
           // Countdown overlay

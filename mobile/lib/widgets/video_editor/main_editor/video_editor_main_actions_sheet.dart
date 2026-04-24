@@ -10,11 +10,17 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 ///
 /// Uses [_ItemButton] for each action and closes the sheet after
 /// an action is selected.
+
 class VideoEditorMainActionsSheet extends StatelessWidget {
   const VideoEditorMainActionsSheet({
     required this.scope,
     super.key,
   });
+
+  static const _maxItemWidth = 72.0;
+  static const _itemHeight = 112.0;
+  static const _itemMainSpacing = 16.0;
+  static const _itemCrossSpacing = 24.0;
 
   /// The editor scope captured before opening the sheet.
   final VideoEditorScope scope;
@@ -39,65 +45,69 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: .stretch,
         children: [
-          Row(
-            spacing: 16,
-            mainAxisAlignment: .spaceAround,
+          GridView(
+            primary: false,
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: _maxItemWidth,
+              mainAxisExtent: _itemHeight,
+              mainAxisSpacing: _itemMainSpacing,
+              crossAxisSpacing: _itemCrossSpacing,
+            ),
             children: [
-              Expanded(
-                child: _ItemButton(
-                  icon: .images,
-                  label: context.l10n.videoEditorClipsLabel,
-                  semanticLabel: context.l10n.videoEditorOpenClipsSemanticLabel,
-                  onTap: () {
-                    Navigator.pop(context);
-                    scope.onOpenClipsEditor();
-                  },
-                ),
+              _ItemButton(
+                icon: .camera,
+                label: context.l10n.videoEditorCameraLabel,
+                semanticLabel: context.l10n.videoEditorOpenCameraSemanticLabel,
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.onOpenCamera();
+                },
               ),
-              Expanded(
-                child: _ItemButton(
-                  icon: .waveform,
-                  label: context.l10n.videoEditorAudioLabel,
-                  semanticLabel: context.l10n.videoEditorOpenAudioSemanticLabel,
-                  onTap: () {
-                    Navigator.pop(context);
-                    scope.onOpenMusicLibrary();
-                  },
-                ),
+              _ItemButton(
+                icon: .images,
+                label: context.l10n.videoEditorLibraryLabel,
+                semanticLabel: context.l10n.videoEditorOpenLibrarySemanticLabel,
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.onOpenClipsEditor();
+                },
               ),
-              Expanded(
-                child: _ItemButton(
-                  icon: .textAa,
-                  label: context.l10n.videoEditorTextLabel,
-                  semanticLabel: context.l10n.videoEditorOpenTextSemanticLabel,
-                  onTap: () {
-                    Navigator.pop(context);
-                    scope.editor?.openTextEditor();
-                  },
-                ),
+              _ItemButton(
+                icon: .waveform,
+                label: context.l10n.videoEditorAudioLabel,
+                semanticLabel: context.l10n.videoEditorOpenAudioSemanticLabel,
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.onOpenMusicLibrary();
+                },
               ),
-              Expanded(
-                child: _ItemButton(
-                  icon: .scribble,
-                  label: context.l10n.videoEditorDrawLabel,
-                  semanticLabel: context.l10n.videoEditorOpenDrawSemanticLabel,
-                  onTap: () {
-                    Navigator.pop(context);
-                    scope.editor?.openPaintEditor();
-                  },
-                ),
+              _ItemButton(
+                icon: .textAa,
+                label: context.l10n.videoEditorTextLabel,
+                semanticLabel: context.l10n.videoEditorOpenTextSemanticLabel,
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.editor?.openTextEditor();
+                },
               ),
-              Expanded(
-                child: _ItemButton(
-                  icon: .fadersHorizontal,
-                  label: context.l10n.videoEditorEffectsLabel,
-                  semanticLabel:
-                      context.l10n.videoEditorOpenEffectsSemanticLabel,
-                  onTap: () {
-                    Navigator.pop(context);
-                    scope.editor?.openFilterEditor();
-                  },
-                ),
+              _ItemButton(
+                icon: .circlesThree,
+                label: context.l10n.videoEditorFilterLabel,
+                semanticLabel: context.l10n.videoEditorOpenFilterSemanticLabel,
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.editor?.openFilterEditor();
+                },
+              ),
+              _ItemButton(
+                icon: .scribble,
+                label: context.l10n.videoEditorDrawLabel,
+                semanticLabel: context.l10n.videoEditorOpenDrawSemanticLabel,
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.editor?.openPaintEditor();
+                },
               ),
             ],
           ),
@@ -131,31 +141,23 @@ class _ItemButton extends StatelessWidget {
           button: true,
           child: GestureDetector(
             onTap: onTap,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minWidth: 48,
-                minHeight: 48,
-                maxWidth: 72,
-                maxHeight: 72,
-              ),
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: DecoratedBox(
-                  decoration: ShapeDecoration(
-                    color: VineTheme.surfaceContainer,
-                    shape: RoundedRectangleBorder(
-                      side: const BorderSide(
-                        width: 2,
-                        color: VineTheme.outlineMuted,
-                      ),
-                      borderRadius: .circular(24),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: DecoratedBox(
+                decoration: ShapeDecoration(
+                  color: VineTheme.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    side: const BorderSide(
+                      width: 2,
+                      color: VineTheme.outlineMuted,
                     ),
+                    borderRadius: .circular(24),
                   ),
-                  child: Center(
-                    child: DivineIcon(
-                      icon: icon,
-                      color: VineTheme.primary,
-                    ),
+                ),
+                child: Center(
+                  child: DivineIcon(
+                    icon: icon,
+                    color: VineTheme.primary,
                   ),
                 ),
               ),

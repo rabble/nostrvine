@@ -32,6 +32,7 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
@@ -510,8 +511,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
     return BlocProvider.value(
       value: _autoAdvanceCubit,
-      child: ColoredBox(
-        color: VineTheme.backgroundColor,
+      child: NavRoundedShell(
+        innerColor: VineTheme.backgroundColor,
         child: MultiBlocListener(
           listeners: [
             // Sync volume when hardware buttons change system volume.

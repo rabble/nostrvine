@@ -52,7 +52,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: VideoRecorderCaptureTopBar(),
+            body: VideoRecorderCaptureTopBar(fromEditor: false),
           ),
         ),
       );

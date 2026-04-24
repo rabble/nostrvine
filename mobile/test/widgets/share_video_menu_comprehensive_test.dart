@@ -2,7 +2,6 @@
 // ABOUTME: Covers share sheet rendering, contact row, more actions, feature
 // ABOUTME: flags, save/bookmark, copy link, share via, and error handling
 
-@Tags(['skip_very_good_optimization'])
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -588,9 +588,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     //   (CSS z-index equivalent — the action buttons row overlaps the tabs
     //   group by safeAreaTop).
     content = ClipRRect(
-      borderRadius: const BorderRadius.only(
-        bottomLeft: Radius.circular(30),
-        bottomRight: Radius.circular(30),
+      borderRadius: const BorderRadius.vertical(
+        bottom: Radius.circular(VineTheme.shellCornerRadius),
       ),
       child: ColoredBox(
         color: VineTheme.surfaceBackground,
