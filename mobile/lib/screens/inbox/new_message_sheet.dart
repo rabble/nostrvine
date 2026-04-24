@@ -92,7 +92,9 @@ class _NewMessageSheetViewState extends State<_NewMessageSheetView> {
 
     return Material(
       color: VineTheme.surfaceBackground,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(VineTheme.bottomSheetBorderRadius),
+      ),
       child: SizedBox(
         height: screenHeight * 0.92,
         child: Column(

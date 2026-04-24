@@ -511,7 +511,9 @@ class _InviteSheetPage extends StatelessWidget {
               width: double.infinity,
               decoration: const BoxDecoration(
                 color: VineTheme.surfaceBackground,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(VineTheme.bottomSheetBorderRadius),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -679,7 +681,7 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
       ),
       child: Material(
         color: VineTheme.surfaceBackground,
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(VineTheme.bottomSheetBorderRadius),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: Column(
