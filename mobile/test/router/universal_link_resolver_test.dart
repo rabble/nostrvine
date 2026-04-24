@@ -117,15 +117,14 @@ void main() {
       });
 
       test('preserves URL-encoded non-ASCII tags', () {
-        // `Uri` round-trips the encoded form back through `parseDeepLink`,
-        // which in turn passes it to `HashtagScreenRouter.pathForTag`. The
-        // caller (route matcher) decodes it before rendering.
+        // Uri.parse decodes the percent-encoded emoji into pathSegments;
+        // HashtagScreenRouter.pathForTag then re-encodes it via
+        // Uri.encodeComponent, so the round-trip is deterministic.
         final encoded = Uri.encodeComponent('🔥');
         final result = universalLinkToRouterPath(
           Uri.parse('https://divine.video/hashtag/$encoded'),
         );
-        expect(result, startsWith('/hashtag/'));
-        expect(result!.length, greaterThan('/hashtag/'.length));
+        expect(result, equals('/hashtag/$encoded'));
       });
     });
 

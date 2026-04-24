@@ -1180,9 +1180,16 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               }
             case DeepLinkType.profile:
               if (deepLink.npub != null) {
-                final index = deepLink.index ?? 0;
-                final targetPath =
-                    '${ProfileScreenRouter.pathForNpub(deepLink.npub!)}/$index';
+                // Mirror universalLinkToRouterPath: no index → grid mode
+                // (/profile/<npub>), explicit index → feed mode
+                // (/profile/<npub>/<index>). The old `index ?? 0` form always
+                // produced a feed-mode path, which disagreed with the
+                // resolver's grid-mode redirect for index-less universal links
+                // and caused a spurious second navigation.
+                final index = deepLink.index;
+                final targetPath = index != null
+                    ? ProfileScreenRouter.pathForIndex(deepLink.npub!, index)
+                    : ProfileScreenRouter.pathForNpub(deepLink.npub!);
                 Log.info(
                   '📱 Navigating to profile: $targetPath',
                   name: 'DeepLinkHandler',
