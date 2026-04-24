@@ -103,6 +103,19 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       final nsec = await authService.exportNsec();
 
       if (nsec == null) {
+        // #2092: capture the auth-service state that gated the failure so
+        // a user-submitted log bundle tells us which branch of
+        // AuthService.exportNsec returned null (not_authenticated /
+        // unsupported_source / inmemory_failed / storage_*). No key
+        // material is logged — only presence and source.
+        Log.error(
+          'exportNsec returned null — cannot secure account '
+          '(authSource=${authService.authenticationSource.name}, '
+          'isAuthenticated=${authService.isAuthenticated}, '
+          'hasIdentity=${authService.currentIdentity != null})',
+          name: 'SecureAccountScreen',
+          category: LogCategory.auth,
+        );
         _setGeneralError(l10n.authUnableToAccessKeys);
         return;
       }

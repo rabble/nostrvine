@@ -41,6 +41,10 @@ void main() {
       when(() => mockAuthService.isRegistered).thenReturn(false);
       when(() => mockAuthService.currentNpub).thenReturn('npub1test...');
       when(
+        () => mockAuthService.authenticationSource,
+      ).thenReturn(AuthenticationSource.automatic);
+      when(() => mockAuthService.currentIdentity).thenReturn(null);
+      when(
         () => mockAuthService.exportNsec(),
       ).thenAnswer((_) async => 'nsec1testabc123xyz');
     });
@@ -432,6 +436,59 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets(
+        'reads auth-service diagnostic state when nsec export fails '
+        '(#2092)',
+        (tester) async {
+          // Given: exportNsec returns null (the #2092 failure mode)
+          when(
+            () => mockAuthService.exportNsec(),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAuthService.authenticationSource,
+          ).thenReturn(AuthenticationSource.automatic);
+          when(() => mockAuthService.currentIdentity).thenReturn(null);
+
+          await tester.pumpWidget(buildTestWidget());
+          await tester.pumpAndSettle();
+
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Email'),
+              matching: find.byType(TextField),
+            ),
+            'test@example.com',
+          );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Password'),
+              matching: find.byType(TextField),
+            ),
+            'SecurePass123!',
+          );
+
+          await tester.tap(
+            find.widgetWithText(DivineButton, 'Secure account'),
+          );
+          await tester.pumpAndSettle();
+
+          // Sanity: the user-visible banner still shows.
+          expect(
+            find.text('Unable to access your keys. Please try again.'),
+            findsOneWidget,
+          );
+
+          // After exportNsec returns null the screen must read these
+          // public (non-@visibleForTesting) getters so the Zendesk log
+          // bundle identifies which branch of AuthService.exportNsec
+          // was responsible. No key material is logged — only presence
+          // and source.
+          verify(() => mockAuthService.authenticationSource).called(1);
+          verify(() => mockAuthService.isAuthenticated).called(greaterThan(0));
+          verify(() => mockAuthService.currentIdentity).called(1);
+        },
+      );
     });
 
     group('Autofill Context', () {
