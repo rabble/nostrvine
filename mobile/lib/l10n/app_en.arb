@@ -2810,7 +2810,6 @@
     }
   },
   "videoEditorLayerReorderHint": "Hold to reorder",
-  "videoEditorLayers": "Layers",
   "videoEditorShowTimelineSemanticLabel": "Show timeline",
   "videoEditorHideTimelineSemanticLabel": "Hide timeline",
   "videoEditorFeedPreviewContent": "Avoid placing content behind these areas.",

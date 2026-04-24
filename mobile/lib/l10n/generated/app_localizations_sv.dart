@@ -5394,9 +5394,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorLayerReorderHint => 'Håll ned för att ordna om';
 
   @override
-  String get videoEditorLayers => 'Lager';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Visa tidslinje';
 
   @override

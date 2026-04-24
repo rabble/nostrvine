@@ -5377,9 +5377,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorLayerReorderHint => 'Tahan untuk mengurutkan ulang';
 
   @override
-  String get videoEditorLayers => 'Lapisan';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Tampilkan timeline';
 
   @override

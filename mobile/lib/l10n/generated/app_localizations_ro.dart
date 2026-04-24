@@ -5545,9 +5545,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorLayerReorderHint => 'Ține apăsat pentru a reordona';
 
   @override
-  String get videoEditorLayers => 'Straturi';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Afișează cronologia';
 
   @override

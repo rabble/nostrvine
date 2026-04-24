@@ -5198,9 +5198,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorLayerReorderHint => '길게 눌러 순서 변경';
 
   @override
-  String get videoEditorLayers => '레이어';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => '타임라인 표시';
 
   @override

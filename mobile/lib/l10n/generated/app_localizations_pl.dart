@@ -5541,9 +5541,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przytrzymaj, aby zmienić kolejność';
 
   @override
-  String get videoEditorLayers => 'Warstwy';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Pokaż oś czasu';
 
   @override

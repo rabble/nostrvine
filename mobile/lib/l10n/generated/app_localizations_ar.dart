@@ -5349,9 +5349,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorLayerReorderHint => 'اضغط مطولاً لإعادة الترتيب';
 
   @override
-  String get videoEditorLayers => 'الطبقات';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'إظهار الجدول الزمني';
 
   @override

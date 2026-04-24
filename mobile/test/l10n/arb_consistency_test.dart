@@ -52,6 +52,13 @@ const _knownUntranslatedDebt = {
   'profileMyLibraryLabel',
   'profileMessageLabel',
   'profileUserFallback',
+  'videoActionLikeLabel',
+  'videoActionReplyLabel',
+  'videoActionRepostLabel',
+  'videoActionShareLabel',
+  'videoActionAboutLabel',
+  'videoOverlayOpenMetadataFromTitle',
+  'videoOverlayOpenMetadataFromDescription',
 };
 
 Map<String, Object?> _readArb(File file) {

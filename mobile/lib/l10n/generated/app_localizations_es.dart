@@ -5462,9 +5462,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorLayerReorderHint => 'Mantén presionado para reordenar';
 
   @override
-  String get videoEditorLayers => 'Capas';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Mostrar línea de tiempo';
 
   @override

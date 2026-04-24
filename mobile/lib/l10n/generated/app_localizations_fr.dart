@@ -5480,9 +5480,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoEditorLayerReorderHint => 'Maintenez appuyé pour réorganiser';
 
   @override
-  String get videoEditorLayers => 'Calques';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Afficher la timeline';
 
   @override

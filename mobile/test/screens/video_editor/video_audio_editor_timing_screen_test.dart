@@ -181,7 +181,11 @@ void main() {
       await tester.pump();
 
       expect(
-        find.text('Select the audio segment for your video'),
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).videoEditorAudioSegmentInstruction,
+        ),
         findsOneWidget,
       );
     });
@@ -191,11 +195,19 @@ void main() {
       await tester.pump();
 
       expect(
-        find.text('Wähle den Audiobereich für dein Video aus'),
+        find.text(
+          lookupAppLocalizations(
+            const Locale('de'),
+          ).videoEditorAudioSegmentInstruction,
+        ),
         findsOneWidget,
       );
       expect(
-        find.text('Select the audio segment for your video'),
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).videoEditorAudioSegmentInstruction,
+        ),
         findsNothing,
       );
     });

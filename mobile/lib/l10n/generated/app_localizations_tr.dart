@@ -5379,9 +5379,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorLayerReorderHint => 'Yeniden sıralamak için basılı tut';
 
   @override
-  String get videoEditorLayers => 'Katmanlar';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Zaman çizelgesini göster';
 
   @override

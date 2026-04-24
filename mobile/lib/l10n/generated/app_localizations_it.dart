@@ -5458,9 +5458,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorLayerReorderHint => 'Tieni premuto per riordinare';
 
   @override
-  String get videoEditorLayers => 'Livelli';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'Mostra timeline';
 
   @override

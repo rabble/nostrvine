@@ -9578,12 +9578,6 @@ abstract class AppLocalizations {
   /// **'Hold to reorder'**
   String get videoEditorLayerReorderHint;
 
-  /// No description provided for @videoEditorLayers.
-  ///
-  /// In en, this message translates to:
-  /// **'Layers'**
-  String get videoEditorLayers;
-
   /// No description provided for @videoEditorShowTimelineSemanticLabel.
   ///
   /// In en, this message translates to:

@@ -5176,9 +5176,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorLayerReorderHint => '長押しして並べ替え';
 
   @override
-  String get videoEditorLayers => 'レイヤー';
-
-  @override
   String get videoEditorShowTimelineSemanticLabel => 'タイムラインを表示';
 
   @override
