@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -107,6 +109,12 @@ class VideoEditorTimelineBody extends StatelessWidget {
         fit: .passthrough,
         clipBehavior: .none,
         children: [
+          // Keep stack slots stable during drag-reorder to avoid gesture drops.
+          _TimelineMaxDurationStripeOverlay(
+            pixelsPerSecond: pixelsPerSecond,
+            visible: !isReordering,
+          ),
+
           Column(
             crossAxisAlignment: .start,
             mainAxisSize: .min,
@@ -177,21 +185,26 @@ class VideoEditorTimelineBody extends StatelessWidget {
               ),
             ],
           ),
-          // Semi-transparent overlay from 6.3s to the end.
-          if (!isReordering)
-            _TimelineMaxDurationOverlay(pixelsPerSecond: pixelsPerSecond),
+          _TimelineMaxDurationDimOverlay(
+            pixelsPerSecond: pixelsPerSecond,
+            visible: !isReordering,
+          ),
         ],
       ),
     );
   }
 }
 
-class _TimelineMaxDurationOverlay extends StatelessWidget {
-  const _TimelineMaxDurationOverlay({
+class _TimelineMaxDurationStripeOverlay extends StatelessWidget {
+  const _TimelineMaxDurationStripeOverlay({
     required this.pixelsPerSecond,
+    required this.visible,
   });
 
+  static const _outsideExtendWidth = 200.0;
+
   final double pixelsPerSecond;
+  final bool visible;
 
   @override
   Widget build(BuildContext context) {
@@ -202,12 +215,99 @@ class _TimelineMaxDurationOverlay extends StatelessWidget {
           pixelsPerSecond,
       top: 0,
       bottom: 0,
-      right: -200,
+      right: -_outsideExtendWidth,
       child: IgnorePointer(
-        child: ColoredBox(
-          color: VineTheme.surfaceContainerHigh.withValues(alpha: 0.6),
+        child: Visibility(
+          visible: visible,
+          maintainState: true,
+          child: const CustomPaint(
+            painter: _TimelineOutsideAreaPainter(
+              stripeColor: VineTheme.onSurfaceDisabled,
+            ),
+            child: SizedBox.expand(),
+          ),
         ),
       ),
     );
+  }
+}
+
+class _TimelineMaxDurationDimOverlay extends StatelessWidget {
+  const _TimelineMaxDurationDimOverlay({
+    required this.pixelsPerSecond,
+    required this.visible,
+  });
+
+  static const _outsideExtendWidth = 200.0;
+
+  final double pixelsPerSecond;
+  final bool visible;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left:
+          VideoEditorConstants.maxDuration.inMilliseconds /
+          1000 *
+          pixelsPerSecond,
+      top: 0,
+      bottom: 0,
+      right: -_outsideExtendWidth,
+      child: IgnorePointer(
+        child: Visibility(
+          visible: visible,
+          maintainState: true,
+          child: ColoredBox(
+            color: VineTheme.surfaceContainerHigh.withValues(alpha: 0.3),
+            child: const SizedBox.expand(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimelineOutsideAreaPainter extends CustomPainter {
+  const _TimelineOutsideAreaPainter({
+    required this.stripeColor,
+  });
+
+  static const _stripeRotationRadians = 1.05;
+  static const double _stripeWidth = 5;
+  static const double _stripeGap = 10;
+  static final Float64List _stripeTransformStorage =
+      (Matrix4.identity()..rotateZ(_stripeRotationRadians)).storage;
+
+  final Color stripeColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stripePaint = Paint()
+      ..color = stripeColor
+      ..strokeWidth = _stripeWidth
+      ..strokeCap = StrokeCap.butt
+      ..isAntiAlias = false;
+
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    canvas.transform(_stripeTransformStorage);
+
+    final drawHeight = (size.height * 3).ceilToDouble();
+    final drawWidth = (size.width * 3).ceilToDouble();
+    final startX = -drawWidth - ((-drawWidth) % _stripeGap);
+    for (var x = startX; x <= drawWidth; x += _stripeGap) {
+      canvas.drawLine(
+        Offset(x, -drawHeight),
+        Offset(x, drawHeight),
+        stripePaint,
+      );
+    }
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _TimelineOutsideAreaPainter oldDelegate) {
+    return oldDelegate.stripeColor != stripeColor;
   }
 }

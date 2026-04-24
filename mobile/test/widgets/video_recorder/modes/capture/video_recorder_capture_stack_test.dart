@@ -50,7 +50,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: VideoRecorderCaptureStack(),
+            body: VideoRecorderCaptureStack(fromEditor: false),
           ),
         ),
       );

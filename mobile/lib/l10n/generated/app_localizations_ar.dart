@@ -5044,7 +5044,13 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'المقاطع';
+  String get videoEditorCameraLabel => 'الكاميرا';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'فتح الكاميرا';
+
+  @override
+  String get videoEditorLibraryLabel => 'المكتبة';
 
   @override
   String get videoEditorTextLabel => 'النص';
@@ -5053,7 +5059,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorDrawLabel => 'رسم';
 
   @override
-  String get videoEditorEffectsLabel => 'التأثيرات';
+  String get videoEditorFilterLabel => 'فلتر';
 
   @override
   String get videoEditorAudioLabel => 'الصوت';
@@ -5065,7 +5071,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAddTitle => 'إضافة';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'فتح محرر المقاطع';
+  String get videoEditorOpenLibrarySemanticLabel => 'فتح المكتبة';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'فتح محرر الصوت';
@@ -5077,7 +5083,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'فتح محرر الرسم';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'فتح محرر التأثيرات';
+  String get videoEditorOpenFilterSemanticLabel => 'فتح محرر الفلاتر';
 
   @override
   String get videoEditorSaveDraftTitle => 'حفظ المسودة؟';

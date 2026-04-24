@@ -1,16 +1,21 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 
+/// Top bar for capture mode with close and confirm buttons.
 class VideoRecorderCaptureTopBar extends ConsumerWidget {
-  const VideoRecorderCaptureTopBar({super.key});
+  const VideoRecorderCaptureTopBar({required this.fromEditor, super.key});
 
   static const _animationDuration = Duration(milliseconds: 220);
+
+  /// Whether the recorder was opened from the video editor.
+  final bool fromEditor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,7 +52,9 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                           context.l10n.videoRecorderCaptureCloseLabel,
                       size: .small,
                       type: .ghostSecondary,
-                      onPressed: () => notifier.closeVideoRecorder(context),
+                      onPressed: () => fromEditor
+                          ? context.pop(false)
+                          : notifier.closeVideoRecorder(context),
                     ),
                     AnimatedOpacity(
                       duration: _animationDuration,
@@ -58,7 +65,9 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                             context.l10n.videoRecorderCaptureNextLabel,
                         size: .small,
                         type: .ghostSecondary,
-                        onPressed: () => notifier.openVideoEditor(context),
+                        onPressed: () => fromEditor
+                            ? context.pop(true)
+                            : notifier.openVideoEditor(context),
                       ),
                     ),
                   ],

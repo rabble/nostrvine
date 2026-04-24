@@ -9,15 +9,17 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   group(VideoEditorMainBottomBar, () {
     testWidgets('renders core action labels', (tester) async {
       await tester.pumpWidget(_buildWidget());
 
-      expect(find.text('Clips'), findsOneWidget);
-      expect(find.text('Text'), findsOneWidget);
-      expect(find.text('Draw'), findsOneWidget);
-      expect(find.text('Volume'), findsOneWidget);
-      expect(find.text('Effects'), findsOneWidget);
+      expect(find.text(l10n.videoEditorLibraryLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorTextLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorDrawLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorVolumeLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorFilterLabel), findsOneWidget);
     });
 
     testWidgets('tapping Clips calls onOpenClipsEditor', (tester) async {
@@ -27,7 +29,7 @@ void main() {
         _buildWidget(onOpenClipsEditor: () => clipsTapped = true),
       );
 
-      await tester.tap(find.bySemanticsLabel('Clips'));
+      await tester.tap(find.bySemanticsLabel(l10n.videoEditorLibraryLabel));
       await tester.pump();
 
       expect(clipsTapped, isTrue);
@@ -40,7 +42,7 @@ void main() {
         _buildWidget(onAdjustVolume: () => volumeTapped = true),
       );
 
-      await tester.tap(find.bySemanticsLabel('Volume'));
+      await tester.tap(find.bySemanticsLabel(l10n.videoEditorVolumeLabel));
       await tester.pump();
 
       expect(volumeTapped, isTrue);
@@ -61,6 +63,7 @@ Widget _buildWidget({
     home: VideoEditorScope(
       editorKey: editorKey,
       removeAreaKey: removeAreaKey,
+      onOpenCamera: () {},
       onAddStickers: () {},
       onAdjustVolume: onAdjustVolume ?? () {},
       onOpenClipsEditor: onOpenClipsEditor ?? () {},

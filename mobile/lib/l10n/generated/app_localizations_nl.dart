@@ -5114,7 +5114,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'Clips';
+  String get videoEditorCameraLabel => 'Camera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Camera openen';
+
+  @override
+  String get videoEditorLibraryLabel => 'Bibliotheek';
 
   @override
   String get videoEditorTextLabel => 'Tekst';
@@ -5123,7 +5129,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorDrawLabel => 'Tekenen';
 
   @override
-  String get videoEditorEffectsLabel => 'Effecten';
+  String get videoEditorFilterLabel => 'Filter';
 
   @override
   String get videoEditorAudioLabel => 'Audio';
@@ -5135,7 +5141,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorAddTitle => 'Toevoegen';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'Clip-editor openen';
+  String get videoEditorOpenLibrarySemanticLabel => 'Bibliotheek openen';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Audio-editor openen';
@@ -5147,7 +5153,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Tekeneditor openen';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'Effecteditor openen';
+  String get videoEditorOpenFilterSemanticLabel => 'Filtereditor openen';
 
   @override
   String get videoEditorSaveDraftTitle => 'Je concept opslaan?';

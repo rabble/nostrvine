@@ -1001,6 +1001,7 @@ class _DailyTrendCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final points = summary.dailyInteractions;
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final maxValue = points.fold<int>(
       0,
       (maxInteractions, point) => point.interactions > maxInteractions
@@ -1043,7 +1044,7 @@ class _DailyTrendCard extends StatelessWidget {
                         SizedBox(
                           width: 68,
                           child: Text(
-                            point.axisLabel,
+                            point.axisLabel(locale),
                             style: VineTheme.bodySmallFont(
                               color: VineTheme.onSurfaceMuted,
                             ),
@@ -1357,8 +1358,9 @@ class _DailyInteractionPoint {
   final DateTime day;
   final int interactions;
 
-  String get axisLabel =>
-      '${DateFormat.E().format(day)} ${DateFormat.Md().format(day)}';
+  String axisLabel(String locale) =>
+      '${DateFormat.E(locale).format(day)} '
+      '${DateFormat.Md(locale).format(day)}';
 }
 
 DateTime _videoTimestamp(VideoEvent video) {

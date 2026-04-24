@@ -21,7 +21,6 @@ typedef ClipTrimCallback =
       required String clipId,
       required Duration trimStart,
       required Duration trimEnd,
-      required bool isStart,
     });
 
 /// Callback reporting a reorder change — from index and to index.
