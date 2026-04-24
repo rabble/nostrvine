@@ -31,6 +31,23 @@ void main() {
           isNull,
         );
       });
+
+      test('accepts a realistic Apple Hide-My-Email relay address (#2092)', () {
+        // Apple iCloud "Hide My Email" returns relay addresses with a
+        // 24-char lowercase-hex local part on the privaterelay.appleid.com
+        // domain. Pin this exact shape so validator tightening cannot
+        // silently block iOS users who pick Hide My Email from autofill.
+        expect(
+          Validators.validateEmail(
+            '1a2b3c4d5e6f7a8b9c0d1e2f@privaterelay.appleid.com',
+            messages: messages,
+          ),
+          isNull,
+          reason:
+              'Hide-My-Email produces a 24-char lowercase-hex local part; '
+              'secure-account must accept it.',
+        );
+      });
     });
   });
 }
