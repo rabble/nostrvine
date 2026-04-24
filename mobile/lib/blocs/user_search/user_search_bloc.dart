@@ -85,9 +85,10 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     var trackedFirst = false;
 
     // Snapshot the follow graph once for this query so every progressive
-    // yield uses the same boost set without O(n) list scans per profile.
-    final followedPubkeys =
-        _followRepository?.followingPubkeys.toSet() ?? const <String>{};
+    // yield uses the same boost set. Boost ordering is applied inside the
+    // repository (see ProfileRepository.searchUsersProgressive), keeping
+    // ranking logic out of the BLoC.
+    final followedPubkeys = _followRepository?.followingPubkeys.toSet();
 
     try {
       final searchStream = _profileRepository.searchUsersProgressive(
@@ -95,6 +96,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         limit: _pageSize,
         sortBy: 'followers',
         hasVideos: hasVideos,
+        boostPubkeys: followedPubkeys,
       );
 
       await emit.forEach<List<UserProfile>>(
@@ -109,11 +111,10 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
               results.length,
             );
           }
-          final boosted = _boostFollowed(results, followedPubkeys);
           return state.copyWith(
             status: UserSearchStatus.loading,
-            results: boosted,
-            resultCount: boosted.length,
+            results: results,
+            resultCount: results.length,
           );
         },
       );
@@ -185,29 +186,5 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
   void _onCleared(UserSearchCleared event, Emitter<UserSearchState> emit) {
     emit(const UserSearchState());
-  }
-
-  /// Moves followed users to the front of [results] while preserving the
-  /// server-relative order within each group.
-  ///
-  /// Only applied to the initial search page. Load-more pages append raw
-  /// (see [_onLoadMore]) so that already-visible positions stay stable as
-  /// the user scrolls.
-  List<UserProfile> _boostFollowed(
-    List<UserProfile> results,
-    Set<String> followedPubkeys,
-  ) {
-    if (followedPubkeys.isEmpty) return results;
-    final boosted = <UserProfile>[];
-    final rest = <UserProfile>[];
-    for (final profile in results) {
-      if (followedPubkeys.contains(profile.pubkey)) {
-        boosted.add(profile);
-      } else {
-        rest.add(profile);
-      }
-    }
-    if (boosted.isEmpty) return results;
-    return [...boosted, ...rest];
   }
 }

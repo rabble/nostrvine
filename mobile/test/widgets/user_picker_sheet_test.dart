@@ -37,6 +37,7 @@ _MockProfileRepository _createMockProfileRepository({
       offset: any(named: 'offset'),
       sortBy: any(named: 'sortBy'),
       hasVideos: any(named: 'hasVideos'),
+      boostPubkeys: any(named: 'boostPubkeys'),
     ),
   ).thenAnswer((_) => Stream.value(searchResults));
 
@@ -439,6 +440,7 @@ void main() {
               offset: any(named: 'offset'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
+              boostPubkeys: any(named: 'boostPubkeys'),
             ),
           ).thenAnswer((_) => streamController.stream);
 
@@ -499,9 +501,44 @@ void main() {
             createdAt: DateTime.now(),
             eventId: 'event_liz',
           );
-          final mockProfileRepo = _createMockProfileRepository(
-            searchResults: [zoe, liz],
-          );
+          final mockProfileRepo = _MockProfileRepository();
+          // Simulate the real repository's boost behaviour: profiles whose
+          // pubkey is in [boostPubkeys] are promoted to the front while
+          // preserving server-relative order. Boost ordering itself is
+          // unit-tested in profile_repository_test.dart; here we just need
+          // a mock that reacts to [boostPubkeys] so the widget test can
+          // assert that the UI reflects it.
+          when(
+            () => mockProfileRepo.searchUsersProgressive(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+              boostPubkeys: any(named: 'boostPubkeys'),
+            ),
+          ).thenAnswer((invocation) {
+            final boost =
+                invocation.namedArguments[#boostPubkeys] as Set<String>? ??
+                const <String>{};
+            final results = [zoe, liz];
+            if (boost.isEmpty) return Stream.value(results);
+            final boosted = <UserProfile>[];
+            final rest = <UserProfile>[];
+            for (final p in results) {
+              if (boost.contains(p.pubkey)) {
+                boosted.add(p);
+              } else {
+                rest.add(p);
+              }
+            }
+            return Stream.value([...boosted, ...rest]);
+          });
+          when(
+            () => mockProfileRepo.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
           final mockFollowRepo = _createMockFollowRepository(
             followingPubkeys: ['p_liz'],
           );
@@ -611,6 +648,7 @@ void main() {
               offset: any(named: 'offset'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
+              boostPubkeys: any(named: 'boostPubkeys'),
             ),
           ).thenAnswer((_) => Stream.value([alice]));
           when(
@@ -620,6 +658,7 @@ void main() {
               offset: any(named: 'offset'),
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
+              boostPubkeys: any(named: 'boostPubkeys'),
             ),
           ).thenAnswer((_) => bobController.stream);
 
