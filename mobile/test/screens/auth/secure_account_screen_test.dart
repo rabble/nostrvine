@@ -484,9 +484,17 @@ void main() {
           // bundle identifies which branch of AuthService.exportNsec
           // was responsible. No key material is logged — only presence
           // and source.
-          verify(() => mockAuthService.authenticationSource).called(1);
+          //
+          // Use `greaterThan(0)` rather than `.called(1)` so a future
+          // diagnostic expansion that reads any of these getters again
+          // in the same error branch does not break this test. The
+          // contract is "the diagnostic happened", not "exactly one
+          // read per getter".
+          verify(
+            () => mockAuthService.authenticationSource,
+          ).called(greaterThan(0));
           verify(() => mockAuthService.isAuthenticated).called(greaterThan(0));
-          verify(() => mockAuthService.currentIdentity).called(1);
+          verify(() => mockAuthService.currentIdentity).called(greaterThan(0));
         },
       );
     });
