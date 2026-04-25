@@ -323,6 +323,8 @@ List<dynamic> getStandardTestOverrides({
   final mockBlossom = mockBlossomAuthService ?? createMockBlossomAuthService();
   final mockCache = mockMediaCacheManager ?? createMockMediaCacheManager();
   final mockProfile = mockProfileRepository ?? createMockProfileRepository();
+  final mockNip05 =
+      mockNip05VerificationService ?? createMockNip05VerificationService();
   final mockModeration =
       mockModerationLabelService ?? createMockModerationLabelService();
 
@@ -354,10 +356,7 @@ List<dynamic> getStandardTestOverrides({
 
     // Override NIP-05 verification service to avoid opening Drift/SQLite in
     // widget tests that only care about badge presence, not verification.
-    if (mockNip05VerificationService != null)
-      nip05VerificationServiceProvider.overrideWithValue(
-        mockNip05VerificationService,
-      ),
+    nip05VerificationServiceProvider.overrideWithValue(mockNip05),
 
     // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)
