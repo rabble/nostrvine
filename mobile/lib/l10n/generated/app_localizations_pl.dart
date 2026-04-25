@@ -5857,4 +5857,7 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Napisy wyłączone dla wszystkich filmów';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Video removed';
 }

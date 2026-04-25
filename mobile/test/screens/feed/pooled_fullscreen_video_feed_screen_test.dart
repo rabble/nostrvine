@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -20,6 +21,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/services/build_configuration.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
@@ -363,9 +365,69 @@ void main() {
           // not push the screen onto a route stack with a parent — so
           // pop is a no-op and the BlocBuilder must render the
           // empty-state branch instead of the loading spinner.
-          expect(find.text('Video removed'), findsOneWidget);
+          final removedText = lookupAppLocalizations(
+            const Locale('en'),
+          ).fullscreenFeedRemovedMessage;
+          expect(find.text(removedText), findsOneWidget);
           expect(find.byType(BrandedLoadingIndicator), findsNothing);
           expect(find.byType(PooledVideoFeed), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'empty-state back button falls back to root when route cannot pop',
+        (tester) async {
+          // When the BlocListener's `maybePop` was a no-op (cold deep-link
+          // into the fullscreen with no parent route), the appbar back
+          // button must NOT also be a no-op — that would leave the user
+          // stranded on "Video removed" with no way out. The closure in
+          // pooled_fullscreen_video_feed_screen.dart navigates to "/" in
+          // that case; this test verifies the fallback fires.
+          var sentinelBuilt = false;
+          final router = GoRouter(
+            initialLocation: '/empty-feed',
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) {
+                  sentinelBuilt = true;
+                  return const Scaffold(body: Text('home-sentinel'));
+                },
+              ),
+              GoRoute(
+                path: '/empty-feed',
+                builder: (_, _) => Scaffold(
+                  appBar: AppBar(
+                    leading: Builder(
+                      builder: (context) => BackButton(
+                        onPressed: () =>
+                            context.canPop() ? context.pop() : context.go('/'),
+                      ),
+                    ),
+                  ),
+                  body: const Center(child: Text('empty-state-body')),
+                ),
+              ),
+            ],
+          );
+          addTearDown(router.dispose);
+
+          await tester.pumpWidget(
+            MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.text('empty-state-body'), findsOneWidget);
+
+          await tester.tap(find.byType(BackButton));
+          await tester.pumpAndSettle();
+
+          expect(sentinelBuilt, isTrue);
+          expect(find.text('home-sentinel'), findsOneWidget);
+          expect(find.text('empty-state-body'), findsNothing);
         },
       );
 

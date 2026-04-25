@@ -20,6 +20,7 @@ import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -664,14 +665,20 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 appBar: DiVineAppBar(
                   title: widget.contextTitle ?? '',
                   showBackButton: true,
-                  onBackPressed: context.pop,
+                  // The BlocListener above already tried `maybePop` and
+                  // failed (otherwise we wouldn't be rendering this
+                  // branch). The same `pop` from the appbar back button
+                  // would also be a no-op, so fall back to the home
+                  // shell to avoid a dead-end UX.
+                  onBackPressed: () =>
+                      context.canPop() ? context.pop() : context.go('/'),
                   backgroundMode: DiVineAppBarBackgroundMode.transparent,
                   forceMaterialTransparency: true,
                 ),
-                body: const Center(
+                body: Center(
                   child: Text(
-                    'Video removed',
-                    style: TextStyle(color: VineTheme.whiteText),
+                    context.l10n.fullscreenFeedRemovedMessage,
+                    style: VineTheme.bodyMediumFont(),
                   ),
                 ),
               );
