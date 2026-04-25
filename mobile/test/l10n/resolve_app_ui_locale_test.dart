@@ -9,6 +9,10 @@ void main() {
   const supported = AppLocalizations.supportedLocales;
 
   group('resolveAppUiLocale', () {
+    test('keeps English first for Flutter framework fallback', () {
+      expect(supported.first.languageCode, 'en');
+    });
+
     test('uses English when device language is not supported (Russian)', () {
       final locale = resolveAppUiLocale(
         const [Locale('ru')],
