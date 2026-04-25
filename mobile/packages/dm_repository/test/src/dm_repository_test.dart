@@ -787,7 +787,6 @@ void main() {
             content: 'Fallback invite copy',
             createdAt: 1700000000,
             giftWrapId: _giftWrapEventId,
-            messageKind: EventKind.privateDirectMessage,
             replyToId: any(named: 'replyToId'),
             subject: any(named: 'subject'),
             fileType: any(named: 'fileType'),
