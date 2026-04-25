@@ -684,6 +684,9 @@ class DirectMessages extends Table {
   /// Optional conversation subject/title (from `subject` tag).
   TextColumn get subject => text().nullable()();
 
+  /// JSON-encoded tags from the decrypted NIP-17 rumor event.
+  TextColumn get tagsJson => text().nullable().named('tags_json')();
+
   /// The inner event kind: 14 (text) or 15 (file). Defaults to 14.
   IntColumn get messageKind =>
       integer().withDefault(const Constant(14)).named('message_kind')();

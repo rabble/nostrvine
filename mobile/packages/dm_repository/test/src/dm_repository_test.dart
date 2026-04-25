@@ -372,6 +372,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -431,6 +432,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(1);
 
@@ -494,6 +496,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         );
       });
@@ -633,6 +636,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -707,6 +711,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(1);
 
@@ -723,6 +728,80 @@ void main() {
             currentUserHasSent: any(named: 'currentUserHasSent'),
             ownerPubkey: any(named: 'ownerPubkey'),
             dmProtocol: any(named: 'dmProtocol'),
+          ),
+        ).called(1);
+
+        await controller.close();
+        await repository.stopListening();
+      });
+
+      test('persists decrypted rumor tags as JSON', () async {
+        final giftWrap = createGiftWrapEvent();
+        const creatorPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        const videoAddress = '34236:$creatorPubkey:video-d-tag';
+        final inviteTags = [
+          ['p', _validPubkeyA],
+          ['divine', 'collab-invite'],
+          [
+            'a',
+            videoAddress,
+            'wss://relay.divine.video',
+            'root',
+          ],
+          ['p', creatorPubkey],
+          ['role', 'Collaborator'],
+        ];
+        final rumor = createRumorEvent(
+          content: 'Fallback invite copy',
+          tags: inviteTags,
+        );
+
+        when(
+          () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+        ).thenAnswer((_) async => false);
+        stubDaoInserts();
+
+        final controller = StreamController<Event>();
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final repository = createRepository(
+          rumorDecryptor: (_, _) async => rumor,
+        );
+
+        await repository.startListening();
+        controller.add(giftWrap);
+        await Future<void>.delayed(Duration.zero);
+
+        verify(
+          () => mockDirectMessagesDao.insertMessage(
+            id: _rumorEventId,
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: _validPubkeyB,
+            content: 'Fallback invite copy',
+            createdAt: 1700000000,
+            giftWrapId: _giftWrapEventId,
+            messageKind: EventKind.privateDirectMessage,
+            replyToId: any(named: 'replyToId'),
+            subject: any(named: 'subject'),
+            fileType: any(named: 'fileType'),
+            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+            decryptionKey: any(named: 'decryptionKey'),
+            decryptionNonce: any(named: 'decryptionNonce'),
+            fileHash: any(named: 'fileHash'),
+            originalFileHash: any(named: 'originalFileHash'),
+            fileSize: any(named: 'fileSize'),
+            dimensions: any(named: 'dimensions'),
+            blurhash: any(named: 'blurhash'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: _validPubkeyA,
+            tagsJson: jsonEncode(inviteTags),
           ),
         ).called(1);
 
@@ -913,6 +992,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         );
 
@@ -967,6 +1047,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         );
 
@@ -1023,6 +1104,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         );
 
@@ -1079,6 +1161,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         );
 
@@ -1140,6 +1223,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(1);
 
@@ -1275,6 +1359,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(2);
 
@@ -1313,6 +1398,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenThrow(Exception('DB write failed'));
 
@@ -2060,6 +2146,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -2225,6 +2312,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -2331,6 +2419,7 @@ void main() {
             fileSize: 1024,
             dimensions: '1920x1080',
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(1);
 
@@ -2415,6 +2504,7 @@ void main() {
             giftWrapId: _giftWrapEventId,
             messageKind: EventKind.fileMessage,
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(1);
 
@@ -2577,6 +2667,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -2640,6 +2731,7 @@ void main() {
             fileHash: fileHash,
             fileSize: 2048,
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(1);
 
@@ -2706,6 +2798,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         );
       });
@@ -2752,6 +2845,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -2845,6 +2939,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).called(1);
         },
@@ -2922,6 +3017,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).called(1);
 
@@ -3124,6 +3220,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -3205,6 +3302,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         );
 
@@ -3246,6 +3344,7 @@ void main() {
             giftWrapId: _rumorEventId,
             messageKind: EventKind.directMessage,
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(1);
 
@@ -3365,6 +3464,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         );
 
@@ -3417,6 +3517,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         );
 
@@ -3469,6 +3570,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         );
 
@@ -3556,6 +3658,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(1);
 
@@ -3570,6 +3673,7 @@ void main() {
             giftWrapId: _giftWrapEventId2,
             messageKind: EventKind.directMessage,
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(1);
 
@@ -3652,6 +3756,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -3767,6 +3872,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -4192,6 +4298,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).thenAnswer((_) async {});
           when(
@@ -4278,6 +4385,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).called(1);
 
@@ -4349,6 +4457,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).thenAnswer((_) async {});
           when(
@@ -4413,6 +4522,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).called(1);
 
@@ -4484,6 +4594,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).thenAnswer((_) async {});
           when(
@@ -4574,6 +4685,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).called(1);
 
@@ -4646,6 +4758,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).thenAnswer((_) async {});
           when(
@@ -4712,6 +4825,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).called(1);
 
@@ -4755,6 +4869,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           );
 
@@ -4802,6 +4917,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -4866,6 +4982,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).called(1);
 
@@ -5874,6 +5991,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
 
@@ -5967,6 +6085,7 @@ void main() {
             blurhash: any(named: 'blurhash'),
             thumbnailUrl: any(named: 'thumbnailUrl'),
             ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
           ),
         ).thenAnswer((_) async {});
         when(
@@ -6093,6 +6212,7 @@ void main() {
               giftWrapId: any(named: 'giftWrapId'),
               replyToId: any(named: 'replyToId'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).called(1);
         },
@@ -6143,6 +6263,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           );
         },
@@ -6622,6 +6743,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).thenAnswer((_) async {});
 
@@ -6726,6 +6848,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).thenAnswer((_) async {});
 
@@ -6819,6 +6942,7 @@ void main() {
               blurhash: any(named: 'blurhash'),
               thumbnailUrl: any(named: 'thumbnailUrl'),
               ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
             ),
           ).thenAnswer((_) async {});
 
