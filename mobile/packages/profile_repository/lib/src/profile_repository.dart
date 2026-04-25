@@ -230,15 +230,20 @@ class ProfileRepository {
 
     if (social == null && stats == null && engagement == null) return;
 
+    int? publicViewCount;
+    if (engagement != null) {
+      publicViewCount = engagement.totalViews > 0
+          ? engagement.totalViews
+          : engagement.totalLoops.round();
+    }
+
     await dao.upsertStats(
       pubkey: pubkey,
       followerCount: social?.followerCount,
       followingCount: social?.followingCount,
       videoCount: stats?.videoCount,
       totalLikes: engagement?.totalReactions,
-      // total_loops can be fractional due to a backend aggregation issue;
-      // round to the nearest integer.
-      totalViews: engagement?.totalLoops.round(),
+      totalViews: publicViewCount,
     );
   }
 

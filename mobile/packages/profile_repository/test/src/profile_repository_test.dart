@@ -628,6 +628,7 @@ void main() {
               engagement: ProfileEngagementData.fromJson(const {
                 'total_reactions': 42,
                 'total_loops': 12.6,
+                'total_views': 99,
               }),
             ),
           );
@@ -654,7 +655,7 @@ void main() {
               followingCount: 7,
               videoCount: 3,
               totalLikes: 42,
-              totalViews: 13,
+              totalViews: 99,
             ),
           ).called(1);
         });
