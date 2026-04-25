@@ -9,6 +9,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
@@ -26,12 +27,16 @@ class MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 class MockDraftStorageService extends Mock implements DraftStorageService {}
 
+class MockCollaboratorInviteService extends Mock
+    implements CollaboratorInviteService {}
+
 void main() {
   late MockUploadManager mockUploadManager;
   late MockAuthService mockAuthService;
   late MockVideoEventPublisher mockVideoEventPublisher;
   late MockBlossomUploadService mockBlossomService;
   late MockDraftStorageService mockDraftService;
+  late MockCollaboratorInviteService mockCollaboratorInviteService;
   late VideoPublishService service;
 
   late List<double> progressChanges;
@@ -56,6 +61,7 @@ void main() {
     mockVideoEventPublisher = MockVideoEventPublisher();
     mockBlossomService = MockBlossomUploadService();
     mockDraftService = MockDraftStorageService();
+    mockCollaboratorInviteService = MockCollaboratorInviteService();
 
     progressChanges = [];
 
@@ -65,6 +71,7 @@ void main() {
       videoEventPublisher: mockVideoEventPublisher,
       blossomService: mockBlossomService,
       draftService: mockDraftService,
+      collaboratorInviteService: mockCollaboratorInviteService,
       onProgressChanged:
           ({required double progress, required String draftId}) =>
               progressChanges.add(progress),
@@ -109,6 +116,90 @@ void main() {
         expect(result, isA<PublishSuccess>());
         verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
       });
+
+      test('collaborator invites are sent after successful publish', () async {
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+        when(
+          () => mockCollaboratorInviteService.sendInvites(
+            collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+            creatorPubkey: any(named: 'creatorPubkey'),
+            videoAddress: any(named: 'videoAddress'),
+            title: any(named: 'title'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            relayHint: any(named: 'relayHint'),
+          ),
+        ).thenAnswer(
+          (_) async => const CollaboratorInviteBatchResult(results: {}),
+        );
+
+        final draft = _createTestDraft(
+          collaboratorPubkeys: {
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          },
+        );
+
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishSuccess>());
+        verify(
+          () => mockCollaboratorInviteService.sendInvites(
+            collaboratorPubkeys: draft.collaboratorPubkeys,
+            creatorPubkey: 'test_pubkey',
+            videoAddress: '34236:test_pubkey:test_video_id',
+            title: 'Test Video',
+            thumbnailUrl: null,
+            relayHint: 'wss://relay.divine.video',
+          ),
+        ).called(1);
+      });
+
+      test(
+        'collaborator invite failure does not fail successful publish',
+        () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockCollaboratorInviteService.sendInvites(
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              creatorPubkey: any(named: 'creatorPubkey'),
+              videoAddress: any(named: 'videoAddress'),
+              title: any(named: 'title'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              relayHint: any(named: 'relayHint'),
+            ),
+          ).thenAnswer(
+            (_) async => const CollaboratorInviteBatchResult(
+              results: {
+                'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb':
+                    CollaboratorInviteResult(
+                      success: false,
+                      error: 'relay unavailable',
+                    ),
+              },
+            ),
+          );
+
+          final draft = _createTestDraft(
+            collaboratorPubkeys: {
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            },
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
+        },
+      );
 
       test('returns error when video event publishing fails', () async {
         // Arrange
@@ -946,7 +1037,9 @@ DivineVideoClip _createTestClip() {
   );
 }
 
-DivineVideoDraft _createTestDraft() {
+DivineVideoDraft _createTestDraft({
+  Set<String> collaboratorPubkeys = const {},
+}) {
   return DivineVideoDraft.create(
     clips: [_createTestClip()],
     title: 'Test Video',
@@ -954,6 +1047,7 @@ DivineVideoDraft _createTestDraft() {
     hashtags: {'test', 'video'},
     selectedApproach: 'test',
     id: 'test_draft_id',
+    collaboratorPubkeys: collaboratorPubkeys,
   );
 }
 
@@ -969,6 +1063,7 @@ PendingUpload _createPendingUpload({
     createdAt: DateTime.now(),
     errorMessage: errorMessage,
     uploadProgress: status == UploadStatus.readyToPublish ? 1.0 : 0.5,
+    videoId: 'test_video_id',
     cdnUrl: 'https://test.cdn/video.mp4',
   );
 }
@@ -1004,6 +1099,14 @@ void _setupSuccessfulPublish({
       hashtags: any(named: 'hashtags'),
       expirationTimestamp: any(named: 'expirationTimestamp'),
       allowAudioReuse: any(named: 'allowAudioReuse'),
+      collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+      inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+      inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+      inspiredByNpub: any(named: 'inspiredByNpub'),
+      selectedAudioEventId: any(named: 'selectedAudioEventId'),
+      selectedAudioRelay: any(named: 'selectedAudioRelay'),
+      language: any(named: 'language'),
+      contentWarning: any(named: 'contentWarning'),
     ),
   ).thenAnswer((_) async => true);
 }

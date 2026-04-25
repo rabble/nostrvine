@@ -21,6 +21,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
+import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
@@ -112,6 +113,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       videoEventPublisher: ref.read(videoEventPublisherProvider),
       blossomService: ref.read(blossomUploadServiceProvider),
       draftService: _draftService,
+      collaboratorInviteService: CollaboratorInviteService(
+        dmRepository: ref.read(dmRepositoryProvider),
+      ),
       languagePreferenceService: ref.read(languagePreferenceServiceProvider),
       onProgressChanged: ({required String draftId, required double progress}) {
         setUploadProgress(draftId: draftId, progress: progress);

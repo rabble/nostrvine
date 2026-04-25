@@ -6,10 +6,12 @@ import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
+import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -50,6 +52,7 @@ class VideoPublishService {
     required this.blossomService,
     required this.draftService,
     required this.onProgressChanged,
+    this.collaboratorInviteService,
     this.languagePreferenceService,
   });
 
@@ -67,6 +70,9 @@ class VideoPublishService {
 
   /// Manages video draft storage.
   final DraftStorageService draftService;
+
+  /// Sends encrypted collaborator invites after a video publish succeeds.
+  final CollaboratorInviteService? collaboratorInviteService;
 
   /// Callback when upload progress changes.
   final OnProgressChanged onProgressChanged;
@@ -164,6 +170,12 @@ class VideoPublishService {
         );
       }
 
+      await _sendCollaboratorInvites(
+        draft: draft,
+        upload: pendingUpload,
+        creatorPubkey: pubkey,
+      );
+
       // Success: delete draft
       await draftService.deleteDraft(draft.id);
       Log.debug('🗑️ Deleted publish draft: ${draft.id}', category: .video);
@@ -172,6 +184,45 @@ class VideoPublishService {
       return const PublishSuccess();
     } catch (e, stackTrace) {
       return _handleUploadError(e, stackTrace, draft);
+    }
+  }
+
+  Future<void> _sendCollaboratorInvites({
+    required DivineVideoDraft draft,
+    required PendingUpload upload,
+    required String creatorPubkey,
+  }) async {
+    final inviteService = collaboratorInviteService;
+    final videoId = upload.videoId;
+    if (inviteService == null ||
+        draft.collaboratorPubkeys.isEmpty ||
+        videoId == null ||
+        videoId.isEmpty) {
+      return;
+    }
+
+    final videoKind = NIP71VideoKinds.getPreferredAddressableKind();
+    final videoAddress = '$videoKind:$creatorPubkey:$videoId';
+
+    try {
+      final result = await inviteService.sendInvites(
+        collaboratorPubkeys: draft.collaboratorPubkeys,
+        creatorPubkey: creatorPubkey,
+        videoAddress: videoAddress,
+        title: draft.title,
+        relayHint: 'wss://relay.divine.video',
+      );
+      if (result.hasFailures) {
+        Log.warning(
+          '⚠️ Some collaborator invites failed to send',
+          category: .video,
+        );
+      }
+    } on Object catch (e, stackTrace) {
+      Log.warning(
+        '⚠️ Failed to send collaborator invites: $e\n$stackTrace',
+        category: .video,
+      );
     }
   }
 
