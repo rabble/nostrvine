@@ -256,7 +256,11 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
           '🔄 NewVideosTab: Refreshing feed',
           category: LogCategory.video,
         );
-        await popularNowFeedNotifier.refresh();
+        // Rebuild the provider so the tab can re-query and repopulate even
+        // from an empty-state screen. This mirrors other tab-level refresh
+        // patterns in Explore and keeps pull-to-refresh available here.
+        ref.invalidate(popularNowFeedProvider);
+        await ref.read(popularNowFeedProvider.future);
       },
       onLoadMore: () async {
         Log.info('📜 NewVideosTab: Loading more', category: LogCategory.video);
