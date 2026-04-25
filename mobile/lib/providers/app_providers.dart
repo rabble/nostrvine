@@ -2094,10 +2094,12 @@ Future<ContentDeletionService> contentDeletionService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
+  final analyticsService = ref.watch(analyticsServiceProvider);
   final service = ContentDeletionService(
     nostrService: nostrService,
     authService: authService,
     prefs: prefs,
+    analyticsService: analyticsService,
   );
 
   // Initialize the service to enable content deletion

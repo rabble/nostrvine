@@ -9,6 +9,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
+import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +19,22 @@ class _MockNostrClient extends Mock implements NostrClient {}
 class _MockAuthService extends Mock implements AuthService {}
 
 class _FakeEvent extends Fake implements Event {}
+
+/// Captures every [AnalyticsService.trackDeletion] call so the deletion
+/// service tests can assert the lifecycle phase sequence.
+class _RecordingAnalyticsService extends Fake implements AnalyticsService {
+  final List<({DeletionLifecyclePhase phase, String videoId, String? reason})>
+  calls = [];
+
+  @override
+  void trackDeletion({
+    required DeletionLifecyclePhase phase,
+    required String videoId,
+    String? reason,
+  }) {
+    calls.add((phase: phase, videoId: videoId, reason: reason));
+  }
+}
 
 void main() {
   setUpAll(() {
@@ -404,6 +421,174 @@ void main() {
       test('returns null for an id that was never deleted', () {
         expect(service.getDeletionForEvent('non_existent_event_id'), isNull);
       });
+    });
+
+    group('analytics lifecycle tracking', () {
+      late _RecordingAnalyticsService recorder;
+      late ContentDeletionService instrumentedService;
+
+      setUp(() async {
+        recorder = _RecordingAnalyticsService();
+        instrumentedService = ContentDeletionService(
+          nostrService: mockNostrService,
+          authService: mockAuthService,
+          prefs: prefs,
+          analyticsService: recorder,
+        );
+        await instrumentedService.initialize();
+      });
+
+      test(
+        'happy path emits requested → relayConfirmed → localApplied',
+        () async {
+          final video = createTestVideoEvent(testPublicKey);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+            ],
+            content: '',
+          );
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(deleteEvent.id));
+
+          final result = await instrumentedService.deleteContent(
+            video: video,
+            reason: 'test',
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            recorder.calls.map((c) => c.phase),
+            equals([
+              DeletionLifecyclePhase.requested,
+              DeletionLifecyclePhase.relayConfirmed,
+              DeletionLifecyclePhase.localApplied,
+            ]),
+          );
+          expect(
+            recorder.calls.every((c) => c.videoId == video.id),
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'relay rejection emits requested → failed with reason=relayRejected',
+        () async {
+          final video = createTestVideoEvent(testPublicKey);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+            ],
+            content: '',
+          );
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => rejected(deleteEvent.id));
+
+          final result = await instrumentedService.deleteContent(
+            video: video,
+            reason: 'test',
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            recorder.calls.map((c) => c.phase),
+            equals([
+              DeletionLifecyclePhase.requested,
+              DeletionLifecyclePhase.failed,
+            ]),
+          );
+          expect(recorder.calls.last.reason, equals('relayRejected'));
+        },
+      );
+
+      test(
+        'not-owner emits requested → failed with reason=notOwner',
+        () async {
+          // Sign in with a different pubkey so the video is NOT ours.
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('someone_else');
+          final video = createTestVideoEvent(testPublicKey);
+
+          final result = await instrumentedService.deleteContent(
+            video: video,
+            reason: 'test',
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            recorder.calls.map((c) => c.phase),
+            equals([
+              DeletionLifecyclePhase.requested,
+              DeletionLifecyclePhase.failed,
+            ]),
+          );
+          expect(recorder.calls.last.reason, equals('notOwner'));
+        },
+      );
+
+      test(
+        'analyticsService is optional — null is safe',
+        () async {
+          // Use the original `service` without an analyticsService injected.
+          final video = createTestVideoEvent(testPublicKey);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+            ],
+            content: '',
+          );
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(deleteEvent.id));
+
+          // No throw — the null-coalescing in the service swallows.
+          final result = await service.deleteContent(
+            video: video,
+            reason: 'test',
+          );
+          expect(result.success, isTrue);
+        },
+      );
     });
   });
 }

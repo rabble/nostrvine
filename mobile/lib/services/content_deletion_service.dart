@@ -7,6 +7,7 @@ import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -107,14 +108,21 @@ class ContentDeletionService {
     required NostrClient nostrService,
     required AuthService authService,
     required SharedPreferences prefs,
+    AnalyticsService? analyticsService,
   }) : _nostrService = nostrService,
        _authService = authService,
-       _prefs = prefs {
+       _prefs = prefs,
+       _analyticsService = analyticsService {
     _loadDeletionHistory();
   }
   final NostrClient _nostrService;
   final AuthService _authService;
   final SharedPreferences _prefs;
+
+  /// Optional. When wired, every deletion-lifecycle transition is
+  /// reported via [AnalyticsService.trackDeletion] for local-only
+  /// observability — see the deletion-telemetry brainstorm.
+  final AnalyticsService? _analyticsService;
 
   static const String deletionsStorageKey = 'content_deletions_history';
 
@@ -165,9 +173,22 @@ class ContentDeletionService {
     required String reason,
     String? additionalContext,
   }) async {
+    _analyticsService?.trackDeletion(
+      phase: DeletionLifecyclePhase.requested,
+      videoId: video.id,
+    );
+    DeleteResult emitFailure(String message, DeleteFailureKind kind) {
+      _analyticsService?.trackDeletion(
+        phase: DeletionLifecyclePhase.failed,
+        videoId: video.id,
+        reason: kind.name,
+      );
+      return DeleteResult.failure(message, kind);
+    }
+
     try {
       if (!_isInitialized) {
-        return DeleteResult.failure(
+        return emitFailure(
           'Deletion service not initialized',
           DeleteFailureKind.notInitialized,
         );
@@ -175,7 +196,7 @@ class ContentDeletionService {
 
       // Verify this is the user's own content
       if (!_isUserOwnContent(video)) {
-        return DeleteResult.failure(
+        return emitFailure(
           'Can only delete your own content',
           DeleteFailureKind.notOwner,
         );
@@ -193,7 +214,7 @@ class ContentDeletionService {
       final deleteEvent = deleteOutcome.event;
       if (deleteEvent == null) {
         final kind = deleteOutcome.failureKind!;
-        return DeleteResult.failure(_failureMessageForKind(kind), kind);
+        return emitFailure(_failureMessageForKind(kind), kind);
       }
 
       final publishOutcome = await _nostrService.publishEventAwaitOk(
@@ -207,7 +228,7 @@ class ContentDeletionService {
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
-        return DeleteResult.failure(
+        return emitFailure(
           'Relay did not confirm deletion: ${publishOutcome.summary}',
           DeleteFailureKind.relayRejected,
         );
@@ -217,6 +238,10 @@ class ContentDeletionService {
         'Delete request confirmed by relay(s): ${publishOutcome.acceptedBy}',
         name: 'ContentDeletionService',
         category: LogCategory.system,
+      );
+      _analyticsService?.trackDeletion(
+        phase: DeletionLifecyclePhase.relayConfirmed,
+        videoId: video.id,
       );
 
       // Relay accepted — now it is safe to persist the deletion locally.
@@ -236,6 +261,10 @@ class ContentDeletionService {
         name: 'ContentDeletionService',
         category: LogCategory.system,
       );
+      _analyticsService?.trackDeletion(
+        phase: DeletionLifecyclePhase.localApplied,
+        videoId: video.id,
+      );
       return DeleteResult.createSuccess(deleteEvent.id);
     } catch (e) {
       Log.error(
@@ -243,7 +272,7 @@ class ContentDeletionService {
         name: 'ContentDeletionService',
         category: LogCategory.system,
       );
-      return DeleteResult.failure(
+      return emitFailure(
         'Failed to delete content: $e',
         DeleteFailureKind.unknown,
       );

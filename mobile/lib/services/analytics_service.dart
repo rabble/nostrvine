@@ -10,6 +10,28 @@ import 'package:openvine/services/view_event_publisher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Phase of a per-video deletion the user has initiated.
+///
+/// Mirrors the [ContentDeletionService] flow:
+/// `requested` → `relayConfirmed` → `localApplied`. On any error path
+/// the lifecycle ends with `failed` instead.
+enum DeletionLifecyclePhase {
+  /// User invoked deletion; the kind 5 has not been published yet.
+  requested,
+
+  /// Relay accepted the kind 5 event.
+  relayConfirmed,
+
+  /// Local caches scrubbed and the bus emit fired. The user-visible
+  /// outcome is "video gone."
+  localApplied,
+
+  /// The lifecycle terminated with an error before reaching
+  /// [localApplied]. The video is NOT in the local tombstone set; the
+  /// caller can retry.
+  failed,
+}
+
 /// Service for tracking video analytics with privacy controls.
 ///
 /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
@@ -283,6 +305,48 @@ class AnalyticsService implements BackgroundAwareService {
   /// Clear tracked views cache.
   void clearTrackedViews() {
     _recentlyTrackedViews.clear();
+  }
+
+  /// Phase of a per-video deletion the user has initiated.
+  ///
+  /// The lifecycle of [trackDeletion] mirrors the [ContentDeletionService]
+  /// flow:
+  ///
+  ///   `requested` → `relayConfirmed` → `localApplied`
+  ///
+  /// or, on any error path:
+  ///
+  ///   `requested` → `failed`
+  ///
+  /// Used purely for local observability — no Nostr publishing, no
+  /// remote dashboard. Greppable structured log lines are the
+  /// observable surface today.
+  // (kept here so callers can `import analytics_service.dart` and get
+  // both the service and the enum.)
+
+  /// Emit a structured local log line for one phase of a content
+  /// deletion. Respects the user's analytics opt-out preference — when
+  /// analytics are disabled, the call is a no-op.
+  ///
+  /// [phase] — which lifecycle transition just happened.
+  /// [videoId] — the original video event id being deleted.
+  /// [reason] — optional. For `failed`, the [DeleteFailureKind.name].
+  ///
+  /// Does NOT publish a Nostr event. The product / privacy surface for
+  /// publish-on-delete is tracked separately and intentionally out of
+  /// scope here — see #3380's brainstorm doc.
+  void trackDeletion({
+    required DeletionLifecyclePhase phase,
+    required String videoId,
+    String? reason,
+  }) {
+    if (_isDisposed || !_analyticsEnabled) return;
+    final reasonSuffix = reason == null ? '' : ' reason=$reason';
+    Log.info(
+      'AnalyticsDeletion: phase=${phase.name} videoId=$videoId$reasonSuffix',
+      name: 'AnalyticsService',
+      category: LogCategory.system,
+    );
   }
 
   // BackgroundAwareService implementation
