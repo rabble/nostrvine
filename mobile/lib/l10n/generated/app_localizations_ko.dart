@@ -2923,8 +2923,43 @@ class AppLocalizationsKo extends AppLocalizations {
   String get peopleListsAddPeopleSemanticLabel => 'Add people to list';
 
   @override
+  String get peopleListsListNotFoundTitle => 'List not found';
+
+  @override
   String get peopleListsListNotFoundSubtitle =>
       'List not found. It may have been deleted.';
+
+  @override
+  String get peopleListsListDeletedSubtitle =>
+      'This list may have been deleted.';
+
+  @override
+  String get peopleListsNoPeopleTitle => 'No people in this list';
+
+  @override
+  String get peopleListsNoPeopleSubtitle => 'Add some people to get started';
+
+  @override
+  String get peopleListsNoVideosTitle => 'No videos yet';
+
+  @override
+  String get peopleListsNoVideosSubtitle =>
+      'Videos from list members will appear here';
+
+  @override
+  String get peopleListsNoVideosAvailable => 'No videos available';
+
+  @override
+  String get peopleListsFailedToLoadVideos => 'Failed to load videos';
+
+  @override
+  String get peopleListsVideoNotAvailable => 'Video not available';
+
+  @override
+  String get peopleListsBackToGridTooltip => 'Back to grid';
+
+  @override
+  String get peopleListsErrorLoadingVideos => 'Error loading videos';
 
   @override
   String get peopleListsNoPeopleToAdd => 'No people available to add.';

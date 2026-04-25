@@ -339,6 +339,8 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       listId: listId,
       pubkey: pubkey,
     );
+    final previousLists = List<UserList>.of(state.lists, growable: false);
+    final previousIndex = _copyReverseIndex(state.listIdsByPubkey);
 
     final optimisticLists = _applyOptimisticAdd(
       state.lists,
@@ -368,7 +370,12 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(_withoutMutation(state, mutation.id, failed: true));
+      emit(
+        _withoutMutation(state, mutation.id, failed: true).copyWith(
+          lists: previousLists,
+          listIdsByPubkey: previousIndex,
+        ),
+      );
     }
   }
 
@@ -393,6 +400,8 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       listId: listId,
       pubkey: pubkey,
     );
+    final previousLists = List<UserList>.of(state.lists, growable: false);
+    final previousIndex = _copyReverseIndex(state.listIdsByPubkey);
 
     final optimisticLists = _applyOptimisticRemove(
       state.lists,
@@ -422,7 +431,12 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(_withoutMutation(state, mutation.id, failed: true));
+      emit(
+        _withoutMutation(state, mutation.id, failed: true).copyWith(
+          lists: previousLists,
+          listIdsByPubkey: previousIndex,
+        ),
+      );
     }
   }
 
@@ -503,6 +517,14 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       }
     }
     return index;
+  }
+
+  static Map<String, Set<String>> _copyReverseIndex(
+    Map<String, Set<String>> index,
+  ) {
+    return {
+      for (final entry in index.entries) entry.key: Set<String>.of(entry.value),
+    };
   }
 
   static List<UserList> _applyOptimisticAdd(

@@ -339,6 +339,120 @@ void main() {
     );
 
     blocTest<PeopleListsBloc, PeopleListsState>(
+      'restores exact prior lists and reverse index when add pubkey fails',
+      build: buildBloc,
+      setUp: () {
+        when(
+          () => repository.addPubkey(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+            pubkey: _memberBob,
+          ),
+        ).thenThrow(StateError('relay down'));
+      },
+      seed: () {
+        final priorLists = [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice],
+          ),
+        ];
+        return PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerA,
+          lists: priorLists,
+          listIdsByPubkey: const {
+            _memberAlice: {'list-1'},
+          },
+        );
+      },
+      errors: () => [isA<StateError>()],
+      act: (bloc) => bloc.add(
+        const PeopleListsPubkeyAddRequested(
+          listId: 'list-1',
+          pubkey: _memberBob,
+        ),
+      ),
+      verify: (bloc) {
+        final expectedLists = [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice],
+          ),
+        ];
+        expect(bloc.state.status, equals(PeopleListsStatus.failure));
+        expect(bloc.state.pendingMutations, isEmpty);
+        expect(bloc.state.lists, equals(expectedLists));
+        expect(
+          bloc.state.listIdsByPubkey,
+          equals({
+            _memberAlice: {'list-1'},
+          }),
+        );
+      },
+    );
+
+    blocTest<PeopleListsBloc, PeopleListsState>(
+      'restores exact prior lists and reverse index when remove pubkey fails',
+      build: buildBloc,
+      setUp: () {
+        when(
+          () => repository.removePubkey(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+            pubkey: _memberAlice,
+          ),
+        ).thenThrow(StateError('relay down'));
+      },
+      seed: () {
+        final priorLists = [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice, _memberBob],
+          ),
+        ];
+        return PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerA,
+          lists: priorLists,
+          listIdsByPubkey: const {
+            _memberAlice: {'list-1'},
+            _memberBob: {'list-1'},
+          },
+        );
+      },
+      errors: () => [isA<StateError>()],
+      act: (bloc) => bloc.add(
+        const PeopleListsPubkeyRemoveRequested(
+          listId: 'list-1',
+          pubkey: _memberAlice,
+        ),
+      ),
+      verify: (bloc) {
+        final expectedLists = [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice, _memberBob],
+          ),
+        ];
+        expect(bloc.state.status, equals(PeopleListsStatus.failure));
+        expect(bloc.state.pendingMutations, isEmpty);
+        expect(bloc.state.lists, equals(expectedLists));
+        expect(
+          bloc.state.listIdsByPubkey,
+          equals({
+            _memberAlice: {'list-1'},
+            _memberBob: {'list-1'},
+          }),
+        );
+      },
+    );
+
+    blocTest<PeopleListsBloc, PeopleListsState>(
       'emits optimistic state for create list before repository returns',
       build: buildBloc,
       setUp: () {

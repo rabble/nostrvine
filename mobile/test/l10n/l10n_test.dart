@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -159,6 +161,33 @@ void main() {
       );
 
       expect(l10n.contentPreferencesDoneCount(2), equals('Done (2 selected)'));
+    });
+
+    test('people-list screen user-facing strings use l10n keys', () {
+      final source = File(
+        'lib/screens/user_list_people_screen.dart',
+      ).readAsStringSync();
+
+      for (final hardcodedString in [
+        "'People list'",
+        "'List not found'",
+        "'This list may have been deleted.'",
+        "'No people in this list'",
+        "'Add some people to get started'",
+        "'No videos yet'",
+        "'Videos from list members will appear here'",
+        "'No videos available'",
+        "'Failed to load videos'",
+        "'Video not available'",
+        "'Back to grid'",
+        "'Error loading videos'",
+      ]) {
+        expect(
+          source,
+          isNot(contains(hardcodedString)),
+          reason: '$hardcodedString should be read from context.l10n.',
+        );
+      }
     });
   });
 }

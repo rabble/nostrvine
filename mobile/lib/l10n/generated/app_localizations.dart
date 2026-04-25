@@ -5408,11 +5408,77 @@ abstract class AppLocalizations {
   /// **'Add people to list'**
   String get peopleListsAddPeopleSemanticLabel;
 
+  /// No description provided for @peopleListsListNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'List not found'**
+  String get peopleListsListNotFoundTitle;
+
   /// No description provided for @peopleListsListNotFoundSubtitle.
   ///
   /// In en, this message translates to:
   /// **'List not found. It may have been deleted.'**
   String get peopleListsListNotFoundSubtitle;
+
+  /// No description provided for @peopleListsListDeletedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This list may have been deleted.'**
+  String get peopleListsListDeletedSubtitle;
+
+  /// No description provided for @peopleListsNoPeopleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No people in this list'**
+  String get peopleListsNoPeopleTitle;
+
+  /// No description provided for @peopleListsNoPeopleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add some people to get started'**
+  String get peopleListsNoPeopleSubtitle;
+
+  /// No description provided for @peopleListsNoVideosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos yet'**
+  String get peopleListsNoVideosTitle;
+
+  /// No description provided for @peopleListsNoVideosSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos from list members will appear here'**
+  String get peopleListsNoVideosSubtitle;
+
+  /// No description provided for @peopleListsNoVideosAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos available'**
+  String get peopleListsNoVideosAvailable;
+
+  /// No description provided for @peopleListsFailedToLoadVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load videos'**
+  String get peopleListsFailedToLoadVideos;
+
+  /// No description provided for @peopleListsVideoNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Video not available'**
+  String get peopleListsVideoNotAvailable;
+
+  /// No description provided for @peopleListsBackToGridTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to grid'**
+  String get peopleListsBackToGridTooltip;
+
+  /// No description provided for @peopleListsErrorLoadingVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading videos'**
+  String get peopleListsErrorLoadingVideos;
 
   /// No description provided for @peopleListsNoPeopleToAdd.
   ///
