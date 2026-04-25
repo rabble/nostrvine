@@ -60,7 +60,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     unawaited(_loadAppVersion());
-    unawaited(context.read<InviteStatusCubit>().load());
+    unawaited(context.read<InviteStatusCubit?>()?.load());
     _accountCubit = SettingsAccountCubit(
       authService: ref.read(authServiceProvider),
       draftStorageService: ref.read(draftStorageServiceProvider),
