@@ -10,10 +10,7 @@ sealed class ProfileCollabVideosEvent {
 
 /// Request to fetch collab videos for the target user.
 ///
-/// This triggers:
-/// 1. Funnelcake REST API call (primary)
-/// 2. Nostr relay p-tag query (fallback)
-/// 3. Client-side filtering to confirm collaborator status
+/// This triggers the repository's Funnelcake-confirmed collaborator read path.
 final class ProfileCollabVideosFetchRequested extends ProfileCollabVideosEvent {
   const ProfileCollabVideosFetchRequested();
 }

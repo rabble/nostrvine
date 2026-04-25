@@ -1152,41 +1152,34 @@ class VideosRepository {
     }
   }
 
-  /// Fetches videos where [taggedPubkey] appears in a p-tag.
+  /// Fetches confirmed collaborator videos for [taggedPubkey].
   ///
-  /// Uses Funnelcake REST API when available, with Nostr
-  /// relay p-tag query as fallback.
+  /// Confirmed profile collabs come from Funnelcake's collaborator edge
+  /// endpoint. Raw relay p-tag queries are intentionally not used here because
+  /// a p-tag can represent a pending invite or generic mention, not a confirmed
+  /// collaborator relationship.
   ///
-  /// The caller should client-side filter results to confirm
-  /// collaborator status (pubkey != event author).
+  /// Returns an empty list while Funnelcake is unavailable or when the endpoint
+  /// has no confirmed collabs for the profile.
   Future<List<VideoEvent>> getCollabVideos({
     required String taggedPubkey,
     int limit = _defaultLimit,
     int? until,
   }) async {
-    // Try Funnelcake REST API first
-    if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
-      try {
-        final stats = await _funnelcakeApiClient.getCollabVideos(
-          pubkey: taggedPubkey,
-          limit: limit,
-          before: until,
-        );
-        return _transformVideoStats(stats);
-      } on FunnelcakeException {
-        // Fall through to relay query
-      }
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return [];
     }
 
-    // Fallback: Nostr relay p-tag query
-    final filter = Filter(
-      kinds: [_videoKind],
-      p: [taggedPubkey],
-      limit: limit,
-      until: until,
-    );
-    final events = await _nostrClient.queryEvents([filter]);
-    return _transformAndFilter(events);
+    try {
+      final stats = await _funnelcakeApiClient.getCollabVideos(
+        pubkey: taggedPubkey,
+        limit: limit,
+        before: until,
+      );
+      return _transformVideoStats(stats);
+    } on FunnelcakeNotFoundException {
+      return [];
+    }
   }
 
   /// Fetches videos sorted by loop count (most looped first).

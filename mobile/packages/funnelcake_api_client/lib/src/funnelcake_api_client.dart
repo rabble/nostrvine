@@ -493,9 +493,13 @@ class FunnelcakeApiClient {
     }
   }
 
-  /// Fetches videos where a user is tagged as collaborator.
+  /// Fetches confirmed collaborator videos for a user.
   ///
-  /// [pubkey] is the collaborator's public key (hex format).
+  /// This endpoint is the canonical confirmed collaborator read path. It is not
+  /// a raw Nostr p-tag mention search; pending/unconfirmed collaborator tags
+  /// should not be surfaced as profile collabs by callers.
+  ///
+  /// [pubkey] is the confirmed collaborator's public key (hex format).
   /// [limit] is the maximum number of videos to return
   /// (defaults to 50).
   /// [before] is an optional Unix timestamp cursor for

@@ -1,6 +1,5 @@
 // ABOUTME: BLoC for managing profile collab videos grid
-// ABOUTME: Fetches videos where user is tagged as collaborator via
-// ABOUTME: Funnelcake REST API (primary) with Nostr relay fallback
+// ABOUTME: Fetches Funnelcake-confirmed collaborator videos for a profile
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,17 +16,11 @@ const _pageSize = 18;
 
 /// BLoC for managing profile collab videos.
 ///
-/// Fetches videos where the target user is tagged as a collaborator
-/// (p-tag in a Kind 34236 event where pubkey != event author).
-///
-/// Uses [VideosRepository.getCollabVideos] which tries:
-/// 1. Funnelcake REST API (`GET /api/users/{pubkey}/collabs`) - primary
-/// 2. Nostr relay p-tag query (`Filter(kinds: [34236], p: [pubkey])`) -
-///    fallback
-///
-/// Applies client-side filtering to confirm collaborator status:
-/// - `video.pubkey != targetUserPubkey` (not the author)
-/// - `video.collaboratorPubkeys.contains(targetUserPubkey)`
+/// Fetches videos from Funnelcake's confirmed collaborator edge endpoint
+/// (`GET /api/users/{pubkey}/collabs`). Raw relay p-tags are not confirmation:
+/// they can represent pending invites or generic mentions, so the profile
+/// collabs tab trusts the repository's confirmed read path instead of
+/// re-confirming from event tags.
 class ProfileCollabVideosBloc
     extends Bloc<ProfileCollabVideosEvent, ProfileCollabVideosState> {
   ProfileCollabVideosBloc({
@@ -66,10 +59,7 @@ class ProfileCollabVideosBloc
         limit: _pageSize,
       );
 
-      // Client-side filter: only videos where user is a collaborator
-      // (not the author) and their pubkey is in collaboratorPubkeys
       final collabVideos = videos
-          .where(_isCollabVideo)
           .where((v) => v.isSupportedOnCurrentPlatform)
           .toList();
 
@@ -132,9 +122,7 @@ class ProfileCollabVideosBloc
         until: state.paginationCursor,
       );
 
-      // Client-side filter
       final newCollabVideos = videos
-          .where(_isCollabVideo)
           .where((v) => v.isSupportedOnCurrentPlatform)
           .toList();
 
@@ -174,14 +162,5 @@ class ProfileCollabVideosBloc
       );
       emit(state.copyWith(isLoadingMore: false));
     }
-  }
-
-  /// Check if a video is a valid collaboration for the target user.
-  ///
-  /// A video is a collab if the target user is NOT the author AND
-  /// appears in the collaborator pubkeys list.
-  bool _isCollabVideo(VideoEvent video) {
-    return video.pubkey != _targetUserPubkey &&
-        video.collaboratorPubkeys.contains(_targetUserPubkey);
   }
 }
