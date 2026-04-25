@@ -5404,20 +5404,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Terminar edición de la línea de tiempo';
 
   @override
-  String get videoEditorSortNewest => 'Más nuevos';
-
-  @override
-  String get videoEditorSortLongest => 'Más largos';
-
-  @override
-  String get videoEditorSortShortest => 'Más cortos';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Ordenar por $option. Toca para cambiar el orden';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel =>
       'Reproducir vista previa';
 
@@ -5426,9 +5412,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Sonido sin título';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Seleccionar sonido';
 
   @override
   String get videoEditorAudioUntitled => 'Sin título';
@@ -5445,19 +5428,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Los sonidos aparecerán aquí cuando los creadores compartan audio';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'No se encontraron sonidos';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Prueba con otro término de búsqueda';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle =>
       'No se pudieron cargar los sonidos';
 
   @override
   String get videoEditorAudioSegmentInstruction =>
       'Selecciona el segmento de audio para tu video';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Comunidad';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Herramienta flecha';

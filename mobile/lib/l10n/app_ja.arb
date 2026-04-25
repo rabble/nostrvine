@@ -2616,14 +2616,13 @@
     "videoEditorAdjustVolumeTitle": "音量を調整",
     "videoEditorAudioAddAudio": "オーディオを追加",
     "videoEditorAudioFailedToLoadTitle": "サウンドの読み込みに失敗",
+    "videoEditorAudioCategoryDivine": "diVine",
+    "videoEditorAudioCategoryCommunity": "コミュニティ",
     "videoEditorAudioLabel": "オーディオ",
     "videoEditorAudioNoSoundsAvailableSubtitle": "クリエイターがオーディオを共有するとここに表示されます",
     "videoEditorAudioNoSoundsAvailableTitle": "利用可能なサウンドなし",
-    "videoEditorAudioNoSoundsFoundSubtitle": "別の検索ワードをお試しください",
-    "videoEditorAudioNoSoundsFoundTitle": "サウンドが見つかりません",
     "videoEditorAudioPausePreviewSemanticLabel": "プレビューを一時停止",
     "videoEditorAudioPlayPreviewSemanticLabel": "プレビューを再生",
-    "videoEditorAudioSelectSoundSemanticLabel": "サウンドを選択",
     "videoEditorAudioUntitled": "タイトルなし",
     "videoEditorAudioUntitledSound": "タイトルなしのサウンド",
     "videoEditorCannotSplitProcessing": "処理中はクリップを分割できません。しばらくお待ちください。",
@@ -2716,17 +2715,6 @@
     "videoEditorSaveSelectedClip": "選択したクリップを保存",
     "videoEditorSelectFontSemanticLabel": "フォントを選択",
     "videoEditorShowTimelineSemanticLabel": "タイムラインを表示",
-    "videoEditorSortBySemanticLabel": "{option}で並べ替え。タップして並べ替え順を変更",
-    "@videoEditorSortBySemanticLabel": {
-        "placeholders": {
-            "option": {
-                "type": "String"
-            }
-        }
-    },
-    "videoEditorSortLongest": "長い順",
-    "videoEditorSortNewest": "新しい順",
-    "videoEditorSortShortest": "短い順",
     "videoEditorSplitClip": "クリップを分割",
     "videoEditorSplitLabel": "分割",
     "videoEditorSplitPlayheadOutsideClip": "分割するには再生ヘッドを選択したクリップ内に置いてください。",

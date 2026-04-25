@@ -2713,28 +2713,16 @@
     "videoEditorSplitLabel": "Dela",
     "videoEditorSplitSelectedClipSemanticLabel": "Dela valt klipp",
     "videoEditorFinishTimelineEditingSemanticLabel": "Avsluta redigering av tidslinje",
-    "videoEditorSortNewest": "Nyaste",
-    "videoEditorSortLongest": "Längsta",
-    "videoEditorSortShortest": "Kortaste",
-    "videoEditorSortBySemanticLabel": "Sortera efter {option}. Tryck för att ändra sorteringsordning",
-    "@videoEditorSortBySemanticLabel": {
-        "placeholders": {
-            "option": {
-                "type": "String"
-            }
-        }
-    },
     "videoEditorAudioPlayPreviewSemanticLabel": "Spela förhandsvisning",
     "videoEditorAudioPausePreviewSemanticLabel": "Pausa förhandsvisning",
     "videoEditorAudioUntitledSound": "Namnlöst ljud",
-    "videoEditorAudioSelectSoundSemanticLabel": "Välj ljud",
     "videoEditorAudioUntitled": "Namnlös",
     "videoEditorAudioAddAudio": "Lägg till ljud",
     "videoEditorAudioNoSoundsAvailableTitle": "Inga ljud tillgängliga",
     "videoEditorAudioNoSoundsAvailableSubtitle": "Ljud visas här när skapare delar ljud",
-    "videoEditorAudioNoSoundsFoundTitle": "Inga ljud hittades",
-    "videoEditorAudioNoSoundsFoundSubtitle": "Prova ett annat sökord",
     "videoEditorAudioFailedToLoadTitle": "Det gick inte att ladda ljud",
+    "videoEditorAudioCategoryDivine": "diVine",
+    "videoEditorAudioCategoryCommunity": "Gemenskap",
     "videoEditorDrawToolArrowSemanticLabel": "Pilverktyg",
     "videoEditorDrawToolEraserSemanticLabel": "Suddverktyg",
     "videoEditorDrawToolMarkerSemanticLabel": "Markeringsverktyg",

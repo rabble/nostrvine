@@ -5369,20 +5369,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Bewerken van tijdlijn voltooien';
 
   @override
-  String get videoEditorSortNewest => 'Nieuwste';
-
-  @override
-  String get videoEditorSortLongest => 'Langste';
-
-  @override
-  String get videoEditorSortShortest => 'Kortste';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Sorteren op $option. Tik om sorteervolgorde te wijzigen';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'Voorbeeld afspelen';
 
   @override
@@ -5390,9 +5376,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Naamloos geluid';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Geluid selecteren';
 
   @override
   String get videoEditorAudioUntitled => 'Naamloos';
@@ -5409,18 +5392,17 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geluiden verschijnen hier wanneer creators audio delen';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'Geen geluiden gevonden';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Probeer een andere zoekterm';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'Geluiden laden mislukt';
 
   @override
   String get videoEditorAudioSegmentInstruction =>
       'Selecteer het audiofragment voor je video';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Gemeenschap';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pijlgereedschap';

@@ -2780,29 +2780,17 @@
   "videoEditorSplitLabel": "Split",
   "videoEditorSplitSelectedClipSemanticLabel": "Split selected clip",
   "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
-  "videoEditorSortNewest": "Newest",
-  "videoEditorSortLongest": "Longest",
-  "videoEditorSortShortest": "Shortest",
-  "videoEditorSortBySemanticLabel": "Sort by {option}. Tap to change sort order",
-  "@videoEditorSortBySemanticLabel": {
-    "placeholders": {
-      "option": {
-        "type": "String"
-      }
-    }
-  },
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",
   "videoEditorAudioUntitledSound": "Untitled sound",
-  "videoEditorAudioSelectSoundSemanticLabel": "Select sound",
   "videoEditorAudioUntitled": "Untitled",
   "videoEditorAudioAddAudio": "Add audio",
   "videoEditorAudioNoSoundsAvailableTitle": "No sounds available",
   "videoEditorAudioNoSoundsAvailableSubtitle": "Sounds will appear here when creators share audio",
-  "videoEditorAudioNoSoundsFoundTitle": "No sounds found",
-  "videoEditorAudioNoSoundsFoundSubtitle": "Try a different search term",
   "videoEditorAudioFailedToLoadTitle": "Failed to load sounds",
   "videoEditorAudioSegmentInstruction": "Select the audio segment for your video",
+  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryCommunity": "Community",
   "videoEditorDrawToolArrowSemanticLabel": "Arrow tool",
   "videoEditorDrawToolEraserSemanticLabel": "Eraser tool",
   "videoEditorDrawToolMarkerSemanticLabel": "Marker tool",

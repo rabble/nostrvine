@@ -339,6 +339,83 @@ void main() {
 
         expect(find.text('Body Content'), findsOneWidget);
       });
+
+      testWidgets('forwards headerPadding to header in scrollable mode', (
+        tester,
+      ) async {
+        const customPadding = EdgeInsetsDirectional.only(
+          start: 12,
+          end: 12,
+          top: 8,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      title: const Text('Padded Sheet'),
+                      headerPadding: customPadding,
+                      children: const [Text('Content')],
+                    );
+                  },
+                  child: const Text('Show'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show'));
+        await tester.pumpAndSettle();
+
+        final header = tester.widget<VineBottomSheetHeader>(
+          find.byType(VineBottomSheetHeader),
+        );
+        expect(header.padding, customPadding);
+      });
+
+      testWidgets('forwards headerPadding to header in fixed mode', (
+        tester,
+      ) async {
+        const customPadding = EdgeInsetsDirectional.only(
+          start: 16,
+          end: 16,
+          top: 4,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      title: const Text('Fixed Padded Sheet'),
+                      headerPadding: customPadding,
+                      children: const [Text('Content')],
+                    );
+                  },
+                  child: const Text('Show'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show'));
+        await tester.pumpAndSettle();
+
+        final header = tester.widget<VineBottomSheetHeader>(
+          find.byType(VineBottomSheetHeader),
+        );
+        expect(header.padding, customPadding);
+      });
     });
 
     group('tapOutsideToDismiss', () {
@@ -398,94 +475,91 @@ void main() {
         },
       );
 
-      testWidgets(
-        'does not dismiss on tap on non-interactive sheet body',
-        (tester) async {
-          await showDraggable(tester, tapOutsideToDismiss: true);
+      testWidgets('does not dismiss on tap on non-interactive sheet body', (
+        tester,
+      ) async {
+        await showDraggable(tester, tapOutsideToDismiss: true);
 
-          // Tap directly on the sheet's body text — a non-interactive area.
-          await tester.tap(find.text('Sheet Body'));
-          await tester.pumpAndSettle();
+        // Tap directly on the sheet's body text — a non-interactive area.
+        await tester.tap(find.text('Sheet Body'));
+        await tester.pumpAndSettle();
 
-          expect(find.text('Sheet Body'), findsOneWidget);
-        },
-      );
+        expect(find.text('Sheet Body'), findsOneWidget);
+      });
 
-      testWidgets(
-        'interactive children inside the sheet still receive taps',
-        (tester) async {
-          var tapped = false;
-          await tester.pumpWidget(
-            MaterialApp(
-              home: Scaffold(
-                body: Builder(
-                  builder: (context) => ElevatedButton(
-                    onPressed: () async {
-                      await VineBottomSheet.show<void>(
-                        context: context,
-                        initialChildSize: 0.5,
-                        title: const Text('Interactive Sheet'),
-                        children: [
-                          ElevatedButton(
-                            onPressed: () => tapped = true,
-                            child: const Text('Inner Button'),
-                          ),
-                        ],
-                      );
-                    },
-                    child: const Text('Open'),
-                  ),
+      testWidgets('interactive children inside the sheet still receive taps', (
+        tester,
+      ) async {
+        var tapped = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      initialChildSize: 0.5,
+                      title: const Text('Interactive Sheet'),
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => tapped = true,
+                          child: const Text('Inner Button'),
+                        ),
+                      ],
+                    );
+                  },
+                  child: const Text('Open'),
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          await tester.tap(find.text('Open'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Inner Button'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Inner Button'));
+        await tester.pumpAndSettle();
 
-          expect(tapped, isTrue);
-          // Sheet should still be visible after tapping an inner button.
-          expect(find.text('Inner Button'), findsOneWidget);
-        },
-      );
+        expect(tapped, isTrue);
+        // Sheet should still be visible after tapping an inner button.
+        expect(find.text('Inner Button'), findsOneWidget);
+      });
 
-      testWidgets(
-        'fixed mode still dismisses on barrier tap (unchanged)',
-        (tester) async {
-          await tester.pumpWidget(
-            MaterialApp(
-              home: Scaffold(
-                body: Builder(
-                  builder: (context) => ElevatedButton(
-                    onPressed: () async {
-                      await VineBottomSheet.show<void>(
-                        context: context,
-                        scrollable: false,
-                        title: const Text('Fixed Sheet'),
-                        children: const [Text('Fixed Body')],
-                      );
-                    },
-                    child: const Text('Open Fixed'),
-                  ),
+      testWidgets('fixed mode still dismisses on barrier tap (unchanged)', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      title: const Text('Fixed Sheet'),
+                      children: const [Text('Fixed Body')],
+                    );
+                  },
+                  child: const Text('Open Fixed'),
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          await tester.tap(find.text('Open Fixed'));
-          await tester.pumpAndSettle();
-          expect(find.text('Fixed Body'), findsOneWidget);
+        await tester.tap(find.text('Open Fixed'));
+        await tester.pumpAndSettle();
+        expect(find.text('Fixed Body'), findsOneWidget);
 
-          // Tap well above the fixed sheet — hits the modal scrim.
-          await tester.tapAt(const Offset(200, 20));
-          await tester.pumpAndSettle();
+        // Tap well above the fixed sheet — hits the modal scrim.
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
 
-          expect(find.text('Fixed Body'), findsNothing);
-        },
-      );
+        expect(find.text('Fixed Body'), findsNothing);
+      });
     });
 
     group('new parameters', () {

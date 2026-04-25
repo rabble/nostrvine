@@ -427,14 +427,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 
   Future<void> _openMusicLibrary() async {
-    var result = await VineBottomSheet.show<AudioEvent>(
-      context: context,
-      maxChildSize: 1,
-      initialChildSize: 1,
-      minChildSize: 0.8,
-      buildScrollBody: (scrollController) =>
-          AudioSelectionBottomSheet(scrollController: scrollController),
-    );
+    var result = await AudioSelectionBottomSheet.show(context);
 
     final editor = _editorKey.currentState;
 

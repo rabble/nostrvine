@@ -9482,30 +9482,6 @@ abstract class AppLocalizations {
   /// **'Finish timeline editing'**
   String get videoEditorFinishTimelineEditingSemanticLabel;
 
-  /// No description provided for @videoEditorSortNewest.
-  ///
-  /// In en, this message translates to:
-  /// **'Newest'**
-  String get videoEditorSortNewest;
-
-  /// No description provided for @videoEditorSortLongest.
-  ///
-  /// In en, this message translates to:
-  /// **'Longest'**
-  String get videoEditorSortLongest;
-
-  /// No description provided for @videoEditorSortShortest.
-  ///
-  /// In en, this message translates to:
-  /// **'Shortest'**
-  String get videoEditorSortShortest;
-
-  /// No description provided for @videoEditorSortBySemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Sort by {option}. Tap to change sort order'**
-  String videoEditorSortBySemanticLabel(String option);
-
   /// No description provided for @videoEditorAudioPlayPreviewSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -9523,12 +9499,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Untitled sound'**
   String get videoEditorAudioUntitledSound;
-
-  /// No description provided for @videoEditorAudioSelectSoundSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Select sound'**
-  String get videoEditorAudioSelectSoundSemanticLabel;
 
   /// No description provided for @videoEditorAudioUntitled.
   ///
@@ -9554,18 +9524,6 @@ abstract class AppLocalizations {
   /// **'Sounds will appear here when creators share audio'**
   String get videoEditorAudioNoSoundsAvailableSubtitle;
 
-  /// No description provided for @videoEditorAudioNoSoundsFoundTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No sounds found'**
-  String get videoEditorAudioNoSoundsFoundTitle;
-
-  /// No description provided for @videoEditorAudioNoSoundsFoundSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Try a different search term'**
-  String get videoEditorAudioNoSoundsFoundSubtitle;
-
   /// No description provided for @videoEditorAudioFailedToLoadTitle.
   ///
   /// In en, this message translates to:
@@ -9577,6 +9535,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select the audio segment for your video'**
   String get videoEditorAudioSegmentInstruction;
+
+  /// No description provided for @videoEditorAudioCategoryDivine.
+  ///
+  /// In en, this message translates to:
+  /// **'diVine'**
+  String get videoEditorAudioCategoryDivine;
+
+  /// No description provided for @videoEditorAudioCategoryCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get videoEditorAudioCategoryCommunity;
 
   /// No description provided for @videoEditorDrawToolArrowSemanticLabel.
   ///
