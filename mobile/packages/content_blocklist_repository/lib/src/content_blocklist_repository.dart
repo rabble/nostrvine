@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:content_blocklist_repository/src/block_list_signer.dart';
+import 'package:content_blocklist_repository/src/blocklist_change.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -76,6 +77,11 @@ class ContentBlocklistRepository {
 
   final _stateController = StreamController<ContentPolicyState>.broadcast();
 
+  // Granular per-pubkey change events. Subscribers (e.g. VideoEventService)
+  // react per-author rather than diffing snapshots from [stateStream].
+  // See [changes] for the public getter.
+  final _changesController = StreamController<BlocklistChange>.broadcast();
+
   // Subscription tracking for mutual mutes
   String? _mutualMuteSubscriptionId;
   bool _mutualMuteSyncStarted = false;
@@ -94,6 +100,20 @@ class ContentBlocklistRepository {
   /// Emits a new [ContentPolicyState] snapshot whenever the policy changes.
   Stream<ContentPolicyState> get stateStream => _stateController.stream;
 
+  /// Emits per-pubkey [BlocklistChange] events the moment the
+  /// composition mutates (block, unblock, mute, unmute, externally-applied
+  /// changes).
+  ///
+  /// Subscribers should use this stream when they need to react to a
+  /// specific pubkey transitioning into or out of a hide-bucket — e.g.
+  /// dropping that author's videos from open feed surfaces. Diffing the
+  /// snapshots from [stateStream] would also work but is brittle and
+  /// allocation-heavy.
+  ///
+  /// Broadcast semantics: late subscribers do not receive past emissions;
+  /// the canonical truth is [currentState] / the contains-checks.
+  Stream<BlocklistChange> get changes => _changesController.stream;
+
   ContentPolicyState _buildCurrentState() => ContentPolicyState(
     currentUserPubkey: _ourPubkey,
     // TODO(rabble): populate from our own kind 10000 once personal-mute
@@ -111,6 +131,15 @@ class ContentBlocklistRepository {
     _onChanged?.call();
     if (!_stateController.isClosed) {
       _stateController.add(_buildCurrentState());
+    }
+  }
+
+  /// Emit a granular change on [changes]. Call sites pair this with
+  /// [_notifyChanged] so the broad-state listeners and the per-pubkey
+  /// listeners stay in sync.
+  void _emitChange(BlocklistChange change) {
+    if (!_changesController.isClosed) {
+      _changesController.add(change);
     }
   }
 
@@ -352,6 +381,9 @@ class ContentBlocklistRepository {
     if (!_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.add(pubkey);
       await _saveBlockedUsers();
+      _emitChange(
+        BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked),
+      );
       _notifyChanged();
       await _publishBlockListToNostr();
 
@@ -379,6 +411,9 @@ class ContentBlocklistRepository {
     if (_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.remove(pubkey);
       await _saveBlockedUsers();
+      _emitChange(
+        BlocklistChange(pubkey: pubkey, op: BlocklistOp.unblocked),
+      );
       _notifyChanged();
       await _publishBlockListToNostr();
 
@@ -625,6 +660,9 @@ class ContentBlocklistRepository {
       // They muted us - add to blocklist
       if (!_mutualMuteBlocklist.contains(muterPubkey)) {
         _mutualMuteBlocklist.add(muterPubkey);
+        _emitChange(
+          BlocklistChange(pubkey: muterPubkey, op: BlocklistOp.muted),
+        );
         _notifyChanged();
         Log.info(
           'Added mutual mute: $muterPubkey',
@@ -636,6 +674,9 @@ class ContentBlocklistRepository {
       // They removed us from mute list - remove from blocklist
       if (_mutualMuteBlocklist.contains(muterPubkey)) {
         _mutualMuteBlocklist.remove(muterPubkey);
+        _emitChange(
+          BlocklistChange(pubkey: muterPubkey, op: BlocklistOp.unmuted),
+        );
         _notifyChanged();
         Log.info(
           'Removed mutual mute (unmuted): $muterPubkey',
@@ -691,6 +732,11 @@ class ContentBlocklistRepository {
 
     _runtimeBlocklist.addAll(added);
     unawaited(_saveBlockedUsers());
+    for (final pubkey in added) {
+      _emitChange(
+        BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked),
+      );
+    }
     _notifyChanged();
 
     Log.info(
@@ -720,6 +766,9 @@ class ContentBlocklistRepository {
     if (stillBlocked) {
       if (!_blockedByOthers.contains(blockerPubkey)) {
         _blockedByOthers.add(blockerPubkey);
+        _emitChange(
+          BlocklistChange(pubkey: blockerPubkey, op: BlocklistOp.blockedUs),
+        );
         _notifyChanged();
         Log.info(
           'Detected block from user: $blockerPubkey',
@@ -730,6 +779,9 @@ class ContentBlocklistRepository {
     } else {
       if (_blockedByOthers.contains(blockerPubkey)) {
         _blockedByOthers.remove(blockerPubkey);
+        _emitChange(
+          BlocklistChange(pubkey: blockerPubkey, op: BlocklistOp.unblockedUs),
+        );
         _notifyChanged();
         Log.info(
           'Detected unblock from user: $blockerPubkey',
@@ -747,5 +799,6 @@ class ContentBlocklistRepository {
     _mutualMuteSubscriptionId = null;
     _blockListSyncStarted = false;
     unawaited(_stateController.close());
+    unawaited(_changesController.close());
   }
 }
