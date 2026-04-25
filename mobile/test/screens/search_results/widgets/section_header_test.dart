@@ -36,11 +36,11 @@ void main() {
 
       expect(
         border.top,
-        equals(const BorderSide(color: VineTheme.outlineDisabled)),
+        equals(const BorderSide(color: VineTheme.outlineDisabled, width: 0)),
       );
       expect(
         border.bottom,
-        equals(const BorderSide(color: VineTheme.outlineDisabled)),
+        equals(const BorderSide(color: VineTheme.outlineDisabled, width: 0)),
       );
     });
 

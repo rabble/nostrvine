@@ -25,8 +25,8 @@ class SectionHeader extends StatelessWidget {
           // header, matching the Figma list-divider treatment.
           decoration: const BoxDecoration(
             border: Border(
-              top: BorderSide(color: VineTheme.outlineDisabled),
-              bottom: BorderSide(color: VineTheme.outlineDisabled),
+              top: BorderSide(color: VineTheme.outlineDisabled, width: 0),
+              bottom: BorderSide(color: VineTheme.outlineDisabled, width: 0),
             ),
           ),
           child: Padding(
