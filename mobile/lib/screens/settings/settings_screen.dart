@@ -315,7 +315,7 @@ class _AccountHeader extends StatelessWidget {
               _AccountHeaderProfile(pubkey: pubkey),
               BlocBuilder<InviteStatusCubit, InviteStatusState>(
                 builder: (context, inviteState) {
-                  if (!inviteState.hasUnclaimedCodes) {
+                  if (!inviteState.hasAvailableInvites) {
                     return const SizedBox.shrink();
                   }
                   return Semantics(
@@ -361,7 +361,7 @@ class _AccountHeader extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                '${inviteState.unclaimedCount}',
+                                '${inviteState.availableInviteCount}',
                                 style: VineTheme.labelSmallFont(
                                   color: VineTheme.backgroundColor,
                                 ),

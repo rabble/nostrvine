@@ -80,8 +80,9 @@ class _LoadedView extends StatelessWidget {
   Widget build(BuildContext context) {
     final unclaimed = inviteStatus.unclaimedCodes;
     final claimed = inviteStatus.claimedCodes;
+    final hasRemainingCapacity = inviteStatus.remaining > 0;
 
-    if (unclaimed.isEmpty && claimed.isEmpty) {
+    if (unclaimed.isEmpty && claimed.isEmpty && !hasRemainingCapacity) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
@@ -108,6 +109,10 @@ class _LoadedView extends StatelessWidget {
           ...unclaimed.map((code) => _InviteCodeCard(code: code)),
           const SizedBox(height: 24),
         ],
+        if (hasRemainingCapacity) ...[
+          _GenerateInviteCard(remaining: inviteStatus.remaining),
+          const SizedBox(height: 24),
+        ],
         if (claimed.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -119,6 +124,44 @@ class _LoadedView extends StatelessWidget {
           ...claimed.map((code) => _ClaimedCodeRow(code: code)),
         ],
       ],
+    );
+  }
+}
+
+class _GenerateInviteCard extends StatelessWidget {
+  const _GenerateInviteCard({required this.remaining});
+
+  final int remaining;
+
+  @override
+  Widget build(BuildContext context) {
+    final inviteLabel = remaining == 1 ? 'invite' : 'invites';
+
+    return Card(
+      color: VineTheme.surfaceContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 12,
+          children: [
+            Text(
+              '$remaining $inviteLabel ready to generate',
+              style: VineTheme.titleMediumFont(),
+            ),
+            Text(
+              'Generate a code when you are ready to share one.',
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            ),
+            DivineButton(
+              label: 'Generate invite',
+              expanded: true,
+              onPressed: () =>
+                  context.read<InviteStatusCubit>().generateInvite(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

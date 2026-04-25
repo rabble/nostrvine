@@ -114,8 +114,9 @@ void main() {
   Widget buildScreenWidget(
     RelayNotifications Function() notifierFactory, {
     InviteStatusState inviteStatusState = const InviteStatusState(),
+    _MockInviteStatusCubit? inviteCubit,
   }) {
-    final mockInviteCubit = _MockInviteStatusCubit();
+    final mockInviteCubit = inviteCubit ?? _MockInviteStatusCubit();
     when(() => mockInviteCubit.state).thenReturn(inviteStatusState);
     when(mockInviteCubit.load).thenAnswer((_) async {});
     return ProviderScope(
@@ -378,7 +379,7 @@ void main() {
               status: InviteStatusLoadingStatus.loaded,
               inviteStatus: InviteStatus(
                 canInvite: true,
-                remaining: 2,
+                remaining: 0,
                 total: 2,
                 codes: [
                   InviteCode(code: 'AB23-EF7K', claimed: false),
@@ -392,6 +393,34 @@ void main() {
 
         expect(
           find.text('You have 2 invites to share with friends!'),
+          findsOneWidget,
+        );
+        expect(find.text('No notifications yet'), findsNothing);
+        expect(find.byType(NotificationListItem), findsNothing);
+      });
+
+      testWidgets('shows invite card when invite capacity is available', (
+        WidgetTester tester,
+      ) async {
+        final mockNotifier = _MockEmptyRelayNotifications();
+        await tester.pumpWidget(
+          buildScreenWidget(
+            () => mockNotifier,
+            inviteStatusState: const InviteStatusState(
+              status: InviteStatusLoadingStatus.loaded,
+              inviteStatus: InviteStatus(
+                canInvite: true,
+                remaining: 5,
+                total: 5,
+                codes: [],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('You have 5 invites to share with friends!'),
           findsOneWidget,
         );
         expect(find.text('No notifications yet'), findsNothing);
@@ -491,6 +520,42 @@ void main() {
         expect(find.text('Comments'), findsOneWidget);
         expect(find.text('Follows'), findsOneWidget);
         expect(find.text('Reposts'), findsOneWidget);
+      });
+    });
+
+    group('refresh', () {
+      testWidgets('pull to refresh also reloads invite status', (
+        WidgetTester tester,
+      ) async {
+        final mockNotifier = _MockEmptyRelayNotifications();
+        final mockInviteCubit = _MockInviteStatusCubit();
+        when(() => mockInviteCubit.state).thenReturn(
+          const InviteStatusState(),
+        );
+        when(mockInviteCubit.load).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          buildScreenWidget(
+            () => mockNotifier,
+            inviteCubit: mockInviteCubit,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.drag(
+          find
+              .descendant(
+                of: find.byType(RefreshIndicator),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+          const Offset(0, 500),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        verify(mockInviteCubit.load).called(1);
       });
     });
   });

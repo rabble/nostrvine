@@ -298,19 +298,22 @@ class _NotificationTabContentState
               color: VineTheme.onPrimary,
               backgroundColor: VineTheme.vineGreen,
               onRefresh: () async {
-                await ref.read(relayNotificationsProvider.notifier).refresh();
+                await Future.wait([
+                  ref.read(relayNotificationsProvider.notifier).refresh(),
+                  context.read<InviteStatusCubit>().load(),
+                ]);
               },
               child: BlocBuilder<InviteStatusCubit, InviteStatusState>(
                 builder: (context, inviteState) {
                   final showInviteCard =
-                      widget.filter == null && inviteState.hasUnclaimedCodes;
+                      widget.filter == null && inviteState.hasAvailableInvites;
                   if (showInviteCard) {
                     return ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       controller: _scrollController,
                       children: [
                         _InviteNotificationCard(
-                          count: inviteState.unclaimedCount,
+                          count: inviteState.availableInviteCount,
                         ),
                       ],
                     );
@@ -379,12 +382,15 @@ class _NotificationTabContentState
             color: VineTheme.onPrimary,
             backgroundColor: VineTheme.vineGreen,
             onRefresh: () async {
-              await ref.read(relayNotificationsProvider.notifier).refresh();
+              await Future.wait([
+                ref.read(relayNotificationsProvider.notifier).refresh(),
+                context.read<InviteStatusCubit>().load(),
+              ]);
             },
             child: BlocBuilder<InviteStatusCubit, InviteStatusState>(
               builder: (context, inviteState) {
                 final showInviteCard =
-                    widget.filter == null && inviteState.hasUnclaimedCodes;
+                    widget.filter == null && inviteState.hasAvailableInvites;
                 final inviteCardOffset = showInviteCard ? 1 : 0;
                 final hasLoadingIndicator =
                     feedState.hasMoreContent &&
@@ -402,7 +408,7 @@ class _NotificationTabContentState
                     // Invite card at top of All tab
                     if (showInviteCard && index == 0) {
                       return _InviteNotificationCard(
-                        count: inviteState.unclaimedCount,
+                        count: inviteState.availableInviteCount,
                       );
                     }
                     final adjustedIndex = index - inviteCardOffset;

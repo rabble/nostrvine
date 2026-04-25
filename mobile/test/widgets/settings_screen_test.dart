@@ -196,7 +196,7 @@ void main() {
           status: InviteStatusLoadingStatus.loaded,
           inviteStatus: InviteStatus(
             canInvite: true,
-            remaining: 1,
+            remaining: 0,
             total: 1,
             codes: [InviteCode(code: 'AB23-EF7K', claimed: false)],
           ),
@@ -208,6 +208,33 @@ void main() {
 
       expect(find.text('Invites'), findsOneWidget);
       expect(find.text('1'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('renders invite shortcut when invite capacity exists', (
+      tester,
+    ) async {
+      final mockInviteCubit = _MockInviteStatusCubit();
+      when(mockInviteCubit.load).thenAnswer((_) async {});
+      when(() => mockInviteCubit.state).thenReturn(
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loaded,
+          inviteStatus: InviteStatus(
+            canInvite: true,
+            remaining: 5,
+            total: 5,
+            codes: [],
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Invites'), findsOneWidget);
+      expect(find.text('5'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
