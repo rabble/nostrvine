@@ -114,19 +114,20 @@ class _PeopleContent extends StatelessWidget {
         ? results
         : results.take(_maxPeoplePreview).toList();
 
+    // No outer horizontal padding — each [SearchUserTile] already
+    // applies its own EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+    // matching the Figma list-item spec (node 11177:208718). Wrapping
+    // in another Padding here would double the side inset to 32 px.
     return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final profile in profiles)
-              SearchUserTile(
-                profile: profile,
-                onTap: () => _navigateToProfile(context, profile),
-              ),
-          ],
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final profile in profiles)
+            SearchUserTile(
+              profile: profile,
+              onTap: () => _navigateToProfile(context, profile),
+            ),
+        ],
       ),
     );
   }
@@ -144,20 +145,20 @@ class _PeopleSkeletonLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // No outer horizontal padding — each [_UserTileSkeletonItem]
+    // applies its own 16 px inset to match the loaded-state tile
+    // geometry. See `_PeopleContent.build` for the same rationale.
     return SliverToBoxAdapter(
       child: Semantics(
         identifier: 'people_loading_indicator',
         label: 'Loading people results',
         child: Skeletonizer(
           effect: vineSkeletonEffect,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(
-                _maxPeoplePreview,
-                (_) => const _UserTileSkeletonItem(),
-              ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              _maxPeoplePreview,
+              (_) => const _UserTileSkeletonItem(),
             ),
           ),
         ),
