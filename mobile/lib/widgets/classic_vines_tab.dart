@@ -231,6 +231,9 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
                   hasMoreStream: _hasMoreStreamController.stream.startWith(
                     widget.hasMoreContent,
                   ),
+                  removedIdsStream: ref
+                      .read(videoEventServiceProvider)
+                      .removedVideoIds,
                   contextTitle: 'Classics',
                   trafficSource: ViewTrafficSource.discoveryClassic,
                 ),

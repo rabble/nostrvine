@@ -223,6 +223,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         PooledFullscreenVideoFeedScreen(
           videosStream: Stream.value([_video!]),
           initialIndex: 0,
+          removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: 'Shared Video',
           trafficSource: ViewTrafficSource.share,
         );

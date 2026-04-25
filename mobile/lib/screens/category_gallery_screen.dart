@@ -112,6 +112,9 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
                     hasMoreStream: _hasMoreStreamController.stream.startWith(
                       state.hasMoreVideos,
                     ),
+                    removedIdsStream: ref
+                        .read(videoEventServiceProvider)
+                        .removedVideoIds,
                     contextTitle: localizedCategoryName(
                       context.l10n,
                       widget.category.name,

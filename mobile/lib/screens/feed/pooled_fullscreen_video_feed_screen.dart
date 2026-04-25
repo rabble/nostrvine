@@ -102,6 +102,7 @@ class PooledFullscreenVideoFeedArgs {
     required this.initialIndex,
     this.onLoadMore,
     this.hasMoreStream,
+    this.removedIdsStream,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -120,6 +121,11 @@ class PooledFullscreenVideoFeedArgs {
 
   /// Stream of whether the source can paginate further.
   final Stream<bool>? hasMoreStream;
+
+  /// Side-channel for "this video must be dropped now" — fed from
+  /// [VideoEventService.removedVideoIds]. Optional so that callers
+  /// pre-dating the deletion-bus migration keep working.
+  final Stream<String>? removedIdsStream;
 
   /// Optional title for context display.
   final String? contextTitle;
@@ -161,6 +167,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     required this.initialIndex,
     this.onLoadMore,
     this.hasMoreStream,
+    this.removedIdsStream,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -173,6 +180,12 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   final int initialIndex;
   final VoidCallback? onLoadMore;
   final Stream<bool>? hasMoreStream;
+
+  /// Side-channel that emits a video id whenever the underlying service
+  /// has marked it removed (deletion / future block / mute). Optional so
+  /// not-yet-migrated callers keep working — without the wire-up the
+  /// fullscreen falls back to today's stale behaviour.
+  final Stream<String>? removedIdsStream;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -200,6 +213,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             videosStream: videosStream,
             initialIndex: initialIndex,
             hasMoreStream: hasMoreStream,
+            removedIdsStream: removedIdsStream,
             onLoadMore: onLoadMore,
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
@@ -620,6 +634,18 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             listener: (context, state) {
               final target = state.pendingSkipTarget;
               if (target != null) unawaited(_handlePendingSkip(target));
+            },
+          ),
+          // Pop the route when the last visible video has been removed
+          // by deletion (or, soon, block / mute). The user already
+          // confirmed the action, there is nothing to show, and any
+          // empty-state placeholder would be one extra dismissal.
+          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+            listenWhen: (prev, curr) =>
+                prev.status != curr.status &&
+                curr.status == FullscreenFeedStatus.emptyAfterRemoval,
+            listener: (context, _) {
+              unawaited(Navigator.of(context).maybePop());
             },
           ),
         ],

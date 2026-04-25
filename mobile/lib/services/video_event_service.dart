@@ -202,6 +202,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   // Track locally deleted videos to prevent resurrection from pagination
   final Set<String> _locallyDeletedVideoIds = {};
 
+  // Broadcasts video ids the moment they are removed (deletion / future
+  // block / mute). Subscribers — fullscreen feed bloc, profile feed
+  // provider — react in real time without waiting for a route change.
+  // Broadcast semantics are intentional: state.notifyListeners is the
+  // canonical truth, this stream is a side-channel for "act now" hooks.
+  final StreamController<String> _removedVideoIdsController =
+      StreamController<String>.broadcast();
+
   static const int _maxRetryAttempts = 3;
   static const Duration _retryDelay = Duration(seconds: 10);
 
@@ -900,6 +908,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // restart or test tearDown).
     _locallyDeletedVideoIds.add(videoId);
 
+    // Emit on the side-channel BEFORE notifyListeners so that subscribers
+    // who react via the stream (e.g. FullscreenFeedBloc) update their
+    // state in the same frame as ChangeNotifier consumers. Emit
+    // unconditionally — even when the video wasn't in any active feed,
+    // a fullscreen route may still be holding it in BLoC-local state.
+    if (!_removedVideoIdsController.isClosed) {
+      _removedVideoIdsController.add(videoId);
+    }
+
     if (removedCount > 0) {
       Log.info(
         'Removed video $videoId from $removedCount location(s) across all feeds',
@@ -932,6 +949,16 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   bool isVideoLocallyDeleted(String videoId) {
     return _locallyDeletedVideoIds.contains(videoId);
   }
+
+  /// Emits a video id whenever the service has marked it removed —
+  /// today this is user-initiated deletion via [removeVideoCompletely];
+  /// future block / mute flows will reuse this same channel.
+  ///
+  /// Subscribers should treat each event as "drop this id from any open
+  /// surface immediately." The stream is broadcast and does not buffer,
+  /// so newcomers only receive future emissions; the canonical source of
+  /// truth is still the service state plus [isVideoLocallyDeleted].
+  Stream<String> get removedVideoIds => _removedVideoIdsController.stream;
 
   /// Query for all users who have reposted a specific video
   /// Returns list of pubkeys (hex) of users who created Kind 6 repost events
@@ -4963,6 +4990,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _authStateSubscription?.cancel();
     _connectionService.dispose();
     unsubscribeFromVideoFeed();
+    unawaited(_removedVideoIdsController.close());
     super.dispose();
   }
 
