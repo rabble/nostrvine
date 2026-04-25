@@ -27,7 +27,14 @@ sealed class PublishResult extends Equatable {
 }
 
 class PublishSuccess extends PublishResult {
-  const PublishSuccess();
+  const PublishSuccess({this.inviteWarnings = const []});
+
+  final List<CollaboratorInviteWarning> inviteWarnings;
+
+  bool get hasInviteWarnings => inviteWarnings.isNotEmpty;
+
+  @override
+  List<Object?> get props => [inviteWarnings];
 }
 
 class PublishError extends PublishResult {
@@ -36,6 +43,37 @@ class PublishError extends PublishResult {
 
   @override
   List<Object?> get props => [userMessage];
+}
+
+class CollaboratorInviteWarning extends Equatable {
+  const CollaboratorInviteWarning({
+    required this.collaboratorPubkey,
+    required this.creatorPubkey,
+    required this.videoAddress,
+    this.title,
+    this.thumbnailUrl,
+    this.relayHint,
+    this.error,
+  });
+
+  final String collaboratorPubkey;
+  final String creatorPubkey;
+  final String videoAddress;
+  final String? title;
+  final String? thumbnailUrl;
+  final String? relayHint;
+  final String? error;
+
+  @override
+  List<Object?> get props => [
+    collaboratorPubkey,
+    creatorPubkey,
+    videoAddress,
+    title,
+    thumbnailUrl,
+    relayHint,
+    error,
+  ];
 }
 
 /// Callbacks for VideoPublishService to communicate state changes.
@@ -170,7 +208,7 @@ class VideoPublishService {
         );
       }
 
-      await _sendCollaboratorInvites(
+      final inviteWarnings = await _sendCollaboratorInvites(
         draft: draft,
         upload: pendingUpload,
         creatorPubkey: pubkey,
@@ -181,13 +219,13 @@ class VideoPublishService {
       Log.debug('🗑️ Deleted publish draft: ${draft.id}', category: .video);
 
       Log.info('📝 Published successfully', category: .video);
-      return const PublishSuccess();
+      return PublishSuccess(inviteWarnings: inviteWarnings);
     } catch (e, stackTrace) {
       return _handleUploadError(e, stackTrace, draft);
     }
   }
 
-  Future<void> _sendCollaboratorInvites({
+  Future<List<CollaboratorInviteWarning>> _sendCollaboratorInvites({
     required DivineVideoDraft draft,
     required PendingUpload upload,
     required String creatorPubkey,
@@ -198,11 +236,12 @@ class VideoPublishService {
         draft.collaboratorPubkeys.isEmpty ||
         videoId == null ||
         videoId.isEmpty) {
-      return;
+      return const [];
     }
 
     final videoKind = NIP71VideoKinds.getPreferredAddressableKind();
     final videoAddress = '$videoKind:$creatorPubkey:$videoId';
+    const relayHint = 'wss://relay.divine.video';
 
     try {
       final result = await inviteService.sendInvites(
@@ -210,7 +249,7 @@ class VideoPublishService {
         creatorPubkey: creatorPubkey,
         videoAddress: videoAddress,
         title: draft.title,
-        relayHint: 'wss://relay.divine.video',
+        relayHint: relayHint,
       );
       if (result.hasFailures) {
         Log.warning(
@@ -218,12 +257,58 @@ class VideoPublishService {
           category: .video,
         );
       }
+      return result.results.entries
+          .where((entry) => !entry.value.success)
+          .map(
+            (entry) => CollaboratorInviteWarning(
+              collaboratorPubkey: entry.key,
+              creatorPubkey: creatorPubkey,
+              videoAddress: videoAddress,
+              title: draft.title,
+              relayHint: relayHint,
+              error: entry.value.error,
+            ),
+          )
+          .toList(growable: false);
     } on Object catch (e, stackTrace) {
       Log.warning(
         '⚠️ Failed to send collaborator invites: $e\n$stackTrace',
         category: .video,
       );
+      return draft.collaboratorPubkeys
+          .map(
+            (pubkey) => CollaboratorInviteWarning(
+              collaboratorPubkey: pubkey,
+              creatorPubkey: creatorPubkey,
+              videoAddress: videoAddress,
+              title: draft.title,
+              relayHint: relayHint,
+              error: e.toString(),
+            ),
+          )
+          .toList(growable: false);
     }
+  }
+
+  Future<CollaboratorInviteResult> retryCollaboratorInvite(
+    CollaboratorInviteWarning warning,
+  ) async {
+    final inviteService = collaboratorInviteService;
+    if (inviteService == null) {
+      return const CollaboratorInviteResult(
+        success: false,
+        error: 'Collaborator invite service unavailable',
+      );
+    }
+
+    return inviteService.sendInvite(
+      collaboratorPubkey: warning.collaboratorPubkey,
+      creatorPubkey: warning.creatorPubkey,
+      videoAddress: warning.videoAddress,
+      title: warning.title,
+      thumbnailUrl: warning.thumbnailUrl,
+      relayHint: warning.relayHint,
+    );
   }
 
   /// Gets existing upload from background ID, reuses a matching upload
