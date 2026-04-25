@@ -4620,6 +4620,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => '흥미로운 것을 발견해보세요';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => '목록';
 
   @override

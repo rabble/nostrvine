@@ -2485,6 +2485,12 @@
   "@searchDiscoverSomethingInteresting": {
     "description": "Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query."
   },
+  "searchPeopleSectionHeader": "People",
+  "searchPeopleLoadingLabel": "Loading people results",
+  "searchTagsSectionHeader": "Tags",
+  "searchTagsLoadingLabel": "Loading tag results",
+  "searchVideosSectionHeader": "Videos",
+  "searchVideosLoadingLabel": "Loading video results",
   "searchListsSectionHeader": "Lists",
   "searchListsLoadingLabel": "Loading list results",
 

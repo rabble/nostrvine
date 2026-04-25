@@ -1,6 +1,8 @@
 // ABOUTME: Granular blocklist change events emitted on the changes stream
 // ABOUTME: Subscribers (e.g. VideoEventService) react per-pubkey on additions
 
+import 'package:flutter/foundation.dart';
+
 /// Type of blocklist mutation. Used by [BlocklistChange.op] so subscribers
 /// can decide whether the change should hide content
 /// (any "added" op) or restore it (any "removed" op).
@@ -30,7 +32,9 @@ enum BlocklistOp {
 /// remote sync) modifies which pubkeys are blocked / muted / blocking-us.
 /// Subscribers can react per-pubkey rather than reading whole-state
 /// snapshots and diffing them.
+@immutable
 class BlocklistChange {
+  /// Creates a [BlocklistChange] for [pubkey] with mutation [op].
   const BlocklistChange({required this.pubkey, required this.op});
 
   /// The pubkey (hex) the change applies to.

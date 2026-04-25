@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
@@ -88,7 +89,10 @@ void main() {
           await tester.pumpWidget(buildSubject());
 
           expect(find.byType(SectionHeader), findsOneWidget);
-          expect(find.text('Videos'), findsOneWidget);
+          expect(
+            find.text(AppLocalizationsEn().searchVideosSectionHeader),
+            findsOneWidget,
+          );
         },
       );
 
