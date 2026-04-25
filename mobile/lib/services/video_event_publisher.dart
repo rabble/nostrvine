@@ -650,7 +650,7 @@ class VideoEventPublisher {
 
       // Add collaborator p-tags (standard NIP-71 format)
       for (final pubkey in collaboratorPubkeys) {
-        tags.add(['p', pubkey, 'wss://relay.divine.video']);
+        tags.add(['p', pubkey, 'wss://relay.divine.video', 'Collaborator']);
       }
 
       // Add Inspired By a-tag (specific video reference)
