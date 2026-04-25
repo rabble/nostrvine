@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
@@ -46,7 +47,10 @@ class PeopleSection extends StatelessWidget {
       slivers: [
         if (!showAll)
           SliverToBoxAdapter(
-            child: SectionHeader(title: 'People', onTap: onSeeAll),
+            child: SectionHeader(
+              title: context.l10n.searchPeopleSectionHeader,
+              onTap: onSeeAll,
+            ),
           ),
         _PeopleContent(showAll: showAll),
         if (showAll) const _PeoplePaginationTrigger(),
@@ -151,7 +155,7 @@ class _PeopleSkeletonLoader extends StatelessWidget {
     return SliverToBoxAdapter(
       child: Semantics(
         identifier: 'people_loading_indicator',
-        label: 'Loading people results',
+        label: context.l10n.searchPeopleLoadingLabel,
         child: Skeletonizer(
           effect: vineSkeletonEffect,
           child: Column(
