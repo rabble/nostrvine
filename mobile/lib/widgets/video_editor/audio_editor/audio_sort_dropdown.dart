@@ -7,7 +7,8 @@ import 'package:openvine/l10n/l10n.dart';
 enum AudioSortOption {
   newest,
   longest,
-  shortest;
+  shortest
+  ;
 
   String localizedLabel(BuildContext context) {
     return switch (this) {

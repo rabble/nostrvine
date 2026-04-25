@@ -59,7 +59,8 @@ enum FeatureFlag {
   contentPolicyV2(
     'Content Policy v2',
     'Parse-gated policy engine — filter blocked/muted authors at ingress',
-  );
+  )
+  ;
 
   const FeatureFlag(this.displayName, this.description);
 
