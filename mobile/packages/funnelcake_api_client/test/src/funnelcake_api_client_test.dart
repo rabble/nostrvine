@@ -1246,17 +1246,20 @@ void main() {
     });
 
     group('getCollabVideos', () {
+      const collabAuthorPubkey =
+          'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
       const validCollabResponse =
           '''
 [
   {
     "id": "collab123def456",
-    "pubkey": "$testPubkey",
+    "pubkey": "$collabAuthorPubkey",
     "created_at": 1700000000,
     "kind": 34236,
     "d_tag": "collab-video-1",
     "title": "Collab Video",
     "content": "A collab video",
+    "tags": [["p", "$testPubkey", "", "Collaborator"]],
     "thumbnail": "https://example.com/thumb.jpg",
     "video_url": "https://example.com/video.mp4",
     "reactions": 50,
@@ -1267,17 +1270,22 @@ void main() {
 ]
 ''';
 
-      test('returns videos on successful response', () async {
-        when(
-          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer((_) async => http.Response(validCollabResponse, 200));
+      test(
+        'returns confirmed collaborator videos on successful response',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(validCollabResponse, 200));
 
-        final videos = await client.getCollabVideos(pubkey: testPubkey);
+          final videos = await client.getCollabVideos(pubkey: testPubkey);
 
-        expect(videos, hasLength(1));
-        expect(videos.first.id, equals('collab123def456'));
-        expect(videos.first.title, equals('Collab Video'));
-      });
+          expect(videos, hasLength(1));
+          expect(videos.first.id, equals('collab123def456'));
+          expect(videos.first.title, equals('Collab Video'));
+          expect(videos.first.pubkey, equals(collabAuthorPubkey));
+          expect(videos.first.collaboratorPubkeys, equals([testPubkey]));
+        },
+      );
 
       test('constructs correct URL with default limit', () async {
         when(

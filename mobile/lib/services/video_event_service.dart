@@ -1131,7 +1131,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     nip50Sort, // NIP-50 search sorting (e.g., sort:hot, sort:top)
     bool force = false, // Force refresh even if parameters match
     List<String>?
-    collaboratorPubkeys, // Also fetch videos tagging these pubkeys
+    collaboratorPubkeys, // Legacy no-op until Funnelcake edge expansion exists
   }) async {
     // NostrService now handles subscription deduplication automatically via filter hashing
     // We still track subscription types for our own state management
@@ -1397,19 +1397,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         );
       }
 
-      // Add collaborator p-tag filter to catch videos tagging followed users
+      // Do not expand feeds with raw collaborator p-tag filters. A p-tag can
+      // mean a pending invite or generic mention; confirmed collaborator feed
+      // expansion must come from Funnelcake collaborator edges once mobile has
+      // an endpoint/client for that feed path.
       if (collaboratorPubkeys != null && collaboratorPubkeys.isNotEmpty) {
-        final collabFilter = Filter(
-          kinds: NIP71VideoKinds.getAllVideoKinds(),
-          p: collaboratorPubkeys,
-          since: effectiveSince,
-          until: effectiveUntil,
-          limit: (limit * 0.3).round(), // 30% of limit for collab videos
-        );
-        filters.add(collabFilter);
         Log.debug(
-          '  - Collaborator filter (${(limit * 0.3).round()} limit, '
-          '${collaboratorPubkeys.length} pubkeys): ${collabFilter.toJson()}',
+          'Skipping raw collaborator p-tag feed expansion for '
+          '${collaboratorPubkeys.length} pubkeys; waiting for Funnelcake '
+          'confirmed collaborator edges.',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
