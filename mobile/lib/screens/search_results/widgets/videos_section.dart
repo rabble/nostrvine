@@ -49,10 +49,7 @@ class VideosSection extends StatelessWidget {
       slivers: [
         if (!showAll)
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: SectionHeader(title: 'Videos', onTap: onSeeAll),
-            ),
+            child: SectionHeader(title: 'Videos', onTap: onSeeAll),
           ),
         _VideosContent(showAll: showAll),
         if (showAll) const _VideosPaginationTrigger(),

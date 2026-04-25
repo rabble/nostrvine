@@ -112,7 +112,7 @@ class _TagsContent extends StatelessWidget {
 
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -144,7 +144,7 @@ class _TagsSkeletonLoader extends StatelessWidget {
         child: Skeletonizer(
           effect: vineSkeletonEffect,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
