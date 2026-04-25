@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
+import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
@@ -17,6 +20,10 @@ import '../../../helpers/test_provider_overrides.dart';
 class _MockConversationBloc
     extends MockBloc<ConversationEvent, ConversationState>
     implements ConversationBloc {}
+
+class _MockCollaboratorInviteActionsCubit
+    extends MockCubit<CollaboratorInviteActionsState>
+    implements CollaboratorInviteActionsCubit {}
 
 class _MockAuthService extends MockAuthService {
   _MockAuthService(this._pubkey);
@@ -31,16 +38,42 @@ void main() {
       'aabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd';
   const otherPubkey =
       '1122334411223344112233441122334411223344112233441122334411223344';
+  const fallbackInvite = CollaboratorInvite(
+    messageId:
+        '9999999999999999999999999999999999999999999999999999999999999999',
+    videoAddress:
+        '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
+    videoKind: 34236,
+    creatorPubkey: otherPubkey,
+    videoDTag: 'skate-loop',
+    role: 'Collaborator',
+  );
 
   final now = DateTime.now();
 
   group(ConversationView, () {
     late _MockConversationBloc mockBloc;
+    late _MockCollaboratorInviteActionsCubit mockInviteActionsCubit;
     late _MockAuthService mockAuthService;
+
+    setUpAll(() {
+      registerFallbackValue(fallbackInvite);
+    });
 
     setUp(() {
       mockBloc = _MockConversationBloc();
+      mockInviteActionsCubit = _MockCollaboratorInviteActionsCubit();
       mockAuthService = _MockAuthService(currentPubkey);
+
+      when(() => mockInviteActionsCubit.state).thenReturn(
+        const CollaboratorInviteActionsState(),
+      );
+      when(
+        () => mockInviteActionsCubit.acceptInvite(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockInviteActionsCubit.ignoreInvite(any()),
+      ).thenAnswer((_) async {});
     });
 
     Widget buildSubject({
@@ -63,8 +96,11 @@ void main() {
         ],
         home: BlocProvider<ConversationBloc>.value(
           value: mockBloc,
-          child: const ConversationView(
-            participantPubkeys: [otherPubkey],
+          child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+            value: mockInviteActionsCubit,
+            child: const ConversationView(
+              participantPubkeys: [otherPubkey],
+            ),
           ),
         ),
       );
@@ -159,6 +195,56 @@ void main() {
 
           expect(find.byType(MessageBubble), findsOneWidget);
           expect(find.text('Hello there!'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'renders collaborator invite card instead of plaintext invite copy',
+        (tester) async {
+          final message = DmMessage(
+            id: '9999999999999999999999999999999999999999999999999999999999999999',
+            conversationId:
+                'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            senderPubkey: otherPubkey,
+            content: 'You were invited to collaborate.',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+            tags: const [
+              ['divine', 'collab-invite'],
+              [
+                'a',
+                '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
+                'wss://relay.divine.video',
+              ],
+              ['p', otherPubkey],
+              ['role', 'Collaborator'],
+              ['title', 'Skate loop'],
+            ],
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text('Collaborator invite'), findsOneWidget);
+          expect(find.textContaining('Skate loop'), findsOneWidget);
+          expect(find.text('Accept'), findsOneWidget);
+          expect(find.text('Ignore'), findsOneWidget);
+          expect(find.text('You were invited to collaborate.'), findsNothing);
+
+          await tester.tap(find.text('Accept'));
+          await tester.pump();
+
+          verify(
+            () => mockInviteActionsCubit.acceptInvite(any()),
+          ).called(1);
         },
       );
 

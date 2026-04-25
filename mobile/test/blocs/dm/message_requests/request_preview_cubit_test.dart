@@ -17,6 +17,26 @@ void main() {
       '1122334411223344112233441122334411223344112233441122334411223344';
   const conversationId =
       'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+  const inviteMessage = DmMessage(
+    id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    conversationId: conversationId,
+    senderPubkey: otherPubkey,
+    content: 'You were invited to collaborate.',
+    createdAt: 1700000000,
+    giftWrapId:
+        'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+    tags: [
+      ['divine', 'collab-invite'],
+      [
+        'a',
+        '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
+        'wss://relay.divine.video',
+      ],
+      ['p', otherPubkey],
+      ['role', 'Collaborator'],
+      ['title', 'Skate loop'],
+    ],
+  );
 
   group(RequestPreviewCubit, () {
     late _MockDmRepository mockDmRepository;
@@ -55,6 +75,10 @@ void main() {
           when(
             () => mockDmRepository.countMessagesInConversation(any()),
           ).thenAnswer((_) async => 5);
+          when(
+            () =>
+                mockDmRepository.getMessages(any(), limit: any(named: 'limit')),
+          ).thenAnswer((_) async => [inviteMessage]);
         },
         build: () => buildCubit(
           initialParticipantPubkeys: [otherPubkey],
@@ -65,6 +89,7 @@ void main() {
             status: RequestPreviewStatus.loaded,
             messageCount: 5,
             participantPubkeys: [otherPubkey],
+            messages: [inviteMessage],
           ),
         ],
         verify: (_) {
@@ -72,6 +97,9 @@ void main() {
             () => mockDmRepository.countMessagesInConversation(conversationId),
           ).called(1);
           verifyNever(() => mockDmRepository.getConversation(any()));
+          verify(
+            () => mockDmRepository.getMessages(conversationId, limit: 10),
+          ).called(1);
         },
       );
 
@@ -91,6 +119,10 @@ void main() {
               createdAt: 1700000000,
             ),
           );
+          when(
+            () =>
+                mockDmRepository.getMessages(any(), limit: any(named: 'limit')),
+          ).thenAnswer((_) async => [inviteMessage]);
         },
         build: buildCubit,
         act: (cubit) => cubit.load(),
@@ -99,6 +131,7 @@ void main() {
             status: RequestPreviewStatus.loaded,
             messageCount: 3,
             participantPubkeys: [otherPubkey],
+            messages: [inviteMessage],
           ),
         ],
         verify: (_) {
@@ -117,6 +150,10 @@ void main() {
           when(
             () => mockDmRepository.getConversation(any()),
           ).thenAnswer((_) async => null);
+          when(
+            () =>
+                mockDmRepository.getMessages(any(), limit: any(named: 'limit')),
+          ).thenAnswer((_) async => const []);
         },
         build: buildCubit,
         act: (cubit) => cubit.load(),

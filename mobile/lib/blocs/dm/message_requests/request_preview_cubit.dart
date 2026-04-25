@@ -4,6 +4,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:models/models.dart';
 
 enum RequestPreviewStatus { loading, loaded, error }
 
@@ -12,26 +13,35 @@ class RequestPreviewState extends Equatable {
     this.status = RequestPreviewStatus.loading,
     this.messageCount = 0,
     this.participantPubkeys = const [],
+    this.messages = const [],
   });
 
   final RequestPreviewStatus status;
   final int messageCount;
   final List<String> participantPubkeys;
+  final List<DmMessage> messages;
 
   RequestPreviewState copyWith({
     RequestPreviewStatus? status,
     int? messageCount,
     List<String>? participantPubkeys,
+    List<DmMessage>? messages,
   }) {
     return RequestPreviewState(
       status: status ?? this.status,
       messageCount: messageCount ?? this.messageCount,
       participantPubkeys: participantPubkeys ?? this.participantPubkeys,
+      messages: messages ?? this.messages,
     );
   }
 
   @override
-  List<Object?> get props => [status, messageCount, participantPubkeys];
+  List<Object?> get props => [
+    status,
+    messageCount,
+    participantPubkeys,
+    messages,
+  ];
 }
 
 class RequestPreviewCubit extends Cubit<RequestPreviewState> {
@@ -55,6 +65,10 @@ class RequestPreviewCubit extends Cubit<RequestPreviewState> {
       final messageCount = await _dmRepository.countMessagesInConversation(
         conversationId,
       );
+      final messages = await _dmRepository.getMessages(
+        conversationId,
+        limit: 10,
+      );
 
       // Use provided pubkeys if available, otherwise load from DB.
       final pubkeys = _initialParticipantPubkeys.isNotEmpty
@@ -66,6 +80,7 @@ class RequestPreviewCubit extends Cubit<RequestPreviewState> {
           status: RequestPreviewStatus.loaded,
           messageCount: messageCount,
           participantPubkeys: pubkeys,
+          messages: messages,
         ),
       );
     } catch (e, stackTrace) {

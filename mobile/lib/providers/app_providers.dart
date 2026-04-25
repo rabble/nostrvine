@@ -54,11 +54,12 @@ import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/collaborator_invite_state_store.dart';
+import 'package:openvine/services/collaborator_response_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
-import 'package:openvine/services/collaborator_response_service.dart';
 import 'package:openvine/services/crosspost_api_client.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
@@ -152,6 +153,13 @@ final collaboratorResponseServiceProvider =
       return CollaboratorResponseService(
         authService: ref.watch(authServiceProvider),
         nostrClient: ref.watch(nostrServiceProvider),
+      );
+    });
+
+final collaboratorInviteStateStoreProvider =
+    Provider<CollaboratorInviteStateStore>((ref) {
+      return CollaboratorInviteStateStore(
+        prefs: ref.watch(sharedPreferencesProvider),
       );
     });
 

@@ -10,9 +10,12 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
+import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
+import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -31,6 +34,9 @@ class RequestPreviewView extends ConsumerWidget {
     );
     final messageCount = context.select(
       (RequestPreviewCubit cubit) => cubit.state.messageCount,
+    );
+    final messages = context.select(
+      (RequestPreviewCubit cubit) => cubit.state.messages,
     );
 
     final otherPubkey = participantPubkeys.isNotEmpty
@@ -65,6 +71,7 @@ class RequestPreviewView extends ConsumerWidget {
                   profile: profile,
                   otherPubkey: otherPubkey,
                   messageCount: messageCount,
+                  messages: messages,
                 ),
               ),
               _ActionButtons(
@@ -84,12 +91,14 @@ class _ProfileContent extends StatelessWidget {
     required this.profile,
     required this.otherPubkey,
     required this.messageCount,
+    required this.messages,
   });
 
   final String displayName;
   final UserProfile? profile;
   final String otherPubkey;
   final int messageCount;
+  final List<DmMessage> messages;
 
   @override
   Widget build(BuildContext context) {
@@ -154,9 +163,33 @@ class _ProfileContent extends StatelessWidget {
                 displayName: displayName,
                 messageCount: messageCount,
               ),
+              _InvitePreview(messages: messages),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _InvitePreview extends StatelessWidget {
+  const _InvitePreview({required this.messages});
+
+  final List<DmMessage> messages;
+
+  @override
+  Widget build(BuildContext context) {
+    final inviteMessages = messages
+        .map(CollaboratorInviteParser.parse)
+        .whereType<CollaboratorInvite>()
+        .toList();
+    if (inviteMessages.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: CollaboratorInviteCard(
+        invite: inviteMessages.first,
+        isSent: false,
       ),
     );
   }
