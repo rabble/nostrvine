@@ -83,6 +83,35 @@ void main() {
         ),
       );
     });
+
+    test(
+      'returns structured failure when a new collaborator invite throws',
+      () async {
+        const collaboratorPubkey =
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+        when(
+          () => inviteService.sendInvite(
+            collaboratorPubkey: any(named: 'collaboratorPubkey'),
+            creatorPubkey: any(named: 'creatorPubkey'),
+            videoAddress: any(named: 'videoAddress'),
+            title: any(named: 'title'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            relayHint: any(named: 'relayHint'),
+          ),
+        ).thenThrow(Exception('relay exploded'));
+
+        final results = await sendPostPublishCollaboratorInvites(
+          inviteService: inviteService,
+          video: _video(),
+          previousCollaboratorPubkeys: const [],
+          updatedCollaboratorPubkeys: const [collaboratorPubkey],
+        );
+
+        expect(results.keys, contains(collaboratorPubkey));
+        expect(results[collaboratorPubkey]?.success, isFalse);
+        expect(results[collaboratorPubkey]?.error, contains('relay exploded'));
+      },
+    );
   });
 }
 

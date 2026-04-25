@@ -158,6 +158,127 @@ void main() {
       });
 
       test(
+        'publishes video event before sending collaborator invites',
+        () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockCollaboratorInviteService.sendInvites(
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              creatorPubkey: any(named: 'creatorPubkey'),
+              videoAddress: any(named: 'videoAddress'),
+              title: any(named: 'title'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              relayHint: any(named: 'relayHint'),
+            ),
+          ).thenAnswer(
+            (_) async => const CollaboratorInviteBatchResult(results: {}),
+          );
+
+          final draft = _createTestDraft(
+            collaboratorPubkeys: {
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            },
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verifyInOrder([
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+              inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+              inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudioEventId: any(named: 'selectedAudioEventId'),
+              selectedAudioRelay: any(named: 'selectedAudioRelay'),
+              language: any(named: 'language'),
+              contentWarning: any(named: 'contentWarning'),
+            ),
+            () => mockCollaboratorInviteService.sendInvites(
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              creatorPubkey: any(named: 'creatorPubkey'),
+              videoAddress: any(named: 'videoAddress'),
+              title: any(named: 'title'),
+              relayHint: any(named: 'relayHint'),
+            ),
+          ]);
+        },
+      );
+
+      test(
+        'does not send collaborator invites when event publish fails',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                _createPendingUpload(status: UploadStatus.readyToPublish),
+          );
+          when(
+            () => mockUploadManager.getUpload(any()),
+          ).thenReturn(
+            _createPendingUpload(status: UploadStatus.readyToPublish),
+          );
+          when(
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: any(named: 'description'),
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockBlossomService.getBlossomServer(),
+          ).thenAnswer((_) async => 'https://test.server');
+
+          final draft = _createTestDraft(
+            collaboratorPubkeys: {
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            },
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishError>());
+          verifyNever(
+            () => mockCollaboratorInviteService.sendInvites(
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              creatorPubkey: any(named: 'creatorPubkey'),
+              videoAddress: any(named: 'videoAddress'),
+              title: any(named: 'title'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              relayHint: any(named: 'relayHint'),
+            ),
+          );
+        },
+      );
+
+      test(
         'collaborator invite failure does not fail successful publish',
         () async {
           _setupSuccessfulPublish(
@@ -296,6 +417,33 @@ void main() {
             relayHint: warning.relayHint,
           ),
         ).called(1);
+      });
+
+      test('retryCollaboratorInvite returns failure when send throws', () async {
+        const warning = CollaboratorInviteWarning(
+          collaboratorPubkey:
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          creatorPubkey: 'test_pubkey',
+          videoAddress: '34236:test_pubkey:test_video_id',
+          title: 'Test Video',
+          relayHint: 'wss://relay.divine.video',
+          error: 'relay unavailable',
+        );
+        when(
+          () => mockCollaboratorInviteService.sendInvite(
+            collaboratorPubkey: any(named: 'collaboratorPubkey'),
+            creatorPubkey: any(named: 'creatorPubkey'),
+            videoAddress: any(named: 'videoAddress'),
+            title: any(named: 'title'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            relayHint: any(named: 'relayHint'),
+          ),
+        ).thenThrow(Exception('relay exploded'));
+
+        final result = await service.retryCollaboratorInvite(warning);
+
+        expect(result.success, isFalse);
+        expect(result.error, contains('relay exploded'));
       });
 
       test('returns error when video event publishing fails', () async {

@@ -301,14 +301,22 @@ class VideoPublishService {
       );
     }
 
-    return inviteService.sendInvite(
-      collaboratorPubkey: warning.collaboratorPubkey,
-      creatorPubkey: warning.creatorPubkey,
-      videoAddress: warning.videoAddress,
-      title: warning.title,
-      thumbnailUrl: warning.thumbnailUrl,
-      relayHint: warning.relayHint,
-    );
+    try {
+      return await inviteService.sendInvite(
+        collaboratorPubkey: warning.collaboratorPubkey,
+        creatorPubkey: warning.creatorPubkey,
+        videoAddress: warning.videoAddress,
+        title: warning.title,
+        thumbnailUrl: warning.thumbnailUrl,
+        relayHint: warning.relayHint,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.warning(
+        '⚠️ Failed to retry collaborator invite: $e\n$stackTrace',
+        category: LogCategory.video,
+      );
+      return CollaboratorInviteResult(success: false, error: e.toString());
+    }
   }
 
   /// Gets existing upload from background ID, reuses a matching upload

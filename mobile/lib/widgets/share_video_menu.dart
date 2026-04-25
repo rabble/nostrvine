@@ -53,14 +53,26 @@ sendPostPublishCollaboratorInvites({
       '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:${video.stableId}';
   final results = <String, CollaboratorInviteResult>{};
   for (final pubkey in newCollaborators) {
-    results[pubkey] = await inviteService.sendInvite(
-      collaboratorPubkey: pubkey,
-      creatorPubkey: video.pubkey,
-      videoAddress: videoAddress,
-      title: video.title,
-      thumbnailUrl: video.thumbnailUrl,
-      relayHint: relayHint,
-    );
+    try {
+      results[pubkey] = await inviteService.sendInvite(
+        collaboratorPubkey: pubkey,
+        creatorPubkey: video.pubkey,
+        videoAddress: videoAddress,
+        title: video.title,
+        thumbnailUrl: video.thumbnailUrl,
+        relayHint: relayHint,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.warning(
+        'Failed to send post-publish collaborator invite: $e\n$stackTrace',
+        name: 'ShareVideoMenu',
+        category: LogCategory.video,
+      );
+      results[pubkey] = CollaboratorInviteResult(
+        success: false,
+        error: e.toString(),
+      );
+    }
   }
   return results;
 }
