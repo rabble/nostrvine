@@ -713,7 +713,6 @@ class DmRepository {
           createdAt: nip04Event.createdAt,
           giftWrapId: nip04Event.id,
           messageKind: EventKind.directMessage,
-          tagsJson: null,
           ownerPubkey: _userPubkey,
         );
 
