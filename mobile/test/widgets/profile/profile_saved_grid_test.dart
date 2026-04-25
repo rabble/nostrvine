@@ -8,13 +8,21 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/profile/profile_saved_grid.dart';
 
 import '../../helpers/go_router.dart';
+import '../../helpers/test_provider_overrides.dart';
 
 class _MockProfileSavedVideosBloc
     extends MockBloc<ProfileSavedVideosEvent, ProfileSavedVideosState>
     implements ProfileSavedVideosBloc {}
+
+class _FakeVideoEventService extends Mock implements VideoEventService {
+  @override
+  Stream<String> get removedVideoIds => const Stream<String>.empty();
+}
 
 List<VideoEvent> _createTestVideos({int count = 2}) {
   final now = DateTime.now();
@@ -48,14 +56,19 @@ void main() {
     });
 
     Widget buildSubject({MockGoRouter? goRouter}) {
-      final app = MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: VineTheme.theme,
-        home: Scaffold(
-          body: BlocProvider<ProfileSavedVideosBloc>.value(
-            value: mockBloc,
-            child: const ProfileSavedGrid(),
+      final app = testProviderScope(
+        additionalOverrides: [
+          videoEventServiceProvider.overrideWithValue(_FakeVideoEventService()),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: BlocProvider<ProfileSavedVideosBloc>.value(
+              value: mockBloc,
+              child: const ProfileSavedGrid(),
+            ),
           ),
         ),
       );

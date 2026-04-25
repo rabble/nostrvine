@@ -215,6 +215,7 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
           // Stream is seeded via _pushVideos in the BlocConsumer listener.
           videosStream: _streamController.stream,
           initialIndex: safeIndex,
+          removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: 'Liked Videos',
           trafficSource: ViewTrafficSource.profile,
         );

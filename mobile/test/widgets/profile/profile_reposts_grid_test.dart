@@ -8,13 +8,21 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
 
 import '../../helpers/go_router.dart';
+import '../../helpers/test_provider_overrides.dart';
 
 class _MockProfileRepostedVideosBloc
     extends MockBloc<ProfileRepostedVideosEvent, ProfileRepostedVideosState>
     implements ProfileRepostedVideosBloc {}
+
+class _FakeVideoEventService extends Mock implements VideoEventService {
+  @override
+  Stream<String> get removedVideoIds => const Stream<String>.empty();
+}
 
 List<VideoEvent> _createTestVideos({int count = 2}) {
   final now = DateTime.now();
@@ -51,14 +59,19 @@ void main() {
       bool isOwnProfile = true,
       MockGoRouter? goRouter,
     }) {
-      final app = MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: VineTheme.theme,
-        home: Scaffold(
-          body: BlocProvider<ProfileRepostedVideosBloc>.value(
-            value: mockBloc,
-            child: ProfileRepostsGrid(isOwnProfile: isOwnProfile),
+      final app = testProviderScope(
+        additionalOverrides: [
+          videoEventServiceProvider.overrideWithValue(_FakeVideoEventService()),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: BlocProvider<ProfileRepostedVideosBloc>.value(
+              value: mockBloc,
+              child: ProfileRepostsGrid(isOwnProfile: isOwnProfile),
+            ),
           ),
         ),
       );

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -213,6 +214,9 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                     hasMoreStream: _hasMoreStreamController.stream.startWith(
                       widget.hasMoreContent,
                     ),
+                    removedIdsStream: ref
+                        .read(videoEventServiceProvider)
+                        .removedVideoIds,
                     contextTitle: 'For You',
                     trafficSource: ViewTrafficSource.discoveryForYou,
                   ),

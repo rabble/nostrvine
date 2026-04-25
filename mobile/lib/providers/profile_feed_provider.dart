@@ -682,7 +682,25 @@ class ProfileFeed extends _$ProfileFeed {
         .where((v) => !v.isRepost)
         .toList();
     videos = _applyMetadataCache(videos);
-    return videoEventService.filterVideoList(videos);
+    return _withoutTombstones(
+      videoEventService.filterVideoList(videos),
+      videoEventService,
+    );
+  }
+
+  /// Subtract the service's session-tombstoned ids (deleted via NIP-09 in
+  /// this session). The service already prevents pagination resurrection
+  /// internally, but the merge below would otherwise carry the id forward
+  /// from the existing state forever — see `removeVideoCompletely` in
+  /// VideoEventService.
+  List<VideoEvent> _withoutTombstones(
+    List<VideoEvent> videos,
+    VideoEventService videoEventService,
+  ) {
+    if (videos.isEmpty) return videos;
+    return videos
+        .where((v) => !videoEventService.isVideoLocallyDeleted(v.id))
+        .toList();
   }
 
   void _mergeSourceVideos(
@@ -747,9 +765,11 @@ class ProfileFeed extends _$ProfileFeed {
       byKey[key] = existing == null ? video : _mergeVideo(existing, video);
     }
 
-    final merged = byKey.values.toList();
-    merged.sort(_compareVideos);
-    return merged;
+    final merged = byKey.values.toList()..sort(_compareVideos);
+    // Drop any session-tombstoned ids the merge carried forward. The
+    // upstream snapshot is already filtered, but `current` may still
+    // contain a video that was just deleted before the source caught up.
+    return _withoutTombstones(merged, ref.read(videoEventServiceProvider));
   }
 
   VideoEvent _mergeVideo(VideoEvent existing, VideoEvent incoming) {

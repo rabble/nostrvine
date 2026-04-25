@@ -5865,4 +5865,7 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Subtitrări dezactivate pentru toate videoclipurile';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Video removed';
 }
