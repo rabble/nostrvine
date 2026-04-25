@@ -43,10 +43,7 @@ void main() {
   });
 }
 
-DivineVideoClip _createTestClip({
-  required String id,
-  int seconds = 2,
-}) {
+DivineVideoClip _createTestClip({required String id, int seconds = 2}) {
   return DivineVideoClip(
     id: id,
     video: EditorVideo.file('/tmp/test_$id.mp4'),

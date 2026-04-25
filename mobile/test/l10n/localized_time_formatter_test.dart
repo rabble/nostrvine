@@ -132,14 +132,8 @@ void main() {
             : earlierToday;
         final ts = safeTime.millisecondsSinceEpoch ~/ 1000;
 
-        expect(
-          LocalizedTimeFormatter.formatDateLabel(en, ts),
-          equals('Today'),
-        );
-        expect(
-          LocalizedTimeFormatter.formatDateLabel(de, ts),
-          equals('Heute'),
-        );
+        expect(LocalizedTimeFormatter.formatDateLabel(en, ts), equals('Today'));
+        expect(LocalizedTimeFormatter.formatDateLabel(de, ts), equals('Heute'));
       });
 
       testWidgets('returns localized "Yesterday"', (tester) async {
@@ -264,10 +258,7 @@ void main() {
         final de = await _loadL10n(tester, const Locale('de'));
         final ts = _unixSecondsAgo(const Duration(seconds: 30));
 
-        expect(
-          LocalizedTimeFormatter.formatMessageTime(en, ts),
-          equals('Now'),
-        );
+        expect(LocalizedTimeFormatter.formatMessageTime(en, ts), equals('Now'));
         expect(
           LocalizedTimeFormatter.formatMessageTime(de, ts),
           equals('Jetzt'),
@@ -310,23 +301,22 @@ void main() {
         },
       );
 
-      testWidgets(
-        'use24Hour: false keeps locale-default 12h in en',
-        (tester) async {
-          final en = await _loadL10n(tester, const Locale('en'));
-          final now = DateTime.now();
-          final earlierToday = now.subtract(const Duration(hours: 2));
-          if (earlierToday.day != now.day) return;
-          final ts = earlierToday.millisecondsSinceEpoch ~/ 1000;
+      testWidgets('use24Hour: false keeps locale-default 12h in en', (
+        tester,
+      ) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+        final now = DateTime.now();
+        final earlierToday = now.subtract(const Duration(hours: 2));
+        if (earlierToday.day != now.day) return;
+        final ts = earlierToday.millisecondsSinceEpoch ~/ 1000;
 
-          final result = LocalizedTimeFormatter.formatMessageTime(
-            en,
-            ts,
-            locale: 'en',
-          );
-          expect(result, anyOf(contains('AM'), contains('PM')));
-        },
-      );
+        final result = LocalizedTimeFormatter.formatMessageTime(
+          en,
+          ts,
+          locale: 'en',
+        );
+        expect(result, anyOf(contains('AM'), contains('PM')));
+      });
 
       testWidgets('returns "Yesterday" for previous day', (tester) async {
         final en = await _loadL10n(tester, const Locale('en'));
@@ -480,10 +470,7 @@ void main() {
         final en = await _loadL10n(tester, const Locale('en'));
 
         expect(
-          LocalizedTimeFormatter.formatDurationAgo(
-            en,
-            const Duration(days: 2),
-          ),
+          LocalizedTimeFormatter.formatDurationAgo(en, const Duration(days: 2)),
           equals('2d ago'),
         );
       });
@@ -514,10 +501,7 @@ void main() {
         final en = await _loadL10n(tester, const Locale('en'));
 
         expect(
-          LocalizedTimeFormatter.formatDraftAge(
-            en,
-            const Duration(minutes: 7),
-          ),
+          LocalizedTimeFormatter.formatDraftAge(en, const Duration(minutes: 7)),
           equals('7m ago'),
         );
       });
@@ -526,10 +510,7 @@ void main() {
         final en = await _loadL10n(tester, const Locale('en'));
 
         expect(
-          LocalizedTimeFormatter.formatDraftAge(
-            en,
-            const Duration(hours: 5),
-          ),
+          LocalizedTimeFormatter.formatDraftAge(en, const Duration(hours: 5)),
           equals('5h ago'),
         );
       });
@@ -538,10 +519,7 @@ void main() {
         final en = await _loadL10n(tester, const Locale('en'));
 
         expect(
-          LocalizedTimeFormatter.formatDraftAge(
-            en,
-            const Duration(days: 4),
-          ),
+          LocalizedTimeFormatter.formatDraftAge(en, const Duration(days: 4)),
           equals('4d ago'),
         );
       });

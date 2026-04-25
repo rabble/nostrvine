@@ -233,10 +233,7 @@ class VideoPublishService {
         return draft.clips.first.video.safeFilePath();
       }
     } catch (e) {
-      Log.warning(
-        '⚠️ Could not resolve video path: $e',
-        category: .video,
-      );
+      Log.warning('⚠️ Could not resolve video path: $e', category: .video);
     }
     return null;
   }

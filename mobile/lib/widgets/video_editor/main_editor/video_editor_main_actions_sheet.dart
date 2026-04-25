@@ -11,10 +11,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 /// Uses [_ItemButton] for each action and closes the sheet after
 /// an action is selected.
 class VideoEditorMainActionsSheet extends StatelessWidget {
-  const VideoEditorMainActionsSheet({
-    required this.scope,
-    super.key,
-  });
+  const VideoEditorMainActionsSheet({required this.scope, super.key});
 
   static const _maxItemWidth = 72.0;
   static const _itemHeight = 112.0;
@@ -154,10 +151,7 @@ class _ItemButton extends StatelessWidget {
                   ),
                 ),
                 child: Center(
-                  child: DivineIcon(
-                    icon: icon,
-                    color: VineTheme.primary,
-                  ),
+                  child: DivineIcon(icon: icon, color: VineTheme.primary),
                 ),
               ),
             ),

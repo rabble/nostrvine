@@ -275,10 +275,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           children: [
             const Text(
               'By ',
-              style: TextStyle(
-                color: VineTheme.onSurfaceVariant,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: VineTheme.onSurfaceVariant, fontSize: 12),
             ),
             Flexible(
               flex: 0,
@@ -308,10 +305,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     // No author - just show video count
     return Text(
       videoText,
-      style: const TextStyle(
-        color: VineTheme.onSurfaceVariant,
-        fontSize: 12,
-      ),
+      style: const TextStyle(color: VineTheme.onSurfaceVariant, fontSize: 12),
     );
   }
 

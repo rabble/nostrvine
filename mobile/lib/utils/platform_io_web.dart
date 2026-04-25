@@ -56,10 +56,8 @@ class File {
 
   String readAsStringSync() => '';
 
-  Future<File> writeAsBytes(
-    List<int> bytes, {
-    bool flush = false,
-  }) async => this;
+  Future<File> writeAsBytes(List<int> bytes, {bool flush = false}) async =>
+      this;
 
   Future<File> writeAsString(String contents) async => this;
 
@@ -130,11 +128,7 @@ class FileSystemException implements Exception {
 
 // PathNotFoundException stub for web platform
 class PathNotFoundException extends FileSystemException {
-  PathNotFoundException(
-    super.message, [
-    super.path,
-    super.osError,
-  ]);
+  PathNotFoundException(super.message, [super.path, super.osError]);
 }
 
 // Process stub for web platform

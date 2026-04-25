@@ -21,20 +21,19 @@ DivineVideoClip _createTestClip() => DivineVideoClip(
 
 /// Creates a minimal draft with no edits (only clips, defaults for everything
 /// else). This is the baseline: [hasBeenEdited] should be false.
-DivineVideoDraft _minimalDraft({
-  List<DivineVideoClip>? clips,
-}) => DivineVideoDraft(
-  id: 'draft_1',
-  clips: clips ?? [_createTestClip()],
-  title: '',
-  description: '',
-  hashtags: const {},
-  selectedApproach: 'camera',
-  createdAt: DateTime(2025),
-  lastModified: DateTime(2025),
-  publishStatus: PublishStatus.draft,
-  publishAttempts: 0,
-);
+DivineVideoDraft _minimalDraft({List<DivineVideoClip>? clips}) =>
+    DivineVideoDraft(
+      id: 'draft_1',
+      clips: clips ?? [_createTestClip()],
+      title: '',
+      description: '',
+      hashtags: const {},
+      selectedApproach: 'camera',
+      createdAt: DateTime(2025),
+      lastModified: DateTime(2025),
+      publishStatus: PublishStatus.draft,
+      publishAttempts: 0,
+    );
 
 void main() {
   group(DivineVideoDraft, () {
@@ -98,6 +97,24 @@ void main() {
       test('returns true when draft has editorStateHistory', () {
         final draft = _minimalDraft().copyWith(
           editorStateHistory: const {'key': 'value'},
+          skipUpdateLastModified: true,
+        );
+
+        expect(draft.hasBeenEdited, isTrue);
+      });
+
+      test('returns false when editorStateHistory position is -1', () {
+        final draft = _minimalDraft().copyWith(
+          editorStateHistory: const {'position': -1},
+          skipUpdateLastModified: true,
+        );
+
+        expect(draft.hasBeenEdited, isFalse);
+      });
+
+      test('returns true when editorStateHistory position is not -1', () {
+        final draft = _minimalDraft().copyWith(
+          editorStateHistory: const {'position': 0},
           skipUpdateLastModified: true,
         );
 

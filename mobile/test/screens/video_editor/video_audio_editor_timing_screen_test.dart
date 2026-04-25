@@ -150,11 +150,7 @@ void main() {
 
     Widget buildWidget({AudioEvent? sound, Locale? locale}) {
       final testSound =
-          sound ??
-          _createTestAudioEvent(
-            title: 'Test Audio',
-            duration: 10.0,
-          );
+          sound ?? _createTestAudioEvent(title: 'Test Audio', duration: 10.0);
 
       return ProviderScope(
         child: MaterialApp(
@@ -170,10 +166,7 @@ void main() {
       await tester.pumpWidget(buildWidget());
       await tester.pump();
 
-      expect(
-        find.byType(VideoAudioEditorTimingScreen),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoAudioEditorTimingScreen), findsOneWidget);
     });
 
     testWidgets('renders instruction text', (tester) async {
@@ -232,10 +225,7 @@ void main() {
       await tester.pumpWidget(buildWidget(sound: bundledSound));
       await tester.pump();
 
-      expect(
-        find.byType(VideoAudioEditorTimingScreen),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoAudioEditorTimingScreen), findsOneWidget);
     });
 
     testWidgets('renders with short audio (< maxDuration)', (tester) async {
@@ -247,10 +237,7 @@ void main() {
       await tester.pumpWidget(buildWidget(sound: shortSound));
       await tester.pump();
 
-      expect(
-        find.byType(VideoAudioEditorTimingScreen),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoAudioEditorTimingScreen), findsOneWidget);
     });
 
     testWidgets('renders with long audio (> maxDuration)', (tester) async {
@@ -262,10 +249,7 @@ void main() {
       await tester.pumpWidget(buildWidget(sound: longSound));
       await tester.pump();
 
-      expect(
-        find.byType(VideoAudioEditorTimingScreen),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoAudioEditorTimingScreen), findsOneWidget);
     });
 
     testWidgets('has route name and path constants', (tester) async {
@@ -273,10 +257,7 @@ void main() {
         VideoAudioEditorTimingScreen.routeName,
         equals('video-audio-timing'),
       );
-      expect(
-        VideoAudioEditorTimingScreen.path,
-        equals('/video-audio-timing'),
-      );
+      expect(VideoAudioEditorTimingScreen.path, equals('/video-audio-timing'));
     });
   });
 }

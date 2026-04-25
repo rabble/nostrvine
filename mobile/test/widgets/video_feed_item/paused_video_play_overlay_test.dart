@@ -114,55 +114,52 @@ void main() {
             w.state == CenterPlaybackControlState.pause,
       );
 
-      testWidgets(
-        'shows the pause icon briefly after a user-initiated unpause '
-        '(pause longer than 150 ms then resume)',
-        (tester) async {
-          // The feedback threshold is compared against `clock.now()`
-          // differences; drive a manual clock so the test is not at the
-          // mercy of wall-clock timing.
-          var now = DateTime(2026);
-          await withClock(Clock(() => now), () async {
-            await tester.pumpWidget(buildSubject());
-            await tester.pump();
+      testWidgets('shows the pause icon briefly after a user-initiated unpause '
+          '(pause longer than 150 ms then resume)', (tester) async {
+        // The feedback threshold is compared against `clock.now()`
+        // differences; drive a manual clock so the test is not at the
+        // mercy of wall-clock timing.
+        var now = DateTime(2026);
+        await withClock(Clock(() => now), () async {
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
 
-            // Latch: first paused -> playing transition enables future
-            // feedback for this widget + player.
-            playingController.add(true);
-            await tester.pump();
+          // Latch: first paused -> playing transition enables future
+          // feedback for this widget + player.
+          playingController.add(true);
+          await tester.pump();
 
-            // Pause for longer than the 150 ms feedback threshold.
-            playingController.add(false);
-            await tester.pump();
+          // Pause for longer than the 150 ms feedback threshold.
+          playingController.add(false);
+          await tester.pump();
 
-            // Advance both the injected clock and the test clock so the
-            // pause duration crosses the 150 ms threshold.
-            now = now.add(const Duration(milliseconds: 220));
-            await tester.pump(const Duration(milliseconds: 220));
+          // Advance both the injected clock and the test clock so the
+          // pause duration crosses the 150 ms threshold.
+          now = now.add(const Duration(milliseconds: 220));
+          await tester.pump(const Duration(milliseconds: 220));
 
-            // While paused, the paused-play affordance is visible — the
-            // feedback pause icon is explicitly *not* the play icon.
-            expect(find.byKey(const ValueKey('paused-play')), findsOneWidget);
-            expect(findPauseCenterControl(), findsNothing);
+          // While paused, the paused-play affordance is visible — the
+          // feedback pause icon is explicitly *not* the play icon.
+          expect(find.byKey(const ValueKey('paused-play')), findsOneWidget);
+          expect(findPauseCenterControl(), findsNothing);
 
-            // User taps to resume.
-            playingController.add(true);
-            // Let AnimatedSwitcher settle after the transition kicks in.
-            await tester.pump();
-            await tester.pump(const Duration(milliseconds: 220));
+          // User taps to resume.
+          playingController.add(true);
+          // Let AnimatedSwitcher settle after the transition kicks in.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 220));
 
-            // Feedback pause icon should now be mounted.
-            expect(findPauseCenterControl(), findsOneWidget);
-            expect(find.byKey(const ValueKey('paused-play')), findsNothing);
+          // Feedback pause icon should now be mounted.
+          expect(findPauseCenterControl(), findsOneWidget);
+          expect(find.byKey(const ValueKey('paused-play')), findsNothing);
 
-            // After the full feedback window + fade + AnimatedSwitcher
-            // transition, the feedback collapses back to the hidden branch.
-            await tester.pumpAndSettle();
-            expect(findPauseCenterControl(), findsNothing);
-            expect(find.byKey(const ValueKey('paused-play')), findsNothing);
-          });
-        },
-      );
+          // After the full feedback window + fade + AnimatedSwitcher
+          // transition, the feedback collapses back to the hidden branch.
+          await tester.pumpAndSettle();
+          expect(findPauseCenterControl(), findsNothing);
+          expect(find.byKey(const ValueKey('paused-play')), findsNothing);
+        });
+      });
 
       testWidgets(
         'does not flash feedback for sub-threshold loop-restart blips',

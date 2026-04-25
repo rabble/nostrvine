@@ -35,10 +35,7 @@ void main() {
           find.byType(DecoratedBox),
         );
         final decoration = decoratedBox.decoration as BoxDecoration;
-        expect(
-          decoration.borderRadius,
-          equals(BorderRadius.circular(4)),
-        );
+        expect(decoration.borderRadius, equals(BorderRadius.circular(4)));
       });
 
       testWidgets('with surfaceContainer color', (tester) async {

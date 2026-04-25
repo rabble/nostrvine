@@ -50,9 +50,9 @@ void main() {
     blocTest<DmUnreadCountCubit, int>(
       'emits counts from watchUnreadAcceptedCount stream',
       setUp: () {
-        when(() => mockConversationsDao.watchUnreadAcceptedCount()).thenAnswer(
-          (_) => Stream.fromIterable([1, 3, 0]),
-        );
+        when(
+          () => mockConversationsDao.watchUnreadAcceptedCount(),
+        ).thenAnswer((_) => Stream.fromIterable([1, 3, 0]));
       },
       build: buildCubit,
       expect: () => const [1, 3, 0],

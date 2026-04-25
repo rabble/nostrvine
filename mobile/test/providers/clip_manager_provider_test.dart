@@ -37,9 +37,7 @@ void main() {
           draftStorageServiceProvider.overrideWithValue(
             mockDraftStorageService,
           ),
-          clipLibraryServiceProvider.overrideWithValue(
-            mockClipLibraryService,
-          ),
+          clipLibraryServiceProvider.overrideWithValue(mockClipLibraryService),
         ],
       );
     });
@@ -546,10 +544,7 @@ void main() {
         final state = container.read(clipManagerProvider);
         final updatedClip = state.clips.first;
         expect(updatedClip.proofManifestJson, equals('{"hash":"abc123"}'));
-        expect(
-          updatedClip.thumbnailPath,
-          equals('/path/to/updated_thumb.jpg'),
-        );
+        expect(updatedClip.thumbnailPath, equals('/path/to/updated_thumb.jpg'));
       });
 
       test('proof state survives clip reordering', () {

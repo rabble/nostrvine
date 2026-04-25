@@ -177,11 +177,7 @@ class _ShadowedIcon extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         _IconShadow(icon: icon, offset: const Offset(1, 1), blurSigma: 1),
-        _IconShadow(
-          icon: icon,
-          offset: const Offset(0.4, 0.4),
-          blurSigma: 0.6,
-        ),
+        _IconShadow(icon: icon, offset: const Offset(0.4, 0.4), blurSigma: 0.6),
         DivineIcon(icon: icon, color: color),
       ],
     );

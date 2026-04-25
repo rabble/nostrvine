@@ -24,10 +24,7 @@ void main() {
       });
 
       test('returns null for path-only URIs (in-app navigation)', () {
-        expect(
-          universalLinkToRouterPath(Uri.parse('/home/0')),
-          isNull,
-        );
+        expect(universalLinkToRouterPath(Uri.parse('/home/0')), isNull);
       });
 
       test('accepts divine.video host', () {
@@ -39,18 +36,15 @@ void main() {
         );
       });
 
-      test(
-        'returns null for login.divine.video — OAuth callback paths '
-        'already match internal GoRoutes by coincidence',
-        () {
-          expect(
-            universalLinkToRouterPath(
-              Uri.parse('https://login.divine.video/search/music'),
-            ),
-            isNull,
-          );
-        },
-      );
+      test('returns null for login.divine.video — OAuth callback paths '
+          'already match internal GoRoutes by coincidence', () {
+        expect(
+          universalLinkToRouterPath(
+            Uri.parse('https://login.divine.video/search/music'),
+          ),
+          isNull,
+        );
+      });
     });
 
     group('search', () {
@@ -151,9 +145,7 @@ void main() {
 
       test('unknown divine.video path returns null', () {
         expect(
-          universalLinkToRouterPath(
-            Uri.parse('https://divine.video/nope'),
-          ),
+          universalLinkToRouterPath(Uri.parse('https://divine.video/nope')),
           isNull,
         );
       });

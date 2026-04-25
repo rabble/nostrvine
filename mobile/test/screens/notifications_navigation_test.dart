@@ -85,21 +85,16 @@ void main() {
     thumbnailUrl: 'https://example.com/$id.jpg',
   );
 
-  Event commentEvent({required String rootVideoId}) => Event(
-    'd' * 64,
-    1111,
-    [
-      // NIP-22: uppercase = root scope (video)
-      ['E', rootVideoId, '', 'video_author_pubkey'],
-      ['K', '34236'],
-      ['P', 'video_author_pubkey'],
-      // NIP-22: lowercase = parent item (comment being replied to)
-      ['e', 'parent_comment', '', 'parent_author_pubkey'],
-      ['k', '1111'],
-      ['p', 'parent_author_pubkey'],
-    ],
-    'comment body',
-  );
+  Event commentEvent({required String rootVideoId}) => Event('d' * 64, 1111, [
+    // NIP-22: uppercase = root scope (video)
+    ['E', rootVideoId, '', 'video_author_pubkey'],
+    ['K', '34236'],
+    ['P', 'video_author_pubkey'],
+    // NIP-22: lowercase = parent item (comment being replied to)
+    ['e', 'parent_comment', '', 'parent_author_pubkey'],
+    ['k', '1111'],
+    ['p', 'parent_author_pubkey'],
+  ], 'comment body');
 
   group('NotificationsScreen Navigation', () {
     testWidgets('comment target id resolves to parent video', (
@@ -112,15 +107,15 @@ void main() {
       when(
         () => mockVideoService.getVideoById('comment_event_1'),
       ).thenReturn(null);
-      when(() => mockVideoService.getVideoById('video_root_1')).thenReturn(
-        resolvedVideo,
-      );
+      when(
+        () => mockVideoService.getVideoById('video_root_1'),
+      ).thenReturn(resolvedVideo);
       when(
         () => mockVideoService.shouldHideVideo(resolvedVideo),
       ).thenReturn(true);
-      when(() => mockNostrClient.fetchEventById('comment_event_1')).thenAnswer(
-        (_) async => commentEvent(rootVideoId: 'video_root_1'),
-      );
+      when(
+        () => mockNostrClient.fetchEventById('comment_event_1'),
+      ).thenAnswer((_) async => commentEvent(rootVideoId: 'video_root_1'));
 
       final notifier = _MockRelayNotifications([
         NotificationModel(

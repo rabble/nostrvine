@@ -72,9 +72,7 @@ void main() {
 
   testWidgets(
     'resolves the sandbox route from the directory when extra is absent',
-    (
-      tester,
-    ) async {
+    (tester) async {
       SharedPreferences.setMockInitialValues({
         'current_user_pubkey_hex': 'f' * 64,
         'following_list_${'f' * 64}': '["npub1followed"]',
@@ -129,9 +127,7 @@ void main() {
 
   testWidgets(
     'shows integration unavailable messaging when the app cannot be resolved',
-    (
-      tester,
-    ) async {
+    (tester) async {
       SharedPreferences.setMockInitialValues({
         'current_user_pubkey_hex': 'f' * 64,
         'following_list_${'f' * 64}': '["npub1followed"]',

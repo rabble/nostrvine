@@ -325,25 +325,24 @@ void main() {
         ).called(1);
       });
 
-      testWidgets(
-        'navigates to login options when session is expired',
-        (tester) async {
-          when(
-            () => mockAuthService.signInForAccount(any(), any()),
-          ).thenThrow(SessionExpiredException());
+      testWidgets('navigates to login options when session is expired', (
+        tester,
+      ) async {
+        when(
+          () => mockAuthService.signInForAccount(any(), any()),
+        ).thenThrow(SessionExpiredException());
 
-          await tester.binding.setSurfaceSize(const Size(800, 1200));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-          await tester.pumpWidget(createTestWidget());
-          await tester.pumpAndSettle();
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Sign back in'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Sign back in'));
+        await tester.pumpAndSettle();
 
-          verify(() => mockAuthService.acceptTerms()).called(1);
-          expect(find.text('Sign in'), findsOneWidget);
-        },
-      );
+        verify(() => mockAuthService.acceptTerms()).called(1);
+        expect(find.text('Sign in'), findsOneWidget);
+      });
 
       testWidgets(
         'tapping "Create a new Divine account" calls acceptTerms and navigates',

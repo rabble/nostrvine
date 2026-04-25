@@ -176,10 +176,7 @@ class StartupPerformanceService {
     CrashReportingService.instance.logInitializationStep(
       'Auth shell ready: ${elapsed}ms',
     );
-    CrashReportingService.instance.setCustomKey(
-      'auth_shell_ready_ms',
-      elapsed,
-    );
+    CrashReportingService.instance.setCustomKey('auth_shell_ready_ms', elapsed);
   }
 
   /// Mark when UI is ready for interaction

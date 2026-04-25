@@ -63,10 +63,7 @@ void main() {
       testWidgets('renders $VideoEditorTimelineClipStrip', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(
-          find.byType(VideoEditorTimelineClipStrip),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoEditorTimelineClipStrip), findsOneWidget);
       });
 
       testWidgets('renders clip tiles for each clip', (tester) async {
@@ -76,9 +73,7 @@ void main() {
           _createTestClip(id: 'c', seconds: 1),
         ];
 
-        await tester.pumpWidget(
-          buildWidget(clips: clips, totalWidth: 600),
-        );
+        await tester.pumpWidget(buildWidget(clips: clips, totalWidth: 600));
 
         // Each clip gets a ClipRRect for the tile
         expect(find.byType(ClipRRect), findsNWidgets(3));
@@ -87,9 +82,7 @@ void main() {
       testWidgets('renders single clip filling total width', (tester) async {
         final clips = [_createTestClip(id: 'only', seconds: 5)];
 
-        await tester.pumpWidget(
-          buildWidget(clips: clips, totalWidth: 400),
-        );
+        await tester.pumpWidget(buildWidget(clips: clips, totalWidth: 400));
 
         expect(find.byType(ClipRRect), findsOneWidget);
       });
@@ -115,10 +108,7 @@ void main() {
 
         // 1 root GestureDetector for long-press reorder +
         // 1 per clip tile for tap selection.
-        expect(
-          find.byType(GestureDetector),
-          findsAtLeast(1),
-        );
+        expect(find.byType(GestureDetector), findsAtLeast(1));
       });
     });
 
@@ -136,9 +126,7 @@ void main() {
         );
 
         // Long press on single clip should not enter reorder mode
-        await tester.longPress(
-          find.byType(VideoEditorTimelineClipStrip),
-        );
+        await tester.longPress(find.byType(VideoEditorTimelineClipStrip));
         await tester.pumpAndSettle();
 
         expect(reorderTriggered, isFalse);
@@ -158,9 +146,7 @@ void main() {
           ),
         );
 
-        await tester.longPress(
-          find.byType(VideoEditorTimelineClipStrip),
-        );
+        await tester.longPress(find.byType(VideoEditorTimelineClipStrip));
         await tester.pumpAndSettle();
 
         expect(reorderTriggered, isFalse);
@@ -174,9 +160,7 @@ void main() {
           _createTestClip(id: 'b', seconds: 5),
         ];
 
-        await tester.pumpWidget(
-          buildWidget(clips: clips),
-        );
+        await tester.pumpWidget(buildWidget(clips: clips));
 
         // Clip 1 of 2, 3.0 seconds
         expect(
@@ -196,9 +180,7 @@ void main() {
           _createTestClip(id: 'b', seconds: 3),
         ];
 
-        await tester.pumpWidget(
-          buildWidget(clips: clips, totalWidth: 400),
-        );
+        await tester.pumpWidget(buildWidget(clips: clips, totalWidth: 400));
 
         final semantics = tester.getSemantics(
           find.bySemanticsLabel(RegExp('Clip 1 of 2')),
@@ -209,23 +191,15 @@ void main() {
 
     group('empty state', () {
       testWidgets('renders with empty clip list', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(clips: [], totalWidth: 0),
-        );
+        await tester.pumpWidget(buildWidget(clips: [], totalWidth: 0));
 
-        expect(
-          find.byType(VideoEditorTimelineClipStrip),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoEditorTimelineClipStrip), findsOneWidget);
       });
     });
   });
 }
 
-DivineVideoClip _createTestClip({
-  required String id,
-  int seconds = 2,
-}) {
+DivineVideoClip _createTestClip({required String id, int seconds = 2}) {
   return DivineVideoClip(
     id: id,
     video: EditorVideo.file('/tmp/test_$id.mp4'),

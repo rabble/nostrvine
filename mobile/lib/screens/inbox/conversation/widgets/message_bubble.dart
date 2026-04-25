@@ -33,9 +33,7 @@ final _linkRegex = RegExp(
   caseSensitive: false,
 );
 
-final _emailRegex = RegExp(
-  r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-);
+final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
 /// Matches `divine.video/video/{stableId}` URLs in message text.
 ///
@@ -126,10 +124,7 @@ class MessageBubble extends StatelessWidget {
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.sizeOf(context).width * 0.75,
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isSent
                     ? VineTheme.surfaceContainer
@@ -201,9 +196,7 @@ const _trustedDomains = {
 /// Returns `true` if [host] is a trusted Divine domain.
 bool _isTrustedDomain(String host) {
   final lower = host.toLowerCase();
-  return _trustedDomains.any(
-    (d) => lower == d || lower.endsWith('.$d'),
-  );
+  return _trustedDomains.any((d) => lower == d || lower.endsWith('.$d'));
 }
 
 /// Renders message text with clickable URLs and email addresses.
@@ -296,23 +289,14 @@ class _MessageTextState extends State<_MessageText> {
       final link = match.group(0)!;
       final recognizer = TapGestureRecognizer()..onTap = () => _openLink(link);
       _recognizers.add(recognizer);
-      spans.add(
-        TextSpan(
-          text: link,
-          style: linkStyle,
-          recognizer: recognizer,
-        ),
-      );
+      spans.add(TextSpan(text: link, style: linkStyle, recognizer: recognizer));
 
       lastEnd = match.end;
     }
 
     if (lastEnd < widget.message.length) {
       spans.add(
-        TextSpan(
-          text: widget.message.substring(lastEnd),
-          style: defaultStyle,
-        ),
+        TextSpan(text: widget.message.substring(lastEnd), style: defaultStyle),
       );
     }
 
@@ -346,27 +330,21 @@ class _MessageTextState extends State<_MessageText> {
           content: Text(
             'This link goes to an external site and may not be safe:\n\n'
             '$uri',
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.secondaryText,
-            ),
+            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: Text(
                 'Cancel',
-                style: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurface,
-                ),
+                style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(
                 'Open',
-                style: VineTheme.bodyMediumFont(
-                  color: VineTheme.primary,
-                ),
+                style: VineTheme.bodyMediumFont(color: VineTheme.primary),
               ),
             ),
           ],

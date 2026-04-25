@@ -52,9 +52,9 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
-              userProfileReactiveProvider(otherPubkey).overrideWith(
-                (ref) => Stream.value(testProfile),
-              ),
+              userProfileReactiveProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(testProfile)),
             ],
             home: Scaffold(
               body: RequestTile(
@@ -77,9 +77,9 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
-              userProfileReactiveProvider(otherPubkey).overrideWith(
-                (ref) => Stream.value(testProfile),
-              ),
+              userProfileReactiveProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(testProfile)),
             ],
             home: Scaffold(
               body: RequestTile(
@@ -104,9 +104,9 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
-              userProfileReactiveProvider(otherPubkey).overrideWith(
-                (ref) => Stream.value(testProfile),
-              ),
+              userProfileReactiveProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(testProfile)),
             ],
             home: Scaffold(
               body: RequestTile(
@@ -133,9 +133,9 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
-              userProfileReactiveProvider(otherPubkey).overrideWith(
-                (ref) => Stream.value(testProfile),
-              ),
+              userProfileReactiveProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(testProfile)),
             ],
             home: Scaffold(
               body: RequestTile(
@@ -168,9 +168,9 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
-              userProfileReactiveProvider(otherPubkey).overrideWith(
-                (ref) => Stream.value(testProfile),
-              ),
+              userProfileReactiveProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(testProfile)),
             ],
             home: Scaffold(
               body: RequestTile(

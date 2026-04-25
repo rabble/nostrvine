@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -20,10 +21,12 @@ const _pageSize = 50;
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({
     required ProfileRepository profileRepository,
+    FollowRepository? followRepository,
     this.hasVideos = false,
     this.searchTimeout = const Duration(seconds: 20),
     FeedPerformanceTracker? feedTracker,
   }) : _profileRepository = profileRepository,
+       _followRepository = followRepository,
        _feedTracker = feedTracker,
        super(const UserSearchState()) {
     on<UserSearchQueryChanged>(
@@ -35,6 +38,11 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   }
 
   final ProfileRepository _profileRepository;
+
+  /// Optional follow graph used to boost followed users to the top of the
+  /// initial search page. Null for consumers that want raw server ranking.
+  final FollowRepository? _followRepository;
+
   final FeedPerformanceTracker? _feedTracker;
 
   /// Whether to filter results to users who have uploaded videos.
@@ -67,8 +75,8 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       state.copyWith(
         status: UserSearchStatus.loading,
         query: query,
-        results: const [],
-        resultCount: null,
+        offset: 0,
+        hasMore: false,
         isLoadingMore: false,
       ),
     );
@@ -76,12 +84,19 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     _feedTracker?.startFeedLoad('user_search');
     var trackedFirst = false;
 
+    // Snapshot the follow graph once for this query so every progressive
+    // yield uses the same boost set. Boost ordering is applied inside the
+    // repository (see ProfileRepository.searchUsersProgressive), keeping
+    // ranking logic out of the BLoC.
+    final followedPubkeys = _followRepository?.followingPubkeys.toSet();
+
     try {
       final searchStream = _profileRepository.searchUsersProgressive(
         query: query,
         limit: _pageSize,
         sortBy: 'followers',
         hasVideos: hasVideos,
+        boostPubkeys: followedPubkeys,
       );
 
       await emit.forEach<List<UserProfile>>(

@@ -21,11 +21,7 @@ class AppDetailScreen extends ConsumerWidget {
   static const path = '/apps/:slug';
 
   /// Creates an [AppDetailScreen].
-  const AppDetailScreen({
-    required this.slug,
-    this.initialEntry,
-    super.key,
-  });
+  const AppDetailScreen({required this.slug, this.initialEntry, super.key});
 
   /// The slug of the app to display.
   final String slug;
@@ -38,9 +34,7 @@ class AppDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final service = ref.read(
-      nostrAppDirectoryServiceProvider,
-    );
+    final service = ref.read(nostrAppDirectoryServiceProvider);
     return BlocProvider(
       create: (_) => AppDetailCubit(
         slug: slug,
@@ -90,10 +84,7 @@ class _AppDetailContent extends StatelessWidget {
                     const CircleAvatar(
                       radius: 28,
                       backgroundColor: VineTheme.cardBackground,
-                      child: Icon(
-                        Icons.apps,
-                        color: VineTheme.vineGreen,
-                      ),
+                      child: Icon(Icons.apps, color: VineTheme.vineGreen),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -147,21 +138,15 @@ class _AppDetailContent extends StatelessWidget {
                     ),
                     _AppDetailSection(
                       title: 'Approved origins',
-                      child: _PillList(
-                        items: app.allowedOrigins,
-                      ),
+                      child: _PillList(items: app.allowedOrigins),
                     ),
                     _AppDetailSection(
                       title: 'Available capabilities',
-                      child: _PillList(
-                        items: app.allowedMethods,
-                      ),
+                      child: _PillList(items: app.allowedMethods),
                     ),
                     _AppDetailSection(
                       title: 'Ask before',
-                      child: _PillList(
-                        items: app.promptRequiredFor,
-                      ),
+                      child: _PillList(items: app.promptRequiredFor),
                     ),
                     const SizedBox(height: 8),
                     DivineButton(
@@ -185,10 +170,7 @@ class _AppDetailContent extends StatelessWidget {
 }
 
 class _AppDetailSection extends StatelessWidget {
-  const _AppDetailSection({
-    required this.title,
-    required this.child,
-  });
+  const _AppDetailSection({required this.title, required this.child});
 
   final String title;
   final Widget child;
@@ -231,10 +213,7 @@ class _PillList extends StatelessWidget {
     if (items.isEmpty) {
       return const Text(
         'None declared yet',
-        style: TextStyle(
-          color: VineTheme.lightText,
-          fontSize: 14,
-        ),
+        style: TextStyle(color: VineTheme.lightText, fontSize: 14),
       );
     }
 
@@ -244,16 +223,11 @@ class _PillList extends StatelessWidget {
       children: items
           .map(
             (item) => Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: VineTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: VineTheme.vineGreen.withAlpha(80),
-                ),
+                border: Border.all(color: VineTheme.vineGreen.withAlpha(80)),
               ),
               child: Text(
                 item,
@@ -270,10 +244,7 @@ class _PillList extends StatelessWidget {
 }
 
 class _AppDetailMessage extends StatelessWidget {
-  const _AppDetailMessage({
-    required this.title,
-    required this.subtitle,
-  });
+  const _AppDetailMessage({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;

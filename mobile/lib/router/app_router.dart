@@ -511,6 +511,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, state) => InviteGateScreen(
               initialCode: state.uri.queryParameters['code'],
               initialError: state.uri.queryParameters['error'],
+              initialSourceSlug: state.uri.queryParameters['sourceSlug'],
             ),
           ),
           GoRoute(
@@ -773,10 +774,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: LibraryScreen.clipsNoSoundPath,
         name: LibraryScreen.clipsNoSoundRouteName,
-        builder: (_, _) => const LibraryScreen(
-          initialTabIndex: 1,
-          enableSoundTab: false,
-        ),
+        builder: (_, _) =>
+            const LibraryScreen(initialTabIndex: 1, enableSoundTab: false),
       ),
       GoRoute(
         path: LibraryScreen.soundsPath,

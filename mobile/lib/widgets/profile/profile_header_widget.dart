@@ -368,10 +368,7 @@ class _ProfileNameAndBio extends StatelessWidget {
     return Column(
       children: [
         if (profile != null)
-          UserName.fromUserProfile(
-            profile!,
-            style: VineTheme.titleLargeFont(),
-          )
+          UserName.fromUserProfile(profile!, style: VineTheme.titleLargeFont())
         else
           UserName.fromPubKey(
             userIdHex,
@@ -657,10 +654,7 @@ class _BannerImage extends StatelessWidget {
 
 /// Stats row displaying Followers, Following, Likes, and Loops with dividers.
 class _ProfileStatsRow extends StatelessWidget {
-  const _ProfileStatsRow({
-    required this.userIdHex,
-    this.profileStats,
-  });
+  const _ProfileStatsRow({required this.userIdHex, this.profileStats});
 
   final String userIdHex;
   final ProfileStats? profileStats;
@@ -691,18 +685,16 @@ class _ProfileStatsRow extends StatelessWidget {
           count: profileStats!.following,
           label: l10n.profileFollowingLabel,
           isLoading: false,
-          onTap: () => context.push(
-            FollowingScreenRouter.pathForPubkey(userIdHex),
-          ),
+          onTap: () =>
+              context.push(FollowingScreenRouter.pathForPubkey(userIdHex)),
         ),
       if (hasFollowers)
         ProfileStatColumn(
           count: profileStats!.followers,
           label: l10n.profileFollowersLabel,
           isLoading: false,
-          onTap: () => context.push(
-            FollowersScreenRouter.pathForPubkey(userIdHex),
-          ),
+          onTap: () =>
+              context.push(FollowersScreenRouter.pathForPubkey(userIdHex)),
         ),
     ];
 
@@ -797,10 +789,7 @@ class _ProfileAvatarWithColor extends StatelessWidget {
 /// pending action. Displays an icon and text matching the action type, with
 /// an optional red badge when multiple actions are pending.
 class _ProfileActionLabel extends StatelessWidget {
-  const _ProfileActionLabel({
-    required this.action,
-    required this.badgeCount,
-  });
+  const _ProfileActionLabel({required this.action, required this.badgeCount});
 
   final ProfileActionType action;
   final int badgeCount;
@@ -843,16 +832,10 @@ class _ProfileActionLabel extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: 8,
             children: [
-              DivineIcon(
-                icon: icon,
-                size: 16,
-                color: VineTheme.accentYellow,
-              ),
+              DivineIcon(icon: icon, size: 16, color: VineTheme.accentYellow),
               Text(
                 label,
-                style: VineTheme.titleSmallFont(
-                  color: VineTheme.accentYellow,
-                ),
+                style: VineTheme.titleSmallFont(color: VineTheme.accentYellow),
               ),
             ],
           ),
@@ -862,10 +845,7 @@ class _ProfileActionLabel extends StatelessWidget {
             right: -4,
             top: -8,
             child: Container(
-              constraints: const BoxConstraints(
-                minWidth: 20,
-                minHeight: 20,
-              ),
+              constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
               padding: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
                 color: VineTheme.error,

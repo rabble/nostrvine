@@ -30,9 +30,7 @@ class ResolvedSandboxRouteScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final service = ref.read(
-      nostrAppDirectoryServiceProvider,
-    );
+    final service = ref.read(nostrAppDirectoryServiceProvider);
     return BlocProvider(
       create: (_) => SandboxRouteCubit(
         appId: appId,
@@ -59,9 +57,7 @@ class _SandboxRouteContent extends StatelessWidget {
               onBackPressed: context.pop,
             ),
             backgroundColor: VineTheme.backgroundColor,
-            body: const Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: const Center(child: CircularProgressIndicator()),
           ),
           SandboxRouteNotFound() => const MissingSandboxAppScreen(),
           SandboxRouteResolved(:final app) => NostrAppSandboxScreen(app: app),

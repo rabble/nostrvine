@@ -112,10 +112,7 @@ void main() {
         build: buildBloc,
         seed: () => ClipEditorState(clips: twoClips),
         act: (bloc) => bloc.add(
-          ClipEditorClipInserted(
-            index: 1,
-            clip: _createClip(id: 'new'),
-          ),
+          ClipEditorClipInserted(index: 1, clip: _createClip(id: 'new')),
         ),
         expect: () => [
           isA<ClipEditorState>()
@@ -129,10 +126,7 @@ void main() {
         build: buildBloc,
         seed: () => ClipEditorState(clips: twoClips),
         act: (bloc) => bloc.add(
-          ClipEditorClipInserted(
-            index: 100,
-            clip: _createClip(id: 'end'),
-          ),
+          ClipEditorClipInserted(index: 100, clip: _createClip(id: 'end')),
         ),
         verify: (bloc) {
           expect(bloc.state.clips.last.id, equals('end'));
@@ -144,10 +138,7 @@ void main() {
         build: buildBloc,
         seed: () => ClipEditorState(clips: twoClips),
         act: (bloc) => bloc.add(
-          ClipEditorClipInserted(
-            index: -5,
-            clip: _createClip(id: 'first'),
-          ),
+          ClipEditorClipInserted(index: -5, clip: _createClip(id: 'first')),
         ),
         verify: (bloc) {
           expect(bloc.state.clips.first.id, equals('first'));
@@ -253,10 +244,7 @@ void main() {
       blocTest<ClipEditorBloc, ClipEditorState>(
         'is no-op when currentClipIndex >= clips.length',
         build: buildBloc,
-        seed: () => ClipEditorState(
-          clips: twoClips,
-          currentClipIndex: 5,
-        ),
+        seed: () => ClipEditorState(clips: twoClips, currentClipIndex: 5),
         act: (bloc) => bloc.add(const ClipEditorEditingStarted()),
         expect: () => <ClipEditorState>[],
       );
@@ -417,10 +405,7 @@ void main() {
       );
 
       test('uses state splitPosition for resulting clip durations', () async {
-        final clip = _createClip(
-          id: 'x',
-          duration: const Duration(seconds: 2),
-        );
+        final clip = _createClip(id: 'x', duration: const Duration(seconds: 2));
 
         final bloc = buildBloc();
 

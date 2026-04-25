@@ -32,9 +32,9 @@ class VideoEditorFilterBottomBar extends ConsumerWidget {
     );
     final scope = VideoEditorScope.of(context);
     final stateManager = scope.editor?.stateManager;
-    final textScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.25,
-    );
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.25);
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: ListView.separated(

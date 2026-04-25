@@ -29,29 +29,14 @@ class NotificationFeedBloc
   }) : _notificationRepository = notificationRepository,
        _followRepository = followRepository,
        super(const NotificationFeedState()) {
-    on<NotificationFeedStarted>(
-      _onStarted,
-      transformer: droppable(),
-    );
-    on<NotificationFeedLoadMore>(
-      _onLoadMore,
-      transformer: droppable(),
-    );
-    on<NotificationFeedRefreshed>(
-      _onRefreshed,
-      transformer: droppable(),
-    );
-    on<NotificationFeedPushReceived>(
-      _onPushReceived,
-      transformer: droppable(),
-    );
+    on<NotificationFeedStarted>(_onStarted, transformer: droppable());
+    on<NotificationFeedLoadMore>(_onLoadMore, transformer: droppable());
+    on<NotificationFeedRefreshed>(_onRefreshed, transformer: droppable());
+    on<NotificationFeedPushReceived>(_onPushReceived, transformer: droppable());
     on<NotificationFeedRealtimeReceived>(_onRealtimeReceived);
     on<NotificationFeedItemTapped>(_onItemTapped);
     on<NotificationFeedMarkAllRead>(_onMarkAllRead);
-    on<NotificationFeedFollowBack>(
-      _onFollowBack,
-      transformer: sequential(),
-    );
+    on<NotificationFeedFollowBack>(_onFollowBack, transformer: sequential());
   }
 
   final NotificationRepository _notificationRepository;
@@ -217,9 +202,7 @@ class NotificationFeedBloc
       ),
     );
 
-    unawaited(
-      _notificationRepository.markAsRead([event.notificationId]),
-    );
+    unawaited(_notificationRepository.markAsRead([event.notificationId]));
   }
 
   /// Handle mark all as read.

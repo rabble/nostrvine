@@ -19,15 +19,9 @@ void main() {
     pictureUrl: 'https://example.com/bob.jpg',
   );
 
-  const actorNoPhoto = ActorInfo(
-    pubkey: 'ghi789',
-    displayName: 'Carol',
-  );
+  const actorNoPhoto = ActorInfo(pubkey: 'ghi789', displayName: 'Carol');
 
-  Widget buildSubject({
-    required List<ActorInfo> actors,
-    int? overflowCount,
-  }) {
+  Widget buildSubject({required List<ActorInfo> actors, int? overflowCount}) {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -49,9 +43,7 @@ void main() {
     });
 
     testWidgets('renders two avatars for two actors', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(actors: const [actor1, actor2]),
-      );
+      await tester.pumpWidget(buildSubject(actors: const [actor1, actor2]));
       await tester.pump();
 
       expect(find.byType(CachedNetworkImage), findsNWidgets(2));
@@ -99,9 +91,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        buildSubject(
-          actors: const [actor1, actor2, actorNoPhoto, actor4],
-        ),
+        buildSubject(actors: const [actor1, actor2, actorNoPhoto, actor4]),
       );
       await tester.pump();
 

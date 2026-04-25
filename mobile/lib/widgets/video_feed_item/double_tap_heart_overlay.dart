@@ -85,9 +85,10 @@ class _DoubleTapHeartOverlayState extends State<DoubleTapHeartOverlay>
         weight: _HeartAnimation.fadeStart * 100,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1, end: 0).chain(
-          CurveTween(curve: Curves.easeOut),
-        ),
+        tween: Tween<double>(
+          begin: 1,
+          end: 0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: (1 - _HeartAnimation.fadeStart) * 100,
       ),
     ]).animate(_controller);

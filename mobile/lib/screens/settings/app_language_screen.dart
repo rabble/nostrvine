@@ -52,10 +52,7 @@ class AppLanguageScreen extends StatelessWidget {
                     ),
                   ),
                   _DeviceDefaultTile(isSelected: isDeviceDefault),
-                  const Divider(
-                    color: VineTheme.outlineMuted,
-                    height: 1,
-                  ),
+                  const Divider(color: VineTheme.outlineMuted, height: 1),
                   ...LocalePreferenceService.supportedLocales.entries.map(
                     (entry) => _LocaleTile(
                       code: entry.key,
@@ -94,15 +91,11 @@ class _DeviceDefaultTile extends StatelessWidget {
       ),
       title: Text(
         context.l10n.settingsAppLanguageUseDeviceLanguage,
-        style: VineTheme.titleMediumFont(
-          color: VineTheme.onSurface,
-        ),
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       subtitle: Text(
         deviceLanguageName,
-        style: VineTheme.bodySmallFont(
-          color: VineTheme.onSurfaceVariant,
-        ),
+        style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
       ),
       onTap: () => context.read<LocaleCubit>().clearLocale(),
     );
@@ -129,15 +122,11 @@ class _LocaleTile extends StatelessWidget {
       ),
       title: Text(
         nativeName,
-        style: VineTheme.titleMediumFont(
-          color: VineTheme.onSurface,
-        ),
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       subtitle: Text(
         code.toUpperCase(),
-        style: VineTheme.bodySmallFont(
-          color: VineTheme.onSurfaceVariant,
-        ),
+        style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
       ),
       onTap: () => context.read<LocaleCubit>().setLocale(code),
     );

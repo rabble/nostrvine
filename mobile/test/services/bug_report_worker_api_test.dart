@@ -32,11 +32,7 @@ void main() {
     reportId: 'test-report-001',
     timestamp: DateTime(2026, 3, 9),
     userDescription: 'App crashed on startup',
-    deviceInfo: {
-      'platform': 'ios',
-      'version': '17.0',
-      'model': 'iPhone 15',
-    },
+    deviceInfo: {'platform': 'ios', 'version': '17.0', 'model': 'iPhone 15'},
     appVersion: '1.0.0+42',
     recentLogs: [
       LogEntry(
@@ -86,9 +82,7 @@ void main() {
 
     // Mock nostrService getter and addRelay for backup relay connection
     when(() => mockNip17.nostrService).thenReturn(mockNostrClient);
-    when(
-      () => mockNostrClient.addRelay(any()),
-    ).thenAnswer((_) async => true);
+    when(() => mockNostrClient.addRelay(any())).thenAnswer((_) async => true);
 
     service = BugReportService(
       nip17MessageService: mockNip17,
@@ -189,9 +183,7 @@ void main() {
           () => mockBlossom.uploadBugReport(
             bugReportFile: any(named: 'bugReportFile'),
           ),
-        ).thenAnswer(
-          (_) async => 'https://media.divine.video/report-file.txt',
-        );
+        ).thenAnswer((_) async => 'https://media.divine.video/report-file.txt');
 
         List<List<String>>? capturedTags;
         when(
@@ -225,9 +217,7 @@ void main() {
 
     test('sends summary only when Blossom upload not available', () async {
       // Create service with NIP-17 but without Blossom
-      final serviceNoBlossom = BugReportService(
-        nip17MessageService: mockNip17,
-      );
+      final serviceNoBlossom = BugReportService(nip17MessageService: mockNip17);
 
       String? capturedContent;
       when(

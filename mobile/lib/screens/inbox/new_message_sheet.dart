@@ -76,9 +76,7 @@ class _NewMessageSheetViewState extends State<_NewMessageSheetView> {
   void _onSearchChanged(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) {
-      context.read<NewMessageSearchBloc>().add(
-        const NewMessageSearchCleared(),
-      );
+      context.read<NewMessageSearchBloc>().add(const NewMessageSearchCleared());
     } else {
       context.read<NewMessageSearchBloc>().add(
         NewMessageSearchQueryChanged(trimmed),
@@ -172,10 +170,7 @@ class _SheetHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        Text(
-          'New message',
-          style: VineTheme.titleMediumFont(),
-        ),
+        Text('New message', style: VineTheme.titleMediumFont()),
         const SizedBox(height: 8),
         const Divider(height: 1, thickness: 1, color: VineTheme.outlineMuted),
       ],
@@ -226,10 +221,7 @@ class _SearchField extends StatelessWidget {
 }
 
 class _UserProfileList extends StatelessWidget {
-  const _UserProfileList({
-    required this.profiles,
-    this.emptyMessage,
-  });
+  const _UserProfileList({required this.profiles, this.emptyMessage});
 
   final List<UserProfile> profiles;
   final String? emptyMessage;

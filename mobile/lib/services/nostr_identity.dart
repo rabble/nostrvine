@@ -190,10 +190,8 @@ class KeycastNostrIdentity extends NostrIdentity
 
 /// Identity backed by a NIP-46 bunker remote signer.
 class BunkerNostrIdentity extends NostrIdentity {
-  BunkerNostrIdentity({
-    required this.pubkey,
-    required NostrSigner remoteSigner,
-  }) : _remoteSigner = remoteSigner;
+  BunkerNostrIdentity({required this.pubkey, required NostrSigner remoteSigner})
+    : _remoteSigner = remoteSigner;
 
   final NostrSigner _remoteSigner;
 
@@ -236,10 +234,8 @@ class BunkerNostrIdentity extends NostrIdentity {
 
 /// Identity backed by a NIP-55 Amber Android signer.
 class AmberNostrIdentity extends NostrIdentity {
-  AmberNostrIdentity({
-    required this.pubkey,
-    required NostrSigner amberSigner,
-  }) : _amberSigner = amberSigner;
+  AmberNostrIdentity({required this.pubkey, required NostrSigner amberSigner})
+    : _amberSigner = amberSigner;
 
   final NostrSigner _amberSigner;
 

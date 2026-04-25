@@ -60,9 +60,7 @@ void main() {
       when(
         () => mockNostrService.connectedRelays,
       ).thenReturn(const <String>['wss://relay.divine.video']);
-      when(
-        () => mockNostrService.publicKey,
-      ).thenReturn(
+      when(() => mockNostrService.publicKey).thenReturn(
         '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
       );
       when(() => mockNostrService.initialize()).thenAnswer((_) async {});

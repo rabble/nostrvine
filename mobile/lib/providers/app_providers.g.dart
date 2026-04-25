@@ -8,6 +8,55 @@ part of 'app_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+
+@ProviderFor(contentPolicyEngine)
+const contentPolicyEngineProvider = ContentPolicyEngineProvider._();
+
+final class ContentPolicyEngineProvider
+    extends
+        $FunctionalProvider<
+          ContentPolicyEngine,
+          ContentPolicyEngine,
+          ContentPolicyEngine
+        >
+    with $Provider<ContentPolicyEngine> {
+  const ContentPolicyEngineProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'contentPolicyEngineProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$contentPolicyEngineHash();
+
+  @$internal
+  @override
+  $ProviderElement<ContentPolicyEngine> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ContentPolicyEngine create(Ref ref) {
+    return contentPolicyEngine(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ContentPolicyEngine value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ContentPolicyEngine>(value),
+    );
+  }
+}
+
+String _$contentPolicyEngineHash() =>
+    r'3e6e0f8415da251057c220f5873bd5359c6ce9f1';
+
 /// Connection status service for monitoring network connectivity
 
 @ProviderFor(connectionStatusService)

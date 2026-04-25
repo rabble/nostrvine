@@ -16,10 +16,7 @@ abstract class LocalizedTimeFormatter {
   /// short relative time string.
   ///
   /// Examples: "now", "3m", "2h", "3d", "2w", "1mo", "1y"
-  static String formatRelative(
-    AppLocalizations l10n,
-    int unixSeconds,
-  ) {
+  static String formatRelative(AppLocalizations l10n, int unixSeconds) {
     final now = DateTime.now();
     final then = DateTime.fromMillisecondsSinceEpoch(
       unixSeconds * 1000,
@@ -50,10 +47,7 @@ abstract class LocalizedTimeFormatter {
   /// verbose relative time string.
   ///
   /// Examples: "Now", "3m ago", "2h ago"
-  static String formatRelativeVerbose(
-    AppLocalizations l10n,
-    int unixSeconds,
-  ) {
+  static String formatRelativeVerbose(AppLocalizations l10n, int unixSeconds) {
     final now = DateTime.now();
     final then = DateTime.fromMillisecondsSinceEpoch(
       unixSeconds * 1000,
@@ -152,10 +146,7 @@ abstract class LocalizedTimeFormatter {
   /// localization from the UI layer.
   ///
   /// Examples: "just now", "5m ago", "2h ago", "3d ago"
-  static String formatDurationAgo(
-    AppLocalizations l10n,
-    Duration duration,
-  ) {
+  static String formatDurationAgo(AppLocalizations l10n, Duration duration) {
     if (duration.inMinutes < 1) return l10n.timeJustNow;
     if (duration.inMinutes < 60) {
       return l10n.timeMinutesAgo(duration.inMinutes);
@@ -200,10 +191,7 @@ abstract class LocalizedTimeFormatter {
   /// Formats a [Duration] into a localized draft age string.
   ///
   /// Examples: "Just now", "5m ago", "2h ago", "3d ago"
-  static String formatDraftAge(
-    AppLocalizations l10n,
-    Duration duration,
-  ) {
+  static String formatDraftAge(AppLocalizations l10n, Duration duration) {
     if (duration.inMinutes < 1) return l10n.draftTimeJustNow;
     if (duration.inMinutes < 60) {
       return l10n.timeMinutesAgo(duration.inMinutes);

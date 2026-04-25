@@ -22,10 +22,7 @@ void main() {
 
     group('sync', () {
       test('creates notifier for each clip', () {
-        final clips = [
-          _createTestClip(id: 'a'),
-          _createTestClip(id: 'b'),
-        ];
+        final clips = [_createTestClip(id: 'a'), _createTestClip(id: 'b')];
 
         manager.sync(clips: clips, devicePixelRatio: 1);
 
@@ -51,16 +48,10 @@ void main() {
         );
 
         // Second sync without clip 'b'.
-        manager.sync(
-          clips: [_createTestClip(id: 'a')],
-          devicePixelRatio: 1,
-        );
+        manager.sync(clips: [_createTestClip(id: 'a')], devicePixelRatio: 1);
 
         expect(manager['a'], isA<ValueNotifier<List<StripThumbnail>>>());
-        expect(
-          () => manager['b'],
-          throwsA(isA<TypeError>()),
-        );
+        expect(() => manager['b'], throwsA(isA<TypeError>()));
       });
 
       test('does not recreate existing notifiers on re-sync', () {
@@ -83,17 +74,11 @@ void main() {
       });
 
       test('handles transition from clips to empty', () {
-        manager.sync(
-          clips: [_createTestClip(id: 'a')],
-          devicePixelRatio: 1,
-        );
+        manager.sync(clips: [_createTestClip(id: 'a')], devicePixelRatio: 1);
 
         manager.sync(clips: [], devicePixelRatio: 1);
 
-        expect(
-          () => manager['a'],
-          throwsA(isA<TypeError>()),
-        );
+        expect(() => manager['a'], throwsA(isA<TypeError>()));
       });
     });
 
@@ -122,10 +107,7 @@ void main() {
 /// Creates a test clip whose [EditorVideo] has no local file so
 /// [ClipThumbnailManager._loadThumbnails] exits early without
 /// triggering a platform channel call.
-DivineVideoClip _createTestClip({
-  required String id,
-  int seconds = 3,
-}) {
+DivineVideoClip _createTestClip({required String id, int seconds = 3}) {
   return DivineVideoClip(
     id: id,
     video: EditorVideo.network('https://example.com/$id.mp4'),

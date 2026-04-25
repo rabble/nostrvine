@@ -24,8 +24,7 @@ enum ContentFilterReason {
   falseInformation('Misinformation'),
   csam('Child safety concern'),
   aiGenerated('Suspected AI-generated content'),
-  other('Other violation')
-  ;
+  other('Other violation');
 
   const ContentFilterReason(this.description);
   final String description;

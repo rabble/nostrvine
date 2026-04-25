@@ -101,9 +101,7 @@ void main() {
 
       testWidgets('error message when status is failure', (tester) async {
         when(() => mockBloc.state).thenReturn(
-          const ProfileCommentsState(
-            status: ProfileCommentsStatus.failure,
-          ),
+          const ProfileCommentsState(status: ProfileCommentsStatus.failure),
         );
 
         await tester.pumpWidget(buildSubject());
@@ -303,9 +301,7 @@ void main() {
               home: Scaffold(
                 body: NestedScrollView(
                   headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 200),
-                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 200)),
                   ],
                   body: BlocProvider<ProfileCommentsBloc>.value(
                     value: mockBloc,
@@ -325,63 +321,60 @@ void main() {
         },
       );
 
-      testWidgets(
-        'header scrolls away when scrolling inside the grid',
-        (tester) async {
-          final manyComments = List.generate(
-            30,
-            (i) => _createTextComment(
-              id: 't$i',
-              createdAtSeconds: 1700000000 - i,
-            ),
-          );
+      testWidgets('header scrolls away when scrolling inside the grid', (
+        tester,
+      ) async {
+        final manyComments = List.generate(
+          30,
+          (i) =>
+              _createTextComment(id: 't$i', createdAtSeconds: 1700000000 - i),
+        );
 
-          when(() => mockBloc.state).thenReturn(
-            ProfileCommentsState(
-              status: ProfileCommentsStatus.success,
-              textComments: manyComments,
-            ),
-          );
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            textComments: manyComments,
+          ),
+        );
 
-          await tester.pumpWidget(
-            MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              theme: VineTheme.theme,
-              home: Scaffold(
-                body: NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                    const SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 200,
-                        child: ColoredBox(
-                          color: Colors.red,
-                          child: Center(child: Text('Header')),
-                        ),
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                  const SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 200,
+                      child: ColoredBox(
+                        color: Colors.red,
+                        child: Center(child: Text('Header')),
                       ),
                     ),
-                  ],
-                  body: BlocProvider<ProfileCommentsBloc>.value(
-                    value: mockBloc,
-                    child: const ProfileCommentsGrid(isOwnProfile: true),
                   ),
+                ],
+                body: BlocProvider<ProfileCommentsBloc>.value(
+                  value: mockBloc,
+                  child: const ProfileCommentsGrid(isOwnProfile: true),
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          expect(find.text('Header'), findsOneWidget);
+        expect(find.text('Header'), findsOneWidget);
 
-          await tester.drag(
-            find.byType(CustomScrollView).last,
-            const Offset(0, -300),
-          );
-          await tester.pumpAndSettle();
+        await tester.drag(
+          find.byType(CustomScrollView).last,
+          const Offset(0, -300),
+        );
+        await tester.pumpAndSettle();
 
-          // Header should have scrolled off screen (clipped from tree)
-          expect(find.text('Header'), findsNothing);
-        },
-      );
+        // Header should have scrolled off screen (clipped from tree)
+        expect(find.text('Header'), findsNothing);
+      });
     });
   });
 }

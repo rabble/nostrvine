@@ -11,45 +11,42 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 
 void main() {
   group('showVideoPausingVineBottomSheet', () {
-    testWidgets(
-      'default path dismisses on tap above the sheet (inherits '
-      'tapOutsideToDismiss default)',
-      (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp(
-              home: Scaffold(
-                body: Builder(
-                  builder: (context) => ElevatedButton(
-                    onPressed: () {
-                      context.showVideoPausingVineBottomSheet<void>(
-                        showHeader: false,
-                        initialChildSize: 0.7,
-                        buildScrollBody: (scrollController) => ListView(
-                          controller: scrollController,
-                          children: const [Text('Metadata Body')],
-                        ),
-                      );
-                    },
-                    child: const Text('Open'),
-                  ),
+    testWidgets('default path dismisses on tap above the sheet (inherits '
+        'tapOutsideToDismiss default)', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    context.showVideoPausingVineBottomSheet<void>(
+                      showHeader: false,
+                      initialChildSize: 0.7,
+                      buildScrollBody: (scrollController) => ListView(
+                        controller: scrollController,
+                        children: const [Text('Metadata Body')],
+                      ),
+                    );
+                  },
+                  child: const Text('Open'),
                 ),
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.tap(find.text('Open'));
-        await tester.pumpAndSettle();
-        expect(find.text('Metadata Body'), findsOneWidget);
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(find.text('Metadata Body'), findsOneWidget);
 
-        // Tap above the sheet — simulates the scrim tap.
-        await tester.tapAt(const Offset(200, 20));
-        await tester.pumpAndSettle();
+      // Tap above the sheet — simulates the scrim tap.
+      await tester.tapAt(const Offset(200, 20));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Metadata Body'), findsNothing);
-      },
-    );
+      expect(find.text('Metadata Body'), findsNothing);
+    });
 
     testWidgets(
       'sets and clears isBottomSheetOpen on the overlay visibility provider',

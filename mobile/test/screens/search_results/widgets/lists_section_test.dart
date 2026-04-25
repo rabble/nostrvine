@@ -43,65 +43,60 @@ void main() {
         home: Scaffold(
           body: BlocProvider<ListSearchBloc>.value(
             value: mockBloc,
-            child: CustomScrollView(
-              slivers: [ListsSection(showAll: showAll)],
-            ),
+            child: CustomScrollView(slivers: [ListsSection(showAll: showAll)]),
           ),
         ),
       );
     }
 
     group('showAll: false (All tab preview)', () {
-      testWidgets(
-        'hides entirely when success with empty results',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const ListSearchState(
-              status: ListSearchStatus.success,
-              query: 'test',
-            ),
-          );
+      testWidgets('hides entirely when success with empty results', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const ListSearchState(
+            status: ListSearchStatus.success,
+            query: 'test',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SectionHeader), findsNothing);
-          expect(find.byType(SearchSectionEmptyState), findsNothing);
-        },
-      );
+        expect(find.byType(SectionHeader), findsNothing);
+        expect(find.byType(SearchSectionEmptyState), findsNothing);
+      });
 
-      testWidgets(
-        'renders header and content when success with results',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            ListSearchState(
-              status: ListSearchStatus.success,
-              query: 'test',
-              videoResults: [testList],
-            ),
-          );
+      testWidgets('renders header and content when success with results', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          ListSearchState(
+            status: ListSearchStatus.success,
+            query: 'test',
+            videoResults: [testList],
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SectionHeader), findsOneWidget);
-          expect(find.text('Lists'), findsOneWidget);
-        },
-      );
+        expect(find.byType(SectionHeader), findsOneWidget);
+        expect(find.text('Lists'), findsOneWidget);
+      });
 
-      testWidgets(
-        'renders $SearchSectionErrorState on failure',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const ListSearchState(
-              status: ListSearchStatus.failure,
-              query: 'test',
-            ),
-          );
+      testWidgets('renders $SearchSectionErrorState on failure', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const ListSearchState(
+            status: ListSearchStatus.failure,
+            query: 'test',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SearchSectionErrorState), findsOneWidget);
-        },
-      );
+        expect(find.byType(SearchSectionErrorState), findsOneWidget);
+      });
     });
 
     group('showAll: true (dedicated tab)', () {
@@ -121,41 +116,39 @@ void main() {
         },
       );
 
-      testWidgets(
-        'renders $SearchSectionErrorState on failure',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const ListSearchState(
-              status: ListSearchStatus.failure,
-              query: 'test',
-            ),
-          );
-
-          await tester.pumpWidget(buildSubject(showAll: true));
-
-          expect(find.byType(SearchSectionErrorState), findsOneWidget);
-        },
-      );
-    });
-
-    testWidgets(
-      'retry dispatches $ListSearchQueryChanged with current query',
-      (tester) async {
+      testWidgets('renders $SearchSectionErrorState on failure', (
+        tester,
+      ) async {
         when(() => mockBloc.state).thenReturn(
           const ListSearchState(
             status: ListSearchStatus.failure,
-            query: 'retry-test',
+            query: 'test',
           ),
         );
 
-        await tester.pumpWidget(buildSubject());
-        await tester.tap(find.text('Try again'));
-        await tester.pumpAndSettle();
+        await tester.pumpWidget(buildSubject(showAll: true));
 
-        verify(
-          () => mockBloc.add(const ListSearchQueryChanged('retry-test')),
-        ).called(1);
-      },
-    );
+        expect(find.byType(SearchSectionErrorState), findsOneWidget);
+      });
+    });
+
+    testWidgets('retry dispatches $ListSearchQueryChanged with current query', (
+      tester,
+    ) async {
+      when(() => mockBloc.state).thenReturn(
+        const ListSearchState(
+          status: ListSearchStatus.failure,
+          query: 'retry-test',
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockBloc.add(const ListSearchQueryChanged('retry-test')),
+      ).called(1);
+    });
   });
 }

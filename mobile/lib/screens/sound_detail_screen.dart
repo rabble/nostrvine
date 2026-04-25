@@ -44,11 +44,7 @@ class SoundDetailScreen extends ConsumerStatefulWidget {
   /// [sound] is the audio event to display.
   /// [sourceVideo] is optional — provided for original sounds to show
   /// the video this sound came from.
-  const SoundDetailScreen({
-    required this.sound,
-    this.sourceVideo,
-    super.key,
-  });
+  const SoundDetailScreen({required this.sound, this.sourceVideo, super.key});
 
   /// The audio event to display details for.
   final AudioEvent sound;
@@ -539,10 +535,7 @@ class _AttributionInfo extends StatelessWidget {
 
     return Text.rich(
       TextSpan(
-        style: const TextStyle(
-          color: VineTheme.secondaryText,
-          fontSize: 12,
-        ),
+        style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
         children: [
           TextSpan(text: attributionText),
           if (sourceUrl != null) ...[
@@ -554,10 +547,7 @@ class _AttributionInfo extends StatelessWidget {
                 onTap: () async {
                   final uri = Uri.parse(sourceUrl!);
                   if (await canLaunchUrl(uri)) {
-                    await launchUrl(
-                      uri,
-                      mode: LaunchMode.externalApplication,
-                    );
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
                   }
                 },
                 child: Text(
@@ -599,15 +589,12 @@ class _SourceVideoGrid extends StatelessWidget {
               crossAxisSpacing: 2,
               mainAxisSpacing: 2,
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                return _VideoGridTile(
-                  video: video,
-                  onTap: () => onVideoTap(video.id, 0, videosList),
-                );
-              },
-              childCount: 1,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              return _VideoGridTile(
+                video: video,
+                onTap: () => onVideoTap(video.id, 0, videosList),
+              );
+            }, childCount: 1),
           ),
         ),
       ],

@@ -346,9 +346,7 @@ class _AccountContentLabelsTileState
       subtitle: Text(
         _accountLabels.isNotEmpty
             ? _accountLabels
-                  .map(
-                    (l) => localizedContentLabelName(context.l10n, l),
-                  )
+                  .map((l) => localizedContentLabelName(context.l10n, l))
                   .join(', ')
             : context.l10n.contentPreferencesAccountLabelsEmpty,
         style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
@@ -457,10 +455,7 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                     value: isChecked,
                     onChanged: (_) => _toggle(label),
                     title: Text(
-                      localizedContentLabelName(
-                        context.l10n,
-                        label,
-                      ),
+                      localizedContentLabelName(context.l10n, label),
                       style: const TextStyle(
                         color: VineTheme.whiteText,
                         fontSize: 15,

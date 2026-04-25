@@ -87,20 +87,14 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: AudioSelectionBottomSheet(
-              scrollController: scrollController,
-            ),
+            body: AudioSelectionBottomSheet(scrollController: scrollController),
           ),
         ),
       );
     }
 
     final testSounds = [
-      _createTestAudioEvent(
-        id: 'sound-1',
-        title: 'Alpha Track',
-        duration: 3.0,
-      ),
+      _createTestAudioEvent(id: 'sound-1', title: 'Alpha Track', duration: 3.0),
       _createTestAudioEvent(
         id: 'sound-2',
         title: 'Beta Song',
@@ -125,10 +119,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(
-          find.byType(AudioSelectionBottomSheet),
-          findsOneWidget,
-        );
+        expect(find.byType(AudioSelectionBottomSheet), findsOneWidget);
       });
 
       testWidgets('renders $AudioListTile for each sound', (tester) async {

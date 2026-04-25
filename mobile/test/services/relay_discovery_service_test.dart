@@ -112,35 +112,29 @@ void main() {
         },
       );
 
-      test(
-        'returns failure when all indexers return empty',
-        () async {
-          final service = _TestableRelayDiscoveryService(
-            indexerRelays: ['wss://a', 'wss://b', 'wss://c'],
-            queryHandler: (_) async => <DiscoveredRelay>[],
-          );
+      test('returns failure when all indexers return empty', () async {
+        final service = _TestableRelayDiscoveryService(
+          indexerRelays: ['wss://a', 'wss://b', 'wss://c'],
+          queryHandler: (_) async => <DiscoveredRelay>[],
+        );
 
-          final result = await service.discoverRelays(_testNpub);
+        final result = await service.discoverRelays(_testNpub);
 
-          expect(result.success, isFalse);
-          expect(result.errorMessage, equals('No relay list found'));
-        },
-      );
+        expect(result.success, isFalse);
+        expect(result.errorMessage, equals('No relay list found'));
+      });
 
-      test(
-        'returns failure when all indexers throw',
-        () async {
-          final service = _TestableRelayDiscoveryService(
-            indexerRelays: ['wss://a', 'wss://b'],
-            queryHandler: (_) async => throw Exception('connection refused'),
-          );
+      test('returns failure when all indexers throw', () async {
+        final service = _TestableRelayDiscoveryService(
+          indexerRelays: ['wss://a', 'wss://b'],
+          queryHandler: (_) async => throw Exception('connection refused'),
+        );
 
-          final result = await service.discoverRelays(_testNpub);
+        final result = await service.discoverRelays(_testNpub);
 
-          expect(result.success, isFalse);
-          expect(result.errorMessage, equals('No relay list found'));
-        },
-      );
+        expect(result.success, isFalse);
+        expect(result.errorMessage, equals('No relay list found'));
+      });
 
       test(
         'returns result when one indexer succeeds and others throw',
@@ -149,9 +143,7 @@ void main() {
             indexerRelays: ['wss://bad1', 'wss://good', 'wss://bad2'],
             queryHandler: (url) async {
               if (url == 'wss://good') {
-                return [
-                  const DiscoveredRelay(url: 'wss://relay.example.com'),
-                ];
+                return [const DiscoveredRelay(url: 'wss://relay.example.com')];
               }
               throw Exception('connection refused');
             },
@@ -164,81 +156,69 @@ void main() {
         },
       );
 
-      test(
-        'does not wait for slow indexer when fast one succeeds',
-        () async {
-          final slowCompleter = Completer<List<DiscoveredRelay>>();
+      test('does not wait for slow indexer when fast one succeeds', () async {
+        final slowCompleter = Completer<List<DiscoveredRelay>>();
 
-          final service = _TestableRelayDiscoveryService(
-            indexerRelays: ['wss://slow', 'wss://fast'],
-            queryHandler: (url) {
-              if (url == 'wss://slow') return slowCompleter.future;
-              return Future.value([
-                const DiscoveredRelay(url: 'wss://relay.fast.com'),
-              ]);
-            },
-          );
+        final service = _TestableRelayDiscoveryService(
+          indexerRelays: ['wss://slow', 'wss://fast'],
+          queryHandler: (url) {
+            if (url == 'wss://slow') return slowCompleter.future;
+            return Future.value([
+              const DiscoveredRelay(url: 'wss://relay.fast.com'),
+            ]);
+          },
+        );
 
-          final result = await service.discoverRelays(_testNpub);
+        final result = await service.discoverRelays(_testNpub);
 
-          expect(result.success, isTrue);
-          expect(result.foundOnIndexer, equals('wss://fast'));
-          // Slow indexer still pending - we didn't block on it
-          expect(slowCompleter.isCompleted, isFalse);
-        },
-      );
+        expect(result.success, isTrue);
+        expect(result.foundOnIndexer, equals('wss://fast'));
+        // Slow indexer still pending - we didn't block on it
+        expect(slowCompleter.isCompleted, isFalse);
+      });
 
-      test(
-        'handles single indexer returning relays',
-        () async {
-          final service = _TestableRelayDiscoveryService(
-            indexerRelays: ['wss://only-one'],
-            queryHandler: (_) async => [
-              const DiscoveredRelay(url: 'wss://relay.solo.com'),
-            ],
-          );
+      test('handles single indexer returning relays', () async {
+        final service = _TestableRelayDiscoveryService(
+          indexerRelays: ['wss://only-one'],
+          queryHandler: (_) async => [
+            const DiscoveredRelay(url: 'wss://relay.solo.com'),
+          ],
+        );
 
-          final result = await service.discoverRelays(_testNpub);
+        final result = await service.discoverRelays(_testNpub);
 
-          expect(result.success, isTrue);
-          expect(result.relays, hasLength(1));
-        },
-      );
+        expect(result.success, isTrue);
+        expect(result.relays, hasLength(1));
+      });
 
-      test(
-        'handles single indexer returning empty',
-        () async {
-          final service = _TestableRelayDiscoveryService(
-            indexerRelays: ['wss://only-one'],
-            queryHandler: (_) async => <DiscoveredRelay>[],
-          );
+      test('handles single indexer returning empty', () async {
+        final service = _TestableRelayDiscoveryService(
+          indexerRelays: ['wss://only-one'],
+          queryHandler: (_) async => <DiscoveredRelay>[],
+        );
 
-          final result = await service.discoverRelays(_testNpub);
+        final result = await service.discoverRelays(_testNpub);
 
-          expect(result.success, isFalse);
-        },
-      );
+        expect(result.success, isFalse);
+      });
 
-      test(
-        'caches result after first success',
-        () async {
-          final service = _TestableRelayDiscoveryService(
-            indexerRelays: ['wss://indexer'],
-            queryHandler: (_) async => [
-              const DiscoveredRelay(url: 'wss://cached-relay.com'),
-            ],
-          );
+      test('caches result after first success', () async {
+        final service = _TestableRelayDiscoveryService(
+          indexerRelays: ['wss://indexer'],
+          queryHandler: (_) async => [
+            const DiscoveredRelay(url: 'wss://cached-relay.com'),
+          ],
+        );
 
-          // First call - queries indexer
-          final result1 = await service.discoverRelays(_testNpub);
-          expect(result1.foundOnIndexer, equals('wss://indexer'));
+        // First call - queries indexer
+        final result1 = await service.discoverRelays(_testNpub);
+        expect(result1.foundOnIndexer, equals('wss://indexer'));
 
-          // Second call - should come from cache
-          final result2 = await service.discoverRelays(_testNpub);
-          expect(result2.foundOnIndexer, equals('cache'));
-          expect(result2.relays.first.url, equals('wss://cached-relay.com'));
-        },
-      );
+        // Second call - should come from cache
+        final result2 = await service.discoverRelays(_testNpub);
+        expect(result2.foundOnIndexer, equals('cache'));
+        expect(result2.relays.first.url, equals('wss://cached-relay.com'));
+      });
 
       test(
         'returns first non-empty when multiple resolve simultaneously',

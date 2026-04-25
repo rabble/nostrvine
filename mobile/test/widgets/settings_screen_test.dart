@@ -79,15 +79,11 @@ void main() {
       when(
         () => mockAuthService.currentPublicKeyHex,
       ).thenReturn('abc123pubkey');
-      when(
-        () => mockAuthService.authState,
-      ).thenReturn(AuthState.authenticated);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
-      when(
-        () => mockAuthService.hasExpiredOAuthSession,
-      ).thenReturn(false);
+      when(() => mockAuthService.hasExpiredOAuthSession).thenReturn(false);
       when(
         () => mockAuthService.getKnownAccounts(),
       ).thenAnswer((_) async => []);
@@ -115,9 +111,7 @@ void main() {
             mockDraftStorageService,
           ),
           currentAuthStateProvider.overrideWith((ref) => authState),
-          knownAccountsProvider.overrideWith(
-            (ref) async => knownAccounts,
-          ),
+          knownAccountsProvider.overrideWith((ref) async => knownAccounts),
           userProfileReactiveProvider.overrideWith(
             (ref, pubkey) => Stream.value(null),
           ),
@@ -127,9 +121,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: MultiBlocProvider(
             providers: [
-              BlocProvider<InviteStatusCubit>.value(
-                value: mockInviteCubit,
-              ),
+              BlocProvider<InviteStatusCubit>.value(value: mockInviteCubit),
               BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
             ],
             child: const SettingsScreen(),
@@ -179,9 +171,7 @@ void main() {
 
     testWidgets(
       'hides account action when multiple accounts exist and switching is disabled',
-      (
-        tester,
-      ) async {
+      (tester) async {
         await tester.pumpWidget(buildSubject(knownAccounts: twoAccounts));
         await tester.pumpAndSettle();
 
@@ -296,9 +286,7 @@ void main() {
                   BlocProvider<InviteStatusCubit>.value(
                     value: _createMockInviteCubit(),
                   ),
-                  BlocProvider<LocaleCubit>.value(
-                    value: mockLocaleCubit,
-                  ),
+                  BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
                 ],
                 child: const SettingsScreen(),
               ),
@@ -342,9 +330,7 @@ void main() {
     testWidgets('renders Session Expired tile when session expired', (
       tester,
     ) async {
-      when(
-        () => mockAuthService.hasExpiredOAuthSession,
-      ).thenReturn(true);
+      when(() => mockAuthService.hasExpiredOAuthSession).thenReturn(true);
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -360,9 +346,7 @@ void main() {
       'users',
       (tester) async {
         when(() => mockAuthService.isAnonymous).thenReturn(true);
-        when(
-          () => mockAuthService.hasExpiredOAuthSession,
-        ).thenReturn(true);
+        when(() => mockAuthService.hasExpiredOAuthSession).thenReturn(true);
 
         await tester.pumpWidget(
           ProviderScope(
@@ -384,9 +368,7 @@ void main() {
                   BlocProvider<InviteStatusCubit>.value(
                     value: _createMockInviteCubit(),
                   ),
-                  BlocProvider<LocaleCubit>.value(
-                    value: mockLocaleCubit,
-                  ),
+                  BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
                 ],
                 child: const SettingsScreen(),
               ),
@@ -432,70 +414,66 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets(
-      'hides Bluesky Publishing tile when feature flag is off',
-      (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+    testWidgets('hides Bluesky Publishing tile when feature flag is off', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-        expect(find.text('Bluesky Publishing'), findsNothing);
+      expect(find.text('Bluesky Publishing'), findsNothing);
 
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump();
-      },
-    );
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
 
-    testWidgets(
-      'shows Bluesky Publishing tile when feature flag is on',
-      (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-              authServiceProvider.overrideWithValue(mockAuthService),
-              draftStorageServiceProvider.overrideWithValue(
-                mockDraftStorageService,
-              ),
-              currentAuthStateProvider.overrideWith(
-                (ref) => AuthState.authenticated,
-              ),
-              userProfileReactiveProvider.overrideWith(
-                (ref, pubkey) => Stream.value(null),
-              ),
-              isFeatureEnabledProvider(
-                FeatureFlag.blueskyPublishing,
-              ).overrideWith((ref) => true),
-            ],
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: MultiBlocProvider(
-                providers: [
-                  BlocProvider<InviteStatusCubit>.value(
-                    value: _createMockInviteCubit(),
-                  ),
-                  BlocProvider<LocaleCubit>.value(
-                    value: mockLocaleCubit,
-                  ),
-                ],
-                child: const SettingsScreen(),
-              ),
+    testWidgets('shows Bluesky Publishing tile when feature flag is on', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            authServiceProvider.overrideWithValue(mockAuthService),
+            draftStorageServiceProvider.overrideWithValue(
+              mockDraftStorageService,
+            ),
+            currentAuthStateProvider.overrideWith(
+              (ref) => AuthState.authenticated,
+            ),
+            userProfileReactiveProvider.overrideWith(
+              (ref, pubkey) => Stream.value(null),
+            ),
+            isFeatureEnabledProvider(
+              FeatureFlag.blueskyPublishing,
+            ).overrideWith((ref) => true),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<InviteStatusCubit>.value(
+                  value: _createMockInviteCubit(),
+                ),
+                BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
+              ],
+              child: const SettingsScreen(),
             ),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        final scrollable = find.byType(Scrollable);
-        await tester.scrollUntilVisible(
-          find.text('Bluesky Publishing'),
-          100,
-          scrollable: scrollable,
-        );
-        expect(find.text('Bluesky Publishing'), findsOneWidget);
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text('Bluesky Publishing'),
+        100,
+        scrollable: scrollable,
+      );
+      expect(find.text('Bluesky Publishing'), findsOneWidget);
 
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump();
-      },
-    );
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
   });
 }

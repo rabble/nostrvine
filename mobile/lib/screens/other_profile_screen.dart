@@ -170,10 +170,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
       final shareText = shareTextFn(displayName, npub);
 
       await SharePlus.instance.share(
-        ShareParams(
-          text: shareText,
-          subject: shareSubjectFn(displayName),
-        ),
+        ShareParams(text: shareText, subject: shareSubjectFn(displayName)),
       );
     } catch (e) {
       Log.error(
@@ -239,9 +236,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               widget.displayNameHint ??
               fallbackName;
           // TODO(SofiaRey): revisit when designs are ready
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(l10n.profileBlockedUser(name))),
           );
           context.pop();
@@ -259,12 +254,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               widget.displayNameHint ??
               fallbackName;
           // TODO(SofiaRey): revisit when designs are ready
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(
-            SnackBar(
-              content: Text(l10n.profileUnblockedUser(name)),
-            ),
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.profileUnblockedUser(name))),
           );
         }
     }
@@ -280,9 +271,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     await followRepository.toggleFollow(widget.pubkey);
 
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.l10n.profileUnfollowedUser(displayName)),
         ),

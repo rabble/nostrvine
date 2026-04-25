@@ -196,10 +196,7 @@ void main() {
           // First: accounts without profiles
           const WelcomeState(
             status: WelcomeStatus.loaded,
-            previousAccounts: [
-              _testPreviousAccount,
-              _testPreviousAccount2,
-            ],
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
           ),
           // Second: accounts with hydrated profiles
           WelcomeState(
@@ -483,9 +480,7 @@ void main() {
     });
 
     test('copyWith status resets from error', () {
-      const state = WelcomeState(
-        status: WelcomeStatus.error,
-      );
+      const state = WelcomeState(status: WelcomeStatus.error);
       final cleared = state.copyWith(status: WelcomeStatus.loaded);
       expect(cleared.status, equals(WelcomeStatus.loaded));
     });

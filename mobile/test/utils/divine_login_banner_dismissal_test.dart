@@ -12,18 +12,10 @@ void main() {
   test('dismissal remains active within 30 days', () async {
     final prefs = await SharedPreferences.getInstance();
 
-    await dismissDivineLoginBanner(
-      prefs,
-      pubkey,
-      now: DateTime(2026, 3, 22),
-    );
+    await dismissDivineLoginBanner(prefs, pubkey, now: DateTime(2026, 3, 22));
 
     expect(
-      isDivineLoginBannerDismissed(
-        prefs,
-        pubkey,
-        now: DateTime(2026, 4, 20),
-      ),
+      isDivineLoginBannerDismissed(prefs, pubkey, now: DateTime(2026, 4, 20)),
       isTrue,
     );
   });
@@ -31,18 +23,10 @@ void main() {
   test('dismissal expires after 30 days', () async {
     final prefs = await SharedPreferences.getInstance();
 
-    await dismissDivineLoginBanner(
-      prefs,
-      pubkey,
-      now: DateTime(2026, 3, 22),
-    );
+    await dismissDivineLoginBanner(prefs, pubkey, now: DateTime(2026, 3, 22));
 
     expect(
-      isDivineLoginBannerDismissed(
-        prefs,
-        pubkey,
-        now: DateTime(2026, 4, 22),
-      ),
+      isDivineLoginBannerDismissed(prefs, pubkey, now: DateTime(2026, 4, 22)),
       isFalse,
     );
   });

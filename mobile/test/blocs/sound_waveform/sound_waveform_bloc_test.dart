@@ -274,21 +274,18 @@ void main() {
       },
     );
 
-    test(
-      '$SoundWaveformLoaded states with different waveform data '
-      'are not equal',
-      () {
-        final state1 = SoundWaveformLoaded(
-          leftChannel: Float32List.fromList([0.1, 0.5]),
-          duration: const Duration(seconds: 5),
-        );
-        final state2 = SoundWaveformLoaded(
-          leftChannel: Float32List.fromList([0.9, 0.3]),
-          duration: const Duration(seconds: 5),
-        );
-        expect(state1, isNot(equals(state2)));
-      },
-    );
+    test('$SoundWaveformLoaded states with different waveform data '
+        'are not equal', () {
+      final state1 = SoundWaveformLoaded(
+        leftChannel: Float32List.fromList([0.1, 0.5]),
+        duration: const Duration(seconds: 5),
+      );
+      final state2 = SoundWaveformLoaded(
+        leftChannel: Float32List.fromList([0.9, 0.3]),
+        duration: const Duration(seconds: 5),
+      );
+      expect(state1, isNot(equals(state2)));
+    });
 
     test('$SoundWaveformError states with same message are equal', () {
       const state1 = SoundWaveformError('Error message');

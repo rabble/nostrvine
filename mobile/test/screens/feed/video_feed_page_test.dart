@@ -123,9 +123,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _buildEmptyFeedSubject(
-          const VideoFeedState(
-            status: VideoFeedStatus.success,
-          ),
+          const VideoFeedState(status: VideoFeedStatus.success),
         ),
       );
 
@@ -482,9 +480,7 @@ void main() {
               home: MultiBlocProvider(
                 providers: [
                   BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
-                  BlocProvider<VideoVolumeCubit>.value(
-                    value: videoVolumeCubit,
-                  ),
+                  BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
                   BlocProvider<VideoPlaybackStatusCubit>(
                     create: (_) => VideoPlaybackStatusCubit(),
                   ),

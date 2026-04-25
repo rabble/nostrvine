@@ -165,10 +165,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
       // Use share_plus to show native share sheet
       final result = await SharePlus.instance.share(
-        ShareParams(
-          text: shareText,
-          subject: shareSubjectFn(displayName),
-        ),
+        ShareParams(text: shareText, subject: shareSubjectFn(displayName)),
       );
 
       if (result.status == ShareResultStatus.success) {
@@ -463,9 +460,7 @@ class _ProfileDataView extends ConsumerWidget {
     // Get video data and stats from providers
     final videosAsync = ref.watch(profileFeedProvider(userIdHex));
     final profileStats = ref
-        .watch(
-          userProfileStatsReactiveProvider(userIdHex),
-        )
+        .watch(userProfileStatsReactiveProvider(userIdHex))
         .value;
 
     if (videosAsync is AsyncData) {

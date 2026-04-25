@@ -2,8 +2,7 @@ import 'package:models/models.dart' as model show AspectRatio;
 
 enum VideoRecorderMode {
   capture,
-  classic
-  ;
+  classic;
 
   String get label => switch (this) {
     .capture => 'Capture',

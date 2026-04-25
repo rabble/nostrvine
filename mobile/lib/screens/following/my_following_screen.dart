@@ -47,9 +47,7 @@ class _MyFollowingView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(blocklistVersionProvider, (_, _) {
-      context.read<MyFollowingBloc>().add(
-        const MyFollowingBlocklistChanged(),
-      );
+      context.read<MyFollowingBloc>().add(const MyFollowingBlocklistChanged());
     });
 
     final appBarTitle = displayName?.isNotEmpty == true
@@ -167,18 +165,11 @@ class _FollowingEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.person_add_outlined,
-            size: 64,
-            color: VineTheme.lightText,
-          ),
+          Icon(Icons.person_add_outlined, size: 64, color: VineTheme.lightText),
           SizedBox(height: 16),
           Text(
             'Not following anyone yet',
-            style: TextStyle(
-              color: VineTheme.secondaryText,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
           ),
         ],
       ),
@@ -197,24 +188,14 @@ class _FollowingErrorBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: VineTheme.lightText,
-          ),
+          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
           const SizedBox(height: 16),
           const Text(
             'Failed to load following list',
-            style: TextStyle(
-              color: VineTheme.secondaryText,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: onRetry,
-            child: Text(context.l10n.commonRetry),
-          ),
+          TextButton(onPressed: onRetry, child: Text(context.l10n.commonRetry)),
         ],
       ),
     );

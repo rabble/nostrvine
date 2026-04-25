@@ -47,9 +47,7 @@ void main() {
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoRecorderClassicActionsTop(),
-          ),
+          home: Scaffold(body: VideoRecorderClassicActionsTop()),
         ),
       );
     }
@@ -115,9 +113,7 @@ void main() {
         expect(opacity.opacity, equals(1));
       });
 
-      testWidgets('is hidden during recording even with clips', (
-        tester,
-      ) async {
+      testWidgets('is hidden during recording even with clips', (tester) async {
         final clips = [
           DivineVideoClip(
             id: 'clip1',

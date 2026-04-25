@@ -444,10 +444,7 @@ VideoEvent _createVideo(String id, {required bool hasUrl, String? videoUrl}) {
 
 /// Test implementation of VideoPrefetchMixin
 class TestVideoPrefetchMixin with VideoPrefetchMixin {
-  TestVideoPrefetchMixin(
-    this._cache, {
-    this.videoControllerParamsBuilder,
-  });
+  TestVideoPrefetchMixin(this._cache, {this.videoControllerParamsBuilder});
 
   final MediaCacheManager _cache;
   final VideoControllerParams Function(VideoEvent video)?

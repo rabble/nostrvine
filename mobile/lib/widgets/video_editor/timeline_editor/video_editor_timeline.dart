@@ -163,9 +163,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
             Column(
               crossAxisAlignment: .stretch,
               children: [
-                VideoEditorTimelineHeader(
-                  playheadPosition: _playheadPosition,
-                ),
+                VideoEditorTimelineHeader(playheadPosition: _playheadPosition),
                 const Padding(
                   padding: .only(top: 12),
                   child: Divider(
@@ -261,9 +259,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   // -- Reorder callbacks ----------------------------------------------------
 
   void _onClipsReordered(List<DivineVideoClip> reorderedClips) {
-    context.read<ClipEditorBloc>().add(
-      ClipEditorInitialized(reorderedClips),
-    );
+    context.read<ClipEditorBloc>().add(ClipEditorInitialized(reorderedClips));
     context.read<VideoEditorMainBloc>().add(
       const VideoEditorExternalPauseRequested(isPaused: true),
     );
@@ -484,11 +480,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   ///
   /// [targetIdx] is the insertion position in the list *after* removing
   /// the dragged element (computed by [_targetListIndex]).
-  void _reorderEditorList<T>(
-    List<T> list,
-    int currentIdx,
-    int targetIdx,
-  ) {
+  void _reorderEditorList<T>(List<T> list, int currentIdx, int targetIdx) {
     if (currentIdx < 0) return;
 
     final element = list.removeAt(currentIdx);
@@ -634,26 +626,15 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   }
 
   void _onOverlayDragEnded() {
-    context.read<TimelineOverlayBloc>().add(
-      const TimelineOverlayDragEnded(),
-    );
+    context.read<TimelineOverlayBloc>().add(const TimelineOverlayDragEnded());
   }
 
   // -- Pointer tracking + manual pinch-to-zoom ------------------------------
 
-  void _stepPosition(
-    Duration current,
-    Duration total,
-    Duration step,
-  ) {
-    final ms = (current + step).inMilliseconds.clamp(
-      0,
-      total.inMilliseconds,
-    );
+  void _stepPosition(Duration current, Duration total, Duration step) {
+    final ms = (current + step).inMilliseconds.clamp(0, total.inMilliseconds);
     final position = Duration(milliseconds: ms);
-    context.read<VideoEditorMainBloc>().add(
-      VideoEditorSeekRequested(position),
-    );
+    context.read<VideoEditorMainBloc>().add(VideoEditorSeekRequested(position));
   }
 
   void _onPointerDown(PointerDownEvent event) {
@@ -721,10 +702,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   void _updatePlayheadTime() {
     if (!_scrollController.hasClients) return;
     final seconds = _scrollController.offset / _pixelsPerSecond;
-    final ms = (seconds * 1000).round().clamp(
-      0,
-      _totalDuration.inMilliseconds,
-    );
+    final ms = (seconds * 1000).round().clamp(0, _totalDuration.inMilliseconds);
     _playheadPosition.value = Duration(milliseconds: ms);
   }
 
@@ -756,14 +734,9 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     _lastSeekMs = now;
 
     final seconds = _scrollController.offset / _pixelsPerSecond;
-    final ms = (seconds * 1000).round().clamp(
-      0,
-      _totalDuration.inMilliseconds,
-    );
+    final ms = (seconds * 1000).round().clamp(0, _totalDuration.inMilliseconds);
     final position = Duration(milliseconds: ms);
-    context.read<VideoEditorMainBloc>().add(
-      VideoEditorSeekRequested(position),
-    );
+    context.read<VideoEditorMainBloc>().add(VideoEditorSeekRequested(position));
   }
 }
 

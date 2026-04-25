@@ -31,11 +31,7 @@ class EmptyConversation extends StatelessWidget {
       child: Column(
         children: [
           // Avatar
-          UserAvatar(
-            imageUrl: imageUrl,
-            name: displayName,
-            size: 96,
-          ),
+          UserAvatar(imageUrl: imageUrl, name: displayName, size: 96),
           const SizedBox(height: 32),
           // User info
           Text(
@@ -49,9 +45,7 @@ class EmptyConversation extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               nip05!,
-              style: VineTheme.bodySmallFont(
-                color: VineTheme.onSurfaceVariant,
-              ),
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

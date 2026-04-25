@@ -4937,6 +4937,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Descoperă ceva interesant';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Liste';
 
   @override

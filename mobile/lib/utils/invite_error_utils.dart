@@ -15,6 +15,9 @@ enum InviteActivationFailureReason {
   /// Invite code is invalid, revoked, expired, or not eligible.
   invalid,
 
+  /// Creator invite cap has been reached.
+  creatorFull,
+
   /// Temporary server or network problem (retryable).
   temporary,
 
@@ -32,6 +35,11 @@ class InviteErrorUtils {
   ) {
     final statusCode = error.statusCode;
     final normalizedMessage = error.message.toLowerCase();
+    final code = error.code;
+
+    if (code == 'creator_page_full') {
+      return InviteActivationFailureReason.creatorFull;
+    }
 
     final isUsedError =
         statusCode == 409 ||
@@ -81,6 +89,7 @@ class InviteErrorUtils {
       case InviteActivationFailureReason.alreadyUsed:
         return EmailVerificationError.inviteAlreadyUsed;
       case InviteActivationFailureReason.invalid:
+      case InviteActivationFailureReason.creatorFull:
         return EmailVerificationError.inviteInvalid;
       case InviteActivationFailureReason.temporary:
         return EmailVerificationError.inviteTemporary;
@@ -106,6 +115,9 @@ class InviteErrorUtils {
         return 'That invite code cannot be used right now. '
             'Go back to your invite code, join the waitlist, '
             'or contact support.';
+      case InviteActivationFailureReason.creatorFull:
+        return "This creator's invites are full. Join the waitlist and "
+            "we'll send an invite when there's room.";
       case InviteActivationFailureReason.temporary:
         return "We couldn't confirm your invite right now. "
             'Go back to your invite code and try again, or contact support.';

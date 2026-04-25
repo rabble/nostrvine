@@ -7,6 +7,7 @@ export 'package:invite_api_client/invite_api_client.dart'
         InviteClientConfig,
         InviteCode,
         InviteConsumeResult,
+        InviteConsumeStatus,
         InviteStatus,
         InviteValidationResult,
         OnboardingMode,

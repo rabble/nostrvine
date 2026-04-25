@@ -22,8 +22,7 @@ enum VideoMetadataExpiration {
   oneYear,
 
   /// Video expires after 1 decade (10 years, 3650 days).
-  oneDecade
-  ;
+  oneDecade;
 
   /// Returns the duration value for this expiration option.
   ///

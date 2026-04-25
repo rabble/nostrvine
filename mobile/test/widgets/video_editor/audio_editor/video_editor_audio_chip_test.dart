@@ -162,9 +162,7 @@ void main() {
         AudioEvent? receivedSound;
 
         await tester.pumpWidget(
-          buildWidget(
-            onSoundChanged: (sound) => receivedSound = sound,
-          ),
+          buildWidget(onSoundChanged: (sound) => receivedSound = sound),
         );
         await tester.pumpAndSettle();
 

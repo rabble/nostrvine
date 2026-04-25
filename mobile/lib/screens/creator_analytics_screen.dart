@@ -231,9 +231,7 @@ class _CreatorAnalyticsScreenState
                     useFixture: useFixture,
                     onToggleFixture: (enabled) async {
                       ref
-                              .read(
-                                useFixtureCreatorAnalyticsProvider.notifier,
-                              )
+                              .read(useFixtureCreatorAnalyticsProvider.notifier)
                               .state =
                           enabled;
                       await _refresh();
@@ -1112,8 +1110,7 @@ enum _AnalyticsWindow {
   last7Days('7D', Duration(days: 7)),
   last28Days('28D', Duration(days: 28)),
   last90Days('90D', Duration(days: 90)),
-  allTime('All', null)
-  ;
+  allTime('All', null);
 
   const _AnalyticsWindow(this.label, this.duration);
 
@@ -1379,10 +1376,7 @@ String _dayKey(DateTime day) {
   return '${day.year}-$month-$date';
 }
 
-String _formatLastUpdated(
-  AppLocalizations l10n,
-  DateTime updatedAt,
-) {
+String _formatLastUpdated(AppLocalizations l10n, DateTime updatedAt) {
   final diff = DateTime.now().difference(updatedAt);
   return LocalizedTimeFormatter.formatDurationAgo(l10n, diff);
 }

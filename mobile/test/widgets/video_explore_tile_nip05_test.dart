@@ -55,24 +55,20 @@ void main() {
 
     return ProviderScope(
       overrides: [
-        userProfileReactiveProvider.overrideWith(
-          (ref, pubkey) async* {
-            yield UserProfile(
-              pubkey: pubkey,
-              name: 'Test User',
-              nip05: nip05,
-              rawData: const {},
-              createdAt: DateTime(2026),
-              eventId: 'test_event',
-            );
-          },
-        ),
+        userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
+          yield UserProfile(
+            pubkey: pubkey,
+            name: 'Test User',
+            nip05: nip05,
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'test_event',
+          );
+        }),
         nip05VerificationProvider.overrideWith(
           (ref, pubkey) async => verificationStatus,
         ),
-        moderationLabelServiceProvider.overrideWithValue(
-          mockLabelService,
-        ),
+        moderationLabelServiceProvider.overrideWithValue(mockLabelService),
         videoModerationStatusServiceProvider.overrideWithValue(
           _MockVideoModerationStatusService(),
         ),

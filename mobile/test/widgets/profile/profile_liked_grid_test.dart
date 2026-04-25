@@ -47,10 +47,7 @@ void main() {
       ).thenAnswer((_) async => null);
     });
 
-    Widget buildSubject({
-      bool isOwnProfile = true,
-      MockGoRouter? goRouter,
-    }) {
+    Widget buildSubject({bool isOwnProfile = true, MockGoRouter? goRouter}) {
       final app = MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -69,21 +66,15 @@ void main() {
     }
 
     group('renders', () {
-      testWidgets('loading indicator when status is initial', (
-        tester,
-      ) async {
-        when(() => mockBloc.state).thenReturn(
-          const ProfileLikedVideosState(),
-        );
+      testWidgets('loading indicator when status is initial', (tester) async {
+        when(() => mockBloc.state).thenReturn(const ProfileLikedVideosState());
 
         await tester.pumpWidget(buildSubject());
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('loading indicator when status is syncing', (
-        tester,
-      ) async {
+      testWidgets('loading indicator when status is syncing', (tester) async {
         when(() => mockBloc.state).thenReturn(
           const ProfileLikedVideosState(
             status: ProfileLikedVideosStatus.syncing,
@@ -95,9 +86,7 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('loading indicator when status is loading', (
-        tester,
-      ) async {
+      testWidgets('loading indicator when status is loading', (tester) async {
         when(() => mockBloc.state).thenReturn(
           const ProfileLikedVideosState(
             status: ProfileLikedVideosStatus.loading,
@@ -173,9 +162,7 @@ void main() {
         expect(find.byType(SliverGrid), findsOneWidget);
       });
 
-      testWidgets('bottom loading indicator when loading more', (
-        tester,
-      ) async {
+      testWidgets('bottom loading indicator when loading more', (tester) async {
         final videos = _createTestVideos(count: 3);
         when(() => mockBloc.state).thenReturn(
           ProfileLikedVideosState(
@@ -233,10 +220,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockGoRouter.push<Object?>(
-            any(),
-            extra: any(named: 'extra'),
-          ),
+          () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
         ).called(1);
       });
     });
@@ -261,9 +245,7 @@ void main() {
               home: Scaffold(
                 body: NestedScrollView(
                   headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 200),
-                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 200)),
                   ],
                   body: BlocProvider<ProfileLikedVideosBloc>.value(
                     value: mockBloc,
@@ -287,58 +269,57 @@ void main() {
         },
       );
 
-      testWidgets(
-        'header scrolls away when scrolling inside the grid',
-        (tester) async {
-          final videos = _createTestVideos(count: 30);
-          when(() => mockBloc.state).thenReturn(
-            ProfileLikedVideosState(
-              status: ProfileLikedVideosStatus.success,
-              videos: videos,
-            ),
-          );
+      testWidgets('header scrolls away when scrolling inside the grid', (
+        tester,
+      ) async {
+        final videos = _createTestVideos(count: 30);
+        when(() => mockBloc.state).thenReturn(
+          ProfileLikedVideosState(
+            status: ProfileLikedVideosStatus.success,
+            videos: videos,
+          ),
+        );
 
-          await tester.pumpWidget(
-            MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              theme: VineTheme.theme,
-              home: Scaffold(
-                body: NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                    const SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 200,
-                        child: ColoredBox(
-                          color: Colors.red,
-                          child: Center(child: Text('Header')),
-                        ),
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                  const SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 200,
+                      child: ColoredBox(
+                        color: Colors.red,
+                        child: Center(child: Text('Header')),
                       ),
                     ),
-                  ],
-                  body: BlocProvider<ProfileLikedVideosBloc>.value(
-                    value: mockBloc,
-                    child: const ProfileLikedGrid(isOwnProfile: true),
                   ),
+                ],
+                body: BlocProvider<ProfileLikedVideosBloc>.value(
+                  value: mockBloc,
+                  child: const ProfileLikedGrid(isOwnProfile: true),
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          // Header should initially be visible
-          expect(find.text('Header'), findsOneWidget);
+        // Header should initially be visible
+        expect(find.text('Header'), findsOneWidget);
 
-          // Scroll down inside the grid
-          await tester.drag(
-            find.byType(CustomScrollView).last,
-            const Offset(0, -300),
-          );
-          await tester.pumpAndSettle();
+        // Scroll down inside the grid
+        await tester.drag(
+          find.byType(CustomScrollView).last,
+          const Offset(0, -300),
+        );
+        await tester.pumpAndSettle();
 
-          // Header should have scrolled off screen (clipped from tree)
-          expect(find.text('Header'), findsNothing);
-        },
-      );
+        // Header should have scrolled off screen (clipped from tree)
+        expect(find.text('Header'), findsNothing);
+      });
     });
   });
 }

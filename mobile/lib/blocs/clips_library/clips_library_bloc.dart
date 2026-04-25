@@ -25,24 +25,12 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   }) : _clipLibraryService = clipLibraryService,
        _gallerySaveService = gallerySaveService,
        super(const ClipsLibraryState()) {
-    on<ClipsLibraryLoadRequested>(
-      _onLoadRequested,
-      transformer: droppable(),
-    );
+    on<ClipsLibraryLoadRequested>(_onLoadRequested, transformer: droppable());
     on<ClipsLibraryToggleSelection>(_onToggleSelection);
     on<ClipsLibraryClearSelection>(_onClearSelection);
-    on<ClipsLibraryDeleteSelected>(
-      _onDeleteSelected,
-      transformer: droppable(),
-    );
-    on<ClipsLibraryDeleteClip>(
-      _onDeleteClip,
-      transformer: droppable(),
-    );
-    on<ClipsLibrarySaveToGallery>(
-      _onSaveToGallery,
-      transformer: droppable(),
-    );
+    on<ClipsLibraryDeleteSelected>(_onDeleteSelected, transformer: droppable());
+    on<ClipsLibraryDeleteClip>(_onDeleteClip, transformer: droppable());
+    on<ClipsLibrarySaveToGallery>(_onSaveToGallery, transformer: droppable());
   }
 
   final ClipLibraryService _clipLibraryService;

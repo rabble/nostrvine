@@ -33,9 +33,7 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
           GestureDetector(
             behavior: .opaque,
             onTap: textEditor.focusNode.requestFocus,
-            child: const IgnorePointer(
-              child: SizedBox.expand(),
-            ),
+            child: const IgnorePointer(child: SizedBox.expand()),
           ),
         // Close/Done buttons at the top
         Align(

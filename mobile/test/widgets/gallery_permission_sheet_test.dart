@@ -45,9 +45,9 @@ void main() {
               );
               if (!context.mounted) return;
               // Surface the result as text so tests can verify it.
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('result:${choice.name}')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('result:${choice.name}')));
             },
             child: const Text('Open Sheet'),
           ),
@@ -72,9 +72,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.textContaining(
-            'Flip on Gallery access in Settings',
-          ),
+          find.textContaining('Flip on Gallery access in Settings'),
           findsOneWidget,
         );
       });
@@ -84,10 +82,7 @@ void main() {
         await tester.tap(find.text('Open Sheet'));
         await tester.pumpAndSettle();
 
-        expect(
-          find.byType(DivineSticker),
-          findsOneWidget,
-        );
+        expect(find.byType(DivineSticker), findsOneWidget);
       });
 
       testWidgets('Open Settings primary button', (tester) async {
@@ -116,67 +111,57 @@ void main() {
     });
 
     group('interactions', () {
-      testWidgets(
-        'tapping Open Settings calls openAppSettings and returns '
-        '$GalleryPermissionChoice.openedSettings',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
-          await tester.tap(find.text('Open Sheet'));
-          await tester.pumpAndSettle();
+      testWidgets('tapping Open Settings calls openAppSettings and returns '
+          '$GalleryPermissionChoice.openedSettings', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Open Settings'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Settings'));
+        await tester.pumpAndSettle();
 
-          // Sheet dismissed
-          expect(find.text('Let us save your videos'), findsNothing);
+        // Sheet dismissed
+        expect(find.text('Let us save your videos'), findsNothing);
 
-          verify(() => mockPermissionsService.openAppSettings()).called(1);
-          expect(find.text('result:openedSettings'), findsOneWidget);
-        },
-      );
+        verify(() => mockPermissionsService.openAppSettings()).called(1);
+        expect(find.text('result:openedSettings'), findsOneWidget);
+      });
 
-      testWidgets(
-        'tapping Not Now returns $GalleryPermissionChoice.skipped',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
-          await tester.tap(find.text('Open Sheet'));
-          await tester.pumpAndSettle();
+      testWidgets('tapping Not Now returns $GalleryPermissionChoice.skipped', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Not Now'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Not Now'));
+        await tester.pumpAndSettle();
 
-          // Sheet dismissed
-          expect(find.text('Let us save your videos'), findsNothing);
+        // Sheet dismissed
+        expect(find.text('Let us save your videos'), findsNothing);
 
-          verifyNever(() => mockPermissionsService.openAppSettings());
-          expect(find.text('result:skipped'), findsOneWidget);
-        },
-      );
+        verifyNever(() => mockPermissionsService.openAppSettings());
+        expect(find.text('result:skipped'), findsOneWidget);
+      });
 
-      testWidgets(
-        "tapping Don't Ask Again persists flag and returns "
-        '$GalleryPermissionChoice.dismissedForever',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
-          await tester.tap(find.text('Open Sheet'));
-          await tester.pumpAndSettle();
+      testWidgets("tapping Don't Ask Again persists flag and returns "
+          '$GalleryPermissionChoice.dismissedForever', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text("Don't Ask Again"));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text("Don't Ask Again"));
+        await tester.pumpAndSettle();
 
-          // Sheet dismissed
-          expect(find.text('Let us save your videos'), findsNothing);
+        // Sheet dismissed
+        expect(find.text('Let us save your videos'), findsNothing);
 
-          expect(find.text('result:dismissedForever'), findsOneWidget);
+        expect(find.text('result:dismissedForever'), findsOneWidget);
 
-          // SharedPreferences flag was set
-          final prefs = await SharedPreferences.getInstance();
-          expect(
-            prefs.getBool('gallery_permission_dismissed_forever'),
-            isTrue,
-          );
-        },
-      );
+        // SharedPreferences flag was set
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('gallery_permission_dismissed_forever'), isTrue);
+      });
     });
 
     group('when permission can be requested', () {
@@ -201,63 +186,52 @@ void main() {
           await tester.tap(find.text('Open Sheet'));
           await tester.pumpAndSettle();
 
-          expect(
-            find.textContaining(
-              'we need Gallery access',
-            ),
-            findsOneWidget,
-          );
+          expect(find.textContaining('we need Gallery access'), findsOneWidget);
         });
       });
 
       group('interactions', () {
-        testWidgets(
-          'tapping Allow Access calls requestGalleryPermission '
-          'and returns $GalleryPermissionChoice.granted when granted',
-          (tester) async {
-            await tester.pumpWidget(buildSubject());
-            await tester.tap(find.text('Open Sheet'));
-            await tester.pumpAndSettle();
+        testWidgets('tapping Allow Access calls requestGalleryPermission '
+            'and returns $GalleryPermissionChoice.granted when granted', (
+          tester,
+        ) async {
+          await tester.pumpWidget(buildSubject());
+          await tester.tap(find.text('Open Sheet'));
+          await tester.pumpAndSettle();
 
-            await tester.tap(find.text('Allow Access'));
-            await tester.pumpAndSettle();
+          await tester.tap(find.text('Allow Access'));
+          await tester.pumpAndSettle();
 
-            // Sheet dismissed
-            expect(find.text('Let us save your videos'), findsNothing);
+          // Sheet dismissed
+          expect(find.text('Let us save your videos'), findsNothing);
 
-            verify(
-              () => mockPermissionsService.requestGalleryPermission(),
-            ).called(1);
-            verifyNever(() => mockPermissionsService.openAppSettings());
-            expect(find.text('result:granted'), findsOneWidget);
-          },
-        );
+          verify(
+            () => mockPermissionsService.requestGalleryPermission(),
+          ).called(1);
+          verifyNever(() => mockPermissionsService.openAppSettings());
+          expect(find.text('result:granted'), findsOneWidget);
+        });
 
-        testWidgets(
-          'tapping Allow Access returns '
-          '$GalleryPermissionChoice.skipped when denied',
-          (tester) async {
-            when(
-              () => mockPermissionsService.requestGalleryPermission(),
-            ).thenAnswer(
-              (_) async => PermissionStatus.requiresSettings,
-            );
+        testWidgets('tapping Allow Access returns '
+            '$GalleryPermissionChoice.skipped when denied', (tester) async {
+          when(
+            () => mockPermissionsService.requestGalleryPermission(),
+          ).thenAnswer((_) async => PermissionStatus.requiresSettings);
 
-            await tester.pumpWidget(buildSubject());
-            await tester.tap(find.text('Open Sheet'));
-            await tester.pumpAndSettle();
+          await tester.pumpWidget(buildSubject());
+          await tester.tap(find.text('Open Sheet'));
+          await tester.pumpAndSettle();
 
-            await tester.tap(find.text('Allow Access'));
-            await tester.pumpAndSettle();
+          await tester.tap(find.text('Allow Access'));
+          await tester.pumpAndSettle();
 
-            expect(find.text('Let us save your videos'), findsNothing);
+          expect(find.text('Let us save your videos'), findsNothing);
 
-            verify(
-              () => mockPermissionsService.requestGalleryPermission(),
-            ).called(1);
-            expect(find.text('result:skipped'), findsOneWidget);
-          },
-        );
+          verify(
+            () => mockPermissionsService.requestGalleryPermission(),
+          ).called(1);
+          expect(find.text('result:skipped'), findsOneWidget);
+        });
 
         testWidgets(
           'tapping Not Now returns $GalleryPermissionChoice.skipped',

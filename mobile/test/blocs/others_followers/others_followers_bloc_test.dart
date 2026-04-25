@@ -289,9 +289,9 @@ void main() {
         () async {
           final countCompleter = Completer<int>();
 
-          when(() => mockFollowRepository.getFollowers(any())).thenAnswer(
-            (_) async => [validPubkey('follower1')],
-          );
+          when(
+            () => mockFollowRepository.getFollowers(any()),
+          ).thenAnswer((_) async => [validPubkey('follower1')]);
           when(
             () => mockFollowRepository.getFollowerCount(any()),
           ).thenAnswer((_) => countCompleter.future);
@@ -317,11 +317,7 @@ void main() {
                     'followersPubkeys',
                     [validPubkey('follower1')],
                   )
-                  .having(
-                    (state) => state.followerCount,
-                    'followerCount',
-                    1,
-                  ),
+                  .having((state) => state.followerCount, 'followerCount', 1),
             ]),
           );
 

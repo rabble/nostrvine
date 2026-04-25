@@ -18,9 +18,7 @@ import 'package:webview_flutter_wkwebview/src/common/web_kit.g.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 typedef SandboxViewBuilder =
-    Widget Function(
-      void Function(Uri uri) onNavigationAttempt,
-    );
+    Widget Function(void Function(Uri uri) onNavigationAttempt);
 typedef SandboxJavaScriptRunner = Future<void> Function(String script);
 
 class NostrAppSandboxScreen extends ConsumerStatefulWidget {
@@ -354,10 +352,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         promptForPermission: _showPermissionPrompt,
       );
 
-      await _emitBridgeResponse(
-        id: responseId,
-        result: result,
-      );
+      await _emitBridgeResponse(id: responseId, result: result);
     } catch (error) {
       await _emitBridgeResponse(
         id: responseId,
@@ -494,10 +489,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
 /// Builds the bridge bootstrap JavaScript with optional eager pubkey,
 /// provider metadata, ready-event dispatch, and per-app auto-login.
 @visibleForTesting
-String buildBridgeBootstrapScript({
-  String? pubkey,
-  String? autoLoginScript,
-}) {
+String buildBridgeBootstrapScript({String? pubkey, String? autoLoginScript}) {
   final escapedPubkey = pubkey != null && pubkey.isNotEmpty
       ? _escapeJs(pubkey)
       : '';
@@ -666,10 +658,7 @@ class _SandboxStatusCard extends StatelessWidget {
 }
 
 class _BootstrappedSandboxPage {
-  const _BootstrappedSandboxPage({
-    required this.baseUri,
-    required this.html,
-  });
+  const _BootstrappedSandboxPage({required this.baseUri, required this.html});
 
   final Uri baseUri;
   final String html;

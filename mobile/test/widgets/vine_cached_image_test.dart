@@ -25,10 +25,7 @@ void main() {
     });
 
     test('limits to 200 cache objects', () {
-      expect(
-        openVineImageCache.mediaConfig.maxNrOfCacheObjects,
-        equals(200),
-      );
+      expect(openVineImageCache.mediaConfig.maxNrOfCacheObjects, equals(200));
     });
   });
 

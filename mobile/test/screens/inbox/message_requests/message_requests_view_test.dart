@@ -62,9 +62,9 @@ void main() {
       mockAuthService = _MockAuthService(currentPubkey);
       mockGoRouter = MockGoRouter();
 
-      when(() => mockActionsCubit.state).thenReturn(
-        const MessageRequestActionsState(),
-      );
+      when(
+        () => mockActionsCubit.state,
+      ).thenReturn(const MessageRequestActionsState());
     });
 
     Widget buildSubject({ConversationListState? state}) {
@@ -77,9 +77,7 @@ void main() {
 
       return testMaterialApp(
         mockAuthService: mockAuthService,
-        additionalOverrides: [
-          goRouterProvider.overrideWithValue(mockGoRouter),
-        ],
+        additionalOverrides: [goRouterProvider.overrideWithValue(mockGoRouter)],
         home: MockGoRouterProvider(
           goRouter: mockGoRouter,
           child: MultiBlocProvider(
@@ -105,15 +103,14 @@ void main() {
         expect(find.text('Message requests'), findsOneWidget);
       });
 
-      testWidgets(
-        'renders $CircularProgressIndicator when status is initial',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
-          await tester.pump();
+      testWidgets('renders $CircularProgressIndicator when status is initial', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        },
-      );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
 
       testWidgets('renders "No message requests" when loaded with empty list', (
         tester,
@@ -167,9 +164,9 @@ void main() {
             mockAuthService: mockAuthService,
             additionalOverrides: [
               goRouterProvider.overrideWithValue(mockGoRouter),
-              userProfileReactiveProvider(otherPubkey).overrideWith(
-                (ref) => Stream.value(testProfile),
-              ),
+              userProfileReactiveProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(testProfile)),
             ],
             home: MockGoRouterProvider(
               goRouter: mockGoRouter,
@@ -240,9 +237,9 @@ void main() {
             mockAuthService: mockAuthService,
             additionalOverrides: [
               goRouterProvider.overrideWithValue(mockGoRouter),
-              userProfileReactiveProvider(otherPubkey).overrideWith(
-                (ref) => Stream.value(testProfile),
-              ),
+              userProfileReactiveProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(testProfile)),
             ],
             home: MockGoRouterProvider(
               goRouter: mockGoRouter,

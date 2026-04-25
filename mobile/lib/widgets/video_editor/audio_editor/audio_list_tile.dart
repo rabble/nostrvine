@@ -51,10 +51,7 @@ class AudioListTile extends StatelessWidget {
             children: [
               TextSpan(
                 text: Duration(
-                  seconds: max(
-                    (audio.duration ?? 0).toInt(),
-                    1,
-                  ),
+                  seconds: max((audio.duration ?? 0).toInt(), 1),
                 ).toMmSs(),
                 style: const TextStyle(fontFeatures: [.tabularFigures()]),
               ),

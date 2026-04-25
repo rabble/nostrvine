@@ -133,21 +133,19 @@ void main() {
       ).thenAnswer((_) async => []);
       when(
         () => mockVideoEventService.addVideoUpdateListener(any()),
-      ).thenReturn(
-        () {},
-      );
+      ).thenReturn(() {});
       when(() => mockVideoEventService.addListener(any())).thenReturn(null);
       when(() => mockVideoEventService.removeListener(any())).thenReturn(null);
-      when(() => mockVideoEventService.addNewVideoListener(any())).thenReturn(
-        () {},
-      );
+      when(
+        () => mockVideoEventService.addNewVideoListener(any()),
+      ).thenReturn(() {});
       when(
         () => mockVideoEventService.subscribeToUserVideos(userId),
       ).thenAnswer((_) async {});
       when(() => mockVideoEventService.authorVideos(userId)).thenReturn([]);
-      when(
-        () => mockVideoEventService.filterVideoList(any()),
-      ).thenAnswer((invocation) {
+      when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
+        invocation,
+      ) {
         return invocation.positionalArguments.single as List<VideoEvent>;
       });
     });
@@ -182,9 +180,9 @@ void main() {
         when(
           () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
         ).thenAnswer((_) async => _videoStats(count: 50, pubkey: userId));
-        when(
-          () => mockVideoEventService.filterVideoList(any()),
-        ).thenAnswer((invocation) {
+        when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
+          invocation,
+        ) {
           final videos =
               invocation.positionalArguments.single as List<VideoEvent>;
           return videos.take(9).toList();
@@ -232,9 +230,7 @@ void main() {
         when(
           () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
         ).thenAnswer((_) => restCompleter.future);
-        when(
-          () => mockVideoEventService.authorVideos(userId),
-        ).thenReturn([
+        when(() => mockVideoEventService.authorVideos(userId)).thenReturn([
           _relayVideo(
             id: 'relay-head',
             pubkey: userId,
@@ -268,9 +264,7 @@ void main() {
         when(
           () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
         ).thenAnswer((_) => restCompleter.future);
-        when(
-          () => mockVideoEventService.authorVideos(userId),
-        ).thenReturn([
+        when(() => mockVideoEventService.authorVideos(userId)).thenReturn([
           _relayVideo(
             id: 'relay-head',
             pubkey: userId,
@@ -310,10 +304,11 @@ void main() {
         final mergedState = await merged.future.timeout(
           const Duration(milliseconds: 200),
         );
-        expect(
-          mergedState.videos.map((v) => v.id),
-          ['relay-head', 'video-1', 'video-2'],
-        );
+        expect(mergedState.videos.map((v) => v.id), [
+          'relay-head',
+          'video-1',
+          'video-2',
+        ]);
         expect(mergedState.hasMoreContent, isFalse);
         expect(mergedState.totalVideoCount, 12);
       },
@@ -364,18 +359,17 @@ void main() {
 
         final initialHydrated = Completer<void>();
         final initialSubscription = container
-            .listen<AsyncValue<VideoFeedState>>(
-              profileFeedProvider(userId),
-              (previous, next) {
-                final value = next.asData?.value;
-                if (value != null &&
-                    value.videos.length == 50 &&
-                    !initialHydrated.isCompleted) {
-                  initialHydrated.complete();
-                }
-              },
-              fireImmediately: true,
-            );
+            .listen<AsyncValue<VideoFeedState>>(profileFeedProvider(userId), (
+              previous,
+              next,
+            ) {
+              final value = next.asData?.value;
+              if (value != null &&
+                  value.videos.length == 50 &&
+                  !initialHydrated.isCompleted) {
+                initialHydrated.complete();
+              }
+            }, fireImmediately: true);
         addTearDown(initialSubscription.close);
         await initialHydrated.future.timeout(const Duration(milliseconds: 200));
 

@@ -37,10 +37,7 @@ class FollowingBar extends StatelessWidget {
             height: 128,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 20,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               itemCount: followingPubkeys.length,
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) => _FollowingUserButton(
@@ -89,10 +86,8 @@ class _FollowingUserButton extends ConsumerWidget {
             Text(
               displayName,
               textScaler: TextScaler.noScaling,
-              style:
-                  VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceVariant,
-                  ).copyWith(
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant)
+                  .copyWith(
                     fontSize: MediaQuery.textScalerOf(
                       context,
                     ).scale(VineTheme.bodySmallFont().fontSize!).clamp(0, 18),

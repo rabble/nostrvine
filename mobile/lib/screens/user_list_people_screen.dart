@@ -234,10 +234,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        VineTheme.scrim70,
-                        VineTheme.transparent,
-                      ],
+                      colors: [VineTheme.scrim70, VineTheme.transparent],
                     ),
                   ),
                   child: Row(

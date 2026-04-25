@@ -102,10 +102,7 @@ void main() {
       // KeycastNostrIdentity is a concrete subtype of the sealed
       // NostrIdentity class, so tests can construct one directly while
       // controlling signing behavior via the mock rpcSigner.
-      return KeycastNostrIdentity(
-        pubkey: testPubkeyHex,
-        rpcSigner: mockSigner,
-      );
+      return KeycastNostrIdentity(pubkey: testPubkeyHex, rpcSigner: mockSigner);
     }
 
     setUp(() {
@@ -170,35 +167,31 @@ void main() {
       },
     );
 
-    test(
-      'also publishes when discovery throws (catch branch)',
-      () async {
-        final discovery = _ControllableRelayDiscoveryService(
-          outcome: () => throw Exception('connection refused'),
-        );
-        final recorder = _BootstrapCallbackRecorder(publishResult: true);
-        final authService = buildAuthService(
-          discovery,
-          identity: buildIdentity(),
-          recorder: recorder,
-        );
+    test('also publishes when discovery throws (catch branch)', () async {
+      final discovery = _ControllableRelayDiscoveryService(
+        outcome: () => throw Exception('connection refused'),
+      );
+      final recorder = _BootstrapCallbackRecorder(publishResult: true);
+      final authService = buildAuthService(
+        discovery,
+        identity: buildIdentity(),
+        recorder: recorder,
+      );
 
-        await authService.debugDiscoverUserRelays(testNpub);
+      await authService.debugDiscoverUserRelays(testNpub);
 
-        expect(recorder.invocations, hasLength(1));
-        final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getBool(flagKey), isTrue);
-      },
-    );
+      expect(recorder.invocations, hasLength(1));
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(flagKey), isTrue);
+    });
 
     test(
       "does NOT publish when discovery returns the user's real relay list",
       () async {
         final discovery = _ControllableRelayDiscoveryService(
-          outcome: () => RelayDiscoveryResult.success(
-            [const DiscoveredRelay(url: 'wss://relay.example.com')],
-            'wss://test-indexer',
-          ),
+          outcome: () => RelayDiscoveryResult.success([
+            const DiscoveredRelay(url: 'wss://relay.example.com'),
+          ], 'wss://test-indexer'),
         );
         final recorder = _BootstrapCallbackRecorder(publishResult: true);
         final authService = buildAuthService(
@@ -289,28 +282,25 @@ void main() {
       },
     );
 
-    test(
-      'flag is NOT set when callback reports publish failure',
-      () async {
-        final discovery = _ControllableRelayDiscoveryService(
-          outcome: () => RelayDiscoveryResult.failure('No relay list found'),
-        );
-        final recorder = _BootstrapCallbackRecorder(publishResult: false);
-        final authService = buildAuthService(
-          discovery,
-          identity: buildIdentity(),
-          recorder: recorder,
-        );
+    test('flag is NOT set when callback reports publish failure', () async {
+      final discovery = _ControllableRelayDiscoveryService(
+        outcome: () => RelayDiscoveryResult.failure('No relay list found'),
+      );
+      final recorder = _BootstrapCallbackRecorder(publishResult: false);
+      final authService = buildAuthService(
+        discovery,
+        identity: buildIdentity(),
+        recorder: recorder,
+      );
 
-        await authService.debugDiscoverUserRelays(testNpub);
+      await authService.debugDiscoverUserRelays(testNpub);
 
-        // Callback was invoked (we tried), but publish returned false so
-        // the flag stays unset and the next login will retry.
-        expect(recorder.invocations, hasLength(1));
-        final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getBool(flagKey) ?? false, isFalse);
-      },
-    );
+      // Callback was invoked (we tried), but publish returned false so
+      // the flag stays unset and the next login will retry.
+      expect(recorder.invocations, hasLength(1));
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(flagKey) ?? false, isFalse);
+    });
 
     test('flag is NOT set when callback throws', () async {
       final discovery = _ControllableRelayDiscoveryService(
@@ -337,9 +327,9 @@ void main() {
       'flag is NOT set when signer hangs past timeout (retriable next login)',
       () {
         // Simulate a hung Keycast/Amber signer that never completes.
-        when(() => mockSigner.signEvent(any())).thenAnswer(
-          (_) => Completer<Event?>().future,
-        );
+        when(
+          () => mockSigner.signEvent(any()),
+        ).thenAnswer((_) => Completer<Event?>().future);
 
         fakeAsync((async) {
           final discovery = _ControllableRelayDiscoveryService(
@@ -405,10 +395,7 @@ void main() {
         // public indexers. See #3183.
         expect(
           invocation.targetRelays,
-          equals([
-            stagingRelayUrl,
-            ...IndexerRelayConfig.defaultIndexers,
-          ]),
+          equals([stagingRelayUrl, ...IndexerRelayConfig.defaultIndexers]),
         );
         expect(
           invocation.targetRelays,

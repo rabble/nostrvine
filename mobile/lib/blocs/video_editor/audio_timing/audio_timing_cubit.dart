@@ -27,12 +27,10 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
   ///
   /// The [sound] is the audio event to edit timing for.
   /// An optional [clipPlayer] can be injected for testing.
-  AudioTimingCubit({
-    required AudioEvent sound,
-    AudioClipPlayer? clipPlayer,
-  }) : _sound = sound,
-       _clipPlayer = clipPlayer ?? AudioClipPlayer(),
-       super(const AudioTimingState());
+  AudioTimingCubit({required AudioEvent sound, AudioClipPlayer? clipPlayer})
+    : _sound = sound,
+      _clipPlayer = clipPlayer ?? AudioClipPlayer(),
+      super(const AudioTimingState());
 
   final AudioEvent _sound;
   final AudioClipPlayer _clipPlayer;

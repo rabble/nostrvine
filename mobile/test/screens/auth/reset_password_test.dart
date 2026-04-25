@@ -66,41 +66,36 @@ void main() {
         expect(find.byType(AutofillGroup), findsOneWidget);
       });
 
-      testWidgets(
-        'calls TextInput.finishAutofillContext on successful reset',
-        (tester) async {
-          final recorder = AutofillContextRecorder.install();
+      testWidgets('calls TextInput.finishAutofillContext on successful reset', (
+        tester,
+      ) async {
+        final recorder = AutofillContextRecorder.install();
 
-          when(
-            () => mockOAuth.resetPassword(
-              token: any(named: 'token'),
-              newPassword: any(named: 'newPassword'),
-            ),
-          ).thenAnswer(
-            (_) async => ResetPasswordResult(success: true),
-          );
+        when(
+          () => mockOAuth.resetPassword(
+            token: any(named: 'token'),
+            newPassword: any(named: 'newPassword'),
+          ),
+        ).thenAnswer((_) async => ResetPasswordResult(success: true));
 
-          await tester.pumpWidget(buildTestWidget());
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
 
-          // Enter a valid password (>= 8 characters).
-          await tester.enterText(
-            find.descendant(
-              of: find.widgetWithText(DivineAuthTextField, 'New Password'),
-              matching: find.byType(TextField),
-            ),
-            'NewSecure123!',
-          );
+        // Enter a valid password (>= 8 characters).
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'New Password'),
+            matching: find.byType(TextField),
+          ),
+          'NewSecure123!',
+        );
 
-          await tester.tap(
-            find.widgetWithText(DivineButton, 'Update password'),
-          );
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 100));
+        await tester.tap(find.widgetWithText(DivineButton, 'Update password'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-          expect(recorder.didFinishAutofillContext, isTrue);
-        },
-      );
+        expect(recorder.didFinishAutofillContext, isTrue);
+      });
     });
   });
 }

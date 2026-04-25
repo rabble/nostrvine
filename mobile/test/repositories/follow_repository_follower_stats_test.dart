@@ -37,9 +37,9 @@ FollowRepository _createRepository({
   final nostrClient = _MockNostrClient();
 
   // Mock NostrClient.subscribe to return an empty stream (no WS data).
-  when(() => nostrClient.subscribe(any())).thenAnswer(
-    (_) => const Stream<Event>.empty(),
-  );
+  when(
+    () => nostrClient.subscribe(any()),
+  ).thenAnswer((_) => const Stream<Event>.empty());
 
   // Mock REST API response.
   when(() => apiClient.isAvailable).thenReturn(true);
@@ -52,9 +52,9 @@ FollowRepository _createRepository({
   );
 
   // Mock DAO reads.
-  when(() => dao.getStatsRaw(_testPubkey)).thenAnswer(
-    (_) async => persistedRow,
-  );
+  when(
+    () => dao.getStatsRaw(_testPubkey),
+  ).thenAnswer((_) async => persistedRow);
 
   // Mock DAO writes (no-op).
   when(
@@ -225,24 +225,21 @@ void main() {
         expect(stats.following, equals(18));
       });
 
-      test(
-        'does not apply hysteresis when no persisted data exists',
-        () async {
-          final apiClient = _MockFunnelcakeApiClient();
-          final dao = _MockProfileStatsDao();
-          final repository = _createRepository(
-            apiClient: apiClient,
-            dao: dao,
-            restFollowers: 42,
-            restFollowing: 10,
-          );
+      test('does not apply hysteresis when no persisted data exists', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 42,
+          restFollowing: 10,
+        );
 
-          final stats = await repository.getFollowerStats(_testPubkey);
+        final stats = await repository.getFollowerStats(_testPubkey);
 
-          expect(stats.followers, equals(42));
-          expect(stats.following, equals(10));
-        },
-      );
+        expect(stats.followers, equals(42));
+        expect(stats.following, equals(10));
+      });
 
       test('boundary: fresh count exactly at threshold is kept', () async {
         final apiClient = _MockFunnelcakeApiClient();
@@ -281,33 +278,30 @@ void main() {
         expect(stats.followers, equals(79));
       });
 
-      test(
-        'does not re-persist when hysteresis keeps old value',
-        () async {
-          final apiClient = _MockFunnelcakeApiClient();
-          final dao = _MockProfileStatsDao();
-          // Persisted: 100 followers, recent timestamp.
-          final repository = _createRepository(
-            apiClient: apiClient,
-            dao: dao,
-            restFollowers: 90,
-            restFollowing: 20,
-            persistedRow: _persistedRow(followers: 100, following: 20),
-          );
+      test('does not re-persist when hysteresis keeps old value', () async {
+        final apiClient = _MockFunnelcakeApiClient();
+        final dao = _MockProfileStatsDao();
+        // Persisted: 100 followers, recent timestamp.
+        final repository = _createRepository(
+          apiClient: apiClient,
+          dao: dao,
+          restFollowers: 90,
+          restFollowing: 20,
+          persistedRow: _persistedRow(followers: 100, following: 20),
+        );
 
-          await repository.getFollowerStats(_testPubkey);
+        await repository.getFollowerStats(_testPubkey);
 
-          // Hysteresis kept 100/20 which matches persisted.
-          // upsertStats should NOT have been called since value didn't change.
-          verifyNever(
-            () => dao.upsertStats(
-              pubkey: any(named: 'pubkey'),
-              followerCount: any(named: 'followerCount'),
-              followingCount: any(named: 'followingCount'),
-            ),
-          );
-        },
-      );
+        // Hysteresis kept 100/20 which matches persisted.
+        // upsertStats should NOT have been called since value didn't change.
+        verifyNever(
+          () => dao.upsertStats(
+            pubkey: any(named: 'pubkey'),
+            followerCount: any(named: 'followerCount'),
+            followingCount: any(named: 'followingCount'),
+          ),
+        );
+      });
     });
 
     group('getFollowerStats - in-memory cache', () {

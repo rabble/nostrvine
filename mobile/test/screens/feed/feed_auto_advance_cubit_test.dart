@@ -65,10 +65,7 @@ void main() {
       blocTest<FeedAutoAdvanceCubit, FeedAutoAdvanceState>(
         'resumes (clears suppression) when enabled and suppressed',
         build: FeedAutoAdvanceCubit.new,
-        seed: () => const FeedAutoAdvanceState(
-          enabled: true,
-          suppressed: true,
-        ),
+        seed: () => const FeedAutoAdvanceState(enabled: true, suppressed: true),
         act: (cubit) => cubit.toggle(),
         expect: () => const [FeedAutoAdvanceState(enabled: true)],
       );
@@ -91,10 +88,7 @@ void main() {
       blocTest<FeedAutoAdvanceCubit, FeedAutoAdvanceState>(
         'is a no-op when already suppressed',
         build: FeedAutoAdvanceCubit.new,
-        seed: () => const FeedAutoAdvanceState(
-          enabled: true,
-          suppressed: true,
-        ),
+        seed: () => const FeedAutoAdvanceState(enabled: true, suppressed: true),
         act: (cubit) => cubit.suppressForInteraction(),
         expect: () => const <FeedAutoAdvanceState>[],
       );
@@ -143,10 +137,7 @@ void main() {
         seed: () => const FeedAutoAdvanceState(enabled: true),
         act: (cubit) => cubit.markPendingPaginationAdvance(),
         expect: () => const [
-          FeedAutoAdvanceState(
-            enabled: true,
-            pendingPaginationAdvance: true,
-          ),
+          FeedAutoAdvanceState(enabled: true, pendingPaginationAdvance: true),
         ],
       );
 

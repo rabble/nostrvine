@@ -302,9 +302,7 @@ void main() {
     late bool getMetadataSucceeds;
 
     /// Dummy JPEG-like bytes produced by the mock.
-    final fakeJpegBytes = Uint8List.fromList(
-      List<int>.generate(128, (i) => i),
-    );
+    final fakeJpegBytes = Uint8List.fromList(List<int>.generate(128, (i) => i));
 
     setUpAll(() async {
       tempDir = await Directory.systemTemp.createTemp('ghost_frame_test');
@@ -340,10 +338,7 @@ void main() {
             }
             if (call.method == 'getMetadata') {
               if (!getMetadataSucceeds) {
-                throw PlatformException(
-                  code: 'ERROR',
-                  message: 'cannot open',
-                );
+                throw PlatformException(code: 'ERROR', message: 'cannot open');
               }
               return <String, dynamic>{
                 'duration': 3000000, // microseconds
@@ -446,10 +441,7 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
             if (call.method == 'getThumbnails') {
-              throw PlatformException(
-                code: 'ERROR',
-                message: 'Cannot Open',
-              );
+              throw PlatformException(code: 'ERROR', message: 'Cannot Open');
             }
             if (call.method == 'getMetadata') {
               return <String, dynamic>{

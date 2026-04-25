@@ -13,8 +13,7 @@ enum StartupPhase {
   standard(2, 'Standard features'),
 
   /// Nice-to-have warmups and observability that should stay off first paint.
-  deferred(3, 'Deferred services')
-  ;
+  deferred(3, 'Deferred services');
 
   final int priority;
   final String description;

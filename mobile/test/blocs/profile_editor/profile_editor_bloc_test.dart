@@ -1350,11 +1350,7 @@ void main() {
                 'usernameStatus',
                 UsernameStatus.checking,
               )
-              .having(
-                (s) => s.reservedUsernames,
-                'reservedUsernames',
-                isEmpty,
-              ),
+              .having((s) => s.reservedUsernames, 'reservedUsernames', isEmpty),
           isA<ProfileEditorState>().having(
             (s) => s.usernameStatus,
             'usernameStatus',
@@ -1408,9 +1404,7 @@ void main() {
               username: testUsername,
               currentUserPubkey: any(named: 'currentUserPubkey'),
             ),
-          ).thenAnswer(
-            (_) async => const UsernameCheckError('Network error'),
-          );
+          ).thenAnswer((_) async => const UsernameCheckError('Network error'));
         },
         act: (bloc) => bloc.add(const UsernameRechecked()),
         expect: () => [
@@ -1420,11 +1414,7 @@ void main() {
                 'usernameStatus',
                 UsernameStatus.checking,
               )
-              .having(
-                (s) => s.reservedUsernames,
-                'reservedUsernames',
-                isEmpty,
-              ),
+              .having((s) => s.reservedUsernames, 'reservedUsernames', isEmpty),
           isA<ProfileEditorState>()
               .having(
                 (s) => s.usernameStatus,
@@ -1442,9 +1432,8 @@ void main() {
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'does nothing when username is empty',
         build: createBloc,
-        seed: () => const ProfileEditorState(
-          usernameStatus: UsernameStatus.reserved,
-        ),
+        seed: () =>
+            const ProfileEditorState(usernameStatus: UsernameStatus.reserved),
         act: (bloc) => bloc.add(const UsernameRechecked()),
         expect: () => <ProfileEditorState>[],
         verify: (_) {

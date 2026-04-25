@@ -63,39 +63,38 @@ void main() {
       expect(platform.controller.goBackCallCount, 1);
     });
 
-    testWidgets(
-      'bootstraps the initial Android page through injected HTML',
-      (tester) async {
-        final platform = _BootstrapAwareWebViewPlatform();
-        WebViewPlatform.instance = platform;
-        debugDefaultTargetPlatformOverride = TargetPlatform.android;
-        final bootstrapClient = MockClient(
-          (_) async => http.Response(
-            '<!doctype html><html><head><script src="/app.js"></script></head><body></body></html>',
-            200,
-            request: http.Request('GET', Uri.parse(_fixtureApp().launchUrl)),
-            headers: const {'content-type': 'text/html'},
-          ),
-        );
+    testWidgets('bootstraps the initial Android page through injected HTML', (
+      tester,
+    ) async {
+      final platform = _BootstrapAwareWebViewPlatform();
+      WebViewPlatform.instance = platform;
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final bootstrapClient = MockClient(
+        (_) async => http.Response(
+          '<!doctype html><html><head><script src="/app.js"></script></head><body></body></html>',
+          200,
+          request: http.Request('GET', Uri.parse(_fixtureApp().launchUrl)),
+          headers: const {'content-type': 'text/html'},
+        ),
+      );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: NostrAppSandboxScreen(
-              app: _fixtureApp(),
-              bootstrapHttpClientOverride: bootstrapClient,
-              currentUserPubkeyOverride: 'f' * 64,
-            ),
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NostrAppSandboxScreen(
+            app: _fixtureApp(),
+            bootstrapHttpClientOverride: bootstrapClient,
+            currentUserPubkeyOverride: 'f' * 64,
           ),
-        );
-        await tester.pump();
-        debugDefaultTargetPlatformOverride = null;
+        ),
+      );
+      await tester.pump();
+      debugDefaultTargetPlatformOverride = null;
 
-        expect(platform.controller.loadRequestCallCount, 0);
-        expect(platform.controller.loadedHtml, hasLength(1));
-      },
-    );
+      expect(platform.controller.loadRequestCallCount, 0);
+      expect(platform.controller.loadedHtml, hasLength(1));
+    });
 
     testWidgets(
       'includes the Divine bridge script in the initial Android bootstrap HTML',
@@ -136,9 +135,7 @@ void main() {
 
     testWidgets(
       'shows a loading state before the integration finishes booting',
-      (
-        tester,
-      ) async {
+      (tester) async {
         await tester.pumpWidget(
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -274,10 +271,7 @@ void main() {
           pubkey: 'deadbeef',
           autoLoginScript: "localStorage.setItem('pubkey', '{{PUBKEY}}');",
         );
-        expect(
-          script,
-          contains("localStorage.setItem('pubkey', 'deadbeef')"),
-        );
+        expect(script, contains("localStorage.setItem('pubkey', 'deadbeef')"));
         expect(script, isNot(contains('{{PUBKEY}}')));
       });
 

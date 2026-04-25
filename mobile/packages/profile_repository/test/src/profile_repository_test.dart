@@ -2740,6 +2740,236 @@ void main() {
           },
         );
       });
+
+      group('with boostPubkeys', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+        // Three distinct 64-char hex pubkeys.
+        final pubA = 'a' * 64;
+        final pubB = 'b' * 64;
+        final pubC = 'c' * 64;
+
+        ProfileSearchResult restResult(String pubkey, String name) {
+          return ProfileSearchResult(
+            pubkey: pubkey,
+            displayName: name,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+          );
+        }
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockUserProfilesDao.getAllProfiles(),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
+          ).thenAnswer((_) async => []);
+        });
+
+        test(
+          'promotes boosted pubkeys to the front on the initial page',
+          () async {
+            when(
+              () => mockFunnelcakeClient.searchProfiles(
+                query: 'liz',
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                sortBy: any(named: 'sortBy'),
+                hasVideos: any(named: 'hasVideos'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                restResult(pubA, 'Zoe'),
+                restResult(pubB, 'Liz'),
+                restResult(pubC, 'Maya'),
+              ],
+            );
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo
+                .searchUsersProgressive(
+                  query: 'liz',
+                  sortBy: 'followers',
+                  boostPubkeys: {pubB},
+                )
+                .last;
+
+            expect(
+              result.map((p) => p.displayName).toList(),
+              equals(['Liz', 'Zoe', 'Maya']),
+            );
+          },
+        );
+
+        test(
+          'preserves server-relative order within each boost group',
+          () async {
+            when(
+              () => mockFunnelcakeClient.searchProfiles(
+                query: 'test',
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                sortBy: any(named: 'sortBy'),
+                hasVideos: any(named: 'hasVideos'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                restResult(pubA, 'A'), // boosted
+                restResult(pubB, 'B'), // not boosted
+                restResult(pubC, 'C'), // boosted
+                restResult('d' * 64, 'D'), // not boosted
+              ],
+            );
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo
+                .searchUsersProgressive(
+                  query: 'test',
+                  sortBy: 'followers',
+                  boostPubkeys: {pubA, pubC},
+                )
+                .last;
+
+            expect(
+              result.map((p) => p.displayName).toList(),
+              equals(['A', 'C', 'B', 'D']),
+            );
+          },
+        );
+
+        test(
+          'is a no-op when the boost set is empty',
+          () async {
+            when(
+              () => mockFunnelcakeClient.searchProfiles(
+                query: 'test',
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                sortBy: any(named: 'sortBy'),
+                hasVideos: any(named: 'hasVideos'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                restResult(pubA, 'Zoe'),
+                restResult(pubB, 'Maya'),
+              ],
+            );
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo
+                .searchUsersProgressive(
+                  query: 'test',
+                  sortBy: 'followers',
+                  boostPubkeys: const <String>{},
+                )
+                .last;
+
+            expect(
+              result.map((p) => p.displayName).toList(),
+              equals(['Zoe', 'Maya']),
+            );
+          },
+        );
+
+        test(
+          'is a no-op when boostPubkeys is null',
+          () async {
+            when(
+              () => mockFunnelcakeClient.searchProfiles(
+                query: 'test',
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                sortBy: any(named: 'sortBy'),
+                hasVideos: any(named: 'hasVideos'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                restResult(pubA, 'Zoe'),
+                restResult(pubB, 'Maya'),
+              ],
+            );
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo
+                .searchUsersProgressive(
+                  query: 'test',
+                  sortBy: 'followers',
+                )
+                .last;
+
+            expect(
+              result.map((p) => p.displayName).toList(),
+              equals(['Zoe', 'Maya']),
+            );
+          },
+        );
+
+        test(
+          'is a no-op when no result is in the boost set',
+          () async {
+            when(
+              () => mockFunnelcakeClient.searchProfiles(
+                query: 'test',
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                sortBy: any(named: 'sortBy'),
+                hasVideos: any(named: 'hasVideos'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                restResult(pubA, 'Zoe'),
+                restResult(pubB, 'Maya'),
+              ],
+            );
+
+            final repo = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo
+                .searchUsersProgressive(
+                  query: 'test',
+                  sortBy: 'followers',
+                  boostPubkeys: {'f' * 64},
+                )
+                .last;
+
+            expect(
+              result.map((p) => p.displayName).toList(),
+              equals(['Zoe', 'Maya']),
+            );
+          },
+        );
+      });
     });
 
     group('exceptions', () {

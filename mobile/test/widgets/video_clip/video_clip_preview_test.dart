@@ -23,15 +23,14 @@ void main() {
   setUp(() {
     DivineVideoPlayerController.resetIdCounterForTesting();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          const MethodChannel('divine_video_player'),
-          (call) async {
-            if (call.method == 'create') {
-              return <String, Object?>{'textureId': 1};
-            }
-            return null;
-          },
-        );
+        .setMockMethodCallHandler(const MethodChannel('divine_video_player'), (
+          call,
+        ) async {
+          if (call.method == 'create') {
+            return <String, Object?>{'textureId': 1};
+          }
+          return null;
+        });
 
     mockGoRouter = MockGoRouter();
     when(() => mockGoRouter.pop<Object?>(any())).thenReturn(null);
@@ -72,10 +71,7 @@ void main() {
     }
 
     test('can be instantiated', () {
-      expect(
-        VideoClipPreview(clip: testClip),
-        isA<VideoClipPreview>(),
-      );
+      expect(VideoClipPreview(clip: testClip), isA<VideoClipPreview>());
     });
 
     test('accepts onDelete callback', () {
@@ -85,9 +81,7 @@ void main() {
       );
     });
 
-    testWidgets('renders $DivineVideoPlayer and save button', (
-      tester,
-    ) async {
+    testWidgets('renders $DivineVideoPlayer and save button', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
             const MethodChannel('divine_video_player/player_0'),
@@ -138,9 +132,7 @@ void main() {
           );
     });
 
-    testWidgets('hides delete button when onDelete is null', (
-      tester,
-    ) async {
+    testWidgets('hides delete button when onDelete is null', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
             const MethodChannel('divine_video_player/player_0'),
@@ -164,9 +156,7 @@ void main() {
           );
     });
 
-    testWidgets('renders placeholder with progress indicator', (
-      tester,
-    ) async {
+    testWidgets('renders placeholder with progress indicator', (tester) async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
             const MethodChannel('divine_video_player/player_0'),

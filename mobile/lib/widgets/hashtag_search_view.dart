@@ -69,10 +69,7 @@ class _HashtagSearchEmptyState extends StatelessWidget {
             size: 64,
           ),
           const SizedBox(height: 16),
-          Text(
-            'Search for hashtags',
-            style: VineTheme.titleSmallFont(),
-          ),
+          Text('Search for hashtags', style: VineTheme.titleSmallFont()),
           Text(
             'Discover trending topics and content',
             style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),

@@ -343,9 +343,9 @@ void main() {
 
     setUp(() {
       backgroundPublishBloc = _MockBackgroundPublishBloc();
-      when(() => backgroundPublishBloc.state).thenReturn(
-        const BackgroundPublishState(),
-      );
+      when(
+        () => backgroundPublishBloc.state,
+      ).thenReturn(const BackgroundPublishState());
       whenListen(
         backgroundPublishBloc,
         const Stream<BackgroundPublishState>.empty(),
@@ -379,10 +379,7 @@ void main() {
             ),
             profileFeedProvider(testUserHex).overrideWith(() {
               profileFeed = _TestProfileFeed(
-                VideoFeedState(
-                  videos: videos,
-                  hasMoreContent: true,
-                ),
+                VideoFeedState(videos: videos, hasMoreContent: true),
               );
               return profileFeed;
             }),
@@ -418,77 +415,73 @@ void main() {
       expect(profileFeed.loadMoreCallCount, 1);
     });
 
-    testWidgets(
-      'nested scroll profile grid triggers loadMore near bottom',
-      (tester) async {
-        final videos = List.generate(60, (index) {
-          final createdAt = nowUnix - index;
-          return VideoEvent(
-            id: 'nested-video-$index',
-            pubkey: testUserHex,
-            createdAt: createdAt,
-            content: 'Video $index',
-            timestamp: now.subtract(Duration(seconds: index)),
-            title: 'Nested Video $index',
-            videoUrl: 'https://example.com/v$index.mp4',
-          );
-        });
+    testWidgets('nested scroll profile grid triggers loadMore near bottom', (
+      tester,
+    ) async {
+      final videos = List.generate(60, (index) {
+        final createdAt = nowUnix - index;
+        return VideoEvent(
+          id: 'nested-video-$index',
+          pubkey: testUserHex,
+          createdAt: createdAt,
+          content: 'Video $index',
+          timestamp: now.subtract(Duration(seconds: index)),
+          title: 'Nested Video $index',
+          videoUrl: 'https://example.com/v$index.mp4',
+        );
+      });
 
-        late _TestProfileFeed profileFeed;
+      late _TestProfileFeed profileFeed;
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              authServiceProvider.overrideWithValue(
-                createTestAuthService('someone-else'),
-              ),
-              profileFeedProvider(testUserHex).overrideWith(() {
-                profileFeed = _TestProfileFeed(
-                  VideoFeedState(
-                    videos: videos,
-                    hasMoreContent: true,
-                  ),
-                );
-                return profileFeed;
-              }),
-            ],
-            child: BlocProvider<BackgroundPublishBloc>.value(
-              value: backgroundPublishBloc,
-              child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: NestedScrollView(
-                    headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 200, child: Placeholder()),
-                      ),
-                    ],
-                    body: ProfileVideosGrid(
-                      videos: videos,
-                      userIdHex: testUserHex,
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authServiceProvider.overrideWithValue(
+              createTestAuthService('someone-else'),
+            ),
+            profileFeedProvider(testUserHex).overrideWith(() {
+              profileFeed = _TestProfileFeed(
+                VideoFeedState(videos: videos, hasMoreContent: true),
+              );
+              return profileFeed;
+            }),
+          ],
+          child: BlocProvider<BackgroundPublishBloc>.value(
+            value: backgroundPublishBloc,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 200, child: Placeholder()),
                     ),
+                  ],
+                  body: ProfileVideosGrid(
+                    videos: videos,
+                    userIdHex: testUserHex,
                   ),
                 ),
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        expect(profileFeed.loadMoreCallCount, 0);
+      expect(profileFeed.loadMoreCallCount, 0);
 
-        await tester.scrollUntilVisible(
-          find.bySemanticsLabel('Video thumbnail 60'),
-          800,
-          scrollable: find.byType(Scrollable).last,
-        );
-        await tester.pump();
+      await tester.scrollUntilVisible(
+        find.bySemanticsLabel('Video thumbnail 60'),
+        800,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pump();
 
-        expect(profileFeed.loadMoreCallCount, greaterThanOrEqualTo(1));
-      },
-    );
+      expect(profileFeed.loadMoreCallCount, greaterThanOrEqualTo(1));
+    });
 
     testWidgets(
       'nested scroll profile grid does not trigger loadMore when hasMoreContent is false',
@@ -516,10 +509,7 @@ void main() {
               ),
               profileFeedProvider(testUserHex).overrideWith(() {
                 profileFeed = _TestProfileFeed(
-                  VideoFeedState(
-                    videos: videos,
-                    hasMoreContent: false,
-                  ),
+                  VideoFeedState(videos: videos, hasMoreContent: false),
                 );
                 return profileFeed;
               }),
@@ -564,9 +554,9 @@ void main() {
 
     setUp(() {
       backgroundPublishBloc = _MockBackgroundPublishBloc();
-      when(() => backgroundPublishBloc.state).thenReturn(
-        const BackgroundPublishState(),
-      );
+      when(
+        () => backgroundPublishBloc.state,
+      ).thenReturn(const BackgroundPublishState());
       whenListen(
         backgroundPublishBloc,
         const Stream<BackgroundPublishState>.empty(),

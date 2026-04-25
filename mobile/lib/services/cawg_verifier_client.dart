@@ -7,8 +7,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 enum VerifierRequiredMethod {
   oauth('oauth'),
-  publicProof('public_proof')
-  ;
+  publicProof('public_proof');
 
   const VerifierRequiredMethod(this.wireValue);
 
@@ -223,21 +222,18 @@ class VerifierClaimBundle {
 }
 
 class CawgVerifierClient {
-  CawgVerifierClient({
-    http.Client? httpClient,
-    Uri? baseUri,
-    Duration? timeout,
-  }) : _httpClient = httpClient ?? http.Client(),
-       _ownsHttpClient = httpClient == null,
-       _baseUri =
-           baseUri ??
-           Uri.parse(
-             const String.fromEnvironment(
-               'CAWG_VERIFIER_BASE_URL',
-               defaultValue: 'https://verifier.divine.video',
-             ),
-           ),
-       _timeout = timeout ?? const Duration(seconds: 8);
+  CawgVerifierClient({http.Client? httpClient, Uri? baseUri, Duration? timeout})
+    : _httpClient = httpClient ?? http.Client(),
+      _ownsHttpClient = httpClient == null,
+      _baseUri =
+          baseUri ??
+          Uri.parse(
+            const String.fromEnvironment(
+              'CAWG_VERIFIER_BASE_URL',
+              defaultValue: 'https://verifier.divine.video',
+            ),
+          ),
+      _timeout = timeout ?? const Duration(seconds: 8);
 
   final http.Client _httpClient;
   final bool _ownsHttpClient;

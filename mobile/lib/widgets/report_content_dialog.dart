@@ -249,9 +249,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // Show error snackbar
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                context.l10n.reportFailed(result.error ?? ''),
-              ),
+              content: Text(context.l10n.reportFailed(result.error ?? '')),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -313,11 +311,7 @@ class ReportConfirmationDialog extends StatelessWidget {
       title: Row(
         spacing: 12,
         children: [
-          const Icon(
-            Icons.check_circle,
-            color: VineTheme.vineGreen,
-            size: 28,
-          ),
+          const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
           Text(
             l10n.reportReceivedTitle,
             style: const TextStyle(color: VineTheme.whiteText),

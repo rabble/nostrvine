@@ -358,49 +358,43 @@ void main() {
         expect(filter(video), isFalse);
       });
 
-      test(
-        'hides when moderationLabels contains a known hide label '
-        'alongside an unknown label',
-        () {
-          final filter = createNsfwFilter(
-            contentFilterService,
-            moderationLabelService: moderationLabelService,
-          );
-          final video = _createVideo(
-            moderationLabels: const ['nudity', 'unknown-x'],
-          );
+      test('hides when moderationLabels contains a known hide label '
+          'alongside an unknown label', () {
+        final filter = createNsfwFilter(
+          contentFilterService,
+          moderationLabelService: moderationLabelService,
+        );
+        final video = _createVideo(
+          moderationLabels: const ['nudity', 'unknown-x'],
+        );
 
-          expect(filter(video), isTrue);
-        },
-      );
+        expect(filter(video), isTrue);
+      });
 
-      test(
-        'unknown label hides the video even if the user preferenced the '
-        'known label as show',
-        () async {
-          // Simulate an age-verified user who has explicitly opted in to
-          // seeing violence. Without the unknown-label short-circuit, a
-          // video labeled ['violence', 'unknown-x'] would pass through
-          // because the combined preference resolves to show.
-          await ageService.initialize();
-          await ageService.setAdultContentVerified(true);
-          await contentFilterService.setPreference(
-            ContentLabel.violence,
-            ContentFilterPreference.show,
-          );
+      test('unknown label hides the video even if the user preferenced the '
+          'known label as show', () async {
+        // Simulate an age-verified user who has explicitly opted in to
+        // seeing violence. Without the unknown-label short-circuit, a
+        // video labeled ['violence', 'unknown-x'] would pass through
+        // because the combined preference resolves to show.
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await contentFilterService.setPreference(
+          ContentLabel.violence,
+          ContentFilterPreference.show,
+        );
 
-          final filter = createNsfwFilter(
-            contentFilterService,
-            moderationLabelService: moderationLabelService,
-          );
-          final video = _createVideo(
-            moderationLabels: const ['violence', 'unknown-x'],
-          );
+        final filter = createNsfwFilter(
+          contentFilterService,
+          moderationLabelService: moderationLabelService,
+        );
+        final video = _createVideo(
+          moderationLabels: const ['violence', 'unknown-x'],
+        );
 
-          // The unknown label must force-hide regardless of user preference.
-          expect(filter(video), isTrue);
-        },
-      );
+        // The unknown label must force-hide regardless of user preference.
+        expect(filter(video), isTrue);
+      });
 
       test(
         'does not hide on self-labels branch when moderationLabels is empty',
@@ -434,9 +428,7 @@ void main() {
           contentFilterService,
           moderationLabelService: moderationLabelService,
         );
-        final labels = resolver(
-          _createVideo(sha256: 'trusted-warning-hash'),
-        );
+        final labels = resolver(_createVideo(sha256: 'trusted-warning-hash'));
 
         expect(labels, equals(['violence']));
       });

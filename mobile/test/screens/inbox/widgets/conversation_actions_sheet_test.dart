@@ -73,103 +73,90 @@ void main() {
     });
 
     group('interactions', () {
-      testWidgets(
-        'returns toggleMute when mute tile tapped',
-        (tester) async {
-          ConversationAction? result;
-          await tester.pumpWidget(
-            buildSubject(onResult: (action) => result = action),
-          );
+      testWidgets('returns toggleMute when mute tile tapped', (tester) async {
+        ConversationAction? result;
+        await tester.pumpWidget(
+          buildSubject(onResult: (action) => result = action),
+        );
 
-          await tester.tap(find.text('Show sheet'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Mute conversation'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Mute conversation'));
+        await tester.pumpAndSettle();
 
-          expect(result, equals(ConversationAction.toggleMute));
-        },
-      );
+        expect(result, equals(ConversationAction.toggleMute));
+      });
 
-      testWidgets(
-        'returns report when report tile tapped',
-        (tester) async {
-          ConversationAction? result;
-          await tester.pumpWidget(
-            buildSubject(onResult: (action) => result = action),
-          );
+      testWidgets('returns report when report tile tapped', (tester) async {
+        ConversationAction? result;
+        await tester.pumpWidget(
+          buildSubject(onResult: (action) => result = action),
+        );
 
-          await tester.tap(find.text('Show sheet'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Report Alice'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Report Alice'));
+        await tester.pumpAndSettle();
 
-          expect(result, equals(ConversationAction.report));
-        },
-      );
+        expect(result, equals(ConversationAction.report));
+      });
 
-      testWidgets(
-        'returns block when block tile tapped',
-        (tester) async {
-          ConversationAction? result;
-          await tester.pumpWidget(
-            buildSubject(onResult: (action) => result = action),
-          );
+      testWidgets('returns block when block tile tapped', (tester) async {
+        ConversationAction? result;
+        await tester.pumpWidget(
+          buildSubject(onResult: (action) => result = action),
+        );
 
-          await tester.tap(find.text('Show sheet'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Block Alice'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Block Alice'));
+        await tester.pumpAndSettle();
 
-          expect(result, equals(ConversationAction.block));
-        },
-      );
+        expect(result, equals(ConversationAction.block));
+      });
 
-      testWidgets(
-        'returns remove when remove tile tapped',
-        (tester) async {
-          ConversationAction? result;
-          await tester.pumpWidget(
-            buildSubject(onResult: (action) => result = action),
-          );
+      testWidgets('returns remove when remove tile tapped', (tester) async {
+        ConversationAction? result;
+        await tester.pumpWidget(
+          buildSubject(onResult: (action) => result = action),
+        );
 
-          await tester.tap(find.text('Show sheet'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Remove conversation'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Remove conversation'));
+        await tester.pumpAndSettle();
 
-          expect(result, equals(ConversationAction.remove));
-        },
-      );
+        expect(result, equals(ConversationAction.remove));
+      });
 
-      testWidgets(
-        'returns null when dismissed by tapping scrim',
-        (tester) async {
-          ConversationAction? result;
-          var callbackCalled = false;
-          await tester.pumpWidget(
-            buildSubject(
-              onResult: (action) {
-                callbackCalled = true;
-                result = action;
-              },
-            ),
-          );
+      testWidgets('returns null when dismissed by tapping scrim', (
+        tester,
+      ) async {
+        ConversationAction? result;
+        var callbackCalled = false;
+        await tester.pumpWidget(
+          buildSubject(
+            onResult: (action) {
+              callbackCalled = true;
+              result = action;
+            },
+          ),
+        );
 
-          await tester.tap(find.text('Show sheet'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Show sheet'));
+        await tester.pumpAndSettle();
 
-          // Tap the scrim (top-left corner, outside the bottom sheet)
-          await tester.tapAt(Offset.zero);
-          await tester.pumpAndSettle();
+        // Tap the scrim (top-left corner, outside the bottom sheet)
+        await tester.tapAt(Offset.zero);
+        await tester.pumpAndSettle();
 
-          expect(callbackCalled, isTrue);
-          expect(result, isNull);
-        },
-      );
+        expect(callbackCalled, isTrue);
+        expect(result, isNull);
+      });
     });
   });
 }

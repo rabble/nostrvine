@@ -95,9 +95,7 @@ void main() {
         act: (bloc) => bloc.add(const ClipsLibraryLoadRequested()),
         expect: () => [
           const ClipsLibraryState(status: ClipsLibraryStatus.loading),
-          const ClipsLibraryState(
-            status: ClipsLibraryStatus.loaded,
-          ),
+          const ClipsLibraryState(status: ClipsLibraryStatus.loaded),
         ],
       );
 
@@ -109,9 +107,8 @@ void main() {
           );
         },
         build: createBloc,
-        act: (bloc) => bloc.add(
-          const ClipsLibraryLoadRequested(preSelectedIds: {'c1'}),
-        ),
+        act: (bloc) =>
+            bloc.add(const ClipsLibraryLoadRequested(preSelectedIds: {'c1'})),
         expect: () => [
           const ClipsLibraryState(status: ClipsLibraryStatus.loading),
           isA<ClipsLibraryState>()
@@ -132,9 +129,9 @@ void main() {
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
         'ignores preSelectedIds that do not exist in loaded clips',
         setUp: () {
-          when(() => mockClipLibraryService.getAllClips()).thenAnswer(
-            (_) async => [createClip(id: 'c1')],
-          );
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [createClip(id: 'c1')]);
         },
         build: createBloc,
         act: (bloc) => bloc.add(
@@ -279,10 +276,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const ClipsLibraryClearSelection()),
         expect: () => [
-          ClipsLibraryState(
-            status: ClipsLibraryStatus.loaded,
-            clips: [clip1],
-          ),
+          ClipsLibraryState(status: ClipsLibraryStatus.loaded, clips: [clip1]),
         ],
       );
     });

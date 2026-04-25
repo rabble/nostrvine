@@ -607,26 +607,25 @@ void main() {
     });
 
     group('Action Label', () {
-      testWidgets(
-        'shows Secure label when anonymous with custom name',
-        (tester) async {
-          final testProfile = createTestProfile(displayName: 'Test User');
+      testWidgets('shows Secure label when anonymous with custom name', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Test User');
 
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              profile: testProfile,
-              isAnonymous: true,
-            ),
-          );
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            isAnonymous: true,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          expect(find.text('Secure your account'), findsOneWidget);
-          // 1 action — badge shows "1"
-          expect(find.text('1'), findsOneWidget);
-        },
-      );
+        expect(find.text('Secure your account'), findsOneWidget);
+        // 1 action — badge shows "1"
+        expect(find.text('1'), findsOneWidget);
+      });
 
       testWidgets(
         'shows Secure label with count badge when anonymous and no name',
@@ -796,52 +795,46 @@ void main() {
     });
 
     group('MyProfile state fallbacks (own profile)', () {
-      testWidgets(
-        'reads profile from MyProfileLoaded',
-        (tester) async {
-          final loadedProfile = createTestProfile(
-            displayName: 'Loaded User',
-            about: 'Bio from MyProfileLoaded',
-          );
+      testWidgets('reads profile from MyProfileLoaded', (tester) async {
+        final loadedProfile = createTestProfile(
+          displayName: 'Loaded User',
+          about: 'Bio from MyProfileLoaded',
+        );
 
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              myProfileState: MyProfileLoaded(
-                profile: loadedProfile,
-                isFresh: true,
-              ),
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            myProfileState: MyProfileLoaded(
+              profile: loadedProfile,
+              isFresh: true,
             ),
-          );
-          await tester.pumpAndSettle();
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          expect(find.text('Loaded User'), findsOneWidget);
-          expect(find.text('Bio from MyProfileLoaded'), findsOneWidget);
-        },
-      );
+        expect(find.text('Loaded User'), findsOneWidget);
+        expect(find.text('Bio from MyProfileLoaded'), findsOneWidget);
+      });
 
-      testWidgets(
-        'reads cached profile from MyProfileLoading',
-        (tester) async {
-          final cachedProfile = createTestProfile(
-            displayName: 'Cached While Loading',
-            about: 'Cached bio',
-          );
+      testWidgets('reads cached profile from MyProfileLoading', (tester) async {
+        final cachedProfile = createTestProfile(
+          displayName: 'Cached While Loading',
+          about: 'Cached bio',
+        );
 
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              myProfileState: MyProfileLoading(profile: cachedProfile),
-            ),
-          );
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            myProfileState: MyProfileLoading(profile: cachedProfile),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          expect(find.text('Cached While Loading'), findsOneWidget);
-          expect(find.text('Cached bio'), findsOneWidget);
-        },
-      );
+        expect(find.text('Cached While Loading'), findsOneWidget);
+        expect(find.text('Cached bio'), findsOneWidget);
+      });
 
       testWidgets(
         'falls back to widget.profile when MyProfile state has no profile',
@@ -883,9 +876,7 @@ void main() {
                 matching: find.byType(AnimatedOpacity),
               ),
             )
-            .where(
-              (w) => w.duration == const Duration(milliseconds: 80),
-            )
+            .where((w) => w.duration == const Duration(milliseconds: 80))
             .toList();
         expect(
           matches,
@@ -895,29 +886,28 @@ void main() {
         return matches.single;
       }
 
-      testWidgets(
-        'opens immediately when profile is already available',
-        (tester) async {
-          final testProfile = createTestProfile(displayName: 'Fade Target');
+      testWidgets('opens immediately when profile is already available', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Fade Target');
 
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              profile: testProfile,
-            ),
-          );
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+          ),
+        );
 
-          // First frame — _profileVisible is still false, but profile is
-          // non-null so the AnimatedOpacity opens at full opacity.
-          final opacity = readFadeOpacity(tester);
-          expect(opacity.opacity, equals(1.0));
-          expect(opacity.duration, equals(const Duration(milliseconds: 80)));
+        // First frame — _profileVisible is still false, but profile is
+        // non-null so the AnimatedOpacity opens at full opacity.
+        final opacity = readFadeOpacity(tester);
+        expect(opacity.opacity, equals(1.0));
+        expect(opacity.duration, equals(const Duration(milliseconds: 80)));
 
-          await tester.pumpAndSettle();
-          expect(find.text('Fade Target'), findsOneWidget);
-        },
-      );
+        await tester.pumpAndSettle();
+        expect(find.text('Fade Target'), findsOneWidget);
+      });
 
       testWidgets(
         'stays visible once the post-frame callback flips _profileVisible',

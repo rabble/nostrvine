@@ -270,9 +270,7 @@ class _TimelineMaxDurationDimOverlay extends StatelessWidget {
 }
 
 class _TimelineOutsideAreaPainter extends CustomPainter {
-  const _TimelineOutsideAreaPainter({
-    required this.stripeColor,
-  });
+  const _TimelineOutsideAreaPainter({required this.stripeColor});
 
   static const _stripeRotationRadians = 1.05;
   static const double _stripeWidth = 5;

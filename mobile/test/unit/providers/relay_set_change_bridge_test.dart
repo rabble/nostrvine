@@ -32,9 +32,7 @@ void main() {
       when(
         () => mockVideoEventService.resetAndResubscribeAll(),
       ).thenAnswer((_) async {});
-      when(
-        () => mockNostrClient.forceReconnectAll(),
-      ).thenAnswer((_) async {});
+      when(() => mockNostrClient.forceReconnectAll()).thenAnswer((_) async {});
     });
 
     tearDown(() {

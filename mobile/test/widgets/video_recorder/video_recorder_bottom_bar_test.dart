@@ -57,15 +57,10 @@ void main() {
         expect(find.byType(VideoRecorderBottomBar), findsOneWidget);
       });
 
-      testWidgets('renders $VideoRecorderModeSelectorWheel', (
-        tester,
-      ) async {
+      testWidgets('renders $VideoRecorderModeSelectorWheel', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
-        expect(
-          find.byType(VideoRecorderModeSelectorWheel),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoRecorderModeSelectorWheel), findsOneWidget);
       });
 
       testWidgets('renders $VideoRecorderLibraryButton', (tester) async {
@@ -100,24 +95,21 @@ void main() {
         );
       });
 
-      testWidgets(
-        'library button is aligned to center-left',
-        (tester) async {
-          await tester.pumpWidget(buildTestWidget());
+      testWidgets('library button is aligned to center-left', (tester) async {
+        await tester.pumpWidget(buildTestWidget());
 
-          final aligns = tester.widgetList<Align>(
-            find.descendant(
-              of: find.byType(VideoRecorderBottomBar),
-              matching: find.byType(Align),
-            ),
-          );
+        final aligns = tester.widgetList<Align>(
+          find.descendant(
+            of: find.byType(VideoRecorderBottomBar),
+            matching: find.byType(Align),
+          ),
+        );
 
-          final leftAlign = aligns.where(
-            (a) => a.alignment == Alignment.centerLeft,
-          );
-          expect(leftAlign, isNotEmpty);
-        },
-      );
+        final leftAlign = aligns.where(
+          (a) => a.alignment == Alignment.centerLeft,
+        );
+        expect(leftAlign, isNotEmpty);
+      });
     });
 
     group('opacity', () {

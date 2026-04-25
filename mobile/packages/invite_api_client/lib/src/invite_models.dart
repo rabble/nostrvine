@@ -43,22 +43,43 @@ class InviteValidationResult {
   const InviteValidationResult({
     required this.valid,
     required this.used,
+    this.available,
     this.code,
+    this.errorCode,
+    this.creatorSlug,
+    this.creatorDisplayName,
+    this.remaining,
   });
 
   factory InviteValidationResult.fromJson(Map<String, dynamic> json) {
     return InviteValidationResult(
       valid: json['valid'] == true,
       used: json['used'] == true,
+      available: json['available'] as bool?,
       code: json['code'] as String?,
+      errorCode:
+          json['errorCode'] as String? ??
+          json['error_code'] as String? ??
+          json['code_name'] as String?,
+      creatorSlug:
+          json['creatorSlug'] as String? ?? json['creator_slug'] as String?,
+      creatorDisplayName:
+          json['creatorDisplayName'] as String? ??
+          json['creator_display_name'] as String?,
+      remaining: json['remaining'] as int?,
     );
   }
 
   final bool valid;
   final bool used;
+  final bool? available;
   final String? code;
+  final String? errorCode;
+  final String? creatorSlug;
+  final String? creatorDisplayName;
+  final int? remaining;
 
-  bool get canContinue => valid && !used;
+  bool get canContinue => valid && (available ?? !used);
 }
 
 class WaitlistJoinResult {
@@ -75,10 +96,34 @@ class WaitlistJoinResult {
   final String message;
 }
 
+enum InviteConsumeStatus {
+  consumed,
+  alreadyConsumed,
+  userAlreadyJoined,
+  unknown,
+}
+
+InviteConsumeStatus parseInviteConsumeStatus(String? rawValue) {
+  switch (rawValue?.trim().toLowerCase()) {
+    case 'consumed':
+      return InviteConsumeStatus.consumed;
+    case 'already_consumed':
+      return InviteConsumeStatus.alreadyConsumed;
+    case 'user_already_joined':
+      return InviteConsumeStatus.userAlreadyJoined;
+    default:
+      return InviteConsumeStatus.unknown;
+  }
+}
+
 class InviteConsumeResult {
   const InviteConsumeResult({
     required this.message,
     required this.codesAllocated,
+    this.result = InviteConsumeStatus.consumed,
+    this.code,
+    this.creatorSlug,
+    this.creatorDisplayName,
   });
 
   factory InviteConsumeResult.fromJson(Map<String, dynamic> json) {
@@ -86,18 +131,43 @@ class InviteConsumeResult {
       message: json['message'] as String? ?? '',
       codesAllocated:
           (json['codesAllocated'] ?? json['codes_allocated'] ?? 0) as int,
+      result: parseInviteConsumeStatus(json['result'] as String?),
+      code: json['code'] as String?,
+      creatorSlug:
+          json['creatorSlug'] as String? ?? json['creator_slug'] as String?,
+      creatorDisplayName:
+          json['creatorDisplayName'] as String? ??
+          json['creator_display_name'] as String?,
     );
   }
 
   final String message;
   final int codesAllocated;
+  final InviteConsumeStatus result;
+  final String? code;
+  final String? creatorSlug;
+  final String? creatorDisplayName;
+
+  bool get isSuccess =>
+      result == InviteConsumeStatus.consumed ||
+      result == InviteConsumeStatus.alreadyConsumed ||
+      result == InviteConsumeStatus.userAlreadyJoined;
 }
 
 class InviteAccessGrant {
-  const InviteAccessGrant({required this.code, required this.validatedAt});
+  const InviteAccessGrant({
+    required this.code,
+    required this.validatedAt,
+    this.creatorSlug,
+    this.creatorDisplayName,
+    this.remaining,
+  });
 
   final String code;
   final DateTime validatedAt;
+  final String? creatorSlug;
+  final String? creatorDisplayName;
+  final int? remaining;
 }
 
 class InviteCode extends Equatable {

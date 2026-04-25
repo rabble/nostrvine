@@ -231,26 +231,21 @@ void main() {
         expect(result, equals(ContentFilterPreference.hide));
       });
 
-      test(
-        'respects user preference for ai-generated labels',
-        () async {
-          await service.initialize();
+      test('respects user preference for ai-generated labels', () async {
+        await service.initialize();
 
-          // Default is show
-          final defaultResult = service.getPreferenceForLabels([
-            'ai-generated',
-          ]);
-          expect(defaultResult, equals(ContentFilterPreference.show));
+        // Default is show
+        final defaultResult = service.getPreferenceForLabels(['ai-generated']);
+        expect(defaultResult, equals(ContentFilterPreference.show));
 
-          // User can change to warn or hide
-          await service.setPreference(
-            ContentLabel.aiGenerated,
-            ContentFilterPreference.warn,
-          );
-          final warnResult = service.getPreferenceForLabels(['ai-generated']);
-          expect(warnResult, equals(ContentFilterPreference.warn));
-        },
-      );
+        // User can change to warn or hide
+        await service.setPreference(
+          ContentLabel.aiGenerated,
+          ContentFilterPreference.warn,
+        );
+        final warnResult = service.getPreferenceForLabels(['ai-generated']);
+        expect(warnResult, equals(ContentFilterPreference.warn));
+      });
     });
 
     group('lockAdultCategories', () {

@@ -34,10 +34,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       transformer: droppable(),
     );
     on<WelcomeLogBackInRequested>(_onLogBackIn, transformer: droppable());
-    on<WelcomeCancelSwitchRequested>(
-      _onCancelSwitch,
-      transformer: droppable(),
-    );
+    on<WelcomeCancelSwitchRequested>(_onCancelSwitch, transformer: droppable());
     on<WelcomeAccountSelected>(_onAccountSelected);
     on<WelcomeCreateAccountRequested>(
       _onCreateAccountRequested,
@@ -226,12 +223,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         category: LogCategory.auth,
       );
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: WelcomeStatus.error,
-          clearSigningIn: true,
-        ),
-      );
+      emit(state.copyWith(status: WelcomeStatus.error, clearSigningIn: true));
     }
   }
 
@@ -271,12 +263,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       emit(state.copyWith(status: WelcomeStatus.loaded));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(
-        state.copyWith(
-          status: WelcomeStatus.error,
-          clearSigningIn: true,
-        ),
-      );
+      emit(state.copyWith(status: WelcomeStatus.error, clearSigningIn: true));
     }
   }
 

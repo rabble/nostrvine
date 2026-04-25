@@ -60,9 +60,7 @@ class _VideoRecorderCameraPreviewState
                 child: ClipRRect(
                   clipBehavior: .hardEdge,
                   borderRadius: widget.borderRadius,
-                  child: _StackItems(
-                    enableTapToFocus: widget.enableTapToFocus,
-                  ),
+                  child: _StackItems(enableTapToFocus: widget.enableTapToFocus),
                 ),
               );
             },
@@ -131,9 +129,7 @@ class _CameraPreview extends ConsumerWidget {
             if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux)
               const SizedBox.shrink()
             else
-              VideoRecorderMobilePreview(
-                enableTapToFocus: enableTapToFocus,
-              ),
+              VideoRecorderMobilePreview(enableTapToFocus: enableTapToFocus),
           ],
         ),
       ),

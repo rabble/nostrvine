@@ -251,10 +251,7 @@ class _PermissionScreen extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: .center,
                         children: [
-                          const DivineSticker(
-                            sticker: .alert,
-                            size: 154,
-                          ),
+                          const DivineSticker(sticker: .alert, size: 154),
                           const SizedBox(height: 19),
                           Text(
                             title,
@@ -272,10 +269,7 @@ class _PermissionScreen extends StatelessWidget {
                             textAlign: .center,
                           ),
                           const SizedBox(height: 32),
-                          DivineButton(
-                            label: buttonLabel,
-                            onPressed: onAction,
-                          ),
+                          DivineButton(label: buttonLabel, onPressed: onAction),
                         ],
                       ),
                     ),

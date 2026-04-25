@@ -72,10 +72,7 @@ void main() {
       await tester.tap(find.text('Revoke'));
       await tester.pumpAndSettle();
 
-      expect(
-        grantStore.listGrants(userPubkey: 'f' * 64),
-        isEmpty,
-      );
+      expect(grantStore.listGrants(userPubkey: 'f' * 64), isEmpty);
       expect(find.text('No saved integration permissions'), findsOneWidget);
     });
   });

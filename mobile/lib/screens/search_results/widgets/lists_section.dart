@@ -36,9 +36,7 @@ class ListsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = context.select(
-      (ListSearchBloc bloc) => bloc.state.status,
-    );
+    final status = context.select((ListSearchBloc bloc) => bloc.state.status);
     final videoResults = context.select(
       (ListSearchBloc bloc) => bloc.state.videoResults,
     );
@@ -96,9 +94,8 @@ class _ListsContent extends StatelessWidget {
 
     if (status == .failure) {
       return SearchSectionErrorState(
-        onRetry: () => context.read<ListSearchBloc>().add(
-          ListSearchQueryChanged(query),
-        ),
+        onRetry: () =>
+            context.read<ListSearchBloc>().add(ListSearchQueryChanged(query)),
       );
     }
 
@@ -184,10 +181,7 @@ class _ResultsGrid extends StatelessWidget {
               ),
             if (previewPeople != null)
               Expanded(
-                child: _PeopleListCard(
-                  userList: previewPeople,
-                  onTap: () {},
-                ),
+                child: _PeopleListCard(userList: previewPeople, onTap: () {}),
               ),
             // If only one item, fill the second slot with empty space.
             if (previewCount == 1) const Expanded(child: SizedBox()),

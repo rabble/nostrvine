@@ -39,20 +39,14 @@ void main() {
       test('supports value equality with preSelectedIds', () {
         expect(
           const ClipsLibraryLoadRequested(preSelectedIds: {'a', 'b'}),
-          equals(
-            const ClipsLibraryLoadRequested(preSelectedIds: {'a', 'b'}),
-          ),
+          equals(const ClipsLibraryLoadRequested(preSelectedIds: {'a', 'b'})),
         );
       });
 
       test('different preSelectedIds are not equal', () {
         expect(
           const ClipsLibraryLoadRequested(preSelectedIds: {'a'}),
-          isNot(
-            equals(
-              const ClipsLibraryLoadRequested(preSelectedIds: {'b'}),
-            ),
-          ),
+          isNot(equals(const ClipsLibraryLoadRequested(preSelectedIds: {'b'}))),
         );
       });
 
@@ -65,10 +59,7 @@ void main() {
       });
 
       test('default preSelectedIds is empty', () {
-        expect(
-          const ClipsLibraryLoadRequested().preSelectedIds,
-          isEmpty,
-        );
+        expect(const ClipsLibraryLoadRequested().preSelectedIds, isEmpty);
       });
     });
 

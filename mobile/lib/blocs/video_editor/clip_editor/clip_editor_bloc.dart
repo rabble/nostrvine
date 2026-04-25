@@ -192,9 +192,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     ClipEditorOriginalClipReplaced event,
     Emitter<ClipEditorState> emit,
   ) {
-    final index = state.clips.indexWhere(
-      (c) => c.id == event.sourceClipId,
-    );
+    final index = state.clips.indexWhere((c) => c.id == event.sourceClipId);
     if (index == -1) return;
 
     final newClips = List<DivineVideoClip>.of(state.clips)
@@ -271,9 +269,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           // Read the current clip from BLoC state to avoid
           // overwriting fields updated by earlier callbacks
           // (e.g. thumbnailPath from onThumbnailExtracted).
-          final current = state.clips.where(
-            (c) => c.id == clip.id,
-          );
+          final current = state.clips.where((c) => c.id == clip.id);
           final base = current.isNotEmpty ? current.first : clip;
           add(
             ClipEditorClipUpdated(

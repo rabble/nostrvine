@@ -36,10 +36,7 @@ void main() {
           .toList();
 
       expect(icons, hasLength(2));
-      expect(
-        icons.every((icon) => icon.icon == DivineIconName.play),
-        isTrue,
-      );
+      expect(icons.every((icon) => icon.icon == DivineIconName.play), isTrue);
       expect(find.text('Auto'), findsNothing);
     });
 
@@ -78,10 +75,7 @@ void main() {
           .toList();
 
       expect(icons, hasLength(2));
-      expect(
-        icons.every((icon) => icon.color == VineTheme.vineGreen),
-        isTrue,
-      );
+      expect(icons.every((icon) => icon.color == VineTheme.vineGreen), isTrue);
     });
   });
 }

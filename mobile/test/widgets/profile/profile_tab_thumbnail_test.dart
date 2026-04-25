@@ -8,10 +8,7 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 
 void main() {
   group(ProfileTabThumbnail, () {
-    Widget buildSubject({
-      String? thumbnailUrl,
-      bool isPrecached = false,
-    }) {
+    Widget buildSubject({String? thumbnailUrl, bool isPrecached = false}) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -30,42 +27,34 @@ void main() {
     }
 
     group('renders', () {
-      testWidgets(
-        '$ProfileTabThumbnailPlaceholder when thumbnailUrl is null',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
+      testWidgets('$ProfileTabThumbnailPlaceholder when thumbnailUrl is null', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
 
-          expect(
-            find.byType(ProfileTabThumbnailPlaceholder),
-            findsOneWidget,
-          );
-          expect(find.byType(VineCachedImage), findsNothing);
-        },
-      );
+        expect(find.byType(ProfileTabThumbnailPlaceholder), findsOneWidget);
+        expect(find.byType(VineCachedImage), findsNothing);
+      });
 
       testWidgets(
         '$ProfileTabThumbnailPlaceholder when thumbnailUrl is empty',
         (tester) async {
           await tester.pumpWidget(buildSubject(thumbnailUrl: ''));
 
-          expect(
-            find.byType(ProfileTabThumbnailPlaceholder),
-            findsOneWidget,
-          );
+          expect(find.byType(ProfileTabThumbnailPlaceholder), findsOneWidget);
           expect(find.byType(VineCachedImage), findsNothing);
         },
       );
 
-      testWidgets(
-        '$VineCachedImage when thumbnailUrl is non-empty',
-        (tester) async {
-          await tester.pumpWidget(
-            buildSubject(thumbnailUrl: 'https://example.com/thumb.jpg'),
-          );
+      testWidgets('$VineCachedImage when thumbnailUrl is non-empty', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(thumbnailUrl: 'https://example.com/thumb.jpg'),
+        );
 
-          expect(find.byType(VineCachedImage), findsOneWidget);
-        },
-      );
+        expect(find.byType(VineCachedImage), findsOneWidget);
+      });
 
       testWidgets(
         '$VineCachedImage with default fade durations when not precached',
@@ -88,23 +77,22 @@ void main() {
         },
       );
 
-      testWidgets(
-        '$VineCachedImage with zero fade durations when precached',
-        (tester) async {
-          await tester.pumpWidget(
-            buildSubject(
-              thumbnailUrl: 'https://example.com/thumb.jpg',
-              isPrecached: true,
-            ),
-          );
+      testWidgets('$VineCachedImage with zero fade durations when precached', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            thumbnailUrl: 'https://example.com/thumb.jpg',
+            isPrecached: true,
+          ),
+        );
 
-          final image = tester.widget<VineCachedImage>(
-            find.byType(VineCachedImage),
-          );
-          expect(image.fadeInDuration, equals(Duration.zero));
-          expect(image.fadeOutDuration, equals(Duration.zero));
-        },
-      );
+        final image = tester.widget<VineCachedImage>(
+          find.byType(VineCachedImage),
+        );
+        expect(image.fadeInDuration, equals(Duration.zero));
+        expect(image.fadeOutDuration, equals(Duration.zero));
+      });
     });
   });
 }

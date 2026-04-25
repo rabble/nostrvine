@@ -12,9 +12,7 @@ void main() {
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: InboxFab(onPressed: () {}),
-            ),
+            home: Scaffold(body: InboxFab(onPressed: () {})),
           ),
         );
 
@@ -30,9 +28,7 @@ void main() {
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: InboxFab(onPressed: () => wasCalled = true),
-            ),
+            home: Scaffold(body: InboxFab(onPressed: () => wasCalled = true)),
           ),
         );
 

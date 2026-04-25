@@ -180,12 +180,7 @@ class _AudioSelectionBottomSheetState
         bundledSoundsAsync.whenOrNull(
           data: (service) {
             return service.sounds.indexed
-                .map(
-                  (e) => AudioEvent.fromBundledSound(
-                    e.$2,
-                    index: e.$1,
-                  ),
-                )
+                .map((e) => AudioEvent.fromBundledSound(e.$2, index: e.$1))
                 .toList();
           },
         ) ??
@@ -337,9 +332,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.secondaryText,
-            ),
+            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             textAlign: TextAlign.center,
           ),
         ],
@@ -370,9 +363,7 @@ class _NoResultsState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             context.l10n.videoEditorAudioNoSoundsFoundSubtitle,
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.secondaryText,
-            ),
+            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
           ),
         ],
       ),
@@ -402,9 +393,7 @@ class _ErrorState extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: VineTheme.bodySmallFont(
-                color: VineTheme.secondaryText,
-              ),
+              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,

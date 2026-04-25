@@ -104,9 +104,7 @@ void main() {
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
         'clears selection when not trimming',
         build: TimelineOverlayBloc.new,
-        seed: () => const TimelineOverlayState(
-          selectedItemId: 'sound-1',
-        ),
+        seed: () => const TimelineOverlayState(selectedItemId: 'sound-1'),
         act: (bloc) => bloc.add(
           const TimelineOverlayItemsUpdate(
             layers: <Layer>[],
@@ -115,9 +113,7 @@ void main() {
             totalVideoDuration: Duration(seconds: 8),
           ),
         ),
-        expect: () => [
-          const TimelineOverlayState(),
-        ],
+        expect: () => [const TimelineOverlayState()],
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
@@ -135,11 +131,7 @@ void main() {
             totalVideoDuration: Duration(seconds: 8),
           ),
         ),
-        expect: () => const [
-          TimelineOverlayState(
-            trimmingItemId: 'sound-1',
-          ),
-        ],
+        expect: () => const [TimelineOverlayState(trimmingItemId: 'sound-1')],
       );
     });
 
@@ -190,9 +182,8 @@ void main() {
             ),
           ],
         ),
-        act: (bloc) => bloc.add(
-          const TimelineOverlayItemMoved(itemId: 'missing'),
-        ),
+        act: (bloc) =>
+            bloc.add(const TimelineOverlayItemMoved(itemId: 'missing')),
         expect: () => <TimelineOverlayState>[],
       );
     });

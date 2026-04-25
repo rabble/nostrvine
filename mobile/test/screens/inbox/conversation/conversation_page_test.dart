@@ -50,10 +50,7 @@ void main() {
 
     test('has correct route constants', () {
       expect(ConversationPage.routeName, equals('conversation'));
-      expect(
-        ConversationPage.pathPattern,
-        equals('/inbox/conversation/:id'),
-      );
+      expect(ConversationPage.pathPattern, equals('/inbox/conversation/:id'));
       expect(
         ConversationPage.pathForId('abc'),
         equals('/inbox/conversation/abc'),

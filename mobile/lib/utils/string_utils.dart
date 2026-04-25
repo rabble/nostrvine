@@ -39,8 +39,6 @@ class StringUtils {
   ///
   /// Delegates to [CountFormatter.formatCompact] for consistent,
   /// locale-aware number formatting across the app.
-  static String formatCompactNumber(
-    int number, {
-    String? locale,
-  }) => CountFormatter.formatCompact(number, locale: locale);
+  static String formatCompactNumber(int number, {String? locale}) =>
+      CountFormatter.formatCompact(number, locale: locale);
 }

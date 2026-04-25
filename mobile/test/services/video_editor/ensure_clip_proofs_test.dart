@@ -73,21 +73,12 @@ void main() {
 
       expect(generatorCalled, isFalse);
       expect(result.length, equals(2));
-      expect(
-        result[0].proofManifestJson,
-        equals('{"hash":"existing"}'),
-      );
-      expect(
-        result[1].proofManifestJson,
-        equals('{"hash":"also_exists"}'),
-      );
+      expect(result[0].proofManifestJson, equals('{"hash":"existing"}'));
+      expect(result[1].proofManifestJson, equals('{"hash":"also_exists"}'));
     });
 
     test('generates proof for clips missing attestation', () {
-      final clips = [
-        createClip(id: 'clip_1'),
-        createClip(id: 'clip_2'),
-      ];
+      final clips = [createClip(id: 'clip_1'), createClip(id: 'clip_2')];
 
       final generatedIds = <String>[];
       final result = ensureClipProofsSimulated(
@@ -129,18 +120,12 @@ void main() {
 
       expect(generatedIds, equals(['clip_2', 'clip_4']));
       expect(result.length, equals(4));
-      expect(
-        result[0].proofManifestJson,
-        equals('{"hash":"existing"}'),
-      );
+      expect(result[0].proofManifestJson, equals('{"hash":"existing"}'));
       expect(
         result[1].proofManifestJson,
         equals('{"hash":"backfilled_clip_2"}'),
       );
-      expect(
-        result[2].proofManifestJson,
-        equals('{"hash":"also_exists"}'),
-      );
+      expect(result[2].proofManifestJson, equals('{"hash":"also_exists"}'));
       expect(
         result[3].proofManifestJson,
         equals('{"hash":"backfilled_clip_4"}'),
@@ -184,10 +169,9 @@ void main() {
         thumbnailPath: '/path/to/thumb.jpg',
       );
 
-      final result = ensureClipProofsSimulated(
-        [clip],
-        proofGenerator: (_) => {'hash': 'abc123'},
-      );
+      final result = ensureClipProofsSimulated([
+        clip,
+      ], proofGenerator: (_) => {'hash': 'abc123'});
 
       final attested = result.first;
       expect(attested.id, equals('clip_full'));
@@ -221,16 +205,12 @@ void main() {
     test('single clip list without proof gets attested', () {
       final clip = createClip(id: 'solo');
 
-      final result = ensureClipProofsSimulated(
-        [clip],
-        proofGenerator: (_) => {'hash': 'attested'},
-      );
+      final result = ensureClipProofsSimulated([
+        clip,
+      ], proofGenerator: (_) => {'hash': 'attested'});
 
       expect(result.length, equals(1));
-      expect(
-        result.first.proofManifestJson,
-        equals('{"hash":"attested"}'),
-      );
+      expect(result.first.proofManifestJson, equals('{"hash":"attested"}'));
     });
 
     test('generated proof JSON is valid and decodable', () {

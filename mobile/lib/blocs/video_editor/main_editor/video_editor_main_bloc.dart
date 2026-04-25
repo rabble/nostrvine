@@ -43,12 +43,7 @@ class VideoEditorMainBloc
     VideoEditorMainCapabilitiesChanged event,
     Emitter<VideoEditorMainState> emit,
   ) {
-    emit(
-      state.copyWith(
-        canUndo: event.canUndo,
-        canRedo: event.canRedo,
-      ),
-    );
+    emit(state.copyWith(canUndo: event.canUndo, canRedo: event.canRedo));
   }
 
   void _onLayerInteractionStarted(
@@ -182,10 +177,6 @@ class VideoEditorMainBloc
     VideoEditorTimelineVisibilityToggled event,
     Emitter<VideoEditorMainState> emit,
   ) {
-    emit(
-      state.copyWith(
-        isTimelineHiddenByUser: !state.isTimelineHiddenByUser,
-      ),
-    );
+    emit(state.copyWith(isTimelineHiddenByUser: !state.isTimelineHiddenByUser));
   }
 }

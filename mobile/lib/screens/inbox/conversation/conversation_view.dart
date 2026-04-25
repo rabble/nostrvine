@@ -27,10 +27,7 @@ import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 /// Uses [BlocSelector] for child widgets that depend on specific slices of
 /// [ConversationState] to avoid unnecessary rebuilds.
 class ConversationView extends ConsumerStatefulWidget {
-  const ConversationView({
-    required this.participantPubkeys,
-    super.key,
-  });
+  const ConversationView({required this.participantPubkeys, super.key});
 
   /// Pubkeys of the other participants (excludes current user).
   final List<String> participantPubkeys;
@@ -40,10 +37,7 @@ class ConversationView extends ConsumerStatefulWidget {
 }
 
 class _ConversationViewState extends ConsumerState<ConversationView> {
-  Future<void> _onOptions(
-    String otherPubkey,
-    String displayName,
-  ) async {
+  Future<void> _onOptions(String otherPubkey, String displayName) async {
     if (otherPubkey.isEmpty) return;
 
     final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
@@ -123,9 +117,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
               nip05: profile?.displayNip05,
               onViewProfile: () {
                 final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-                context.push(
-                  '${OtherProfileScreen.path}/$npub',
-                );
+                context.push('${OtherProfileScreen.path}/$npub');
               },
             ),
           ),
@@ -219,10 +211,7 @@ class _ConversationContent extends StatelessWidget {
 }
 
 class _MessageList extends StatelessWidget {
-  const _MessageList({
-    required this.messages,
-    required this.currentPubkey,
-  });
+  const _MessageList({required this.messages, required this.currentPubkey});
 
   final List<DmMessage> messages;
   final String currentPubkey;

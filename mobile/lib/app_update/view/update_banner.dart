@@ -40,9 +40,7 @@ class _BannerContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: VineTheme.vineGreen.withValues(alpha: 0.15),
         border: Border(
-          top: BorderSide(
-            color: VineTheme.vineGreen.withValues(alpha: 0.3),
-          ),
+          top: BorderSide(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
         ),
       ),
       child: Row(
@@ -52,9 +50,9 @@ class _BannerContent extends StatelessWidget {
               onTap: () => _launchUpdate(downloadUrl),
               child: Text(
                 UpdateCopy.gentle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: VineTheme.vineGreen,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: VineTheme.vineGreen),
               ),
             ),
           ),

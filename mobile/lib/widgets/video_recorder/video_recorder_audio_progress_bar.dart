@@ -182,10 +182,7 @@ class _AudioWaveformProgress extends ConsumerWidget {
             borderRadius: .circular(4),
           ),
           child: CustomPaint(
-            size: const Size(
-              double.infinity,
-              WaveformConstants.waveformHeight,
-            ),
+            size: const Size(double.infinity, WaveformConstants.waveformHeight),
             foregroundPainter: StereoWaveformPainter(
               leftChannel: leftChannel,
               rightChannel: rightChannel,

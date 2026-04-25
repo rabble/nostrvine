@@ -1760,10 +1760,7 @@ class VideoOverlayActionColumn extends ConsumerWidget {
       children: [
         if (showEditButton) _VideoEditButton(video: video),
         if (showAutoButton && onAutoPressed != null)
-          AutoActionButton(
-            isEnabled: isAutoEnabled,
-            onPressed: onAutoPressed!,
-          ),
+          AutoActionButton(isEnabled: isAutoEnabled, onPressed: onAutoPressed!),
         LikeActionButton(
           video: video,
           isPreviewMode: isPreviewMode,

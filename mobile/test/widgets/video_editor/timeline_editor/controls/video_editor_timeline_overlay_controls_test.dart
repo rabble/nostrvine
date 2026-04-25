@@ -25,12 +25,10 @@ void main() {
 
     setUp(() {
       overlayBloc = _MockTimelineOverlayBloc();
-      when(() => overlayBloc.stream).thenAnswer(
-        (_) => const Stream<TimelineOverlayState>.empty(),
-      );
-      when(() => overlayBloc.state).thenReturn(
-        const TimelineOverlayState(),
-      );
+      when(
+        () => overlayBloc.stream,
+      ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());
+      when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
     });
 
     Widget build(TimelineOverlayItem item) {
@@ -43,9 +41,7 @@ void main() {
               editorKey: GlobalKey(),
               removeAreaKey: GlobalKey(),
               originalClipAspectRatio: 9 / 16,
-              bodySizeNotifier: ValueNotifier(
-                const Size(400, 600),
-              ),
+              bodySizeNotifier: ValueNotifier(const Size(400, 600)),
               fromLibrary: false,
               onOpenCamera: () {},
               onOpenClipsEditor: () {},
@@ -75,10 +71,7 @@ void main() {
 
       await tester.pumpWidget(build(item));
 
-      expect(
-        find.byType(VideoEditorTimelineControls),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoEditorTimelineControls), findsOneWidget);
     });
 
     testWidgets('renders $VideoEditorTimelineControls for filter', (
@@ -93,10 +86,7 @@ void main() {
 
       await tester.pumpWidget(build(item));
 
-      expect(
-        find.byType(VideoEditorTimelineControls),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoEditorTimelineControls), findsOneWidget);
     });
 
     testWidgets('renders $VideoEditorTimelineControls for sound', (
@@ -111,10 +101,7 @@ void main() {
 
       await tester.pumpWidget(build(item));
 
-      expect(
-        find.byType(VideoEditorTimelineControls),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoEditorTimelineControls), findsOneWidget);
     });
   });
 }

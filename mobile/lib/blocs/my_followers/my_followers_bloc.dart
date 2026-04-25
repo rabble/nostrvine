@@ -52,10 +52,7 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   ) async {
     if (state.status != MyFollowersStatus.success) {
       emit(
-        state.copyWith(
-          status: MyFollowersStatus.loading,
-          followersPubkeys: [],
-        ),
+        state.copyWith(status: MyFollowersStatus.loading, followersPubkeys: []),
       );
     }
 

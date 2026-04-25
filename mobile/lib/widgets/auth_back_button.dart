@@ -15,11 +15,7 @@ class AuthBackButton extends StatelessWidget {
   /// Creates an authentication flow back button.
   ///
   /// If [onPressed] is null, the button will perform a guarded back action.
-  const AuthBackButton({
-    super.key,
-    this.onPressed,
-    this.enabled = true,
-  });
+  const AuthBackButton({super.key, this.onPressed, this.enabled = true});
 
   /// Optional custom callback when the button is pressed.
   ///

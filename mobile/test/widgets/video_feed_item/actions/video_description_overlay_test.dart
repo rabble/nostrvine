@@ -28,9 +28,7 @@ VideoEvent _video({
 Future<void> _pump(WidgetTester tester, VideoEvent video) async {
   await tester.pumpWidget(
     MaterialApp(
-      home: Scaffold(
-        body: VideoDescriptionOverlay(video: video),
-      ),
+      home: Scaffold(body: VideoDescriptionOverlay(video: video)),
     ),
   );
 }
@@ -45,10 +43,7 @@ void main() {
           // has originalLoops=null in REST but a non-zero ClickHouse views
           // count. The old gate (originalLoops != null && > 0) hid the
           // count here, re-introducing the "0 loops" symptom in this widget.
-          await _pump(
-            tester,
-            _video(rawTags: const {'views': '34'}),
-          );
+          await _pump(tester, _video(rawTags: const {'views': '34'}));
 
           expect(find.text('🔁 34 loops'), findsOneWidget);
         },
@@ -59,10 +54,7 @@ void main() {
         (tester) async {
           await _pump(
             tester,
-            _video(
-              originalLoops: 6,
-              rawTags: const {'views': '34'},
-            ),
+            _video(originalLoops: 6, rawTags: const {'views': '34'}),
           );
 
           expect(find.text('🔁 40 loops'), findsOneWidget);

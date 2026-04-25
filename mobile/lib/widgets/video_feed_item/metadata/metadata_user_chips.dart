@@ -100,9 +100,7 @@ class MetadataRepostedBySection extends StatelessWidget {
         }.toList();
 
         if (state.isLoading && allPubkeys.isEmpty) {
-          return _RepostedByContent(
-            pubkeys: video.reposterPubkeys ?? [],
-          );
+          return _RepostedByContent(pubkeys: video.reposterPubkeys ?? []);
         }
 
         return _RepostedByContent(pubkeys: allPubkeys);

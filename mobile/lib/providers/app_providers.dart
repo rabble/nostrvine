@@ -9,6 +9,7 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:categories_repository/categories_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:curation_repository/curation_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
@@ -115,6 +116,11 @@ import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'app_providers.g.dart';
+
+@Riverpod(keepAlive: true)
+ContentPolicyEngine contentPolicyEngine(Ref ref) {
+  return ContentPolicyEngine.defaultRules();
+}
 
 final nostrAppDirectoryServiceProvider = Provider<NostrAppDirectoryService>((
   ref,
@@ -1774,9 +1780,7 @@ Nip98AuthService nip98AuthService(Ref ref) {
 @riverpod
 BlossomAuthService blossomAuthService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  return BlossomAuthService(
-    authProvider: _BlossomAuthAdapter(authService),
-  );
+  return BlossomAuthService(authProvider: _BlossomAuthAdapter(authService));
 }
 
 /// Shared viewer auth service for media GET requests.

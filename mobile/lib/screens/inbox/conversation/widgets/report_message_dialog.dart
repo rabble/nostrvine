@@ -44,10 +44,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: VineTheme.cardBackground,
-    title: Text(
-      'Report Message',
-      style: VineTheme.titleMediumFont(),
-    ),
+    title: Text('Report Message', style: VineTheme.titleMediumFont()),
     content: SizedBox(
       width: double.maxFinite,
       child: SingleChildScrollView(
@@ -63,9 +60,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
               'Divine will act on content reports within 24 hours by '
               'removing the content and ejecting the user who provided '
               'the offending content.',
-              style: VineTheme.bodySmallFont(
-                color: VineTheme.secondaryText,
-              ),
+              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
             ),
             const SizedBox(height: 16),
             RadioGroup<ContentFilterReason>(
@@ -100,10 +95,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
             ),
             const SizedBox(height: 8),
             CheckboxListTile(
-              title: Text(
-                'Block this user',
-                style: VineTheme.bodyMediumFont(),
-              ),
+              title: Text('Block this user', style: VineTheme.bodyMediumFont()),
               value: _blockUser,
               onChanged: (value) => setState(() => _blockUser = value ?? false),
               controlAffinity: ListTileControlAffinity.leading,

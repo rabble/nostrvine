@@ -65,10 +65,7 @@ class _HumanMadeBadge extends StatelessWidget {
     return Text.rich(
       TextSpan(
         children: [
-          TextSpan(
-            text: 'Human-Made',
-            style: VineTheme.titleSmallFont(),
-          ),
+          TextSpan(text: 'Human-Made', style: VineTheme.titleSmallFont()),
           WidgetSpan(
             alignment: PlaceholderAlignment.top,
             child: Text(

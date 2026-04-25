@@ -61,9 +61,9 @@ void main() {
       mockAuthService = _MockAuthService(currentPubkey);
       mockGoRouter = MockGoRouter();
 
-      when(() => mockActionsCubit.state).thenReturn(
-        const MessageRequestActionsState(),
-      );
+      when(
+        () => mockActionsCubit.state,
+      ).thenReturn(const MessageRequestActionsState());
 
       when(() => mockPreviewCubit.state).thenReturn(
         const RequestPreviewState(
@@ -94,17 +94,15 @@ void main() {
         mockAuthService: mockAuthService,
         additionalOverrides: [
           goRouterProvider.overrideWithValue(mockGoRouter),
-          userProfileReactiveProvider(otherPubkey).overrideWith(
-            (ref) => Stream.value(testProfile),
-          ),
+          userProfileReactiveProvider(
+            otherPubkey,
+          ).overrideWith((ref) => Stream.value(testProfile)),
         ],
         home: MockGoRouterProvider(
           goRouter: mockGoRouter,
           child: MultiBlocProvider(
             providers: [
-              BlocProvider<RequestPreviewCubit>.value(
-                value: mockPreviewCubit,
-              ),
+              BlocProvider<RequestPreviewCubit>.value(value: mockPreviewCubit),
               BlocProvider<MessageRequestActionsCubit>.value(
                 value: mockActionsCubit,
               ),
@@ -116,9 +114,7 @@ void main() {
     }
 
     group('renders', () {
-      testWidgets('renders app bar with display name as title', (
-        tester,
-      ) async {
+      testWidgets('renders app bar with display name as title', (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
@@ -162,53 +158,47 @@ void main() {
     });
 
     group('navigation', () {
-      testWidgets(
-        'navigates to profile view when "View profile" tapped',
-        (tester) async {
-          when(
-            () => mockGoRouter.push(any()),
-          ).thenAnswer((_) async => null);
+      testWidgets('navigates to profile view when "View profile" tapped', (
+        tester,
+      ) async {
+        when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
 
-          await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('View profile'));
-          await tester.pump();
+        await tester.tap(find.text('View profile'));
+        await tester.pump();
 
-          verify(
-            () => mockGoRouter.push(
-              any(that: startsWith('/profile-view/')),
-            ),
-          ).called(1);
-        },
-      );
+        verify(
+          () => mockGoRouter.push(any(that: startsWith('/profile-view/'))),
+        ).called(1);
+      });
 
-      testWidgets(
-        'navigates to conversation when "View messages" tapped',
-        (tester) async {
-          when(
-            () => mockGoRouter.pushReplacementNamed(
-              any(),
-              pathParameters: any(named: 'pathParameters'),
-              extra: any(named: 'extra'),
-            ),
-          ).thenAnswer((_) async => null);
+      testWidgets('navigates to conversation when "View messages" tapped', (
+        tester,
+      ) async {
+        when(
+          () => mockGoRouter.pushReplacementNamed(
+            any(),
+            pathParameters: any(named: 'pathParameters'),
+            extra: any(named: 'extra'),
+          ),
+        ).thenAnswer((_) async => null);
 
-          await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('View messages'));
-          await tester.pump();
+        await tester.tap(find.text('View messages'));
+        await tester.pump();
 
-          verify(
-            () => mockGoRouter.pushReplacementNamed(
-              ConversationPage.routeName,
-              pathParameters: {'id': conversationId},
-              extra: [otherPubkey],
-            ),
-          ).called(1);
-        },
-      );
+        verify(
+          () => mockGoRouter.pushReplacementNamed(
+            ConversationPage.routeName,
+            pathParameters: {'id': conversationId},
+            extra: [otherPubkey],
+          ),
+        ).called(1);
+      });
 
       testWidgets(
         'calls declineRequest and pops when "Decline and remove" tapped',

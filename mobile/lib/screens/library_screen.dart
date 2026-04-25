@@ -136,10 +136,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
       final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
       for (final clip in selectedClips) {
-        clipManagerNotifier.insertClip(
-          clipManagerNotifier.clips.length,
-          clip,
-        );
+        clipManagerNotifier.insertClip(clipManagerNotifier.clips.length, clip);
       }
     }
 
@@ -153,10 +150,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       context.pop(newClips);
     } else {
       if (!context.mounted) return;
-      await context.push(
-        VideoEditorScreen.path,
-        extra: {'fromLibrary': true},
-      );
+      await context.push(VideoEditorScreen.path, extra: {'fromLibrary': true});
       // Re-sync selection with ClipManager after returning from editor.
       if (!context.mounted) return;
       final currentClipIds = ref
@@ -164,9 +158,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           .clips
           .map((c) => c.id)
           .toSet();
-      clipsBloc.add(
-        ClipsLibraryLoadRequested(preSelectedIds: currentClipIds),
-      );
+      clipsBloc.add(ClipsLibraryLoadRequested(preSelectedIds: currentClipIds));
     }
   }
 
@@ -442,9 +434,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
                   DiVineAppBarAction(
                     backgroundColor: VineTheme.primary,
                     iconColor: VineTheme.onPrimary,
-                    icon: SvgIconSource(
-                      DivineIconName.caretRight.assetPath,
-                    ),
+                    icon: SvgIconSource(DivineIconName.caretRight.assetPath),
                     onPressed: onNext,
                     tooltip: context.l10n.commonNext,
                     semanticLabel: context.l10n.commonNext,
@@ -520,14 +510,8 @@ class _TabBody extends StatelessWidget {
     return TabBarView(
       controller: tabController,
       children: [
-        const DraftsTab(
-          showRecordButton: false,
-          showAutosavedDraft: false,
-        ),
-        ClipsTab(
-          targetAspectRatio: targetAspectRatio,
-          showRecordButton: false,
-        ),
+        const DraftsTab(showRecordButton: false, showAutosavedDraft: false),
+        ClipsTab(targetAspectRatio: targetAspectRatio, showRecordButton: false),
         if (enableSoundTab) const SoundsTab(),
       ],
     );

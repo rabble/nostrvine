@@ -88,9 +88,10 @@ void main() {
           ).thenAnswer((_) async {});
         },
         build: createCubit,
-        act: (cubit) => cubit.markAllRequestsAsRead(
-          [_testConversationId1, _testConversationId2],
-        ),
+        act: (cubit) => cubit.markAllRequestsAsRead([
+          _testConversationId1,
+          _testConversationId2,
+        ]),
         expect: () => [
           const MessageRequestActionsState(
             status: MessageRequestActionsStatus.processing,
@@ -101,9 +102,10 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockDmRepository.markConversationsAsRead(
-              [_testConversationId1, _testConversationId2],
-            ),
+            () => mockDmRepository.markConversationsAsRead([
+              _testConversationId1,
+              _testConversationId2,
+            ]),
           ).called(1);
         },
       );
@@ -145,9 +147,10 @@ void main() {
           ).thenAnswer((_) async {});
         },
         build: createCubit,
-        act: (cubit) => cubit.removeAllRequests(
-          [_testConversationId1, _testConversationId2],
-        ),
+        act: (cubit) => cubit.removeAllRequests([
+          _testConversationId1,
+          _testConversationId2,
+        ]),
         expect: () => [
           const MessageRequestActionsState(
             status: MessageRequestActionsStatus.processing,
@@ -158,9 +161,10 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockDmRepository.removeConversations(
-              [_testConversationId1, _testConversationId2],
-            ),
+            () => mockDmRepository.removeConversations([
+              _testConversationId1,
+              _testConversationId2,
+            ]),
           ).called(1);
         },
       );
@@ -222,10 +226,7 @@ void main() {
         );
         final updated = state.copyWith();
 
-        expect(
-          updated.status,
-          equals(MessageRequestActionsStatus.processing),
-        );
+        expect(updated.status, equals(MessageRequestActionsStatus.processing));
       });
 
       test('copyWith replaces status', () {
@@ -234,10 +235,7 @@ void main() {
           status: MessageRequestActionsStatus.processing,
         );
 
-        expect(
-          updated.status,
-          equals(MessageRequestActionsStatus.processing),
-        );
+        expect(updated.status, equals(MessageRequestActionsStatus.processing));
       });
 
       test('props contains status', () {

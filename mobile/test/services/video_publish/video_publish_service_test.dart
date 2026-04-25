@@ -374,55 +374,48 @@ void main() {
     });
 
     group('upload reuse', () {
-      test(
-        'reuses readyToPublish upload matching video path',
-        () async {
-          when(() => mockAuthService.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthService.currentPublicKeyHex,
-          ).thenReturn('test_pubkey');
-          when(
-            () => mockDraftService.saveDraft(any()),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockDraftService.deleteDraft(any()),
-          ).thenAnswer((_) async {});
-          when(() => mockUploadManager.isInitialized).thenReturn(true);
+      test('reuses readyToPublish upload matching video path', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(
+          () => mockDraftService.deleteDraft(any()),
+        ).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
 
-          final readyUpload = _createPendingUpload(
-            status: UploadStatus.readyToPublish,
-          );
-          when(
-            () => mockUploadManager.findReusableUpload(any()),
-          ).thenReturn(readyUpload);
-          when(
-            () => mockUploadManager.getUpload(any()),
-          ).thenReturn(readyUpload);
-          when(
-            () => mockVideoEventPublisher.publishVideoEvent(
-              upload: any(named: 'upload'),
-              title: any(named: 'title'),
-              description: any(named: 'description'),
-              hashtags: any(named: 'hashtags'),
-              expirationTimestamp: any(named: 'expirationTimestamp'),
-              allowAudioReuse: any(named: 'allowAudioReuse'),
-            ),
-          ).thenAnswer((_) async => true);
+        final readyUpload = _createPendingUpload(
+          status: UploadStatus.readyToPublish,
+        );
+        when(
+          () => mockUploadManager.findReusableUpload(any()),
+        ).thenReturn(readyUpload);
+        when(() => mockUploadManager.getUpload(any())).thenReturn(readyUpload);
+        when(
+          () => mockVideoEventPublisher.publishVideoEvent(
+            upload: any(named: 'upload'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            expirationTimestamp: any(named: 'expirationTimestamp'),
+            allowAudioReuse: any(named: 'allowAudioReuse'),
+          ),
+        ).thenAnswer((_) async => true);
 
-          final draft = _createTestDraft();
-          final result = await service.publishVideo(draft: draft);
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
 
-          expect(result, isA<PublishSuccess>());
-          // Should NOT have started a new upload.
-          verifyNever(
-            () => mockUploadManager.startUploadFromDraft(
-              draft: any(named: 'draft'),
-              nostrPubkey: any(named: 'nostrPubkey'),
-              onProgress: any(named: 'onProgress'),
-            ),
-          );
-        },
-      );
+        expect(result, isA<PublishSuccess>());
+        // Should NOT have started a new upload.
+        verifyNever(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+      });
 
       test(
         'falls through to new upload when no reusable upload exists',
@@ -453,72 +446,65 @@ void main() {
         },
       );
 
-      test(
-        'resumes interrupted upload when reusable upload is in '
-        'uploading status',
-        () async {
-          when(() => mockAuthService.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthService.currentPublicKeyHex,
-          ).thenReturn('test_pubkey');
-          when(
-            () => mockDraftService.saveDraft(any()),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockDraftService.deleteDraft(any()),
-          ).thenAnswer((_) async {});
-          when(() => mockUploadManager.isInitialized).thenReturn(true);
+      test('resumes interrupted upload when reusable upload is in '
+          'uploading status', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn('test_pubkey');
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+        when(
+          () => mockDraftService.deleteDraft(any()),
+        ).thenAnswer((_) async {});
+        when(() => mockUploadManager.isInitialized).thenReturn(true);
 
-          final uploadingUpload = _createPendingUpload(
-            status: UploadStatus.uploading,
-          );
-          final readyUpload = _createPendingUpload(
-            status: UploadStatus.readyToPublish,
-          );
+        final uploadingUpload = _createPendingUpload(
+          status: UploadStatus.uploading,
+        );
+        final readyUpload = _createPendingUpload(
+          status: UploadStatus.readyToPublish,
+        );
 
-          when(
-            () => mockUploadManager.findReusableUpload(any()),
-          ).thenReturn(uploadingUpload);
+        when(
+          () => mockUploadManager.findReusableUpload(any()),
+        ).thenReturn(uploadingUpload);
 
-          // First call returns uploading (triggers resume),
-          // subsequent calls return readyToPublish (poll succeeds).
-          var getUploadCalls = 0;
-          when(() => mockUploadManager.getUpload(any())).thenAnswer((_) {
-            getUploadCalls++;
-            return getUploadCalls <= 1 ? uploadingUpload : readyUpload;
-          });
-          when(
-            () => mockUploadManager.resumeInterruptedUpload(any()),
-          ).thenReturn(null);
-          when(
-            () => mockVideoEventPublisher.publishVideoEvent(
-              upload: any(named: 'upload'),
-              title: any(named: 'title'),
-              description: any(named: 'description'),
-              hashtags: any(named: 'hashtags'),
-              expirationTimestamp: any(named: 'expirationTimestamp'),
-              allowAudioReuse: any(named: 'allowAudioReuse'),
-            ),
-          ).thenAnswer((_) async => true);
+        // First call returns uploading (triggers resume),
+        // subsequent calls return readyToPublish (poll succeeds).
+        var getUploadCalls = 0;
+        when(() => mockUploadManager.getUpload(any())).thenAnswer((_) {
+          getUploadCalls++;
+          return getUploadCalls <= 1 ? uploadingUpload : readyUpload;
+        });
+        when(
+          () => mockUploadManager.resumeInterruptedUpload(any()),
+        ).thenReturn(null);
+        when(
+          () => mockVideoEventPublisher.publishVideoEvent(
+            upload: any(named: 'upload'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            expirationTimestamp: any(named: 'expirationTimestamp'),
+            allowAudioReuse: any(named: 'allowAudioReuse'),
+          ),
+        ).thenAnswer((_) async => true);
 
-          final draft = _createTestDraft();
-          final result = await service.publishVideo(draft: draft);
+        final draft = _createTestDraft();
+        final result = await service.publishVideo(draft: draft);
 
-          expect(result, isA<PublishSuccess>());
-          verify(
-            () => mockUploadManager.resumeInterruptedUpload(
-              uploadingUpload.id,
-            ),
-          ).called(1);
-          verifyNever(
-            () => mockUploadManager.startUploadFromDraft(
-              draft: any(named: 'draft'),
-              nostrPubkey: any(named: 'nostrPubkey'),
-              onProgress: any(named: 'onProgress'),
-            ),
-          );
-        },
-      );
+        expect(result, isA<PublishSuccess>());
+        verify(
+          () => mockUploadManager.resumeInterruptedUpload(uploadingUpload.id),
+        ).called(1);
+        verifyNever(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+      });
     });
 
     group('error messages', () {
@@ -548,10 +534,7 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          contains('media server'),
-        );
+        expect((result as PublishError).userMessage, contains('media server'));
         expect(result.userMessage, contains('not available'));
       });
 
@@ -609,10 +592,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          contains('timed out'),
-        );
+        expect((result as PublishError).userMessage, contains('timed out'));
       });
 
       test('returns user-friendly message for TLS/certificate error', () async {
@@ -665,10 +645,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          contains('too large'),
-        );
+        expect((result as PublishError).userMessage, contains('too large'));
       });
 
       test(
@@ -757,10 +734,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          contains('sign in'),
-        );
+        expect((result as PublishError).userMessage, contains('sign in'));
       });
 
       test('returns user-friendly message for 403 forbidden', () async {
@@ -785,10 +759,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          contains('permission'),
-        );
+        expect((result as PublishError).userMessage, contains('permission'));
       });
 
       test('returns user-friendly message for file not found', () async {
@@ -841,10 +812,7 @@ void main() {
         final result = await service.publishVideo(draft: draft);
 
         expect(result, isA<PublishError>());
-        expect(
-          (result as PublishError).userMessage,
-          contains('storage'),
-        );
+        expect((result as PublishError).userMessage, contains('storage'));
       });
 
       test('returns user-friendly message for Nostr relay failure', () async {

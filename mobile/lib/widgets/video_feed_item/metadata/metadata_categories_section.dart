@@ -56,9 +56,7 @@ class CategoryChip extends StatelessWidget {
               localizedCategoryName(context.l10n, category.name),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: VineTheme.titleSmallFont(
-                color: visuals.foregroundColor,
-              ),
+              style: VineTheme.titleSmallFont(color: visuals.foregroundColor),
             ),
           ),
         ],

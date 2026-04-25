@@ -12,8 +12,7 @@ enum ProfileActionType {
   secureAccount,
 
   /// The user has not yet set a custom display name, bio, or picture.
-  completeProfile
-  ;
+  completeProfile;
 
   /// Returns the list of pending actions based on the current profile and
   /// auth state.

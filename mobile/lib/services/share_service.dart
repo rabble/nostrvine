@@ -87,10 +87,7 @@ class ShareService {
     try {
       final shareText = generateShareText(video);
       await SharePlus.instance.share(
-        ShareParams(
-          text: shareText,
-          subject: context.l10n.shareVideoSubject,
-        ),
+        ShareParams(text: shareText, subject: context.l10n.shareVideoSubject),
       );
     } catch (e) {
       Log.error(
@@ -151,10 +148,7 @@ class _ShareOptionsBottomSheet extends StatelessWidget {
         // Title
         Text(
           context.l10n.shareVideoTitle,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 20),
 

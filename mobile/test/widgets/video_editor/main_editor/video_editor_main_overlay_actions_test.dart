@@ -46,10 +46,8 @@ class _FakeVideoEditorNotifier extends VideoEditorNotifier {
   VideoEditorProviderState build() => initialState;
 
   @override
-  DivineVideoDraft getActiveDraft({
-    bool isAutosave = false,
-    String? draftId,
-  }) => activeDraft;
+  DivineVideoDraft getActiveDraft({bool isAutosave = false, String? draftId}) =>
+      activeDraft;
 
   @override
   Future<bool> saveAsDraft({bool enforceCreateNewDraft = false}) async {
@@ -87,9 +85,9 @@ void main() {
       mockGoRouter = MockGoRouter();
 
       when(() => mockBloc.state).thenReturn(const VideoEditorMainState());
-      when(() => mockBloc.stream).thenAnswer(
-        (_) => const Stream<VideoEditorMainState>.empty(),
-      );
+      when(
+        () => mockBloc.stream,
+      ).thenAnswer((_) => const Stream<VideoEditorMainState>.empty());
       when(() => mockGoRouter.pop<Object?>(any())).thenAnswer((_) async {});
     });
 
@@ -155,10 +153,7 @@ void main() {
       testWidgets('renders $VideoEditorMainOverlayActions', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(
-          find.byType(VideoEditorMainOverlayActions),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoEditorMainOverlayActions), findsOneWidget);
       });
 
       testWidgets('renders $VideoEditorToolbar', (tester) async {
@@ -167,9 +162,7 @@ void main() {
         expect(find.byType(VideoEditorToolbar), findsOneWidget);
       });
 
-      testWidgets('renders Close button with caret-left icon', (
-        tester,
-      ) async {
+      testWidgets('renders Close button with caret-left icon', (tester) async {
         await tester.pumpWidget(buildWidget());
 
         expect(find.bySemanticsLabel('Close'), findsOneWidget);
@@ -181,9 +174,7 @@ void main() {
         );
       });
 
-      testWidgets('renders Done button with caret-right icon', (
-        tester,
-      ) async {
+      testWidgets('renders Done button with caret-right icon', (tester) async {
         await tester.pumpWidget(buildWidget());
 
         expect(find.bySemanticsLabel('Done'), findsOneWidget);
@@ -263,45 +254,38 @@ void main() {
         },
       );
 
-      testWidgets(
-        'autosaved draft without edits closes directly',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidget(isAutosavedDraft: true),
-          );
+      testWidgets('autosaved draft without edits closes directly', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(isAutosavedDraft: true));
 
-          await tester.tap(find.bySemanticsLabel('Close'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.bySemanticsLabel('Close'));
+        await tester.pumpAndSettle();
 
-          verify(() => mockGoRouter.pop<Object?>(any())).called(1);
-          expect(find.text('Save your draft?'), findsNothing);
-        },
-      );
+        verify(() => mockGoRouter.pop<Object?>(any())).called(1);
+        expect(find.text('Save your draft?'), findsNothing);
+      });
 
-      testWidgets(
-        'autosaved draft with edits shows save/discard prompt',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
-          );
+      testWidgets('autosaved draft with edits shows save/discard prompt', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
+        );
 
-          await tester.tap(find.bySemanticsLabel('Close'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.bySemanticsLabel('Close'));
+        await tester.pumpAndSettle();
 
-          expect(find.text('Save your draft?'), findsOneWidget);
-          expect(find.text('Save draft'), findsOneWidget);
-          expect(find.text('Discard changes'), findsOneWidget);
-        },
-      );
+        expect(find.text('Save your draft?'), findsOneWidget);
+        expect(find.text('Save draft'), findsOneWidget);
+        expect(find.text('Discard changes'), findsOneWidget);
+      });
 
       testWidgets(
         'save draft action calls saveAsDraft, closes twice and shows success snackbar',
         (tester) async {
           await tester.pumpWidget(
-            buildWidget(
-              isAutosavedDraft: true,
-              hasBeenEdited: true,
-            ),
+            buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
           );
 
           await tester.tap(find.bySemanticsLabel('Close'));
@@ -316,23 +300,22 @@ void main() {
         },
       );
 
-      testWidgets(
-        'discard action clears publish state and closes twice',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
-          );
+      testWidgets('discard action clears publish state and closes twice', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(isAutosavedDraft: true, hasBeenEdited: true),
+        );
 
-          await tester.tap(find.bySemanticsLabel('Close'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.bySemanticsLabel('Close'));
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Discard changes'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Discard changes'));
+        await tester.pumpAndSettle();
 
-          expect(fakeVideoPublishNotifier.clearAllCalls, equals(1));
-          verify(() => mockGoRouter.pop<Object?>(any())).called(2);
-        },
-      );
+        expect(fakeVideoPublishNotifier.clearAllCalls, equals(1));
+        verify(() => mockGoRouter.pop<Object?>(any())).called(2);
+      });
 
       testWidgets(
         'save draft failure keeps editor open and shows failure snackbar',

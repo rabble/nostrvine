@@ -17,9 +17,9 @@ class _MockVideoEditorMainBloc
 
 Widget _buildWidget({required bool isReordering}) {
   final bloc = _MockVideoEditorMainBloc();
-  when(() => bloc.state).thenReturn(
-    VideoEditorMainState(isReordering: isReordering),
-  );
+  when(
+    () => bloc.state,
+  ).thenReturn(VideoEditorMainState(isReordering: isReordering));
   when(() => bloc.stream).thenAnswer(
     (_) => Stream<VideoEditorMainState>.value(
       VideoEditorMainState(isReordering: isReordering),
@@ -47,10 +47,7 @@ void main() {
       ) async {
         await tester.pumpWidget(_buildWidget(isReordering: false));
 
-        expect(
-          find.byType(VideoEditorTimelinePlayhead),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoEditorTimelinePlayhead), findsOneWidget);
       });
 
       testWidgets('renders playhead line with correct width', (tester) async {
@@ -72,10 +69,7 @@ void main() {
         );
         final decoration = decoratedBox.decoration as BoxDecoration;
 
-        expect(
-          decoration.color,
-          equals(VineTheme.onSurface),
-        );
+        expect(decoration.color, equals(VineTheme.onSurface));
       });
     });
 
@@ -104,10 +98,7 @@ void main() {
         final animated = tester.widget<AnimatedOpacity>(
           find.byType(AnimatedOpacity),
         );
-        expect(
-          animated.duration,
-          equals(const Duration(milliseconds: 200)),
-        );
+        expect(animated.duration, equals(const Duration(milliseconds: 200)));
       });
     });
 

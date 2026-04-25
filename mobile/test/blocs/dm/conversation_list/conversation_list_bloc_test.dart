@@ -113,17 +113,12 @@ void main() {
           ];
           // Default currentUserHasSent=false → potential requests.
           // Default isFollowing=true → classified as followed.
-          _stubStreams(
-            mockDmRepository,
-            potentialRequests: conversations,
-          );
+          _stubStreams(mockDmRepository, potentialRequests: conversations);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
         expect: () => [
-          const ConversationListState(
-            status: ConversationListStatus.loading,
-          ),
+          const ConversationListState(status: ConversationListStatus.loading),
           ConversationListState(
             status: ConversationListStatus.loaded,
             conversations: [
@@ -148,9 +143,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
         expect: () => [
-          const ConversationListState(
-            status: ConversationListStatus.loading,
-          ),
+          const ConversationListState(status: ConversationListStatus.loading),
           const ConversationListState(
             status: ConversationListStatus.loaded,
             hasMore: false,
@@ -174,12 +167,8 @@ void main() {
         act: (bloc) => bloc.add(const ConversationListStarted()),
         errors: () => [isA<Exception>()],
         expect: () => [
-          const ConversationListState(
-            status: ConversationListStatus.loading,
-          ),
-          const ConversationListState(
-            status: ConversationListStatus.error,
-          ),
+          const ConversationListState(status: ConversationListStatus.loading),
+          const ConversationListState(status: ConversationListStatus.error),
         ],
       );
 
@@ -190,10 +179,7 @@ void main() {
             id: _testConversationId1,
             isRead: false,
           );
-          _stubStreams(
-            mockDmRepository,
-            potentialRequests: [conversation],
-          );
+          _stubStreams(mockDmRepository, potentialRequests: [conversation]);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -256,9 +242,7 @@ void main() {
         act: (bloc) => bloc.add(const ConversationListStarted()),
         wait: const Duration(milliseconds: 200),
         expect: () => [
-          const ConversationListState(
-            status: ConversationListStatus.loading,
-          ),
+          const ConversationListState(status: ConversationListStatus.loading),
           ConversationListState(
             status: ConversationListStatus.loaded,
             conversations: [
@@ -296,9 +280,8 @@ void main() {
           ).thenAnswer((_) async {});
         },
         build: createBloc,
-        act: (bloc) => bloc.add(
-          const ConversationListMarkRead(_testConversationId1),
-        ),
+        act: (bloc) =>
+            bloc.add(const ConversationListMarkRead(_testConversationId1)),
         verify: (_) {
           verify(
             () => mockDmRepository.markConversationAsRead(_testConversationId1),
@@ -314,9 +297,8 @@ void main() {
           ).thenAnswer((_) async {});
         },
         build: createBloc,
-        act: (bloc) => bloc.add(
-          const ConversationListMarkRead(_testConversationId1),
-        ),
+        act: (bloc) =>
+            bloc.add(const ConversationListMarkRead(_testConversationId1)),
         expect: () => const <ConversationListState>[],
       );
     });
@@ -329,16 +311,11 @@ void main() {
           when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
         },
         build: createBloc,
-        act: (bloc) => bloc.add(
-          const ConversationListNavigateToUser(_testPubkey2),
-        ),
+        act: (bloc) =>
+            bloc.add(const ConversationListNavigateToUser(_testPubkey2)),
         expect: () => [
           isA<ConversationListState>()
-              .having(
-                (s) => s.navigationTarget,
-                'navigationTarget',
-                isNotNull,
-              )
+              .having((s) => s.navigationTarget, 'navigationTarget', isNotNull)
               .having(
                 (s) => s.navigationTarget!.participantPubkeys,
                 'participantPubkeys',
@@ -348,9 +325,10 @@ void main() {
                 (s) => s.navigationTarget!.conversationId,
                 'conversationId',
                 equals(
-                  DmRepository.computeConversationId(
-                    [_testPubkey1, _testPubkey2],
-                  ),
+                  DmRepository.computeConversationId([
+                    _testPubkey1,
+                    _testPubkey2,
+                  ]),
                 ),
               ),
         ],
@@ -362,9 +340,8 @@ void main() {
           when(() => mockDmRepository.userPubkey).thenReturn('');
         },
         build: createBloc,
-        act: (bloc) => bloc.add(
-          const ConversationListNavigateToUser(_testPubkey2),
-        ),
+        act: (bloc) =>
+            bloc.add(const ConversationListNavigateToUser(_testPubkey2)),
         expect: () => const <ConversationListState>[],
       );
     });
@@ -377,16 +354,15 @@ void main() {
         },
         seed: () => ConversationListState(
           navigationTarget: ConversationNavigationTarget(
-            conversationId: DmRepository.computeConversationId(
-              [_testPubkey1, _testPubkey2],
-            ),
+            conversationId: DmRepository.computeConversationId([
+              _testPubkey1,
+              _testPubkey2,
+            ]),
             participantPubkeys: const [_testPubkey2],
           ),
         ),
         build: createBloc,
-        act: (bloc) => bloc.add(
-          const ConversationListNavigationConsumed(),
-        ),
+        act: (bloc) => bloc.add(const ConversationListNavigationConsumed()),
         expect: () => [
           isA<ConversationListState>().having(
             (s) => s.navigationTarget,
@@ -418,9 +394,7 @@ void main() {
             });
 
             // Complete the first call after some time
-            Future<void>.delayed(
-              const Duration(milliseconds: 50),
-            ).then((_) {
+            Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
               completer.complete();
             });
           },
@@ -439,9 +413,8 @@ void main() {
             // Only the first call should have been processed; the rest
             // are dropped by droppable().
             verify(
-              () => mockDmRepository.markConversationAsRead(
-                _testConversationId1,
-              ),
+              () =>
+                  mockDmRepository.markConversationAsRead(_testConversationId1),
             ).called(1);
           },
         );
@@ -455,28 +428,20 @@ void main() {
           },
           build: createBloc,
           act: (bloc) async {
-            bloc.add(
-              const ConversationListMarkRead(_testConversationId1),
-            );
+            bloc.add(const ConversationListMarkRead(_testConversationId1));
             // Wait for the first to complete before adding the second
-            await Future<void>.delayed(
-              const Duration(milliseconds: 30),
-            );
-            bloc.add(
-              const ConversationListMarkRead(_testConversationId2),
-            );
+            await Future<void>.delayed(const Duration(milliseconds: 30));
+            bloc.add(const ConversationListMarkRead(_testConversationId2));
           },
           wait: const Duration(milliseconds: 100),
           verify: (_) {
             verify(
-              () => mockDmRepository.markConversationAsRead(
-                _testConversationId1,
-              ),
+              () =>
+                  mockDmRepository.markConversationAsRead(_testConversationId1),
             ).called(1);
             verify(
-              () => mockDmRepository.markConversationAsRead(
-                _testConversationId2,
-              ),
+              () =>
+                  mockDmRepository.markConversationAsRead(_testConversationId2),
             ).called(1);
           },
         );
@@ -504,18 +469,16 @@ void main() {
               return acceptedCtrl2.stream;
             });
 
-            when(
-              () => mockDmRepository.watchPotentialRequests(),
-            ).thenAnswer((_) {
+            when(() => mockDmRepository.watchPotentialRequests()).thenAnswer((
+              _,
+            ) {
               requestsCallCount++;
               if (requestsCallCount == 1) return requestsCtrl1.stream;
               return requestsCtrl2.stream;
             });
 
             // First streams emit quickly
-            Future<void>.delayed(
-              const Duration(milliseconds: 10),
-            ).then((_) {
+            Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
               requestsCtrl1.add(const []);
               acceptedCtrl1.add([
                 _createConversation(
@@ -526,9 +489,7 @@ void main() {
             });
 
             // After restart, emit on old stream (should be ignored)
-            Future<void>.delayed(
-              const Duration(milliseconds: 60),
-            ).then((_) {
+            Future<void>.delayed(const Duration(milliseconds: 60)).then((_) {
               acceptedCtrl1.add([
                 _createConversation(
                   id: _testConversationId1,
@@ -544,9 +505,7 @@ void main() {
             });
 
             // New stream emits its data
-            Future<void>.delayed(
-              const Duration(milliseconds: 70),
-            ).then((_) {
+            Future<void>.delayed(const Duration(milliseconds: 70)).then((_) {
               requestsCtrl2.add(const []);
               acceptedCtrl2.add([
                 _createConversation(
@@ -562,17 +521,13 @@ void main() {
           act: (bloc) async {
             bloc.add(const ConversationListStarted());
             // Wait for first emission, then restart
-            await Future<void>.delayed(
-              const Duration(milliseconds: 30),
-            );
+            await Future<void>.delayed(const Duration(milliseconds: 30));
             bloc.add(const ConversationListStarted());
           },
           wait: const Duration(milliseconds: 200),
           expect: () => [
             // First subscription starts (initial → loading)
-            const ConversationListState(
-              status: ConversationListStatus.loading,
-            ),
+            const ConversationListState(status: ConversationListStatus.loading),
             // First streams emit
             ConversationListState(
               status: ConversationListStatus.loaded,
@@ -681,10 +636,7 @@ void main() {
             _createConversation(id: _testConversationId1),
             _createConversation(id: _testConversationId2),
           ];
-          _stubStreams(
-            mockDmRepository,
-            potentialRequests: conversations,
-          );
+          _stubStreams(mockDmRepository, potentialRequests: conversations);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -704,13 +656,8 @@ void main() {
           when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
           when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
 
-          final conversations = [
-            _createConversation(id: _testConversationId1),
-          ];
-          _stubStreams(
-            mockDmRepository,
-            potentialRequests: conversations,
-          );
+          final conversations = [_createConversation(id: _testConversationId1)];
+          _stubStreams(mockDmRepository, potentialRequests: conversations);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -775,15 +722,10 @@ void main() {
             final conversations = [
               _createConversation(id: _testConversationId1),
             ];
-            _stubStreams(
-              mockDmRepository,
-              potentialRequests: conversations,
-            );
+            _stubStreams(mockDmRepository, potentialRequests: conversations);
 
             // After a short delay, update follow state and emit on stream.
-            Future<void>.delayed(
-              const Duration(milliseconds: 50),
-            ).then((_) {
+            Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
               when(
                 () => mockFollowRepository.isFollowing(_testPubkey2),
               ).thenReturn(true);
@@ -820,17 +762,10 @@ void main() {
               _createConversation(
                 id: _testConversationId1,
                 isGroup: true,
-                participantPubkeys: [
-                  _testPubkey1,
-                  _testPubkey2,
-                  _testPubkey3,
-                ],
+                participantPubkeys: [_testPubkey1, _testPubkey2, _testPubkey3],
               ),
             ];
-            _stubStreams(
-              mockDmRepository,
-              potentialRequests: conversations,
-            );
+            _stubStreams(mockDmRepository, potentialRequests: conversations);
           },
           build: createBloc,
           act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -857,11 +792,7 @@ void main() {
                 id: _testConversationId1,
                 isGroup: true,
                 currentUserHasSent: true,
-                participantPubkeys: [
-                  _testPubkey1,
-                  _testPubkey2,
-                  _testPubkey3,
-                ],
+                participantPubkeys: [_testPubkey1, _testPubkey2, _testPubkey3],
               ),
             ];
             // currentUserHasSent=true → accepted stream.

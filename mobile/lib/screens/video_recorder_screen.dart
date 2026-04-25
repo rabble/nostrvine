@@ -250,10 +250,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     // Listen for future changes using listenManual (works outside build phase)
     _soundSubscription = ref.listenManual<AudioEvent?>(
       videoEditorProvider.select((s) => s.selectedSound),
-      (
-        previous,
-        next,
-      ) {
+      (previous, next) {
         Log.info(
           '🎵 Sound changed: ${previous?.id ?? 'null'} → ${next?.id ?? 'null'}',
           name: 'VideoRecorderScreen',

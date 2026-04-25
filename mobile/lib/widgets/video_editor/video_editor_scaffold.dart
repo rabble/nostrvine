@@ -244,10 +244,7 @@ class _AddElementFab extends StatelessWidget {
             ),
           ),
           child: const Center(
-            child: DivineIcon(
-              icon: .plus,
-              color: VineTheme.primary,
-            ),
+            child: DivineIcon(icon: .plus, color: VineTheme.primary),
           ),
         ),
       ),

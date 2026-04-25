@@ -277,9 +277,7 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
                   height: fittedSize.height,
                   // The underlying HTML video element can otherwise swallow
                   // taps that should go to the overlay action buttons.
-                  child: IgnorePointer(
-                    child: VideoPlayer(controller),
-                  ),
+                  child: IgnorePointer(child: VideoPlayer(controller)),
                 ),
               ),
             ),
@@ -398,18 +396,11 @@ class _AuthPlayerFailureSurface extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline,
-              color: VineTheme.secondaryText,
-              size: 48,
-            ),
+            Icon(Icons.error_outline, color: VineTheme.secondaryText, size: 48),
             SizedBox(height: 16),
             Text(
               'Failed to load video',
-              style: TextStyle(
-                color: VineTheme.secondaryText,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
             ),
           ],
         ),

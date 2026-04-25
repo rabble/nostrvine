@@ -22,9 +22,9 @@ void main() {
     setUp(() {
       bloc = _MockClipEditorBloc();
       when(() => bloc.state).thenReturn(const ClipEditorState());
-      when(() => bloc.stream).thenAnswer(
-        (_) => const Stream<ClipEditorState>.empty(),
-      );
+      when(
+        () => bloc.stream,
+      ).thenAnswer((_) => const Stream<ClipEditorState>.empty());
     });
 
     Widget build() {

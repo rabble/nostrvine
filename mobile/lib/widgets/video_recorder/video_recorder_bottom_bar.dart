@@ -18,10 +18,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
 
     final state = ref.watch(
       videoRecorderProvider.select(
-        (p) => (
-          isRecording: p.isRecording,
-          recorderMode: p.recorderMode,
-        ),
+        (p) => (isRecording: p.isRecording, recorderMode: p.recorderMode),
       ),
     );
 

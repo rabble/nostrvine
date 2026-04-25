@@ -27,29 +27,26 @@ void main() {
       expect(state.hasVisibleOverlay, isTrue);
     });
 
-    test(
-      'shouldRetainPlayer returns true for bottom sheet overlays',
-      () {
-        // Only bottom sheet - retain player
-        const onlyBottomSheet = OverlayVisibilityState(isBottomSheetOpen: true);
-        expect(onlyBottomSheet.shouldRetainPlayer, isTrue);
+    test('shouldRetainPlayer returns true for bottom sheet overlays', () {
+      // Only bottom sheet - retain player
+      const onlyBottomSheet = OverlayVisibilityState(isBottomSheetOpen: true);
+      expect(onlyBottomSheet.shouldRetainPlayer, isTrue);
 
-        // Bottom sheet with page - do NOT retain (page takes precedence)
-        const withPage = OverlayVisibilityState(
-          isBottomSheetOpen: true,
-          isPageOpen: true,
-        );
-        expect(withPage.shouldRetainPlayer, isFalse);
+      // Bottom sheet with page - do NOT retain (page takes precedence)
+      const withPage = OverlayVisibilityState(
+        isBottomSheetOpen: true,
+        isPageOpen: true,
+      );
+      expect(withPage.shouldRetainPlayer, isFalse);
 
-        // No overlays - do NOT retain
-        const noOverlays = OverlayVisibilityState();
-        expect(noOverlays.shouldRetainPlayer, isFalse);
+      // No overlays - do NOT retain
+      const noOverlays = OverlayVisibilityState();
+      expect(noOverlays.shouldRetainPlayer, isFalse);
 
-        // Only page - do NOT retain
-        const onlyPage = OverlayVisibilityState(isPageOpen: true);
-        expect(onlyPage.shouldRetainPlayer, isFalse);
-      },
-    );
+      // Only page - do NOT retain
+      const onlyPage = OverlayVisibilityState(isPageOpen: true);
+      expect(onlyPage.shouldRetainPlayer, isFalse);
+    });
 
     test('copyWith creates correct copy', () {
       const state = OverlayVisibilityState();
@@ -207,11 +204,7 @@ void main() {
       final container = createTestContainer(mockVideos);
       addTearDown(container.dispose);
 
-      container.listen(
-        activeVideoIdProvider,
-        (_, _) {},
-        fireImmediately: true,
-      );
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
       await pumpEventQueue();
 
@@ -244,11 +237,7 @@ void main() {
       final container = createTestContainer(mockVideos);
       addTearDown(container.dispose);
 
-      container.listen(
-        activeVideoIdProvider,
-        (_, _) {},
-        fireImmediately: true,
-      );
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
       await pumpEventQueue();
 

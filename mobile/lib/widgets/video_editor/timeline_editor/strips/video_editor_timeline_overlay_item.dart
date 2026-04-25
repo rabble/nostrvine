@@ -29,9 +29,7 @@ class TimelineOverlayItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.of(context).disableAnimations;
-    final radius = BorderRadius.circular(
-      TimelineConstants.thumbnailRadius,
-    );
+    final radius = BorderRadius.circular(TimelineConstants.thumbnailRadius);
     final animDuration = reduceMotion
         ? Duration.zero
         : const Duration(milliseconds: 150);
@@ -136,10 +134,7 @@ class _PaintPreview extends StatelessWidget {
     return FittedBox(
       child: CustomPaint(
         size: layer.size,
-        painter: DrawPaintItem(
-          item: layer.item,
-          scale: layer.scale,
-        ),
+        painter: DrawPaintItem(item: layer.item, scale: layer.scale),
       ),
     );
   }

@@ -64,24 +64,16 @@ void main() {
           ).thenReturn(['b' * 64, 'a' * 64]);
           when(
             () => mockProfileRepo.getCachedProfile(pubkey: 'b' * 64),
-          ).thenAnswer(
-            (_) async => createTestProfile('b' * 64, 'Bob'),
-          );
+          ).thenAnswer((_) async => createTestProfile('b' * 64, 'Bob'));
           when(
             () => mockProfileRepo.getCachedProfile(pubkey: 'a' * 64),
-          ).thenAnswer(
-            (_) async => createTestProfile('a' * 64, 'Alice'),
-          );
+          ).thenAnswer((_) async => createTestProfile('a' * 64, 'Alice'));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const NewMessageSearchStarted()),
         expect: () => [
           isA<NewMessageSearchState>()
-              .having(
-                (s) => s.status,
-                'status',
-                NewMessageSearchStatus.idle,
-              )
+              .having((s) => s.status, 'status', NewMessageSearchStatus.idle)
               .having((s) => s.contacts, 'contacts', hasLength(2))
               .having(
                 (s) => s.contacts.first.displayName,
@@ -104,9 +96,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const NewMessageSearchStarted()),
         expect: () => [
-          const NewMessageSearchState(
-            status: NewMessageSearchStatus.idle,
-          ),
+          const NewMessageSearchState(status: NewMessageSearchStatus.idle),
         ],
       );
 
@@ -118,9 +108,7 @@ void main() {
           ).thenReturn(['a' * 64, 'b' * 64]);
           when(
             () => mockProfileRepo.getCachedProfile(pubkey: 'a' * 64),
-          ).thenAnswer(
-            (_) async => createTestProfile('a' * 64, 'Alice'),
-          );
+          ).thenAnswer((_) async => createTestProfile('a' * 64, 'Alice'));
           when(
             () => mockProfileRepo.getCachedProfile(pubkey: 'b' * 64),
           ).thenAnswer((_) async => null);
@@ -129,11 +117,7 @@ void main() {
         act: (bloc) => bloc.add(const NewMessageSearchStarted()),
         expect: () => [
           isA<NewMessageSearchState>()
-              .having(
-                (s) => s.status,
-                'status',
-                NewMessageSearchStatus.idle,
-              )
+              .having((s) => s.status, 'status', NewMessageSearchStatus.idle)
               .having((s) => s.contacts, 'contacts', hasLength(1))
               .having(
                 (s) => s.contacts.first.displayName,
@@ -226,11 +210,7 @@ void main() {
                 NewMessageSearchStatus.searching,
               )
               .having((s) => s.results, 'results', hasLength(1))
-              .having(
-                (s) => s.results.first.nip05,
-                'nip05',
-                'alice@ex.com',
-              ),
+              .having((s) => s.results.first.nip05, 'nip05', 'alice@ex.com'),
           isA<NewMessageSearchState>()
               .having(
                 (s) => s.status,
@@ -342,11 +322,7 @@ void main() {
         wait: debounceDuration,
         expect: () => [
           isA<NewMessageSearchState>()
-              .having(
-                (s) => s.status,
-                'status',
-                NewMessageSearchStatus.idle,
-              )
+              .having((s) => s.status, 'status', NewMessageSearchStatus.idle)
               .having((s) => s.query, 'query', isEmpty)
               .having((s) => s.results, 'results', isEmpty)
               .having((s) => s.contacts, 'contacts preserved', hasLength(1)),
@@ -366,11 +342,7 @@ void main() {
         wait: debounceDuration,
         expect: () => [
           isA<NewMessageSearchState>()
-              .having(
-                (s) => s.status,
-                'status',
-                NewMessageSearchStatus.idle,
-              )
+              .having((s) => s.status, 'status', NewMessageSearchStatus.idle)
               .having((s) => s.query, 'query', isEmpty)
               .having((s) => s.results, 'results', isEmpty),
         ],
@@ -446,18 +418,10 @@ void main() {
         act: (bloc) => bloc.add(const NewMessageSearchCleared()),
         expect: () => [
           isA<NewMessageSearchState>()
-              .having(
-                (s) => s.status,
-                'status',
-                NewMessageSearchStatus.idle,
-              )
+              .having((s) => s.status, 'status', NewMessageSearchStatus.idle)
               .having((s) => s.query, 'query', isEmpty)
               .having((s) => s.results, 'results', isEmpty)
-              .having(
-                (s) => s.contacts,
-                'contacts preserved',
-                hasLength(1),
-              ),
+              .having((s) => s.contacts, 'contacts preserved', hasLength(1)),
         ],
       );
     });

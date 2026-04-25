@@ -10,9 +10,7 @@ class VideoRecorderClassicActionsBottom extends ConsumerWidget {
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
-      ..showSnackBar(
-        DivineSnackbarContainer.snackBar(message),
-      );
+      ..showSnackBar(DivineSnackbarContainer.snackBar(message));
   }
 
   @override

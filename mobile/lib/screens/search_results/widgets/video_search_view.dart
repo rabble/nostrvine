@@ -22,9 +22,7 @@ class VideoSearchView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final videos = context.select(
-      (VideoSearchBloc bloc) => bloc.state.videos,
-    );
+    final videos = context.select((VideoSearchBloc bloc) => bloc.state.videos);
     final hasMore = context.select(
       (VideoSearchBloc bloc) => bloc.state.hasMore,
     );
@@ -106,9 +104,8 @@ class _VideoSearchGridState extends State<_VideoSearchGrid>
       extra: PooledFullscreenVideoFeedArgs(
         videosStream: _videosStreamController.stream.startWith(widget.videos),
         initialIndex: index,
-        onLoadMore: () => context.read<VideoSearchBloc>().add(
-          const VideoSearchLoadMore(),
-        ),
+        onLoadMore: () =>
+            context.read<VideoSearchBloc>().add(const VideoSearchLoadMore()),
         hasMoreStream: _hasMoreStreamController.stream.startWith(
           widget.hasMore,
         ),

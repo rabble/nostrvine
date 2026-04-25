@@ -282,12 +282,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
         bundledSoundsAsync.whenOrNull(
           data: (service) {
             return service.sounds.indexed
-                .map(
-                  (e) => AudioEvent.fromBundledSound(
-                    e.$2,
-                    index: e.$1,
-                  ),
-                )
+                .map((e) => AudioEvent.fromBundledSound(e.$2, index: e.$1))
                 .toList();
           },
         ) ??
@@ -565,11 +560,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.search_off,
-            size: 64,
-            color: VineTheme.lightText,
-          ),
+          const Icon(Icons.search_off, size: 64, color: VineTheme.lightText),
           const SizedBox(height: 16),
           Text(
             context.l10n.soundsNoSoundsFound,

@@ -58,12 +58,10 @@ void main() {
 
     setUp(() {
       mockClipPlayer = _MockAudioClipPlayer();
-      when(() => mockClipPlayer.completionStream).thenAnswer(
-        (_) => const Stream.empty(),
-      );
       when(
-        () => mockClipPlayer.setClip(any()),
-      ).thenAnswer((_) async {});
+        () => mockClipPlayer.completionStream,
+      ).thenAnswer((_) => const Stream.empty());
+      when(() => mockClipPlayer.setClip(any())).thenAnswer((_) async {});
       when(() => mockClipPlayer.play()).thenAnswer((_) async {});
       when(() => mockClipPlayer.pause()).thenAnswer((_) async {});
       when(() => mockClipPlayer.stop()).thenAnswer((_) async {});
@@ -71,9 +69,7 @@ void main() {
       when(() => mockClipPlayer.dispose()).thenAnswer((_) async {});
     });
 
-    AudioTimingCubit buildCubit({
-      AudioEvent? sound,
-    }) {
+    AudioTimingCubit buildCubit({AudioEvent? sound}) {
       return AudioTimingCubit(
         sound: sound ?? _createTestSound(),
         clipPlayer: mockClipPlayer,
@@ -106,9 +102,7 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(
-            () => mockClipPlayer.setClip(any()),
-          ).called(1);
+          verify(() => mockClipPlayer.setClip(any())).called(1);
           verify(() => mockClipPlayer.play()).called(1);
         },
       );
@@ -126,11 +120,7 @@ void main() {
         expect: () => [
           isA<AudioTimingState>()
               .having((s) => s.audioDuration, 'audioDuration', 20)
-              .having(
-                (s) => s.startOffset,
-                'startOffset',
-                closeTo(0.5, 0.01),
-              ),
+              .having((s) => s.startOffset, 'startOffset', closeTo(0.5, 0.01)),
           isA<AudioTimingState>().having(
             (s) => s.isPlaying,
             'isPlaying',
@@ -141,9 +131,7 @@ void main() {
 
       blocTest<AudioTimingCubit, AudioTimingState>(
         'uses offset 0 when audio is shorter than maxDuration',
-        build: () => buildCubit(
-          sound: _createTestSound(duration: 3),
-        ),
+        build: () => buildCubit(sound: _createTestSound(duration: 3)),
         act: (cubit) => cubit.initialize(),
         expect: () => [
           isA<AudioTimingState>()
@@ -159,9 +147,7 @@ void main() {
 
       blocTest<AudioTimingCubit, AudioTimingState>(
         'handles null duration gracefully',
-        build: () => buildCubit(
-          sound: _createTestSound(duration: null),
-        ),
+        build: () => buildCubit(sound: _createTestSound(duration: null)),
         act: (cubit) => cubit.initialize(),
         expect: () => [
           isA<AudioTimingState>()
@@ -179,9 +165,7 @@ void main() {
 
       blocTest<AudioTimingCubit, AudioTimingState>(
         'handles bundled sound with asset path',
-        build: () => buildCubit(
-          sound: _createBundledSound(),
-        ),
+        build: () => buildCubit(sound: _createBundledSound()),
         act: (cubit) => cubit.initialize(),
         expect: () => [
           isA<AudioTimingState>().having(
@@ -196,9 +180,7 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(
-            () => mockClipPlayer.setClip(any()),
-          ).called(1);
+          verify(() => mockClipPlayer.setClip(any())).called(1);
           verify(() => mockClipPlayer.play()).called(1);
         },
       );
@@ -268,10 +250,7 @@ void main() {
       blocTest<AudioTimingCubit, AudioTimingState>(
         'sets clipped source and plays audio',
         build: buildCubit,
-        seed: () => const AudioTimingState(
-          audioDuration: 20,
-          startOffset: 0.5,
-        ),
+        seed: () => const AudioTimingState(audioDuration: 20, startOffset: 0.5),
         act: (cubit) => cubit.resumePlayback(),
         expect: () => [
           isA<AudioTimingState>().having(
@@ -281,9 +260,7 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(
-            () => mockClipPlayer.setClip(any()),
-          ).called(1);
+          verify(() => mockClipPlayer.setClip(any())).called(1);
           verify(() => mockClipPlayer.play()).called(1);
         },
       );
@@ -310,9 +287,7 @@ void main() {
 
     group('calculateStartOffset', () {
       test('returns Duration.zero when audio is shorter than maxDuration', () {
-        final cubit = buildCubit(
-          sound: _createTestSound(duration: 3),
-        );
+        final cubit = buildCubit(sound: _createTestSound(duration: 3));
         // Simulate initialized state
         cubit.emit(const AudioTimingState(audioDuration: 3, startOffset: 0.5));
 
@@ -322,9 +297,7 @@ void main() {
       });
 
       test('returns correct offset for 20s audio at midpoint', () {
-        final cubit = buildCubit(
-          sound: _createTestSound(),
-        );
+        final cubit = buildCubit(sound: _createTestSound());
         // maxDuration = 6.3s, scrollable = 20 - 6.3 = 13.7s
         // At offset 0.5: startTime = 0.5 * 13.7 = 6.85s = 6850ms
         cubit.emit(const AudioTimingState(audioDuration: 20, startOffset: 0.5));
@@ -337,9 +310,7 @@ void main() {
       });
 
       test('returns Duration.zero at offset 0', () {
-        final cubit = buildCubit(
-          sound: _createTestSound(),
-        );
+        final cubit = buildCubit(sound: _createTestSound());
         cubit.emit(const AudioTimingState(audioDuration: 20));
 
         expect(cubit.calculateStartOffset(), equals(Duration.zero));
@@ -347,9 +318,7 @@ void main() {
       });
 
       test('returns maximum offset at 1.0', () {
-        final cubit = buildCubit(
-          sound: _createTestSound(),
-        );
+        final cubit = buildCubit(sound: _createTestSound());
         // scrollable = 20 - 6.3 = 13.7s
         cubit.emit(const AudioTimingState(audioDuration: 20, startOffset: 1.0));
 
@@ -365,13 +334,11 @@ void main() {
       test('restarts playback when audio completes', () async {
         final completionController = StreamController<void>();
 
-        when(() => mockClipPlayer.completionStream).thenAnswer(
-          (_) => completionController.stream,
-        );
+        when(
+          () => mockClipPlayer.completionStream,
+        ).thenAnswer((_) => completionController.stream);
 
-        final cubit = buildCubit(
-          sound: _createTestSound(),
-        );
+        final cubit = buildCubit(sound: _createTestSound());
         await cubit.initialize();
 
         // Simulate audio completion
@@ -401,17 +368,11 @@ void main() {
 
   group(AudioTimingState, () {
     test('supports value equality', () {
-      expect(
-        const AudioTimingState(),
-        equals(const AudioTimingState()),
-      );
+      expect(const AudioTimingState(), equals(const AudioTimingState()));
     });
 
     test('props are correct', () {
-      expect(
-        const AudioTimingState().props,
-        equals([0.0, null, false]),
-      );
+      expect(const AudioTimingState().props, equals([0.0, null, false]));
     });
 
     group('copyWith', () {

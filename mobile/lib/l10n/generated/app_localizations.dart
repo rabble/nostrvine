@@ -8522,6 +8522,42 @@ abstract class AppLocalizations {
   /// **'Discover something interesting'**
   String get searchDiscoverSomethingInteresting;
 
+  /// No description provided for @searchPeopleSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get searchPeopleSectionHeader;
+
+  /// No description provided for @searchPeopleLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading people results'**
+  String get searchPeopleLoadingLabel;
+
+  /// No description provided for @searchTagsSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get searchTagsSectionHeader;
+
+  /// No description provided for @searchTagsLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading tag results'**
+  String get searchTagsLoadingLabel;
+
+  /// No description provided for @searchVideosSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos'**
+  String get searchVideosSectionHeader;
+
+  /// No description provided for @searchVideosLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading video results'**
+  String get searchVideosLoadingLabel;
+
   /// No description provided for @searchListsSectionHeader.
   ///
   /// In en, this message translates to:
