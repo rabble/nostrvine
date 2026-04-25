@@ -39,31 +39,28 @@ class RetryExecutor {
 void main() {
   group('VideoEventPublisher retry logic', () {
     group('RetryExecutor.executeWithRetry', () {
-      test(
-        'returns true immediately when operation succeeds on first try',
-        () {
-          fakeAsync((async) {
-            var callCount = 0;
-            bool? result;
+      test('returns true immediately when operation succeeds on first try', () {
+        fakeAsync((async) {
+          var callCount = 0;
+          bool? result;
 
-            RetryExecutor.executeWithRetry(
-              operation: () async {
-                callCount++;
-                return true; // Succeeds immediately
-              },
-            ).then((r) => result = r);
+          RetryExecutor.executeWithRetry(
+            operation: () async {
+              callCount++;
+              return true; // Succeeds immediately
+            },
+          ).then((r) => result = r);
 
-            async.flushMicrotasks();
+          async.flushMicrotasks();
 
-            expect(result, isTrue);
-            expect(
-              callCount,
-              equals(1),
-              reason: 'Should only call once on success',
-            );
-          });
-        },
-      );
+          expect(result, isTrue);
+          expect(
+            callCount,
+            equals(1),
+            reason: 'Should only call once on success',
+          );
+        });
+      });
 
       test('retries up to 3 times when operation fails', () {
         fakeAsync((async) {
@@ -105,11 +102,7 @@ void main() {
           async.elapse(const Duration(seconds: 3));
 
           expect(result, isTrue);
-          expect(
-            callCount,
-            equals(2),
-            reason: 'Should succeed on second try',
-          );
+          expect(callCount, equals(2), reason: 'Should succeed on second try');
         });
       });
 
@@ -129,11 +122,7 @@ void main() {
           async.elapse(const Duration(seconds: 7));
 
           expect(result, isTrue);
-          expect(
-            callCount,
-            equals(3),
-            reason: 'Should succeed on third try',
-          );
+          expect(callCount, equals(3), reason: 'Should succeed on third try');
         });
       });
 
@@ -179,49 +168,43 @@ void main() {
         });
       });
 
-      test(
-        'does not call onAllFailed when operation eventually succeeds',
-        () {
-          fakeAsync((async) {
-            var allFailedCalled = false;
-            var callCount = 0;
+      test('does not call onAllFailed when operation eventually succeeds', () {
+        fakeAsync((async) {
+          var allFailedCalled = false;
+          var callCount = 0;
 
-            RetryExecutor.executeWithRetry(
-              operation: () async {
-                callCount++;
-                return callCount >= 2; // Succeeds on second try
-              },
-              onAllFailed: () {
-                allFailedCalled = true;
-              },
-            );
+          RetryExecutor.executeWithRetry(
+            operation: () async {
+              callCount++;
+              return callCount >= 2; // Succeeds on second try
+            },
+            onAllFailed: () {
+              allFailedCalled = true;
+            },
+          );
 
-            async.elapse(const Duration(seconds: 3));
+          async.elapse(const Duration(seconds: 3));
 
-            expect(allFailedCalled, isFalse);
-          });
-        },
-      );
+          expect(allFailedCalled, isFalse);
+        });
+      });
 
-      test(
-        'does not call onRetry when operation succeeds on first try',
-        () {
-          fakeAsync((async) {
-            var retryCalled = false;
+      test('does not call onRetry when operation succeeds on first try', () {
+        fakeAsync((async) {
+          var retryCalled = false;
 
-            RetryExecutor.executeWithRetry(
-              operation: () async => true,
-              onRetry: (_, _) {
-                retryCalled = true;
-              },
-            );
+          RetryExecutor.executeWithRetry(
+            operation: () async => true,
+            onRetry: (_, _) {
+              retryCalled = true;
+            },
+          );
 
-            async.flushMicrotasks();
+          async.flushMicrotasks();
 
-            expect(retryCalled, isFalse);
-          });
-        },
-      );
+          expect(retryCalled, isFalse);
+        });
+      });
 
       test('respects custom maxRetries parameter', () {
         fakeAsync((async) {

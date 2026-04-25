@@ -43,9 +43,7 @@ void main() {
 
     testWidgets('calls onRetry when button is tapped', (tester) async {
       var retryCalled = false;
-      await tester.pumpWidget(
-        buildSubject(onRetry: () => retryCalled = true),
-      );
+      await tester.pumpWidget(buildSubject(onRetry: () => retryCalled = true));
 
       await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();

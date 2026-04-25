@@ -41,15 +41,14 @@ void main() {
   setUp(() {
     DivineVideoPlayerController.resetIdCounterForTesting();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          const MethodChannel('divine_video_player'),
-          (call) async {
-            if (call.method == 'create') {
-              return <String, Object?>{'textureId': 1};
-            }
-            return null;
-          },
-        );
+        .setMockMethodCallHandler(const MethodChannel('divine_video_player'), (
+          call,
+        ) async {
+          if (call.method == 'create') {
+            return <String, Object?>{'textureId': 1};
+          }
+          return null;
+        });
   });
 
   tearDown(() {
@@ -68,9 +67,7 @@ void main() {
       return ProviderScope(
         overrides: [
           videoPublishProvider.overrideWith(
-            () => _MockVideoPublishNotifier(
-              const VideoPublishProviderState(),
-            ),
+            () => _MockVideoPublishNotifier(const VideoPublishProviderState()),
           ),
         ],
         child: MaterialApp(

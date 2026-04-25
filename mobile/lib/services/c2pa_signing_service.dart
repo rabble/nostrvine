@@ -34,11 +34,9 @@ class C2paSigningResult {
 /// cryptographic provenance information directly into media files,
 /// establishing the origin and history of digital content.
 class C2paSigningService {
-  C2paSigningService({
-    C2pa? c2pa,
-    C2paIdentityManifestService? manifestService,
-  }) : _c2pa = c2pa ?? C2pa(),
-       _manifestService = manifestService ?? C2paIdentityManifestService();
+  C2paSigningService({C2pa? c2pa, C2paIdentityManifestService? manifestService})
+    : _c2pa = c2pa ?? C2pa(),
+      _manifestService = manifestService ?? C2paIdentityManifestService();
 
   final C2pa _c2pa;
   final C2paIdentityManifestService _manifestService;

@@ -434,10 +434,7 @@ void main() {
       // Should be stream_720p (high) or stream_480p (low) based on bandwidth
       expect(
         hlsFallback,
-        anyOf(
-          contains('stream_720p.m3u8'),
-          contains('stream_480p.m3u8'),
-        ),
+        anyOf(contains('stream_720p.m3u8'), contains('stream_480p.m3u8')),
       );
     });
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
@@ -44,7 +45,10 @@ class TagsSection extends StatelessWidget {
       slivers: [
         if (!showAll)
           SliverToBoxAdapter(
-            child: SectionHeader(title: 'Tags', onTap: onSeeAll),
+            child: SectionHeader(
+              title: context.l10n.searchTagsSectionHeader,
+              onTap: onSeeAll,
+            ),
           ),
         _TagsContent(showAll: showAll),
         if (showAll) const _TagsPaginationTrigger(),
@@ -58,16 +62,13 @@ class _TagsPaginationTrigger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasMore = context.select(
-      (HashtagSearchBloc b) => b.state.hasMore,
-    );
+    final hasMore = context.select((HashtagSearchBloc b) => b.state.hasMore);
     final isLoadingMore = context.select(
       (HashtagSearchBloc b) => b.state.isLoadingMore,
     );
     return SliverPaginationTrigger(
-      onLoadMore: () => context.read<HashtagSearchBloc>().add(
-        const HashtagSearchLoadMore(),
-      ),
+      onLoadMore: () =>
+          context.read<HashtagSearchBloc>().add(const HashtagSearchLoadMore()),
       hasMore: hasMore,
       isLoadingMore: isLoadingMore,
     );
@@ -87,9 +88,7 @@ class _TagsContent extends StatelessWidget {
     final results = context.select(
       (HashtagSearchBloc bloc) => bloc.state.results,
     );
-    final query = context.select(
-      (HashtagSearchBloc bloc) => bloc.state.query,
-    );
+    final query = context.select((HashtagSearchBloc bloc) => bloc.state.query);
 
     if ((status == .initial || status == .loading) && results.isEmpty) {
       return const _TagsSkeletonLoader();
@@ -112,7 +111,7 @@ class _TagsContent extends StatelessWidget {
 
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -140,11 +139,11 @@ class _TagsSkeletonLoader extends StatelessWidget {
     return SliverToBoxAdapter(
       child: Semantics(
         identifier: 'tags_loading_indicator',
-        label: 'Loading tag results',
+        label: context.l10n.searchTagsLoadingLabel,
         child: Skeletonizer(
           effect: vineSkeletonEffect,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,

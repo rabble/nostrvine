@@ -8,15 +8,12 @@ import 'package:openvine/notifications/widgets/notification_list_item.dart';
 /// Returns a finder that matches [RichText] widgets whose plain text
 /// contains [substring].
 Finder _findRichTextContaining(String substring) {
-  return find.byWidgetPredicate(
-    (widget) {
-      if (widget is RichText) {
-        return widget.text.toPlainText().contains(substring);
-      }
-      return false;
-    },
-    description: 'RichText containing "$substring"',
-  );
+  return find.byWidgetPredicate((widget) {
+    if (widget is RichText) {
+      return widget.text.toPlainText().contains(substring);
+    }
+    return false;
+  }, description: 'RichText containing "$substring"');
 }
 
 @Tags(['skip_very_good_optimization'])
@@ -27,15 +24,9 @@ void main() {
     pictureUrl: 'https://example.com/alice.jpg',
   );
 
-  const actor2 = ActorInfo(
-    pubkey: 'def456',
-    displayName: 'Bob',
-  );
+  const actor2 = ActorInfo(pubkey: 'def456', displayName: 'Bob');
 
-  const actor3 = ActorInfo(
-    pubkey: 'ghi789',
-    displayName: 'Carol',
-  );
+  const actor3 = ActorInfo(pubkey: 'ghi789', displayName: 'Carol');
 
   Widget buildSubject(
     NotificationItem notification, {
@@ -59,9 +50,7 @@ void main() {
 
   group(NotificationListItem, () {
     group('SingleNotification', () {
-      testWidgets('renders actor name for like notification', (
-        tester,
-      ) async {
+      testWidgets('renders actor name for like notification', (tester) async {
         final notification = SingleNotification(
           id: '1',
           type: NotificationKind.like,
@@ -90,9 +79,7 @@ void main() {
         expect(find.text('Great video!'), findsOneWidget);
       });
 
-      testWidgets('renders follow-back button for follow type', (
-        tester,
-      ) async {
+      testWidgets('renders follow-back button for follow type', (tester) async {
         final notification = SingleNotification(
           id: '3',
           type: NotificationKind.follow,
@@ -106,23 +93,22 @@ void main() {
         expect(find.text('Follow back'), findsOneWidget);
       });
 
-      testWidgets(
-        'does not render follow-back button when already following',
-        (tester) async {
-          final notification = SingleNotification(
-            id: '4',
-            type: NotificationKind.follow,
-            actor: actor,
-            timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-            isFollowingBack: true,
-          );
+      testWidgets('does not render follow-back button when already following', (
+        tester,
+      ) async {
+        final notification = SingleNotification(
+          id: '4',
+          type: NotificationKind.follow,
+          actor: actor,
+          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+          isFollowingBack: true,
+        );
 
-          await tester.pumpWidget(buildSubject(notification));
-          await tester.pump();
+        await tester.pumpWidget(buildSubject(notification));
+        await tester.pump();
 
-          expect(find.text('Follow back'), findsNothing);
-        },
-      );
+        expect(find.text('Follow back'), findsNothing);
+      });
 
       testWidgets('calls onTap when tapped', (tester) async {
         var tapped = false;
@@ -156,10 +142,7 @@ void main() {
         );
 
         await tester.pumpWidget(
-          buildSubject(
-            notification,
-            onFollowBack: () => followedBack = true,
-          ),
+          buildSubject(notification, onFollowBack: () => followedBack = true),
         );
         await tester.pump();
 
@@ -169,9 +152,7 @@ void main() {
         expect(followedBack, isTrue);
       });
 
-      testWidgets('renders reply comment text for reply type', (
-        tester,
-      ) async {
+      testWidgets('renders reply comment text for reply type', (tester) async {
         final notification = SingleNotification(
           id: '7',
           type: NotificationKind.reply,
@@ -199,9 +180,7 @@ void main() {
 
         // The NotificationListItem wraps content in a Material widget.
         // Unread uses VineTheme.cardBackground, read uses backgroundColor.
-        final materials = tester.widgetList<Material>(
-          find.byType(Material),
-        );
+        final materials = tester.widgetList<Material>(find.byType(Material));
 
         // At least one Material should have a non-null color.
         expect(materials.any((m) => m.color != null), isTrue);

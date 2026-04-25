@@ -140,31 +140,28 @@ void main() {
       );
     }
 
-    testWidgets(
-      'renders normal chrome when status is ready and swaps in '
-      'ModeratedContentOverlay when cubit reports forbidden',
-      (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.pump();
+    testWidgets('renders normal chrome when status is ready and swaps in '
+        'ModeratedContentOverlay when cubit reports forbidden', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
 
-        // Normal chrome visible, moderated overlay absent.
-        expect(find.text('Test video content'), findsOneWidget);
-        expect(find.byType(ModeratedContentOverlay), findsNothing);
+      // Normal chrome visible, moderated overlay absent.
+      expect(find.text('Test video content'), findsOneWidget);
+      expect(find.byType(ModeratedContentOverlay), findsNothing);
 
-        // Report forbidden for the active video.
-        cubit.report(_testVideoId, PlaybackStatus.forbidden);
-        await tester.pumpAndSettle();
+      // Report forbidden for the active video.
+      cubit.report(_testVideoId, PlaybackStatus.forbidden);
+      await tester.pumpAndSettle();
 
-        // Moderated overlay takes over — the normal chrome (author
-        // description, action buttons) is gone.
-        expect(find.byType(ModeratedContentOverlay), findsOneWidget);
-        expect(find.text('Test video content'), findsNothing);
-        expect(
-          find.text(ModeratedContentOverlayStrings.forbiddenTitle),
-          findsOneWidget,
-        );
-      },
-    );
+      // Moderated overlay takes over — the normal chrome (author
+      // description, action buttons) is gone.
+      expect(find.byType(ModeratedContentOverlay), findsOneWidget);
+      expect(find.text('Test video content'), findsNothing);
+      expect(
+        find.text(ModeratedContentOverlayStrings.forbiddenTitle),
+        findsOneWidget,
+      );
+    });
 
     testWidgets(
       'renders ModeratedContentOverlay with verify-age CTA when cubit reports '

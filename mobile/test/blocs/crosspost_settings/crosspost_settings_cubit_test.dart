@@ -100,10 +100,7 @@ void main() {
             () => apiClient.getStatus(testPubkey),
           ).thenAnswer((_) async => loadedStatus);
           when(
-            () => apiClient.setCrosspost(
-              pubkey: testPubkey,
-              enabled: false,
-            ),
+            () => apiClient.setCrosspost(pubkey: testPubkey, enabled: false),
           ).thenAnswer(
             (_) async => const CrosspostStatus(
               crosspostEnabled: false,
@@ -112,10 +109,8 @@ void main() {
             ),
           );
         },
-        build: () => CrosspostSettingsCubit(
-          apiClient: apiClient,
-          pubkey: testPubkey,
-        ),
+        build: () =>
+            CrosspostSettingsCubit(apiClient: apiClient, pubkey: testPubkey),
         act: (cubit) async {
           await Future<void>.delayed(Duration.zero);
           await cubit.toggleCrosspost(enabled: false);
@@ -138,18 +133,13 @@ void main() {
             () => apiClient.getStatus(testPubkey),
           ).thenAnswer((_) async => loadedStatus);
           when(
-            () => apiClient.setCrosspost(
-              pubkey: testPubkey,
-              enabled: false,
-            ),
+            () => apiClient.setCrosspost(pubkey: testPubkey, enabled: false),
           ).thenAnswer(
             (_) async => throw const CrosspostApiException('Server error'),
           );
         },
-        build: () => CrosspostSettingsCubit(
-          apiClient: apiClient,
-          pubkey: testPubkey,
-        ),
+        build: () =>
+            CrosspostSettingsCubit(apiClient: apiClient, pubkey: testPubkey),
         act: (cubit) async {
           await Future<void>.delayed(Duration.zero);
           await cubit.toggleCrosspost(enabled: false);
@@ -172,10 +162,7 @@ void main() {
           () => apiClient.getStatus(testPubkey),
         ).thenAnswer((_) async => loadedStatus);
         when(
-          () => apiClient.setCrosspost(
-            pubkey: testPubkey,
-            enabled: false,
-          ),
+          () => apiClient.setCrosspost(pubkey: testPubkey, enabled: false),
         ).thenAnswer((_) => completer.future);
 
         final cubit = CrosspostSettingsCubit(

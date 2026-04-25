@@ -74,9 +74,7 @@ void main() {
               reason: ContentFilterReason.other,
               details: 'Reported from DM conversation',
             ),
-          ).thenAnswer(
-            (_) async => ReportResult.createSuccess('report-id'),
-          );
+          ).thenAnswer((_) async => ReportResult.createSuccess('report-id'));
         },
         build: createCubit,
         act: (cubit) async {
@@ -215,9 +213,7 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(
-            () => mockBlocklistRepository.unblockUser(pubkey),
-          ).called(1);
+          verify(() => mockBlocklistRepository.unblockUser(pubkey)).called(1);
         },
       );
 
@@ -264,9 +260,7 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(
-            () => mockDmRepo.removeConversation(conversationId),
-          ).called(1);
+          verify(() => mockDmRepo.removeConversation(conversationId)).called(1);
         },
       );
 

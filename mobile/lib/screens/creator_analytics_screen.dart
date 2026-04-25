@@ -231,9 +231,7 @@ class _CreatorAnalyticsScreenState
                     useFixture: useFixture,
                     onToggleFixture: (enabled) async {
                       ref
-                              .read(
-                                useFixtureCreatorAnalyticsProvider.notifier,
-                              )
+                              .read(useFixtureCreatorAnalyticsProvider.notifier)
                               .state =
                           enabled;
                       await _refresh();
@@ -1379,10 +1377,7 @@ String _dayKey(DateTime day) {
   return '${day.year}-$month-$date';
 }
 
-String _formatLastUpdated(
-  AppLocalizations l10n,
-  DateTime updatedAt,
-) {
+String _formatLastUpdated(AppLocalizations l10n, DateTime updatedAt) {
   final diff = DateTime.now().difference(updatedAt);
   return LocalizedTimeFormatter.formatDurationAgo(l10n, diff);
 }

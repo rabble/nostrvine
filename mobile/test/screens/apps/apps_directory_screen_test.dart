@@ -59,9 +59,9 @@ void main() {
     testWidgets('loads approved apps from the directory service', (
       tester,
     ) async {
-      when(() => mockDirectoryService.fetchApprovedApps()).thenAnswer(
-        (_) async => [_fixture()],
-      );
+      when(
+        () => mockDirectoryService.fetchApprovedApps(),
+      ).thenAnswer((_) async => [_fixture()]);
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -82,9 +82,9 @@ void main() {
     });
 
     testWidgets('embedded mode omits its own app bar', (tester) async {
-      when(() => mockDirectoryService.fetchApprovedApps()).thenAnswer(
-        (_) async => [_fixture()],
-      );
+      when(
+        () => mockDirectoryService.fetchApprovedApps(),
+      ).thenAnswer((_) async => [_fixture()]);
 
       await tester.pumpWidget(buildEmbeddedSubject());
       await tester.pumpAndSettle();
@@ -102,9 +102,9 @@ void main() {
       when(
         () => mockGoRouter.push(any(), extra: any(named: 'extra')),
       ).thenAnswer((_) async => null);
-      when(() => mockDirectoryService.fetchApprovedApps()).thenAnswer(
-        (_) async => [_fixture()],
-      );
+      when(
+        () => mockDirectoryService.fetchApprovedApps(),
+      ).thenAnswer((_) async => [_fixture()]);
 
       await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
       await tester.pumpAndSettle();

@@ -41,48 +41,46 @@ void main() {
         expect(find.text('Hello there'), findsOneWidget);
       });
 
-      testWidgets(
-        'renders timestamp when isFirstInGroup is true',
-        (tester) async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: MessageBubble(
-                  message: 'Hello there',
-                  timestamp: '2:30 PM',
-                  isSent: true,
-                ),
+      testWidgets('renders timestamp when isFirstInGroup is true', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'Hello there',
+                timestamp: '2:30 PM',
+                isSent: true,
               ),
             ),
-          );
+          ),
+        );
 
-          expect(find.text('2:30 PM'), findsOneWidget);
-        },
-      );
+        expect(find.text('2:30 PM'), findsOneWidget);
+      });
 
-      testWidgets(
-        'does not render timestamp when isFirstInGroup is false',
-        (tester) async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: MessageBubble(
-                  message: 'Hello there',
-                  timestamp: '2:30 PM',
-                  isSent: true,
-                  isFirstInGroup: false,
-                ),
+      testWidgets('does not render timestamp when isFirstInGroup is false', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'Hello there',
+                timestamp: '2:30 PM',
+                isSent: true,
+                isFirstInGroup: false,
               ),
             ),
-          );
+          ),
+        );
 
-          expect(find.text('2:30 PM'), findsNothing);
-        },
-      );
+        expect(find.text('2:30 PM'), findsNothing);
+      });
 
       testWidgets('aligns right for sent messages', (tester) async {
         await tester.pumpWidget(
@@ -101,10 +99,7 @@ void main() {
 
         final align = tester.widget<Align>(find.byType(Align));
 
-        expect(
-          align.alignment,
-          equals(AlignmentDirectional.centerEnd),
-        );
+        expect(align.alignment, equals(AlignmentDirectional.centerEnd));
       });
 
       testWidgets('aligns left for received messages', (tester) async {
@@ -124,10 +119,7 @@ void main() {
 
         final align = tester.widget<Align>(find.byType(Align));
 
-        expect(
-          align.alignment,
-          equals(AlignmentDirectional.centerStart),
-        );
+        expect(align.alignment, equals(AlignmentDirectional.centerStart));
       });
     });
 
@@ -282,83 +274,79 @@ void main() {
         expect(urlSpan.recognizer, isA<TapGestureRecognizer>());
       });
 
-      testWidgets(
-        'renders bare domain with path as tappable link',
-        (tester) async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: MessageBubble(
-                  message: 'Check example.com/page today',
-                  timestamp: '2:30 PM',
-                  isSent: true,
-                ),
+      testWidgets('renders bare domain with path as tappable link', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'Check example.com/page today',
+                timestamp: '2:30 PM',
+                isSent: true,
               ),
             ),
-          );
+          ),
+        );
 
-          final richText = tester.widget<RichText>(
-            find.byWidgetPredicate(
-              (widget) =>
-                  widget is RichText &&
-                  widget.text.toPlainText().contains('example.com/page'),
-            ),
-          );
+        final richText = tester.widget<RichText>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is RichText &&
+                widget.text.toPlainText().contains('example.com/page'),
+          ),
+        );
 
-          final textSpan = richText.text as TextSpan;
-          final innerSpan = textSpan.children!.first as TextSpan;
-          final urlSpan =
-              innerSpan.children!.firstWhere(
-                    (span) =>
-                        span is TextSpan &&
-                        (span.text?.contains('example.com/page') ?? false),
-                  )
-                  as TextSpan;
+        final textSpan = richText.text as TextSpan;
+        final innerSpan = textSpan.children!.first as TextSpan;
+        final urlSpan =
+            innerSpan.children!.firstWhere(
+                  (span) =>
+                      span is TextSpan &&
+                      (span.text?.contains('example.com/page') ?? false),
+                )
+                as TextSpan;
 
-          expect(urlSpan.recognizer, isA<TapGestureRecognizer>());
-        },
-      );
+        expect(urlSpan.recognizer, isA<TapGestureRecognizer>());
+      });
 
-      testWidgets(
-        'renders email address as tappable link',
-        (tester) async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: MessageBubble(
-                  message: 'Email me at user@example.com please',
-                  timestamp: '2:30 PM',
-                  isSent: true,
-                ),
+      testWidgets('renders email address as tappable link', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'Email me at user@example.com please',
+                timestamp: '2:30 PM',
+                isSent: true,
               ),
             ),
-          );
+          ),
+        );
 
-          final richText = tester.widget<RichText>(
-            find.byWidgetPredicate(
-              (widget) =>
-                  widget is RichText &&
-                  widget.text.toPlainText().contains('user@example.com'),
-            ),
-          );
+        final richText = tester.widget<RichText>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is RichText &&
+                widget.text.toPlainText().contains('user@example.com'),
+          ),
+        );
 
-          final textSpan = richText.text as TextSpan;
-          final innerSpan = textSpan.children!.first as TextSpan;
-          final emailSpan =
-              innerSpan.children!.firstWhere(
-                    (span) =>
-                        span is TextSpan &&
-                        (span.text?.contains('user@example.com') ?? false),
-                  )
-                  as TextSpan;
+        final textSpan = richText.text as TextSpan;
+        final innerSpan = textSpan.children!.first as TextSpan;
+        final emailSpan =
+            innerSpan.children!.firstWhere(
+                  (span) =>
+                      span is TextSpan &&
+                      (span.text?.contains('user@example.com') ?? false),
+                )
+                as TextSpan;
 
-          expect(emailSpan.recognizer, isA<TapGestureRecognizer>());
-        },
-      );
+        expect(emailSpan.recognizer, isA<TapGestureRecognizer>());
+      });
 
       testWidgets('URL-only message renders as link', (tester) async {
         await tester.pumpWidget(
@@ -406,9 +394,7 @@ void main() {
         mockNostrClient = createMockNostrService();
 
         // Default stubs: nothing in cache.
-        when(
-          () => mockVideoEventService.getVideoById(any()),
-        ).thenReturn(null);
+        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
         when(
           () => mockVideoEventService.getVideoEventByVineId(any()),
         ).thenReturn(null);
@@ -418,131 +404,119 @@ void main() {
         ).thenAnswer((_) async => null);
       });
 
-      Widget buildWithVideoMessage({
-        required String message,
-      }) => testMaterialApp(
-        home: Scaffold(
-          body: MessageBubble(
-            message: message,
-            timestamp: '2:30 PM',
-            isSent: true,
+      Widget buildWithVideoMessage({required String message}) =>
+          testMaterialApp(
+            home: Scaffold(
+              body: MessageBubble(
+                message: message,
+                timestamp: '2:30 PM',
+                isSent: true,
+              ),
+            ),
+            mockNostrService: mockNostrClient,
+            additionalOverrides: [
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+            ],
+          );
+
+      testWidgets('shows loading spinner before video resolves', (
+        tester,
+      ) async {
+        // Use a Completer that never completes so the cubit stays in
+        // the loading state without leaving a pending Timer.
+        final neverCompletes = Completer<Never>();
+        when(
+          () => mockNostrClient.fetchEventById(any()),
+        ).thenAnswer((_) => neverCompletes.future);
+
+        await tester.pumpWidget(
+          buildWithVideoMessage(message: 'https://divine.video/video/abc123'),
+        );
+        // Single pump to build the widget tree (don't settle).
+        await tester.pump();
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(VideoThumbnailWidget), findsNothing);
+      });
+
+      testWidgets('renders $VideoThumbnailWidget when video is in cache', (
+        tester,
+      ) async {
+        when(
+          () => mockVideoEventService.getVideoById('abc123'),
+        ).thenReturn(testVideo);
+
+        await tester.pumpWidget(
+          buildWithVideoMessage(message: 'https://divine.video/video/abc123'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+        expect(find.text('My Cool Video'), findsOneWidget);
+      });
+
+      testWidgets('falls back to link text when video not found', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWithVideoMessage(
+            message: 'https://divine.video/video/unknown-id',
           ),
-        ),
-        mockNostrService: mockNostrClient,
-        additionalOverrides: [
-          videoEventServiceProvider.overrideWithValue(
-            mockVideoEventService,
+        );
+        await tester.pumpAndSettle();
+
+        final richTextFinder = find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText &&
+              widget.text.toPlainText().contains(
+                'https://divine.video/video/unknown-id',
+              ),
+        );
+        expect(richTextFinder, findsOneWidget);
+        expect(find.byType(VideoThumbnailWidget), findsNothing);
+      });
+
+      testWidgets('preserves surrounding text alongside video preview', (
+        tester,
+      ) async {
+        when(
+          () => mockVideoEventService.getVideoById('abc123'),
+        ).thenReturn(testVideo);
+
+        await tester.pumpWidget(
+          buildWithVideoMessage(
+            message:
+                'hey check this out '
+                'https://divine.video/video/abc123 what do you think?',
           ),
-        ],
-      );
+        );
+        await tester.pumpAndSettle();
 
-      testWidgets(
-        'shows loading spinner before video resolves',
-        (tester) async {
-          // Use a Completer that never completes so the cubit stays in
-          // the loading state without leaving a pending Timer.
-          final neverCompletes = Completer<Never>();
-          when(
-            () => mockNostrClient.fetchEventById(any()),
-          ).thenAnswer((_) => neverCompletes.future);
+        // Preview card is rendered.
+        expect(find.byType(VideoThumbnailWidget), findsOneWidget);
 
-          await tester.pumpWidget(
-            buildWithVideoMessage(
-              message: 'https://divine.video/video/abc123',
-            ),
-          );
-          // Single pump to build the widget tree (don't settle).
-          await tester.pump();
+        // Surrounding text is preserved.
+        expect(find.text('hey check this out'), findsOneWidget);
+        expect(find.text('what do you think?'), findsOneWidget);
+      });
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
-          expect(find.byType(VideoThumbnailWidget), findsNothing);
-        },
-      );
+      testWidgets('preserves text before video URL only', (tester) async {
+        when(
+          () => mockVideoEventService.getVideoById('abc123'),
+        ).thenReturn(testVideo);
 
-      testWidgets(
-        'renders $VideoThumbnailWidget when video is in cache',
-        (tester) async {
-          when(
-            () => mockVideoEventService.getVideoById('abc123'),
-          ).thenReturn(testVideo);
+        await tester.pumpWidget(
+          buildWithVideoMessage(
+            message: 'check this https://divine.video/video/abc123',
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          await tester.pumpWidget(
-            buildWithVideoMessage(
-              message: 'https://divine.video/video/abc123',
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
-          expect(find.text('My Cool Video'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'falls back to link text when video not found',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWithVideoMessage(
-              message: 'https://divine.video/video/unknown-id',
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          final richTextFinder = find.byWidgetPredicate(
-            (widget) =>
-                widget is RichText &&
-                widget.text.toPlainText().contains(
-                  'https://divine.video/video/unknown-id',
-                ),
-          );
-          expect(richTextFinder, findsOneWidget);
-          expect(find.byType(VideoThumbnailWidget), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'preserves surrounding text alongside video preview',
-        (tester) async {
-          when(
-            () => mockVideoEventService.getVideoById('abc123'),
-          ).thenReturn(testVideo);
-
-          await tester.pumpWidget(
-            buildWithVideoMessage(
-              message:
-                  'hey check this out '
-                  'https://divine.video/video/abc123 what do you think?',
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          // Preview card is rendered.
-          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
-
-          // Surrounding text is preserved.
-          expect(find.text('hey check this out'), findsOneWidget);
-          expect(find.text('what do you think?'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'preserves text before video URL only',
-        (tester) async {
-          when(
-            () => mockVideoEventService.getVideoById('abc123'),
-          ).thenReturn(testVideo);
-
-          await tester.pumpWidget(
-            buildWithVideoMessage(
-              message: 'check this https://divine.video/video/abc123',
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
-          expect(find.text('check this'), findsOneWidget);
-        },
-      );
+        expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+        expect(find.text('check this'), findsOneWidget);
+      });
     });
 
     group('long-press', () {

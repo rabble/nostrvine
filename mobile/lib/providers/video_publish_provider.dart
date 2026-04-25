@@ -63,9 +63,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       ];
     }
 
-    return const <VerifierRequiredMethod>[
-      VerifierRequiredMethod.publicProof,
-    ];
+    return const <VerifierRequiredMethod>[VerifierRequiredMethod.publicProof];
   }
 
   /// Fetches optional verifier-issued identity metadata without blocking
@@ -595,9 +593,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   }) async {
     try {
       final hardBindingValue =
-          await NativeProofModeService.generateSha256FileHash(
-            filePath,
-          );
+          await NativeProofModeService.generateSha256FileHash(filePath);
       return await ref
           .read(nostrCreatorBindingServiceProvider)
           .createAssertion(
@@ -627,10 +623,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     String? nip05,
     String? website,
   }) {
-    return CreatorBindingClaims(
-      nip05: nip05,
-      website: website,
-    );
+    return CreatorBindingClaims(nip05: nip05, website: website);
   }
 
   VerifierClaimRequest _buildVerifierClaimRequest({

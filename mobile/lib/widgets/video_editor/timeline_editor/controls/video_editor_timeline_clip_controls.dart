@@ -17,9 +17,7 @@ class TimelineClipControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clips = context.select(
-      (ClipEditorBloc b) => b.state.clips,
-    );
+    final clips = context.select((ClipEditorBloc b) => b.state.clips);
     final isLastClip = clips.length <= 1;
 
     return VideoEditorTimelineControls(
@@ -27,9 +25,7 @@ class TimelineClipControls extends ConsumerWidget {
       onDuplicated: () => _duplicateClip(context, ref),
       onSplit: () => _splitClip(context),
       onDone: () {
-        context.read<ClipEditorBloc>().add(
-          const ClipEditorEditingStopped(),
-        );
+        context.read<ClipEditorBloc>().add(const ClipEditorEditingStopped());
       },
     );
   }
@@ -71,12 +67,7 @@ class TimelineClipControls extends ConsumerWidget {
     );
 
     bloc
-      ..add(
-        ClipEditorClipInserted(
-          index: state.clips.length,
-          clip: copy,
-        ),
-      )
+      ..add(ClipEditorClipInserted(index: state.clips.length, clip: copy))
       ..add(const ClipEditorEditingStopped());
 
     editor.addHistory(

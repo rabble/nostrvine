@@ -9,10 +9,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 import 'package:time_formatter/time_formatter.dart';
 
 class VideoEditorTimelineHeader extends StatelessWidget {
-  const VideoEditorTimelineHeader({
-    required this.playheadPosition,
-    super.key,
-  });
+  const VideoEditorTimelineHeader({required this.playheadPosition, super.key});
 
   /// Notifier driven by the scroll offset of the timeline.
   final ValueNotifier<Duration> playheadPosition;
@@ -41,10 +38,7 @@ class VideoEditorTimelineHeader extends StatelessWidget {
 
                 _TimeDisplay(playheadPosition: playheadPosition),
 
-                const Row(
-                  spacing: 8,
-                  children: [_UndoButton(), _RedoButton()],
-                ),
+                const Row(spacing: 8, children: [_UndoButton(), _RedoButton()]),
               ],
             ),
           ),
@@ -82,9 +76,7 @@ class _MuteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMuted = context.select(
-      (VideoEditorMainBloc b) => b.state.isMuted,
-    );
+    final isMuted = context.select((VideoEditorMainBloc b) => b.state.isMuted);
 
     return DivineIconButton(
       icon: isMuted ? .speakerSimpleX : .speakerHigh,
@@ -150,9 +142,7 @@ class _UndoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canUndo = context.select(
-      (VideoEditorMainBloc b) => b.state.canUndo,
-    );
+    final canUndo = context.select((VideoEditorMainBloc b) => b.state.canUndo);
 
     return DivineIconButton(
       icon: .arrowUUpLeft,
@@ -173,9 +163,7 @@ class _RedoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canRedo = context.select(
-      (VideoEditorMainBloc b) => b.state.canRedo,
-    );
+    final canRedo = context.select((VideoEditorMainBloc b) => b.state.canRedo);
 
     return DivineIconButton(
       icon: .arrowUUpRight,

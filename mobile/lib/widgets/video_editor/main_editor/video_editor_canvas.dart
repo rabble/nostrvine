@@ -266,18 +266,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         .read<VideoEditorMainBloc>()
         .state
         .currentPosition;
-    _videoPlayer?.setClips(
-      [
-        for (final clip in clips)
-          if (clip.video.file?.path case final path?)
-            VideoClip(
-              uri: path,
-              start: clip.trimStart,
-              end: clip.duration - clip.trimEnd,
-            ),
-      ],
-      startPosition: currentPosition,
-    );
+    _videoPlayer?.setClips([
+      for (final clip in clips)
+        if (clip.video.file?.path case final path?)
+          VideoClip(
+            uri: path,
+            start: clip.trimStart,
+            end: clip.duration - clip.trimEnd,
+          ),
+    ], startPosition: currentPosition);
   }
 
   /// Creates the [ProVideoController] (only once, not tied to a file).
@@ -361,9 +358,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
     // Notify BLoC that player is ready
     if (mounted) {
-      context.read<VideoEditorMainBloc>().add(
-        const VideoEditorPlayerReady(),
-      );
+      context.read<VideoEditorMainBloc>().add(const VideoEditorPlayerReady());
     }
 
     // Setup state stream listener
@@ -407,9 +402,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
 
     // Index audio events by ID for fast lookup.
-    final audioById = {
-      for (final e in audioEvents) e.id: e,
-    };
+    final audioById = {for (final e in audioEvents) e.id: e};
 
     final customVolume = ref.read(videoEditorProvider).customAudioVolume;
 
@@ -694,18 +687,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             .state
             .currentPosition;
 
-        _videoPlayer?.setClips(
-          [
-            for (final clip in clips)
-              if (clip.video.file?.path case final path?)
-                VideoClip(
-                  uri: path,
-                  start: clip.trimStart,
-                  end: clip.duration - clip.trimEnd,
-                ),
-          ],
-          startPosition: currentPosition,
-        );
+        _videoPlayer?.setClips([
+          for (final clip in clips)
+            if (clip.video.file?.path case final path?)
+              VideoClip(
+                uri: path,
+                start: clip.trimStart,
+                end: clip.duration - clip.trimEnd,
+              ),
+        ], startPosition: currentPosition);
       },
     );
 
@@ -776,18 +766,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                   .read<VideoEditorMainBloc>()
                   .state
                   .currentPosition;
-              _videoPlayer?.setClips(
-                [
-                  for (final clip in state.clips)
-                    if (clip.video.file?.path case final path?)
-                      VideoClip(
-                        uri: path,
-                        start: clip.trimStart,
-                        end: clip.duration - clip.trimEnd,
-                      ),
-                ],
-                startPosition: currentPosition,
-              );
+              _videoPlayer?.setClips([
+                for (final clip in state.clips)
+                  if (clip.video.file?.path case final path?)
+                    VideoClip(
+                      uri: path,
+                      start: clip.trimStart,
+                      end: clip.duration - clip.trimEnd,
+                    ),
+              ], startPosition: currentPosition);
             },
           ),
           BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
@@ -795,9 +782,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 previous.isExternalPauseRequested !=
                 current.isExternalPauseRequested,
             listener: (context, state) {
-              _onExternalPauseChanged(
-                isPaused: state.isExternalPauseRequested,
-              );
+              _onExternalPauseChanged(isPaused: state.isExternalPauseRequested);
             },
           ),
           BlocListener<VideoEditorMainBloc, VideoEditorMainState>(

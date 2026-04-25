@@ -40,11 +40,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// Manages the [VideoEditorMainBloc] and [VideoEditorStickerBloc] lifecycle,
 /// precaches sticker images, and coordinates the editor canvas with toolbars.
 class VideoEditorScreen extends ConsumerStatefulWidget {
-  const VideoEditorScreen({
-    super.key,
-    this.draftId,
-    this.fromLibrary = false,
-  });
+  const VideoEditorScreen({super.key, this.draftId, this.fromLibrary = false});
 
   /// Optional draft ID to load an existing draft.
   final String? draftId;
@@ -213,9 +209,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   /// clips can be rolled back if the user cancels (`result != true`).
   /// On success or cancel, calls [_syncClipsToEditor] to keep the
   /// [ClipEditorBloc] in sync.
-  Future<void> _openCamera({
-    required ClipEditorBloc clipEditorBloc,
-  }) async {
+  Future<void> _openCamera({required ClipEditorBloc clipEditorBloc}) async {
     final initialIds = ref
         .read(clipManagerProvider)
         .clips
@@ -291,9 +285,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   /// Syncs the current clip list from [clipManagerProvider] into the
   /// [ClipEditorBloc] and appends a history entry to the pro_image_editor.
-  void _syncClipsToEditor({
-    required ClipEditorBloc clipEditorBloc,
-  }) {
+  void _syncClipsToEditor({required ClipEditorBloc clipEditorBloc}) {
     // Sync the updated clip list into the editor BLoC.
     final updatedClips = ref.read(clipManagerProvider).clips;
     clipEditorBloc.add(ClipEditorInitialized(updatedClips));
@@ -435,14 +427,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 
   Future<void> _openMusicLibrary() async {
-    var result = await VineBottomSheet.show<AudioEvent>(
-      context: context,
-      maxChildSize: 1,
-      initialChildSize: 1,
-      minChildSize: 0.8,
-      buildScrollBody: (scrollController) =>
-          AudioSelectionBottomSheet(scrollController: scrollController),
-    );
+    var result = await AudioSelectionBottomSheet.show(context);
 
     final editor = _editorKey.currentState;
 
@@ -453,9 +438,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     );
     final clipDuration = _clipEditorBloc.state.totalDuration;
     const maxDuration = VideoEditorConstants.maxDuration;
-    final endTime = [audioDuration, clipDuration, maxDuration].reduce(
-      (a, b) => a < b ? a : b,
-    );
+    final endTime = [
+      audioDuration,
+      clipDuration,
+      maxDuration,
+    ].reduce((a, b) => a < b ? a : b);
 
     result = result.copyWith(
       id: '${result.id}-${DateTime.now().millisecondsSinceEpoch}',
@@ -533,9 +520,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         listenWhen: (previous, current) =>
             previous.audioTracks != current.audioTracks,
         listener: (context, state) {
-          final previousById = {
-            for (final a in _previousAudioTracks) a.id: a,
-          };
+          final previousById = {for (final a in _previousAudioTracks) a.id: a};
           _previousAudioTracks = state.audioTracks;
 
           final existingWaveformIds = state.items

@@ -413,76 +413,73 @@ void main() {
         expect(textField.decoration?.hintText, equals('Search by name...'));
       });
 
-      testWidgets(
-        'renders tiles during progressive loading '
-        'instead of the full-screen spinner',
-        (tester) async {
-          // Stream controller kept open after the first yield — this
-          // simulates the real progressive search still running (e.g.
-          // NIP-50 WebSocket phase) while the REST phase has already
-          // delivered results.
-          final streamController =
-              StreamController<List<UserProfile>>.broadcast();
-          addTearDown(streamController.close);
+      testWidgets('renders tiles during progressive loading '
+          'instead of the full-screen spinner', (tester) async {
+        // Stream controller kept open after the first yield — this
+        // simulates the real progressive search still running (e.g.
+        // NIP-50 WebSocket phase) while the REST phase has already
+        // delivered results.
+        final streamController =
+            StreamController<List<UserProfile>>.broadcast();
+        addTearDown(streamController.close);
 
-          final alice = UserProfile(
-            pubkey: 'p_alice',
-            name: 'Alice',
-            rawData: const {'name': 'Alice'},
-            createdAt: DateTime.now(),
-            eventId: 'event_alice',
-          );
-          final mockProfileRepo = _createMockProfileRepository();
-          when(
-            () => mockProfileRepo.searchUsersProgressive(
-              query: any(named: 'query'),
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              sortBy: any(named: 'sortBy'),
-              hasVideos: any(named: 'hasVideos'),
-              boostPubkeys: any(named: 'boostPubkeys'),
-            ),
-          ).thenAnswer((_) => streamController.stream);
+        final alice = UserProfile(
+          pubkey: 'p_alice',
+          name: 'Alice',
+          rawData: const {'name': 'Alice'},
+          createdAt: DateTime.now(),
+          eventId: 'event_alice',
+        );
+        final mockProfileRepo = _createMockProfileRepository();
+        when(
+          () => mockProfileRepo.searchUsersProgressive(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
+            boostPubkeys: any(named: 'boostPubkeys'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                profileRepositoryProvider.overrideWithValue(mockProfileRepo),
-                followRepositoryProvider.overrideWithValue(
-                  _createMockFollowRepository(),
-                ),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: UserPickerSheet(
-                    filterMode: UserPickerFilterMode.allUsers,
-                  ),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          await tester.enterText(find.byType(TextField), 'alice');
-          // Past the 300ms search debounce.
-          await tester.pump(const Duration(milliseconds: 400));
+        await tester.enterText(find.byType(TextField), 'alice');
+        // Past the 300ms search debounce.
+        await tester.pump(const Duration(milliseconds: 400));
 
-          // Emit the first batch — stream stays open, so the BLoC
-          // stays in `loading` with results available. The fix is that
-          // the picker now renders these results instead of a spinner.
-          streamController.add([alice]);
-          await tester.pump();
+        // Emit the first batch — stream stays open, so the BLoC
+        // stays in `loading` with results available. The fix is that
+        // the picker now renders these results instead of a spinner.
+        streamController.add([alice]);
+        await tester.pump();
 
-          // The tile renders while the stream is still open (loading). Before
-          // the fix, the UI showed a full-screen spinner and Alice never
-          // appeared until the progressive stream completed.
-          expect(find.text('Alice'), findsOneWidget);
-          // Only the footer load-more spinner should be in the tree (1);
-          // before the fix there was a full-screen spinner instead (also 1),
-          // so we distinguish by asserting the tile is present above.
-        },
-      );
+        // The tile renders while the stream is still open (loading). Before
+        // the fix, the UI showed a full-screen spinner and Alice never
+        // appeared until the progressive stream completed.
+        expect(find.text('Alice'), findsOneWidget);
+        // Only the footer load-more spinner should be in the tree (1);
+        // before the fix there was a full-screen spinner instead (also 1),
+        // so we distinguish by asserting the tile is present above.
+      });
 
       testWidgets(
         'boosts followed users above non-followed in search results',
@@ -535,9 +532,8 @@ void main() {
             return Stream.value([...boosted, ...rest]);
           });
           when(
-            () => mockProfileRepo.getCachedProfile(
-              pubkey: any(named: 'pubkey'),
-            ),
+            () =>
+                mockProfileRepo.getCachedProfile(pubkey: any(named: 'pubkey')),
           ).thenAnswer((_) async => null);
           final mockFollowRepo = _createMockFollowRepository(
             followingPubkeys: ['p_liz'],
@@ -580,130 +576,126 @@ void main() {
         },
       );
 
-      testWidgets(
-        'disables iOS autocorrect and predictive suggestions on the '
-        'search field',
-        (tester) async {
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                profileRepositoryProvider.overrideWithValue(
-                  _createMockProfileRepository(),
-                ),
-                followRepositoryProvider.overrideWithValue(
-                  _createMockFollowRepository(),
-                ),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: UserPickerSheet(
-                    filterMode: UserPickerFilterMode.allUsers,
-                  ),
+      testWidgets('disables iOS autocorrect and predictive suggestions on the '
+          'search field', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          final textField = tester.widget<TextField>(find.byType(TextField));
-          expect(
-            textField.autocorrect,
-            isFalse,
-            reason: 'autocorrect must be off or iOS silently rewrites queries',
-          );
-          expect(
-            textField.enableSuggestions,
-            isFalse,
-            reason: 'enableSuggestions must be off for the same reason',
-          );
-        },
-      );
+        final textField = tester.widget<TextField>(find.byType(TextField));
+        expect(
+          textField.autocorrect,
+          isFalse,
+          reason: 'autocorrect must be off or iOS silently rewrites queries',
+        );
+        expect(
+          textField.enableSuggestions,
+          isFalse,
+          reason: 'enableSuggestions must be off for the same reason',
+        );
+      });
 
-      testWidgets(
-        'preserves previous results while a new query is loading',
-        (tester) async {
-          final alice = UserProfile(
-            pubkey: 'p_alice',
-            name: 'Alice',
-            rawData: const {'name': 'Alice'},
-            createdAt: DateTime.now(),
-            eventId: 'event_alice',
-          );
-          final bob = UserProfile(
-            pubkey: 'p_bob',
-            name: 'Bob',
-            rawData: const {'name': 'Bob'},
-            createdAt: DateTime.now(),
-            eventId: 'event_bob',
-          );
-          final bobController = StreamController<List<UserProfile>>.broadcast();
-          addTearDown(bobController.close);
+      testWidgets('preserves previous results while a new query is loading', (
+        tester,
+      ) async {
+        final alice = UserProfile(
+          pubkey: 'p_alice',
+          name: 'Alice',
+          rawData: const {'name': 'Alice'},
+          createdAt: DateTime.now(),
+          eventId: 'event_alice',
+        );
+        final bob = UserProfile(
+          pubkey: 'p_bob',
+          name: 'Bob',
+          rawData: const {'name': 'Bob'},
+          createdAt: DateTime.now(),
+          eventId: 'event_bob',
+        );
+        final bobController = StreamController<List<UserProfile>>.broadcast();
+        addTearDown(bobController.close);
 
-          final mockProfileRepo = _createMockProfileRepository();
-          when(
-            () => mockProfileRepo.searchUsersProgressive(
-              query: 'alice',
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              sortBy: any(named: 'sortBy'),
-              hasVideos: any(named: 'hasVideos'),
-              boostPubkeys: any(named: 'boostPubkeys'),
-            ),
-          ).thenAnswer((_) => Stream.value([alice]));
-          when(
-            () => mockProfileRepo.searchUsersProgressive(
-              query: 'bob',
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              sortBy: any(named: 'sortBy'),
-              hasVideos: any(named: 'hasVideos'),
-              boostPubkeys: any(named: 'boostPubkeys'),
-            ),
-          ).thenAnswer((_) => bobController.stream);
+        final mockProfileRepo = _createMockProfileRepository();
+        when(
+          () => mockProfileRepo.searchUsersProgressive(
+            query: 'alice',
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
+            boostPubkeys: any(named: 'boostPubkeys'),
+          ),
+        ).thenAnswer((_) => Stream.value([alice]));
+        when(
+          () => mockProfileRepo.searchUsersProgressive(
+            query: 'bob',
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
+            boostPubkeys: any(named: 'boostPubkeys'),
+          ),
+        ).thenAnswer((_) => bobController.stream);
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                profileRepositoryProvider.overrideWithValue(mockProfileRepo),
-                followRepositoryProvider.overrideWithValue(
-                  _createMockFollowRepository(),
-                ),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: UserPickerSheet(
-                    filterMode: UserPickerFilterMode.allUsers,
-                  ),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          // First query — 'alice' succeeds.
-          await tester.enterText(find.byType(TextField), 'alice');
-          await tester.pump(const Duration(milliseconds: 400));
-          await tester.pumpAndSettle();
-          expect(find.text('Alice'), findsOneWidget);
+        // First query — 'alice' succeeds.
+        await tester.enterText(find.byType(TextField), 'alice');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
+        expect(find.text('Alice'), findsOneWidget);
 
-          // Second query — 'bob' starts loading (stream stays open).
-          await tester.enterText(find.byType(TextField), 'bob');
-          await tester.pump(const Duration(milliseconds: 400));
+        // Second query — 'bob' starts loading (stream stays open).
+        await tester.enterText(find.byType(TextField), 'bob');
+        await tester.pump(const Duration(milliseconds: 400));
 
-          // Alice is still visible — we did NOT blank the list.
-          expect(find.text('Alice'), findsOneWidget);
+        // Alice is still visible — we did NOT blank the list.
+        expect(find.text('Alice'), findsOneWidget);
 
-          // When 'bob' results arrive, the list updates in place.
-          bobController.add([bob]);
-          // Pump twice: once to let the stream event propagate through the
-          // bloc's emit.forEach, once more for the rebuilt BlocBuilder.
-          await tester.pump();
-          await tester.pump();
-          expect(find.text('Bob'), findsOneWidget);
-        },
-      );
+        // When 'bob' results arrive, the list updates in place.
+        bobController.add([bob]);
+        // Pump twice: once to let the stream event propagate through the
+        // bloc's emit.forEach, once more for the rebuilt BlocBuilder.
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Bob'), findsOneWidget);
+      });
     });
 
     group('autoFocus', () {
@@ -857,9 +849,7 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(
-            find.text(
-              'User search is unavailable. Please try again later.',
-            ),
+            find.text('User search is unavailable. Please try again later.'),
             findsOneWidget,
           );
           // Should not show the search field
@@ -867,42 +857,37 @@ void main() {
         },
       );
 
-      testWidgets(
-        'shows error state for mutualFollowsOnly mode '
-        'when profileRepository is null',
-        (tester) async {
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                profileRepositoryProvider.overrideWithValue(null),
-                followRepositoryProvider.overrideWithValue(
-                  _createMockFollowRepository(),
-                ),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: UserPickerSheet(
-                    filterMode: UserPickerFilterMode.mutualFollowsOnly,
-                  ),
+      testWidgets('shows error state for mutualFollowsOnly mode '
+          'when profileRepository is null', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(null),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-          expect(
-            find.text(
-              'User search is unavailable. Please try again later.',
-            ),
-            findsOneWidget,
-          );
-          // Should not show the search field
-          expect(find.byType(TextField), findsNothing);
-        },
-      );
+        expect(
+          find.text('User search is unavailable. Please try again later.'),
+          findsOneWidget,
+        );
+        // Should not show the search field
+        expect(find.byType(TextField), findsNothing);
+      });
     });
   });
 

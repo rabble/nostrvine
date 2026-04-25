@@ -48,10 +48,7 @@ Widget _buildExpandedHitScene({
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: onLeftHandleTap,
-                    child: SizedBox(
-                      width: handleWidth,
-                      height: contentHeight,
-                    ),
+                    child: SizedBox(width: handleWidth, height: contentHeight),
                   ),
                 ),
                 // Right handle positioned outside bounds.
@@ -61,10 +58,7 @@ Widget _buildExpandedHitScene({
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: onRightHandleTap,
-                    child: SizedBox(
-                      width: handleWidth,
-                      height: contentHeight,
-                    ),
+                    child: SizedBox(width: handleWidth, height: contentHeight),
                   ),
                 ),
               ],
@@ -84,9 +78,7 @@ void main() {
           const Directionality(
             textDirection: TextDirection.ltr,
             child: Center(
-              child: HitExpandedBox(
-                child: SizedBox(width: 100, height: 50),
-              ),
+              child: HitExpandedBox(child: SizedBox(width: 100, height: 50)),
             ),
           ),
         );
@@ -99,16 +91,12 @@ void main() {
           const Directionality(
             textDirection: TextDirection.ltr,
             child: Center(
-              child: HitExpandedBox(
-                child: SizedBox(width: 100, height: 40),
-              ),
+              child: HitExpandedBox(child: SizedBox(width: 100, height: 40)),
             ),
           ),
         );
 
-        final box = tester.renderObject<RenderBox>(
-          find.byType(HitExpandedBox),
-        );
+        final box = tester.renderObject<RenderBox>(find.byType(HitExpandedBox));
         expect(box.size.height, equals(40));
       });
     });
@@ -133,97 +121,89 @@ void main() {
         expect(centerTapped, isTrue);
       });
 
-      testWidgets(
-        'registers taps on handle in expanded left margin',
-        (tester) async {
-          var leftTapped = false;
+      testWidgets('registers taps on handle in expanded left margin', (
+        tester,
+      ) async {
+        var leftTapped = false;
 
-          await tester.pumpWidget(
-            _buildExpandedHitScene(
-              expandLeft: 30,
-              expandRight: 30,
-              handleWidth: 20,
-              onLeftHandleTap: () => leftTapped = true,
-              onRightHandleTap: () {},
-              onCenterTap: () {},
-            ),
-          );
+        await tester.pumpWidget(
+          _buildExpandedHitScene(
+            expandLeft: 30,
+            expandRight: 30,
+            handleWidth: 20,
+            onLeftHandleTap: () => leftTapped = true,
+            onRightHandleTap: () {},
+            onCenterTap: () {},
+          ),
+        );
 
-          // Left handle is outside main content bounds: x in [80, 100].
-          await tester.tapAt(const Offset(90, 125));
+        // Left handle is outside main content bounds: x in [80, 100].
+        await tester.tapAt(const Offset(90, 125));
 
-          expect(leftTapped, isTrue);
-        },
-      );
+        expect(leftTapped, isTrue);
+      });
 
-      testWidgets(
-        'registers taps on handle in expanded right margin',
-        (tester) async {
-          var rightTapped = false;
+      testWidgets('registers taps on handle in expanded right margin', (
+        tester,
+      ) async {
+        var rightTapped = false;
 
-          await tester.pumpWidget(
-            _buildExpandedHitScene(
-              expandLeft: 30,
-              expandRight: 30,
-              handleWidth: 20,
-              onLeftHandleTap: () {},
-              onRightHandleTap: () => rightTapped = true,
-              onCenterTap: () {},
-            ),
-          );
+        await tester.pumpWidget(
+          _buildExpandedHitScene(
+            expandLeft: 30,
+            expandRight: 30,
+            handleWidth: 20,
+            onLeftHandleTap: () {},
+            onRightHandleTap: () => rightTapped = true,
+            onCenterTap: () {},
+          ),
+        );
 
-          // Right handle is outside main content bounds: x in [200, 220].
-          await tester.tapAt(const Offset(210, 125));
+        // Right handle is outside main content bounds: x in [200, 220].
+        await tester.tapAt(const Offset(210, 125));
 
-          expect(rightTapped, isTrue);
-        },
-      );
+        expect(rightTapped, isTrue);
+      });
 
-      testWidgets(
-        'ignores taps beyond the expanded area',
-        (tester) async {
-          var anyTapped = false;
-          void onTap() => anyTapped = true;
+      testWidgets('ignores taps beyond the expanded area', (tester) async {
+        var anyTapped = false;
+        void onTap() => anyTapped = true;
 
-          await tester.pumpWidget(
-            _buildExpandedHitScene(
-              expandLeft: 20,
-              expandRight: 20,
-              handleWidth: 15,
-              onLeftHandleTap: onTap,
-              onRightHandleTap: onTap,
-              onCenterTap: onTap,
-            ),
-          );
+        await tester.pumpWidget(
+          _buildExpandedHitScene(
+            expandLeft: 20,
+            expandRight: 20,
+            handleWidth: 15,
+            onLeftHandleTap: onTap,
+            onRightHandleTap: onTap,
+            onCenterTap: onTap,
+          ),
+        );
 
-          // Tap well outside the expanded area.
-          await tester.tapAt(const Offset(10, 10));
-          expect(anyTapped, isFalse);
-        },
-      );
+        // Tap well outside the expanded area.
+        await tester.tapAt(const Offset(10, 10));
+        expect(anyTapped, isFalse);
+      });
 
-      testWidgets(
-        'ignores taps outside vertical bounds',
-        (tester) async {
-          var anyTapped = false;
-          void onTap() => anyTapped = true;
+      testWidgets('ignores taps outside vertical bounds', (tester) async {
+        var anyTapped = false;
+        void onTap() => anyTapped = true;
 
-          await tester.pumpWidget(
-            _buildExpandedHitScene(
-              expandLeft: 30,
-              expandRight: 30,
-              handleWidth: 20,
-              onLeftHandleTap: onTap,
-              onRightHandleTap: onTap,
-              onCenterTap: onTap,
-            ),
-          );
+        await tester.pumpWidget(
+          _buildExpandedHitScene(
+            expandLeft: 30,
+            expandRight: 30,
+            handleWidth: 20,
+            onLeftHandleTap: onTap,
+            onRightHandleTap: onTap,
+            onCenterTap: onTap,
+          ),
+        );
 
-          // Tap below the widget (y > 100 + 50 = 150).
-          await tester.tapAt(const Offset(150, 170));
-          expect(anyTapped, isFalse);
-        },
-      );
+        // Tap below the widget (y > 100 + 50 = 150).
+        await tester.tapAt(const Offset(150, 170));
+        expect(anyTapped, isFalse);
+      });
     });
 
     group('updateRenderObject', () {
@@ -289,17 +269,13 @@ void main() {
           ),
         );
 
-        var box = tester.renderObject<RenderBox>(
-          find.byType(HitExpandedBox),
-        );
+        var box = tester.renderObject<RenderBox>(find.byType(HitExpandedBox));
         expect(box.size.height, equals(40));
 
         rebuildState(() => height = 60);
         await tester.pump();
 
-        box = tester.renderObject<RenderBox>(
-          find.byType(HitExpandedBox),
-        );
+        box = tester.renderObject<RenderBox>(find.byType(HitExpandedBox));
         expect(box.size.height, equals(60));
       });
     });

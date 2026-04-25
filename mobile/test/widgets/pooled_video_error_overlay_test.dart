@@ -39,10 +39,7 @@ void main() {
       retryPressed = false;
     });
 
-    Widget buildWidget({
-      VideoErrorType? errorType,
-      VideoEvent? video,
-    }) {
+    Widget buildWidget({VideoErrorType? errorType, VideoEvent? video}) {
       return ProviderScope(
         overrides: [
           videoModerationStatusProvider.overrideWith(
@@ -89,9 +86,7 @@ void main() {
     }
 
     group('forbidden', () {
-      testWidgets('shows shield icon and "Content restricted"', (
-        tester,
-      ) async {
+      testWidgets('shows shield icon and "Content restricted"', (tester) async {
         await tester.pumpWidget(
           buildWidget(errorType: VideoErrorType.forbidden),
         );
@@ -193,31 +188,30 @@ void main() {
         },
       );
 
-      testWidgets(
-        'skips moderation lookup for non-divine video URLs',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidgetWithModeration(
-              errorType: VideoErrorType.notFound,
-              moderationStatus: const VideoModerationStatus(
-                moderated: true,
-                blocked: true,
-                quarantined: false,
-                ageRestricted: false,
-                needsReview: false,
-                aiGenerated: false,
-              ),
-              video: thirdPartyVideo,
+      testWidgets('skips moderation lookup for non-divine video URLs', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidgetWithModeration(
+            errorType: VideoErrorType.notFound,
+            moderationStatus: const VideoModerationStatus(
+              moderated: true,
+              blocked: true,
+              quarantined: false,
+              ageRestricted: false,
+              needsReview: false,
+              aiGenerated: false,
             ),
-          );
-          await tester.pumpAndSettle();
+            video: thirdPartyVideo,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          // Should show plain 404, not moderation-restricted.
-          expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
-          expect(find.text('Video not found'), findsOneWidget);
-          expect(find.text('Retry'), findsOneWidget);
-        },
-      );
+        // Should show plain 404, not moderation-restricted.
+        expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);
+        expect(find.text('Video not found'), findsOneWidget);
+        expect(find.text('Retry'), findsOneWidget);
+      });
     });
 
     group('generic', () {
@@ -236,9 +230,7 @@ void main() {
       });
 
       testWidgets('shows generic error for null error type', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(video: thirdPartyVideo),
-        );
+        await tester.pumpWidget(buildWidget(video: thirdPartyVideo));
         await tester.pumpAndSettle();
 
         expect(_findDivineIcon(DivineIconName.warningCircle), findsOneWidget);

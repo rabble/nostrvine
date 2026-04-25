@@ -11,9 +11,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
-        home: Scaffold(
-          body: ProfileTabLoadingState(message: message),
-        ),
+        home: Scaffold(body: ProfileTabLoadingState(message: message)),
       );
     }
 
@@ -40,9 +38,7 @@ void main() {
       });
 
       testWidgets('message text when provided', (tester) async {
-        await tester.pumpWidget(
-          buildSubject(message: 'Loading videos...'),
-        );
+        await tester.pumpWidget(buildSubject(message: 'Loading videos...'));
 
         expect(find.text('Loading videos...'), findsOneWidget);
       });

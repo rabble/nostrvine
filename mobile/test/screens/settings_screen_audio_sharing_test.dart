@@ -42,12 +42,8 @@ void main() {
       ).thenReturn(false);
       when(() => mockLanguageService.contentLanguage).thenReturn('en');
       when(() => mockLanguageService.isCustomLanguageSet).thenReturn(false);
-      when(
-        () => mockAccountLabelService.accountLabels,
-      ).thenReturn({});
-      when(
-        () => mockAccountLabelService.initialized,
-      ).thenAnswer((_) async {});
+      when(() => mockAccountLabelService.accountLabels).thenReturn({});
+      when(() => mockAccountLabelService.initialized).thenAnswer((_) async {});
     });
 
     Widget createTestWidget() {
@@ -131,9 +127,7 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('tapping toggle calls setAudioSharingEnabled', (
-      tester,
-    ) async {
+    testWidgets('tapping toggle calls setAudioSharingEnabled', (tester) async {
       when(
         () => mockAudioSharingService.isAudioSharingEnabled,
       ).thenReturn(false);

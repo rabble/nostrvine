@@ -75,10 +75,7 @@ void main() {
 
       test('props contains drafts', () {
         final drafts = [createDraft(id: 'draft1')];
-        expect(
-          DraftsLibraryLoaded(drafts: drafts).props,
-          [drafts],
-        );
+        expect(DraftsLibraryLoaded(drafts: drafts).props, [drafts]);
       });
     });
 
@@ -93,10 +90,7 @@ void main() {
 
       test('props contains drafts', () {
         final drafts = [createDraft(id: 'draft1')];
-        expect(
-          DraftsLibraryDraftDeleted(drafts: drafts).props,
-          [drafts],
-        );
+        expect(DraftsLibraryDraftDeleted(drafts: drafts).props, [drafts]);
       });
     });
 
@@ -111,19 +105,13 @@ void main() {
 
       test('props contains drafts', () {
         final drafts = [createDraft(id: 'draft1')];
-        expect(
-          DraftsLibraryDeleteFailed(drafts: drafts).props,
-          [drafts],
-        );
+        expect(DraftsLibraryDeleteFailed(drafts: drafts).props, [drafts]);
       });
     });
 
     group(DraftsLibraryError, () {
       test('supports value equality', () {
-        expect(
-          const DraftsLibraryError(),
-          equals(const DraftsLibraryError()),
-        );
+        expect(const DraftsLibraryError(), equals(const DraftsLibraryError()));
       });
 
       test('props matches base state', () {

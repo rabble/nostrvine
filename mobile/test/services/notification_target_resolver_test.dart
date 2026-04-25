@@ -62,27 +62,20 @@ void main() {
           () => videoEventService.getVideoById('comment_nested'),
         ).thenReturn(null);
         when(() => nostrClient.fetchEventById('comment_nested')).thenAnswer(
-          (_) async => Event(
-            'b' * 64,
-            1111,
-            const [
-              // NIP-22: uppercase = root scope (video)
-              ['E', rootVideoId, '', videoAuthorPubkey],
-              ['K', '34236'],
-              ['P', videoAuthorPubkey],
-              // NIP-22: lowercase = parent item (comment being replied to)
-              ['e', parentCommentId, '', parentAuthorPubkey],
-              ['k', '1111'],
-              ['p', parentAuthorPubkey],
-            ],
-            'reply to comment',
-          ),
+          (_) async => Event('b' * 64, 1111, const [
+            // NIP-22: uppercase = root scope (video)
+            ['E', rootVideoId, '', videoAuthorPubkey],
+            ['K', '34236'],
+            ['P', videoAuthorPubkey],
+            // NIP-22: lowercase = parent item (comment being replied to)
+            ['e', parentCommentId, '', parentAuthorPubkey],
+            ['k', '1111'],
+            ['p', parentAuthorPubkey],
+          ], 'reply to comment'),
         );
 
         final resolved = await resolver
-            .resolveVideoEventIdFromNotificationTarget(
-              'comment_nested',
-            );
+            .resolveVideoEventIdFromNotificationTarget('comment_nested');
 
         expect(resolved, equals(rootVideoId));
       },
@@ -98,27 +91,20 @@ void main() {
           () => videoEventService.getVideoById('comment_top'),
         ).thenReturn(null);
         when(() => nostrClient.fetchEventById('comment_top')).thenAnswer(
-          (_) async => Event(
-            'c' * 64,
-            1111,
-            const [
-              // NIP-22: uppercase = root scope (video)
-              ['E', rootVideoId, '', videoAuthorPubkey],
-              ['K', '34236'],
-              ['P', videoAuthorPubkey],
-              // NIP-22: lowercase = parent (same as root for top-level)
-              ['e', rootVideoId, '', videoAuthorPubkey],
-              ['k', '34236'],
-              ['p', videoAuthorPubkey],
-            ],
-            'top-level comment',
-          ),
+          (_) async => Event('c' * 64, 1111, const [
+            // NIP-22: uppercase = root scope (video)
+            ['E', rootVideoId, '', videoAuthorPubkey],
+            ['K', '34236'],
+            ['P', videoAuthorPubkey],
+            // NIP-22: lowercase = parent (same as root for top-level)
+            ['e', rootVideoId, '', videoAuthorPubkey],
+            ['k', '34236'],
+            ['p', videoAuthorPubkey],
+          ], 'top-level comment'),
         );
 
         final resolved = await resolver
-            .resolveVideoEventIdFromNotificationTarget(
-              'comment_top',
-            );
+            .resolveVideoEventIdFromNotificationTarget('comment_top');
 
         expect(resolved, equals(rootVideoId));
       },
@@ -133,22 +119,15 @@ void main() {
           () => videoEventService.getVideoById('comment_minimal'),
         ).thenReturn(null);
         when(() => nostrClient.fetchEventById('comment_minimal')).thenAnswer(
-          (_) async => Event(
-            'd' * 64,
-            1111,
-            const [
-              ['E', rootVideoId, '', 'author_pub'],
-              ['K', '34236'],
-              ['P', 'author_pub'],
-            ],
-            'minimal comment',
-          ),
+          (_) async => Event('d' * 64, 1111, const [
+            ['E', rootVideoId, '', 'author_pub'],
+            ['K', '34236'],
+            ['P', 'author_pub'],
+          ], 'minimal comment'),
         );
 
         final resolved = await resolver
-            .resolveVideoEventIdFromNotificationTarget(
-              'comment_minimal',
-            );
+            .resolveVideoEventIdFromNotificationTarget('comment_minimal');
 
         expect(resolved, equals(rootVideoId));
       },
@@ -161,40 +140,26 @@ void main() {
           () => videoEventService.getVideoById('comment_1'),
         ).thenReturn(null);
         when(() => nostrClient.fetchEventById('comment_1')).thenAnswer(
-          (_) async => Event(
-            'e' * 64,
-            1111,
-            const [
-              ['e', 'root_video_1', '', 'root'],
-              ['e', 'parent_comment_1', '', 'reply'],
-            ],
-            'comment',
-          ),
+          (_) async => Event('e' * 64, 1111, const [
+            ['e', 'root_video_1', '', 'root'],
+            ['e', 'parent_comment_1', '', 'reply'],
+          ], 'comment'),
         );
 
         final resolved = await resolver
-            .resolveVideoEventIdFromNotificationTarget(
-              'comment_1',
-            );
+            .resolveVideoEventIdFromNotificationTarget('comment_1');
 
         expect(resolved, equals('root_video_1'));
       },
     );
 
     test('returns null when no resolvable video tags exist', () async {
-      when(
-        () => videoEventService.getVideoById('comment_2'),
-      ).thenReturn(null);
+      when(() => videoEventService.getVideoById('comment_2')).thenReturn(null);
       when(() => nostrClient.fetchEventById('comment_2')).thenAnswer(
-        (_) async => Event(
-          'f' * 64,
-          1111,
-          const [
-            ['p', 'author_pubkey'],
-            ['t', 'comment'],
-          ],
-          'comment',
-        ),
+        (_) async => Event('f' * 64, 1111, const [
+          ['p', 'author_pubkey'],
+          ['t', 'comment'],
+        ], 'comment'),
       );
 
       final resolved = await resolver.resolveVideoEventIdFromNotificationTarget(

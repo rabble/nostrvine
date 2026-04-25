@@ -104,65 +104,63 @@ void main() {
     });
 
     group('recorder mode switch', () {
-      testWidgets(
-        'renders $VideoMetadataCaptureStack when mode is capture',
-        (tester) async {
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                clipManagerProvider.overrideWith(
-                  () => _MockClipManagerNotifier([testClip]),
+      testWidgets('renders $VideoMetadataCaptureStack when mode is capture', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
+              ),
+              videoRecorderProvider.overrideWith(
+                () => _MockVideoRecorderNotifier(
+                  const VideoRecorderProviderState(),
                 ),
-                videoRecorderProvider.overrideWith(
-                  () => _MockVideoRecorderNotifier(
-                    const VideoRecorderProviderState(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoMetadataCaptureStack), findsOneWidget);
+        expect(find.byType(VideoMetadataClassicStack), findsNothing);
+      });
+
+      testWidgets('renders $VideoMetadataClassicStack when mode is classic', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
+              ),
+              videoRecorderProvider.overrideWith(
+                () => _MockVideoRecorderNotifier(
+                  const VideoRecorderProviderState(
+                    recorderMode: VideoRecorderMode.classic,
                   ),
                 ),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoMetadataScreen(),
               ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
             ),
-          );
-          await tester.pumpAndSettle();
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          expect(find.byType(VideoMetadataCaptureStack), findsOneWidget);
-          expect(find.byType(VideoMetadataClassicStack), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'renders $VideoMetadataClassicStack when mode is classic',
-        (tester) async {
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                clipManagerProvider.overrideWith(
-                  () => _MockClipManagerNotifier([testClip]),
-                ),
-                videoRecorderProvider.overrideWith(
-                  () => _MockVideoRecorderNotifier(
-                    const VideoRecorderProviderState(
-                      recorderMode: VideoRecorderMode.classic,
-                    ),
-                  ),
-                ),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoMetadataScreen(),
-              ),
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.byType(VideoMetadataClassicStack), findsOneWidget);
-          expect(find.byType(VideoMetadataCaptureStack), findsNothing);
-        },
-      );
+        expect(find.byType(VideoMetadataClassicStack), findsOneWidget);
+        expect(find.byType(VideoMetadataCaptureStack), findsNothing);
+      });
     });
   });
 }

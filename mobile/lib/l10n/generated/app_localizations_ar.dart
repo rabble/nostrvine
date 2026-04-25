@@ -4758,6 +4758,24 @@ class AppLocalizationsAr extends AppLocalizations {
       'اكتشف شيئًا مثيرًا للاهتمام';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'القوائم';
 
   @override
@@ -5277,20 +5295,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'إنهاء تحرير الجدول الزمني';
 
   @override
-  String get videoEditorSortNewest => 'الأحدث';
-
-  @override
-  String get videoEditorSortLongest => 'الأطول';
-
-  @override
-  String get videoEditorSortShortest => 'الأقصر';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'ترتيب حسب $option. اضغط لتغيير ترتيب الفرز';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'تشغيل المعاينة';
 
   @override
@@ -5299,9 +5303,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'صوت بدون عنوان';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'اختيار صوت';
 
   @override
   String get videoEditorAudioUntitled => 'بدون عنوان';
@@ -5317,16 +5318,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'ستظهر الأصوات هنا عندما يشاركها المبدعون';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'لم يتم العثور على أصوات';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle => 'جرّب مصطلح بحث مختلف';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'فشل تحميل الأصوات';
 
   @override
   String get videoEditorAudioSegmentInstruction => 'حدّد مقطع الصوت لفيديوك';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'المجتمع';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'أداة السهم';

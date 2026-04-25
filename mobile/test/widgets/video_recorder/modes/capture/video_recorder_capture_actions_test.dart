@@ -54,9 +54,7 @@ void main() {
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoRecorderCaptureActions(),
-          ),
+          home: Scaffold(body: VideoRecorderCaptureActions()),
         ),
       );
     }
@@ -142,9 +140,7 @@ void main() {
     });
 
     group('switch camera button', () {
-      testWidgets('is disabled when canSwitchCamera is false', (
-        tester,
-      ) async {
+      testWidgets('is disabled when canSwitchCamera is false', (tester) async {
         await tester.pumpWidget(buildWidget(canSwitchCamera: false));
         await tester.pumpAndSettle();
 

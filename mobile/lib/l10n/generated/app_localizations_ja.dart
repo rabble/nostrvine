@@ -4598,6 +4598,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => '面白いものを見つけよう';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'リスト';
 
   @override
@@ -5105,20 +5123,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorFinishTimelineEditingSemanticLabel => 'タイムライン編集を終了';
 
   @override
-  String get videoEditorSortNewest => '新しい順';
-
-  @override
-  String get videoEditorSortLongest => '長い順';
-
-  @override
-  String get videoEditorSortShortest => '短い順';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return '$optionで並べ替え。タップして並べ替え順を変更';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'プレビューを再生';
 
   @override
@@ -5126,9 +5130,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'タイトルなしのサウンド';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'サウンドを選択';
 
   @override
   String get videoEditorAudioUntitled => 'タイトルなし';
@@ -5144,16 +5145,16 @@ class AppLocalizationsJa extends AppLocalizations {
       'クリエイターがオーディオを共有するとここに表示されます';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'サウンドが見つかりません';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle => '別の検索ワードをお試しください';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'サウンドの読み込みに失敗';
 
   @override
   String get videoEditorAudioSegmentInstruction => '動画に使うオーディオ範囲を選択';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'コミュニティ';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => '矢印ツール';

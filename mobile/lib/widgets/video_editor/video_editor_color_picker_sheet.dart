@@ -137,10 +137,7 @@ class _VideoEditorColorPickerSheetState
         return SingleChildScrollView(
           padding: .only(bottom: MediaQuery.viewPaddingOf(context).bottom),
           child: GridView.builder(
-            padding: EdgeInsets.symmetric(
-              horizontal: spacing,
-              vertical: 32,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: spacing, vertical: 32),
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -484,10 +481,7 @@ class _SatBrightPainter extends CustomPainter {
 }
 
 class _HueBar extends StatelessWidget {
-  const _HueBar({
-    required this.hue,
-    required this.onChanged,
-  });
+  const _HueBar({required this.hue, required this.onChanged});
 
   final double hue;
   final ValueChanged<double> onChanged;

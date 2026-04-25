@@ -35,9 +35,7 @@ void main() {
           body: Stack(
             children: [
               Positioned.fill(
-                child: DoubleTapHeartOverlay(
-                  trigger: customTrigger ?? trigger,
-                ),
+                child: DoubleTapHeartOverlay(trigger: customTrigger ?? trigger),
               ),
             ],
           ),
@@ -61,9 +59,7 @@ void main() {
       expect(find.byType(DivineIcon), findsOneWidget);
     });
 
-    testWidgets('heart disappears after animation completes', (
-      tester,
-    ) async {
+    testWidgets('heart disappears after animation completes', (tester) async {
       await tester.pumpWidget(buildWidget());
 
       fire(const Offset(100, 200));
@@ -125,17 +121,12 @@ void main() {
       expect(overlay, findsOneWidget);
 
       expect(
-        find.descendant(
-          of: overlay,
-          matching: find.byType(IgnorePointer),
-        ),
+        find.descendant(of: overlay, matching: find.byType(IgnorePointer)),
         findsOneWidget,
       );
     });
 
-    testWidgets('respects trigger swap via didUpdateWidget', (
-      tester,
-    ) async {
+    testWidgets('respects trigger swap via didUpdateWidget', (tester) async {
       await tester.pumpWidget(buildWidget());
 
       final newTrigger = ValueNotifier<HeartTrigger?>(null);

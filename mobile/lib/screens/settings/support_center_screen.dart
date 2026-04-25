@@ -49,11 +49,8 @@ class SupportCenterScreen extends ConsumerWidget {
                 icon: Icons.bug_report,
                 title: l10n.supportReportBug,
                 subtitle: l10n.supportReportBugSubtitle,
-                onTap: () => _showBugReport(
-                  context,
-                  bugReportService,
-                  userPubkey,
-                ),
+                onTap: () =>
+                    _showBugReport(context, bugReportService, userPubkey),
               ),
               _SupportTile(
                 icon: Icons.lightbulb,
@@ -65,11 +62,7 @@ class SupportCenterScreen extends ConsumerWidget {
                 icon: Icons.save,
                 title: l10n.supportSaveLogs,
                 subtitle: l10n.supportSaveLogsSubtitle,
-                onTap: () => _exportLogs(
-                  context,
-                  bugReportService,
-                  userPubkey,
-                ),
+                onTap: () => _exportLogs(context, bugReportService, userPubkey),
               ),
               _SupportTile(
                 icon: Icons.help,
@@ -195,9 +188,7 @@ class SupportCenterScreen extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                context.l10n.supportCouldNotOpenPage(pageName),
-              ),
+              content: Text(context.l10n.supportCouldNotOpenPage(pageName)),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -207,9 +198,7 @@ class SupportCenterScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.supportErrorOpeningPage(pageName, e),
-            ),
+            content: Text(context.l10n.supportErrorOpeningPage(pageName, e)),
             backgroundColor: VineTheme.error,
           ),
         );

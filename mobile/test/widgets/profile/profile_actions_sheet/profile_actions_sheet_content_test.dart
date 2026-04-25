@@ -119,60 +119,58 @@ void main() {
         expect(find.text('Complete Your Profile'), findsNothing);
       });
 
-      testWidgets(
-        'Maybe Later on first action transitions to second action',
-        (tester) async {
-          await tester.pumpWidget(
-            buildApp(
-              actions: [
-                ProfileActionType.secureAccount,
-                ProfileActionType.completeProfile,
-              ],
-            ),
-          );
-          await tester.tap(find.text('Open'));
-          await tester.pumpAndSettle();
+      testWidgets('Maybe Later on first action transitions to second action', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildApp(
+            actions: [
+              ProfileActionType.secureAccount,
+              ProfileActionType.completeProfile,
+            ],
+          ),
+        );
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
 
-          // Tap Maybe Later on first action
-          await tester.tap(find.text('Maybe Later'));
-          // Pump through the 600ms animation
-          await tester.pump(const Duration(milliseconds: 700));
-          await tester.pumpAndSettle();
+        // Tap Maybe Later on first action
+        await tester.tap(find.text('Maybe Later'));
+        // Pump through the 600ms animation
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pumpAndSettle();
 
-          // Second action should now be visible
-          expect(find.text('Complete Your Profile'), findsOneWidget);
-          expect(find.text('Update Your Profile'), findsOneWidget);
-        },
-      );
+        // Second action should now be visible
+        expect(find.text('Complete Your Profile'), findsOneWidget);
+        expect(find.text('Update Your Profile'), findsOneWidget);
+      });
 
-      testWidgets(
-        'Maybe Later on second action dismisses sheet',
-        (tester) async {
-          await tester.pumpWidget(
-            buildApp(
-              actions: [
-                ProfileActionType.secureAccount,
-                ProfileActionType.completeProfile,
-              ],
-            ),
-          );
-          await tester.tap(find.text('Open'));
-          await tester.pumpAndSettle();
+      testWidgets('Maybe Later on second action dismisses sheet', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildApp(
+            actions: [
+              ProfileActionType.secureAccount,
+              ProfileActionType.completeProfile,
+            ],
+          ),
+        );
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
 
-          // Skip to second action
-          await tester.tap(find.text('Maybe Later'));
-          await tester.pump(const Duration(milliseconds: 700));
-          await tester.pumpAndSettle();
+        // Skip to second action
+        await tester.tap(find.text('Maybe Later'));
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pumpAndSettle();
 
-          // Dismiss second action
-          await tester.tap(find.text('Maybe Later'));
-          await tester.pumpAndSettle();
+        // Dismiss second action
+        await tester.tap(find.text('Maybe Later'));
+        await tester.pumpAndSettle();
 
-          // Sheet should be fully dismissed
-          expect(find.text('Complete Your Profile'), findsNothing);
-          expect(find.text('Secure Your Account'), findsNothing);
-        },
-      );
+        // Sheet should be fully dismissed
+        expect(find.text('Complete Your Profile'), findsNothing);
+        expect(find.text('Secure Your Account'), findsNothing);
+      });
     });
   });
 }

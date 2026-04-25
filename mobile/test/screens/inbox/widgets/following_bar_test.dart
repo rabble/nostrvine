@@ -73,9 +73,7 @@ void main() {
       testWidgets('renders $SizedBox when following list is empty', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          buildSubject(state: const MyFollowingState()),
-        );
+        await tester.pumpWidget(buildSubject(state: const MyFollowingState()));
         await tester.pumpAndSettle();
 
         expect(find.byType(FollowingBar), findsOneWidget);
@@ -90,10 +88,7 @@ void main() {
           pubkey: pubkey1,
           displayName: 'Alice',
         );
-        final profile2 = createTestProfile(
-          pubkey: pubkey2,
-          displayName: 'Bob',
-        );
+        final profile2 = createTestProfile(pubkey: pubkey2, displayName: 'Bob');
 
         await tester.pumpWidget(
           buildSubject(
@@ -102,12 +97,12 @@ void main() {
               followingPubkeys: [pubkey1, pubkey2],
             ),
             additionalOverrides: [
-              fetchUserProfileProvider(pubkey1).overrideWith(
-                (ref) async => profile1,
-              ),
-              fetchUserProfileProvider(pubkey2).overrideWith(
-                (ref) async => profile2,
-              ),
+              fetchUserProfileProvider(
+                pubkey1,
+              ).overrideWith((ref) async => profile1),
+              fetchUserProfileProvider(
+                pubkey2,
+              ).overrideWith((ref) async => profile2),
             ],
           ),
         );
@@ -138,12 +133,12 @@ void main() {
                 followingPubkeys: [pubkey1, pubkey2],
               ),
               additionalOverrides: [
-                fetchUserProfileProvider(pubkey1).overrideWith(
-                  (ref) async => profile1,
-                ),
-                fetchUserProfileProvider(pubkey2).overrideWith(
-                  (ref) async => profile2,
-                ),
+                fetchUserProfileProvider(
+                  pubkey1,
+                ).overrideWith((ref) async => profile1),
+                fetchUserProfileProvider(
+                  pubkey2,
+                ).overrideWith((ref) async => profile2),
               ],
               onUserTapped: (pk) => tappedPubkey = pk,
             ),

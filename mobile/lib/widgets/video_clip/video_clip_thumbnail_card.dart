@@ -99,9 +99,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                       _DurationBadge(clip: widget.clip),
 
                     /// Selection check circle - top right
-                    _SelectionOverlay(
-                      selectionIndex: widget.selectionIndex,
-                    ),
+                    _SelectionOverlay(selectionIndex: widget.selectionIndex),
                   ],
                 ),
               ),

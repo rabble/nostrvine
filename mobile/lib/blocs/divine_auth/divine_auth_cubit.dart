@@ -372,9 +372,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
             code: inviteCode,
             keyContainer: pendingKey,
           );
-          await _authService.createAnonymousAccountFromKeyContainer(
-            pendingKey,
-          );
+          await _authService.createAnonymousAccountFromKeyContainer(pendingKey);
         } finally {
           pendingKey.dispose();
         }

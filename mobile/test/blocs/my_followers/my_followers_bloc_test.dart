@@ -53,15 +53,10 @@ void main() {
         'emits [loading, success] when no cache exists',
         setUp: () {
           when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) => Stream.value(
-              (
-                pubkeys: [
-                  validPubkey('follower1'),
-                  validPubkey('follower2'),
-                ],
-                count: 2,
-              ),
-            ),
+            (_) => Stream.value((
+              pubkeys: [validPubkey('follower1'), validPubkey('follower2')],
+              count: 2,
+            )),
           );
         },
         build: createBloc,
@@ -86,10 +81,7 @@ void main() {
             (_) => Stream.fromIterable([
               (pubkeys: [validPubkey('old')], count: 1),
               (
-                pubkeys: [
-                  validPubkey('follower1'),
-                  validPubkey('follower2'),
-                ],
+                pubkeys: [validPubkey('follower1'), validPubkey('follower2')],
                 count: 2,
               ),
             ]),
@@ -119,9 +111,8 @@ void main() {
         'uses higher count from service when list is incomplete',
         setUp: () {
           when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) => Stream.value(
-              (pubkeys: [validPubkey('follower1')], count: 500),
-            ),
+            (_) =>
+                Stream.value((pubkeys: [validPubkey('follower1')], count: 500)),
           );
         },
         build: createBloc,
@@ -139,9 +130,9 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'emits [loading, success] with empty list when no followers',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) => Stream.value((pubkeys: <String>[], count: 0)),
-          );
+          when(
+            () => mockFollowRepository.watchMyFollowers(),
+          ).thenAnswer((_) => Stream.value((pubkeys: <String>[], count: 0)));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
@@ -154,9 +145,9 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'emits [loading, failure] when stream throws and no data',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) => Stream.error(Exception('Network error')),
-          );
+          when(
+            () => mockFollowRepository.watchMyFollowers(),
+          ).thenAnswer((_) => Stream.error(Exception('Network error')));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
@@ -169,12 +160,12 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'keeps cached data when stream errors after first yield',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) async* {
-              yield (pubkeys: [validPubkey('cached')], count: 1);
-              throw Exception('Network error');
-            },
-          );
+          when(() => mockFollowRepository.watchMyFollowers()).thenAnswer((
+            _,
+          ) async* {
+            yield (pubkeys: [validPubkey('cached')], count: 1);
+            throw Exception('Network error');
+          });
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
@@ -197,9 +188,8 @@ void main() {
           ).thenReturn(true);
 
           when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) => Stream.value(
-              (pubkeys: [blocked, validPubkey('ok')], count: 2),
-            ),
+            (_) =>
+                Stream.value((pubkeys: [blocked, validPubkey('ok')], count: 2)),
           );
         },
         build: createBloc,
@@ -220,12 +210,10 @@ void main() {
         're-filters followers when blocklist changes',
         setUp: () {
           when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) => Stream.value(
-              (
-                pubkeys: [validPubkey('a'), validPubkey('b')],
-                count: 2,
-              ),
-            ),
+            (_) => Stream.value((
+              pubkeys: [validPubkey('a'), validPubkey('b')],
+              count: 2,
+            )),
           );
         },
         build: createBloc,

@@ -75,9 +75,7 @@ void main() {
                 originalClipAspectRatio: 9 / 16,
                 bodySizeNotifier: bodySizeNotifier,
                 fromLibrary: false,
-                child: const Scaffold(
-                  body: VideoEditorFilterBottomBar(),
-                ),
+                child: const Scaffold(body: VideoEditorFilterBottomBar()),
               ),
             ),
           ),

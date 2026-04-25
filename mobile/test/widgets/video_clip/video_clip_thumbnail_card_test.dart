@@ -55,17 +55,13 @@ void main() {
       });
 
       testWidgets('selection index when selected', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(selectionIndex: 2),
-        );
+        await tester.pumpWidget(buildWidget(selectionIndex: 2));
 
         expect(find.text('2'), findsOneWidget);
       });
 
       testWidgets('no selection index text when not selected', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(),
-        );
+        await tester.pumpWidget(buildWidget());
 
         // Selection overlay exists but without the number
         expect(find.text('1'), findsNothing);
@@ -93,9 +89,7 @@ void main() {
     group('interactions', () {
       testWidgets('calls onTap when tapped', (tester) async {
         var tapped = false;
-        await tester.pumpWidget(
-          buildWidget(onTap: () => tapped = true),
-        );
+        await tester.pumpWidget(buildWidget(onTap: () => tapped = true));
 
         await tester.tap(find.byType(VideoClipThumbnailCard));
         expect(tapped, isTrue);
@@ -124,10 +118,7 @@ void main() {
       testWidgets('does not call onLongPress when disabled', (tester) async {
         var longPressed = false;
         await tester.pumpWidget(
-          buildWidget(
-            disabled: true,
-            onLongPress: () => longPressed = true,
-          ),
+          buildWidget(disabled: true, onLongPress: () => longPressed = true),
         );
 
         await tester.longPress(find.byType(VideoClipThumbnailCard));
@@ -145,19 +136,14 @@ void main() {
         );
       });
 
-      testWidgets(
-        'has correct semantics value when selected',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidget(selectionIndex: 1),
-          );
+      testWidgets('has correct semantics value when selected', (tester) async {
+        await tester.pumpWidget(buildWidget(selectionIndex: 1));
 
-          final semantics = tester.getSemantics(
-            find.byType(VideoClipThumbnailCard),
-          );
-          expect(semantics.value, equals('Selected'));
-        },
-      );
+        final semantics = tester.getSemantics(
+          find.byType(VideoClipThumbnailCard),
+        );
+        expect(semantics.value, equals('Selected'));
+      });
     });
   });
 }

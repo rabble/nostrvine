@@ -33,9 +33,7 @@ void main() {
       await mockCamera.initialize();
 
       // Create a minimal valid PNG file for Image.file
-      tempFile = File(
-        '${Directory.systemTemp.path}/ghost_frame_test.png',
-      );
+      tempFile = File('${Directory.systemTemp.path}/ghost_frame_test.png');
       // 1x1 transparent PNG
       await tempFile.writeAsBytes([
         0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
@@ -96,9 +94,7 @@ void main() {
     group('renders', () {
       testWidgets('$SizedBox when showOverlay is false', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            clips: [createClip(ghostFramePath: tempFile.path)],
-          ),
+          buildTestWidget(clips: [createClip(ghostFramePath: tempFile.path)]),
         );
 
         // Default showLastClipOverlay is false
@@ -151,9 +147,7 @@ void main() {
 
         // Our IgnorePointer has ignoring: true and a ValueKey
         expect(
-          find.byWidgetPredicate(
-            (w) => w is IgnorePointer && w.ignoring,
-          ),
+          find.byWidgetPredicate((w) => w is IgnorePointer && w.ignoring),
           findsOneWidget,
         );
       });
@@ -200,15 +194,11 @@ void main() {
 
         // Should still show the ghost frame from clip_1
         expect(
-          find.byWidgetPredicate(
-            (w) => w is IgnorePointer && w.ignoring,
-          ),
+          find.byWidgetPredicate((w) => w is IgnorePointer && w.ignoring),
           findsOneWidget,
         );
         expect(
-          find.byWidgetPredicate(
-            (w) => w is Opacity && w.opacity == 0.48,
-          ),
+          find.byWidgetPredicate((w) => w is Opacity && w.opacity == 0.48),
           findsOneWidget,
         );
       });

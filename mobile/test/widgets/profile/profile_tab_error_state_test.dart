@@ -11,9 +11,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
-        home: Scaffold(
-          body: ProfileTabErrorState(message: message),
-        ),
+        home: Scaffold(body: ProfileTabErrorState(message: message)),
       );
     }
 

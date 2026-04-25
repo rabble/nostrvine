@@ -26,9 +26,7 @@ void main() {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        theme: ThemeData(
-          scaffoldBackgroundColor: VineTheme.backgroundColor,
-        ),
+        theme: ThemeData(scaffoldBackgroundColor: VineTheme.backgroundColor),
         home: BlocProvider<LocaleCubit>.value(
           value: localeCubit,
           child: const AppLanguageScreen(),
@@ -62,9 +60,9 @@ void main() {
     ) async {
       when(() => localeCubit.clearLocale()).thenAnswer((_) async {});
 
-      when(() => localeCubit.state).thenReturn(
-        const LocaleState(locale: Locale('es')),
-      );
+      when(
+        () => localeCubit.state,
+      ).thenReturn(const LocaleState(locale: Locale('es')));
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -76,9 +74,9 @@ void main() {
     });
 
     testWidgets('shows selected radio for current locale', (tester) async {
-      when(() => localeCubit.state).thenReturn(
-        const LocaleState(locale: Locale('fr')),
-      );
+      when(
+        () => localeCubit.state,
+      ).thenReturn(const LocaleState(locale: Locale('fr')));
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -93,9 +91,9 @@ void main() {
     testWidgets('shows unselected radio for non-current locale', (
       tester,
     ) async {
-      when(() => localeCubit.state).thenReturn(
-        const LocaleState(locale: Locale('fr')),
-      );
+      when(
+        () => localeCubit.state,
+      ).thenReturn(const LocaleState(locale: Locale('fr')));
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -109,19 +107,18 @@ void main() {
       expect(icon.icon, equals(Icons.radio_button_off));
     });
 
-    testWidgets(
-      'renders visible locale tiles from supportedLocales',
-      (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+    testWidgets('renders visible locale tiles from supportedLocales', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-        // ListView is lazy — only a subset of tiles are built at once.
-        // Verify a few visible ones from the top of the list. Full map
-        // coverage is asserted in locale_preference_service_test.dart.
-        expect(find.text('Deutsch'), findsOneWidget);
-        expect(find.text('Español'), findsOneWidget);
-        expect(find.text('Français'), findsOneWidget);
-      },
-    );
+      // ListView is lazy — only a subset of tiles are built at once.
+      // Verify a few visible ones from the top of the list. Full map
+      // coverage is asserted in locale_preference_service_test.dart.
+      expect(find.text('Deutsch'), findsOneWidget);
+      expect(find.text('Español'), findsOneWidget);
+      expect(find.text('Français'), findsOneWidget);
+    });
   });
 }

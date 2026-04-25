@@ -4778,6 +4778,24 @@ class AppLocalizationsId extends AppLocalizations {
       'Temukan sesuatu yang menarik';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Daftar';
 
   @override
@@ -5303,20 +5321,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Selesai mengedit timeline';
 
   @override
-  String get videoEditorSortNewest => 'Terbaru';
-
-  @override
-  String get videoEditorSortLongest => 'Terpanjang';
-
-  @override
-  String get videoEditorSortShortest => 'Terpendek';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Urutkan berdasarkan $option. Ketuk untuk mengubah urutan';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'Putar pratinjau';
 
   @override
@@ -5324,9 +5328,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Suara tanpa judul';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Pilih suara';
 
   @override
   String get videoEditorAudioUntitled => 'Tanpa judul';
@@ -5343,18 +5344,17 @@ class AppLocalizationsId extends AppLocalizations {
       'Suara akan muncul di sini saat kreator berbagi audio';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'Suara tidak ditemukan';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Coba kata kunci pencarian lain';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'Gagal memuat suara';
 
   @override
   String get videoEditorAudioSegmentInstruction =>
       'Pilih segmen audio untuk videomu';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Komunitas';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Alat panah';

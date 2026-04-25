@@ -43,18 +43,15 @@ void main() {
     });
 
     group('stale session detection', () {
-      test(
-        'markFirstVideosReceived processes fresh session normally',
-        () {
-          tracker.startFeedLoad('home');
-          expect(tracker.activeSessionCount, 1);
+      test('markFirstVideosReceived processes fresh session normally', () {
+        tracker.startFeedLoad('home');
+        expect(tracker.activeSessionCount, 1);
 
-          tracker.markFirstVideosReceived('home', 5);
+        tracker.markFirstVideosReceived('home', 5);
 
-          // Session should still be active (not yet displayed)
-          expect(tracker.activeSessionCount, 1);
-        },
-      );
+        // Session should still be active (not yet displayed)
+        expect(tracker.activeSessionCount, 1);
+      });
 
       test('markFeedDisplayed removes session on completion', () {
         tracker.startFeedLoad('home');

@@ -111,10 +111,7 @@ void main() {
         expect(result.targetVideoThumbnail, video.thumbnailUrl);
         expect(
           result.timestamp,
-          DateTime.fromMillisecondsSinceEpoch(
-            1700000000 * 1000,
-            isUtc: true,
-          ),
+          DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
         );
       });
 

@@ -48,9 +48,7 @@ Future<void> hideContentWarningsLikeThese({
   if (matchedLabels.isEmpty) {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.contentWarningNoFilterYet),
-      ),
+      SnackBar(content: Text(context.l10n.contentWarningNoFilterYet)),
     );
     return;
   }
@@ -61,9 +59,7 @@ Future<void> hideContentWarningsLikeThese({
 
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(context.l10n.contentWarningHiddenConfirmation),
-    ),
+    SnackBar(content: Text(context.l10n.contentWarningHiddenConfirmation)),
   );
 }
 
@@ -115,9 +111,7 @@ class ContentWarningBlurOverlay extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     labels
-                        .map(
-                          (l) => humanizeContentLabel(context, l),
-                        )
+                        .map((l) => humanizeContentLabel(context, l))
                         .join(', '),
                     textAlign: TextAlign.center,
                     style: const TextStyle(

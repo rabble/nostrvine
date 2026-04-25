@@ -97,10 +97,7 @@ class SelectListDialog extends StatelessWidget {
                 },
                 child: Text(l10n.listNewList),
               ),
-              TextButton(
-                onPressed: context.pop,
-                child: Text(l10n.listDone),
-              ),
+              TextButton(onPressed: context.pop, child: Text(l10n.listDone)),
             ],
           );
         },

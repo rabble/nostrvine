@@ -58,13 +58,11 @@ void main() {
 
       return ProviderScope(
         overrides: [
-          fetchUserProfileProvider(_testUserHex).overrideWith(
-            (ref) async => riverpodProfile,
-          ),
+          fetchUserProfileProvider(
+            _testUserHex,
+          ).overrideWith((ref) async => riverpodProfile),
         ],
-        child: MaterialApp(
-          home: Scaffold(body: layer),
-        ),
+        child: MaterialApp(home: Scaffold(body: layer)),
       );
     }
 
@@ -85,84 +83,71 @@ void main() {
       },
     );
 
-    testWidgets(
-      'falls back to profileColor when banner field is a hex color',
-      (tester) async {
-        // Vine-imported profiles store a hex color in the banner field;
-        // hasBannerImage is false, profileBackgroundColor resolves the hex.
-        await tester.pumpWidget(
-          buildSubject(
-            isOwnProfile: true,
-            myProfile: _profileWithBanner('0x336699'),
-          ),
-        );
-        await tester.pump();
+    testWidgets('falls back to profileColor when banner field is a hex color', (
+      tester,
+    ) async {
+      // Vine-imported profiles store a hex color in the banner field;
+      // hasBannerImage is false, profileBackgroundColor resolves the hex.
+      await tester.pumpWidget(
+        buildSubject(
+          isOwnProfile: true,
+          myProfile: _profileWithBanner('0x336699'),
+        ),
+      );
+      await tester.pump();
 
-        final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
-        expect(banner.bannerUrl, isNull);
-        expect(banner.profileColor, isNotNull);
-      },
-    );
+      final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
+      expect(banner.bannerUrl, isNull);
+      expect(banner.profileColor, isNotNull);
+    });
 
-    testWidgets(
-      'renders default banner when profile has no banner field',
-      (tester) async {
-        await tester.pumpWidget(
-          buildSubject(
-            isOwnProfile: true,
-            myProfile: _profileWithBanner(null),
-          ),
-        );
-        await tester.pump();
+    testWidgets('renders default banner when profile has no banner field', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(isOwnProfile: true, myProfile: _profileWithBanner(null)),
+      );
+      await tester.pump();
 
-        final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
-        expect(banner.bannerUrl, isNull);
-        expect(banner.profileColor, isNull);
-      },
-    );
+      final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
+      expect(banner.bannerUrl, isNull);
+      expect(banner.profileColor, isNull);
+    });
 
-    testWidgets(
-      'uses widget.profile for other profiles when supplied',
-      (tester) async {
-        await tester.pumpWidget(
-          buildSubject(
-            isOwnProfile: false,
-            suppliedProfile: _profileWithBanner(
-              'https://example.com/other.jpg',
-            ),
-          ),
-        );
-        await tester.pump();
+    testWidgets('uses widget.profile for other profiles when supplied', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          isOwnProfile: false,
+          suppliedProfile: _profileWithBanner('https://example.com/other.jpg'),
+        ),
+      );
+      await tester.pump();
 
-        final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
-        expect(banner.bannerUrl, equals('https://example.com/other.jpg'));
-      },
-    );
+      final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
+      expect(banner.bannerUrl, equals('https://example.com/other.jpg'));
+    });
 
-    testWidgets(
-      'falls back to fetchUserProfileProvider for other profiles',
-      (tester) async {
-        await tester.pumpWidget(
-          buildSubject(
-            isOwnProfile: false,
-            riverpodProfile: _profileWithBanner(
-              'https://example.com/relay.jpg',
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('falls back to fetchUserProfileProvider for other profiles', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          isOwnProfile: false,
+          riverpodProfile: _profileWithBanner('https://example.com/relay.jpg'),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
-        expect(banner.bannerUrl, equals('https://example.com/relay.jpg'));
-      },
-    );
+      final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
+      expect(banner.bannerUrl, equals('https://example.com/relay.jpg'));
+    });
 
     testWidgets(
       'renders default banner when own MyProfile state has no profile',
       (tester) async {
-        await tester.pumpWidget(
-          buildSubject(isOwnProfile: true),
-        );
+        await tester.pumpWidget(buildSubject(isOwnProfile: true));
         await tester.pump();
 
         // No banner data anywhere → ProfileBanner falls back to gradient.

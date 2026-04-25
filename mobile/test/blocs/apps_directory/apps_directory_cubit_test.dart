@@ -15,9 +15,7 @@ void main() {
     });
 
     test('initial state is correct', () {
-      final cubit = AppsDirectoryCubit(
-        directoryService: mockService,
-      );
+      final cubit = AppsDirectoryCubit(directoryService: mockService);
       expect(cubit.state.status, AppsDirectoryStatus.initial);
       expect(cubit.state.apps, isEmpty);
     });
@@ -25,50 +23,32 @@ void main() {
     blocTest<AppsDirectoryCubit, AppsDirectoryState>(
       'emits [loading, loaded] when loadApps succeeds',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenAnswer(
-          (_) async => [_fixture()],
-        );
+        when(
+          mockService.fetchApprovedApps,
+        ).thenAnswer((_) async => [_fixture()]);
       },
-      build: () => AppsDirectoryCubit(
-        directoryService: mockService,
-      ),
+      build: () => AppsDirectoryCubit(directoryService: mockService),
       act: (cubit) => cubit.loadApps(),
       expect: () => [
-        const AppsDirectoryState(
-          status: AppsDirectoryStatus.loading,
-        ),
+        const AppsDirectoryState(status: AppsDirectoryStatus.loading),
         isA<AppsDirectoryState>()
-            .having(
-              (s) => s.status,
-              'status',
-              AppsDirectoryStatus.loaded,
-            )
-            .having(
-              (s) => s.apps.length,
-              'apps.length',
-              1,
-            ),
+            .having((s) => s.status, 'status', AppsDirectoryStatus.loaded)
+            .having((s) => s.apps.length, 'apps.length', 1),
       ],
     );
 
     blocTest<AppsDirectoryCubit, AppsDirectoryState>(
       'emits [loading, error] when loadApps fails',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenThrow(
-          Exception('network error'),
-        );
+        when(
+          mockService.fetchApprovedApps,
+        ).thenThrow(Exception('network error'));
       },
-      build: () => AppsDirectoryCubit(
-        directoryService: mockService,
-      ),
+      build: () => AppsDirectoryCubit(directoryService: mockService),
       act: (cubit) => cubit.loadApps(),
       expect: () => [
-        const AppsDirectoryState(
-          status: AppsDirectoryStatus.loading,
-        ),
-        const AppsDirectoryState(
-          status: AppsDirectoryStatus.error,
-        ),
+        const AppsDirectoryState(status: AppsDirectoryStatus.loading),
+        const AppsDirectoryState(status: AppsDirectoryStatus.error),
       ],
       errors: () => [isA<Exception>()],
     );
@@ -76,44 +56,30 @@ void main() {
     blocTest<AppsDirectoryCubit, AppsDirectoryState>(
       'emits [loaded] when refreshApps succeeds',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenAnswer(
-          (_) async => [_fixture()],
-        );
+        when(
+          mockService.fetchApprovedApps,
+        ).thenAnswer((_) async => [_fixture()]);
       },
-      build: () => AppsDirectoryCubit(
-        directoryService: mockService,
-      ),
+      build: () => AppsDirectoryCubit(directoryService: mockService),
       act: (cubit) => cubit.refreshApps(),
       expect: () => [
         isA<AppsDirectoryState>()
-            .having(
-              (s) => s.status,
-              'status',
-              AppsDirectoryStatus.loaded,
-            )
-            .having(
-              (s) => s.apps.length,
-              'apps.length',
-              1,
-            ),
+            .having((s) => s.status, 'status', AppsDirectoryStatus.loaded)
+            .having((s) => s.apps.length, 'apps.length', 1),
       ],
     );
 
     blocTest<AppsDirectoryCubit, AppsDirectoryState>(
       'emits [error] when refreshApps fails',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenThrow(
-          Exception('network error'),
-        );
+        when(
+          mockService.fetchApprovedApps,
+        ).thenThrow(Exception('network error'));
       },
-      build: () => AppsDirectoryCubit(
-        directoryService: mockService,
-      ),
+      build: () => AppsDirectoryCubit(directoryService: mockService),
       act: (cubit) => cubit.refreshApps(),
       expect: () => [
-        const AppsDirectoryState(
-          status: AppsDirectoryStatus.error,
-        ),
+        const AppsDirectoryState(status: AppsDirectoryStatus.error),
       ],
       errors: () => [isA<Exception>()],
     );

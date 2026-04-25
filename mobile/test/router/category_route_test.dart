@@ -14,9 +14,7 @@ void main() {
     });
 
     test('parseRoute treats category gallery as its own route type', () {
-      final context = parseRoute(
-        CategoryGalleryScreen.locationFor('animals'),
-      );
+      final context = parseRoute(CategoryGalleryScreen.locationFor('animals'));
 
       expect(context.type, RouteType.categoryGallery);
       expect(context.categoryName, 'animals');

@@ -80,9 +80,7 @@ void main() {
                 mockDmRepository.getMessages(any(), limit: any(named: 'limit')),
           ).thenAnswer((_) async => [inviteMessage]);
         },
-        build: () => buildCubit(
-          initialParticipantPubkeys: [otherPubkey],
-        ),
+        build: () => buildCubit(initialParticipantPubkeys: [otherPubkey]),
         act: (cubit) => cubit.load(),
         expect: () => [
           const RequestPreviewState(
@@ -109,9 +107,7 @@ void main() {
           when(
             () => mockDmRepository.countMessagesInConversation(any()),
           ).thenAnswer((_) async => 3);
-          when(
-            () => mockDmRepository.getConversation(any()),
-          ).thenAnswer(
+          when(() => mockDmRepository.getConversation(any())).thenAnswer(
             (_) async => DmConversation(
               id: conversationId,
               participantPubkeys: const [testPubkey, otherPubkey],

@@ -12,14 +12,8 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
   InviteGateBloc({required InviteApiClient inviteApiClient})
     : _inviteApiClient = inviteApiClient,
       super(const InviteGateState()) {
-    on<InviteGateConfigRequested>(
-      _onConfigRequested,
-      transformer: droppable(),
-    );
-    on<InviteGateCodeSubmitted>(
-      _onCodeSubmitted,
-      transformer: droppable(),
-    );
+    on<InviteGateConfigRequested>(_onConfigRequested, transformer: droppable());
+    on<InviteGateCodeSubmitted>(_onCodeSubmitted, transformer: droppable());
     on<InviteGateGeneralErrorSet>(_onGeneralErrorSet);
     on<InviteGateTransientCleared>(_onTransientCleared);
     on<InviteGateAccessGranted>(_onAccessGranted);
@@ -179,9 +173,7 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
       return;
     }
 
-    emit(
-      state.copyWith(clearInviteCodeError: true, clearGeneralError: true),
-    );
+    emit(state.copyWith(clearInviteCodeError: true, clearGeneralError: true));
   }
 
   void _onAccessGranted(

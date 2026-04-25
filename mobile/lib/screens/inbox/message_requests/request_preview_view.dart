@@ -74,9 +74,7 @@ class RequestPreviewView extends ConsumerWidget {
                   messages: messages,
                 ),
               ),
-              _ActionButtons(
-                participantPubkeys: participantPubkeys,
-              ),
+              _ActionButtons(participantPubkeys: participantPubkeys),
             ],
           ),
         ),
@@ -111,18 +109,11 @@ class _ProfileContent extends StatelessWidget {
       color: VineTheme.scrim15,
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 64,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 64),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              UserAvatar(
-                imageUrl: imageUrl,
-                name: displayName,
-                size: 96,
-              ),
+              UserAvatar(imageUrl: imageUrl, name: displayName, size: 96),
               const SizedBox(height: 32),
               Text(
                 displayName,
@@ -244,9 +235,7 @@ class _MessageCountDescription extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({
-    required this.participantPubkeys,
-  });
+  const _ActionButtons({required this.participantPubkeys});
 
   final List<String> participantPubkeys;
 
@@ -289,10 +278,7 @@ class _ActionButtons extends StatelessWidget {
 }
 
 class _PrimaryActionButton extends StatelessWidget {
-  const _PrimaryActionButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _PrimaryActionButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -315,9 +301,7 @@ class _PrimaryActionButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               child: Text(
                 label,
-                style: VineTheme.titleMediumFont(
-                  color: VineTheme.onPrimary,
-                ),
+                style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -329,10 +313,7 @@ class _PrimaryActionButton extends StatelessWidget {
 }
 
 class _OutlinedActionButton extends StatelessWidget {
-  const _OutlinedActionButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _OutlinedActionButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -365,10 +346,7 @@ class _OutlinedActionButton extends StatelessWidget {
 }
 
 class _SecondaryActionButton extends StatelessWidget {
-  const _SecondaryActionButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _SecondaryActionButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;

@@ -4,7 +4,6 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
-import 'package:flutter/foundation.dart';
 import 'package:models/models.dart'
     show AspectRatio, AudioEvent, InspiredByInfo, NativeProofData;
 import 'package:openvine/models/content_label.dart';
@@ -399,6 +398,12 @@ class DivineVideoDraft {
   bool get canRetry => publishStatus == PublishStatus.failed;
   bool get isPublishing => publishStatus == PublishStatus.publishing;
 
+  bool get hasEditorStateEdits {
+    if (editorStateHistory.isEmpty) return false;
+
+    return ImportStateHistory.fromMap(editorStateHistory).editorPosition != -1;
+  }
+
   /// Whether the draft has been edited beyond its initial recording.
   ///
   /// Checks metadata and editor state but ignores clips.
@@ -410,11 +415,7 @@ class DivineVideoDraft {
       (hasTitle ||
           hasDescription ||
           hasHashtags ||
-          (editorStateHistory.isNotEmpty &&
-              !mapEquals(
-                editorStateHistory,
-                CompleteParameters.fromMap({}).toMap(),
-              )) ||
+          hasEditorStateEdits ||
           finalRenderedClip != null ||
           selectedSound != null ||
           contentWarning != null ||

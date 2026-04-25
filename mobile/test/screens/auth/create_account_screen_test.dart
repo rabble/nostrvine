@@ -86,9 +86,7 @@ void main() {
               ? InviteGateBloc(inviteApiClient: mockInviteApiClient)
               : _SeededInviteGateBloc(
                   inviteApiClient: mockInviteApiClient,
-                  initialState: InviteGateState(
-                    accessGrant: inviteAccessGrant,
-                  ),
+                  initialState: InviteGateState(accessGrant: inviteAccessGrant),
                 ),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -322,9 +320,8 @@ void main() {
                   child: RepositoryProvider<InviteApiClient>.value(
                     value: mockInviteApiClient,
                     child: BlocProvider(
-                      create: (_) => InviteGateBloc(
-                        inviteApiClient: mockInviteApiClient,
-                      ),
+                      create: (_) =>
+                          InviteGateBloc(inviteApiClient: mockInviteApiClient),
                       child: const CreateAccountScreen(),
                     ),
                   ),
@@ -362,9 +359,7 @@ void main() {
             'SecurePass123!',
           );
 
-          await tester.tap(
-            find.widgetWithText(DivineButton, 'Create account'),
-          );
+          await tester.tap(find.widgetWithText(DivineButton, 'Create account'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 100));
 

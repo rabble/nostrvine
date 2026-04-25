@@ -23,9 +23,9 @@ void main() {
     setUp(() {
       mockNostrClient = _MockNostrClient();
       mockAuthService = _MockAuthService();
-      when(() => mockAuthService.authStateStream).thenAnswer(
-        (_) => const Stream<AuthState>.empty(),
-      );
+      when(
+        () => mockAuthService.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
     });
 
     ProviderContainer createContainer() {
@@ -140,18 +140,13 @@ void main() {
       });
     });
 
-    test(
-      'profileRepositoryProvider is null when isNostrReady is false',
-      () {
-        final container = ProviderContainer(
-          overrides: [
-            isNostrReadyProvider.overrideWithValue(false),
-          ],
-        );
-        addTearDown(container.dispose);
+    test('profileRepositoryProvider is null when isNostrReady is false', () {
+      final container = ProviderContainer(
+        overrides: [isNostrReadyProvider.overrideWithValue(false)],
+      );
+      addTearDown(container.dispose);
 
-        expect(container.read(profileRepositoryProvider), isNull);
-      },
-    );
+      expect(container.read(profileRepositoryProvider), isNull);
+    });
   });
 }

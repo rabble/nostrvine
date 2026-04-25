@@ -271,9 +271,9 @@ MockNip05VerificationService createMockNip05VerificationService() {
 MockModerationLabelService createMockModerationLabelService() {
   final mock = MockModerationLabelService();
 
-  when(() => mock.divineModerationPubkeyHex).thenReturn(
-    ModerationLabelService.fallbackModerationPubkeyHex,
-  );
+  when(
+    () => mock.divineModerationPubkeyHex,
+  ).thenReturn(ModerationLabelService.fallbackModerationPubkeyHex);
   when(() => mock.subscribedLabelers).thenReturn({});
   when(() => mock.isDivineLabelerSubscribed).thenReturn(false);
   when(() => mock.customLabelers).thenReturn({});

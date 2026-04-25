@@ -64,9 +64,7 @@ class CommentOptionsModal {
       expanded: false,
       title: Text(
         'Options',
-        style: VineTheme.titleMediumFont(
-          color: VineTheme.onSurface,
-        ),
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       body: Column(
         mainAxisSize: MainAxisSize.min,
@@ -184,10 +182,7 @@ class _OptionTile extends StatelessWidget {
                 colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
               ),
               const SizedBox(width: 16),
-              Text(
-                label,
-                style: VineTheme.titleMediumFont(color: color),
-              ),
+              Text(label, style: VineTheme.titleMediumFont(color: color)),
             ],
           ),
         ),
@@ -235,9 +230,7 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: Text(
             'Select a reason for flagging this comment',
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.onSurfaceMuted,
-            ),
+            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
           ),
         ),
         for (final reason in ContentFilterReason.values)

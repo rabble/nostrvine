@@ -67,9 +67,7 @@ void main() {
 
     group('renders', () {
       testWidgets('loading indicator when status is initial', (tester) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const ProfileSavedVideosState());
+        when(() => mockBloc.state).thenReturn(const ProfileSavedVideosState());
 
         await tester.pumpWidget(buildSubject());
 
@@ -202,10 +200,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockGoRouter.push<Object?>(
-            any(),
-            extra: any(named: 'extra'),
-          ),
+          () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
         ).called(1);
       });
     });

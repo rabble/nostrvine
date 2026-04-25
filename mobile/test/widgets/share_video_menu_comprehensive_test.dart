@@ -57,14 +57,12 @@ void main() {
   setUp(() {
     mockProfileRepository = _MockProfileRepository();
     when(
-      () => mockProfileRepository.getCachedProfile(
-        pubkey: any(named: 'pubkey'),
-      ),
+      () =>
+          mockProfileRepository.getCachedProfile(pubkey: any(named: 'pubkey')),
     ).thenAnswer((_) async => null);
     when(
-      () => mockProfileRepository.fetchFreshProfile(
-        pubkey: any(named: 'pubkey'),
-      ),
+      () =>
+          mockProfileRepository.fetchFreshProfile(pubkey: any(named: 'pubkey')),
     ).thenAnswer((_) async => null);
 
     testVideo = VideoEvent(

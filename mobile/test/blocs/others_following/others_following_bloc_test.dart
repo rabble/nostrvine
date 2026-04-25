@@ -229,10 +229,7 @@ void main() {
                   .having(
                     (state) => state.followingPubkeys,
                     'followingPubkeys',
-                    [
-                      validPubkey('following1'),
-                      validPubkey('following2'),
-                    ],
+                    [validPubkey('following1'), validPubkey('following2')],
                   ),
             ),
           );

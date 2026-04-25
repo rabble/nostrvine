@@ -4786,6 +4786,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'İlginç bir şey keşfet';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Listeler';
 
   @override
@@ -5306,20 +5324,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Zaman çizelgesi düzenlemeyi bitir';
 
   @override
-  String get videoEditorSortNewest => 'En yeni';
-
-  @override
-  String get videoEditorSortLongest => 'En uzun';
-
-  @override
-  String get videoEditorSortShortest => 'En kısa';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return '$option ile sırala. Sıralama düzenini değiştirmek için dokun';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'Önizlemeyi oynat';
 
   @override
@@ -5327,9 +5331,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Başlıksız ses';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Ses seç';
 
   @override
   String get videoEditorAudioUntitled => 'Başlıksız';
@@ -5345,18 +5346,17 @@ class AppLocalizationsTr extends AppLocalizations {
       'İçerik üreticileri ses paylaştığında burada görünür';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'Ses bulunamadı';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Farklı bir arama terimi deneyin';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'Sesler yüklenemedi';
 
   @override
   String get videoEditorAudioSegmentInstruction =>
       'Videon için ses bölümünü seç';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Topluluk';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Ok aracı';

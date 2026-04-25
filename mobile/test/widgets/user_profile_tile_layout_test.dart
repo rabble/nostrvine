@@ -569,10 +569,7 @@ void main() {
 
       testWidgets('ERROR: handles empty pubkey edge case', (tester) async {
         await tester.pumpWidget(
-          _buildTestWidget(
-            testAuthService,
-            const UserProfileTile(pubkey: ''),
-          ),
+          _buildTestWidget(testAuthService, const UserProfileTile(pubkey: '')),
         );
 
         await tester.pumpAndSettle();
@@ -586,17 +583,12 @@ void main() {
   }, skip: true);
 }
 
-Widget _buildTestWidget(
-  TestAuthService authService,
-  Widget child,
-) {
+Widget _buildTestWidget(TestAuthService authService, Widget child) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: testProviderScope(
-      additionalOverrides: [
-        authServiceProvider.overrideWithValue(authService),
-      ],
+      additionalOverrides: [authServiceProvider.overrideWithValue(authService)],
       child: Scaffold(body: child),
     ),
   );

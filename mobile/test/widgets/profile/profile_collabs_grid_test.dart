@@ -47,10 +47,7 @@ void main() {
       ).thenAnswer((_) async => null);
     });
 
-    Widget buildSubject({
-      bool isOwnProfile = true,
-      MockGoRouter? goRouter,
-    }) {
+    Widget buildSubject({bool isOwnProfile = true, MockGoRouter? goRouter}) {
       final app = MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -69,21 +66,15 @@ void main() {
     }
 
     group('renders', () {
-      testWidgets('loading indicator when status is initial', (
-        tester,
-      ) async {
-        when(() => mockBloc.state).thenReturn(
-          const ProfileCollabVideosState(),
-        );
+      testWidgets('loading indicator when status is initial', (tester) async {
+        when(() => mockBloc.state).thenReturn(const ProfileCollabVideosState());
 
         await tester.pumpWidget(buildSubject());
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('loading indicator when status is loading', (
-        tester,
-      ) async {
+      testWidgets('loading indicator when status is loading', (tester) async {
         when(() => mockBloc.state).thenReturn(
           const ProfileCollabVideosState(
             status: ProfileCollabVideosStatus.loading,
@@ -123,9 +114,7 @@ void main() {
         );
       });
 
-      testWidgets('other profile empty state when no collabs', (
-        tester,
-      ) async {
+      testWidgets('other profile empty state when no collabs', (tester) async {
         when(() => mockBloc.state).thenReturn(
           const ProfileCollabVideosState(
             status: ProfileCollabVideosStatus.success,
@@ -155,9 +144,7 @@ void main() {
         expect(find.byType(SliverGrid), findsOneWidget);
       });
 
-      testWidgets('bottom loading indicator when loading more', (
-        tester,
-      ) async {
+      testWidgets('bottom loading indicator when loading more', (tester) async {
         final videos = _createTestVideos(count: 3);
         when(() => mockBloc.state).thenReturn(
           ProfileCollabVideosState(
@@ -194,9 +181,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockBloc.add(
-            const ProfileCollabVideosLoadMoreRequested(),
-          ),
+          () => mockBloc.add(const ProfileCollabVideosLoadMoreRequested()),
         ).called(greaterThanOrEqualTo(1));
       });
 
@@ -217,10 +202,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockGoRouter.push<Object?>(
-            any(),
-            extra: any(named: 'extra'),
-          ),
+          () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
         ).called(1);
       });
     });
@@ -245,9 +227,7 @@ void main() {
               home: Scaffold(
                 body: NestedScrollView(
                   headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 200),
-                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 200)),
                   ],
                   body: BlocProvider<ProfileCollabVideosBloc>.value(
                     value: mockBloc,
@@ -268,56 +248,55 @@ void main() {
         },
       );
 
-      testWidgets(
-        'header scrolls away when scrolling inside the grid',
-        (tester) async {
-          final videos = _createTestVideos(count: 30);
-          when(() => mockBloc.state).thenReturn(
-            ProfileCollabVideosState(
-              status: ProfileCollabVideosStatus.success,
-              videos: videos,
-            ),
-          );
+      testWidgets('header scrolls away when scrolling inside the grid', (
+        tester,
+      ) async {
+        final videos = _createTestVideos(count: 30);
+        when(() => mockBloc.state).thenReturn(
+          ProfileCollabVideosState(
+            status: ProfileCollabVideosStatus.success,
+            videos: videos,
+          ),
+        );
 
-          await tester.pumpWidget(
-            MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              theme: VineTheme.theme,
-              home: Scaffold(
-                body: NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                    const SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 200,
-                        child: ColoredBox(
-                          color: Colors.red,
-                          child: Center(child: Text('Header')),
-                        ),
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                  const SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 200,
+                      child: ColoredBox(
+                        color: Colors.red,
+                        child: Center(child: Text('Header')),
                       ),
                     ),
-                  ],
-                  body: BlocProvider<ProfileCollabVideosBloc>.value(
-                    value: mockBloc,
-                    child: const ProfileCollabsGrid(isOwnProfile: true),
                   ),
+                ],
+                body: BlocProvider<ProfileCollabVideosBloc>.value(
+                  value: mockBloc,
+                  child: const ProfileCollabsGrid(isOwnProfile: true),
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          expect(find.text('Header'), findsOneWidget);
+        expect(find.text('Header'), findsOneWidget);
 
-          await tester.drag(
-            find.byType(CustomScrollView).last,
-            const Offset(0, -300),
-          );
-          await tester.pumpAndSettle();
+        await tester.drag(
+          find.byType(CustomScrollView).last,
+          const Offset(0, -300),
+        );
+        await tester.pumpAndSettle();
 
-          // Header should have scrolled off screen (clipped from tree)
-          expect(find.text('Header'), findsNothing);
-        },
-      );
+        // Header should have scrolled off screen (clipped from tree)
+        expect(find.text('Header'), findsNothing);
+      });
     });
   });
 }

@@ -24,12 +24,7 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
   final Duration totalVideoDuration;
 
   @override
-  List<Object?> get props => [
-    layers,
-    filters,
-    audioTracks,
-    totalVideoDuration,
-  ];
+  List<Object?> get props => [layers, filters, audioTracks, totalVideoDuration];
 }
 
 /// Move an overlay item to a new start time and/or row.
@@ -73,12 +68,7 @@ class TimelineOverlayItemTrimmed extends TimelineOverlayEvent {
   final Duration? endTime;
 
   @override
-  List<Object?> get props => [
-    itemId,
-    isStart,
-    startTime,
-    endTime,
-  ];
+  List<Object?> get props => [itemId, isStart, startTime, endTime];
 }
 
 /// Select an overlay item (shows trim handles).

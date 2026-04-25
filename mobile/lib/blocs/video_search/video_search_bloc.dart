@@ -121,9 +121,10 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
         offset: state.apiOffset,
       );
 
-      final merged = _videosRepository.deduplicateAndSortVideos(
-        [...state.videos, ...result.videos],
-      );
+      final merged = _videosRepository.deduplicateAndSortVideos([
+        ...state.videos,
+        ...result.videos,
+      ]);
       final newOffset = state.apiOffset + _pageSize;
 
       emit(

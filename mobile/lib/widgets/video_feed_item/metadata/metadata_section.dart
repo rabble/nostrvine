@@ -15,11 +15,7 @@ import 'package:flutter/material.dart';
 /// Sections conditionally render: pass `null` to [child] or wrap the
 /// entire widget in a conditional check to hide sections with no data.
 class MetadataSection extends StatelessWidget {
-  const MetadataSection({
-    required this.label,
-    required this.child,
-    super.key,
-  });
+  const MetadataSection({required this.label, required this.child, super.key});
 
   /// Section header label (e.g. "Creator", "Tags", "Collaborators").
   final String label;
@@ -31,9 +27,7 @@ class MetadataSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: VineTheme.outlineDisabled),
-        ),
+        border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

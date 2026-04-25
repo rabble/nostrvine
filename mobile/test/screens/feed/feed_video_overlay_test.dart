@@ -55,9 +55,8 @@ const _testVideoId =
 const _testPubkey =
     'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
 
-AppLocalizations _l10n(WidgetTester tester) => AppLocalizations.of(
-  tester.element(find.byType(Scaffold).first),
-);
+AppLocalizations _l10n(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first));
 
 void main() {
   group(FeedVideoOverlay, () {

@@ -55,9 +55,7 @@ class _ExploreScreenRouterState extends ConsumerState<ExploreScreenRouter>
           videosAsync,
           onData: (videos) {
             if (videos.isEmpty) {
-              return Center(
-                child: Text(context.l10n.exploreNoVideosAvailable),
-              );
+              return Center(child: Text(context.l10n.exploreNoVideosAvailable));
             }
 
             // Determine target index from route context (index-based routing)

@@ -31,9 +31,8 @@ void main() {
       mockInviteApiClient = _MockInviteApiClient();
     });
 
-    InviteStatusCubit buildCubit() => InviteStatusCubit(
-      inviteApiClient: mockInviteApiClient,
-    );
+    InviteStatusCubit buildCubit() =>
+        InviteStatusCubit(inviteApiClient: mockInviteApiClient);
 
     test('initial state is correct', () {
       final cubit = buildCubit();
@@ -85,9 +84,8 @@ void main() {
         ).thenAnswer((_) async => testStatus);
       },
       build: buildCubit,
-      seed: () => const InviteStatusState(
-        status: InviteStatusLoadingStatus.loading,
-      ),
+      seed: () =>
+          const InviteStatusState(status: InviteStatusLoadingStatus.loading),
       act: (cubit) => cubit.load(),
       expect: () => <InviteStatusState>[],
       verify: (_) {
@@ -103,9 +101,8 @@ void main() {
         ).thenAnswer((_) async => testStatus);
       },
       build: buildCubit,
-      seed: () => const InviteStatusState(
-        status: InviteStatusLoadingStatus.error,
-      ),
+      seed: () =>
+          const InviteStatusState(status: InviteStatusLoadingStatus.error),
       act: (cubit) => cubit.load(),
       expect: () => [
         const InviteStatusState(status: InviteStatusLoadingStatus.loading),

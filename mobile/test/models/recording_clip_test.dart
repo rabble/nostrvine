@@ -176,14 +176,8 @@ void main() {
           'trimEndMs': 2500,
         }, '/documents');
 
-        expect(
-          clip.trimStart,
-          equals(const Duration(milliseconds: 1500)),
-        );
-        expect(
-          clip.trimEnd,
-          equals(const Duration(milliseconds: 2500)),
-        );
+        expect(clip.trimStart, equals(const Duration(milliseconds: 1500)));
+        expect(clip.trimEnd, equals(const Duration(milliseconds: 2500)));
       });
 
       test('fromJson defaults trim to zero when missing', () {
@@ -441,9 +435,7 @@ void main() {
           originalAspectRatio: 9 / 16,
         );
 
-        final updated = clip.copyWith(
-          proofManifestJson: '{"hash":"abc123"}',
-        );
+        final updated = clip.copyWith(proofManifestJson: '{"hash":"abc123"}');
 
         expect(updated.proofManifestJson, equals('{"hash":"abc123"}'));
         expect(updated.id, equals(clip.id));
@@ -460,9 +452,7 @@ void main() {
           proofManifestJson: '{"hash":"abc123"}',
         );
 
-        final updated = clip.copyWith(
-          thumbnailPath: '/path/to/thumb.jpg',
-        );
+        final updated = clip.copyWith(thumbnailPath: '/path/to/thumb.jpg');
 
         expect(updated.proofManifestJson, equals('{"hash":"abc123"}'));
       });
@@ -576,10 +566,7 @@ void main() {
         final json = clip.toJson();
         final restored = DivineVideoClip.fromJson(json, '/path/to');
 
-        expect(
-          restored.proofManifestJson,
-          equals(clip.proofManifestJson),
-        );
+        expect(restored.proofManifestJson, equals(clip.proofManifestJson));
       });
 
       test('roundtrip with complex JSON structure', () {
@@ -642,9 +629,7 @@ void main() {
           proofManifestJson: '{"hash":"old"}',
         );
 
-        final updated = clip.copyWith(
-          proofManifestJson: '{"hash":"new"}',
-        );
+        final updated = clip.copyWith(proofManifestJson: '{"hash":"new"}');
 
         expect(updated.proofManifestJson, equals('{"hash":"new"}'));
       });

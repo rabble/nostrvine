@@ -4937,6 +4937,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Descoperă ceva interesant';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Liste';
 
   @override
@@ -5469,20 +5487,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Finalizează editarea cronologiei';
 
   @override
-  String get videoEditorSortNewest => 'Cele mai noi';
-
-  @override
-  String get videoEditorSortLongest => 'Cele mai lungi';
-
-  @override
-  String get videoEditorSortShortest => 'Cele mai scurte';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Sortează după $option. Atinge pentru a schimba ordinea de sortare';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'Redă previzualizarea';
 
   @override
@@ -5491,9 +5495,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Sunet fără titlu';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Selectează sunetul';
 
   @override
   String get videoEditorAudioUntitled => 'Fără titlu';
@@ -5510,19 +5511,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sunetele vor apărea aici când creatorii vor partaja audio';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'Nu au fost găsite sunete';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Încearcă un alt termen de căutare';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle =>
       'Nu s-au putut încărca sunetele';
 
   @override
   String get videoEditorAudioSegmentInstruction =>
       'Alege segmentul audio pentru videoclipul tău';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Comunitate';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Instrument săgeată';

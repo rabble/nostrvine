@@ -176,10 +176,7 @@ class _CategoryTile extends StatelessWidget {
                     top: 0,
                     bottom: 0,
                     child: IgnorePointer(
-                      child: SvgPicture.asset(
-                        visuals.assetPath!,
-                        height: 88,
-                      ),
+                      child: SvgPicture.asset(visuals.assetPath!, height: 88),
                     ),
                   ),
               ],

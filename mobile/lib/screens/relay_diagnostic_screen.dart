@@ -464,9 +464,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.relayDiagnosticFoundVideoEvents(
-                videoEvents.length,
-              ),
+              context.l10n.relayDiagnosticFoundVideoEvents(videoEvents.length),
             ),
             backgroundColor: videoEvents.isNotEmpty
                 ? VineTheme.success

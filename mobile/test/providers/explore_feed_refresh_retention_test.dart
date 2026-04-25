@@ -61,9 +61,9 @@ void main() {
       mockAuthService = _MockAuthService();
       mockNostrClient = _MockNostrClient();
 
-      when(
-        () => mockVideoEventService.filterVideoList(any()),
-      ).thenAnswer((invocation) {
+      when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
+        invocation,
+      ) {
         return List<VideoEvent>.from(
           invocation.positionalArguments.first as List,
         );

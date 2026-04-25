@@ -147,10 +147,7 @@ class _CollaboratorLabel extends ConsumerWidget {
 
     final label = pubkeys.length == 1
         ? context.l10n.videoCollaboratorWithOne(firstName)
-        : context.l10n.videoCollaboratorWithMore(
-            firstName,
-            pubkeys.length - 1,
-          );
+        : context.l10n.videoCollaboratorWithMore(firstName, pubkeys.length - 1);
 
     return Text(
       label,

@@ -369,93 +369,85 @@ void main() {
       );
     });
 
-    testWidgets(
-      'report with block checkbox calls muteUser but NOT reportUser '
-      '(no duplicate Kind 1984)',
-      (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        await openReportDialog(tester);
+    testWidgets('report with block checkbox calls muteUser but NOT reportUser '
+        '(no duplicate Kind 1984)', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openReportDialog(tester);
 
-        // Select a reason
-        await tester.tap(find.text('Harassment, Bullying, or Threats'));
-        await tester.pumpAndSettle();
+      // Select a reason
+      await tester.tap(find.text('Harassment, Bullying, or Threats'));
+      await tester.pumpAndSettle();
 
-        // Check block user
-        await tester.tap(find.text('Block this user'));
-        await tester.pumpAndSettle();
+      // Check block user
+      await tester.tap(find.text('Block this user'));
+      await tester.pumpAndSettle();
 
-        // Tap Report
-        await tester.tap(find.widgetWithText(TextButton, 'Report'));
-        await tester.pumpAndSettle();
+      // Tap Report
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pumpAndSettle();
 
-        verify(
-          () => mockReportingService.reportContent(
-            eventId: any(named: 'eventId'),
-            authorPubkey: any(named: 'authorPubkey'),
-            reason: any(named: 'reason'),
-            details: any(named: 'details'),
-            additionalContext: any(named: 'additionalContext'),
-            hashtags: any(named: 'hashtags'),
-          ),
-        ).called(1);
+      verify(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).called(1);
 
-        verifyNever(
-          () => mockReportingService.reportUser(
-            userPubkey: any(named: 'userPubkey'),
-            reason: any(named: 'reason'),
-            details: any(named: 'details'),
-            relatedEventIds: any(named: 'relatedEventIds'),
-          ),
-        );
+      verifyNever(
+        () => mockReportingService.reportUser(
+          userPubkey: any(named: 'userPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          relatedEventIds: any(named: 'relatedEventIds'),
+        ),
+      );
 
-        verify(
-          () => mockMuteService.muteUser(
-            any(),
-            reason: any(named: 'reason'),
-            duration: any(named: 'duration'),
-          ),
-        ).called(1);
-      },
-    );
+      verify(
+        () => mockMuteService.muteUser(
+          any(),
+          reason: any(named: 'reason'),
+          duration: any(named: 'duration'),
+        ),
+      ).called(1);
+    });
 
-    testWidgets(
-      'Report button is disabled while submission is in progress '
-      '(prevents double-tap duplicate Kind 1984)',
-      (tester) async {
-        final completer = Completer<ReportResult>();
-        when(
-          () => mockReportingService.reportContent(
-            eventId: any(named: 'eventId'),
-            authorPubkey: any(named: 'authorPubkey'),
-            reason: any(named: 'reason'),
-            details: any(named: 'details'),
-            additionalContext: any(named: 'additionalContext'),
-            hashtags: any(named: 'hashtags'),
-          ),
-        ).thenAnswer((_) => completer.future);
+    testWidgets('Report button is disabled while submission is in progress '
+        '(prevents double-tap duplicate Kind 1984)', (tester) async {
+      final completer = Completer<ReportResult>();
+      when(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer((_) => completer.future);
 
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        await openReportDialog(tester);
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openReportDialog(tester);
 
-        // Select a reason
-        await tester.tap(find.text('Spam or Unwanted Content'));
-        await tester.pumpAndSettle();
+      // Select a reason
+      await tester.tap(find.text('Spam or Unwanted Content'));
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(TextButton, 'Report'));
-        await tester.pump();
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pump();
 
-        final buttons = tester.widgetList<TextButton>(
-          find.byType(TextButton),
-        );
-        final hasDisabledReportButton = buttons.any(
-          (btn) => btn.onPressed == null,
-        );
-        expect(hasDisabledReportButton, isTrue);
+      final buttons = tester.widgetList<TextButton>(find.byType(TextButton));
+      final hasDisabledReportButton = buttons.any(
+        (btn) => btn.onPressed == null,
+      );
+      expect(hasDisabledReportButton, isTrue);
 
-        completer.complete(ReportResult.createSuccess('test_report_id'));
-        await tester.pumpAndSettle();
-      },
-    );
+      completer.complete(ReportResult.createSuccess('test_report_id'));
+      await tester.pumpAndSettle();
+    });
 
     testWidgets('failed report shows error snackbar', (tester) async {
       when(
@@ -684,77 +676,72 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets(
-      'sends DM to moderation team after successful report',
-      (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        await openAndSubmitReport(tester);
+    testWidgets('sends DM to moderation team after successful report', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openAndSubmitReport(tester);
 
-        verify(
-          () => mockDmRepository.sendMessage(
-            recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
-            content: any(named: 'content'),
-            replyToId: any(named: 'replyToId'),
-          ),
-        ).called(1);
-      },
-    );
+      verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).called(1);
+    });
 
-    testWidgets(
-      'DM content includes report reason and event ID',
-      (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        await openAndSubmitReport(tester);
+    testWidgets('DM content includes report reason and event ID', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openAndSubmitReport(tester);
 
-        final captured = verify(
-          () => mockDmRepository.sendMessage(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: captureAny(named: 'content'),
-            replyToId: any(named: 'replyToId'),
-          ),
-        ).captured;
+      final captured = verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: captureAny(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).captured;
 
-        final dmContent = captured.single as String;
-        expect(
-          dmContent,
-          contains('Content Report'),
-          reason: 'DM should be labeled as a content report',
-        );
-        expect(
-          dmContent,
-          contains('Spam or Unwanted Content'),
-          reason: 'DM should include the report reason',
-        );
-        expect(
-          dmContent,
-          contains(testVideo.id),
-          reason: 'DM should include the reported event ID',
-        );
-      },
-    );
+      final dmContent = captured.single as String;
+      expect(
+        dmContent,
+        contains('Content Report'),
+        reason: 'DM should be labeled as a content report',
+      );
+      expect(
+        dmContent,
+        contains('Spam or Unwanted Content'),
+        reason: 'DM should include the report reason',
+      );
+      expect(
+        dmContent,
+        contains(testVideo.id),
+        reason: 'DM should include the reported event ID',
+      );
+    });
 
-    testWidgets(
-      'report succeeds even if moderation DM fails',
-      (tester) async {
-        when(
-          () => mockDmRepository.sendMessage(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            replyToId: any(named: 'replyToId'),
-          ),
-        ).thenThrow(Exception('DM relay unreachable'));
+    testWidgets('report succeeds even if moderation DM fails', (tester) async {
+      when(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenThrow(Exception('DM relay unreachable'));
 
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        await openAndSubmitReport(tester);
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openAndSubmitReport(tester);
 
-        // Confirmation dialog should still appear
-        expect(
-          find.text('Report Received'),
-          findsOneWidget,
-          reason: 'Report should succeed even if DM fails',
-        );
-      },
-    );
+      // Confirmation dialog should still appear
+      expect(
+        find.text('Report Received'),
+        findsOneWidget,
+        reason: 'Report should succeed even if DM fails',
+      );
+    });
 
     testWidgets(
       'report succeeds when DM send throws (unauthenticated/no keys)',
@@ -829,20 +816,17 @@ void main() {
   });
 
   group('moderation constants', () {
-    test(
-      'moderation pubkey is a valid 64-character hex string',
-      () {
-        expect(
-          ModerationLabelService.fallbackModerationPubkeyHex.length,
-          equals(64),
-        );
-        expect(
-          RegExp(r'^[0-9a-f]{64}$').hasMatch(
-            ModerationLabelService.fallbackModerationPubkeyHex,
-          ),
-          isTrue,
-        );
-      },
-    );
+    test('moderation pubkey is a valid 64-character hex string', () {
+      expect(
+        ModerationLabelService.fallbackModerationPubkeyHex.length,
+        equals(64),
+      );
+      expect(
+        RegExp(
+          r'^[0-9a-f]{64}$',
+        ).hasMatch(ModerationLabelService.fallbackModerationPubkeyHex),
+        isTrue,
+      );
+    });
   });
 }

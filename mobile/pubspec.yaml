@@ -30,6 +30,7 @@ workspace:
   - packages/categories_repository
   - packages/comments_repository
   - packages/content_blocklist_repository
+  - packages/content_policy
   - packages/count_formatter
   - packages/curated_list_repository
   - packages/curation_repository
@@ -208,6 +209,9 @@ dependencies:
 
   # TV static noise effect
   tv_static_effect:
+
+  # Content Policy — parse-gate ingress filter
+  content_policy:
 
   # Count Formatter - Compact number formatting
   count_formatter:

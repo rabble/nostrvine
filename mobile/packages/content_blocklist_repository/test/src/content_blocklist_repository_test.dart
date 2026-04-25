@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -1294,6 +1295,52 @@ void main() {
       );
 
       verify(() => mockClient.subscribe(any())).called(4);
+    });
+  });
+
+  group('ContentPolicyState exposure', () {
+    test('currentState reflects blocked set after blockUser', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final repo = ContentBlocklistRepository(prefs: prefs);
+
+      const me = 'my-hex-pubkey';
+      const blockedByUs = 'blocked-hex';
+      await repo.blockUser(blockedByUs, ourPubkey: me);
+
+      final state = repo.currentState;
+      expect(state.blockedPubkeys, contains(blockedByUs));
+      expect(state.mutedPubkeys, isEmpty);
+      expect(state.pubkeysBlockingUs, isEmpty);
+      expect(state.pubkeysMutingUs, isEmpty);
+    });
+
+    test('stateStream emits a new snapshot when blocks change', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final repo = ContentBlocklistRepository(prefs: prefs);
+
+      const blocked = 'some-hex';
+      final snapshots = <ContentPolicyState>[];
+      final sub = repo.stateStream.listen(snapshots.add);
+
+      await repo.blockUser(blocked, ourPubkey: 'me');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(snapshots, hasLength(greaterThanOrEqualTo(1)));
+      expect(snapshots.last.blockedPubkeys, contains(blocked));
+
+      await sub.cancel();
+    });
+
+    test('currentState reflects persisted blocks at construction', () async {
+      SharedPreferences.setMockInitialValues({
+        'blocked_users_list': '["persisted-hex"]',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final repo = ContentBlocklistRepository(prefs: prefs);
+
+      expect(repo.currentState.blockedPubkeys, contains('persisted-hex'));
     });
   });
 }

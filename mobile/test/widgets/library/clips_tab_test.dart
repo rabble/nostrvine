@@ -80,9 +80,9 @@ void main() {
       });
 
       testWidgets('friendly error and retry when error state', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const ClipsLibraryState(status: ClipsLibraryStatus.error),
-        );
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const ClipsLibraryState(status: ClipsLibraryStatus.error));
 
         await tester.pumpWidget(buildWidget());
 
@@ -92,9 +92,7 @@ void main() {
 
       testWidgets('$EmptyLibraryState when no clips', (tester) async {
         when(() => mockBloc.state).thenReturn(
-          const ClipsLibraryState(
-            status: ClipsLibraryStatus.loaded,
-          ),
+          const ClipsLibraryState(status: ClipsLibraryStatus.loaded),
         );
 
         await tester.pumpWidget(buildWidget());
@@ -107,9 +105,7 @@ void main() {
         '$EmptyLibraryState without record button in selection mode',
         (tester) async {
           when(() => mockBloc.state).thenReturn(
-            const ClipsLibraryState(
-              status: ClipsLibraryStatus.loaded,
-            ),
+            const ClipsLibraryState(status: ClipsLibraryStatus.loaded),
           );
 
           await tester.pumpWidget(buildWidget(isSelectionMode: true));
@@ -136,10 +132,7 @@ void main() {
     group('interactions', () {
       testWidgets('toggles selection when clip is tapped', (tester) async {
         when(() => mockBloc.state).thenReturn(
-          ClipsLibraryState(
-            status: ClipsLibraryStatus.loaded,
-            clips: [clip1],
-          ),
+          ClipsLibraryState(status: ClipsLibraryStatus.loaded, clips: [clip1]),
         );
 
         await tester.pumpWidget(buildWidget());

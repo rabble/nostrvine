@@ -361,10 +361,7 @@ class ProfileFeed extends _$ProfileFeed {
         );
 
         final result = await client
-            .getVideosByAuthor(
-              pubkey: userId,
-              offset: offset,
-            )
+            .getVideosByAuthor(pubkey: userId, offset: offset)
             .timeout(_restApiTimeout);
         final apiVideos = result.videos.toVideoEvents();
 

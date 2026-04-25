@@ -331,9 +331,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.shareMenuFailedToReportAiContent('$e'),
-            ),
+            content: Text(context.l10n.shareMenuFailedToReportAiContent('$e')),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -928,9 +926,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            context.l10n.shareMenuCreatedListAndAddedVideo(result),
-          ),
+          content: Text(context.l10n.shareMenuCreatedListAndAddedVideo(result)),
         ),
       );
     }
@@ -1047,9 +1043,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                       )
                     : null,
                 trailing: Text(
-                  context.l10n.shareMenuVideoCount(
-                    list.videoEventIds.length,
-                  ),
+                  context.l10n.shareMenuVideoCount(list.videoEventIds.length),
                   style: const TextStyle(
                     color: VineTheme.lightText,
                     fontSize: 12,
@@ -1204,9 +1198,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.shareMenuDeleteFailedGeneric,
-            ),
+            content: Text(context.l10n.shareMenuDeleteFailedGeneric),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -1846,9 +1838,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.shareMenuFailedToUpdateVideo('$e'),
-            ),
+            content: Text(context.l10n.shareMenuFailedToUpdateVideo('$e')),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -1918,9 +1908,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                context.l10n.shareMenuVideoDeletionRequested,
-              ),
+              content: Text(context.l10n.shareMenuVideoDeletionRequested),
               backgroundColor: VineTheme.vineGreen,
             ),
           );
@@ -1931,9 +1919,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                localizedDeleteFailureMessage(context, result),
-              ),
+              content: Text(localizedDeleteFailureMessage(context, result)),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -1951,9 +1937,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.shareMenuDeleteFailedGeneric,
-            ),
+            content: Text(context.l10n.shareMenuDeleteFailedGeneric),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -1992,9 +1976,7 @@ class _EditContentLabelsSection extends StatelessWidget {
     final displayText = selectedLabels.isEmpty
         ? context.l10n.shareMenuAddContentLabels
         : selectedLabels
-              .map(
-                (label) => localizedContentLabelName(context.l10n, label),
-              )
+              .map((label) => localizedContentLabelName(context.l10n, label))
               .join(', ');
 
     return Column(
@@ -2002,9 +1984,7 @@ class _EditContentLabelsSection extends StatelessWidget {
       children: [
         Text(
           context.l10n.shareMenuContentLabels,
-          style: VineTheme.labelSmallFont(
-            color: VineTheme.onSurfaceVariant,
-          ),
+          style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
         ),
         const SizedBox(height: 8),
         InkWell(
@@ -2119,10 +2099,7 @@ class _EditContentLabelsPickerState extends State<_EditContentLabelsPicker> {
                       value: _selected.contains(label),
                       onChanged: (_) => _toggle(label),
                       title: Text(
-                        localizedContentLabelName(
-                          context.l10n,
-                          label,
-                        ),
+                        localizedContentLabelName(context.l10n, label),
                         style: const TextStyle(color: VineTheme.whiteText),
                       ),
                       activeColor: VineTheme.vineGreen,
@@ -2169,9 +2146,7 @@ class _EditCollaboratorsSection extends ConsumerWidget {
     children: [
       Text(
         context.l10n.shareMenuCollaborators,
-        style: VineTheme.labelSmallFont(
-          color: VineTheme.onSurfaceVariant,
-        ),
+        style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
       ),
       const SizedBox(height: 8),
       if (collaboratorPubkeys.isNotEmpty)
@@ -2240,9 +2215,7 @@ class _EditCollaboratorsSection extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.l10n.shareMenuMutualFollowRequired(
-              profile.bestDisplayName,
-            ),
+            context.l10n.shareMenuMutualFollowRequired(profile.bestDisplayName),
           ),
           backgroundColor: VineTheme.cardBackground,
         ),
@@ -2338,9 +2311,7 @@ class _EditInspiredBySection extends ConsumerWidget {
     children: [
       Text(
         context.l10n.shareMenuInspiredBy,
-        style: VineTheme.labelSmallFont(
-          color: VineTheme.onSurfaceVariant,
-        ),
+        style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
       ),
       const SizedBox(height: 8),
       if (_hasInspiredBy)
@@ -2397,9 +2368,7 @@ class _EditInspiredBySection extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            context.l10n.shareMenuCreatorCannotBeReferenced,
-          ),
+          content: Text(context.l10n.shareMenuCreatorCannotBeReferenced),
           backgroundColor: VineTheme.cardBackground,
         ),
       );
@@ -2520,9 +2489,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
                     ),
                     subtitle: Text(
                       context.l10n.shareMenuStartNewBookmarkCollection,
-                      style: const TextStyle(
-                        color: VineTheme.secondaryText,
-                      ),
+                      style: const TextStyle(color: VineTheme.secondaryText),
                     ),
                     onTap: () {
                       context.pop();
@@ -2543,9 +2510,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
                       padding: const EdgeInsets.all(16.0),
                       child: Text(
                         context.l10n.shareMenuNoBookmarkSets,
-                        style: const TextStyle(
-                          color: VineTheme.secondaryText,
-                        ),
+                        style: const TextStyle(color: VineTheme.secondaryText),
                         textAlign: TextAlign.center,
                       ),
                     )
@@ -2916,10 +2881,7 @@ class _UseThisSoundTile extends ConsumerWidget {
         ),
         subtitle: Text(
           context.l10n.shareMenuLoading,
-          style: const TextStyle(
-            color: VineTheme.secondaryText,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),

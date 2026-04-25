@@ -287,9 +287,7 @@ class _ProfileSetupScreenViewState
                 case ProfileEditorError.usernameTaken:
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        context.l10n.profileSetupUsernameTaken,
-                      ),
+                      content: Text(context.l10n.profileSetupUsernameTaken),
                       backgroundColor: VineTheme.error,
                       duration: const Duration(seconds: 3),
                     ),
@@ -1003,9 +1001,7 @@ class _ProfileSetupScreenViewState
                               _nameFocusNode.requestFocus();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                    'Please enter a display name',
-                                  ),
+                                  content: Text('Please enter a display name'),
                                   backgroundColor: VineTheme.error,
                                 ),
                               );
@@ -1737,9 +1733,7 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
       if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              "Couldn't open email. Send to: names@divine.video",
-            ),
+            content: Text("Couldn't open email. Send to: names@divine.video"),
           ),
         );
       }
@@ -1809,9 +1803,7 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
         ),
         FilledButton(
           onPressed: _submitting ? null : _contactSupport,
-          style: FilledButton.styleFrom(
-            backgroundColor: VineTheme.vineGreen,
-          ),
+          style: FilledButton.styleFrom(backgroundColor: VineTheme.vineGreen),
           child: _submitting
               ? const SizedBox(
                   width: 16,

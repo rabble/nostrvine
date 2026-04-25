@@ -138,9 +138,7 @@ void main() {
 
       expect(headers, equals({'Authorization': 'Nostr blossom-token'}));
       verify(
-        () => mockBlossomAuthService.createGetAuthHeader(
-          sha256Hash: 'abc123',
-        ),
+        () => mockBlossomAuthService.createGetAuthHeader(sha256Hash: 'abc123'),
       ).called(1);
       verifyNever(
         () => mockNip98AuthService.createAuthToken(

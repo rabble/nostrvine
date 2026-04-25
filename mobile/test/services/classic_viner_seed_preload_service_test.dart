@@ -7,10 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/classic_viner_seed_preload_service.dart';
 
 class _FakeAssetBundle extends CachingAssetBundle {
-  _FakeAssetBundle({
-    required this.strings,
-    required this.binaries,
-  });
+  _FakeAssetBundle({required this.strings, required this.binaries});
 
   final Map<String, String> strings;
   final Map<String, Uint8List> binaries;
@@ -165,10 +162,7 @@ void main() {
       'importProfilesIfNeeded handles asset load error gracefully',
       () async {
         final service = ClassicVinerSeedPreloadService(
-          assetBundle: _FakeAssetBundle(
-            strings: const {},
-            binaries: const {},
-          ),
+          assetBundle: _FakeAssetBundle(strings: const {}, binaries: const {}),
           markerDirectoryProvider: () async => markerDirectory,
         );
 
@@ -221,10 +215,7 @@ void main() {
       'preloadAvatarImagesIfNeeded handles asset load error gracefully',
       () async {
         final service = ClassicVinerSeedPreloadService(
-          assetBundle: _FakeAssetBundle(
-            strings: const {},
-            binaries: const {},
-          ),
+          assetBundle: _FakeAssetBundle(strings: const {}, binaries: const {}),
           markerDirectoryProvider: () async => markerDirectory,
         );
 

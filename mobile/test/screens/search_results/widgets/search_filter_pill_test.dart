@@ -43,9 +43,7 @@ void main() {
       expect(find.text('All'), findsOneWidget);
     });
 
-    testWidgets('renders "People" label when filter is people', (
-      tester,
-    ) async {
+    testWidgets('renders "People" label when filter is people', (tester) async {
       when(() => mockCubit.state).thenReturn(SearchResultsFilter.people);
       await tester.pumpWidget(buildSubject());
 
@@ -59,9 +57,7 @@ void main() {
       expect(find.text('Tags'), findsOneWidget);
     });
 
-    testWidgets('renders "Videos" label when filter is videos', (
-      tester,
-    ) async {
+    testWidgets('renders "Videos" label when filter is videos', (tester) async {
       when(() => mockCubit.state).thenReturn(SearchResultsFilter.videos);
       await tester.pumpWidget(buildSubject());
 

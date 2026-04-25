@@ -195,10 +195,7 @@ class _DraftPreviewState extends State<_DraftPreview> {
           height: previewHeight,
           width: previewWidth,
           child: _hasThumb
-              ? Image.file(
-                  File(widget.clip!.thumbnailPath!),
-                  fit: BoxFit.cover,
-                )
+              ? Image.file(File(widget.clip!.thumbnailPath!), fit: BoxFit.cover)
               : SvgPicture.asset(
                   'assets/stickers/alert.svg',
                   height: 132,

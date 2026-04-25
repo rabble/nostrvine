@@ -66,9 +66,7 @@ void main() {
           subscriptionId: any(named: 'subscriptionId'),
         ),
       ).thenAnswer((_) => const Stream<Event>.empty());
-      when(
-        () => mockNostrClient.unsubscribe(any()),
-      ).thenAnswer((_) async {});
+      when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
 
       // AuthService stubs for auth-state-driven providers.
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -97,73 +95,64 @@ void main() {
       );
     }
 
-    test(
-      'opens gift-wrap subscription when isNostrReady is true',
-      () async {
-        // ARRANGE
-        final container = createContainer(isReady: true);
-        addTearDown(container.dispose);
+    test('opens gift-wrap subscription when isNostrReady is true', () async {
+      // ARRANGE
+      final container = createContainer(isReady: true);
+      addTearDown(container.dispose);
 
-        // ACT — touching the provider triggers the build
-        final repository = container.read(dmRepositoryProvider);
+      // ACT — touching the provider triggers the build
+      final repository = container.read(dmRepositoryProvider);
 
-        // The provider calls startListening() asynchronously via unawaited(),
-        // so let microtasks drain before asserting.
-        await Future<void>.delayed(Duration.zero);
+      // The provider calls startListening() asynchronously via unawaited(),
+      // so let microtasks drain before asserting.
+      await Future<void>.delayed(Duration.zero);
 
-        // ASSERT — the gift-wrap subscription was opened on the relay
-        // client. This is the proof that the auth-scoped lifecycle is
-        // active and DMs will be ingested even without InboxPage mounting.
-        verify(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        ).called(1);
-        expect(repository.isInitialized, isTrue);
-        expect(repository.userPubkey, equals(testPubkey));
-      },
-    );
+      // ASSERT — the gift-wrap subscription was opened on the relay
+      // client. This is the proof that the auth-scoped lifecycle is
+      // active and DMs will be ingested even without InboxPage mounting.
+      verify(
+        () => mockNostrClient.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+        ),
+      ).called(1);
+      expect(repository.isInitialized, isTrue);
+      expect(repository.userPubkey, equals(testPubkey));
+    });
 
-    test(
-      'does NOT open subscription when isNostrReady is false',
-      () async {
-        // ARRANGE — pre-auth or initialization-pending state
-        final container = createContainer(isReady: false);
-        addTearDown(container.dispose);
+    test('does NOT open subscription when isNostrReady is false', () async {
+      // ARRANGE — pre-auth or initialization-pending state
+      final container = createContainer(isReady: false);
+      addTearDown(container.dispose);
 
-        // ACT
-        final repository = container.read(dmRepositoryProvider);
-        await Future<void>.delayed(Duration.zero);
+      // ACT
+      final repository = container.read(dmRepositoryProvider);
+      await Future<void>.delayed(Duration.zero);
 
-        // ASSERT — the repository exists for read-only operations but no
-        // relay traffic is generated until isNostrReady flips true.
-        verifyNever(
-          () => mockNostrClient.subscribe(
-            any(),
-            subscriptionId: any(named: 'subscriptionId'),
-          ),
-        );
-        expect(repository.isInitialized, isFalse);
-      },
-    );
+      // ASSERT — the repository exists for read-only operations but no
+      // relay traffic is generated until isNostrReady flips true.
+      verifyNever(
+        () => mockNostrClient.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+        ),
+      );
+      expect(repository.isInitialized, isFalse);
+    });
 
-    test(
-      'tears down subscription on container dispose',
-      () async {
-        // ARRANGE
-        final container = createContainer(isReady: true);
-        container.read(dmRepositoryProvider);
-        await Future<void>.delayed(Duration.zero);
+    test('tears down subscription on container dispose', () async {
+      // ARRANGE
+      final container = createContainer(isReady: true);
+      container.read(dmRepositoryProvider);
+      await Future<void>.delayed(Duration.zero);
 
-        // ACT — disposing the container fires ref.onDispose hooks, which
-        // include repository.stopListening.
-        container.dispose();
-        await Future<void>.delayed(Duration.zero);
+      // ACT — disposing the container fires ref.onDispose hooks, which
+      // include repository.stopListening.
+      container.dispose();
+      await Future<void>.delayed(Duration.zero);
 
-        // ASSERT — unsubscribe was called on the relay client.
-        verify(() => mockNostrClient.unsubscribe(any())).called(1);
-      },
-    );
+      // ASSERT — unsubscribe was called on the relay client.
+      verify(() => mockNostrClient.unsubscribe(any())).called(1);
+    });
   });
 }

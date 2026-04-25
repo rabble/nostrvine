@@ -85,30 +85,26 @@ void main() {
       mockOverlayBloc = _MockTimelineOverlayBloc();
       mockFilterBloc = _MockVideoEditorFilterBloc();
 
-      when(() => mockMainBloc.state).thenReturn(
-        const VideoEditorMainState(),
-      );
-      when(() => mockMainBloc.stream).thenAnswer(
-        (_) => const Stream<VideoEditorMainState>.empty(),
-      );
-      when(() => mockClipBloc.state).thenReturn(
-        const ClipEditorState(),
-      );
-      when(() => mockClipBloc.stream).thenAnswer(
-        (_) => const Stream<ClipEditorState>.empty(),
-      );
-      when(() => mockOverlayBloc.state).thenReturn(
-        const TimelineOverlayState(),
-      );
-      when(() => mockOverlayBloc.stream).thenAnswer(
-        (_) => const Stream<TimelineOverlayState>.empty(),
-      );
-      when(() => mockFilterBloc.state).thenReturn(
-        const VideoEditorFilterState(filters: []),
-      );
-      when(() => mockFilterBloc.stream).thenAnswer(
-        (_) => const Stream<VideoEditorFilterState>.empty(),
-      );
+      when(() => mockMainBloc.state).thenReturn(const VideoEditorMainState());
+      when(
+        () => mockMainBloc.stream,
+      ).thenAnswer((_) => const Stream<VideoEditorMainState>.empty());
+      when(() => mockClipBloc.state).thenReturn(const ClipEditorState());
+      when(
+        () => mockClipBloc.stream,
+      ).thenAnswer((_) => const Stream<ClipEditorState>.empty());
+      when(
+        () => mockOverlayBloc.state,
+      ).thenReturn(const TimelineOverlayState());
+      when(
+        () => mockOverlayBloc.stream,
+      ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());
+      when(
+        () => mockFilterBloc.state,
+      ).thenReturn(const VideoEditorFilterState(filters: []));
+      when(
+        () => mockFilterBloc.stream,
+      ).thenAnswer((_) => const Stream<VideoEditorFilterState>.empty());
     });
 
     Widget buildWidget({
@@ -141,9 +137,7 @@ void main() {
               onAddEditTextLayer: ([layer]) async => null,
               child: MultiBlocProvider(
                 providers: [
-                  BlocProvider<VideoEditorMainBloc>.value(
-                    value: mockMainBloc,
-                  ),
+                  BlocProvider<VideoEditorMainBloc>.value(value: mockMainBloc),
                   BlocProvider<ClipEditorBloc>.value(value: mockClipBloc),
                   BlocProvider<TimelineOverlayBloc>.value(
                     value: mockOverlayBloc,
@@ -169,10 +163,7 @@ void main() {
 
         // Should shrink — no header, no strip, no playhead
         expect(find.byType(VideoEditorTimelineHeader), findsNothing);
-        expect(
-          find.byType(VideoEditorTimelineClipStrip),
-          findsNothing,
-        );
+        expect(find.byType(VideoEditorTimelineClipStrip), findsNothing);
       });
     });
 
@@ -217,10 +208,7 @@ void main() {
           buildWidget(clipState: ClipEditorState(clips: clips)),
         );
 
-        expect(
-          find.byType(VideoEditorTimelineRulesIndicator),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoEditorTimelineRulesIndicator), findsOneWidget);
       });
 
       testWidgets('renders $VideoEditorTimelineClipStrip', (tester) async {
@@ -230,10 +218,7 @@ void main() {
           buildWidget(clipState: ClipEditorState(clips: clips)),
         );
 
-        expect(
-          find.byType(VideoEditorTimelineClipStrip),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoEditorTimelineClipStrip), findsOneWidget);
       });
 
       testWidgets('does not show controls when not editing', (tester) async {
@@ -338,10 +323,7 @@ void main() {
           buildWidget(clipState: ClipEditorState(clips: clips)),
         );
 
-        expect(
-          find.bySemanticsLabel('Video timeline'),
-          findsOneWidget,
-        );
+        expect(find.bySemanticsLabel('Video timeline'), findsOneWidget);
       });
     });
 
@@ -353,19 +335,13 @@ void main() {
           buildWidget(clipState: ClipEditorState(clips: clips)),
         );
 
-        expect(
-          find.byType(SingleChildScrollView),
-          findsWidgets,
-        );
+        expect(find.byType(SingleChildScrollView), findsWidgets);
       });
     });
   });
 }
 
-DivineVideoClip _createTestClip({
-  required String id,
-  int seconds = 2,
-}) {
+DivineVideoClip _createTestClip({required String id, int seconds = 2}) {
   return DivineVideoClip(
     id: id,
     video: EditorVideo.file('/tmp/test_$id.mp4'),

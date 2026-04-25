@@ -93,34 +93,31 @@ void main() {
         ],
       );
 
-      test(
-        'does not re-fetch while a load is already in progress',
-        () async {
-          // Use a Completer to keep the first request suspended so the second
-          // event arrives while the bloc is still in loading state.
-          final completer = Completer<List<VideoCategory>>();
-          when(
-            () => mockRepository.getCategories(),
-          ).thenAnswer((_) => completer.future);
+      test('does not re-fetch while a load is already in progress', () async {
+        // Use a Completer to keep the first request suspended so the second
+        // event arrives while the bloc is still in loading state.
+        final completer = Completer<List<VideoCategory>>();
+        when(
+          () => mockRepository.getCategories(),
+        ).thenAnswer((_) => completer.future);
 
-          final bloc = CategoriesBloc(categoriesRepository: mockRepository);
+        final bloc = CategoriesBloc(categoriesRepository: mockRepository);
 
-          // First request — bloc enters loading state.
-          bloc.add(const CategoriesLoadRequested());
-          await Future<void>.delayed(Duration.zero);
+        // First request — bloc enters loading state.
+        bloc.add(const CategoriesLoadRequested());
+        await Future<void>.delayed(Duration.zero);
 
-          // Second request while first is still suspended.
-          bloc.add(const CategoriesLoadRequested());
-          await Future<void>.delayed(Duration.zero);
+        // Second request while first is still suspended.
+        bloc.add(const CategoriesLoadRequested());
+        await Future<void>.delayed(Duration.zero);
 
-          // Only one network call should have been made.
-          verify(() => mockRepository.getCategories()).called(1);
+        // Only one network call should have been made.
+        verify(() => mockRepository.getCategories()).called(1);
 
-          // Clean up.
-          completer.complete([]);
-          await bloc.close();
-        },
-      );
+        // Clean up.
+        completer.complete([]);
+        await bloc.close();
+      });
     });
 
     group('CategorySelected', () {
@@ -135,9 +132,7 @@ void main() {
         'emits [loading, loaded] with videos for selected category',
         setUp: () {
           when(
-            () => mockApiClient.getVideosByCategory(
-              category: 'music',
-            ),
+            () => mockApiClient.getVideosByCategory(category: 'music'),
           ).thenAnswer((_) async => mockVideoStats);
         },
         build: () => CategoriesBloc(categoriesRepository: mockRepository),
@@ -163,9 +158,7 @@ void main() {
         'emits error when API throws on category selection',
         setUp: () {
           when(
-            () => mockApiClient.getVideosByCategory(
-              category: 'music',
-            ),
+            () => mockApiClient.getVideosByCategory(category: 'music'),
           ).thenThrow(const FunnelcakeException('Failed'));
         },
         build: () => CategoriesBloc(categoriesRepository: mockRepository),
@@ -262,15 +255,11 @@ void main() {
               category: 'music',
             ),
           ).thenAnswer(
-            (_) async => const RecommendationsResponse(
-              videos: [],
-              source: 'popular',
-            ),
+            (_) async =>
+                const RecommendationsResponse(videos: [], source: 'popular'),
           );
           when(
-            () => mockApiClient.getVideosByCategory(
-              category: 'music',
-            ),
+            () => mockApiClient.getVideosByCategory(category: 'music'),
           ).thenAnswer((_) async => [_createVideoStats('hot-fallback-id')]);
           when(
             () => mockApiClient.getVideosByCategory(

@@ -42,9 +42,8 @@ void main() {
       mockDraftStorageService = _MockDraftStorageService();
     });
 
-    DraftsLibraryBloc createBloc() => DraftsLibraryBloc(
-      draftStorageService: mockDraftStorageService,
-    );
+    DraftsLibraryBloc createBloc() =>
+        DraftsLibraryBloc(draftStorageService: mockDraftStorageService);
 
     test('initial state is $DraftsLibraryInitial', () {
       final bloc = createBloc();
@@ -57,10 +56,7 @@ void main() {
         'emits [loading, loaded] with drafts from service',
         setUp: () {
           when(() => mockDraftStorageService.getAllDrafts()).thenAnswer(
-            (_) async => [
-              createDraft(id: 'draft1'),
-              createDraft(id: 'draft2'),
-            ],
+            (_) async => [createDraft(id: 'draft1'), createDraft(id: 'draft2')],
           );
         },
         build: createBloc,

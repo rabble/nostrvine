@@ -64,10 +64,7 @@ void main() {
       final sessionUpdates = <BlossomResumableUploadSession>[];
 
       when(
-        () => mockDio.head(
-          any(),
-          options: any(named: 'options'),
-        ),
+        () => mockDio.head(any(), options: any(named: 'options')),
       ).thenAnswer((invocation) async {
         final url = invocation.positionalArguments.first as String;
         if (url == 'https://media.divine.video/upload') {
@@ -78,12 +75,8 @@ void main() {
               DivineUploadHeaders.extensions: [
                 DivineUploadExtensions.resumableSessions,
               ],
-              DivineUploadHeaders.controlHost: [
-                'https://media.divine.video',
-              ],
-              DivineUploadHeaders.dataHost: [
-                'https://upload.divine.video',
-              ],
+              DivineUploadHeaders.controlHost: ['https://media.divine.video'],
+              DivineUploadHeaders.dataHost: ['https://upload.divine.video'],
             }),
           );
         }
@@ -240,10 +233,7 @@ void main() {
       final sessionUpdates = <BlossomResumableUploadSession>[];
 
       when(
-        () => mockDio.head(
-          any(),
-          options: any(named: 'options'),
-        ),
+        () => mockDio.head(any(), options: any(named: 'options')),
       ).thenAnswer((invocation) async {
         final url = invocation.positionalArguments.first as String;
         if (url == 'https://media.divine.video/upload') {
@@ -254,12 +244,8 @@ void main() {
               DivineUploadHeaders.extensions: [
                 DivineUploadExtensions.resumableSessions,
               ],
-              DivineUploadHeaders.controlHost: [
-                'https://media.divine.video',
-              ],
-              DivineUploadHeaders.dataHost: [
-                'https://upload.divine.video',
-              ],
+              DivineUploadHeaders.controlHost: ['https://media.divine.video'],
+              DivineUploadHeaders.dataHost: ['https://upload.divine.video'],
             }),
           );
         }
@@ -322,10 +308,7 @@ void main() {
           options.headers?['Authorization'],
           equals('Bearer session-token'),
         );
-        expect(
-          options.headers?['X-ProofMode-Manifest'],
-          isNull,
-        );
+        expect(options.headers?['X-ProofMode-Manifest'], isNull);
         expect(
           invocation.positionalArguments.first,
           equals('https://upload.divine.video/sessions/up_123'),
@@ -421,9 +404,7 @@ void main() {
         ),
       );
 
-      tempDir = await Directory.systemTemp.createTemp(
-        'blossom_chunk_retry_',
-      );
+      tempDir = await Directory.systemTemp.createTemp('blossom_chunk_retry_');
       // 8-byte file → two 4-byte chunks
       videoFile = File('${tempDir.path}/video.mp4')
         ..writeAsBytesSync(List<int>.generate(8, (i) => i));
@@ -495,226 +476,211 @@ void main() {
       }),
     );
 
-    test(
-      'retries a transient 502 on the first chunk and completes',
-      () async {
-        var putCallCount = 0;
+    test('retries a transient 502 on the first chunk and completes', () async {
+      var putCallCount = 0;
 
-        when(
-          () => mockDio.put(
-            any(),
-            data: any(named: 'data'),
-            options: any(named: 'options'),
-            onSendProgress: any(named: 'onSendProgress'),
-          ),
-        ).thenAnswer((invocation) async {
-          putCallCount++;
-          final options = invocation.namedArguments[#options] as Options;
-          final contentRange = options.headers?['Content-Range'] as String;
+      when(
+        () => mockDio.put(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        putCallCount++;
+        final options = invocation.namedArguments[#options] as Options;
+        final contentRange = options.headers?['Content-Range'] as String;
 
-          // First PUT for chunk 1 → 502, second PUT for chunk 1 → success
-          if (contentRange == 'bytes 0-3/8' && putCallCount == 1) {
-            throw DioException(
-              requestOptions: RequestOptions(path: '/sessions/up_retry'),
-              response: Response(
-                requestOptions: RequestOptions(path: '/sessions/up_retry'),
-                statusCode: 502,
-              ),
-              type: DioExceptionType.badResponse,
-            );
-          }
-
-          final nextOffset = switch (contentRange) {
-            'bytes 0-3/8' => '4',
-            'bytes 4-7/8' => '8',
-            _ => throw StateError('Unexpected range: $contentRange'),
-          };
-          return chunkSuccessResponse(nextOffset);
-        });
-
-        final sessionUpdates = <BlossomResumableUploadSession>[];
-        final result = await service.uploadVideo(
-          videoFile: videoFile,
-          nostrPubkey: testPublicKey,
-          title: 'retry test',
-          description: null,
-          hashtags: null,
-          proofManifestJson: null,
-          onResumableSessionUpdated: sessionUpdates.add,
-        );
-
-        expect(result.success, isTrue);
-        // 1 failed + 1 success for chunk 1, 1 success for chunk 2 = 3
-        expect(putCallCount, equals(3));
-        expect(sessionUpdates.map((s) => s.nextOffset), [0, 4, 8]);
-      },
-    );
-
-    test(
-      'retries a DioException.connectionError and completes',
-      () async {
-        var putCallCount = 0;
-
-        when(
-          () => mockDio.put(
-            any(),
-            data: any(named: 'data'),
-            options: any(named: 'options'),
-            onSendProgress: any(named: 'onSendProgress'),
-          ),
-        ).thenAnswer((invocation) async {
-          putCallCount++;
-          final options = invocation.namedArguments[#options] as Options;
-          final contentRange = options.headers?['Content-Range'] as String;
-
-          // First chunk, first attempt → network error
-          if (contentRange == 'bytes 0-3/8' && putCallCount == 1) {
-            throw DioException(
-              requestOptions: RequestOptions(path: '/sessions/up_retry'),
-              type: DioExceptionType.connectionError,
-              error: 'Connection reset by peer',
-            );
-          }
-
-          final nextOffset = switch (contentRange) {
-            'bytes 0-3/8' => '4',
-            'bytes 4-7/8' => '8',
-            _ => throw StateError('Unexpected range: $contentRange'),
-          };
-          return chunkSuccessResponse(nextOffset);
-        });
-
-        final result = await service.uploadVideo(
-          videoFile: videoFile,
-          nostrPubkey: testPublicKey,
-          title: 'network retry test',
-          description: null,
-          hashtags: null,
-          proofManifestJson: null,
-        );
-
-        expect(result.success, isTrue);
-        expect(putCallCount, equals(3));
-      },
-    );
-
-    test(
-      'does not retry a 404 session-expired response',
-      () async {
-        when(
-          () => mockDio.put(
-            any(),
-            data: any(named: 'data'),
-            options: any(named: 'options'),
-            onSendProgress: any(named: 'onSendProgress'),
-          ),
-        ).thenAnswer((invocation) async {
-          // 404 is < 500, so Dio returns it as a response (not exception).
-          // _uploadChunks should throw BlossomResumableUploadException
-          // without retrying.
-          return Response(
-            requestOptions: RequestOptions(path: '/sessions/up_retry'),
-            statusCode: 404,
-          );
-        });
-
-        final result = await service.uploadVideo(
-          videoFile: videoFile,
-          nostrPubkey: testPublicKey,
-          title: 'expired session test',
-          description: null,
-          hashtags: null,
-          proofManifestJson: null,
-        );
-
-        // Upload fails because the session-expired error propagates
-        // through the server loop catch and returns a failed result.
-        expect(result.success, isFalse);
-
-        // PUT was called only once — no retry for 404
-        verify(
-          () => mockDio.put(
-            any(),
-            data: any(named: 'data'),
-            options: any(named: 'options'),
-            onSendProgress: any(named: 'onSendProgress'),
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'rethrows after exhausting per-chunk retries',
-      () async {
-        var putCallCount = 0;
-
-        when(
-          () => mockDio.put(
-            any(),
-            data: any(named: 'data'),
-            options: any(named: 'options'),
-            onSendProgress: any(named: 'onSendProgress'),
-          ),
-        ).thenAnswer((_) async {
-          putCallCount++;
+        // First PUT for chunk 1 → 502, second PUT for chunk 1 → success
+        if (contentRange == 'bytes 0-3/8' && putCallCount == 1) {
           throw DioException(
             requestOptions: RequestOptions(path: '/sessions/up_retry'),
             response: Response(
               requestOptions: RequestOptions(path: '/sessions/up_retry'),
-              statusCode: 503,
+              statusCode: 502,
             ),
             type: DioExceptionType.badResponse,
           );
-        });
+        }
 
-        final result = await service.uploadVideo(
-          videoFile: videoFile,
-          nostrPubkey: testPublicKey,
-          title: 'exhausted retries test',
-          description: null,
-          hashtags: null,
-          proofManifestJson: null,
-        );
+        final nextOffset = switch (contentRange) {
+          'bytes 0-3/8' => '4',
+          'bytes 4-7/8' => '8',
+          _ => throw StateError('Unexpected range: $contentRange'),
+        };
+        return chunkSuccessResponse(nextOffset);
+      });
 
-        expect(result.success, isFalse);
-        // 1 initial + 2 retries = 3 total attempts
-        expect(putCallCount, equals(3));
-      },
-    );
+      final sessionUpdates = <BlossomResumableUploadSession>[];
+      final result = await service.uploadVideo(
+        videoFile: videoFile,
+        nostrPubkey: testPublicKey,
+        title: 'retry test',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
+        onResumableSessionUpdated: sessionUpdates.add,
+      );
 
-    test(
-      'does not retry a non-transient DioException (e.g. cancel)',
-      () async {
-        var putCallCount = 0;
+      expect(result.success, isTrue);
+      // 1 failed + 1 success for chunk 1, 1 success for chunk 2 = 3
+      expect(putCallCount, equals(3));
+      expect(sessionUpdates.map((s) => s.nextOffset), [0, 4, 8]);
+    });
 
-        when(
-          () => mockDio.put(
-            any(),
-            data: any(named: 'data'),
-            options: any(named: 'options'),
-            onSendProgress: any(named: 'onSendProgress'),
-          ),
-        ).thenAnswer((_) async {
-          putCallCount++;
+    test('retries a DioException.connectionError and completes', () async {
+      var putCallCount = 0;
+
+      when(
+        () => mockDio.put(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        putCallCount++;
+        final options = invocation.namedArguments[#options] as Options;
+        final contentRange = options.headers?['Content-Range'] as String;
+
+        // First chunk, first attempt → network error
+        if (contentRange == 'bytes 0-3/8' && putCallCount == 1) {
           throw DioException(
             requestOptions: RequestOptions(path: '/sessions/up_retry'),
-            type: DioExceptionType.cancel,
+            type: DioExceptionType.connectionError,
+            error: 'Connection reset by peer',
           );
-        });
+        }
 
-        final result = await service.uploadVideo(
-          videoFile: videoFile,
-          nostrPubkey: testPublicKey,
-          title: 'cancel test',
-          description: null,
-          hashtags: null,
-          proofManifestJson: null,
+        final nextOffset = switch (contentRange) {
+          'bytes 0-3/8' => '4',
+          'bytes 4-7/8' => '8',
+          _ => throw StateError('Unexpected range: $contentRange'),
+        };
+        return chunkSuccessResponse(nextOffset);
+      });
+
+      final result = await service.uploadVideo(
+        videoFile: videoFile,
+        nostrPubkey: testPublicKey,
+        title: 'network retry test',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
+      );
+
+      expect(result.success, isTrue);
+      expect(putCallCount, equals(3));
+    });
+
+    test('does not retry a 404 session-expired response', () async {
+      when(
+        () => mockDio.put(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        // 404 is < 500, so Dio returns it as a response (not exception).
+        // _uploadChunks should throw BlossomResumableUploadException
+        // without retrying.
+        return Response(
+          requestOptions: RequestOptions(path: '/sessions/up_retry'),
+          statusCode: 404,
         );
+      });
 
-        expect(result.success, isFalse);
-        // No retry — cancel is not transient
-        expect(putCallCount, equals(1));
-      },
-    );
+      final result = await service.uploadVideo(
+        videoFile: videoFile,
+        nostrPubkey: testPublicKey,
+        title: 'expired session test',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
+      );
+
+      // Upload fails because the session-expired error propagates
+      // through the server loop catch and returns a failed result.
+      expect(result.success, isFalse);
+
+      // PUT was called only once — no retry for 404
+      verify(
+        () => mockDio.put(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).called(1);
+    });
+
+    test('rethrows after exhausting per-chunk retries', () async {
+      var putCallCount = 0;
+
+      when(
+        () => mockDio.put(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenAnswer((_) async {
+        putCallCount++;
+        throw DioException(
+          requestOptions: RequestOptions(path: '/sessions/up_retry'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/sessions/up_retry'),
+            statusCode: 503,
+          ),
+          type: DioExceptionType.badResponse,
+        );
+      });
+
+      final result = await service.uploadVideo(
+        videoFile: videoFile,
+        nostrPubkey: testPublicKey,
+        title: 'exhausted retries test',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
+      );
+
+      expect(result.success, isFalse);
+      // 1 initial + 2 retries = 3 total attempts
+      expect(putCallCount, equals(3));
+    });
+
+    test('does not retry a non-transient DioException (e.g. cancel)', () async {
+      var putCallCount = 0;
+
+      when(
+        () => mockDio.put(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenAnswer((_) async {
+        putCallCount++;
+        throw DioException(
+          requestOptions: RequestOptions(path: '/sessions/up_retry'),
+          type: DioExceptionType.cancel,
+        );
+      });
+
+      final result = await service.uploadVideo(
+        videoFile: videoFile,
+        nostrPubkey: testPublicKey,
+        title: 'cancel test',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
+      );
+
+      expect(result.success, isFalse);
+      // No retry — cancel is not transient
+      expect(putCallCount, equals(1));
+    });
   });
 }

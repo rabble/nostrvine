@@ -67,9 +67,7 @@ Future<GalleryPermissionChoice> showGalleryPermissionSheet(
         ? () async {
             await permissionsService.openAppSettings();
             if (context.mounted) {
-              Navigator.of(
-                context,
-              ).pop(GalleryPermissionChoice.openedSettings);
+              Navigator.of(context).pop(GalleryPermissionChoice.openedSettings);
             }
           }
         : () async {
@@ -92,9 +90,7 @@ Future<GalleryPermissionChoice> showGalleryPermissionSheet(
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_kGalleryPermissionDismissedKey, true);
       if (context.mounted) {
-        Navigator.of(
-          context,
-        ).pop(GalleryPermissionChoice.dismissedForever);
+        Navigator.of(context).pop(GalleryPermissionChoice.dismissedForever);
       }
     },
   );

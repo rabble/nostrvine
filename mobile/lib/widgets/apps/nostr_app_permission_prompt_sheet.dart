@@ -55,11 +55,7 @@ class NostrAppPermissionPromptSheet extends StatelessWidget {
           Column(
             spacing: 12,
             children: [
-              DivineButton(
-                label: 'Allow',
-                onPressed: onAllow,
-                expanded: true,
-              ),
+              DivineButton(label: 'Allow', onPressed: onAllow, expanded: true),
               DivineButton(
                 label: 'Cancel',
                 type: DivineButtonType.secondary,
@@ -75,10 +71,7 @@ class NostrAppPermissionPromptSheet extends StatelessWidget {
 }
 
 class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.label,
-    required this.value,
-  });
+  const _DetailRow({required this.label, required this.value});
 
   final String label;
   final String value;

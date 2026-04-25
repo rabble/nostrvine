@@ -172,10 +172,7 @@ class _VideoAudioEditorTimingScreenState
       );
     } else if (sound.url != null) {
       _waveformBloc.add(
-        SoundWaveformExtract(
-          path: sound.url!,
-          soundId: sound.id,
-        ),
+        SoundWaveformExtract(path: sound.url!, soundId: sound.id),
       );
     }
   }
@@ -188,9 +185,7 @@ class _VideoAudioEditorTimingScreenState
   Future<void> _confirmSelection() async {
     await _audioTimingCubit.stopPlayback();
     final startOffset = _audioTimingCubit.calculateStartOffset();
-    final updatedSound = widget.sound.copyWith(
-      startOffset: startOffset,
-    );
+    final updatedSound = widget.sound.copyWith(startOffset: startOffset);
     if (mounted) {
       context.pop<AudioTimingResult>(AudioTimingConfirmed(updatedSound));
     }
@@ -564,10 +559,7 @@ class _AudioWaveformSelector extends StatelessWidget {
           child: BlocBuilder<SoundWaveformBloc, SoundWaveformState>(
             builder: (context, waveformState) {
               final (leftChannel, rightChannel) = switch (waveformState) {
-                SoundWaveformLoaded(
-                  :final leftChannel,
-                  :final rightChannel,
-                ) =>
+                SoundWaveformLoaded(:final leftChannel, :final rightChannel) =>
                   (leftChannel, rightChannel),
                 _ => (null, null),
               };

@@ -123,9 +123,7 @@ void main() {
         expect(find.byType(SingleChildScrollView), findsOneWidget);
       });
 
-      testWidgets('shows loading indicator when isLoadingMore', (
-        tester,
-      ) async {
+      testWidgets('shows loading indicator when isLoadingMore', (tester) async {
         when(() => mockBloc.state).thenReturn(
           const HashtagSearchState(
             status: HashtagSearchStatus.success,

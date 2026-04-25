@@ -15,10 +15,9 @@ part 'locale_state.dart';
 /// language, or `null` when following the device default.
 class LocaleCubit extends Cubit<LocaleState> {
   /// Creates a [LocaleCubit] backed by [localePreferenceService].
-  LocaleCubit({
-    required LocalePreferenceService localePreferenceService,
-  }) : _service = localePreferenceService,
-       super(const LocaleState()) {
+  LocaleCubit({required LocalePreferenceService localePreferenceService})
+    : _service = localePreferenceService,
+      super(const LocaleState()) {
     _loadSavedLocale();
   }
 

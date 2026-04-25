@@ -114,9 +114,7 @@ void main() {
 
         var fetchCallCount = 0;
         when(
-          () => mockProfileRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-          ),
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
         ).thenAnswer((_) async {
           fetchCallCount++;
           if (fetchCallCount <= 2) {
@@ -127,9 +125,7 @@ void main() {
         });
 
         when(
-          () => mockProfileRepository.deleteCachedProfile(
-            pubkey: testPubkey,
-          ),
+          () => mockProfileRepository.deleteCachedProfile(pubkey: testPubkey),
         ).thenAnswer((_) async => 1);
         when(
           () => mockProfileRepository.cacheProfile(any()),
@@ -154,9 +150,7 @@ void main() {
 
         while (attempts < maxAttempts) {
           attempts++;
-          await mockProfileRepository.deleteCachedProfile(
-            pubkey: testPubkey,
-          );
+          await mockProfileRepository.deleteCachedProfile(pubkey: testPubkey);
           final fetchedProfile = await mockProfileRepository.fetchFreshProfile(
             pubkey: testPubkey,
           );
@@ -205,14 +199,10 @@ void main() {
           reason: 'Should retry until getting updated profile',
         );
         verify(
-          () => mockProfileRepository.deleteCachedProfile(
-            pubkey: testPubkey,
-          ),
+          () => mockProfileRepository.deleteCachedProfile(pubkey: testPubkey),
         ).called(3);
         verify(
-          () => mockProfileRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-          ),
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
         ).called(3);
       },
     );
@@ -352,14 +342,10 @@ void main() {
         );
 
         when(
-          () => mockProfileRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-          ),
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
         ).thenAnswer((_) async => updatedProfile);
         when(
-          () => mockProfileRepository.deleteCachedProfile(
-            pubkey: testPubkey,
-          ),
+          () => mockProfileRepository.deleteCachedProfile(pubkey: testPubkey),
         ).thenAnswer((_) async => 1);
 
         // Act
@@ -398,9 +384,7 @@ void main() {
           reason: 'Should succeed on first attempt without retries',
         );
         verify(
-          () => mockProfileRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-          ),
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
         ).called(1);
       },
     );

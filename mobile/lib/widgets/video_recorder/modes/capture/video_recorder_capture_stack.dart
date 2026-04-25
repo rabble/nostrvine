@@ -19,10 +19,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
   /// Whether the recorder was opened from the video editor.
   final bool fromEditor;
 
-  void _deleteLastClip(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  void _deleteLastClip(BuildContext context, WidgetRef ref) {
     final clipsNotifier = ref.read(clipManagerProvider.notifier);
     unawaited(clipsNotifier.deleteLastRecordedClip());
 

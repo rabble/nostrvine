@@ -771,9 +771,7 @@ void main() {
 
     group('FullscreenFeedVideoUnavailable', () {
       MediaAvailabilityChecker checkerReturning(int statusCode) {
-        final client = MockClient(
-          (_) async => http.Response('', statusCode),
-        );
+        final client = MockClient((_) async => http.Response('', statusCode));
         return MediaAvailabilityChecker(client: client);
       }
 
@@ -795,10 +793,7 @@ void main() {
         },
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
-          videos: [
-            createTestVideo('video1'),
-            createTestVideo('video2'),
-          ],
+          videos: [createTestVideo('video1'), createTestVideo('video2')],
         ),
         act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video1')),
         wait: const Duration(milliseconds: 100),
@@ -878,10 +873,7 @@ void main() {
         },
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
-          videos: [
-            createTestVideo('video1'),
-            createTestVideo('video2'),
-          ],
+          videos: [createTestVideo('video1'), createTestVideo('video2')],
         ),
         act: (bloc) async {
           bloc.add(const FullscreenFeedVideoUnavailable('video1'));
@@ -994,9 +986,8 @@ void main() {
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'no-ops when no pending skip',
         build: createBloc,
-        seed: () => const FullscreenFeedState(
-          status: FullscreenFeedStatus.ready,
-        ),
+        seed: () =>
+            const FullscreenFeedState(status: FullscreenFeedStatus.ready),
         act: (bloc) => bloc.add(const FullscreenFeedSkipAcknowledged()),
         expect: () => <FullscreenFeedState>[],
       );
@@ -1011,10 +1002,7 @@ void main() {
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
-          videos: [
-            createTestVideo('video1'),
-            createTestVideo('video2'),
-          ],
+          videos: [createTestVideo('video1'), createTestVideo('video2')],
         ),
         act: (bloc) async {
           bloc.add(const FullscreenFeedVideoUnavailable('video1'));

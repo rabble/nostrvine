@@ -42,9 +42,7 @@ void main() {
       mockNostrClient = _MockNostrClient();
 
       // Default stubs: nothing in cache, nothing from relay.
-      when(
-        () => mockVideoEventService.getVideoById(any()),
-      ).thenReturn(null);
+      when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
       when(
         () => mockVideoEventService.getVideoEventByVineId(any()),
       ).thenReturn(null);
@@ -109,9 +107,7 @@ void main() {
       blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
         'emits $VideoLinkPreviewResolved when relay returns event by ID',
         setUp: () {
-          when(
-            () => mockNostrClient.fetchEventById('test-id'),
-          ).thenAnswer(
+          when(() => mockNostrClient.fetchEventById('test-id')).thenAnswer(
             (_) async => Event.fromJson({
               'id': testVideo.id,
               'pubkey': testVideo.pubkey,
@@ -130,9 +126,7 @@ void main() {
       blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
         'emits $VideoLinkPreviewResolved when relay returns event by d-tag',
         setUp: () {
-          when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenAnswer(
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
             (_) async => [
               Event.fromJson({
                 'id': testVideo.id,

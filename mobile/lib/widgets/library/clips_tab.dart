@@ -145,9 +145,7 @@ class ClipsTab extends StatelessWidget {
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               context.l10n.commonCancel,
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.secondaryText,
-              ),
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             ),
           ),
           ElevatedButton(
@@ -172,10 +170,7 @@ class ClipsTab extends StatelessWidget {
 /// Header widget for clip selection mode.
 class ClipSelectionHeader extends StatelessWidget {
   /// Creates a selection header.
-  const ClipSelectionHeader({
-    required this.onCreate,
-    super.key,
-  });
+  const ClipSelectionHeader({required this.onCreate, super.key});
 
   /// Callback when create button is tapped.
   final VoidCallback onCreate;

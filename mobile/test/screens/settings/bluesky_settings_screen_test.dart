@@ -37,9 +37,7 @@ void main() {
               },
               builder: (context, state) {
                 if (state.status == CrosspostSettingsStatus.loading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
                 return ListView(
                   children: [
@@ -142,9 +140,7 @@ void main() {
       tester,
     ) async {
       when(() => cubit.state).thenReturn(
-        const CrosspostSettingsState(
-          status: CrosspostSettingsStatus.loaded,
-        ),
+        const CrosspostSettingsState(status: CrosspostSettingsStatus.loaded),
       );
 
       await tester.pumpWidget(buildSubject());
@@ -173,10 +169,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      expect(
-        find.text('Failed to update crosspost setting'),
-        findsOneWidget,
-      );
+      expect(find.text('Failed to update crosspost setting'), findsOneWidget);
     });
   });
 }

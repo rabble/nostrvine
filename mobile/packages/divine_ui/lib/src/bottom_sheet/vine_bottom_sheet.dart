@@ -33,6 +33,7 @@ class VineBottomSheet extends StatelessWidget {
     this.bottomInput,
     this.expanded = true,
     this.showHeaderDivider = true,
+    this.headerPadding,
     super.key,
   }) : assert(
          children != null || body != null || buildScrollBody != null,
@@ -94,6 +95,9 @@ class VineBottomSheet extends StatelessWidget {
   /// Defaults to true.
   final bool showHeaderDivider;
 
+  /// Optional padding override forwarded to [VineBottomSheetHeader].
+  final EdgeInsetsGeometry? headerPadding;
+
   /// Shows the bottom sheet as a modal.
   ///
   /// Set [scrollable] to false for fixed-height sheets (e.g., action menus).
@@ -133,6 +137,7 @@ class VineBottomSheet extends StatelessWidget {
     Widget? bottomInput,
     bool expanded = true,
     bool showHeaderDivider = true,
+    EdgeInsetsGeometry? headerPadding,
     bool? isScrollControlled,
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
@@ -162,10 +167,7 @@ class VineBottomSheet extends StatelessWidget {
       scrollable || !snap,
       'snap can only be used when scrollable is true',
     );
-    assert(
-      snapSizes == null || snap,
-      'snapSizes requires snap: true',
-    );
+    assert(snapSizes == null || snap, 'snapSizes requires snap: true');
 
     // When `tapOutsideToDismiss` is explicitly disabled, also disable
     // Flutter's modal barrier dismissal so the two outside-tap mechanisms
@@ -197,6 +199,7 @@ class VineBottomSheet extends StatelessWidget {
               bottomInput: bottomInput,
               expanded: expanded,
               showHeaderDivider: showHeaderDivider,
+              headerPadding: headerPadding,
               body: body,
               children: children,
             );
@@ -280,6 +283,7 @@ class VineBottomSheet extends StatelessWidget {
             bottomInput: bottomInput,
             expanded: expanded,
             showHeaderDivider: showHeaderDivider,
+            headerPadding: headerPadding,
             body: body,
             children: children,
           );
@@ -308,6 +312,7 @@ class VineBottomSheet extends StatelessWidget {
                 contentTitle: contentTitle,
                 bottomInput: bottomInput,
                 showHeaderDivider: showHeaderDivider,
+                headerPadding: headerPadding,
                 children: children,
               )
             : _FixedContent(
@@ -318,6 +323,7 @@ class VineBottomSheet extends StatelessWidget {
                 contentTitle: contentTitle,
                 bottomInput: bottomInput,
                 showHeaderDivider: showHeaderDivider,
+                headerPadding: headerPadding,
                 children: children,
               ),
       ),
@@ -350,6 +356,7 @@ class _ScrollableContent extends StatelessWidget {
     required this.children,
     required this.bottomInput,
     required this.showHeaderDivider,
+    this.headerPadding,
   });
 
   final bool showHeader;
@@ -362,6 +369,7 @@ class _ScrollableContent extends StatelessWidget {
   final List<Widget>? children;
   final Widget? bottomInput;
   final bool showHeaderDivider;
+  final EdgeInsetsGeometry? headerPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -373,6 +381,7 @@ class _ScrollableContent extends StatelessWidget {
             title: title,
             trailing: trailing,
             showDivider: showHeaderDivider,
+            padding: headerPadding,
           )
         else
           // Drag handle only — content manages its own layout below
@@ -428,6 +437,7 @@ class _FixedContent extends StatelessWidget {
     required this.children,
     required this.bottomInput,
     required this.showHeaderDivider,
+    this.headerPadding,
   });
 
   final bool showHeader;
@@ -438,6 +448,7 @@ class _FixedContent extends StatelessWidget {
   final List<Widget>? children;
   final Widget? bottomInput;
   final bool showHeaderDivider;
+  final EdgeInsetsGeometry? headerPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -452,6 +463,9 @@ class _FixedContent extends StatelessWidget {
               title: title,
               trailing: trailing,
               showDivider: showHeaderDivider,
+              padding:
+                  headerPadding ??
+                  const EdgeInsetsDirectional.only(start: 24, end: 24, top: 8),
             )
           else
             // Drag handle only

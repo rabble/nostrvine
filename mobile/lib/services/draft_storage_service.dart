@@ -66,14 +66,10 @@ class DraftStorageService {
           publishError: draft.publishError,
           data: json.encode(draftJson),
           renderedFilePath: draft.finalRenderedClip?.video.file?.path != null
-              ? p.basename(
-                  draft.finalRenderedClip!.video.file!.path,
-                )
+              ? p.basename(draft.finalRenderedClip!.video.file!.path)
               : null,
           renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
-              ? p.basename(
-                  draft.finalRenderedClip!.thumbnailPath!,
-                )
+              ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
               : null,
         );
 
@@ -360,9 +356,7 @@ class DraftStorageService {
   /// Get all drafts from storage
   Future<List<DivineVideoDraft>> getAllDrafts() async {
     try {
-      final rows = await _draftsDao.getAllDrafts(
-        ownerPubkey: ownerPubkey,
-      );
+      final rows = await _draftsDao.getAllDrafts(ownerPubkey: ownerPubkey);
       final documentsPath = await getDocumentsPath();
       final drafts = <DivineVideoDraft>[];
       final corruptedDraftIds = <String>[];

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:content_blocklist_repository/src/block_list_signer.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -73,6 +74,8 @@ class ContentBlocklistRepository {
   // followers list until they explicitly re-follow.
   final Set<String> _severedFollowers = <String>{};
 
+  final _stateController = StreamController<ContentPolicyState>.broadcast();
+
   // Subscription tracking for mutual mutes
   String? _mutualMuteSubscriptionId;
   bool _mutualMuteSyncStarted = false;
@@ -85,8 +88,30 @@ class ContentBlocklistRepository {
   BlockListSigner? _signer;
   NostrClient? _nostrClient;
 
+  /// A synchronous snapshot of the current policy state.
+  ContentPolicyState get currentState => _buildCurrentState();
+
+  /// Emits a new [ContentPolicyState] snapshot whenever the policy changes.
+  Stream<ContentPolicyState> get stateStream => _stateController.stream;
+
+  ContentPolicyState _buildCurrentState() => ContentPolicyState(
+    currentUserPubkey: _ourPubkey,
+    // TODO(rabble): populate from our own kind 10000 once personal-mute
+    // reading is wired; tracking in follow-up to the content-policy epic.
+    mutedPubkeys: const {},
+    blockedPubkeys: Set.unmodifiable({
+      ..._internalBlocklist,
+      ..._runtimeBlocklist,
+    }),
+    pubkeysBlockingUs: Set.unmodifiable(_blockedByOthers),
+    pubkeysMutingUs: Set.unmodifiable(_mutualMuteBlocklist),
+  );
+
   void _notifyChanged() {
     _onChanged?.call();
+    if (!_stateController.isClosed) {
+      _stateController.add(_buildCurrentState());
+    }
   }
 
   void _addInitialBlockedContent() {
@@ -721,5 +746,6 @@ class ContentBlocklistRepository {
     _mutualMuteSyncStarted = false;
     _mutualMuteSubscriptionId = null;
     _blockListSyncStarted = false;
+    unawaited(_stateController.close());
   }
 }

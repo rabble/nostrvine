@@ -38,42 +38,41 @@ class _FirstFrameStartupHarnessState extends State<_FirstFrameStartupHarness> {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets(
-    'renders the first frame before deferred startup completes',
-    (tester) async {
-      final coordinator = StartupCoordinator();
-      final deferredStarted = Completer<void>();
-      final deferredCompleter = Completer<void>();
+  testWidgets('renders the first frame before deferred startup completes', (
+    tester,
+  ) async {
+    final coordinator = StartupCoordinator();
+    final deferredStarted = Completer<void>();
+    final deferredCompleter = Completer<void>();
 
-      coordinator.registerService(
-        name: 'EnvironmentService',
-        phase: StartupPhase.critical,
-        initialize: () async {},
-      );
-      coordinator.registerService(
-        name: 'DeferredWarmup',
-        phase: StartupPhase.deferred,
-        initialize: () async {
-          deferredStarted.complete();
-          await deferredCompleter.future;
-        },
-      );
+    coordinator.registerService(
+      name: 'EnvironmentService',
+      phase: StartupPhase.critical,
+      initialize: () async {},
+    );
+    coordinator.registerService(
+      name: 'DeferredWarmup',
+      phase: StartupPhase.deferred,
+      initialize: () async {
+        deferredStarted.complete();
+        await deferredCompleter.future;
+      },
+    );
 
-      await coordinator.initializeThrough(StartupPhase.critical);
+    await coordinator.initializeThrough(StartupPhase.critical);
 
-      await tester.pumpWidget(
-        _FirstFrameStartupHarness(
-          startDeferredStartup: coordinator.initializeRemaining,
-        ),
-      );
+    await tester.pumpWidget(
+      _FirstFrameStartupHarness(
+        startDeferredStartup: coordinator.initializeRemaining,
+      ),
+    );
 
-      expect(find.text('first-frame-shell'), findsOneWidget);
+    expect(find.text('first-frame-shell'), findsOneWidget);
 
-      await tester.pump();
+    await tester.pump();
 
-      expect(find.text('first-frame-shell'), findsOneWidget);
-      expect(deferredStarted.isCompleted, isTrue);
-      expect(deferredCompleter.isCompleted, isFalse);
-    },
-  );
+    expect(find.text('first-frame-shell'), findsOneWidget);
+    expect(deferredStarted.isCompleted, isTrue);
+    expect(deferredCompleter.isCompleted, isFalse);
+  });
 }

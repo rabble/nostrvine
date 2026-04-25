@@ -15,10 +15,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: Scaffold(
-          body: ProfileTabEmptyState(
-            title: title,
-            subtitle: subtitle,
-          ),
+          body: ProfileTabEmptyState(title: title, subtitle: subtitle),
         ),
       );
     }
@@ -35,10 +32,7 @@ void main() {
           buildSubject(subtitle: 'Videos you like will appear here'),
         );
 
-        expect(
-          find.text('Videos you like will appear here'),
-          findsOneWidget,
-        );
+        expect(find.text('Videos you like will appear here'), findsOneWidget);
       });
 
       testWidgets('$CustomScrollView with $SliverFillRemaining', (

@@ -48,12 +48,8 @@ void main() {
       ).thenReturn(VideoEditorFilterState(filters: presetFiltersList));
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
 
-      when(
-        () => mockMainBloc.state,
-      ).thenReturn(const VideoEditorMainState());
-      when(
-        () => mockMainBloc.stream,
-      ).thenAnswer((_) => const Stream.empty());
+      when(() => mockMainBloc.state).thenReturn(const VideoEditorMainState());
+      when(() => mockMainBloc.stream).thenAnswer((_) => const Stream.empty());
     });
 
     Widget buildWidget() {
@@ -75,12 +71,8 @@ void main() {
             onAddEditTextLayer: ([layer]) async => null,
             child: MultiBlocProvider(
               providers: [
-                BlocProvider<VideoEditorFilterBloc>.value(
-                  value: mockBloc,
-                ),
-                BlocProvider<VideoEditorMainBloc>.value(
-                  value: mockMainBloc,
-                ),
+                BlocProvider<VideoEditorFilterBloc>.value(value: mockBloc),
+                BlocProvider<VideoEditorMainBloc>.value(value: mockMainBloc),
               ],
               child: const SizedBox(
                 width: 400,

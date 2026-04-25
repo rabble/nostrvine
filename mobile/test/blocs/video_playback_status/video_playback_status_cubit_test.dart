@@ -56,24 +56,21 @@ void main() {
       expect(cubit.state.statusFor(id2), PlaybackStatus.ageRestricted);
     });
 
-    test(
-      'states with same entries but different LRU order are not equal',
-      () {
-        const idA =
-            '5555555555555555555555555555555555555555555555555555555555555555';
-        const idB =
-            '6666666666666666666666666666666666666666666666666666666666666666';
+    test('states with same entries but different LRU order are not equal', () {
+      const idA =
+          '5555555555555555555555555555555555555555555555555555555555555555';
+      const idB =
+          '6666666666666666666666666666666666666666666666666666666666666666';
 
-        final a = VideoPlaybackStatusState()
-            .withStatus(idA, PlaybackStatus.forbidden)
-            .withStatus(idB, PlaybackStatus.ageRestricted);
-        final b = VideoPlaybackStatusState()
-            .withStatus(idB, PlaybackStatus.ageRestricted)
-            .withStatus(idA, PlaybackStatus.forbidden);
+      final a = VideoPlaybackStatusState()
+          .withStatus(idA, PlaybackStatus.forbidden)
+          .withStatus(idB, PlaybackStatus.ageRestricted);
+      final b = VideoPlaybackStatusState()
+          .withStatus(idB, PlaybackStatus.ageRestricted)
+          .withStatus(idA, PlaybackStatus.forbidden);
 
-        expect(a, isNot(equals(b)));
-      },
-    );
+      expect(a, isNot(equals(b)));
+    });
 
     test('reporting same id twice moves it to most-recent', () {
       final cubit = VideoPlaybackStatusCubit(maxEntries: 2);
@@ -120,10 +117,7 @@ void main() {
           playbackStatusFromError(VideoErrorType.generic),
           PlaybackStatus.generic,
         );
-        expect(
-          playbackStatusFromError(null),
-          PlaybackStatus.generic,
-        );
+        expect(playbackStatusFromError(null), PlaybackStatus.generic);
       });
     });
   });

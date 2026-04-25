@@ -67,9 +67,8 @@ class VideoEditorAudioChip extends StatelessWidget {
         PageRouteBuilder(
           opaque: false,
           barrierColor: VineTheme.transparent,
-          pageBuilder: (_, _, _) => VideoAudioEditorTimingScreen(
-            sound: soundToEdit!,
-          ),
+          pageBuilder: (_, _, _) =>
+              VideoAudioEditorTimingScreen(sound: soundToEdit!),
         ),
       );
 

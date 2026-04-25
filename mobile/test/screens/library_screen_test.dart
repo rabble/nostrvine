@@ -396,25 +396,15 @@ void main() {
       );
     });
     group('web', () {
-      testWidgets(
-        'shows mobile-app intercept instead of tabs',
-        (tester) async {
-          await tester.pumpWidget(buildWidget());
-          await tester.pumpAndSettle();
+      testWidgets('shows mobile-app intercept instead of tabs', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
 
-          expect(
-            find.text(en.libraryWebUnavailableHeadline),
-            findsOneWidget,
-          );
-          expect(
-            find.text(en.libraryWebUnavailableDescription),
-            findsOneWidget,
-          );
-          expect(find.text(en.libraryTabDrafts), findsNothing);
-          expect(find.text(en.libraryTabClips), findsNothing);
-        },
-        skip: !kIsWeb,
-      );
+        expect(find.text(en.libraryWebUnavailableHeadline), findsOneWidget);
+        expect(find.text(en.libraryWebUnavailableDescription), findsOneWidget);
+        expect(find.text(en.libraryTabDrafts), findsNothing);
+        expect(find.text(en.libraryTabClips), findsNothing);
+      }, skip: !kIsWeb);
     });
   });
 }

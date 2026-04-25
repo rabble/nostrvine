@@ -97,11 +97,7 @@ class _DefaultAvatar extends StatelessWidget {
       width: NotificationAvatarStack._avatarSize,
       height: NotificationAvatarStack._avatarSize,
       color: VineTheme.surfaceContainer,
-      child: const Icon(
-        Icons.person,
-        color: VineTheme.lightText,
-        size: 20,
-      ),
+      child: const Icon(Icons.person, color: VineTheme.lightText, size: 20),
     );
   }
 }

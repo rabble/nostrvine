@@ -77,9 +77,7 @@ void main() {
     testWidgets('maps legacy waitlist-only mode to invite entry flow', (
       tester,
     ) async {
-      when(
-        () => mockInviteApiClient.getClientConfig(),
-      ).thenAnswer(
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => InviteClientConfig(
           mode: parseOnboardingMode('waitlist_only'),
           supportEmail: 'support@divine.video',
@@ -125,17 +123,13 @@ void main() {
     );
 
     testWidgets('valid code continues to create account', (tester) async {
-      when(
-        () => mockInviteApiClient.getClientConfig(),
-      ).thenAnswer(
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
           supportEmail: 'support@divine.video',
         ),
       );
-      when(
-        () => mockInviteApiClient.validateCode(any()),
-      ).thenAnswer(
+      when(() => mockInviteApiClient.validateCode(any())).thenAnswer(
         (_) async => const InviteValidationResult(
           valid: true,
           used: false,
@@ -147,10 +141,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Add your invite code'), findsOneWidget);
-      await tester.enterText(
-        find.byType(TextField),
-        'ab12ef34',
-      );
+      await tester.enterText(find.byType(TextField), 'ab12ef34');
       await tester.tap(find.widgetWithText(DivineButton, 'Next'));
       await tester.pumpAndSettle();
 
@@ -161,9 +152,7 @@ void main() {
     testWidgets('shows initial recovery error from query params', (
       tester,
     ) async {
-      when(
-        () => mockInviteApiClient.getClientConfig(),
-      ).thenAnswer(
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
           supportEmail: 'support@divine.video',
@@ -216,9 +205,7 @@ void main() {
     testWidgets('preserves creator source slug when joining waitlist', (
       tester,
     ) async {
-      when(
-        () => mockInviteApiClient.getClientConfig(),
-      ).thenAnswer(
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
           supportEmail: 'support@divine.video',
@@ -230,10 +217,8 @@ void main() {
           sourceSlug: any(named: 'sourceSlug'),
         ),
       ).thenAnswer(
-        (_) async => const WaitlistJoinResult(
-          id: 'waitlist-entry-1',
-          message: 'Joined',
-        ),
+        (_) async =>
+            const WaitlistJoinResult(id: 'waitlist-entry-1', message: 'Joined'),
       );
 
       await tester.pumpWidget(

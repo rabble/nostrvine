@@ -41,9 +41,7 @@ void main() {
 
     testWidgets(
       'shows category title and picker trigger without inline sort labels',
-      (
-        tester,
-      ) async {
+      (tester) async {
         await tester.binding.setSurfaceSize(const Size(1000, 800));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -110,9 +108,7 @@ void main() {
 
     testWidgets(
       'opens picker sheet and calls back when a different mode is tapped',
-      (
-        tester,
-      ) async {
+      (tester) async {
         String? selectedSort;
 
         await tester.pumpWidget(

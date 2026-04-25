@@ -241,10 +241,7 @@ class _TagChip extends ConsumerWidget {
         mainAxisSize: .min,
         children: [
           // Hashtag symbol
-          Text(
-            '#',
-            style: VineTheme.bodyLargeFont(color: VineTheme.primary),
-          ),
+          Text('#', style: VineTheme.bodyLargeFont(color: VineTheme.primary)),
           const SizedBox(width: 4),
           // Tag text
           Flexible(

@@ -51,9 +51,8 @@ const _audioPubkey =
 const _audioEventId =
     '1111111111111111111111111111111111111111111111111111111111111111';
 
-AppLocalizations _l10n(WidgetTester tester) => AppLocalizations.of(
-  tester.element(find.byType(Scaffold).first),
-);
+AppLocalizations _l10n(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first));
 
 UserProfile _makeProfile(String pubkey, String name) => UserProfile(
   pubkey: pubkey,
@@ -249,10 +248,7 @@ void main() {
     testWidgets('renders captions after the primary metadata content', (
       tester,
     ) async {
-      final video = _makeVideo(
-        title: 'Why',
-        content: 'Because',
-      );
+      final video = _makeVideo(title: 'Why', content: 'Because');
 
       await tester.pumpWidget(
         buildSubject(child: MetadataExpandedSheet(video: video)),
@@ -283,9 +279,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
       addTearDown(container.dispose);
 
@@ -410,9 +404,7 @@ void main() {
     testWidgets('renders Human-Made badge without the divine logo', (
       tester,
     ) async {
-      final video = _makeVideo(
-        rawTags: {'verification': 'verified_mobile'},
-      );
+      final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
       await tester.pumpWidget(
         buildSubject(child: MetadataBadgesRow(video: video)),
       );

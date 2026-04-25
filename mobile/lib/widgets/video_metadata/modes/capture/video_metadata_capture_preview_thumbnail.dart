@@ -10,10 +10,7 @@ import 'package:pro_image_editor/features/filter_editor/widgets/filter_generator
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 class VideoMetadataCapturePreviewThumbnail extends ConsumerWidget {
-  const VideoMetadataCapturePreviewThumbnail({
-    required this.clip,
-    super.key,
-  });
+  const VideoMetadataCapturePreviewThumbnail({required this.clip, super.key});
 
   final DivineVideoClip clip;
 
@@ -25,18 +22,11 @@ class VideoMetadataCapturePreviewThumbnail extends ConsumerWidget {
 
     if (clip.thumbnailPath == null) {
       return const Center(
-        child: DivineIcon(
-          icon: .warning,
-          size: 32,
-          color: VineTheme.lightText,
-        ),
+        child: DivineIcon(icon: .warning, size: 32, color: VineTheme.lightText),
       );
     }
 
-    final thumbnail = Image.file(
-      File(clip.thumbnailPath!),
-      fit: .cover,
-    );
+    final thumbnail = Image.file(File(clip.thumbnailPath!), fit: .cover);
 
     return Stack(
       fit: .expand,

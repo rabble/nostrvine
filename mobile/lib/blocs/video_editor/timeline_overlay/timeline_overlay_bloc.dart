@@ -32,10 +32,7 @@ class TimelineOverlayBloc
   TimelineOverlayBloc() : super(const TimelineOverlayState()) {
     on<TimelineOverlayItemsUpdate>(_onUpdateItems);
     on<TimelineOverlayItemMoved>(_onItemMoved, transformer: restartable());
-    on<TimelineOverlayItemTrimmed>(
-      _onItemTrimmed,
-      transformer: restartable(),
-    );
+    on<TimelineOverlayItemTrimmed>(_onItemTrimmed, transformer: restartable());
     on<TimelineOverlayItemSelected>(_onItemSelected);
     on<TimelineOverlayDragStarted>(_onDragStarted);
     on<TimelineOverlayDragEnded>(_onDragEnded);
@@ -96,10 +93,7 @@ class TimelineOverlayBloc
             id: event.filters[i].id,
             type: .filter,
             startTime: event.filters[i].startTime ?? .zero,
-            endTime: _clampEnd(
-              event.filters[i].endTime ?? total,
-              total,
-            ),
+            endTime: _clampEnd(event.filters[i].endTime ?? total, total),
             label: event.filters[i].name,
           ),
     ];
@@ -151,9 +145,7 @@ class TimelineOverlayBloc
     for (final item in items) {
       (grouped[item.type] ??= []).add(item);
     }
-    return [
-      for (final group in grouped.values) ..._compactRows(group),
-    ];
+    return [for (final group in grouped.values) ..._compactRows(group)];
   }
 
   /// Compacts rows gradually.

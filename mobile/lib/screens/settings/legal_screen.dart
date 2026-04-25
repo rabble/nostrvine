@@ -101,9 +101,7 @@ class LegalScreen extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                context.l10n.legalCouldNotOpenPage(pageName),
-              ),
+              content: Text(context.l10n.legalCouldNotOpenPage(pageName)),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -113,9 +111,7 @@ class LegalScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.legalErrorOpeningPage(pageName, e),
-            ),
+            content: Text(context.l10n.legalErrorOpeningPage(pageName, e)),
             backgroundColor: VineTheme.error,
           ),
         );

@@ -41,9 +41,7 @@ class _FeedAutoAdvanceCompletionListenerState
   }
 
   @override
-  void didUpdateWidget(
-    covariant FeedAutoAdvanceCompletionListener oldWidget,
-  ) {
+  void didUpdateWidget(covariant FeedAutoAdvanceCompletionListener oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.player != widget.player ||
         oldWidget.isEnabled != widget.isEnabled) {

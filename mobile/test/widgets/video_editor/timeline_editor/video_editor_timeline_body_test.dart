@@ -164,10 +164,7 @@ void main() {
     testWidgets(
       'hides outside-area overlays when duration does not exceed max',
       (tester) async {
-        await pumpBody(
-          tester,
-          totalDuration: VideoEditorConstants.maxDuration,
-        );
+        await pumpBody(tester, totalDuration: VideoEditorConstants.maxDuration);
 
         expect(
           find.byWidgetPredicate(

@@ -623,10 +623,7 @@ class VideoThumbnailService {
         );
         await file.writeAsBytes(bytes[i]);
         accumulated.add(
-          StripThumbnail(
-            path: file.path,
-            timestamp: batchTimestamps[i],
-          ),
+          StripThumbnail(path: file.path, timestamp: batchTimestamps[i]),
         );
       }
 

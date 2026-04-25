@@ -13,6 +13,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  content_policy:
   models:
     path: ../models
   nostr_client:

@@ -59,45 +59,42 @@ void main() {
       },
     );
 
-    testWidgets(
-      'does not trigger when canLoadMore returns false',
-      (tester) async {
-        var canLoadMore = false;
-        var loadMoreCalls = 0;
+    testWidgets('does not trigger when canLoadMore returns false', (
+      tester,
+    ) async {
+      var canLoadMore = false;
+      var loadMoreCalls = 0;
 
-        await tester.pumpWidget(
-          MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: _TestWidget(
-              canLoadMore: () => canLoadMore,
-              onLoadMore: () async {
-                loadMoreCalls++;
-              },
-            ),
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: _TestWidget(
+            canLoadMore: () => canLoadMore,
+            onLoadMore: () async {
+              loadMoreCalls++;
+            },
           ),
-        );
+        ),
+      );
 
-        final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
-        final scrollController = state.paginationScrollController;
+      final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+      final scrollController = state.paginationScrollController;
 
-        expect(scrollController.hasClients, isTrue);
-        expect(scrollController.position.maxScrollExtent, greaterThan(0));
+      expect(scrollController.hasClients, isTrue);
+      expect(scrollController.position.maxScrollExtent, greaterThan(0));
 
-        scrollController.jumpTo(
-          scrollController.position.maxScrollExtent - 100,
-        );
-        await tester.pump();
+      scrollController.jumpTo(scrollController.position.maxScrollExtent - 100);
+      await tester.pump();
 
-        expect(loadMoreCalls, 0);
+      expect(loadMoreCalls, 0);
 
-        canLoadMore = true;
-        scrollController.jumpTo(scrollController.position.maxScrollExtent);
-        await tester.pump();
+      canLoadMore = true;
+      scrollController.jumpTo(scrollController.position.maxScrollExtent);
+      await tester.pump();
 
-        expect(loadMoreCalls, 1);
-      },
-    );
+      expect(loadMoreCalls, 1);
+    });
 
     testWidgets(
       'does not throw when the scroll controller has multiple positions',
@@ -135,10 +132,7 @@ void main() {
 
 /// Test widget that uses [ScrollPaginationMixin].
 class _TestWidget extends StatefulWidget {
-  const _TestWidget({
-    required this.canLoadMore,
-    required this.onLoadMore,
-  });
+  const _TestWidget({required this.canLoadMore, required this.onLoadMore});
 
   final bool Function() canLoadMore;
   final FutureOr<void> Function() onLoadMore;
@@ -177,10 +171,8 @@ class _TestWidgetState extends State<_TestWidget> with ScrollPaginationMixin {
     return ListView.builder(
       controller: _scrollController,
       itemCount: 100,
-      itemBuilder: (context, index) => SizedBox(
-        height: 80,
-        child: Text('Item $index'),
-      ),
+      itemBuilder: (context, index) =>
+          SizedBox(height: 80, child: Text('Item $index')),
     );
   }
 }
@@ -235,10 +227,8 @@ class _MultiPositionTestWidgetState extends State<_MultiPositionTestWidget>
     return ListView.builder(
       controller: _scrollController,
       itemCount: 100,
-      itemBuilder: (context, index) => SizedBox(
-        height: 40,
-        child: Text('Item $index'),
-      ),
+      itemBuilder: (context, index) =>
+          SizedBox(height: 40, child: Text('Item $index')),
     );
   }
 }

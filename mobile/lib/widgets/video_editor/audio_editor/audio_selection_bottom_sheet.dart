@@ -9,8 +9,9 @@ import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selection_overlay.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
-import 'package:openvine/widgets/video_editor/audio_editor/audio_sort_dropdown.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -19,53 +20,109 @@ class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
 
   final ScrollController scrollController;
 
+  static Future<AudioEvent?> show(BuildContext context) {
+    return VineBottomSheet.show<AudioEvent>(
+      context: context,
+      maxChildSize: 1,
+      initialChildSize: 1,
+      minChildSize: 0.8,
+      headerPadding: const EdgeInsetsDirectional.only(
+        start: 12,
+        end: 12,
+        top: 8,
+      ),
+      title: Row(
+        mainAxisAlignment: .spaceBetween,
+        spacing: 8,
+        children: [
+          DivineIconButton(
+            icon: .x,
+            onPressed: context.pop,
+            type: .secondary,
+            size: .small,
+          ),
+
+          Flexible(child: Text(context.l10n.videoEditorAudioAddAudio)),
+
+          const IgnorePointer(
+            child: ExcludeSemantics(
+              child: Opacity(
+                opacity: 0,
+                child: DivineIconButton(
+                  icon: .x,
+                  onPressed: null,
+                  size: .small,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      buildScrollBody: (scrollController) =>
+          AudioSelectionBottomSheet(scrollController: scrollController),
+    );
+  }
+
   @override
   ConsumerState<AudioSelectionBottomSheet> createState() =>
       _AudioSelectionBottomSheetState();
 }
 
 class _AudioSelectionBottomSheetState
-    extends ConsumerState<AudioSelectionBottomSheet> {
-  // Note: Temporarily final until search is reimplemented.
-  // Using final to satisfy lint rules (prefer_final_locals).
-  final String _searchQuery = '';
-  AudioSortOption _sortOption = AudioSortOption.newest;
-  String? _playingSoundId;
+    extends ConsumerState<AudioSelectionBottomSheet>
+    with SingleTickerProviderStateMixin {
   final _audioService = AudioPlaybackService();
+  String? _loadedSoundId;
+  AudioEvent? _selectedItem;
+  AudioCategory _category = .diVine;
+
+  late final _tabController = TabController(
+    length: AudioCategory.values.length,
+    vsync: this,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController.addListener(_onTabChanged);
+  }
 
   @override
   void dispose() {
-    _stopPlayback();
     _audioService.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
-  Future<void> _stopPlayback() async {
-    if (_playingSoundId != null) {
-      await _audioService.stop();
-      _playingSoundId = null;
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) return;
+    final newCategory = AudioCategory.values[_tabController.index];
+    if (_category != newCategory) {
+      setState(() => _category = newCategory);
     }
   }
 
-  Future<void> _togglePlayPause(AudioEvent sound) async {
-    // If tapping the same sound, toggle play/stop
-    if (_playingSoundId == sound.id) {
-      if (_audioService.isPlaying) {
-        await _audioService.stop();
+  void _selectCategory(AudioCategory category) {
+    setState(() {
+      _category = category;
+      _tabController.animateTo(
+        AudioCategory.values.indexWhere((el) => el == category),
+      );
+    });
+  }
 
-        if (mounted) setState(() => _playingSoundId = null);
-
-        Log.debug(
-          'Stopped preview: ${sound.title ?? sound.id}',
-          name: 'AudioSelectionBottomSheet',
-          category: LogCategory.ui,
-        );
-      }
+  Future<void> _togglePlayPause({bool enforcePlay = false}) async {
+    if (_selectedItem == null) {
       return;
     }
 
-    // Stop any currently playing audio
-    await _audioService.stop();
+    if (_audioService.isPlaying && !enforcePlay) {
+      await _audioService.pause();
+      await _audioService.seek(.zero);
+      return;
+    }
+
+    final sound = _selectedItem!;
 
     if (sound.url == null || sound.url!.isEmpty) {
       Log.warning(
@@ -76,6 +133,8 @@ class _AudioSelectionBottomSheetState
       return;
     }
 
+    final shouldReload = _loadedSoundId != sound.id;
+
     Log.debug(
       'Starting preview: ${sound.title ?? sound.id}',
       name: 'AudioSelectionBottomSheet',
@@ -83,10 +142,20 @@ class _AudioSelectionBottomSheetState
     );
 
     try {
-      await _audioService.loadAudio(sound.url!);
-      if (mounted) {
-        setState(() => _playingSoundId = sound.id);
+      await _audioService.seek(.zero);
+      if (shouldReload) {
+        await _audioService.stop();
+        await _audioService.loadAudio(sound.url!);
+        _loadedSoundId = sound.id;
       }
+
+      if (mounted) {
+        setState(() {
+          _selectedItem = sound;
+        });
+      }
+      // Blocks here for the entire duration of playback — only
+      // releases once the song finishes playing to the end or was paused.
       await _audioService.play();
     } catch (e) {
       Log.error(
@@ -95,22 +164,37 @@ class _AudioSelectionBottomSheetState
         category: LogCategory.ui,
       );
     } finally {
-      if (mounted) {
-        setState(() => _playingSoundId = null);
+      if (_selectedItem == sound) {
+        await _audioService.pause();
+        setState(() {});
       }
     }
   }
 
   Future<void> _selectSound(AudioEvent sound) async {
+    if (_selectedItem?.id == sound.id) return;
     Log.info(
       'Sound selected: ${sound.title ?? 'Untitled'} (${sound.id})',
       name: 'AudioSelectionBottomSheet',
       category: LogCategory.ui,
     );
-    _stopPlayback();
+    setState(() {
+      _selectedItem = sound;
+    });
+    await _togglePlayPause(enforcePlay: true);
+  }
 
-    if (sound.duration == null ||
-        sound.duration! >
+  Future<void> _handleDoneSelection() async {
+    await _audioService.stop();
+    if (!mounted) return;
+
+    if (_selectedItem == null) {
+      context.pop();
+      return;
+    }
+
+    if (_selectedItem!.duration == null ||
+        _selectedItem!.duration! >
             (VideoEditorConstants.maxDuration.inMilliseconds / 1000)) {
       final timingResult = await Navigator.of(context).push<AudioTimingResult>(
         PageRouteBuilder(
@@ -119,7 +203,7 @@ class _AudioSelectionBottomSheetState
           transitionsBuilder: (_, animation, _, child) =>
               FadeTransition(opacity: animation, child: child),
           pageBuilder: (_, _, _) => VideoAudioEditorTimingScreen(
-            sound: sound,
+            sound: _selectedItem!,
             enableDeleteButton: false,
           ),
         ),
@@ -134,40 +218,8 @@ class _AudioSelectionBottomSheetState
         }
       }
     } else {
-      context.pop(sound);
+      context.pop(_selectedItem);
     }
-  }
-
-  List<AudioEvent> _filterSounds(List<AudioEvent> sounds) {
-    if (_searchQuery.isEmpty) {
-      return sounds;
-    }
-
-    return sounds.where((sound) {
-      final title = sound.title?.toLowerCase() ?? '';
-      return title.contains(_searchQuery);
-    }).toList();
-  }
-
-  List<AudioEvent> _sortSounds(List<AudioEvent> sounds) {
-    final sorted = List<AudioEvent>.from(sounds);
-    switch (_sortOption) {
-      case AudioSortOption.newest:
-        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      case AudioSortOption.longest:
-        sorted.sort((a, b) {
-          final aDuration = a.duration ?? 0;
-          final bDuration = b.duration ?? 0;
-          return bDuration.compareTo(aDuration);
-        });
-      case AudioSortOption.shortest:
-        sorted.sort((a, b) {
-          final aDuration = a.duration ?? 0;
-          final bDuration = b.duration ?? 0;
-          return aDuration.compareTo(bDuration);
-        });
-    }
-    return sorted;
   }
 
   @override
@@ -180,72 +232,65 @@ class _AudioSelectionBottomSheetState
         bundledSoundsAsync.whenOrNull(
           data: (service) {
             return service.sounds.indexed
-                .map(
-                  (e) => AudioEvent.fromBundledSound(
-                    e.$2,
-                    index: e.$1,
-                  ),
-                )
+                .map((e) => AudioEvent.fromBundledSound(e.$2, index: e.$1))
                 .toList();
           },
         ) ??
         <AudioEvent>[];
 
-    return SafeArea(
-      child: nostrSoundsAsync.when(
-        data: (nostrSounds) {
-          final allSounds = [...bundledSounds, ...nostrSounds];
-          final filteredBundled = _filterSounds(bundledSounds);
-          final filteredNostr = _filterSounds(nostrSounds);
-          final filteredAll = [...filteredBundled, ...filteredNostr];
+    return Stack(
+      children: [
+        Column(
+          crossAxisAlignment: .stretch,
+          children: [
+            AudioCategoryBar(category: _category, onSelect: _selectCategory),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _SoundsContent(
+                    scrollController: widget.scrollController,
+                    sounds: bundledSounds,
+                    selectedSound: _selectedItem,
+                    audioService: _audioService,
+                    onSelect: _selectSound,
+                  ),
 
-          final soundsToShow = _searchQuery.isNotEmpty
-              ? filteredAll
-              : allSounds;
-          final sortedSounds = _sortSounds(soundsToShow);
+                  nostrSoundsAsync.when(
+                    data: (nostrSounds) {
+                      return _SoundsContent(
+                        scrollController: widget.scrollController,
+                        sounds: nostrSounds,
+                        selectedSound: _selectedItem,
+                        audioService: _audioService,
+                        onSelect: _selectSound,
+                      );
+                    },
+                    loading: () =>
+                        const Center(child: BrandedLoadingIndicator()),
+                    error: (error, stack) => _ErrorState(error: error),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
 
-          return _SoundsContent(
-            scrollController: widget.scrollController,
-            allSounds: allSounds,
-            filteredSounds: sortedSounds,
-            searchQuery: _searchQuery,
-            hasSearchResults: filteredAll.isNotEmpty,
-            sortOption: _sortOption,
-            onSortChanged: (option) => setState(() => _sortOption = option),
-            playingSoundId: _playingSoundId,
-            onPlayPause: _togglePlayPause,
-            onSelect: _selectSound,
-          );
-        },
-        loading: () => bundledSounds.isNotEmpty
-            ? _SoundsContent(
-                scrollController: widget.scrollController,
-                allSounds: bundledSounds,
-                filteredSounds: _sortSounds(bundledSounds),
-                searchQuery: _searchQuery,
-                hasSearchResults: true,
-                sortOption: _sortOption,
-                onSortChanged: (option) => setState(() => _sortOption = option),
-                playingSoundId: _playingSoundId,
-                onPlayPause: _togglePlayPause,
-                onSelect: _selectSound,
-              )
-            : const Center(child: BrandedLoadingIndicator()),
-        error: (error, stack) => bundledSounds.isNotEmpty
-            ? _SoundsContent(
-                scrollController: widget.scrollController,
-                allSounds: bundledSounds,
-                filteredSounds: _sortSounds(bundledSounds),
-                searchQuery: _searchQuery,
-                hasSearchResults: true,
-                sortOption: _sortOption,
-                onSortChanged: (option) => setState(() => _sortOption = option),
-                playingSoundId: _playingSoundId,
-                onPlayPause: _togglePlayPause,
-                onSelect: _selectSound,
-              )
-            : _ErrorState(error: error),
-      ),
+        Align(
+          alignment: .bottomCenter,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: _selectedItem != null
+                ? AudioEditorSelectionOverlay(
+                    audio: _selectedItem!,
+                    audioService: _audioService,
+                    onTapDone: _handleDoneSelection,
+                    onTogglePlayState: _togglePlayPause,
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -253,67 +298,63 @@ class _AudioSelectionBottomSheetState
 class _SoundsContent extends StatelessWidget {
   const _SoundsContent({
     required this.scrollController,
-    required this.allSounds,
-    required this.filteredSounds,
-    required this.searchQuery,
-    required this.hasSearchResults,
-    required this.sortOption,
-    required this.onSortChanged,
-    required this.playingSoundId,
-    required this.onPlayPause,
+    required this.sounds,
+    required this.selectedSound,
+    required this.audioService,
     required this.onSelect,
   });
 
   final ScrollController scrollController;
-  final List<AudioEvent> allSounds;
-  final List<AudioEvent> filteredSounds;
-  final String searchQuery;
-  final bool hasSearchResults;
-  final AudioSortOption sortOption;
-  final ValueChanged<AudioSortOption> onSortChanged;
-  final String? playingSoundId;
-  final ValueChanged<AudioEvent> onPlayPause;
+  final List<AudioEvent> sounds;
+  final AudioEvent? selectedSound;
+  final AudioPlaybackService audioService;
   final ValueChanged<AudioEvent> onSelect;
+
+  static const _bottomSpace = 120.0;
 
   @override
   Widget build(BuildContext context) {
-    if (allSounds.isEmpty) {
+    if (sounds.isEmpty) {
       return const _EmptyState();
-    }
-
-    if (searchQuery.isNotEmpty && !hasSearchResults) {
-      return const _NoResultsState();
     }
 
     return CustomScrollView(
       controller: scrollController,
       slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const .symmetric(vertical: 12),
-            child: AudioSortDropdown(
-              value: sortOption,
-              onChanged: onSortChanged,
-            ),
-          ),
-        ),
         const SliverToBoxAdapter(
           child: Divider(height: 1, color: VineTheme.outlineDisabled),
         ),
+
         SliverList.separated(
-          itemCount: filteredSounds.length,
+          itemCount: sounds.length,
           separatorBuilder: (context, index) =>
               const Divider(height: 1, color: VineTheme.outlineDisabled),
           itemBuilder: (context, index) {
-            final audio = filteredSounds[index];
-            return AudioListTile(
-              audio: audio,
-              isPlaying: audio.id == playingSoundId,
-              onPlayPause: () => onPlayPause(audio),
-              onSelect: () => onSelect(audio),
+            final audio = sounds[index];
+            final isSelected = audio.id == selectedSound?.id;
+            if (!isSelected) {
+              return AudioListTile(
+                audio: audio,
+                isSelected: false,
+                onTap: () => onSelect(audio),
+              );
+            }
+            return StreamBuilder<bool>(
+              stream: audioService.playingStream,
+              initialData: audioService.isPlaying,
+              builder: (context, snapshot) {
+                return AudioListTile(
+                  audio: audio,
+                  isSelected: true,
+                  isPlaying: snapshot.data ?? false,
+                  onTap: () => onSelect(audio),
+                );
+              },
             );
           },
         ),
+        const SliverToBoxAdapter(child: SizedBox(height: _bottomSpace)),
+        const SliverBottomSafeArea(),
       ],
     );
   }
@@ -337,42 +378,8 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.secondaryText,
-            ),
+            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NoResultsState extends StatelessWidget {
-  const _NoResultsState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.search_off,
-            size: 64,
-            color: VineTheme.secondaryText,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            context.l10n.videoEditorAudioNoSoundsFoundTitle,
-            style: VineTheme.bodyLargeFont().copyWith(),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.videoEditorAudioNoSoundsFoundSubtitle,
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.secondaryText,
-            ),
           ),
         ],
       ),
@@ -402,9 +409,7 @@ class _ErrorState extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: VineTheme.bodySmallFont(
-                color: VineTheme.secondaryText,
-              ),
+              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,

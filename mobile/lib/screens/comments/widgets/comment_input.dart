@@ -257,9 +257,7 @@ class _CommentTextField extends StatelessWidget {
           onChanged: onChanged,
           onTapOutside: (_) => FocusScope.of(context).unfocus(),
           enableInteractiveSelection: true,
-          style: VineTheme.bodyLargeFont(
-            color: VineTheme.onSurface,
-          ),
+          style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
           cursorColor: VineTheme.tabIndicatorGreen,
           decoration: InputDecoration(
             hintText: hintText,

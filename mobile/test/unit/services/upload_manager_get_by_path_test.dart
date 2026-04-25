@@ -49,9 +49,9 @@ void main() {
     );
 
     mockUploadService = MockBlossomUploadService();
-    when(() => mockUploadService.isBlossomEnabled()).thenAnswer(
-      (_) async => false,
-    );
+    when(
+      () => mockUploadService.isBlossomEnabled(),
+    ).thenAnswer((_) async => false);
     when(
       () => mockUploadService.uploadVideo(
         videoFile: any(named: 'videoFile'),
@@ -65,10 +65,8 @@ void main() {
         onProgress: any(named: 'onProgress'),
       ),
     ).thenAnswer(
-      (_) async => const BlossomUploadResult(
-        success: true,
-        videoId: 'test-video-id',
-      ),
+      (_) async =>
+          const BlossomUploadResult(success: true, videoId: 'test-video-id'),
     );
     uploadManager = UploadManager(blossomService: mockUploadService);
 
@@ -117,18 +115,9 @@ void main() {
       final file3 = createVideoFile('path/to/video3.mp4', [6, 7, 8]);
 
       // Start uploads to create PendingUpload entries
-      await uploadManager.startUpload(
-        videoFile: file1,
-        nostrPubkey: 'pubkey1',
-      );
-      await uploadManager.startUpload(
-        videoFile: file2,
-        nostrPubkey: 'pubkey2',
-      );
-      await uploadManager.startUpload(
-        videoFile: file3,
-        nostrPubkey: 'pubkey3',
-      );
+      await uploadManager.startUpload(videoFile: file1, nostrPubkey: 'pubkey1');
+      await uploadManager.startUpload(videoFile: file2, nostrPubkey: 'pubkey2');
+      await uploadManager.startUpload(videoFile: file3, nostrPubkey: 'pubkey3');
 
       // Act
       final result = uploadManager.getUploadByFilePath(file2.path);
@@ -143,10 +132,7 @@ void main() {
       // Arrange
       final file1 = createVideoFile('path/to/video1.mp4', [0, 1, 2]);
 
-      await uploadManager.startUpload(
-        videoFile: file1,
-        nostrPubkey: 'pubkey1',
-      );
+      await uploadManager.startUpload(videoFile: file1, nostrPubkey: 'pubkey1');
 
       // Act
       final missingPath = '${tempDir.path}/path/to/nonexistent.mp4';
@@ -168,10 +154,7 @@ void main() {
       // Arrange
       final file = createVideoFile('path with spaces/my video.mp4', [0, 1, 2]);
 
-      await uploadManager.startUpload(
-        videoFile: file,
-        nostrPubkey: 'pubkey1',
-      );
+      await uploadManager.startUpload(videoFile: file, nostrPubkey: 'pubkey1');
 
       // Act
       final result = uploadManager.getUploadByFilePath(file.path);
@@ -185,10 +168,7 @@ void main() {
       // Arrange
       final file = createVideoFile(r'path/to/video@#$%^&()_+.mp4', [0, 1, 2]);
 
-      await uploadManager.startUpload(
-        videoFile: file,
-        nostrPubkey: 'pubkey1',
-      );
+      await uploadManager.startUpload(videoFile: file, nostrPubkey: 'pubkey1');
 
       // Act
       final result = uploadManager.getUploadByFilePath(file.path);
@@ -241,10 +221,7 @@ void main() {
       // Arrange
       final file = createVideoFile('Path/To/Video.mp4', [0, 1, 2]);
 
-      await uploadManager.startUpload(
-        videoFile: file,
-        nostrPubkey: 'pubkey1',
-      );
+      await uploadManager.startUpload(videoFile: file, nostrPubkey: 'pubkey1');
 
       // Act
       final resultLowerCase = uploadManager.getUploadByFilePath(

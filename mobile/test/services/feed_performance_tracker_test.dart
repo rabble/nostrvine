@@ -22,9 +22,7 @@ void main() {
             'abc123def456abc123def456abc123def456abc123def456abc123def456abcd';
         tracker.startVideoSwipeTracking(videoId);
 
-        verify(
-          () => tracker.startVideoSwipeTracking(videoId),
-        ).called(1);
+        verify(() => tracker.startVideoSwipeTracking(videoId)).called(1);
       });
 
       test('markVideoSwipeComplete calls markFeedDisplayed with video ID', () {
@@ -32,9 +30,7 @@ void main() {
             'abc123def456abc123def456abc123def456abc123def456abc123def456abcd';
         tracker.markVideoSwipeComplete(videoId);
 
-        verify(
-          () => tracker.markVideoSwipeComplete(videoId),
-        ).called(1);
+        verify(() => tracker.markVideoSwipeComplete(videoId)).called(1);
       });
 
       test('swipe tracking uses video_swipe_ prefix for feed type', () {

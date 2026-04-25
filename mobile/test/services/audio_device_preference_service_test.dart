@@ -42,10 +42,7 @@ void main() {
 
         // Change underlying prefs after first init
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(
-          AudioDevicePreferenceService.prefsKey,
-          'mic-2',
-        );
+        await prefs.setString(AudioDevicePreferenceService.prefsKey, 'mic-2');
 
         // Second call is a no-op — value stays the same
         await service.initialize();
@@ -77,10 +74,7 @@ void main() {
         expect(service.preferredDeviceId, isNull);
 
         final prefs = await SharedPreferences.getInstance();
-        expect(
-          prefs.getString(AudioDevicePreferenceService.prefsKey),
-          isNull,
-        );
+        expect(prefs.getString(AudioDevicePreferenceService.prefsKey), isNull);
       });
 
       test('overwrites existing preference', () async {

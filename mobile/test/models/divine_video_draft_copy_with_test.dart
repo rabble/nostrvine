@@ -88,26 +88,23 @@ void main() {
         expect(updated.selectedSound!.title, equals('New Sound'));
       });
 
-      test(
-        'clearSelectedSound takes precedence over new selectedSound',
-        () {
-          final draft = _createDraft();
+      test('clearSelectedSound takes precedence over new selectedSound', () {
+        final draft = _createDraft();
 
-          const newSound = AudioEvent(
-            id: 'ignored-id-123456789012345678901234567890123456789012345678901',
-            pubkey: _testPubkey,
-            createdAt: 1700000001,
-          );
+        const newSound = AudioEvent(
+          id: 'ignored-id-123456789012345678901234567890123456789012345678901',
+          pubkey: _testPubkey,
+          createdAt: 1700000001,
+        );
 
-          final cleared = draft.copyWith(
-            selectedSound: newSound,
-            clearSelectedSound: true,
-            skipUpdateLastModified: true,
-          );
+        final cleared = draft.copyWith(
+          selectedSound: newSound,
+          clearSelectedSound: true,
+          skipUpdateLastModified: true,
+        );
 
-          expect(cleared.selectedSound, isNull);
-        },
-      );
+        expect(cleared.selectedSound, isNull);
+      });
 
       test('preserves selectedSound startOffset through copyWith', () {
         const sound = AudioEvent(

@@ -69,19 +69,13 @@ void main() {
               (ref) => Stream.value(ExploreScreen.path),
             ),
             exploreTabVideosProvider.overrideWith((ref) => null),
-            classicVinesAvailableProvider.overrideWith(
-              (ref) async => false,
-            ),
+            classicVinesAvailableProvider.overrideWith((ref) async => false),
             forYouAvailableProvider.overrideWithValue(false),
             allListsProvider.overrideWith(
-              (ref) async => (
-                userLists: <UserList>[],
-                curatedLists: <CuratedList>[],
-              ),
+              (ref) async =>
+                  (userLists: <UserList>[], curatedLists: <CuratedList>[]),
             ),
-            curatedListsStateProvider.overrideWith(
-              _FakeCuratedListsState.new,
-            ),
+            curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
             isFeatureEnabledProvider(
               FeatureFlag.integratedApps,
             ).overrideWithValue(true),
@@ -112,19 +106,13 @@ void main() {
               (ref) => Stream.value(ExploreScreen.path),
             ),
             exploreTabVideosProvider.overrideWith((ref) => null),
-            classicVinesAvailableProvider.overrideWith(
-              (ref) async => false,
-            ),
+            classicVinesAvailableProvider.overrideWith((ref) async => false),
             forYouAvailableProvider.overrideWithValue(false),
             allListsProvider.overrideWith(
-              (ref) async => (
-                userLists: <UserList>[],
-                curatedLists: <CuratedList>[],
-              ),
+              (ref) async =>
+                  (userLists: <UserList>[], curatedLists: <CuratedList>[]),
             ),
-            curatedListsStateProvider.overrideWith(
-              _FakeCuratedListsState.new,
-            ),
+            curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
             isFeatureEnabledProvider(
               FeatureFlag.integratedApps,
             ).overrideWithValue(false),

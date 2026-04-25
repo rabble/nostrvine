@@ -555,9 +555,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
         verify: (_) {
-          verify(
-            () => mockFollowRepository.toggleFollow(testPubkey),
-          ).called(1);
+          verify(() => mockFollowRepository.toggleFollow(testPubkey)).called(1);
         },
       );
 
@@ -566,9 +564,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
         verify: (_) {
-          verifyNever(
-            () => mockFollowRepository.toggleFollow(any()),
-          );
+          verifyNever(() => mockFollowRepository.toggleFollow(any()));
         },
       );
 

@@ -81,9 +81,7 @@ void main() {
       when(
         () => mockVideoEventService.addVideoUpdateListener(any()),
       ).thenReturn(() {});
-      when(
-        () => mockVideoEventService.filterVideoList(any()),
-      ).thenAnswer(
+      when(() => mockVideoEventService.filterVideoList(any())).thenAnswer(
         (invocation) =>
             invocation.positionalArguments.first as List<VideoEvent>,
       );

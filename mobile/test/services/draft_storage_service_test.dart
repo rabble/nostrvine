@@ -232,9 +232,7 @@ void main() {
         );
 
         // Verify draft row exists
-        final row = await database.draftsDao.getDraftById(
-          'corrupted_draft',
-        );
+        final row = await database.draftsDao.getDraftById('corrupted_draft');
         expect(row, isNotNull);
 
         // getAllDrafts should skip it and delete it
@@ -424,15 +422,15 @@ void main() {
         );
 
         // updatePublishStatus updates the column used for filtering
-        final publishing = await service.getDraftsByPublishStatuses(
-          {PublishStatus.publishing},
-        );
+        final publishing = await service.getDraftsByPublishStatuses({
+          PublishStatus.publishing,
+        });
         expect(publishing, hasLength(1));
         expect(publishing.first.id, equals(draft.id));
 
-        final drafts = await service.getDraftsByPublishStatuses(
-          {PublishStatus.draft},
-        );
+        final drafts = await service.getDraftsByPublishStatuses({
+          PublishStatus.draft,
+        });
         expect(drafts, isEmpty);
       });
 
@@ -462,9 +460,9 @@ void main() {
           publishError: 'Network error',
         );
 
-        final failed = await service.getDraftsByPublishStatuses(
-          {PublishStatus.failed},
-        );
+        final failed = await service.getDraftsByPublishStatuses({
+          PublishStatus.failed,
+        });
         expect(failed, hasLength(1));
 
         // Verify error stored at DB row level
@@ -497,9 +495,9 @@ void main() {
           draftId: draft.id,
           status: PublishStatus.publishing,
         );
-        var matches = await service.getDraftsByPublishStatuses(
-          {PublishStatus.publishing},
-        );
+        var matches = await service.getDraftsByPublishStatuses({
+          PublishStatus.publishing,
+        });
         expect(matches, hasLength(1));
 
         await service.updatePublishStatus(
@@ -507,27 +505,24 @@ void main() {
           status: PublishStatus.failed,
           publishError: 'Timeout',
         );
-        matches = await service.getDraftsByPublishStatuses(
-          {PublishStatus.failed},
-        );
+        matches = await service.getDraftsByPublishStatuses({
+          PublishStatus.failed,
+        });
         expect(matches, hasLength(1));
 
         await service.updatePublishStatus(
           draftId: draft.id,
           status: PublishStatus.draft,
         );
-        matches = await service.getDraftsByPublishStatuses(
-          {PublishStatus.draft},
-        );
+        matches = await service.getDraftsByPublishStatuses({
+          PublishStatus.draft,
+        });
         expect(matches, hasLength(1));
       });
     });
 
     group('getDraftsByPublishStatuses', () {
-      DivineVideoDraft createDraftWithStatus(
-        String id,
-        PublishStatus status,
-      ) {
+      DivineVideoDraft createDraftWithStatus(String id, PublishStatus status) {
         final now = DateTime.now();
         return DivineVideoDraft(
           id: id,
@@ -565,9 +560,10 @@ void main() {
             createDraftWithStatus('d3', PublishStatus.failed),
           );
 
-          final results = await service.getDraftsByPublishStatuses(
-            {PublishStatus.publishing, PublishStatus.failed},
-          );
+          final results = await service.getDraftsByPublishStatuses({
+            PublishStatus.publishing,
+            PublishStatus.failed,
+          });
 
           expect(results, hasLength(2));
           final ids = results.map((d) => d.id).toSet();
@@ -580,9 +576,9 @@ void main() {
           createDraftWithStatus('d1', PublishStatus.draft),
         );
 
-        final results = await service.getDraftsByPublishStatuses(
-          {PublishStatus.failed},
-        );
+        final results = await service.getDraftsByPublishStatuses({
+          PublishStatus.failed,
+        });
 
         expect(results, isEmpty);
       });
@@ -601,9 +597,9 @@ void main() {
           data: '{"title":"Corrupted","description":""}',
         );
 
-        final results = await service.getDraftsByPublishStatuses(
-          {PublishStatus.failed},
-        );
+        final results = await service.getDraftsByPublishStatuses({
+          PublishStatus.failed,
+        });
 
         expect(results, isEmpty);
 
@@ -623,9 +619,9 @@ void main() {
           createDraftWithStatus('d3', PublishStatus.draft),
         );
 
-        final results = await service.getDraftsByPublishStatuses(
-          {PublishStatus.failed},
-        );
+        final results = await service.getDraftsByPublishStatuses({
+          PublishStatus.failed,
+        });
 
         expect(results, hasLength(2));
         expect(
@@ -717,217 +713,194 @@ void main() {
         expect(drafts, isEmpty);
       });
 
-      test(
-        'migrates a single draft with one clip',
-        () async {
-          final draftJson = buildDraftJson(
-            id: 'draft_1',
-            clips: [buildClipJson(id: 'clip_1')],
-            title: 'My First Vine',
-            description: 'A test description',
-          );
-          SharedPreferences.setMockInitialValues({
-            'vine_drafts': json.encode([draftJson]),
-          });
+      test('migrates a single draft with one clip', () async {
+        final draftJson = buildDraftJson(
+          id: 'draft_1',
+          clips: [buildClipJson(id: 'clip_1')],
+          title: 'My First Vine',
+          description: 'A test description',
+        );
+        SharedPreferences.setMockInitialValues({
+          'vine_drafts': json.encode([draftJson]),
+        });
 
-          await service.migrateOldDrafts();
+        await service.migrateOldDrafts();
 
-          final drafts = await service.getAllDrafts();
-          expect(drafts, hasLength(1));
-          expect(drafts.first.id, equals('draft_1'));
-          expect(drafts.first.title, equals('My First Vine'));
-          expect(drafts.first.description, equals('A test description'));
-          expect(drafts.first.clips, hasLength(1));
-          expect(drafts.first.clips.first.id, equals('clip_1'));
+        final drafts = await service.getAllDrafts();
+        expect(drafts, hasLength(1));
+        expect(drafts.first.id, equals('draft_1'));
+        expect(drafts.first.title, equals('My First Vine'));
+        expect(drafts.first.description, equals('A test description'));
+        expect(drafts.first.clips, hasLength(1));
+        expect(drafts.first.clips.first.id, equals('clip_1'));
 
-          // Legacy key should be removed
-          final prefs = await SharedPreferences.getInstance();
-          expect(prefs.getString('vine_drafts'), isNull);
-        },
-      );
+        // Legacy key should be removed
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('vine_drafts'), isNull);
+      });
 
-      test(
-        'migrates multiple drafts with multiple clips',
-        () async {
-          final draft1 = buildDraftJson(
-            id: 'draft_a',
-            clips: [
-              buildClipJson(id: 'clip_a1', filePath: 'a1.mp4'),
-              buildClipJson(id: 'clip_a2', filePath: 'a2.mp4'),
-            ],
-            title: 'Draft A',
-          );
-          final draft2 = buildDraftJson(
-            id: 'draft_b',
-            clips: [
-              buildClipJson(id: 'clip_b1', filePath: 'b1.mp4'),
-            ],
-            title: 'Draft B',
-          );
-          SharedPreferences.setMockInitialValues({
-            'vine_drafts': json.encode([draft1, draft2]),
-          });
+      test('migrates multiple drafts with multiple clips', () async {
+        final draft1 = buildDraftJson(
+          id: 'draft_a',
+          clips: [
+            buildClipJson(id: 'clip_a1', filePath: 'a1.mp4'),
+            buildClipJson(id: 'clip_a2', filePath: 'a2.mp4'),
+          ],
+          title: 'Draft A',
+        );
+        final draft2 = buildDraftJson(
+          id: 'draft_b',
+          clips: [buildClipJson(id: 'clip_b1', filePath: 'b1.mp4')],
+          title: 'Draft B',
+        );
+        SharedPreferences.setMockInitialValues({
+          'vine_drafts': json.encode([draft1, draft2]),
+        });
 
-          await service.migrateOldDrafts();
+        await service.migrateOldDrafts();
 
-          final drafts = await service.getAllDrafts();
-          expect(drafts, hasLength(2));
+        final drafts = await service.getAllDrafts();
+        expect(drafts, hasLength(2));
 
-          final draftA = drafts.firstWhere((d) => d.id == 'draft_a');
-          expect(draftA.clips, hasLength(2));
+        final draftA = drafts.firstWhere((d) => d.id == 'draft_a');
+        expect(draftA.clips, hasLength(2));
 
-          final draftB = drafts.firstWhere((d) => d.id == 'draft_b');
-          expect(draftB.clips, hasLength(1));
+        final draftB = drafts.firstWhere((d) => d.id == 'draft_b');
+        expect(draftB.clips, hasLength(1));
 
-          // Legacy key removed after full success
-          final prefs = await SharedPreferences.getInstance();
-          expect(prefs.getString('vine_drafts'), isNull);
-        },
-      );
+        // Legacy key removed after full success
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('vine_drafts'), isNull);
+      });
 
-      test(
-        'preserves clip order after migration',
-        () async {
-          final draftJson = buildDraftJson(
-            id: 'draft_order',
-            clips: [
-              buildClipJson(id: 'first', filePath: 'first.mp4'),
-              buildClipJson(id: 'second', filePath: 'second.mp4'),
-              buildClipJson(id: 'third', filePath: 'third.mp4'),
-            ],
-          );
-          SharedPreferences.setMockInitialValues({
-            'vine_drafts': json.encode([draftJson]),
-          });
+      test('preserves clip order after migration', () async {
+        final draftJson = buildDraftJson(
+          id: 'draft_order',
+          clips: [
+            buildClipJson(id: 'first', filePath: 'first.mp4'),
+            buildClipJson(id: 'second', filePath: 'second.mp4'),
+            buildClipJson(id: 'third', filePath: 'third.mp4'),
+          ],
+        );
+        SharedPreferences.setMockInitialValues({
+          'vine_drafts': json.encode([draftJson]),
+        });
 
-          await service.migrateOldDrafts();
+        await service.migrateOldDrafts();
 
-          final drafts = await service.getAllDrafts();
-          expect(drafts.first.clips.map((c) => c.id), [
-            'first',
-            'second',
-            'third',
-          ]);
-        },
-      );
+        final drafts = await service.getAllDrafts();
+        expect(drafts.first.clips.map((c) => c.id), [
+          'first',
+          'second',
+          'third',
+        ]);
+      });
 
-      test(
-        'preserves publish status through migration',
-        () async {
-          final draftJson = buildDraftJson(
-            id: 'draft_pub',
-            clips: [buildClipJson(id: 'clip_pub')],
-            publishStatus: 'failed',
-          );
-          SharedPreferences.setMockInitialValues({
-            'vine_drafts': json.encode([draftJson]),
-          });
+      test('preserves publish status through migration', () async {
+        final draftJson = buildDraftJson(
+          id: 'draft_pub',
+          clips: [buildClipJson(id: 'clip_pub')],
+          publishStatus: 'failed',
+        );
+        SharedPreferences.setMockInitialValues({
+          'vine_drafts': json.encode([draftJson]),
+        });
 
-          await service.migrateOldDrafts();
+        await service.migrateOldDrafts();
 
-          final drafts = await service.getAllDrafts();
-          expect(drafts.first.publishStatus, equals(PublishStatus.failed));
-        },
-      );
+        final drafts = await service.getAllDrafts();
+        expect(drafts.first.publishStatus, equals(PublishStatus.failed));
+      });
 
-      test(
-        'keeps failed drafts in SharedPreferences for retry',
-        () async {
-          final goodDraft = buildDraftJson(
-            id: 'draft_good',
-            clips: [buildClipJson(id: 'clip_good')],
-            title: 'Good Draft',
-          );
-          // Malformed draft (missing required fields) — will fail fromJson
-          final badDraft = <String, dynamic>{
-            'id': 'draft_bad',
-            'title': 'Bad Draft',
-            // Missing 'clips', 'description', 'hashtags', etc.
-          };
+      test('keeps failed drafts in SharedPreferences for retry', () async {
+        final goodDraft = buildDraftJson(
+          id: 'draft_good',
+          clips: [buildClipJson(id: 'clip_good')],
+          title: 'Good Draft',
+        );
+        // Malformed draft (missing required fields) — will fail fromJson
+        final badDraft = <String, dynamic>{
+          'id': 'draft_bad',
+          'title': 'Bad Draft',
+          // Missing 'clips', 'description', 'hashtags', etc.
+        };
 
-          SharedPreferences.setMockInitialValues({
-            'vine_drafts': json.encode([goodDraft, badDraft]),
-          });
+        SharedPreferences.setMockInitialValues({
+          'vine_drafts': json.encode([goodDraft, badDraft]),
+        });
 
-          await service.migrateOldDrafts();
+        await service.migrateOldDrafts();
 
-          // Good draft should be in database
-          final drafts = await service.getAllDrafts();
-          expect(drafts, hasLength(1));
-          expect(drafts.first.id, equals('draft_good'));
+        // Good draft should be in database
+        final drafts = await service.getAllDrafts();
+        expect(drafts, hasLength(1));
+        expect(drafts.first.id, equals('draft_good'));
 
-          // Failed draft stays in SharedPreferences for retry
-          final prefs = await SharedPreferences.getInstance();
-          final remaining = prefs.getString('vine_drafts');
-          expect(remaining, isNotNull);
+        // Failed draft stays in SharedPreferences for retry
+        final prefs = await SharedPreferences.getInstance();
+        final remaining = prefs.getString('vine_drafts');
+        expect(remaining, isNotNull);
 
-          final remainingList = json.decode(remaining!) as List<dynamic>;
-          expect(remainingList, hasLength(1));
-          expect(
-            (remainingList.first as Map<String, dynamic>)['id'],
-            equals('draft_bad'),
-          );
-        },
-      );
+        final remainingList = json.decode(remaining!) as List<dynamic>;
+        expect(remainingList, hasLength(1));
+        expect(
+          (remainingList.first as Map<String, dynamic>)['id'],
+          equals('draft_bad'),
+        );
+      });
 
-      test(
-        'is idempotent — re-running migrates without duplicates',
-        () async {
-          final draftJson = buildDraftJson(
-            id: 'draft_idem',
-            clips: [buildClipJson(id: 'clip_idem')],
-          );
-          SharedPreferences.setMockInitialValues({
-            'vine_drafts': json.encode([draftJson]),
-          });
+      test('is idempotent — re-running migrates without duplicates', () async {
+        final draftJson = buildDraftJson(
+          id: 'draft_idem',
+          clips: [buildClipJson(id: 'clip_idem')],
+        );
+        SharedPreferences.setMockInitialValues({
+          'vine_drafts': json.encode([draftJson]),
+        });
 
-          await service.migrateOldDrafts();
+        await service.migrateOldDrafts();
 
-          // Re-populate SharedPreferences to simulate a partial retry
-          SharedPreferences.setMockInitialValues({
-            'vine_drafts': json.encode([draftJson]),
-          });
-          await service.migrateOldDrafts();
+        // Re-populate SharedPreferences to simulate a partial retry
+        SharedPreferences.setMockInitialValues({
+          'vine_drafts': json.encode([draftJson]),
+        });
+        await service.migrateOldDrafts();
 
-          final drafts = await service.getAllDrafts();
-          // Upsert should not duplicate
-          expect(drafts, hasLength(1));
-          expect(drafts.first.id, equals('draft_idem'));
-        },
-      );
+        final drafts = await service.getAllDrafts();
+        // Upsert should not duplicate
+        expect(drafts, hasLength(1));
+        expect(drafts.first.id, equals('draft_idem'));
+      });
 
-      test(
-        'migrates old single-clip format with videoFilePath',
-        () async {
-          // Legacy format before multi-clip support
-          final legacyDraft = {
-            'id': 'draft_legacy',
-            'videoFilePath': 'old_video.mp4',
-            'title': 'Legacy Vine',
-            'description': 'Old format',
-            'hashtags': <String>[],
-            'selectedApproach': 'hybrid',
-            'createdAt': DateTime(2024).toIso8601String(),
-            'lastModified': DateTime(2024).toIso8601String(),
-            'aspectRatio': 'square',
-            'publishStatus': 'draft',
-            'publishAttempts': 0,
-          };
+      test('migrates old single-clip format with videoFilePath', () async {
+        // Legacy format before multi-clip support
+        final legacyDraft = {
+          'id': 'draft_legacy',
+          'videoFilePath': 'old_video.mp4',
+          'title': 'Legacy Vine',
+          'description': 'Old format',
+          'hashtags': <String>[],
+          'selectedApproach': 'hybrid',
+          'createdAt': DateTime(2024).toIso8601String(),
+          'lastModified': DateTime(2024).toIso8601String(),
+          'aspectRatio': 'square',
+          'publishStatus': 'draft',
+          'publishAttempts': 0,
+        };
 
-          SharedPreferences.setMockInitialValues({
-            'vine_drafts': json.encode([legacyDraft]),
-          });
+        SharedPreferences.setMockInitialValues({
+          'vine_drafts': json.encode([legacyDraft]),
+        });
 
-          await service.migrateOldDrafts();
+        await service.migrateOldDrafts();
 
-          final drafts = await service.getAllDrafts();
-          expect(drafts, hasLength(1));
-          expect(drafts.first.id, equals('draft_legacy'));
-          expect(drafts.first.title, equals('Legacy Vine'));
-          // Old format creates a single clip
-          expect(drafts.first.clips, hasLength(1));
-        },
-      );
+        final drafts = await service.getAllDrafts();
+        expect(drafts, hasLength(1));
+        expect(drafts.first.id, equals('draft_legacy'));
+        expect(drafts.first.title, equals('Legacy Vine'));
+        // Old format creates a single clip
+        expect(drafts.first.clips, hasLength(1));
+      });
     });
   });
 }

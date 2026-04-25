@@ -41,10 +41,8 @@ class BlueskySettingsScreen extends ConsumerWidget {
     final apiClient = ref.watch(crosspostApiClientProvider);
 
     return BlocProvider(
-      create: (_) => CrosspostSettingsCubit(
-        apiClient: apiClient,
-        pubkey: pubkey,
-      ),
+      create: (_) =>
+          CrosspostSettingsCubit(apiClient: apiClient, pubkey: pubkey),
       child: const _BlueskySettingsView(),
     );
   }
@@ -71,9 +69,7 @@ class _BlueskySettingsView extends StatelessWidget {
               if (state.status == CrosspostSettingsStatus.failure) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      context.l10n.blueskyFailedToUpdateCrosspost,
-                    ),
+                    content: Text(context.l10n.blueskyFailedToUpdateCrosspost),
                     backgroundColor: VineTheme.error,
                   ),
                 );
@@ -82,9 +78,7 @@ class _BlueskySettingsView extends StatelessWidget {
             builder: (context, state) {
               if (state.status == CrosspostSettingsStatus.loading) {
                 return const Center(
-                  child: CircularProgressIndicator(
-                    color: VineTheme.vineGreen,
-                  ),
+                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
                 );
               }
 

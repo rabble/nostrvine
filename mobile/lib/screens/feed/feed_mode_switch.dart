@@ -156,10 +156,7 @@ class _FeedModeCaret extends StatelessWidget {
 /// caret glyph tinted in the shadow color, offset, and blurred — mirrors
 /// how Text `Shadow`s paint underneath glyphs.
 class _FeedModeCaretShadow extends StatelessWidget {
-  const _FeedModeCaretShadow({
-    required this.offset,
-    required this.blurSigma,
-  });
+  const _FeedModeCaretShadow({required this.offset, required this.blurSigma});
 
   final Offset offset;
   final double blurSigma;

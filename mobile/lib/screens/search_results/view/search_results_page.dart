@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,7 +62,10 @@ class SearchResultsPage extends ConsumerWidget {
         ),
       ],
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        // bg/surface — matches SearchResultsView's body background so the
+        // app bar area (which doesn't paint its own background) doesn't
+        // show through to the root scaffold's darker default.
+        backgroundColor: VineTheme.surfaceBackground,
         body: _SearchResultsBody(initialQuery: initialQuery ?? ''),
       ),
     );

@@ -4810,6 +4810,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Discover something interesting';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Lists';
 
   @override
@@ -5329,20 +5347,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Finish timeline editing';
 
   @override
-  String get videoEditorSortNewest => 'Newest';
-
-  @override
-  String get videoEditorSortLongest => 'Longest';
-
-  @override
-  String get videoEditorSortShortest => 'Shortest';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Sort by $option. Tap to change sort order';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'Play preview';
 
   @override
@@ -5350,9 +5354,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Untitled sound';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Select sound';
 
   @override
   String get videoEditorAudioUntitled => 'Untitled';
@@ -5368,18 +5369,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sounds will appear here when creators share audio';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'No sounds found';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Try a different search term';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'Failed to load sounds';
 
   @override
   String get videoEditorAudioSegmentInstruction =>
       'Select the audio segment for your video';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Community';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Arrow tool';
