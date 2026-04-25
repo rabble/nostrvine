@@ -209,6 +209,115 @@ void main() {
       expect(changeCount, equals(2));
     });
 
+    group('changes stream', () {
+      test('blockUser emits BlocklistOp.blocked', () async {
+        const target = 'pubkey-target';
+        final emitted = <BlocklistChange>[];
+        final sub = service.changes.listen(emitted.add);
+        addTearDown(sub.cancel);
+
+        await service.blockUser(target);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          emitted,
+          equals([
+            const BlocklistChange(
+              pubkey: target,
+              op: BlocklistOp.blocked,
+            ),
+          ]),
+        );
+      });
+
+      test('unblockUser emits BlocklistOp.unblocked', () async {
+        const target = 'pubkey-target';
+        await service.blockUser(target);
+
+        final emitted = <BlocklistChange>[];
+        final sub = service.changes.listen(emitted.add);
+        addTearDown(sub.cancel);
+
+        await service.unblockUser(target);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          emitted,
+          equals([
+            const BlocklistChange(
+              pubkey: target,
+              op: BlocklistOp.unblocked,
+            ),
+          ]),
+        );
+      });
+
+      test('block + unblock round-trip emits both ops in order', () async {
+        const target = 'pubkey-target';
+        final emitted = <BlocklistChange>[];
+        final sub = service.changes.listen(emitted.add);
+        addTearDown(sub.cancel);
+
+        await service.blockUser(target);
+        await service.unblockUser(target);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          emitted.map((c) => c.op),
+          equals([
+            BlocklistOp.blocked,
+            BlocklistOp.unblocked,
+          ]),
+        );
+        expect(emitted.every((c) => c.pubkey == target), isTrue);
+      });
+
+      test(
+        're-blocking the same pubkey is a no-op (no duplicate emit)',
+        () async {
+          const target = 'pubkey-target';
+          await service.blockUser(target);
+
+          final emitted = <BlocklistChange>[];
+          final sub = service.changes.listen(emitted.add);
+          addTearDown(sub.cancel);
+
+          await service.blockUser(target);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(emitted, isEmpty);
+        },
+      );
+
+      test('isAddition is correct for every op', () {
+        const additions = [
+          BlocklistOp.blocked,
+          BlocklistOp.muted,
+          BlocklistOp.blockedUs,
+        ];
+        const removals = [
+          BlocklistOp.unblocked,
+          BlocklistOp.unmuted,
+          BlocklistOp.unblockedUs,
+        ];
+
+        for (final op in additions) {
+          expect(
+            BlocklistChange(pubkey: 'p', op: op).isAddition,
+            isTrue,
+            reason: 'op $op should be an addition',
+          );
+        }
+        for (final op in removals) {
+          expect(
+            BlocklistChange(pubkey: 'p', op: op).isAddition,
+            isFalse,
+            reason: 'op $op should NOT be an addition',
+          );
+        }
+      });
+    });
+
     group('self-block prevention', () {
       test(
         'blockUser() ignores when pubkey matches ourPubkey parameter',

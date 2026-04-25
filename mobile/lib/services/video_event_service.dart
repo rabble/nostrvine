@@ -215,6 +215,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
   // Optional services for enhanced functionality
   ContentBlocklistRepository? _blocklistRepository;
+  StreamSubscription<BlocklistChange>? _blocklistChangesSubscription;
   AgeVerificationService? _ageVerificationService;
   LikesRepository? _likesRepository;
   ContentFilterService? _contentFilterService;
@@ -301,11 +302,97 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// Set the blocklist service for content filtering
   void setBlocklistRepository(ContentBlocklistRepository blocklistRepository) {
     _blocklistRepository = blocklistRepository;
+
+    // Subscribe to per-pubkey blocklist changes so a block / mute
+    // immediately propagates as `removedVideoIds` emissions for every
+    // video by the affected author. Mirrors the deletion bus contract:
+    // subscribers (FullscreenFeedBloc) drop the ids from their visible
+    // state without waiting for a route change or app restart.
+    //
+    // Cancel any prior subscription if `setBlocklistRepository` is
+    // called again — keeps the active subscription bound to the
+    // currently-attached repository.
+    unawaited(_blocklistChangesSubscription?.cancel());
+    _blocklistChangesSubscription = blocklistRepository.changes.listen(
+      (change) {
+        if (!change.isAddition) return;
+        _sweepAuthor(change.pubkey);
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        Log.error(
+          'VideoEventService: blocklist changes stream error - $error',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+          error: error,
+          stackTrace: stackTrace,
+        );
+      },
+    );
+
     Log.debug(
       'Blocklist service attached to VideoEventService',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
+  }
+
+  /// Emit `removedVideoIds` for every cached video authored by [pubkey].
+  ///
+  /// Used in response to block / mute events. Unlike
+  /// [removeVideoCompletely], this does NOT add ids to
+  /// [_locallyDeletedVideoIds] — block / mute are reversible and the
+  /// existing pagination filters (via [shouldHideVideo] /
+  /// [filterVideoList]) already guarantee that an unblocked author's
+  /// videos can come back on the next refresh. We only need the
+  /// fullscreen surface to drop them right now.
+  void _sweepAuthor(String pubkey) {
+    if (_removedVideoIdsController.isClosed) return;
+
+    // Collect ids across every cache that may hold this author's videos.
+    // Fullscreen blocs may be displaying videos sourced from any of
+    // these — discovery, profile, hashtag, etc. Dedupe by id since a
+    // video can appear in multiple buckets simultaneously.
+    final ids = <String>{};
+
+    final authorBucket = _authorBuckets[pubkey];
+    if (authorBucket != null) {
+      for (final video in authorBucket) {
+        ids.add(video.id);
+      }
+    }
+
+    for (final list in _eventLists.values) {
+      for (final video in list) {
+        if (video.pubkey == pubkey) ids.add(video.id);
+      }
+    }
+
+    for (final list in _hashtagBuckets.values) {
+      for (final video in list) {
+        if (video.pubkey == pubkey) ids.add(video.id);
+      }
+    }
+
+    if (ids.isEmpty) return;
+
+    Log.info(
+      'sweepAuthor: emitting ${ids.length} removal(s) for pubkey=$pubkey',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+
+    for (final id in ids) {
+      _removedVideoIdsController.add(id);
+    }
+  }
+
+  /// Test-only seam: pre-populate the author bucket so [_sweepAuthor]
+  /// can be exercised without driving a real relay subscription.
+  /// Production code must never call this — use the public subscription
+  /// APIs instead.
+  @visibleForTesting
+  void debugSeedAuthorBucket(String pubkey, List<VideoEvent> videos) {
+    _authorBuckets[pubkey] = List.of(videos);
   }
 
   /// Set the age verification service for adult content filtering
@@ -4988,6 +5075,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _retryTimer?.cancel();
     _likeCountBatchTimer?.cancel();
     _authStateSubscription?.cancel();
+    unawaited(_blocklistChangesSubscription?.cancel());
     _connectionService.dispose();
     unsubscribeFromVideoFeed();
     unawaited(_removedVideoIdsController.close());
