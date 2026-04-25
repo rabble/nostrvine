@@ -1700,7 +1700,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
       // Add collaborator p-tags
       for (final pubkey in _collaboratorPubkeys) {
-        tags.add(['p', pubkey]);
+        tags.add(['p', pubkey, 'wss://relay.divine.video', 'Collaborator']);
       }
 
       // Add inspired-by a-tag (video reference)
