@@ -6,6 +6,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -108,6 +110,10 @@ class _VideoEditorTimelineClipStripState
   /// clip tile rebuilds, not the entire strip.
   final _thumbnails = ClipThumbnailManager();
 
+  /// Identity of the last split event we already seeded thumbnails
+  /// for. Used to ensure each split is processed exactly once.
+  ClipSplitEvent? _lastSeededSplit;
+
   static const double _reorderSize = TimelineConstants.thumbnailStripHeight;
 
   // Auto-scroll state.
@@ -129,6 +135,7 @@ class _VideoEditorTimelineClipStripState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _maybeSeedSplit();
     _syncThumbnails();
   }
 
@@ -138,6 +145,7 @@ class _VideoEditorTimelineClipStripState
     if (!_isReordering) {
       _orderedClips = List.of(widget.clips);
     }
+    _maybeSeedSplit();
     _syncThumbnails();
   }
 
@@ -154,6 +162,50 @@ class _VideoEditorTimelineClipStripState
       clips: widget.clips,
       devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
       priorityTimestamps: _computeSlotTimestamps(),
+    );
+  }
+
+  /// Seeds the new clips' thumbnail notifiers from the source clip's
+  /// already-loaded thumbnails when a split has just occurred. This
+  /// avoids a flash of placeholder/wrong-range frames while the
+  /// trimmed segment files are being rendered — the real
+  /// subscriptions kick in once the rendered file paths arrive.
+  void _maybeSeedSplit() {
+    final bloc = context.read<ClipEditorBloc?>();
+    if (bloc == null) return;
+    final split = bloc.state.lastSplit;
+    if (split == null || identical(split, _lastSeededSplit)) return;
+    _lastSeededSplit = split;
+
+    final startClipIdx = widget.clips.indexWhere(
+      (c) => c.id == split.startClipId,
+    );
+    final endClipIdx = widget.clips.indexWhere(
+      (c) => c.id == split.endClipId,
+    );
+    if (startClipIdx == -1 || endClipIdx == -1) return;
+    final startClip = widget.clips[startClipIdx];
+    final endClip = widget.clips[endClipIdx];
+    final sourcePath = startClip.video.file?.path;
+    if (sourcePath == null) return;
+
+    _thumbnails.seedFromSource(
+      sourceClipId: split.sourceClipId,
+      targetClipId: split.startClipId,
+      sourceRange: DurationRange(
+        start: Duration.zero,
+        end: split.absoluteSplitPosition,
+      ),
+      currentSourcePath: sourcePath,
+    );
+    _thumbnails.seedFromSource(
+      sourceClipId: split.sourceClipId,
+      targetClipId: split.endClipId,
+      sourceRange: DurationRange(
+        start: split.absoluteSplitPosition,
+        end: split.sourceDuration,
+      ),
+      currentSourcePath: endClip.video.file?.path ?? sourcePath,
     );
   }
 

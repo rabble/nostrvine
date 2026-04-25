@@ -10,21 +10,6 @@ import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Result of a clip split operation containing both resulting clips
-class SplitClipResult {
-  const SplitClipResult({
-    required this.startClip,
-    required this.endClip,
-    required this.startClipPath,
-    required this.endClipPath,
-  });
-
-  final DivineVideoClip startClip;
-  final DivineVideoClip endClip;
-  final String startClipPath;
-  final String endClipPath;
-}
-
 /// Service for splitting video clips into two separate segments
 class VideoEditorSplitService {
   static const minClipDuration = Duration(milliseconds: 30);
@@ -41,7 +26,7 @@ class VideoEditorSplitService {
         clip.trimmedDuration - splitPosition >= minClipDuration;
   }
 
-  /// Splits a clip at the specified position and returns both resulting clips
+  /// Splits a clip at the specified position.
   ///
   /// This method:
   /// 1. Creates two new clip objects with completers for tracking processing
@@ -51,7 +36,7 @@ class VideoEditorSplitService {
   /// 5. Renders both clips in parallel
   ///
   /// Throws if rendering fails or split position is invalid
-  static Future<SplitClipResult> splitClip({
+  static Future<void> splitClip({
     required DivineVideoClip sourceClip,
     required Duration splitPosition,
     required void Function(DivineVideoClip startClip, DivineVideoClip endClip)?
@@ -137,7 +122,10 @@ class VideoEditorSplitService {
       name: 'VideoEditorSplitService',
       category: .video,
     );
-    // Render both clips in parallel using absolute positions
+    // Render both clips in parallel using absolute positions.
+    // Trim must be set on the VideoSegment, not on VideoRenderData —
+    // VideoRenderData.startTime/endTime only apply to the deprecated
+    // single-video field and are ignored when videoSegments is used.
     await Future.wait([
       _renderSplitClip(
         clip: startClip,
@@ -145,8 +133,9 @@ class VideoEditorSplitService {
         sourceVideo: sourceClip.video,
         renderData: VideoRenderData(
           id: startClip.id,
-          videoSegments: [VideoSegment(video: sourceClip.video)],
-          endTime: absoluteSplitPos,
+          videoSegments: [
+            VideoSegment(video: sourceClip.video, endTime: absoluteSplitPos),
+          ],
         ),
         onClipRendered: onClipRendered,
       ),
@@ -156,8 +145,9 @@ class VideoEditorSplitService {
         sourceVideo: sourceClip.video,
         renderData: VideoRenderData(
           id: endClip.id,
-          videoSegments: [VideoSegment(video: sourceClip.video)],
-          startTime: absoluteSplitPos,
+          videoSegments: [
+            VideoSegment(video: sourceClip.video, startTime: absoluteSplitPos),
+          ],
         ),
         onClipRendered: onClipRendered,
       ),
@@ -167,13 +157,6 @@ class VideoEditorSplitService {
       '✅ Split complete - created 2 clips from ${sourceClip.id}',
       name: 'VideoEditorSplitService',
       category: .video,
-    );
-
-    return SplitClipResult(
-      startClip: startClip,
-      endClip: endClip,
-      startClipPath: startClipPath,
-      endClipPath: endClipPath,
     );
   }
 

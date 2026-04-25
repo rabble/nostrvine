@@ -14,6 +14,7 @@ class ClipEditorState extends Equatable {
     this.splitPosition = Duration.zero,
     this.isEditing = false,
     this.isTrimDragging = false,
+    this.lastSplit,
   });
 
   /// Local copy of clips managed by this editor session.
@@ -31,6 +32,15 @@ class ClipEditorState extends Equatable {
   /// Whether a trim handle is currently being dragged.
   final bool isTrimDragging;
 
+  /// Last completed split operation. Consumed by the timeline strip
+  /// to seed the new clips' thumbnail notifiers from the source clip
+  /// — avoiding a flash of placeholder/wrong-range thumbnails while
+  /// the trimmed segment files are still being rendered.
+  ///
+  /// Identity-compared (not value-compared) so each split delivers a
+  /// fresh signal even when fields happen to repeat.
+  final ClipSplitEvent? lastSplit;
+
   /// Total duration of all clips (respecting trim).
   Duration get totalDuration =>
       clips.fold(Duration.zero, (sum, clip) => sum + clip.trimmedDuration);
@@ -42,6 +52,7 @@ class ClipEditorState extends Equatable {
     Duration? splitPosition,
     bool? isEditing,
     bool? isTrimDragging,
+    ClipSplitEvent? lastSplit,
   }) {
     return ClipEditorState(
       clips: clips ?? this.clips,
@@ -49,6 +60,7 @@ class ClipEditorState extends Equatable {
       splitPosition: splitPosition ?? this.splitPosition,
       isEditing: isEditing ?? this.isEditing,
       isTrimDragging: isTrimDragging ?? this.isTrimDragging,
+      lastSplit: lastSplit ?? this.lastSplit,
     );
   }
 
@@ -59,5 +71,28 @@ class ClipEditorState extends Equatable {
     splitPosition,
     isEditing,
     isTrimDragging,
+    // Identity-only: each ClipSplitEvent is a fresh instance per split.
+    identityHashCode(lastSplit),
   ];
+}
+
+/// One-shot signal describing a split operation that just occurred.
+///
+/// The timeline strip uses this to seed the newly-created clips'
+/// thumbnail notifiers from the source clip's already-loaded
+/// thumbnails.
+class ClipSplitEvent {
+  ClipSplitEvent({
+    required this.sourceClipId,
+    required this.startClipId,
+    required this.endClipId,
+    required this.absoluteSplitPosition,
+    required this.sourceDuration,
+  });
+
+  final String sourceClipId;
+  final String startClipId;
+  final String endClipId;
+  final Duration absoluteSplitPosition;
+  final Duration sourceDuration;
 }

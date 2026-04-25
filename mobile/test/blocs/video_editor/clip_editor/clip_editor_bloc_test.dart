@@ -518,6 +518,77 @@ void main() {
           isFalse,
         );
       });
+
+      test(
+        'sets lastSplit with correct ids and position after split',
+        () async {
+          final clip = _createClip(
+            id: 'source-clip',
+            duration: const Duration(seconds: 2),
+          );
+          final bloc = buildBloc()
+            ..emit(
+              ClipEditorState(
+                clips: [clip],
+                isEditing: true,
+                splitPosition: const Duration(seconds: 1),
+              ),
+            );
+
+          bloc.add(const ClipEditorSplitRequested());
+          // First emit: isEditing=false. Second: onClipsCreated with lastSplit.
+          final states = await bloc.stream.take(2).toList();
+          final splitState = states.last;
+
+          expect(splitState.lastSplit, isNotNull);
+          expect(
+            splitState.lastSplit!.sourceClipId,
+            equals('source-clip'),
+          );
+          expect(
+            splitState.lastSplit!.startClipId,
+            equals(splitState.clips.first.id),
+          );
+          expect(
+            splitState.lastSplit!.endClipId,
+            equals(splitState.clips.last.id),
+          );
+
+          await bloc.close();
+        },
+      );
+
+      test(
+        'absoluteSplitPosition equals trimStart + splitPosition',
+        () async {
+          final clip = _createClip(
+            id: 'c',
+            duration: const Duration(seconds: 4),
+          ).copyWith(trimStart: const Duration(milliseconds: 500));
+
+          final bloc = buildBloc()
+            ..emit(
+              ClipEditorState(
+                clips: [clip],
+                isEditing: true,
+                // 1 s into the trimmed view
+                splitPosition: const Duration(seconds: 1),
+              ),
+            );
+
+          bloc.add(const ClipEditorSplitRequested());
+          final states = await bloc.stream.take(2).toList();
+          final split = states.last.lastSplit!;
+
+          expect(
+            split.absoluteSplitPosition,
+            // trimStart(500ms) + splitPosition(1000ms)
+            equals(const Duration(milliseconds: 1500)),
+          );
+
+          await bloc.close();
+        },
+      );
     });
 
     // =========================================================
@@ -560,6 +631,52 @@ void main() {
         // Other fields unchanged
         expect(updated.currentClipIndex, equals(0));
       });
+
+      test('lastSplit defaults to null', () {
+        const state = ClipEditorState();
+        expect(state.lastSplit, isNull);
+      });
+
+      test('copyWith sets lastSplit', () {
+        const state = ClipEditorState();
+        final split = ClipSplitEvent(
+          sourceClipId: 'src',
+          startClipId: 'start',
+          endClipId: 'end',
+          absoluteSplitPosition: const Duration(seconds: 1),
+          sourceDuration: const Duration(seconds: 2),
+        );
+
+        final updated = state.copyWith(lastSplit: split);
+
+        expect(updated.lastSplit, same(split));
+      });
+
+      test(
+        'two ClipSplitEvents with identical fields are treated as distinct',
+        () {
+          final split1 = ClipSplitEvent(
+            sourceClipId: 'src',
+            startClipId: 'start',
+            endClipId: 'end',
+            absoluteSplitPosition: const Duration(seconds: 1),
+            sourceDuration: const Duration(seconds: 2),
+          );
+          final split2 = ClipSplitEvent(
+            sourceClipId: 'src',
+            startClipId: 'start',
+            endClipId: 'end',
+            absoluteSplitPosition: const Duration(seconds: 1),
+            sourceDuration: const Duration(seconds: 2),
+          );
+
+          final state1 = ClipEditorState(lastSplit: split1);
+          final state2 = ClipEditorState(lastSplit: split2);
+
+          // Identity hash differs between instances → props differ → not equal
+          expect(state1, isNot(equals(state2)));
+        },
+      );
     });
 
     // =========================================================
