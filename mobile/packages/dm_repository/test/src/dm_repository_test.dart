@@ -300,11 +300,15 @@ void main() {
         );
 
         final repository = createRepository();
+        const creatorPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        const videoAddress = '34236:$creatorPubkey:video-id';
         const inviteTags = [
           ['divine', 'collab-invite'],
           [
             'a',
-            '34236:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:video-id',
+            videoAddress,
             'wss://relay.divine.video',
             'root',
           ],

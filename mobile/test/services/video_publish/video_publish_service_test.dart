@@ -152,7 +152,6 @@ void main() {
             creatorPubkey: 'test_pubkey',
             videoAddress: '34236:test_pubkey:test_video_id',
             title: 'Test Video',
-            thumbnailUrl: null,
             relayHint: 'wss://relay.divine.video',
           ),
         ).called(1);

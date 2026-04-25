@@ -1,8 +1,8 @@
 // ABOUTME: Tests encrypted collaborator invite payload construction.
 // ABOUTME: Verifies collab invites are NIP-17 DMs with structured tags.
 
-import 'package:dm_repository/dm_repository.dart';
 import 'package:collection/collection.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
