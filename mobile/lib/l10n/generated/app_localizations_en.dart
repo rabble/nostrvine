@@ -3167,11 +3167,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuCollaborators => 'Collaborators';
 
   @override
-  String get shareMenuAddCollaborator => 'Add collaborator';
+  String get shareMenuAddCollaborator => 'Invite collaborator';
 
   @override
   String shareMenuMutualFollowRequired(String name) {
-    return 'You need to mutually follow $name to add them as a collaborator.';
+    return 'You need to mutually follow $name to invite them as a collaborator.';
   }
 
   @override
@@ -5569,7 +5569,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoMetadataCollaboratorsLabel => 'Collaborators';
 
   @override
-  String get videoMetadataAddCollaboratorSemanticLabel => 'Add collaborator';
+  String get videoMetadataAddCollaboratorSemanticLabel => 'Invite collaborator';
 
   @override
   String get videoMetadataCollaboratorsHelpTooltip => 'How collaborators work';
@@ -5585,14 +5585,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoMetadataCollaboratorsHelpMessage =>
-      'Collaborators are tagged as co-creators on this post. You can only add people you mutually follow, and they appear in the post metadata when published.';
+      'Collaborators are invited as co-creators on this post. You can only invite people you mutually follow, and they appear as collaborators after they confirm.';
 
   @override
   String get videoMetadataMutualFollowersSearchText => 'Mutual followers';
 
   @override
   String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return 'You need to mutually follow $name to add them as a collaborator.';
+    return 'You need to mutually follow $name to invite them as a collaborator.';
   }
 
   @override
