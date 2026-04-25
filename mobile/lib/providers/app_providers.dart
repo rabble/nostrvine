@@ -58,6 +58,7 @@ import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/collaborator_response_service.dart';
 import 'package:openvine/services/crosspost_api_client.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
@@ -145,6 +146,14 @@ final firebaseOnMessageProvider = Provider<Stream<RemoteMessage>>(
 final notificationServiceProvider = Provider<NotificationService>(
   (ref) => NotificationService(),
 );
+
+final collaboratorResponseServiceProvider =
+    Provider<CollaboratorResponseService>((ref) {
+      return CollaboratorResponseService(
+        authService: ref.watch(authServiceProvider),
+        nostrClient: ref.watch(nostrServiceProvider),
+      );
+    });
 
 final pushNotificationServiceProvider = Provider<PushNotificationService>((
   ref,
