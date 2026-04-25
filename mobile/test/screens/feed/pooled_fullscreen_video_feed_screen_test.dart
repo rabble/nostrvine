@@ -346,6 +346,29 @@ void main() {
         expect(find.byType(PooledVideoFeed), findsNothing);
       });
 
+      testWidgets(
+        'renders empty-state when status is emptyAfterRemoval and pop is a '
+        'no-op (cold deep-link fallback)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const FullscreenFeedState(
+                status: FullscreenFeedStatus.emptyAfterRemoval,
+              ),
+              contextTitle: 'Saved',
+            ),
+          );
+
+          // The BlocListener tries to maybePop, but `buildSubject` does
+          // not push the screen onto a route stack with a parent — so
+          // pop is a no-op and the BlocBuilder must render the
+          // empty-state branch instead of the loading spinner.
+          expect(find.text('Video removed'), findsOneWidget);
+          expect(find.byType(BrandedLoadingIndicator), findsNothing);
+          expect(find.byType(PooledVideoFeed), findsNothing);
+        },
+      );
+
       testWidgets('shows "No videos available" when videos have no videoUrl', (
         tester,
       ) async {

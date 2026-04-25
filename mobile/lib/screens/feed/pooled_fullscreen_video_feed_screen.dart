@@ -637,9 +637,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             },
           ),
           // Pop the route when the last visible video has been removed
-          // by deletion (or, soon, block / mute). The user already
-          // confirmed the action, there is nothing to show, and any
-          // empty-state placeholder would be one extra dismissal.
+          // by deletion (or, soon, block / mute). When `maybePop`
+          // returns false (cold deep-link into the fullscreen with no
+          // parent route in the stack), the BlocBuilder below renders
+          // an explicit `emptyAfterRemoval` branch so the user is not
+          // left looking at a perpetual loading spinner.
           BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
             listenWhen: (prev, curr) =>
                 prev.status != curr.status &&
@@ -651,6 +653,30 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         ],
         child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
           builder: (context, state) {
+            // The BlocListener above tries to pop on this status; when
+            // it can (parent route exists) the route is gone before this
+            // branch renders. When `maybePop` is a no-op, we land here
+            // and show an explicit empty-state with a back button rather
+            // than the loading spinner below.
+            if (state.status == FullscreenFeedStatus.emptyAfterRemoval) {
+              return Scaffold(
+                backgroundColor: VineTheme.backgroundColor,
+                appBar: DiVineAppBar(
+                  title: widget.contextTitle ?? '',
+                  showBackButton: true,
+                  onBackPressed: context.pop,
+                  backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                  forceMaterialTransparency: true,
+                ),
+                body: const Center(
+                  child: Text(
+                    'Video removed',
+                    style: TextStyle(color: VineTheme.whiteText),
+                  ),
+                ),
+              );
+            }
+
             if (state.status == FullscreenFeedStatus.initial ||
                 !state.hasVideos) {
               return Scaffold(

@@ -483,10 +483,15 @@ class FullscreenFeedBloc
       return;
     }
 
-    final clampedIndex = state.currentIndex.clamp(
-      0,
-      updatedVideos.length - 1,
-    );
+    // Removing an item before the cursor shifts every later item down by
+    // one. Without this shift the visible video would jump from cur to
+    // cur+1 — for user-delete this never happens (the deleted item IS
+    // the cursor), but the bus is the entry point for the upcoming
+    // block / mute sweep where multi-video removals land at any index.
+    final shifted = index < state.currentIndex
+        ? state.currentIndex - 1
+        : state.currentIndex;
+    final clampedIndex = shifted.clamp(0, updatedVideos.length - 1);
     emit(
       state.copyWith(
         videos: updatedVideos,
