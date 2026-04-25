@@ -770,6 +770,7 @@ class DmRepository {
     required String recipientPubkey,
     required String content,
     String? replyToId,
+    List<List<String>> additionalTags = const [],
   }) async {
     _assertInitialized();
     validatePubkey(recipientPubkey);
@@ -777,14 +778,15 @@ class DmRepository {
       throw ArgumentError.value(content, 'content', 'must not be empty');
     }
 
-    final additionalTags = <List<String>>[
+    final rumorTags = <List<String>>[
+      ...additionalTags,
       if (replyToId != null) ['e', replyToId],
     ];
 
     final result = await _messageService!.sendPrivateMessage(
       recipientPubkey: recipientPubkey,
       content: content,
-      additionalTags: additionalTags,
+      additionalTags: rumorTags,
     );
 
     if (result.success) {

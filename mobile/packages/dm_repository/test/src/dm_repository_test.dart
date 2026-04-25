@@ -287,6 +287,50 @@ void main() {
         );
       });
 
+      test('sendMessage forwards additional NIP-17 tags', () async {
+        when(
+          () => mockMessageService.sendPrivateMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            eventKind: any(named: 'eventKind'),
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.failure('relay unavailable'),
+        );
+
+        final repository = createRepository();
+        const inviteTags = [
+          ['divine', 'collab-invite'],
+          [
+            'a',
+            '34236:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:video-id',
+            'wss://relay.divine.video',
+            'root',
+          ],
+          ['role', 'Collaborator'],
+        ];
+
+        await repository.sendMessage(
+          recipientPubkey: _validPubkeyB,
+          content: 'Invited you to collaborate',
+          additionalTags: inviteTags,
+        );
+
+        final captured =
+            verify(
+                  () => mockMessageService.sendPrivateMessage(
+                    recipientPubkey: _validPubkeyB,
+                    content: 'Invited you to collaborate',
+                    eventKind: any(named: 'eventKind'),
+                    additionalTags: captureAny(named: 'additionalTags'),
+                  ),
+                ).captured.single
+                as List<List<String>>;
+
+        expect(captured, containsAll(inviteTags));
+      });
+
       test('persists message and conversation on success', () async {
         when(
           () => mockMessageService.sendPrivateMessage(
