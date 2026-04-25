@@ -844,6 +844,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             ),
             imageGeneration: ImageGenerationConfigs(
               captureImageByteFormat: .rawStraightRgba,
+              outputFormat: .png,
               enableBackgroundGeneration: false,
               enableUseOriginalBytes: false,
               // Disabled in debug mode: combined RAM usage from the editor
@@ -920,7 +921,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                     ),
                     ReactiveWidget(
                       builder: (context) => VideoEditorFeedPreviewOverlay(
-                        renderSize: widget.renderSize,
                         targetAspectRatio: targetAspectRatio.value,
                         isFeedPreviewVisible: editor.isLayerBeingTransformed,
                       ),

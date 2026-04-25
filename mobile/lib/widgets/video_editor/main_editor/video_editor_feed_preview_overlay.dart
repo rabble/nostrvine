@@ -22,16 +22,12 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 class VideoEditorFeedPreviewOverlay extends ConsumerWidget {
   /// Creates a [VideoEditorFeedPreviewOverlay].
   const VideoEditorFeedPreviewOverlay({
-    required this.renderSize,
     required this.targetAspectRatio,
     required this.isFeedPreviewVisible,
     super.key,
   });
 
   static const _animationDuration = Duration(milliseconds: 200);
-
-  /// The render size of the editor content (bodyItems coordinate space).
-  final Size renderSize;
 
   /// The target aspect ratio of the video being edited.
   final double targetAspectRatio;
