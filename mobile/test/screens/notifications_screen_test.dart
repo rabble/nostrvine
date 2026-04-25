@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
@@ -110,9 +111,12 @@ void main() {
       'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
   /// Build the NotificationsScreen directly in a ProviderScope
-  Widget buildScreenWidget(RelayNotifications Function() notifierFactory) {
+  Widget buildScreenWidget(
+    RelayNotifications Function() notifierFactory, {
+    InviteStatusState inviteStatusState = const InviteStatusState(),
+  }) {
     final mockInviteCubit = _MockInviteStatusCubit();
-    when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
+    when(() => mockInviteCubit.state).thenReturn(inviteStatusState);
     when(mockInviteCubit.load).thenAnswer((_) async {});
     return ProviderScope(
       overrides: [relayNotificationsProvider.overrideWith(notifierFactory)],
@@ -360,6 +364,37 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('No notifications yet'), findsOneWidget);
+        expect(find.byType(NotificationListItem), findsNothing);
+      });
+
+      testWidgets('shows invite card when only invites are available', (
+        WidgetTester tester,
+      ) async {
+        final mockNotifier = _MockEmptyRelayNotifications();
+        await tester.pumpWidget(
+          buildScreenWidget(
+            () => mockNotifier,
+            inviteStatusState: const InviteStatusState(
+              status: InviteStatusLoadingStatus.loaded,
+              inviteStatus: InviteStatus(
+                canInvite: true,
+                remaining: 2,
+                total: 2,
+                codes: [
+                  InviteCode(code: 'AB23-EF7K', claimed: false),
+                  InviteCode(code: 'HN4P-QR56', claimed: false),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('You have 2 invites to share with friends!'),
+          findsOneWidget,
+        );
+        expect(find.text('No notifications yet'), findsNothing);
         expect(find.byType(NotificationListItem), findsNothing);
       });
 

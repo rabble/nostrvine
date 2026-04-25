@@ -300,50 +300,73 @@ class _NotificationTabContentState
               onRefresh: () async {
                 await ref.read(relayNotificationsProvider.notifier).refresh();
               },
-              child: LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: SizedBox(
-                    height: constraints.maxHeight,
-                    child: Center(
-                      child: isSearchingForFilteredContent
-                          ? _FilteredTabLoadingState(
-                              filterName: _getFilterName(widget.filter!),
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.notifications_none,
-                                  size: 64,
-                                  color: VineTheme.lightText,
+              child: BlocBuilder<InviteStatusCubit, InviteStatusState>(
+                builder: (context, inviteState) {
+                  final showInviteCard =
+                      widget.filter == null && inviteState.hasUnclaimedCodes;
+                  if (showInviteCard) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      controller: _scrollController,
+                      children: [
+                        _InviteNotificationCard(
+                          count: inviteState.unclaimedCount,
+                        ),
+                      ],
+                    );
+                  }
+
+                  return LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: constraints.maxHeight,
+                        child: Center(
+                          child: isSearchingForFilteredContent
+                              ? _FilteredTabLoadingState(
+                                  filterName: _getFilterName(widget.filter!),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.notifications_none,
+                                      size: 64,
+                                      color: VineTheme.lightText,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      widget.filter == null
+                                          ? context.l10n.notificationsNoneYet
+                                          : context.l10n
+                                                .notificationsNoneForType(
+                                                  _getFilterName(
+                                                    widget.filter!,
+                                                  ),
+                                                ),
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        color: VineTheme.secondaryText,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      context
+                                          .l10n
+                                          .notificationsEmptyDescription,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: VineTheme.lightText,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  widget.filter == null
-                                      ? context.l10n.notificationsNoneYet
-                                      : context.l10n.notificationsNoneForType(
-                                          _getFilterName(widget.filter!),
-                                        ),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    color: VineTheme.secondaryText,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  context.l10n.notificationsEmptyDescription,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: VineTheme.lightText,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           );
