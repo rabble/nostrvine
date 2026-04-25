@@ -425,6 +425,14 @@
   "videoGridDeleteConfirm": "Delete",
   "videoGridDeletingContent": "Deleting content...",
   "videoGridDeleteSuccess": "Delete request sent successfully",
+  "videoGridDeleteFailure": "Failed to delete content: {error}",
+  "@videoGridDeleteFailure": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
   "exploreTabClassics": "Classics",
   "exploreTabNew": "New",
   "exploreTabPopular": "Popular",
@@ -603,6 +611,11 @@
   "videoActionUnlike": "Unlike video",
   "videoActionLike": "Like video",
   "videoActionAutoLabel": "Auto",
+  "videoActionLikeLabel": "Like",
+  "videoActionReplyLabel": "Reply",
+  "videoActionRepostLabel": "Repost",
+  "videoActionShareLabel": "Share",
+  "videoActionAboutLabel": "About",
   "videoActionEnableAutoAdvance": "Enable auto advance",
   "videoActionDisableAutoAdvance": "Disable auto advance",
   "videoActionRemoveRepost": "Remove repost",
@@ -611,6 +624,14 @@
   "videoActionMoreOptions": "More options",
   "videoActionHideSubtitles": "Hide subtitles",
   "videoActionShowSubtitles": "Show subtitles",
+  "videoOverlayOpenMetadataFromTitle": "Open video details",
+  "@videoOverlayOpenMetadataFromTitle": {
+    "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+  },
+  "videoOverlayOpenMetadataFromDescription": "Open video details",
+  "@videoOverlayOpenMetadataFromDescription": {
+    "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+  },
   "videoDescriptionLoops": "{count} loops",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -1519,6 +1540,7 @@
   "shareMenuEditVideoSubtitle": "Update title, description, and hashtags",
   "shareMenuDeleteVideo": "Delete Video",
   "shareMenuDeleteVideoSubtitle": "Remove this video from Divine. It may still appear on other Nostr clients.",
+  "shareMenuDeleteWarning": "This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.",
   "shareMenuVideoInTheseLists": "Video is in these lists:",
   "shareMenuVideoCount": "{count} videos",
   "@shareMenuVideoCount": {
@@ -1533,6 +1555,14 @@
   "shareMenuCancel": "Cancel",
   "shareMenuDelete": "Delete",
   "shareMenuDeletingContent": "Deleting content...",
+  "shareMenuFailedToDeleteContent": "Failed to delete content: {error}",
+  "@shareMenuFailedToDeleteContent": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "shareMenuDeleteRequestSent": "Video deleted",
   "shareMenuDeleteFailedNotInitialized": "Deletion isn't ready yet. Try again in a moment.",
   "shareMenuDeleteFailedNotOwner": "You can only delete your own videos.",
@@ -1565,6 +1595,14 @@
   "shareMenuVideoUpdated": "Video updated successfully",
   "shareMenuFailedToUpdateVideo": "Failed to update video: {error}",
   "@shareMenuFailedToUpdateVideo": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuFailedToDeleteVideo": "Failed to delete video: {error}",
+  "@shareMenuFailedToDeleteVideo": {
     "placeholders": {
       "error": {
         "type": "String"
@@ -1838,6 +1876,8 @@
   "navExplore": "Explore",
   "navInbox": "Inbox",
   "navProfile": "Profile",
+  "navSearch": "Search",
+  "navSearchTooltip": "Search",
   "navMyProfile": "My Profile",
   "navNotifications": "Notifications",
   "navOpenCamera": "Open camera",
@@ -2445,6 +2485,12 @@
   "@searchDiscoverSomethingInteresting": {
     "description": "Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query."
   },
+  "searchPeopleSectionHeader": "People",
+  "searchPeopleLoadingLabel": "Loading people results",
+  "searchTagsSectionHeader": "Tags",
+  "searchTagsLoadingLabel": "Loading tag results",
+  "searchVideosSectionHeader": "Videos",
+  "searchVideosLoadingLabel": "Loading video results",
   "searchListsSectionHeader": "Lists",
   "searchListsLoadingLabel": "Loading list results",
 
@@ -2667,18 +2713,20 @@
       }
     }
   },
-  "videoEditorClipsLabel": "Clips",
+  "videoEditorCameraLabel": "Camera",
+  "videoEditorOpenCameraSemanticLabel": "Open camera",
+  "videoEditorLibraryLabel": "Library",
   "videoEditorTextLabel": "Text",
   "videoEditorDrawLabel": "Draw",
-  "videoEditorEffectsLabel": "Effects",
+  "videoEditorFilterLabel": "Filter",
   "videoEditorAudioLabel": "Audio",
   "videoEditorVolumeLabel": "Volume",
   "videoEditorAddTitle": "Add",
-  "videoEditorOpenClipsSemanticLabel": "Open clips editor",
+  "videoEditorOpenLibrarySemanticLabel": "Open Library",
   "videoEditorOpenAudioSemanticLabel": "Open audio editor",
   "videoEditorOpenTextSemanticLabel": "Open text editor",
   "videoEditorOpenDrawSemanticLabel": "Open draw editor",
-  "videoEditorOpenEffectsSemanticLabel": "Open effects editor",
+  "videoEditorOpenFilterSemanticLabel": "Open filter editor",
   "videoEditorSaveDraftTitle": "Save your draft?",
   "videoEditorSaveDraftSubtitle": "Keep your edits for later, or discard them and leave the editor.",
   "videoEditorSaveDraftButton": "Save draft",
@@ -2754,6 +2802,7 @@
   "videoEditorAudioNoSoundsFoundTitle": "No sounds found",
   "videoEditorAudioNoSoundsFoundSubtitle": "Try a different search term",
   "videoEditorAudioFailedToLoadTitle": "Failed to load sounds",
+  "videoEditorAudioSegmentInstruction": "Select the audio segment for your video",
   "videoEditorDrawToolArrowSemanticLabel": "Arrow tool",
   "videoEditorDrawToolEraserSemanticLabel": "Eraser tool",
   "videoEditorDrawToolMarkerSemanticLabel": "Marker tool",
@@ -2809,6 +2858,7 @@
     }
   },
   "videoEditorTimelineClipReorderHint": "Long press to reorder",
+  "videoEditorClipGalleryInstruction": "Tap to edit. Hold and drag to reorder.",
   "videoEditorTimelineClipMoveLeft": "Move left",
   "videoEditorTimelineClipMoveRight": "Move right",
   "videoEditorTimelineLongPressToDragHint": "Long press to drag",

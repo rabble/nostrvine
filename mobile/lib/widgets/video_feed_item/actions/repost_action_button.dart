@@ -82,6 +82,7 @@ class _ActionButton extends StatelessWidget {
       iconColor: isReposted ? VineTheme.vineGreen : VineTheme.whiteText,
       isLoading: isRepostInProgress,
       count: totalReposts,
+      labelWhenZero: context.l10n.videoActionRepostLabel,
       onPressed: () {
         onInteracted?.call();
         context.read<VideoInteractionsBloc>().add(

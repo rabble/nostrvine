@@ -22,6 +22,7 @@ class VideoEditorScope extends InheritedWidget {
     required this.removeAreaKey,
     required this.onAddStickers,
     required this.onAdjustVolume,
+    required this.onOpenCamera,
     required this.onOpenClipsEditor,
     required this.onAddEditTextLayer,
     required this.onOpenMusicLibrary,
@@ -43,6 +44,9 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Callback to open the audio volume adjust sheet.
   final VoidCallback onAdjustVolume;
+
+  /// Callback to open the in-editor camera recorder.
+  final VoidCallback onOpenCamera;
 
   /// Callback to open the clips editor.
   final VoidCallback onOpenClipsEditor;

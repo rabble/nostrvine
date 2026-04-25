@@ -881,6 +881,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Delete request sent successfully';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Failed to delete content: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Classics';
 
   @override
@@ -1246,6 +1251,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Enable auto advance';
 
   @override
@@ -1268,6 +1288,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => 'Show subtitles';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -2997,6 +3023,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove this video from Divine. It may still appear on other Nostr clients.';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Video is in these lists:';
 
   @override
@@ -3019,6 +3049,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Deleting content...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Failed to delete content: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'Video deleted';
@@ -3102,6 +3137,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Failed to update video: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Failed to delete video: $error';
   }
 
   @override
@@ -3626,6 +3666,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navProfile => 'Profile';
+
+  @override
+  String get navSearch => 'Search';
+
+  @override
+  String get navSearchTooltip => 'Search';
 
   @override
   String get navMyProfile => 'My Profile';
@@ -4764,6 +4810,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Discover something interesting';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Lists';
 
   @override
@@ -5096,7 +5160,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'Clips';
+  String get videoEditorCameraLabel => 'Camera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Open camera';
+
+  @override
+  String get videoEditorLibraryLabel => 'Library';
 
   @override
   String get videoEditorTextLabel => 'Text';
@@ -5105,7 +5175,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorDrawLabel => 'Draw';
 
   @override
-  String get videoEditorEffectsLabel => 'Effects';
+  String get videoEditorFilterLabel => 'Filter';
 
   @override
   String get videoEditorAudioLabel => 'Audio';
@@ -5117,7 +5187,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorAddTitle => 'Add';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'Open clips editor';
+  String get videoEditorOpenLibrarySemanticLabel => 'Open Library';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Open audio editor';
@@ -5129,7 +5199,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Open draw editor';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'Open effects editor';
+  String get videoEditorOpenFilterSemanticLabel => 'Open filter editor';
 
   @override
   String get videoEditorSaveDraftTitle => 'Save your draft?';
@@ -5326,6 +5396,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorAudioFailedToLoadTitle => 'Failed to load sounds';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Select the audio segment for your video';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Arrow tool';
 
   @override
@@ -5397,6 +5471,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => 'Long press to reorder';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Tap to edit. Hold and drag to reorder.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Move left';

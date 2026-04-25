@@ -98,6 +98,28 @@ class VineBottomSheet extends StatelessWidget {
   ///
   /// Set [scrollable] to false for fixed-height sheets (e.g., action menus).
   /// The size parameters are only used when [scrollable] is true.
+  ///
+  /// When [scrollable] is true, [snap] and [snapSizes] are forwarded to the
+  /// underlying [DraggableScrollableSheet] to enable snap-to-position
+  /// behaviour between user-defined fractions of the viewport.
+  ///
+  /// [useRootNavigator] is forwarded to [showModalBottomSheet]; set it to
+  /// true when the sheet must appear above a nested navigator such as the
+  /// tab shell.
+  ///
+  /// [tapOutsideToDismiss], when true (the default) and [scrollable] is
+  /// true, wraps the sheet so that taps on the scrim above the sheet
+  /// dismiss the modal. This compensates for
+  /// [DraggableScrollableSheet]'s default `expand: true` behaviour, which
+  /// otherwise absorbs barrier-tap events. Set to false to keep the
+  /// original layout semantics (full-viewport draggable area, no outer
+  /// tap-catcher). Has no effect in fixed mode — the standard modal
+  /// barrier already dismisses on tap there.
+  ///
+  /// [contentWrapper] wraps the entire sheet subtree once. Useful for
+  /// injecting a single `BlocProvider` / `InheritedWidget` above every
+  /// slot (title, trailing, bottomInput, body, buildScrollBody) without
+  /// having to re-wrap each slot individually at the call site.
   static Future<T?> show<T>({
     required BuildContext context,
     List<Widget>? children,
@@ -115,6 +137,11 @@ class VineBottomSheet extends StatelessWidget {
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
     double maxChildSize = 0.9,
+    bool snap = false,
+    List<double>? snapSizes,
+    bool useRootNavigator = false,
+    bool tapOutsideToDismiss = true,
+    Widget Function(BuildContext context, Widget child)? contentWrapper,
     VoidCallback? onShow,
     VoidCallback? onDismiss,
     bool isDismissible = true,
@@ -131,6 +158,21 @@ class VineBottomSheet extends StatelessWidget {
       scrollable || buildScrollBody == null,
       'buildScrollBody can only be used when scrollable is true',
     );
+    assert(
+      scrollable || !snap,
+      'snap can only be used when scrollable is true',
+    );
+    assert(
+      snapSizes == null || snap,
+      'snapSizes requires snap: true',
+    );
+
+    // When `tapOutsideToDismiss` is explicitly disabled, also disable
+    // Flutter's modal barrier dismissal so the two outside-tap mechanisms
+    // stay consistent. Otherwise a caller that set `tapOutsideToDismiss:
+    // false` would still see the sheet dismissed by barrier taps above the
+    // DraggableScrollableSheet's content area.
+    final effectiveIsDismissible = isDismissible && tapOutsideToDismiss;
 
     if (scrollable) {
       // Draggable/scrollable mode
@@ -138,28 +180,84 @@ class VineBottomSheet extends StatelessWidget {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        isDismissible: isDismissible,
+        useRootNavigator: useRootNavigator,
+        isDismissible: effectiveIsDismissible,
         enableDrag: enableDrag,
         backgroundColor: VineTheme.transparent,
         elevation: 0,
-        builder: (_) => DraggableScrollableSheet(
-          initialChildSize: initialChildSize,
-          minChildSize: minChildSize,
-          maxChildSize: maxChildSize,
-          builder: (context, scrollController) => VineBottomSheet(
-            showHeader: showHeader,
-            title: title,
-            contentTitle: contentTitle,
-            scrollController: scrollController,
-            buildScrollBody: buildScrollBody,
-            trailing: trailing,
-            bottomInput: bottomInput,
-            expanded: expanded,
-            showHeaderDivider: showHeaderDivider,
-            body: body,
-            children: children,
-          ),
-        ),
+        builder: (modalContext) {
+          Widget buildSheet(ScrollController scrollController) {
+            final Widget sheet = VineBottomSheet(
+              showHeader: showHeader,
+              title: title,
+              contentTitle: contentTitle,
+              scrollController: scrollController,
+              buildScrollBody: buildScrollBody,
+              trailing: trailing,
+              bottomInput: bottomInput,
+              expanded: expanded,
+              showHeaderDivider: showHeaderDivider,
+              body: body,
+              children: children,
+            );
+            return contentWrapper?.call(modalContext, sheet) ?? sheet;
+          }
+
+          // Default path preserves the original layout semantics
+          // (`expand: true`, no outer tap-catcher).
+          if (!tapOutsideToDismiss) {
+            return DraggableScrollableSheet(
+              initialChildSize: initialChildSize,
+              minChildSize: minChildSize,
+              maxChildSize: maxChildSize,
+              snap: snap,
+              snapSizes: snapSizes,
+              builder: (context, scrollController) =>
+                  buildSheet(scrollController),
+            );
+          }
+
+          // Tap-outside-to-dismiss path.
+          //
+          // Three layers each with a specific job:
+          //   * Outer translucent GestureDetector — receives taps in the
+          //     empty area above the sheet and pops the route.
+          //   * `expand: false` on DraggableScrollableSheet — stops it from
+          //     claiming the entire modal area, so the region above the
+          //     sheet is free space the outer detector can own.
+          //   * Inner opaque GestureDetector with an empty onTap — swallows
+          //     taps on non-interactive sheet surfaces so they do not
+          //     bubble up to the outer detector. Drags still win via
+          //     gesture arena, and interactive children handle their own
+          //     taps before bubbling.
+          return GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            // coverage:ignore-start
+            // Defensive fallback. In practice the modal barrier pops the
+            // route first on taps above the DraggableScrollableSheet, so
+            // this lambda rarely if ever fires — hence the coverage
+            // exemption. Kept in place for scenarios where the barrier is
+            // somehow non-dismissible but the sheet should still close on
+            // an outside tap.
+            onTap: () => Navigator.of(modalContext).pop(),
+            // coverage:ignore-end
+            child: DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: initialChildSize,
+              minChildSize: minChildSize,
+              maxChildSize: maxChildSize,
+              snap: snap,
+              snapSizes: snapSizes,
+              builder: (context, scrollController) {
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {},
+                  child: buildSheet(scrollController),
+                );
+              },
+            ),
+          );
+        },
       ).whenComplete(() => onDismiss?.call());
     } else {
       // Fixed mode
@@ -167,22 +265,26 @@ class VineBottomSheet extends StatelessWidget {
         context: context,
         isScrollControlled: isScrollControlled ?? expanded,
         useSafeArea: true,
-        isDismissible: isDismissible,
+        useRootNavigator: useRootNavigator,
+        isDismissible: effectiveIsDismissible,
         enableDrag: enableDrag,
         backgroundColor: VineTheme.transparent,
         elevation: 0,
-        builder: (_) => VineBottomSheet(
-          scrollable: false,
-          showHeader: showHeader,
-          title: title,
-          contentTitle: contentTitle,
-          trailing: trailing,
-          bottomInput: bottomInput,
-          expanded: expanded,
-          showHeaderDivider: showHeaderDivider,
-          body: body,
-          children: children,
-        ),
+        builder: (modalContext) {
+          final Widget sheet = VineBottomSheet(
+            scrollable: false,
+            showHeader: showHeader,
+            title: title,
+            contentTitle: contentTitle,
+            trailing: trailing,
+            bottomInput: bottomInput,
+            expanded: expanded,
+            showHeaderDivider: showHeaderDivider,
+            body: body,
+            children: children,
+          );
+          return contentWrapper?.call(modalContext, sheet) ?? sheet;
+        },
       ).whenComplete(() => onDismiss?.call());
     }
   }

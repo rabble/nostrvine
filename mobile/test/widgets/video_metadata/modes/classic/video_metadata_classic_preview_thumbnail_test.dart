@@ -16,7 +16,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_preview_thumbnail.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -128,7 +128,7 @@ void main() {
           );
 
           expect(
-            find.byType(VideoClipEditorProcessingOverlay),
+            find.byType(VideoEditorProcessingOverlay),
             findsOneWidget,
           );
         },
@@ -274,11 +274,30 @@ void main() {
           );
           await tester.pumpAndSettle();
 
+          await _waitForMethodCall(
+            tester: tester,
+            methodCalls: methodCalls,
+            method: 'dispose',
+          );
+
           expect(methodCalls, contains('dispose'));
         },
       );
     });
   });
+}
+
+Future<void> _waitForMethodCall({
+  required WidgetTester tester,
+  required List<String> methodCalls,
+  required String method,
+  int attempts = 20,
+}) async {
+  for (var i = 0; i < attempts; i++) {
+    if (methodCalls.contains(method)) return;
+    await tester.idle();
+    await tester.pump(const Duration(milliseconds: 10));
+  }
 }
 
 /// Registers mock platform channel handlers for divine_video_player.

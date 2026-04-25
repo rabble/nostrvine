@@ -223,20 +223,22 @@ class DraftsTab extends ConsumerWidget {
         backgroundColor: VineTheme.cardBackground,
         title: Text(
           context.l10n.libraryDeleteDraftTitle,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.titleSmallFont(),
         ),
         content: Text(
           context.l10n.libraryDeleteDraftMessage(
             draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
           ),
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: VineTheme.bodyMediumFont(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               context.l10n.commonCancel,
-              style: const TextStyle(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.secondaryText,
+              ),
             ),
           ),
           ElevatedButton(
@@ -269,6 +271,16 @@ class DraftsTab extends ConsumerWidget {
       }
     }
   }
+}
+
+String _formatDraftSubtitle(BuildContext context, DateTime lastModified) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final date = DateFormat.yMMMEd(locale).format(lastModified);
+  final time = MaterialLocalizations.of(context).formatTimeOfDay(
+    TimeOfDay.fromDateTime(lastModified),
+    alwaysUse24HourFormat: MediaQuery.of(context).alwaysUse24HourFormat,
+  );
+  return '$date $time';
 }
 
 /// List tile widget displaying a single draft.
@@ -340,7 +352,7 @@ class DraftListTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        DateFormat.yMMMEd().add_jm().format(draft.lastModified),
+        _formatDraftSubtitle(context, draft.lastModified),
         style: VineTheme.bodySmallFont(),
       ),
       trailing: onOpenMore == null

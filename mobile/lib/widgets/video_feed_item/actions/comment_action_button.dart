@@ -124,6 +124,7 @@ class _ActionButton extends StatelessWidget {
       semanticLabel: context.l10n.videoActionViewComments,
       isLoading: isCommentsInProgress,
       count: totalComments,
+      labelWhenZero: context.l10n.videoActionReplyLabel,
       onPressed: onPressed,
     );
   }

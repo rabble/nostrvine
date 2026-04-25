@@ -1,17 +1,22 @@
-// ABOUTME: Three-dots more action button for video feed overlay.
+// ABOUTME: Info action button for video feed overlay.
 // ABOUTME: Opens the expanded metadata bottom sheet showing video details.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Three-dots more action button for the video overlay.
+/// Info action button for the video overlay.
 ///
 /// Opens the expanded metadata sheet showing title, stats, creator, tags,
 /// collaborators, inspired-by, reposted-by, and sounds.
+///
+/// Built on top of [VideoActionButton] to share the exact 48x48 tap target,
+/// 24 icon + 8 px gap + label/small caption layout, and Figma-spec drop
+/// shadows with the other buttons in the column.
 class MoreActionButton extends StatelessWidget {
   const MoreActionButton({
     required this.video,
@@ -24,36 +29,20 @@ class MoreActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      identifier: 'more_button',
-      container: true,
-      explicitChildNodes: true,
-      button: true,
-      label: context.l10n.videoActionMoreOptions,
-      child: GestureDetector(
-        onTap: () {
-          onInteracted?.call();
-          Log.info(
-            'More button tapped for ${video.id}',
-            name: 'MoreActionButton',
-            category: LogCategory.ui,
-          );
-          MetadataExpandedSheet.show(context, video);
-        },
-        child: Container(
-          width: 40,
-          height: 40,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: VineTheme.scrim30,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const DivineIcon(
-            icon: DivineIconName.dotsThree,
-            color: VineTheme.whiteText,
-          ),
-        ),
-      ),
+    return VideoActionButton(
+      icon: DivineIconName.info,
+      semanticIdentifier: 'more_button',
+      semanticLabel: context.l10n.videoActionMoreOptions,
+      caption: context.l10n.videoActionAboutLabel,
+      onPressed: () {
+        onInteracted?.call();
+        Log.info(
+          'More button tapped for ${video.id}',
+          name: 'MoreActionButton',
+          category: LogCategory.ui,
+        );
+        MetadataExpandedSheet.show(context, video);
+      },
     );
   }
 }

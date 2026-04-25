@@ -50,7 +50,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: VideoRecorderCaptureStack(),
+            body: VideoRecorderCaptureStack(fromEditor: false),
           ),
         ),
       );
@@ -166,6 +166,21 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(Stack), findsWidgets);
+      });
+
+      testWidgets('$RecordButton is horizontally centered', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final stackRect = tester.getRect(
+          find.byType(VideoRecorderCaptureStack),
+        );
+        final recordButtonRect = tester.getRect(find.byType(RecordButton));
+
+        expect(
+          recordButtonRect.center.dx,
+          closeTo(stackRect.center.dx, 2.0),
+        );
       });
     });
   });

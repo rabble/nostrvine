@@ -41,7 +41,6 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
       label: context.l10n.videoMetadataSetInspiredBySemanticLabel,
       child: InkWell(
         onTap: hasInspiredBy

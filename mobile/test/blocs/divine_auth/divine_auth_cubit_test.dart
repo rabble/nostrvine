@@ -1558,6 +1558,7 @@ void main() {
         expect(cleared.generalError, isNull);
         expect(cleared.showInviteGateRecovery, isFalse);
         expect(cleared.inviteRecoveryCode, isNull);
+        expect(cleared.inviteRecoverySourceSlug, isNull);
       });
 
       test('props contains all fields', () {
@@ -1570,10 +1571,11 @@ void main() {
           generalError: 'g',
           showInviteGateRecovery: true,
           inviteRecoveryCode: 'AB12-EF34',
+          inviteRecoverySourceSlug: 'lele-pons',
           obscurePassword: false,
           isSubmitting: true,
         );
-        expect(state.props, hasLength(11));
+        expect(state.props, hasLength(12));
       });
     });
 

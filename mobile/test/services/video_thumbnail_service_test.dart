@@ -1,13 +1,30 @@
 // ABOUTME: Unit tests for video thumbnail extraction service
 // ABOUTME: Tests thumbnail generation, error handling, and edge cases
 
-@Tags(['skip_very_good_optimization'])
 import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+// Not exported from pro_video_editor's barrel — imported via path so we can
+// subclass MethodChannelProVideoEditor and skip its EventChannel subscription.
+// May need updating on pro_video_editor upgrades.
+import 'package:pro_video_editor/core/platform/native_method_channel.dart';
+import 'package:pro_video_editor/core/platform/platform_interface.dart';
+
+/// Fresh ProVideoEditor-compatible instance for tests.
+///
+/// Extends [MethodChannelProVideoEditor] so method calls route through the
+/// per-test mocked `MethodChannel('pro_video_editor')`. Overrides
+/// [initializeStream] to skip subscribing to the `pro_video_editor_progress`
+/// and `pro_video_editor_waveform_stream` EventChannels — without this
+/// override, the constructor throws `MissingPluginException` in the VGV
+/// shared isolate where those EventChannels aren't mocked.
+class _NoopInitProVideoEditor extends MethodChannelProVideoEditor {
+  @override
+  Stream<dynamic> initializeStream() => const Stream.empty();
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +46,14 @@ void main() {
     });
 
     setUp(() {
+      // Reset the pro_video_editor platform singleton to a test-mode instance
+      // whose constructor does NOT subscribe to EventChannels. Without this,
+      // whichever file ran before ours in the VGV shared isolate may have left
+      // `ProVideoEditor.instance` pointing at a foreign mock that overrides
+      // only its own methods, causing our method calls to throw
+      // `UnimplementedError` instead of routing through the MethodChannel.
+      ProVideoEditor.instance = _NoopInitProVideoEditor();
+
       testVideoPath = '${tempDir.path}/test_video.mp4';
 
       // Mock the pro_video_editor platform channel per-test so it does not
@@ -292,6 +317,14 @@ void main() {
     });
 
     setUp(() {
+      // Reset the pro_video_editor platform singleton to a test-mode instance
+      // whose constructor does NOT subscribe to EventChannels. Without this,
+      // whichever file ran before ours in the VGV shared isolate may have left
+      // `ProVideoEditor.instance` pointing at a foreign mock that overrides
+      // only its own methods, causing our method calls to throw
+      // `UnimplementedError` instead of routing through the MethodChannel.
+      ProVideoEditor.instance = _NoopInitProVideoEditor();
+
       getThumbnailsReturnsBytes = false;
       getMetadataSucceeds = true;
 

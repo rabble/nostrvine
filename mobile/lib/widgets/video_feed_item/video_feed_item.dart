@@ -7,7 +7,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -38,10 +37,8 @@ import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
-import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -98,7 +95,6 @@ class VideoFeedItem extends ConsumerStatefulWidget {
     this.isFullscreen = false,
     this.listSources,
     this.showListAttribution = false,
-    this.hideFollowButtonIfFollowing = false,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
   });
@@ -128,11 +124,6 @@ class VideoFeedItem extends ConsumerStatefulWidget {
 
   /// Whether to show the list attribution chip below the author info.
   final bool showListAttribution;
-
-  /// When true, hides the follow button if already following the author.
-  /// Useful for Home feed (all videos are from followed users) and
-  /// Profile views of followed users.
-  final bool hideFollowButtonIfFollowing;
 
   /// Traffic source for view event analytics (home, discovery, profile, etc.)
   final ViewTrafficSource trafficSource;
@@ -1237,7 +1228,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                 isFullscreen: widget.isFullscreen,
                 listSources: widget.listSources,
                 showListAttribution: widget.showListAttribution,
-                hideFollowButtonIfFollowing: widget.hideFollowButtonIfFollowing,
               ),
             ),
 
@@ -1332,7 +1322,6 @@ class VideoOverlayActions extends ConsumerWidget {
     this.listSources,
     this.showListAttribution = false,
     this.isPreviewMode = false,
-    this.hideFollowButtonIfFollowing = false,
     this.showBottomGradient = true,
     this.topOffset = 8.0,
     this.overlayOpacity = 1.0,
@@ -1361,9 +1350,8 @@ class VideoOverlayActions extends ConsumerWidget {
   /// Whether to show the list attribution chip below the author info.
   final bool showListAttribution;
 
-  /// When true, hides the follow button if already following the author.
-  final bool hideFollowButtonIfFollowing;
-
+  /// Whether to render the bottom darkening gradient behind the caption
+  /// block. Disabled in preview / editor flows that have their own chrome.
   final bool showBottomGradient;
 
   /// Opacity for the entire overlay, driven by scroll position.
@@ -1455,18 +1443,6 @@ class VideoOverlayActions extends ConsumerWidget {
                   ),
                 ),
               ),
-            // ProofMode and Vine badges in upper right corner (tappable)
-            if (!isPreviewMode)
-              PositionedDirectional(
-                top: safeAreaTop + topOffset,
-                end: 16,
-                child: GestureDetector(
-                  onTap: () {
-                    _showBadgeExplanationModal(context, ref, video, isActive);
-                  },
-                  child: ProofModeBadgeRow(video: video),
-                ),
-              ),
             // Author info and video description overlay at bottom left
             Positioned(
               bottom: bottomOffset,
@@ -1537,8 +1513,6 @@ class VideoOverlayActions extends ConsumerWidget {
                                     top: 31,
                                     child: VideoFollowButton(
                                       pubkey: video.pubkey,
-                                      hideIfFollowing:
-                                          hideFollowButtonIfFollowing,
                                     ),
                                   ),
                                 ],
@@ -1739,53 +1713,6 @@ class VideoOverlayActions extends ConsumerWidget {
       builder: (context) => _ContentWarningDetailsSheet(labels: labels),
     );
   }
-
-  Future<void> _showBadgeExplanationModal(
-    BuildContext context,
-    WidgetRef ref,
-    VideoEvent video,
-    bool isActive,
-  ) async {
-    // Pause video before showing modal
-    bool wasPaused = false;
-    try {
-      final controllerParams = videoControllerParamsFor(ref, video);
-
-      final controller = ref.read(
-        individualVideoControllerProvider(controllerParams),
-      );
-      if (controller.value.isInitialized && controller.value.isPlaying) {
-        // Use safePause to handle disposed controller gracefully
-        wasPaused = await safePause(controller, video.id);
-        if (wasPaused) {
-          Log.info(
-            '🎬 Paused video for badge modal',
-            name: 'VideoFeedItem',
-            category: LogCategory.ui,
-          );
-        }
-      }
-    } catch (e) {
-      // Ignore disposal errors
-      final errorStr = e.toString().toLowerCase();
-      if (!errorStr.contains('no active player') &&
-          !errorStr.contains('disposed')) {
-        Log.error(
-          'Failed to pause video for modal: $e',
-          name: 'VideoFeedItem',
-          category: LogCategory.ui,
-        );
-      }
-    }
-
-    if (!context.mounted) return;
-
-    await context.showVideoPausingDialog<void>(
-      builder: (context) => BadgeExplanationModal(video: video),
-    );
-
-    // Video resumes when modal closes via overlay visibility provider
-  }
 }
 
 class VideoOverlayActionColumn extends ConsumerWidget {
@@ -1810,10 +1737,28 @@ class VideoOverlayActionColumn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Gate the edit button at the column level so that when it shouldn't
+    // render, it's not included as a child at all. A `SizedBox.shrink` child
+    // under `Column(spacing: 24)` would still pick up the inter-child gap
+    // and inject 24 px of dead space above whichever button ends up first.
+    //
+    // Mirrors the gates previously inside `_VideoEditButton.build`: the
+    // editor feature flag must be on, and the viewer must own the video.
+    final editorEnabled = ref
+        .watch(featureFlagServiceProvider)
+        .isEnabled(FeatureFlag.enableVideoEditorV1);
+    final currentUserPubkey = ref
+        .watch(authServiceProvider)
+        .currentPublicKeyHex;
+    final isOwnVideo =
+        currentUserPubkey != null && currentUserPubkey == video.pubkey;
+    final showEditButton =
+        !isFullscreen && !isPreviewMode && editorEnabled && isOwnVideo;
+
     return Column(
-      spacing: 4,
+      spacing: 24,
       children: [
-        if (!isFullscreen && !isPreviewMode) _VideoEditButton(video: video),
+        if (showEditButton) _VideoEditButton(video: video),
         if (showAutoButton && onAutoPressed != null)
           AutoActionButton(
             isEnabled: isAutoEnabled,
@@ -1835,104 +1780,47 @@ class VideoOverlayActionColumn extends ConsumerWidget {
           onInteracted: onInteracted,
         ),
         ShareActionButton(video: video, onInteracted: onInteracted),
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: MoreActionButton(
-            video: video,
-            onInteracted: onInteracted,
-          ),
-        ),
+        MoreActionButton(video: video, onInteracted: onInteracted),
       ],
     );
   }
 }
 
-/// Edit button shown only for owned videos when feature flag is enabled.
+/// Edit button slot for owned videos when the editor feature flag is on.
 ///
-/// This widget checks:
-/// 1. Feature flag `enableVideoEditorV1` is enabled
-/// 2. Current user owns the video
-///
-/// If both conditions are met, displays an edit button that opens the
-/// video edit dialog.
-class _VideoEditButton extends ConsumerWidget {
+/// Visibility is decided by [VideoOverlayActionColumn.build] (feature-flag
+/// + ownership gate) before this widget is ever instantiated, so `build`
+/// assumes the button should render and no longer performs those checks.
+class _VideoEditButton extends StatelessWidget {
   const _VideoEditButton({required this.video});
 
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Check feature flag
-    final featureFlagService = ref.watch(featureFlagServiceProvider);
-    final isEditorEnabled = featureFlagService.isEnabled(
-      FeatureFlag.enableVideoEditorV1,
-    );
+  Widget build(BuildContext context) {
+    // Outer Semantics carries the test identifier only; DivineIconButton
+    // already emits its own `button: true, label: ...` inner semantics,
+    // which `explicitChildNodes: true` keeps as a sibling node so both
+    // the test identifier and the button role are available to callers.
+    return Semantics(
+      identifier: 'edit_button',
+      container: true,
+      explicitChildNodes: true,
+      child: DivineIconButton(
+        icon: DivineIconName.pencilSimpleLineDuo,
+        type: DivineIconButtonType.ghost,
+        semanticLabel: context.l10n.videoPlayerEditVideo,
+        onPressed: () {
+          Log.info(
+            '✏️ Edit button tapped for ${video.id}',
+            name: 'VideoFeedItem',
+            category: LogCategory.ui,
+          );
 
-    if (!isEditorEnabled) {
-      return const SizedBox.shrink();
-    }
-
-    // Check ownership
-    final authService = ref.watch(authServiceProvider);
-    final currentUserPubkey = authService.currentPublicKeyHex;
-    final isOwnVideo =
-        currentUserPubkey != null && currentUserPubkey == video.pubkey;
-
-    if (!isOwnVideo) {
-      return const SizedBox.shrink();
-    }
-
-    // Show edit button
-    return Column(
-      children: [
-        const SizedBox(height: 4),
-        Semantics(
-          identifier: 'edit_button',
-          container: true,
-          explicitChildNodes: true,
-          button: true,
-          label: context.l10n.videoPlayerEditVideo,
-          child: IconButton(
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-            style: IconButton.styleFrom(
-              highlightColor: VineTheme.transparent,
-              splashFactory: NoSplash.splashFactory,
-            ),
-            onPressed: () {
-              Log.info(
-                '✏️ Edit button tapped for ${video.id}',
-                name: 'VideoFeedItem',
-                category: LogCategory.ui,
-              );
-
-              // Show edit dialog directly (works on all platforms)
-              showEditDialogForVideo(context, video);
-            },
-            tooltip: context.l10n.videoPlayerEditVideoTooltip,
-            icon: DecoratedBox(
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: VineTheme.backgroundColor.withValues(alpha: 0.15),
-                    blurRadius: 15,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: SvgPicture.asset(
-                DivineIconName.pencilSimpleLineDuo.assetPath,
-                width: 32,
-                height: 32,
-                colorFilter: const ColorFilter.mode(
-                  VineTheme.whiteText,
-                  BlendMode.srcIn,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+          // Show edit dialog directly (works on all platforms)
+          showEditDialogForVideo(context, video);
+        },
+      ),
     );
   }
 }
@@ -1945,12 +1833,10 @@ class VideoAuthorRow extends ConsumerWidget {
     required this.video,
     super.key,
     this.isFullscreen = false,
-    this.hideFollowButtonIfFollowing = false,
   });
 
   final VideoEvent video;
   final bool isFullscreen;
-  final bool hideFollowButtonIfFollowing;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2001,10 +1887,7 @@ class VideoAuthorRow extends ConsumerWidget {
         ),
         // Follow button (handles own video check internally)
         const SizedBox(width: 8),
-        VideoFollowButton(
-          pubkey: video.pubkey,
-          hideIfFollowing: hideFollowButtonIfFollowing,
-        ),
+        VideoFollowButton(pubkey: video.pubkey),
       ],
     );
   }

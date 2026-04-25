@@ -1,6 +1,8 @@
 // ABOUTME: Tests for UserPickerSheet widget
 // ABOUTME: Verifies search functionality, local follow search, and user selection
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -35,6 +37,7 @@ _MockProfileRepository _createMockProfileRepository({
       offset: any(named: 'offset'),
       sortBy: any(named: 'sortBy'),
       hasVideos: any(named: 'hasVideos'),
+      boostPubkeys: any(named: 'boostPubkeys'),
     ),
   ).thenAnswer((_) => Stream.value(searchResults));
 
@@ -409,6 +412,298 @@ void main() {
         final textField = tester.widget<TextField>(find.byType(TextField));
         expect(textField.decoration?.hintText, equals('Search by name...'));
       });
+
+      testWidgets(
+        'renders tiles during progressive loading '
+        'instead of the full-screen spinner',
+        (tester) async {
+          // Stream controller kept open after the first yield — this
+          // simulates the real progressive search still running (e.g.
+          // NIP-50 WebSocket phase) while the REST phase has already
+          // delivered results.
+          final streamController =
+              StreamController<List<UserProfile>>.broadcast();
+          addTearDown(streamController.close);
+
+          final alice = UserProfile(
+            pubkey: 'p_alice',
+            name: 'Alice',
+            rawData: const {'name': 'Alice'},
+            createdAt: DateTime.now(),
+            eventId: 'event_alice',
+          );
+          final mockProfileRepo = _createMockProfileRepository();
+          when(
+            () => mockProfileRepo.searchUsersProgressive(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+              boostPubkeys: any(named: 'boostPubkeys'),
+            ),
+          ).thenAnswer((_) => streamController.stream);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+                followRepositoryProvider.overrideWithValue(
+                  _createMockFollowRepository(),
+                ),
+              ],
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: UserPickerSheet(
+                    filterMode: UserPickerFilterMode.allUsers,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.enterText(find.byType(TextField), 'alice');
+          // Past the 300ms search debounce.
+          await tester.pump(const Duration(milliseconds: 400));
+
+          // Emit the first batch — stream stays open, so the BLoC
+          // stays in `loading` with results available. The fix is that
+          // the picker now renders these results instead of a spinner.
+          streamController.add([alice]);
+          await tester.pump();
+
+          // The tile renders while the stream is still open (loading). Before
+          // the fix, the UI showed a full-screen spinner and Alice never
+          // appeared until the progressive stream completed.
+          expect(find.text('Alice'), findsOneWidget);
+          // Only the footer load-more spinner should be in the tree (1);
+          // before the fix there was a full-screen spinner instead (also 1),
+          // so we distinguish by asserting the tile is present above.
+        },
+      );
+
+      testWidgets(
+        'boosts followed users above non-followed in search results',
+        (tester) async {
+          final zoe = UserProfile(
+            pubkey: 'p_zoe',
+            name: 'Zoe',
+            rawData: const {'name': 'Zoe'},
+            createdAt: DateTime.now(),
+            eventId: 'event_zoe',
+          );
+          final liz = UserProfile(
+            pubkey: 'p_liz',
+            name: 'Liz Sweigart',
+            rawData: const {'name': 'Liz Sweigart'},
+            createdAt: DateTime.now(),
+            eventId: 'event_liz',
+          );
+          final mockProfileRepo = _MockProfileRepository();
+          // Simulate the real repository's boost behaviour: profiles whose
+          // pubkey is in [boostPubkeys] are promoted to the front while
+          // preserving server-relative order. Boost ordering itself is
+          // unit-tested in profile_repository_test.dart; here we just need
+          // a mock that reacts to [boostPubkeys] so the widget test can
+          // assert that the UI reflects it.
+          when(
+            () => mockProfileRepo.searchUsersProgressive(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+              boostPubkeys: any(named: 'boostPubkeys'),
+            ),
+          ).thenAnswer((invocation) {
+            final boost =
+                invocation.namedArguments[#boostPubkeys] as Set<String>? ??
+                const <String>{};
+            final results = [zoe, liz];
+            if (boost.isEmpty) return Stream.value(results);
+            final boosted = <UserProfile>[];
+            final rest = <UserProfile>[];
+            for (final p in results) {
+              if (boost.contains(p.pubkey)) {
+                boosted.add(p);
+              } else {
+                rest.add(p);
+              }
+            }
+            return Stream.value([...boosted, ...rest]);
+          });
+          when(
+            () => mockProfileRepo.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          final mockFollowRepo = _createMockFollowRepository(
+            followingPubkeys: ['p_liz'],
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+                followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              ],
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: UserPickerSheet(
+                    filterMode: UserPickerFilterMode.allUsers,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.enterText(find.byType(TextField), 'liz');
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pumpAndSettle();
+
+          final lizTile = find.text('Liz Sweigart');
+          final zoeTile = find.text('Zoe');
+          expect(lizTile, findsOneWidget);
+          expect(zoeTile, findsOneWidget);
+
+          final lizY = tester.getTopLeft(lizTile).dy;
+          final zoeY = tester.getTopLeft(zoeTile).dy;
+          expect(
+            lizY,
+            lessThan(zoeY),
+            reason: 'Followed user should render above non-followed user',
+          );
+        },
+      );
+
+      testWidgets(
+        'disables iOS autocorrect and predictive suggestions on the '
+        'search field',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                profileRepositoryProvider.overrideWithValue(
+                  _createMockProfileRepository(),
+                ),
+                followRepositoryProvider.overrideWithValue(
+                  _createMockFollowRepository(),
+                ),
+              ],
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: UserPickerSheet(
+                    filterMode: UserPickerFilterMode.allUsers,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          final textField = tester.widget<TextField>(find.byType(TextField));
+          expect(
+            textField.autocorrect,
+            isFalse,
+            reason: 'autocorrect must be off or iOS silently rewrites queries',
+          );
+          expect(
+            textField.enableSuggestions,
+            isFalse,
+            reason: 'enableSuggestions must be off for the same reason',
+          );
+        },
+      );
+
+      testWidgets(
+        'preserves previous results while a new query is loading',
+        (tester) async {
+          final alice = UserProfile(
+            pubkey: 'p_alice',
+            name: 'Alice',
+            rawData: const {'name': 'Alice'},
+            createdAt: DateTime.now(),
+            eventId: 'event_alice',
+          );
+          final bob = UserProfile(
+            pubkey: 'p_bob',
+            name: 'Bob',
+            rawData: const {'name': 'Bob'},
+            createdAt: DateTime.now(),
+            eventId: 'event_bob',
+          );
+          final bobController = StreamController<List<UserProfile>>.broadcast();
+          addTearDown(bobController.close);
+
+          final mockProfileRepo = _createMockProfileRepository();
+          when(
+            () => mockProfileRepo.searchUsersProgressive(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+              boostPubkeys: any(named: 'boostPubkeys'),
+            ),
+          ).thenAnswer((_) => Stream.value([alice]));
+          when(
+            () => mockProfileRepo.searchUsersProgressive(
+              query: 'bob',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+              boostPubkeys: any(named: 'boostPubkeys'),
+            ),
+          ).thenAnswer((_) => bobController.stream);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+                followRepositoryProvider.overrideWithValue(
+                  _createMockFollowRepository(),
+                ),
+              ],
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: UserPickerSheet(
+                    filterMode: UserPickerFilterMode.allUsers,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          // First query — 'alice' succeeds.
+          await tester.enterText(find.byType(TextField), 'alice');
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pumpAndSettle();
+          expect(find.text('Alice'), findsOneWidget);
+
+          // Second query — 'bob' starts loading (stream stays open).
+          await tester.enterText(find.byType(TextField), 'bob');
+          await tester.pump(const Duration(milliseconds: 400));
+
+          // Alice is still visible — we did NOT blank the list.
+          expect(find.text('Alice'), findsOneWidget);
+
+          // When 'bob' results arrive, the list updates in place.
+          bobController.add([bob]);
+          // Pump twice: once to let the stream event propagate through the
+          // bloc's emit.forEach, once more for the rebuilt BlocBuilder.
+          await tester.pump();
+          await tester.pump();
+          expect(find.text('Bob'), findsOneWidget);
+        },
+      );
     });
 
     group('autoFocus', () {

@@ -227,6 +227,10 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
     return ComposableVideoGrid(
       videos: widget.videos,
       useMasonryLayout: true,
+      // Explore grids are edge-to-edge; the 4px gap between columns comes
+      // from `crossAxisSpacing` inside ComposableVideoGrid, not from
+      // outer side padding.
+      padding: const EdgeInsets.symmetric(vertical: 4),
       onVideoTap: (videoList, index) {
         Log.info(
           '🎯 NewVideosTab TAP: gridIndex=$index, '

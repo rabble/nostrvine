@@ -92,6 +92,52 @@ void main() {
     );
 
     blocTest<InviteGateBloc, InviteGateState>(
+      'stores creator metadata when reusable creator invite validates',
+      setUp: () {
+        when(
+          () => mockInviteApiClient.validateCode('LELE-PONS'),
+        ).thenAnswer(
+          (_) async => const InviteValidationResult(
+            valid: true,
+            used: true,
+            available: true,
+            code: 'LELE-PONS',
+            creatorSlug: 'lele-pons',
+            creatorDisplayName: 'Lele Pons',
+            remaining: 842,
+          ),
+        );
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('lele-pons')),
+      expect: () => [
+        const InviteGateState(isValidatingCode: true),
+        isA<InviteGateState>()
+            .having((state) => state.hasAccessGrant, 'hasAccessGrant', true)
+            .having(
+              (state) => state.accessGrant?.code,
+              'accessGrant.code',
+              'LELE-PONS',
+            )
+            .having(
+              (state) => state.accessGrant?.creatorSlug,
+              'accessGrant.creatorSlug',
+              'lele-pons',
+            )
+            .having(
+              (state) => state.accessGrant?.creatorDisplayName,
+              'accessGrant.creatorDisplayName',
+              'Lele Pons',
+            )
+            .having(
+              (state) => state.accessGrant?.remaining,
+              'accessGrant.remaining',
+              842,
+            ),
+      ],
+    );
+
+    blocTest<InviteGateBloc, InviteGateState>(
       'maps used invite validations to invite code error state',
       setUp: () {
         when(
@@ -110,6 +156,56 @@ void main() {
         const InviteGateState(isValidatingCode: true),
         const InviteGateState(
           inviteCodeError: 'That invite code has already been used or revoked.',
+        ),
+      ],
+    );
+
+    blocTest<InviteGateBloc, InviteGateState>(
+      'maps unavailable creator codes to waitlist-friendly general error',
+      setUp: () {
+        when(
+          () => mockInviteApiClient.validateCode('LELE-PONS'),
+        ).thenAnswer(
+          (_) async => const InviteValidationResult(
+            valid: false,
+            used: false,
+            available: false,
+            code: 'LELE-PONS',
+            errorCode: 'creator_page_full',
+            creatorSlug: 'lele-pons',
+            creatorDisplayName: 'Lele Pons',
+          ),
+        );
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('lele-pons')),
+      expect: () => [
+        const InviteGateState(isValidatingCode: true),
+        const InviteGateState(generalError: "This creator's invites are full"),
+      ],
+    );
+
+    blocTest<InviteGateBloc, InviteGateState>(
+      'keeps invalid invite codes editable',
+      setUp: () {
+        when(
+          () => mockInviteApiClient.validateCode('NOPE-CODE'),
+        ).thenAnswer(
+          (_) async => const InviteValidationResult(
+            valid: false,
+            used: false,
+            available: false,
+            code: 'NOPE-CODE',
+            errorCode: 'invite_invalid_format',
+          ),
+        );
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('nope-code')),
+      expect: () => [
+        const InviteGateState(isValidatingCode: true),
+        const InviteGateState(
+          inviteCodeError: 'That invite code does not look valid.',
         ),
       ],
     );

@@ -910,6 +910,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cererea de ștergere a fost trimisă cu succes';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'N-am putut șterge conținutul: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Clasice';
 
   @override
@@ -1279,6 +1284,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Activează avansarea automată';
 
   @override
@@ -1301,6 +1321,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => 'Arată subtitrările';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -3083,6 +3109,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Elimină definitiv acest conținut';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Asta va trimite o cerere de ștergere (NIP-09) către toate relay-urile. Unele relay-uri pot păstra totuși conținutul.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Videoclipul e în aceste liste:';
 
   @override
@@ -3112,6 +3142,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Se șterge conținutul...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'N-am putut șterge conținutul: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent =>
@@ -3196,6 +3231,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'N-am putut actualiza videoclipul: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'N-am putut șterge videoclipul: $error';
   }
 
   @override
@@ -3732,6 +3772,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get navProfile => 'Profil';
+
+  @override
+  String get navSearch => 'Caută';
+
+  @override
+  String get navSearchTooltip => 'Caută';
 
   @override
   String get navMyProfile => 'Profilul meu';
@@ -4891,6 +4937,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Descoperă ceva interesant';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Liste';
 
   @override
@@ -5229,7 +5293,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'Clipuri';
+  String get videoEditorCameraLabel => 'Cameră';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Deschide camera';
+
+  @override
+  String get videoEditorLibraryLabel => 'Bibliotecă';
 
   @override
   String get videoEditorTextLabel => 'Text';
@@ -5238,7 +5308,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorDrawLabel => 'Desen';
 
   @override
-  String get videoEditorEffectsLabel => 'Efecte';
+  String get videoEditorFilterLabel => 'Filtru';
 
   @override
   String get videoEditorAudioLabel => 'Audio';
@@ -5250,8 +5320,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorAddTitle => 'Adaugă';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel =>
-      'Deschide editorul de clipuri';
+  String get videoEditorOpenLibrarySemanticLabel => 'Deschide biblioteca';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Deschide editorul audio';
@@ -5263,8 +5332,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Deschide editorul de desen';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel =>
-      'Deschide editorul de efecte';
+  String get videoEditorOpenFilterSemanticLabel =>
+      'Deschide editorul de filtre';
 
   @override
   String get videoEditorSaveDraftTitle => 'Salvezi schița?';
@@ -5470,6 +5539,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-au putut încărca sunetele';
 
   @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Alege segmentul audio pentru videoclipul tău';
+
+  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Instrument săgeată';
 
   @override
@@ -5542,6 +5615,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Apăsare lungă pentru reordonare';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Atinge pentru editare. Ține apăsat și trage pentru reordonare.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Mută la stânga';

@@ -6,7 +6,7 @@ import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show kReleaseMode, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -684,6 +684,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         if (listEquals(previous, current)) return;
 
         final clips = ref.read(clipManagerProvider).clips;
+        // Skip when there are no clips left (e.g. clearAll during
+        // teardown). Sending `setClips([])` to the native player
+        // builds a composition with `renderSize == .zero` on iOS,
+        // which crashes `AVPlayerItem.setVideoComposition:`.
+        if (clips.isEmpty) return;
         final currentPosition = context
             .read<VideoEditorMainBloc>()
             .state
@@ -764,6 +769,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               return false;
             },
             listener: (context, state) {
+              // See note on the trim-times listener above: skip empty
+              // clip lists to avoid crashing the iOS native player.
+              if (state.clips.isEmpty) return;
               final currentPosition = context
                   .read<VideoEditorMainBloc>()
                   .state
@@ -838,8 +846,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               captureImageByteFormat: .rawStraightRgba,
               enableBackgroundGeneration: false,
               enableUseOriginalBytes: false,
+              // Disabled in debug mode: combined RAM usage from the editor
+              // and MediaKit (background) causes crashes on hot-reload.
+              // Release builds are unaffected.
+              enableIsolateGeneration: kReleaseMode,
               processorConfigs: const ProcessorConfigs(
-                numberOfBackgroundProcessors: 4,
+                numberOfBackgroundProcessors: 3,
                 processorMode: .limit,
                 initializationDelay:
                     VideoEditorConstants.isolatesInitialisationDelay,

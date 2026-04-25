@@ -118,6 +118,9 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
             accessGrant: InviteAccessGrant(
               code: result.code ?? normalizedCode,
               validatedAt: DateTime.now(),
+              creatorSlug: result.creatorSlug,
+              creatorDisplayName: result.creatorDisplayName,
+              remaining: result.remaining,
             ),
             clearInviteCodeError: true,
             clearGeneralError: true,
@@ -126,13 +129,15 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
         return;
       }
 
+      final inviteCodeError = _inviteCodeErrorForResult(result);
+      final generalError = _generalErrorForResult(result);
       emit(
         state.copyWith(
           isValidatingCode: false,
-          inviteCodeError: result.used
-              ? 'That invite code has already been used or revoked.'
-              : 'That invite code does not look valid.',
-          clearGeneralError: true,
+          inviteCodeError: inviteCodeError,
+          generalError: generalError,
+          clearInviteCodeError: inviteCodeError == null,
+          clearGeneralError: generalError == null,
         ),
       );
     } on InviteApiException catch (error) {
@@ -201,5 +206,35 @@ class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
     }
 
     emit(state.copyWith(clearAccessGrant: true));
+  }
+
+  String? _inviteCodeErrorForResult(InviteValidationResult result) {
+    switch (result.errorCode) {
+      case 'creator_page_full':
+      case 'invite_revoked':
+      case 'invite_code_rotated':
+      case 'creator_page_disabled':
+        return null;
+      case 'invite_not_found':
+      case 'invite_invalid_format':
+        return 'That invite code does not look valid.';
+    }
+
+    return result.used
+        ? 'That invite code has already been used or revoked.'
+        : 'That invite code does not look valid.';
+  }
+
+  String? _generalErrorForResult(InviteValidationResult result) {
+    switch (result.errorCode) {
+      case 'creator_page_full':
+        return "This creator's invites are full";
+      case 'invite_revoked':
+      case 'invite_code_rotated':
+      case 'creator_page_disabled':
+        return 'That invite code is unavailable. Join the waitlist and '
+            "we'll send an invite when there's room.";
+    }
+    return null;
   }
 }

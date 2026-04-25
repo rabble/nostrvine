@@ -38,6 +38,7 @@ class AuthFormScaffold extends StatelessWidget {
     this.onEmailChanged,
     this.onPasswordChanged,
     this.errorWidget,
+    this.headerWidget,
     this.secondaryButton,
     this.onBack,
   });
@@ -68,6 +69,9 @@ class AuthFormScaffold extends StatelessWidget {
 
   /// Optional error widget displayed below the dog sticker.
   final Widget? errorWidget;
+
+  /// Optional content displayed between the title and form fields.
+  final Widget? headerWidget;
 
   /// The primary action button (e.g. "Create account").
   final Widget primaryButton;
@@ -112,7 +116,12 @@ class AuthFormScaffold extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 32),
+                    if (headerWidget != null) ...[
+                      const SizedBox(height: 12),
+                      headerWidget!,
+                      const SizedBox(height: 24),
+                    ] else
+                      const SizedBox(height: 32),
 
                     // AutofillGroup + Form enables password manager
                     // autofill for the email and password fields.

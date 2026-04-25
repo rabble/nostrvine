@@ -595,11 +595,29 @@ class SecureKeyStorage {
   }
 
   /// Store a key container for a specific identity (multi-account support)
+  ///
+  /// Throws [SecureKeyStorageException] with code `npub_pubkey_mismatch`
+  /// when [keyContainer]'s self-derived npub does not equal [npub]. The
+  /// container is filed under [npub]; a mismatch would let readers retrieve
+  /// keys for a different account than they asked for. Caller discipline
+  /// alone previously guarded this invariant.
   Future<void> storeIdentityKeyContainer(
     String npub,
     SecureKeyContainer keyContainer,
   ) async {
     await _ensureInitialized();
+
+    if (keyContainer.npub != npub) {
+      _log.severe(
+        'Rejected storeIdentityKeyContainer: container npub does not '
+        'match filing npub (code=npub_pubkey_mismatch)',
+      );
+      throw const SecureKeyStorageException(
+        'Identity key mismatch: container pubkey does not derive to '
+        'provided npub',
+        code: 'npub_pubkey_mismatch',
+      );
+    }
 
     try {
       _log.fine(

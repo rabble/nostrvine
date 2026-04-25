@@ -20,24 +20,34 @@ class SectionHeader extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: VineTheme.titleMediumFont().copyWith(
-                    color: VineTheme.whiteText,
+        child: DecoratedBox(
+          // 1 px outline-disabled hairline above and below each section
+          // header, matching the Figma list-divider treatment.
+          decoration: const BoxDecoration(
+            border: Border(
+              top: BorderSide(color: VineTheme.outlineDisabled, width: 0),
+              bottom: BorderSide(color: VineTheme.outlineDisabled, width: 0),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: VineTheme.titleMediumFont().copyWith(
+                      color: VineTheme.whiteText,
+                    ),
                   ),
                 ),
-              ),
-              if (onTap != null)
-                const DivineIcon(
-                  icon: DivineIconName.caretRight,
-                  color: VineTheme.vineGreen,
-                ),
-            ],
+                if (onTap != null)
+                  const DivineIcon(
+                    icon: DivineIconName.caretRight,
+                    color: VineTheme.vineGreen,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

@@ -154,7 +154,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
 
         expect(interacted, isTrue);
         verify(

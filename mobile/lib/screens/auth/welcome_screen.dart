@@ -51,13 +51,20 @@ class WelcomeScreen extends ConsumerWidget {
   ).toString();
 
   /// Build invite gate path with optional recovery context prefilled.
-  static String inviteGatePathWithCode(String code, {String? error}) {
+  static String inviteGatePathWithCode(
+    String code, {
+    String? error,
+    String? sourceSlug,
+  }) {
     final queryParameters = <String, String>{
       'code': code,
     };
 
     if (error != null && error.isNotEmpty) {
       queryParameters['error'] = error;
+    }
+    if (sourceSlug != null && sourceSlug.isNotEmpty) {
+      queryParameters['sourceSlug'] = sourceSlug;
     }
 
     return Uri(

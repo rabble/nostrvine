@@ -7,6 +7,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
@@ -49,9 +50,9 @@ class VideosSection extends StatelessWidget {
       slivers: [
         if (!showAll)
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: SectionHeader(title: 'Videos', onTap: onSeeAll),
+            child: SectionHeader(
+              title: context.l10n.searchVideosSectionHeader,
+              onTap: onSeeAll,
             ),
           ),
         _VideosContent(showAll: showAll),
@@ -264,7 +265,7 @@ class _VideosSkeletonLoader extends StatelessWidget {
     return SliverToBoxAdapter(
       child: Semantics(
         identifier: 'videos_loading_indicator',
-        label: 'Loading video results',
+        label: context.l10n.searchVideosLoadingLabel,
         child: Skeletonizer(
           effect: vineSkeletonEffect,
           child: GridView.count(

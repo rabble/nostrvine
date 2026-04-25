@@ -30,7 +30,6 @@ class _TrimmableClipTile extends StatefulWidget {
 }
 
 class _TrimmableClipTileState extends State<_TrimmableClipTile> {
-  bool _isDragStarted = false;
   bool _leftAtLimit = false;
   bool _rightAtLimit = false;
 
@@ -40,12 +39,10 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
   }
 
   void _onDragStart() {
-    _isDragStarted = false;
     widget.onTrimDragChanged?.call(true);
   }
 
   void _onDragEnd() {
-    _isDragStarted = false;
     widget.onTrimDragChanged?.call(false);
   }
 
@@ -76,9 +73,7 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
       clipId: clip.id,
       trimStart: newTrimStart,
       trimEnd: clip.trimEnd,
-      isStart: !_isDragStarted,
     );
-    _isDragStarted = true;
   }
 
   void _onRightDragUpdate(double dx) {
@@ -109,9 +104,7 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
       clipId: clip.id,
       trimStart: clip.trimStart,
       trimEnd: newTrimEnd,
-      isStart: !_isDragStarted,
     );
-    _isDragStarted = true;
   }
 
   @override

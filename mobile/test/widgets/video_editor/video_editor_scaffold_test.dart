@@ -44,6 +44,7 @@ void main() {
         child: VideoEditorScope(
           editorKey: editorKey,
           removeAreaKey: removeAreaKey,
+          onOpenCamera: () {},
           onAddStickers: () {},
           onAdjustVolume: () {},
           onOpenClipsEditor: () {},

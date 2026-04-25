@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
@@ -35,6 +36,18 @@ class _MockPendingVerificationService extends Mock
 class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
 class _FakeSecureKeyContainer extends Fake implements SecureKeyContainer {}
+
+class _SeededInviteGateBloc extends InviteGateBloc {
+  _SeededInviteGateBloc({
+    required super.inviteApiClient,
+    required InviteGateState initialState,
+  }) : _state = initialState;
+
+  final InviteGateState _state;
+
+  @override
+  InviteGateState get state => _state;
+}
 
 void main() {
   late _MockKeycastOAuth mockOAuth;
@@ -57,7 +70,7 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
-  Widget createTestWidget() {
+  Widget createTestWidget({InviteAccessGrant? inviteAccessGrant}) {
     return ProviderScope(
       overrides: [
         ...getStandardTestOverrides(mockAuthService: mockAuthService),
@@ -68,8 +81,15 @@ void main() {
       ],
       child: RepositoryProvider<InviteApiClient>.value(
         value: mockInviteApiClient,
-        child: BlocProvider(
-          create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
+        child: BlocProvider<InviteGateBloc>(
+          create: (_) => inviteAccessGrant == null
+              ? InviteGateBloc(inviteApiClient: mockInviteApiClient)
+              : _SeededInviteGateBloc(
+                  inviteApiClient: mockInviteApiClient,
+                  initialState: InviteGateState(
+                    accessGrant: inviteAccessGrant,
+                  ),
+                ),
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -133,6 +153,24 @@ void main() {
           find.widgetWithText(DivineButton, 'Create account'),
           findsOneWidget,
         );
+      });
+
+      testWidgets('shows creator invite context when present', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            inviteAccessGrant: InviteAccessGrant(
+              code: 'LELE-PONS',
+              validatedAt: DateTime(2026, 4, 24),
+              creatorSlug: 'lele-pons',
+              creatorDisplayName: 'Lele Pons',
+              remaining: 842,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Lele Pons invited you'), findsOneWidget);
+        expect(find.textContaining('842 invites left'), findsOneWidget);
       });
 
       testWidgets('displays skip button', (tester) async {

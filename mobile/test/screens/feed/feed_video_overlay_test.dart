@@ -22,7 +22,6 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
-import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
@@ -210,7 +209,9 @@ void main() {
           expect(find.text('Sensitive Content'), findsNothing);
           expect(find.text('View Anyway'), findsNothing);
           expect(find.text('Hide all content like this'), findsNothing);
-          expect(find.byType(ProofModeBadgeRow), findsOneWidget);
+          // ProofMode/Vine labels are no longer shown on the overlay; they
+          // live in the Metadata expanded sheet.
+          expect(find.byType(ProofModeBadgeRow), findsNothing);
         },
       );
 
@@ -274,7 +275,9 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(ProofModeBadgeRow), findsOneWidget);
+        // ProofMode/Vine labels are no longer shown on the overlay; they
+        // live in the Metadata expanded sheet.
+        expect(find.byType(ProofModeBadgeRow), findsNothing);
       });
 
       testWidgets(
@@ -323,7 +326,7 @@ void main() {
             tester.element(find.byType(FeedVideoOverlay)),
           );
           cubit.report(testVideo.id, PlaybackStatus.ageRestricted);
-          await tester.pump();
+          await tester.pumpAndSettle();
 
           expect(find.byType(ModeratedContentOverlay), findsOneWidget);
           expect(
@@ -351,83 +354,6 @@ void main() {
           expect(cubit.state.statusFor(testVideo.id), PlaybackStatus.ready);
         },
       );
-
-      testWidgets('renders $ListAttributionChip when listSources is provided', (
-        tester,
-      ) async {
-        final testList = CuratedList(
-          id: 'list-1',
-          name: 'Cool Videos',
-          videoEventIds: const ['v1', 'v2'],
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-
-        when(
-          () => mockCuratedListRepository.getListById('list-1'),
-        ).thenReturn(testList);
-
-        await tester.pumpWidget(buildSubject(listSources: {'list-1'}));
-        await tester.pump();
-
-        expect(find.byType(ListAttributionChip), findsOneWidget);
-        expect(find.text('Cool Videos'), findsOneWidget);
-        expect(find.byIcon(Icons.playlist_play), findsOneWidget);
-      });
-
-      testWidgets(
-        'does not render $ListAttributionChip when listSources is null',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
-          await tester.pump();
-
-          expect(find.byType(ListAttributionChip), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'does not render $ListAttributionChip when listSources is empty',
-        (tester) async {
-          await tester.pumpWidget(buildSubject(listSources: {}));
-          await tester.pump();
-
-          expect(find.byType(ListAttributionChip), findsNothing);
-        },
-      );
-
-      testWidgets('renders multiple list chips for multiple sources', (
-        tester,
-      ) async {
-        final list1 = CuratedList(
-          id: 'list-1',
-          name: 'Cool Videos',
-          videoEventIds: const [],
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-        final list2 = CuratedList(
-          id: 'list-2',
-          name: 'Funny Clips',
-          videoEventIds: const [],
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-
-        when(
-          () => mockCuratedListRepository.getListById('list-1'),
-        ).thenReturn(list1);
-        when(
-          () => mockCuratedListRepository.getListById('list-2'),
-        ).thenReturn(list2);
-
-        await tester.pumpWidget(
-          buildSubject(listSources: {'list-1', 'list-2'}),
-        );
-        await tester.pump();
-
-        expect(find.byType(ListAttributionChip), findsOneWidget);
-        expect(find.byIcon(Icons.playlist_play), findsNWidgets(2));
-      });
 
       testWidgets('opens metadata sheet when tapping the description', (
         tester,

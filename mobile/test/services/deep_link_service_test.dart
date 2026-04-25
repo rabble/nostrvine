@@ -6,22 +6,12 @@ import 'package:openvine/services/deep_link_service.dart';
 
 void main() {
   group('DeepLinkService URL Parsing', () {
-    late DeepLinkService service;
-
-    setUp(() {
-      service = DeepLinkService();
-    });
-
-    tearDown(() {
-      service.dispose();
-    });
-
     group('Video URL Parsing', () {
       test('parses valid video URL correctly', () {
         const videoId = 'abc123def456';
         const url = 'https://divine.video/video/$videoId';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.video));
         expect(result.videoId, equals(videoId));
@@ -33,7 +23,7 @@ void main() {
             'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
         const url = 'https://divine.video/video/$videoId';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.video));
         expect(result.videoId, equals(videoId));
@@ -43,7 +33,7 @@ void main() {
         const videoId = 'abc123';
         const url = 'https://divine.video/video/$videoId/';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         // Should still parse - trailing slash creates empty segment
         expect(result.type, equals(DeepLinkType.unknown));
@@ -52,7 +42,7 @@ void main() {
       test('rejects video URL without ID', () {
         const url = 'https://divine.video/video';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.unknown));
         expect(result.videoId, isNull);
@@ -61,7 +51,7 @@ void main() {
       test('rejects video URL with extra path segments', () {
         const url = 'https://divine.video/video/abc123/extra';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.unknown));
       });
@@ -72,7 +62,7 @@ void main() {
         const npub = 'npub1abc123def456';
         const url = 'https://divine.video/profile/$npub';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.profile));
         expect(result.npub, equals(npub));
@@ -84,7 +74,7 @@ void main() {
             'npub1sn0wdenkukak0d9dfczzeacvhkrgz92ak56egt7vdgzn8pv2wfqqhrjdv9';
         const url = 'https://divine.video/profile/$npub';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.profile));
         expect(result.npub, equals(npub));
@@ -93,7 +83,7 @@ void main() {
       test('rejects profile URL without npub', () {
         const url = 'https://divine.video/profile';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.unknown));
         expect(result.npub, isNull);
@@ -103,7 +93,7 @@ void main() {
         const npub = 'npub1abc123def456';
         const url = 'https://divine.video/profile/$npub/3';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.profile));
         expect(result.npub, equals(npub));
@@ -114,7 +104,7 @@ void main() {
         const npub = 'npub1abc123def456';
         const url = 'https://divine.video/profile/$npub/extra';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.profile));
         expect(result.npub, equals(npub));
@@ -124,7 +114,7 @@ void main() {
 
     group('Hashtag URL Parsing', () {
       test('parses /hashtag/{tag} correctly', () {
-        final result = service.parseDeepLink(
+        final result = DeepLinkService.parseDeepLink(
           'https://divine.video/hashtag/vibes',
         );
 
@@ -134,7 +124,7 @@ void main() {
       });
 
       test('parses /hashtag/{tag}/{index} with index', () {
-        final result = service.parseDeepLink(
+        final result = DeepLinkService.parseDeepLink(
           'https://divine.video/hashtag/music/5',
         );
 
@@ -144,7 +134,9 @@ void main() {
       });
 
       test('rejects hashtag URL without tag', () {
-        final result = service.parseDeepLink('https://divine.video/hashtag');
+        final result = DeepLinkService.parseDeepLink(
+          'https://divine.video/hashtag',
+        );
 
         expect(result.type, equals(DeepLinkType.unknown));
       });
@@ -152,7 +144,7 @@ void main() {
 
     group('Search URL Parsing', () {
       test('parses /search/{term} correctly', () {
-        final result = service.parseDeepLink(
+        final result = DeepLinkService.parseDeepLink(
           'https://divine.video/search/flutter',
         );
 
@@ -162,7 +154,7 @@ void main() {
       });
 
       test('parses /search/{term}/{index} with index', () {
-        final result = service.parseDeepLink(
+        final result = DeepLinkService.parseDeepLink(
           'https://divine.video/search/dart/2',
         );
 
@@ -172,7 +164,9 @@ void main() {
       });
 
       test('rejects search URL without term', () {
-        final result = service.parseDeepLink('https://divine.video/search');
+        final result = DeepLinkService.parseDeepLink(
+          'https://divine.video/search',
+        );
 
         expect(result.type, equals(DeepLinkType.unknown));
       });
@@ -180,7 +174,7 @@ void main() {
 
     group('Invite URL Parsing', () {
       test('parses /invite/{code} correctly', () {
-        final result = service.parseDeepLink(
+        final result = DeepLinkService.parseDeepLink(
           'https://divine.video/invite/ABCD-EFGH',
         );
 
@@ -189,7 +183,7 @@ void main() {
       });
 
       test('parses /invite?code={code} correctly', () {
-        final result = service.parseDeepLink(
+        final result = DeepLinkService.parseDeepLink(
           'https://divine.video/invite?code=WXYZ-1234',
         );
 
@@ -198,7 +192,9 @@ void main() {
       });
 
       test('rejects invite URL without code', () {
-        final result = service.parseDeepLink('https://divine.video/invite');
+        final result = DeepLinkService.parseDeepLink(
+          'https://divine.video/invite',
+        );
 
         expect(result.type, equals(DeepLinkType.unknown));
       });
@@ -208,7 +204,7 @@ void main() {
       test('rejects non-divine.video domain', () {
         const url = 'https://example.com/video/abc123';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.unknown));
       });
@@ -216,7 +212,7 @@ void main() {
       test('rejects invalid path structure', () {
         const url = 'https://divine.video/unknown/path';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.unknown));
       });
@@ -224,7 +220,7 @@ void main() {
       test('rejects root URL', () {
         const url = 'https://divine.video/';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.unknown));
       });
@@ -232,7 +228,7 @@ void main() {
       test('handles malformed URL gracefully', () {
         const url = 'not-a-valid-url';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.unknown));
       });
@@ -240,7 +236,7 @@ void main() {
       test('handles empty string gracefully', () {
         const url = '';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.unknown));
       });
@@ -251,7 +247,7 @@ void main() {
         const videoId = 'abc123';
         const url = 'http://divine.video/video/$videoId';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.video));
         expect(result.videoId, equals(videoId));
@@ -261,7 +257,7 @@ void main() {
         const videoId = 'abc123';
         const url = 'https://divine.video/video/$videoId';
 
-        final result = service.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.video));
         expect(result.videoId, equals(videoId));

@@ -23,7 +23,6 @@ class ProfileBannerLayer extends ConsumerStatefulWidget {
     required this.userIdHex,
     required this.isOwnProfile,
     this.profile,
-    this.scrollController,
     this.height = 334.0,
     super.key,
   });
@@ -31,7 +30,6 @@ class ProfileBannerLayer extends ConsumerStatefulWidget {
   final String userIdHex;
   final bool isOwnProfile;
   final UserProfile? profile;
-  final ScrollController? scrollController;
   final double height;
 
   @override
@@ -43,32 +41,9 @@ class _ProfileBannerLayerState extends ConsumerState<ProfileBannerLayer> {
   final _topOffset = ValueNotifier<double>(0);
 
   @override
-  void initState() {
-    super.initState();
-    widget.scrollController?.addListener(_onScroll);
-  }
-
-  @override
-  void didUpdateWidget(ProfileBannerLayer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.scrollController != widget.scrollController) {
-      oldWidget.scrollController?.removeListener(_onScroll);
-      widget.scrollController?.addListener(_onScroll);
-    }
-  }
-
-  @override
   void dispose() {
-    widget.scrollController?.removeListener(_onScroll);
     _topOffset.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    final controller = widget.scrollController;
-    if (controller == null || !controller.hasClients) return;
-    // Clamp so the banner stops moving once it is fully offscreen.
-    _topOffset.value = (-controller.offset).clamp(-widget.height, 0.0);
   }
 
   @override
@@ -95,13 +70,7 @@ class _ProfileBannerLayerState extends ConsumerState<ProfileBannerLayer> {
 
     return ValueListenableBuilder<double>(
       valueListenable: _topOffset,
-      builder: (_, topOffset, child) => Positioned(
-        top: topOffset,
-        left: 0,
-        right: 0,
-        height: widget.height,
-        child: child!,
-      ),
+      builder: (_, topOffset, child) => child!,
       child: ExcludeSemantics(
         child: ProfileBanner(
           bannerUrl: bannerUrl,

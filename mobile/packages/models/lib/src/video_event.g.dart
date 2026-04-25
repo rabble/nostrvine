@@ -86,7 +86,6 @@ Map<String, dynamic> _$VideoEventToJson(VideoEvent instance) =>
       'isPortrait': instance.isPortrait,
       'fileSizeMB': instance.fileSizeMB,
       'formattedDuration': instance.formattedDuration,
-      'relativeTime': instance.relativeTime,
       'displayPubkey': instance.displayPubkey,
       'hasVideo': instance.hasVideo,
       'effectiveThumbnailUrl': instance.effectiveThumbnailUrl,

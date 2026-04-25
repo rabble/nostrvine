@@ -62,8 +62,6 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                       ),
                       const SizedBox(width: 4),
                       VideoMetadataHelpButton(
-                        // TODO(l10n): Replace with context.l10n
-                        //   when localization is added.
                         onTap: () => _showHelpDialog(context),
                         tooltip:
                             context.l10n.videoMetadataCollaboratorsHelpTooltip,

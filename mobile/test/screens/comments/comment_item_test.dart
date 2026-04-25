@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/widgets/comment_item.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -55,6 +56,8 @@ void main() {
         nostrServiceProvider.overrideWithValue(const _FakeNostrClient()),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: BlocProvider<CommentsBloc>.value(
             value: mockCommentsBloc,

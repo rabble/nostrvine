@@ -81,7 +81,7 @@ class DeepLinkService {
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );
-        final deepLink = parseDeepLink(initialUri.toString());
+        final deepLink = DeepLinkService.parseDeepLink(initialUri.toString());
         _controller.add(deepLink);
       }
 
@@ -92,7 +92,7 @@ class DeepLinkService {
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );
-        final deepLink = parseDeepLink(uri.toString());
+        final deepLink = DeepLinkService.parseDeepLink(uri.toString());
         _controller.add(deepLink);
       });
     } catch (e) {
@@ -104,8 +104,10 @@ class DeepLinkService {
     }
   }
 
-  /// Parse a divine.video URL into a DeepLink
-  DeepLink parseDeepLink(String url) {
+  /// Parse a divine.video URL into a [DeepLink].
+  ///
+  /// Pure: no instance state is touched, safe to call from route redirects.
+  static DeepLink parseDeepLink(String url) {
     try {
       final uri = Uri.parse(url);
 

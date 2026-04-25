@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/theme/app_theme.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -55,7 +56,11 @@ class NotificationListItem extends StatelessWidget {
                     // Timestamp
                     const SizedBox(height: 4),
                     Text(
-                      notification.formattedTimestamp,
+                      LocalizedTimeFormatter.formatNotificationTimestamp(
+                        context.l10n,
+                        notification.timestamp,
+                        context: context,
+                      ),
                       style: const TextStyle(
                         fontSize: 12,
                         color: VineTheme.lightText,

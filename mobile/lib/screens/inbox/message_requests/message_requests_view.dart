@@ -41,7 +41,9 @@ class MessageRequestsView extends ConsumerWidget {
         ],
       ),
       body: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(VineTheme.bottomSheetBorderRadius),
+        ),
         child: ColoredBox(
           color: VineTheme.surfaceContainerHigh,
           child: _RequestList(currentPubkey: currentPubkey),

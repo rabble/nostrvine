@@ -21,6 +21,8 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart' show Intl;
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
@@ -760,6 +762,8 @@ Future<void> _startOpenVineApp() async {
   );
   StartupPerformanceService.instance.checkpoint('pre_app_launch');
 
+  await initializeDateFormatting();
+
   runApp(
     UncontrolledProviderScope(
       container: container,
@@ -1176,15 +1180,26 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               }
             case DeepLinkType.profile:
               if (deepLink.npub != null) {
-                final index = deepLink.index ?? 0;
-                final targetPath =
-                    '${ProfileScreenRouter.pathForNpub(deepLink.npub!)}/$index';
+                // Mirror universalLinkToRouterPath: no index → grid mode
+                // (/profile/<npub>), explicit index → feed mode
+                // (/profile/<npub>/<index>). The old `index ?? 0` form always
+                // produced a feed-mode path, which disagreed with the
+                // resolver's grid-mode redirect for index-less universal links
+                // and caused a spurious second navigation.
+                final index = deepLink.index;
+                final targetPath = index != null
+                    ? ProfileScreenRouter.pathForIndex(deepLink.npub!, index)
+                    : ProfileScreenRouter.pathForNpub(deepLink.npub!);
                 Log.info(
                   '📱 Navigating to profile: $targetPath',
                   name: 'DeepLinkHandler',
                   category: LogCategory.ui,
                 );
                 try {
+                  // GoRouter's universal-link redirect may have already
+                  // navigated here; skip the duplicate go() to avoid a
+                  // second navigation frame on the same target.
+                  if (currentLocation == targetPath) break;
                   router.go(targetPath);
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
@@ -1216,6 +1231,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
                 try {
+                  // GoRouter's universal-link redirect may have already
+                  // navigated here; skip the duplicate go() to avoid a
+                  // second navigation frame on the same target.
+                  if (currentLocation == targetPath) break;
                   router.go(targetPath);
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
@@ -1236,8 +1255,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
-            // TODO(#3032): Currently unreachable — GoRouter intercepts
-            // deep links before DeepLinkService can parse them.
             case DeepLinkType.search:
               if (deepLink.searchTerm != null) {
                 final targetPath = SearchResultsPage.pathForQuery(
@@ -1249,6 +1266,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
                 try {
+                  // GoRouter's universal-link redirect may have already
+                  // navigated here; skip the duplicate go() to avoid a
+                  // second navigation frame on the same target.
+                  if (currentLocation == targetPath) break;
                   router.go(targetPath);
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
@@ -1484,6 +1505,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // The BlocBuilder is used because the cubit is provided further down
     // in the widget tree by MultiBlocProvider.
     Widget buildApp(Locale? locale) {
+      if (locale != null) {
+        Intl.defaultLocale = locale.toLanguageTag();
+      }
       if (!kIsWeb && io.Platform.isAndroid) {
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: VineTheme.statusBarStyle,

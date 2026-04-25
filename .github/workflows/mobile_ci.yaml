@@ -109,6 +109,38 @@ jobs:
         # pollution). concurrency=1 worked but pushed the job past 1 hour
         # because each tagged file pays a full Dart VM startup cost.
         run: very_good test --optimization --concurrency=2 --exclude-tags integration --test-randomize-ordering-seed random
+  vgv-tag-gate:
+    name: VGV Tag Gate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🏷️ Verify skip_very_good_optimization tag count does not increase
+        # Guards #3137. The tag set drifts silently: a feature PR can add a
+        # new `@Tags(['skip_very_good_optimization'])` opt-out without anyone
+        # noticing, growing the CI debt. This step fails the PR when the
+        # count exceeds `test/vgv_tag_baseline.txt`. Decreases are always
+        # allowed; untag PRs may (but don't have to) lower the baseline to
+        # ratchet progress — lowering makes the gate tighter for future PRs.
+        run: |
+          baseline=$(cat test/vgv_tag_baseline.txt | tr -d '[:space:]')
+          current=$(grep -rln "skip_very_good_optimization" test | wc -l | tr -d '[:space:]')
+          if [ "$current" -gt "$baseline" ]; then
+            echo "❌ VGV tag count increased: baseline=$baseline, current=$current"
+            echo ""
+            echo "A new '@Tags([\"skip_very_good_optimization\"])' was added."
+            echo "Either:"
+            echo "  (a) fix the underlying test-isolation issue so the file"
+            echo "      passes under the VGV optimizer without the tag, or"
+            echo "  (b) if the tag is genuinely permanent (e.g. the file uses"
+            echo "      IntegrationTestWidgetsFlutterBinding), add an inline"
+            echo "      '// Permanent: <reason>' comment next to the tag AND"
+            echo "      update mobile/test/vgv_tag_baseline.txt to $current."
+            exit 1
+          fi
+          echo "✅ VGV tag count OK: current=$current, baseline=$baseline"
   mobile-ci:
     name: Mobile CI
     if: ${{ always() }}
@@ -117,6 +149,7 @@ jobs:
       - format
       - analyze
       - tests
+      - vgv-tag-gate
     runs-on: ubuntu-latest
     steps:
       - name: Verify upstream jobs
@@ -125,16 +158,19 @@ jobs:
           FORMAT_RESULT: ${{ needs.format.result }}
           ANALYZE_RESULT: ${{ needs.analyze.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
+          VGV_TAG_GATE_RESULT: ${{ needs.vgv-tag-gate.result }}
         run: |
           echo "generated-files: ${GENERATED_FILES_RESULT}"
           echo "format: ${FORMAT_RESULT}"
           echo "analyze: ${ANALYZE_RESULT}"
           echo "tests: ${TESTS_RESULT}"
+          echo "vgv-tag-gate: ${VGV_TAG_GATE_RESULT}"
 
           if [[ "${GENERATED_FILES_RESULT}" != "success" || \
                 "${FORMAT_RESULT}" != "success" || \
                 "${ANALYZE_RESULT}" != "success" || \
-                "${TESTS_RESULT}" != "success" ]]; then
+                "${TESTS_RESULT}" != "success" || \
+                "${VGV_TAG_GATE_RESULT}" != "success" ]]; then
             echo "One or more Mobile CI jobs failed."
             exit 1
           fi

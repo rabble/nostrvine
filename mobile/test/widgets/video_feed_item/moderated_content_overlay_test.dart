@@ -129,6 +129,11 @@ void main() {
           find.bySemanticsLabel(RegExp('Video author: .*')),
           findsNothing,
         );
+        // The description tap target uses an action-oriented label
+        // ("Open video details") in FeedVideoOverlay; either that or the
+        // older content-echoing label would still indicate chrome leaked
+        // through, so we assert both are absent.
+        expect(find.bySemanticsLabel('Open video details'), findsNothing);
         expect(
           find.bySemanticsLabel(RegExp('Video description: .*')),
           findsNothing,
