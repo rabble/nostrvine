@@ -193,9 +193,10 @@ class _VideoEditorTimelineClipStripState
       sourceClipId: split.sourceClipId,
       targetClipId: split.startClipId,
       sourceRange: DurationRange(
-        start: Duration.zero,
+        start: split.sourceTrimStart,
         end: split.absoluteSplitPosition,
       ),
+      timestampOffset: Duration.zero,
       currentSourcePath: sourcePath,
     );
     _thumbnails.seedFromSource(
@@ -203,7 +204,7 @@ class _VideoEditorTimelineClipStripState
       targetClipId: split.endClipId,
       sourceRange: DurationRange(
         start: split.absoluteSplitPosition,
-        end: split.sourceDuration,
+        end: split.sourceDuration - split.sourceTrimEnd,
       ),
       currentSourcePath: endClip.video.file?.path ?? sourcePath,
     );

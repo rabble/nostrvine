@@ -589,6 +589,35 @@ void main() {
           await bloc.close();
         },
       );
+
+      test('lastSplit captures source trim bounds', () async {
+        final clip =
+            _createClip(
+              id: 'c',
+              duration: const Duration(seconds: 10),
+            ).copyWith(
+              trimStart: const Duration(seconds: 3),
+              trimEnd: const Duration(seconds: 2),
+            );
+
+        final bloc = buildBloc()
+          ..emit(
+            ClipEditorState(
+              clips: [clip],
+              isEditing: true,
+              splitPosition: const Duration(seconds: 2),
+            ),
+          );
+
+        bloc.add(const ClipEditorSplitRequested());
+        final states = await bloc.stream.take(2).toList();
+        final split = states.last.lastSplit!;
+
+        expect(split.sourceTrimStart, equals(const Duration(seconds: 3)));
+        expect(split.sourceTrimEnd, equals(const Duration(seconds: 2)));
+
+        await bloc.close();
+      });
     });
 
     // =========================================================

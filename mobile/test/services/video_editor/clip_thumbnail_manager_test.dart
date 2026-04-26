@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for ClipThumbnailManager.
 // ABOUTME: Validates notifier lifecycle, sync logic, and disposal.
 
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -267,6 +269,101 @@ void main() {
 
         expect(() => manager['tgt'], throwsA(isA<TypeError>()));
       });
+
+      test(
+        'copies seeded files before source cleanup deletes originals',
+        () async {
+          final tempDir = Directory.systemTemp.createTempSync(
+            'clip_thumbnail_seed_test_',
+          );
+          addTearDown(() {
+            if (tempDir.existsSync()) {
+              tempDir.deleteSync(recursive: true);
+            }
+          });
+
+          final sourceThumbnail = File('${tempDir.path}/source.jpg')
+            ..writeAsStringSync('source-thumbnail');
+          final sourceVideoPath = '${tempDir.path}/source.mp4';
+
+          final sourceClip = _createTestClip(id: 'src', seconds: 2);
+          final targetClip = _createFileClip(
+            id: 'tgt',
+            videoPath: sourceVideoPath,
+            seconds: 2,
+          );
+          manager.sync(clips: [sourceClip], devicePixelRatio: 1);
+          manager['src'].value = [
+            StripThumbnail(
+              path: sourceThumbnail.path,
+              timestamp: const Duration(seconds: 1),
+            ),
+          ];
+
+          manager.seedFromSource(
+            sourceClipId: 'src',
+            targetClipId: 'tgt',
+            sourceRange: const DurationRange(
+              start: Duration.zero,
+              end: Duration(seconds: 2),
+            ),
+            currentSourcePath: sourceVideoPath,
+          );
+
+          final seededPath = manager['tgt'].value.single.path;
+          expect(seededPath, isNot(equals(sourceThumbnail.path)));
+
+          // Simulate the split lifecycle: the source clip is removed, but
+          // the seeded target still points at the source video until render
+          // completes. Target thumbnails must survive stale source cleanup.
+          manager.sync(clips: [targetClip], devicePixelRatio: 1);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(sourceThumbnail.existsSync(), isFalse);
+          expect(File(seededPath).existsSync(), isTrue);
+        },
+      );
+
+      test('can preserve source timestamps while filtering a range', () {
+        final sourceClip = _createTestClip(id: 'src', seconds: 6);
+        manager.sync(clips: [sourceClip], devicePixelRatio: 1);
+        manager['src'].value = [
+          const StripThumbnail(
+            path: '/t/2.jpg',
+            timestamp: Duration(seconds: 2),
+          ),
+          const StripThumbnail(
+            path: '/t/3.jpg',
+            timestamp: Duration(seconds: 3),
+          ),
+          const StripThumbnail(
+            path: '/t/4.jpg',
+            timestamp: Duration(seconds: 4),
+          ),
+          const StripThumbnail(
+            path: '/t/5.jpg',
+            timestamp: Duration(seconds: 5),
+          ),
+        ];
+
+        manager.seedFromSource(
+          sourceClipId: 'src',
+          targetClipId: 'tgt',
+          sourceRange: const DurationRange(
+            start: Duration(seconds: 3),
+            end: Duration(seconds: 5),
+          ),
+          timestampOffset: Duration.zero,
+          currentSourcePath: '/video/src.mp4',
+        );
+
+        final thumbnails = manager['tgt'].value;
+        expect(thumbnails, hasLength(2));
+        expect(thumbnails[0].path, equals('/t/3.jpg'));
+        expect(thumbnails[0].timestamp, equals(const Duration(seconds: 3)));
+        expect(thumbnails[1].path, equals('/t/4.jpg'));
+        expect(thumbnails[1].timestamp, equals(const Duration(seconds: 4)));
+      });
     });
 
     group('dispose', () {
@@ -323,6 +420,21 @@ DivineVideoClip _createTestClip({required String id, int seconds = 3}) {
   return DivineVideoClip(
     id: id,
     video: EditorVideo.network('https://example.com/$id.mp4'),
+    duration: Duration(seconds: seconds),
+    recordedAt: DateTime(2025),
+    originalAspectRatio: 9 / 16,
+    targetAspectRatio: .vertical,
+  );
+}
+
+DivineVideoClip _createFileClip({
+  required String id,
+  required String videoPath,
+  int seconds = 3,
+}) {
+  return DivineVideoClip(
+    id: id,
+    video: EditorVideo.file(videoPath),
     duration: Duration(seconds: seconds),
     recordedAt: DateTime(2025),
     originalAspectRatio: 9 / 16,

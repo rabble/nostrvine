@@ -270,6 +270,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
                 endClipId: endClip.id,
                 absoluteSplitPosition: selectedClip.trimStart + splitPosition,
                 sourceDuration: selectedClip.duration,
+                sourceTrimStart: selectedClip.trimStart,
+                sourceTrimEnd: selectedClip.trimEnd,
               ),
             ),
           );

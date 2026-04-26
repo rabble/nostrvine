@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:path/path.dart' as p;
 
 /// Manages thumbnail loading and cleanup for a set of clips.
 ///
@@ -104,9 +105,9 @@ class ClipThumbnailManager {
 
   /// Pre-populates the notifier for [targetClipId] by borrowing
   /// thumbnails from another clip ([sourceClipId]) whose timestamps
-  /// fall within [sourceRange]. Timestamps are shifted by
-  /// `-sourceRange.start` so they map to the new clip's local
-  /// timeline (which starts at zero after rendering).
+  /// fall within [sourceRange]. By default timestamps are shifted by
+  /// `-sourceRange.start` so they map to the new clip's local timeline.
+  /// Pass [timestampOffset] to use a different source-to-target mapping.
   ///
   /// The clip is marked as "seeded" so [sync] will not auto-load a
   /// fresh subscription against the still-un-trimmed source video
@@ -123,15 +124,25 @@ class ClipThumbnailManager {
     required String targetClipId,
     required DurationRange sourceRange,
     required String currentSourcePath,
+    Duration? timestampOffset,
   }) {
     final source = _notifiers[sourceClipId];
     if (source == null) return;
-    final shift = sourceRange.start;
-    final seeded = <StripThumbnail>[
-      for (final t in source.value)
-        if (t.timestamp >= sourceRange.start && t.timestamp < sourceRange.end)
-          StripThumbnail(path: t.path, timestamp: t.timestamp - shift),
-    ];
+    final shift = timestampOffset ?? sourceRange.start;
+    final seeded = <StripThumbnail>[];
+    for (var i = 0; i < source.value.length; i++) {
+      final thumbnail = source.value[i];
+      if (thumbnail.timestamp < sourceRange.start ||
+          thumbnail.timestamp >= sourceRange.end) {
+        continue;
+      }
+      seeded.add(
+        StripThumbnail(
+          path: _copySeededThumbnailFile(thumbnail.path, targetClipId, i),
+          timestamp: thumbnail.timestamp - shift,
+        ),
+      );
+    }
     final notifier = _notifiers.putIfAbsent(
       targetClipId,
       () => ValueNotifier(const []),
@@ -139,6 +150,28 @@ class ClipThumbnailManager {
     notifier.value = seeded;
     _videoPaths[targetClipId] = currentSourcePath;
     _seeded.add(targetClipId);
+  }
+
+  static String _copySeededThumbnailFile(
+    String sourcePath,
+    String targetClipId,
+    int index,
+  ) {
+    final sourceFile = File(sourcePath);
+    if (!sourceFile.existsSync()) return sourcePath;
+
+    final extension = p.extension(sourcePath);
+    final destinationPath = p.join(
+      p.dirname(sourcePath),
+      'seed_${targetClipId}_${DateTime.now().microsecondsSinceEpoch}_'
+      '$index$extension',
+    );
+
+    try {
+      return sourceFile.copySync(destinationPath).path;
+    } catch (_) {
+      return sourcePath;
+    }
   }
 
   void _loadThumbnails(

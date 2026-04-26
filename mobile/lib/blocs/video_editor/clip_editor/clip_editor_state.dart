@@ -88,6 +88,8 @@ class ClipSplitEvent {
     required this.endClipId,
     required this.absoluteSplitPosition,
     required this.sourceDuration,
+    this.sourceTrimStart = Duration.zero,
+    this.sourceTrimEnd = Duration.zero,
   });
 
   final String sourceClipId;
@@ -95,4 +97,6 @@ class ClipSplitEvent {
   final String endClipId;
   final Duration absoluteSplitPosition;
   final Duration sourceDuration;
+  final Duration sourceTrimStart;
+  final Duration sourceTrimEnd;
 }
