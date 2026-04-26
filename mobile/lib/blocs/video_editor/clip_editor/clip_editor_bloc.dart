@@ -255,6 +255,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         sourceClip: selectedClip,
         splitPosition: splitPosition,
         onClipsCreated: (startClip, endClip) {
+          // splitClip's render phase awaits Future.wait on parallel
+          // video renders. If the bloc is closed mid-render (user
+          // navigates away from the editor), the late callbacks fire
+          // on a done emitter — guard each one.
+          if (emit.isDone) return;
           final clips = state.clips;
           final index = clips.indexWhere((c) => c.id == selectedClip.id);
           if (index == -1) return;
@@ -283,6 +288,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           );
         },
         onThumbnailExtracted: (clip, thumbnailPath) {
+          if (emit.isDone) return;
           final clips = state.clips;
           final index = clips.indexWhere((c) => c.id == clip.id);
           if (index == -1) return;
@@ -293,6 +299,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           emit(state.copyWith(clips: List.unmodifiable(newClips)));
         },
         onClipRendered: (clip, video) {
+          if (emit.isDone) return;
           final clips = state.clips;
           final index = clips.indexWhere((c) => c.id == clip.id);
           if (index == -1) return;
