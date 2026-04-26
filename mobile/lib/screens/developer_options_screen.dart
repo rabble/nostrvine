@@ -121,182 +121,201 @@ class _DeveloperOptionsScreenState
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      body: ListView(
-        children: [
-          // Environment configs
-          ...environments.map((env) {
-            final isSelected = env == currentConfig;
-            return ListTile(
-              leading: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(env.indicatorColorValue),
-                ),
-              ),
-              title: Text(
-                env.displayName,
-                style: const TextStyle(
-                  color: VineTheme.primaryText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              subtitle: Text(
-                env.relayUrl,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
-                  fontSize: 14,
-                ),
-              ),
-              trailing: isSelected
-                  ? const Icon(Icons.check, color: VineTheme.vineGreen)
-                  : null,
-              onTap: () => _switchEnvironment(context, env, isSelected),
-            );
-          }),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView(
+            children: [
+              // Environment configs
+              ...environments.map((env) {
+                final isSelected = env == currentConfig;
+                return ListTile(
+                  leading: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(env.indicatorColorValue),
+                    ),
+                  ),
+                  title: Text(
+                    env.displayName,
+                    style: const TextStyle(
+                      color: VineTheme.primaryText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    env.relayUrl,
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: VineTheme.vineGreen)
+                      : null,
+                  onTap: () => _switchEnvironment(context, env, isSelected),
+                );
+              }),
 
-          // Divider between environments and page load times
-          const Divider(color: VineTheme.outlineVariant, height: 32),
+              // Divider between environments and page load times
+              const Divider(color: VineTheme.outlineVariant, height: 32),
 
-          // Page Load Times section header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              context.l10n.devOptionsPageLoadTimes,
-              style: const TextStyle(
-                color: VineTheme.vineGreen,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+              // Page Load Times section header
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Text(
+                  context.l10n.devOptionsPageLoadTimes,
+                  style: const TextStyle(
+                    color: VineTheme.vineGreen,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
+
+              // Recent page load records
+              if (recentRecords.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    context.l10n.devOptionsNoPageLoads,
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                )
+              else
+                ...recentRecords.map((record) {
+                  return ListTile(
+                    title: Text(
+                      record.screenName,
+                      style: const TextStyle(
+                        color: VineTheme.primaryText,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      context.l10n.devOptionsPageLoadVisible(
+                        record.contentVisibleMs?.toString() ?? '\u2014',
+                        record.dataLoadedMs?.toString() ?? '\u2014',
+                      ),
+                      style: const TextStyle(
+                        color: VineTheme.secondaryText,
+                        fontSize: 12,
+                      ),
+                    ),
+                    trailing: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _getSpeedColor(record),
+                      ),
+                    ),
+                  );
+                }),
+
+              // Slowest Screens subsection
+              if (slowestRecords.isNotEmpty) ...[
+                const Divider(color: VineTheme.outlineVariant, height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    context.l10n.devOptionsSlowestScreens,
+                    style: const TextStyle(
+                      color: VineTheme.vineGreen,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                ...slowestRecords.map((record) {
+                  final dataMs = record.dataLoadedMs ?? 0;
+                  return ListTile(
+                    title: Text(
+                      record.screenName,
+                      style: const TextStyle(
+                        color: VineTheme.primaryText,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${dataMs}ms',
+                      style: TextStyle(
+                        color: _getSpeedColor(record),
+                        fontSize: 12,
+                      ),
+                    ),
+                    trailing: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _getSpeedColor(record),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+
+              const Divider(color: VineTheme.outlineVariant, height: 32),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Text(
+                  context.l10n.devOptionsVideoPlaybackFormat,
+                  style: const TextStyle(
+                    color: VineTheme.vineGreen,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              ..._formatOptions.map((option) {
+                final isSelected =
+                    option.format == videoFormatPreference.format;
+                return ListTile(
+                  title: Text(
+                    option.label,
+                    style: const TextStyle(
+                      color: VineTheme.primaryText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    option.urlPattern,
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: VineTheme.vineGreen)
+                      : null,
+                  onTap: () => _switchFormat(option.format),
+                );
+              }),
+            ],
           ),
-
-          // Recent page load records
-          if (recentRecords.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                context.l10n.devOptionsNoPageLoads,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
-                  fontSize: 14,
-                ),
-              ),
-            )
-          else
-            ...recentRecords.map((record) {
-              return ListTile(
-                title: Text(
-                  record.screenName,
-                  style: const TextStyle(
-                    color: VineTheme.primaryText,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                subtitle: Text(
-                  context.l10n.devOptionsPageLoadVisible(
-                    record.contentVisibleMs?.toString() ?? '\u2014',
-                    record.dataLoadedMs?.toString() ?? '\u2014',
-                  ),
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 12,
-                  ),
-                ),
-                trailing: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _getSpeedColor(record),
-                  ),
-                ),
-              );
-            }),
-
-          // Slowest Screens subsection
-          if (slowestRecords.isNotEmpty) ...[
-            const Divider(color: VineTheme.outlineVariant, height: 32),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                context.l10n.devOptionsSlowestScreens,
-                style: const TextStyle(
-                  color: VineTheme.vineGreen,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            ...slowestRecords.map((record) {
-              final dataMs = record.dataLoadedMs ?? 0;
-              return ListTile(
-                title: Text(
-                  record.screenName,
-                  style: const TextStyle(
-                    color: VineTheme.primaryText,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                subtitle: Text(
-                  '${dataMs}ms',
-                  style: TextStyle(color: _getSpeedColor(record), fontSize: 12),
-                ),
-                trailing: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _getSpeedColor(record),
-                  ),
-                ),
-              );
-            }),
-          ],
-
-          const Divider(color: VineTheme.outlineVariant, height: 32),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              context.l10n.devOptionsVideoPlaybackFormat,
-              style: const TextStyle(
-                color: VineTheme.vineGreen,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-
-          ..._formatOptions.map((option) {
-            final isSelected = option.format == videoFormatPreference.format;
-            return ListTile(
-              title: Text(
-                option.label,
-                style: const TextStyle(
-                  color: VineTheme.primaryText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              subtitle: Text(
-                option.urlPattern,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
-                  fontSize: 14,
-                ),
-              ),
-              trailing: isSelected
-                  ? const Icon(Icons.check, color: VineTheme.vineGreen)
-                  : null,
-              onTap: () => _switchFormat(option.format),
-            );
-          }),
-        ],
+        ),
       ),
     );
   }

@@ -76,6 +76,32 @@ void main() {
         expect(find.text('Share diVine with people you know'), findsOneWidget);
       });
 
+      testWidgets('constrains menu content width on wide screens', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(900, 1200);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        when(() => mockCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 1,
+              total: 1,
+              codes: [InviteCode(code: 'AB23-EF7K', claimed: false)],
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        final listViewWidth = tester.getSize(find.byType(ListView).first).width;
+        expect(listViewWidth, moreOrLessEquals(600));
+      });
+
       testWidgets('claimed codes section', (tester) async {
         when(() => mockCubit.state).thenReturn(
           const InviteStatusState(

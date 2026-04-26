@@ -18,6 +18,7 @@ import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
@@ -107,6 +108,11 @@ void main() {
     when(() => ageVerificationService.initialize()).thenAnswer((_) async {});
     when(() => ageVerificationService.isAdultContentVerified).thenReturn(false);
     when(() => contentFilterService.initialize()).thenAnswer((_) async {});
+    for (final label in ContentLabel.values) {
+      when(
+        () => contentFilterService.getPreference(label),
+      ).thenReturn(ContentFilterPreference.warn);
+    }
     when(
       () => contentFilterService.lockAdultCategories(),
     ).thenAnswer((_) async {});
@@ -251,5 +257,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Account Labels'), findsOneWidget);
+  });
+
+  testWidgets('Content Filters constrains menu content width on wide screens', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(wrap(const ContentFiltersScreen()));
+    await tester.pumpAndSettle();
+
+    final listViewWidth = tester.getSize(find.byType(ListView).first).width;
+    expect(listViewWidth, moreOrLessEquals(600));
   });
 }

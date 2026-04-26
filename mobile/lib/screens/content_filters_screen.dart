@@ -63,54 +63,62 @@ class _ContentFiltersScreenState extends ConsumerState<ContentFiltersScreen> {
         onBackPressed: context.pop,
       ),
       backgroundColor: VineTheme.backgroundColor,
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
-            )
-          : ListView(
-              padding: const EdgeInsets.only(bottom: 32),
-              children: [
-                if (!_isAgeVerified) _buildAgeGateBanner(),
-                _buildCategoryGroup(
-                  title: 'ADULT CONTENT',
-                  labels: [
-                    ContentLabel.nudity,
-                    ContentLabel.sexual,
-                    ContentLabel.porn,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: VineTheme.vineGreen,
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.only(bottom: 32),
+                  children: [
+                    if (!_isAgeVerified) _buildAgeGateBanner(),
+                    _buildCategoryGroup(
+                      title: 'ADULT CONTENT',
+                      labels: [
+                        ContentLabel.nudity,
+                        ContentLabel.sexual,
+                        ContentLabel.porn,
+                      ],
+                      locked: !_isAgeVerified,
+                    ),
+                    _buildCategoryGroup(
+                      title: 'VIOLENCE & GORE',
+                      labels: [
+                        ContentLabel.graphicMedia,
+                        ContentLabel.violence,
+                        ContentLabel.selfHarm,
+                      ],
+                    ),
+                    _buildCategoryGroup(
+                      title: 'SUBSTANCES',
+                      labels: [
+                        ContentLabel.drugs,
+                        ContentLabel.alcohol,
+                        ContentLabel.tobacco,
+                        ContentLabel.gambling,
+                      ],
+                    ),
+                    _buildCategoryGroup(
+                      title: 'OTHER',
+                      labels: [
+                        ContentLabel.profanity,
+                        ContentLabel.hate,
+                        ContentLabel.harassment,
+                        ContentLabel.flashingLights,
+                        ContentLabel.aiGenerated,
+                        ContentLabel.spoiler,
+                        ContentLabel.misleading,
+                      ],
+                    ),
                   ],
-                  locked: !_isAgeVerified,
                 ),
-                _buildCategoryGroup(
-                  title: 'VIOLENCE & GORE',
-                  labels: [
-                    ContentLabel.graphicMedia,
-                    ContentLabel.violence,
-                    ContentLabel.selfHarm,
-                  ],
-                ),
-                _buildCategoryGroup(
-                  title: 'SUBSTANCES',
-                  labels: [
-                    ContentLabel.drugs,
-                    ContentLabel.alcohol,
-                    ContentLabel.tobacco,
-                    ContentLabel.gambling,
-                  ],
-                ),
-                _buildCategoryGroup(
-                  title: 'OTHER',
-                  labels: [
-                    ContentLabel.profanity,
-                    ContentLabel.hate,
-                    ContentLabel.harassment,
-                    ContentLabel.flashingLights,
-                    ContentLabel.aiGenerated,
-                    ContentLabel.spoiler,
-                    ContentLabel.misleading,
-                  ],
-                ),
-              ],
-            ),
+        ),
+      ),
     );
   }
 
