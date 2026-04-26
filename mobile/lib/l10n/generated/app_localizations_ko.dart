@@ -4602,6 +4602,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get invitesTitle => '친구 초대';
 
   @override
+  String invitesGenerateCardTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count invites ready to generate',
+      one: '1 invite ready to generate',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get invitesGenerateCardSubtitle =>
+      'Generate a code when you are ready to share one.';
+
+  @override
+  String get invitesGenerateButtonLabel => 'Generate invite';
+
+  @override
   String get searchSomethingWentWrong => '문제가 발생했어요';
 
   @override

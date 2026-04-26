@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:share_plus/share_plus.dart';
@@ -135,8 +136,7 @@ class _GenerateInviteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inviteLabel = remaining == 1 ? 'invite' : 'invites';
-
+    final l10n = context.l10n;
     return Card(
       color: VineTheme.surfaceContainer,
       child: Padding(
@@ -146,15 +146,15 @@ class _GenerateInviteCard extends StatelessWidget {
           spacing: 12,
           children: [
             Text(
-              '$remaining $inviteLabel ready to generate',
+              l10n.invitesGenerateCardTitle(remaining),
               style: VineTheme.titleMediumFont(),
             ),
             Text(
-              'Generate a code when you are ready to share one.',
+              l10n.invitesGenerateCardSubtitle,
               style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             ),
             DivineButton(
-              label: 'Generate invite',
+              label: l10n.invitesGenerateButtonLabel,
               expanded: true,
               onPressed: () =>
                   context.read<InviteStatusCubit>().generateInvite(),

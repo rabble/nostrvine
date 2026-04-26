@@ -117,7 +117,8 @@ void main() {
           ),
         );
         await tester.pumpWidget(buildSubject());
-        expect(find.text('Generate invite'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.invitesGenerateButtonLabel), findsOneWidget);
         expect(find.text('No invites available right now'), findsNothing);
       });
 
@@ -181,7 +182,8 @@ void main() {
         when(() => mockCubit.generateInvite()).thenAnswer((_) async {});
 
         await tester.pumpWidget(buildSubject());
-        await tester.tap(find.text('Generate invite'));
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.invitesGenerateButtonLabel));
 
         verify(() => mockCubit.generateInvite()).called(1);
       });

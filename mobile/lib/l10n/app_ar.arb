@@ -2926,5 +2926,8 @@
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
   "videoEditorAudioSegmentInstruction": "حدّد مقطع الصوت لفيديوك",
   "videoEditorClipGalleryInstruction": "اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب.",
-  "fullscreenFeedRemovedMessage": "تمت إزالة الفيديو"
+  "fullscreenFeedRemovedMessage": "تمت إزالة الفيديو",
+  "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
+  "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
+  "invitesGenerateButtonLabel": "Generate invite"
 }

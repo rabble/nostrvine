@@ -2926,5 +2926,8 @@
   "videoEditorClipGalleryInstruction": "Tippen zum Bearbeiten. Halten und ziehen zum Neuordnen.",
   "navSearch": "Suche",
   "navSearchTooltip": "Suchen",
-  "fullscreenFeedRemovedMessage": "Video entfernt"
+  "fullscreenFeedRemovedMessage": "Video entfernt",
+  "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
+  "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
+  "invitesGenerateButtonLabel": "Generate invite"
 }
