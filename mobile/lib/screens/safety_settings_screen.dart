@@ -96,59 +96,69 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         onBackPressed: context.pop,
       ),
       backgroundColor: VineTheme.backgroundColor,
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
-            )
-          : ListView(
-              children: [
-                _buildSectionHeader('WHAT YOU SEE'),
-                ListTile(
-                  leading: const Icon(
-                    Icons.filter_list,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
                     color: VineTheme.vineGreen,
                   ),
-                  title: Text(
-                    context.l10n.contentPreferencesContentFilters,
-                    style: const TextStyle(color: VineTheme.whiteText),
-                  ),
-                  subtitle: Text(
-                    context.l10n.contentPreferencesContentFiltersSubtitle,
-                    style: const TextStyle(color: VineTheme.secondaryText),
-                  ),
-                  trailing: const Icon(
-                    Icons.chevron_right,
-                    color: VineTheme.lightText,
-                  ),
-                  onTap: () => context.push(ContentFiltersScreen.path),
+                )
+              : ListView(
+                  children: [
+                    _buildSectionHeader('WHAT YOU SEE'),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.filter_list,
+                        color: VineTheme.vineGreen,
+                      ),
+                      title: Text(
+                        context.l10n.contentPreferencesContentFilters,
+                        style: const TextStyle(color: VineTheme.whiteText),
+                      ),
+                      subtitle: Text(
+                        context.l10n.contentPreferencesContentFiltersSubtitle,
+                        style: const TextStyle(color: VineTheme.secondaryText),
+                      ),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        color: VineTheme.lightText,
+                      ),
+                      onTap: () => context.push(ContentFiltersScreen.path),
+                    ),
+                    _buildAgeVerificationSection(),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      value: _showDivineHostedOnly,
+                      onChanged: _setShowDivineHostedOnly,
+                      secondary: const Icon(
+                        Icons.verified,
+                        color: VineTheme.vineGreen,
+                      ),
+                      title: Text(
+                        context.l10n.safetySettingsShowDivineHostedOnly,
+                        style: const TextStyle(color: VineTheme.whiteText),
+                      ),
+                      subtitle: Text(
+                        context.l10n.safetySettingsShowDivineHostedOnlySubtitle,
+                        style: const TextStyle(color: VineTheme.secondaryText),
+                      ),
+                      activeThumbColor: VineTheme.vineGreen,
+                    ),
+                    _buildSectionHeader(context.l10n.safetySettingsModeration),
+                    _buildModerationProvidersSection(),
+                    _buildSectionHeader(
+                      context.l10n.safetySettingsBlockedUsers,
+                    ),
+                    _buildBlockedUsersSection(),
+                    _buildSectionHeader('WHAT YOU PUBLISH'),
+                    const AccountContentLabelsTile(),
+                  ],
                 ),
-                _buildAgeVerificationSection(),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  value: _showDivineHostedOnly,
-                  onChanged: _setShowDivineHostedOnly,
-                  secondary: const Icon(
-                    Icons.verified,
-                    color: VineTheme.vineGreen,
-                  ),
-                  title: Text(
-                    context.l10n.safetySettingsShowDivineHostedOnly,
-                    style: const TextStyle(color: VineTheme.whiteText),
-                  ),
-                  subtitle: Text(
-                    context.l10n.safetySettingsShowDivineHostedOnlySubtitle,
-                    style: const TextStyle(color: VineTheme.secondaryText),
-                  ),
-                  activeThumbColor: VineTheme.vineGreen,
-                ),
-                _buildSectionHeader(context.l10n.safetySettingsModeration),
-                _buildModerationProvidersSection(),
-                _buildSectionHeader(context.l10n.safetySettingsBlockedUsers),
-                _buildBlockedUsersSection(),
-                _buildSectionHeader('WHAT YOU PUBLISH'),
-                const AccountContentLabelsTile(),
-              ],
-            ),
+        ),
+      ),
     );
   }
 
