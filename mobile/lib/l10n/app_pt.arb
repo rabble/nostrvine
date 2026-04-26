@@ -2937,5 +2937,6 @@
   "videoEditorAudioSegmentInstruction": "Selecione o trecho de áudio para seu vídeo",
   "videoEditorClipGalleryInstruction": "Toque para editar. Pressione e arraste para reordenar.",
   "navSearch": "Pesquisar",
-  "navSearchTooltip": "Pesquisar"
+  "navSearchTooltip": "Pesquisar",
+  "fullscreenFeedRemovedMessage": "Video removed"
 }

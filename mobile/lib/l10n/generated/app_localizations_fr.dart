@@ -5800,4 +5800,7 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Sous-titres désactivés pour toutes les vidéos';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Video removed';
 }

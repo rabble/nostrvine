@@ -5709,4 +5709,7 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Undertexter inaktiverade för alla videor';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Video removed';
 }

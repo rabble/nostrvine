@@ -5697,4 +5697,7 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Tüm videolar için altyazılar devre dışı';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Video removed';
 }

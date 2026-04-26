@@ -5692,4 +5692,7 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Teks dinonaktifkan untuk semua video';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Video removed';
 }
