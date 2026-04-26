@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/widgets/special_profile_checkmark.dart';
 
 class UserName extends ConsumerWidget {
   const UserName._({
@@ -76,10 +77,13 @@ class UserName extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     late String displayName;
+    UserProfile? resolvedProfile;
     if (userProfile case final userProfile?) {
+      resolvedProfile = userProfile;
       displayName = userProfile.betterDisplayName(anonymousName);
     } else {
       final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
+      resolvedProfile = profileAsync.value;
 
       // Use embedded name from REST API as fallback, then generated name.
       final fallbackName =
@@ -124,6 +128,8 @@ class UserName extends ConsumerWidget {
                   overflow: overflow ?? TextOverflow.ellipsis,
                 ),
         ),
+        if (shouldShowSpecialProfileCheckmark(resolvedProfile))
+          const SpecialProfileCheckmark(),
       ],
     );
   }

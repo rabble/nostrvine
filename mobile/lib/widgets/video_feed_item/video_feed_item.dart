@@ -38,6 +38,7 @@ import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
@@ -1543,6 +1544,10 @@ class VideoOverlayActions extends ConsumerWidget {
                                             ),
                                           ),
                                         ),
+                                        if (shouldShowSpecialProfileCheckmark(
+                                          profile,
+                                        ))
+                                          const SpecialProfileCheckmark(),
                                       ],
                                     ),
                                     Text(

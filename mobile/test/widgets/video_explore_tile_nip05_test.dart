@@ -155,6 +155,20 @@ void main() {
 
         expect(find.byIcon(Icons.check), findsNothing);
       });
+
+      testWidgets('shows checkmark for Kirsten Swasey special profile', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            verificationStatus: Nip05VerificationStatus.verified,
+            nip05: '_@kirstenswasey.divine.video',
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byIcon(Icons.check), findsOneWidget);
+      });
     });
   });
 }

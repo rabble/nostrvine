@@ -10,6 +10,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
+import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -139,6 +140,7 @@ class _CreatorInfo extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileReactiveProvider(pubkey));
+    final profile = profileAsync.value;
 
     final displayName = switch (profileAsync) {
       AsyncData(:final value) when value != null => value.bestDisplayName,
@@ -176,6 +178,8 @@ class _CreatorInfo extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          if (shouldShowSpecialProfileCheckmark(profile))
+            const SpecialProfileCheckmark(iconSize: 8, padding: 1),
         ],
       ),
     );

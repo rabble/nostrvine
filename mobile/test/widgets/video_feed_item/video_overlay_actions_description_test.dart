@@ -177,6 +177,53 @@ void main() {
   });
 
   testWidgets(
+    'author line shows checkmark for Kirsten Swasey special profile',
+    (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
+              yield UserProfile(
+                pubkey: pubkey,
+                name: 'Alice',
+                nip05: '_@kirstenswasey.divine.video',
+                rawData: const {},
+                createdAt: DateTime(2026),
+                eventId: 'kind0_event_id',
+              );
+            }),
+            nip05VerificationProvider.overrideWith(
+              (ref, pubkey) async => Nip05VerificationStatus.verified,
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: BlocProvider<VideoInteractionsBloc>.value(
+                value: mockInteractionsBloc,
+                child: VideoOverlayActions(
+                  video: testVideo,
+                  isVisible: true,
+                  isActive: true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alice'), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'does not render a dedicated captions button in the action rail',
     (tester) async {
       final subtitleVideo = testVideo.copyWith(
