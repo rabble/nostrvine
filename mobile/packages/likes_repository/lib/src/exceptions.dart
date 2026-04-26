@@ -77,6 +77,29 @@ class NotLikedException extends LikesRepositoryException {
   String toString() => 'NotLikedException: $message';
 }
 
+/// Exception thrown when an event is already downvoted.
+///
+/// Attempting to downvote an event that is already downvoted will throw this.
+class AlreadyDownvotedException extends LikesRepositoryException {
+  /// Creates a new already downvoted exception.
+  const AlreadyDownvotedException(String eventId)
+    : super('Event $eventId is already downvoted');
+
+  @override
+  String toString() => 'AlreadyDownvotedException: $message';
+}
+
+/// Exception thrown when trying to remove a downvote from an event that is
+/// not currently downvoted.
+class NotDownvotedException extends LikesRepositoryException {
+  /// Creates a new not downvoted exception.
+  const NotDownvotedException(String eventId)
+    : super('Event $eventId is not downvoted');
+
+  @override
+  String toString() => 'NotDownvotedException: $message';
+}
+
 /// Exception thrown when syncing reactions from relays fails.
 class SyncFailedException extends LikesRepositoryException {
   /// Creates a new sync failed exception.

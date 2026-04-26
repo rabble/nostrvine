@@ -87,6 +87,13 @@ class LikesRepository {
   /// In-memory cache of like records keyed by target event ID.
   final Map<String, LikeRecord> _likeRecords = {};
 
+  /// In-memory cache of downvote records keyed by target event ID.
+  ///
+  /// Mirror of [_likeRecords] for kind-7 reactions whose content is `-`.
+  /// Not persisted to local storage in v1 — relays repopulate via
+  /// [syncUserReactions] / [getVoteCounts] on next fetch.
+  final Map<String, LikeRecord> _downvoteRecords = {};
+
   /// In-memory cache of global like counts keyed by event ID.
   ///
   /// Prevents redundant relay queries when the same video is scrolled
@@ -96,6 +103,11 @@ class LikesRepository {
 
   /// Reactive stream controller for liked event IDs (ordered by recency).
   final _likedIdsController = BehaviorSubject<List<String>>.seeded([]);
+
+  /// Reactive stream controller for downvoted event IDs (ordered by recency).
+  final _downvotedIdsController = BehaviorSubject<List<String>>.seeded(
+    <String>[],
+  );
 
   /// Whether the repository has been initialized with data from storage.
   bool _isInitialized = false;
@@ -119,6 +131,19 @@ class LikesRepository {
     final sortedRecords = _likeRecords.values.toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     _likedIdsController.add(
+      sortedRecords.map((r) => r.targetEventId).toList(),
+    );
+  }
+
+  /// Emits the current downvoted event IDs ordered by recency.
+  ///
+  /// Mirror of [_emitLikedIds] for the downvote stream. Guarded against
+  /// post-dispose / post-close emission for the same reason.
+  void _emitDownvotedIds() {
+    if (_isDisposed || _downvotedIdsController.isClosed) return;
+    final sortedRecords = _downvoteRecords.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    _downvotedIdsController.add(
       sortedRecords.map((r) => r.targetEventId).toList(),
     );
   }
@@ -164,6 +189,41 @@ class LikesRepository {
   Future<bool> isLiked(String eventId) async {
     await _ensureInitialized();
     return _likeRecords.containsKey(eventId);
+  }
+
+  /// Stream of downvoted event IDs ordered by recency (reactive).
+  ///
+  /// Mirror of [watchLikedEventIds] for the downvote side. Local storage
+  /// does not yet persist downvotes (v1 limitation); the in-memory stream
+  /// is used directly.
+  Stream<List<String>> watchDownvotedEventIds() {
+    return _downvotedIdsController.stream;
+  }
+
+  /// Get the current set of downvoted event IDs (one-shot).
+  Future<Set<String>> getDownvotedEventIds() async {
+    await _ensureInitialized();
+    return _downvoteRecords.keys.toSet();
+  }
+
+  /// Get downvoted event IDs ordered by recency (most recent first).
+  Future<List<String>> getOrderedDownvotedEventIds() async {
+    await _ensureInitialized();
+    final sortedRecords = _downvoteRecords.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return sortedRecords.map((r) => r.targetEventId).toList();
+  }
+
+  /// Check if a specific event is downvoted by the current user.
+  Future<bool> isDownvoted(String eventId) async {
+    await _ensureInitialized();
+    return _downvoteRecords.containsKey(eventId);
+  }
+
+  /// Get the downvote record for an event, or null if not downvoted.
+  Future<LikeRecord?> getDownvoteRecord(String eventId) async {
+    await _ensureInitialized();
+    return _downvoteRecords[eventId];
   }
 
   /// Like an event.
@@ -719,26 +779,137 @@ class LikesRepository {
 
   /// Publish a downvote (Kind 7 reaction with content '-').
   ///
-  /// Returns the reaction event ID.
+  /// Optimistic-first: writes the downvote record into [_downvoteRecords]
+  /// and ticks [watchDownvotedEventIds] BEFORE the kind-7 publish, mirroring
+  /// the upvote flow in [likeEvent]. On publish failure the record is
+  /// removed and the stream is ticked again.
   ///
-  /// Throws `LikeFailedException` if the operation fails.
+  /// Returns the reaction event ID, or a `pending_downvote_*` placeholder
+  /// when the network call hasn't been awaited yet (offline or pre-publish
+  /// failure).
+  ///
+  /// Throws [AlreadyDownvotedException] if the event is already downvoted.
+  /// Throws [LikeFailedException] if the publish fails.
   Future<String> downvoteEvent({
     required String eventId,
     required String authorPubkey,
     int? targetKind,
   }) async {
-    final reactionEvent = await _nostrClient.sendLike(
-      eventId,
-      content: _downvoteContent,
-      targetAuthorPubkey: authorPubkey,
-      targetKind: targetKind,
-    );
+    await _ensureInitialized();
 
-    if (reactionEvent == null) {
-      throw const LikeFailedException('Failed to publish downvote reaction');
+    if (_downvoteRecords.containsKey(eventId)) {
+      throw AlreadyDownvotedException(eventId);
     }
 
-    return reactionEvent.id;
+    // 1. Optimistic-first: write to memory + tick the stream BEFORE any
+    // network I/O. The UI flips here. Mirrors [likeEvent]'s ordering.
+    final placeholderId = 'pending_downvote_$eventId';
+    final placeholder = LikeRecord(
+      targetEventId: eventId,
+      reactionEventId: placeholderId,
+      createdAt: DateTime.now(),
+    );
+    _downvoteRecords[eventId] = placeholder;
+    _emitDownvotedIds();
+
+    // 2. Online → publish kind 7 with '-'; on success swap the placeholder
+    // for the real id, on failure roll back memory + stream.
+    try {
+      final reactionEvent = await _nostrClient.sendLike(
+        eventId,
+        content: _downvoteContent,
+        targetAuthorPubkey: authorPubkey,
+        targetKind: targetKind,
+      );
+
+      if (reactionEvent == null) {
+        throw const LikeFailedException(
+          'Failed to publish downvote reaction',
+        );
+      }
+
+      _downvoteRecords[eventId] = LikeRecord(
+        targetEventId: eventId,
+        reactionEventId: reactionEvent.id,
+        createdAt: placeholder.createdAt,
+      );
+
+      return reactionEvent.id;
+    } catch (_) {
+      _downvoteRecords.remove(eventId);
+      _emitDownvotedIds();
+      rethrow;
+    }
+  }
+
+  /// Remove the current user's downvote on an event.
+  ///
+  /// Optimistic-first: removes the record + ticks [watchDownvotedEventIds]
+  /// BEFORE the kind-5 deletion publish. On failure restores the record and
+  /// re-ticks the stream. Mirrors [unlikeEvent].
+  ///
+  /// Throws [NotDownvotedException] if the event is not downvoted.
+  /// Throws [UnlikeFailedException] if the deletion publish fails.
+  Future<void> removeDownvote(String eventId) async {
+    await _ensureInitialized();
+
+    final record = _downvoteRecords[eventId];
+    if (record == null) {
+      throw NotDownvotedException(eventId);
+    }
+
+    final snapshotRecord = record;
+
+    // 1. Optimistic-first: remove from memory and tick the stream.
+    _downvoteRecords.remove(eventId);
+    _emitDownvotedIds();
+
+    // 2. Skip publishing deletion for placeholders that never reached the
+    // relay (e.g. publish failed and the user retried before sync).
+    if (snapshotRecord.reactionEventId.startsWith('pending_')) {
+      return;
+    }
+
+    // 3. Publish kind 5 deletion; on failure roll back memory + stream.
+    try {
+      final deletionEvent = await _nostrClient.deleteEvent(
+        snapshotRecord.reactionEventId,
+      );
+      if (deletionEvent == null) {
+        throw const UnlikeFailedException(
+          'Failed to publish downvote deletion',
+        );
+      }
+    } catch (_) {
+      _downvoteRecords[eventId] = snapshotRecord;
+      _emitDownvotedIds();
+      rethrow;
+    }
+  }
+
+  /// Toggle the current user's downvote on an event.
+  ///
+  /// Returns `true` when the event ends up downvoted, `false` when the
+  /// downvote was removed. Convenience wrapper around [downvoteEvent] /
+  /// [removeDownvote] mirroring [toggleLike].
+  Future<bool> toggleDownvote({
+    required String eventId,
+    required String authorPubkey,
+    int? targetKind,
+  }) async {
+    await _ensureInitialized();
+
+    if (_downvoteRecords.containsKey(eventId)) {
+      await removeDownvote(eventId);
+      return false;
+    }
+
+    await downvoteEvent(
+      eventId: eventId,
+      authorPubkey: authorPubkey,
+      targetKind: targetKind,
+    );
+    return true;
   }
 
   /// Delete a reaction event by its ID (Kind 5 deletion).
@@ -815,20 +986,25 @@ class LikesRepository {
 
       final newRecords = <LikeRecord>[];
       final deletedTargetIds = <String>[];
+      final deletedDownvoteTargetIds = <String>[];
+      var downvoteCacheChanged = false;
 
       for (final event in reactionEvents) {
+        final targetId = _extractTargetEventId(event);
+        if (targetId == null) continue;
+
         // Skip reactions that have been deleted
         if (deletedReactionIds.contains(event.id)) {
-          // If we have this in local storage, mark for deletion
-          final targetId = _extractTargetEventId(event);
-          if (targetId != null && _likeRecords.containsKey(targetId)) {
+          if (_likeRecords.containsKey(targetId)) {
             deletedTargetIds.add(targetId);
+          }
+          if (_downvoteRecords.containsKey(targetId)) {
+            deletedDownvoteTargetIds.add(targetId);
           }
           continue;
         }
 
-        final targetId = _extractTargetEventId(event);
-        if (targetId != null && event.content == _likeContent) {
+        if (event.content == _likeContent) {
           final record = LikeRecord(
             targetEventId: targetId,
             reactionEventId: event.id,
@@ -844,6 +1020,23 @@ class LikesRepository {
             _likeRecords[targetId] = record;
             newRecords.add(record);
           }
+        } else if (event.content == _downvoteContent) {
+          final record = LikeRecord(
+            targetEventId: targetId,
+            reactionEventId: event.id,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              event.createdAt * 1000,
+            ),
+          );
+
+          // Mirror the upvote freshness check; downvotes aren't persisted
+          // in v1 so there's no batch save.
+          final existing = _downvoteRecords[targetId];
+          if (existing == null ||
+              record.createdAt.isAfter(existing.createdAt)) {
+            _downvoteRecords[targetId] = record;
+            downvoteCacheChanged = true;
+          }
         }
       }
 
@@ -853,12 +1046,21 @@ class LikesRepository {
         await _localStorage?.deleteLikeRecord(targetId);
       }
 
+      // Remove deleted downvotes from in-memory cache (no local storage in v1)
+      for (final targetId in deletedDownvoteTargetIds) {
+        _downvoteRecords.remove(targetId);
+        downvoteCacheChanged = true;
+      }
+
       // Batch save new records to storage
       if (newRecords.isNotEmpty && _localStorage != null) {
         await _localStorage.saveLikeRecordsBatch(newRecords);
       }
 
       _emitLikedIds();
+      if (downvoteCacheChanged) {
+        _emitDownvotedIds();
+      }
       _isInitialized = true;
 
       return _buildSyncResult();
@@ -1004,9 +1206,8 @@ class LikesRepository {
   void _processIncomingReaction(Event event) {
     if (_isDisposed) return;
 
-    // Only process Kind 7 '+' reactions from the current user
+    // Only process Kind 7 reactions from the current user
     if (event.kind != EventKind.reaction) return;
-    if (event.content != _likeContent) return;
     if (event.pubkey != _nostrClient.publicKey) return;
 
     final targetId = _extractTargetEventId(event);
@@ -1016,19 +1217,32 @@ class LikesRepository {
       event.createdAt * 1000,
     );
 
-    // Deduplicate: only update if newer than existing record
-    final existing = _likeRecords[targetId];
-    if (existing != null && !createdAt.isAfter(existing.createdAt)) return;
+    if (event.content == _likeContent) {
+      // Deduplicate upvotes
+      final existing = _likeRecords[targetId];
+      if (existing != null && !createdAt.isAfter(existing.createdAt)) return;
 
-    final record = LikeRecord(
-      targetEventId: targetId,
-      reactionEventId: event.id,
-      createdAt: createdAt,
-    );
+      final record = LikeRecord(
+        targetEventId: targetId,
+        reactionEventId: event.id,
+        createdAt: createdAt,
+      );
 
-    _likeRecords[targetId] = record;
-    unawaited(_localStorage?.saveLikeRecord(record));
-    _emitLikedIds();
+      _likeRecords[targetId] = record;
+      unawaited(_localStorage?.saveLikeRecord(record));
+      _emitLikedIds();
+    } else if (event.content == _downvoteContent) {
+      // Deduplicate downvotes (in-memory only — no local persistence in v1)
+      final existing = _downvoteRecords[targetId];
+      if (existing != null && !createdAt.isAfter(existing.createdAt)) return;
+
+      _downvoteRecords[targetId] = LikeRecord(
+        targetEventId: targetId,
+        reactionEventId: event.id,
+        createdAt: createdAt,
+      );
+      _emitDownvotedIds();
+    }
   }
 
   void _decrementLikeCountCache(String eventId) {
@@ -1045,15 +1259,17 @@ class LikesRepository {
   /// stream emission is attempted.
   Future<void> clearCache() async {
     _likeRecords.clear();
+    _downvoteRecords.clear();
     _likeCountCache.clear();
     await _localStorage?.clearAll();
     _emitLikedIds();
+    _emitDownvotedIds();
     _isInitialized = false;
   }
 
   /// Dispose of resources.
   ///
-  /// Cancels the reaction subscription and closes the stream controller.
+  /// Cancels the reaction subscription and closes both stream controllers.
   /// Should be called when the repository is no longer needed.
   void dispose() {
     _isDisposed = true;
@@ -1063,6 +1279,7 @@ class LikesRepository {
       _reactionSubscriptionId = null;
     }
     unawaited(_likedIdsController.close());
+    unawaited(_downvotedIdsController.close());
   }
 
   /// Ensures the repository is initialized with data from storage.

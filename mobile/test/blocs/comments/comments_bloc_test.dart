@@ -1281,7 +1281,7 @@ void main() {
           ),
         ),
         expect: () => [
-          // First emit: optimistic update with like added
+          // Single optimistic emit: arrow + count flip together.
           isA<CommentsState>()
               .having(
                 (s) => s.upvotedCommentIds.contains(validId('likecomment')),
@@ -1292,28 +1292,6 @@ void main() {
                 (s) => s.commentUpvoteCounts[validId('likecomment')],
                 'count',
                 6,
-              )
-              .having(
-                (s) => s.voteInProgressCommentId,
-                'voteInProgressCommentId',
-                validId('likecomment'),
-              ),
-          // Second emit: clears voteInProgressCommentId on success
-          isA<CommentsState>()
-              .having(
-                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
-                'liked',
-                true,
-              )
-              .having(
-                (s) => s.commentUpvoteCounts[validId('likecomment')],
-                'count',
-                6,
-              )
-              .having(
-                (s) => s.voteInProgressCommentId,
-                'voteInProgressCommentId',
-                null,
               ),
         ],
       );
@@ -1322,12 +1300,8 @@ void main() {
         'emits optimistic unlike update when liked comment is toggled',
         setUp: () {
           when(
-            () => mockLikesRepository.toggleLike(
-              eventId: any(named: 'eventId'),
-              authorPubkey: any(named: 'authorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer((_) async => false);
+            () => mockLikesRepository.unlikeEvent(any()),
+          ).thenAnswer((_) async {});
         },
         build: createBloc,
         seed: () {
@@ -1364,23 +1338,6 @@ void main() {
                 (s) => s.commentUpvoteCounts[validId('likecomment')],
                 'count',
                 2,
-              )
-              .having(
-                (s) => s.voteInProgressCommentId,
-                'voteInProgressCommentId',
-                validId('likecomment'),
-              ),
-          // Second emit: clears voteInProgressCommentId on success
-          isA<CommentsState>()
-              .having(
-                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
-                'liked',
-                false,
-              )
-              .having(
-                (s) => s.voteInProgressCommentId,
-                'voteInProgressCommentId',
-                null,
               ),
         ],
       );
@@ -1389,7 +1346,7 @@ void main() {
         'reverts optimistic update on failure',
         setUp: () {
           when(
-            () => mockLikesRepository.toggleLike(
+            () => mockLikesRepository.likeEvent(
               eventId: any(named: 'eventId'),
               authorPubkey: any(named: 'authorPubkey'),
               targetKind: any(named: 'targetKind'),
@@ -1448,37 +1405,10 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
-        'does nothing when same comment like is in progress',
-        build: createBloc,
-        seed: () {
-          final comment = Comment(
-            id: validId('likecomment'),
-            content: 'Comment',
-            authorPubkey: validId('commenter'),
-            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
-            rootEventId: validId('root'),
-            rootAuthorPubkey: validId('author'),
-          );
-          return CommentsState(
-            status: CommentsStatus.success,
-            commentsById: {comment.id: comment},
-            voteInProgressCommentId: validId('likecomment'),
-          );
-        },
-        act: (bloc) => bloc.add(
-          CommentUpvoteToggled(
-            commentId: validId('likecomment'),
-            authorPubkey: validId('commenter'),
-          ),
-        ),
-        expect: () => <CommentsState>[],
-      );
-
-      blocTest<CommentsBloc, CommentsState>(
         'removes existing downvote when upvoting a downvoted comment',
         setUp: () {
           when(
-            () => mockLikesRepository.unlikeEvent(any()),
+            () => mockLikesRepository.removeDownvote(any()),
           ).thenAnswer((_) async {});
           when(
             () => mockLikesRepository.likeEvent(
@@ -1535,28 +1465,14 @@ void main() {
                 'downvote count',
                 2,
               ),
-          // Second emit: clears voteInProgressCommentId on success
-          isA<CommentsState>()
-              .having(
-                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
-                'upvoted',
-                true,
-              )
-              .having(
-                (s) => s.downvotedCommentIds.contains(validId('likecomment')),
-                'downvoted',
-                false,
-              )
-              .having(
-                (s) => s.voteInProgressCommentId,
-                'voteInProgressCommentId',
-                null,
-              ),
         ],
         verify: (_) {
-          // Verify downvote was removed before upvote was added
+          // Verify downvote was removed (via removeDownvote) before upvote
+          // was added — the previously-broken path used unlikeEvent which
+          // throws NotLikedException because downvotes aren't in
+          // _likeRecords.
           verify(
-            () => mockLikesRepository.unlikeEvent(validId('likecomment')),
+            () => mockLikesRepository.removeDownvote(validId('likecomment')),
           ).called(1);
           verify(
             () => mockLikesRepository.likeEvent(
@@ -1639,7 +1555,7 @@ void main() {
           ),
         ),
         expect: () => [
-          // First emit: optimistic downvote added
+          // Single optimistic emit: downvote added, count incremented.
           isA<CommentsState>()
               .having(
                 (s) => s.downvotedCommentIds.contains(validId('downcomment')),
@@ -1650,23 +1566,6 @@ void main() {
                 (s) => s.commentDownvoteCounts[validId('downcomment')],
                 'count',
                 3,
-              )
-              .having(
-                (s) => s.voteInProgressCommentId,
-                'voteInProgressCommentId',
-                validId('downcomment'),
-              ),
-          // Second emit: clears voteInProgressCommentId on success
-          isA<CommentsState>()
-              .having(
-                (s) => s.downvotedCommentIds.contains(validId('downcomment')),
-                'downvoted',
-                true,
-              )
-              .having(
-                (s) => s.voteInProgressCommentId,
-                'voteInProgressCommentId',
-                null,
               ),
         ],
       );
@@ -1732,26 +1631,10 @@ void main() {
                 'upvote count',
                 4,
               ),
-          // Second emit: clears voteInProgressCommentId on success
-          isA<CommentsState>()
-              .having(
-                (s) => s.downvotedCommentIds.contains(validId('downcomment')),
-                'downvoted',
-                true,
-              )
-              .having(
-                (s) => s.upvotedCommentIds.contains(validId('downcomment')),
-                'upvoted',
-                false,
-              )
-              .having(
-                (s) => s.voteInProgressCommentId,
-                'voteInProgressCommentId',
-                null,
-              ),
         ],
         verify: (_) {
-          // Verify upvote was removed before downvote was added
+          // Verify upvote was removed (via unlikeEvent — upvotes ARE in
+          // _likeRecords) before downvote was added.
           verify(
             () => mockLikesRepository.unlikeEvent(validId('downcomment')),
           ).called(1);
@@ -1768,8 +1651,12 @@ void main() {
       blocTest<CommentsBloc, CommentsState>(
         'emits optimistic un-downvote when downvoted comment is toggled',
         setUp: () {
+          // The downvote-removal path now uses removeDownvote (downvote
+          // records live in _downvoteRecords, not _likeRecords). Pre-fix
+          // this called unlikeEvent and threw NotLikedException, causing
+          // a revert flash; that latent bug is closed by this change.
           when(
-            () => mockLikesRepository.unlikeEvent(any()),
+            () => mockLikesRepository.removeDownvote(any()),
           ).thenAnswer((_) async {});
         },
         build: createBloc,
@@ -1796,7 +1683,9 @@ void main() {
           ),
         ),
         expect: () => [
-          // First emit: optimistic un-downvote
+          // Single optimistic emit: downvote removed, count decremented.
+          // No revert flash — removeDownvote succeeds because the downvote
+          // is tracked in _downvoteRecords now.
           isA<CommentsState>()
               .having(
                 (s) => s.downvotedCommentIds.contains(validId('downcomment')),
@@ -1807,25 +1696,13 @@ void main() {
                 (s) => s.commentDownvoteCounts[validId('downcomment')],
                 'count',
                 2,
-              )
-              .having(
-                (s) => s.voteInProgressCommentId,
-                'voteInProgressCommentId',
-                validId('downcomment'),
-              ),
-          // Second emit: clears voteInProgressCommentId on success
-          isA<CommentsState>()
-              .having(
-                (s) => s.downvotedCommentIds.contains(validId('downcomment')),
-                'downvoted',
-                false,
-              )
-              .having(
-                (s) => s.voteInProgressCommentId,
-                'voteInProgressCommentId',
-                null,
               ),
         ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.removeDownvote(validId('downcomment')),
+          ).called(1);
+        },
       );
     });
 
@@ -3260,24 +3137,6 @@ void main() {
       final comments = state.comments;
       expect(comments.first.id, highEngagement.id);
       expect(comments.last.id, lowEngagement.id);
-    });
-
-    test('copyWith without voteInProgressCommentId clears it', () {
-      const state = CommentsState(voteInProgressCommentId: 'some-comment-id');
-
-      final updated = state.copyWith();
-
-      expect(updated.voteInProgressCommentId, null);
-    });
-
-    test('copyWith with voteInProgressCommentId preserves it', () {
-      const state = CommentsState();
-
-      final updated = state.copyWith(
-        voteInProgressCommentId: 'some-comment-id',
-      );
-
-      expect(updated.voteInProgressCommentId, 'some-comment-id');
     });
 
     test(

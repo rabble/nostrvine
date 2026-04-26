@@ -77,6 +77,32 @@ void main() {
     });
   });
 
+  group('AlreadyDownvotedException', () {
+    test('includes event ID in message', () {
+      const exception = AlreadyDownvotedException('event123');
+      expect(exception.message, contains('event123'));
+      expect(exception.message, contains('downvoted'));
+    });
+
+    test('toString contains class name', () {
+      const exception = AlreadyDownvotedException('event123');
+      expect(exception.toString(), contains('AlreadyDownvotedException'));
+    });
+  });
+
+  group('NotDownvotedException', () {
+    test('includes event ID in message', () {
+      const exception = NotDownvotedException('event123');
+      expect(exception.message, contains('event123'));
+      expect(exception.message, contains('not downvoted'));
+    });
+
+    test('toString contains class name', () {
+      const exception = NotDownvotedException('event123');
+      expect(exception.toString(), contains('NotDownvotedException'));
+    });
+  });
+
   group('SyncFailedException', () {
     test('has correct message', () {
       const exception = SyncFailedException('sync error');

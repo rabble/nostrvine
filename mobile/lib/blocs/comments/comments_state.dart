@@ -122,7 +122,6 @@ final class CommentsState extends Equatable {
     this.commentDownvoteCounts = const {},
     this.upvotedCommentIds = const {},
     this.downvotedCommentIds = const {},
-    this.voteInProgressCommentId,
     this.sortMode = CommentsSortMode.newest,
     this.replyCountsByCommentId = const {},
     this.mentionQuery = '',
@@ -165,9 +164,6 @@ final class CommentsState extends Equatable {
 
   /// Set of comment IDs the current user has downvoted.
   final Set<String> downvotedCommentIds;
-
-  /// Comment ID currently undergoing a vote toggle (prevents double-tap).
-  final String? voteInProgressCommentId;
 
   /// Current sort mode for the comments list.
   final CommentsSortMode sortMode;
@@ -313,7 +309,6 @@ final class CommentsState extends Equatable {
     Map<String, int>? commentDownvoteCounts,
     Set<String>? upvotedCommentIds,
     Set<String>? downvotedCommentIds,
-    String? voteInProgressCommentId,
     CommentsSortMode? sortMode,
     Map<String, int>? replyCountsByCommentId,
     String? mentionQuery,
@@ -341,7 +336,6 @@ final class CommentsState extends Equatable {
           commentDownvoteCounts ?? this.commentDownvoteCounts,
       upvotedCommentIds: upvotedCommentIds ?? this.upvotedCommentIds,
       downvotedCommentIds: downvotedCommentIds ?? this.downvotedCommentIds,
-      voteInProgressCommentId: voteInProgressCommentId,
       sortMode: sortMode ?? this.sortMode,
       replyCountsByCommentId:
           replyCountsByCommentId ?? this.replyCountsByCommentId,
@@ -433,7 +427,6 @@ final class CommentsState extends Equatable {
     commentDownvoteCounts,
     upvotedCommentIds,
     downvotedCommentIds,
-    voteInProgressCommentId,
     sortMode,
     replyCountsByCommentId,
     mentionQuery,
