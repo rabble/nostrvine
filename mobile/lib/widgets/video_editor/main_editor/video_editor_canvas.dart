@@ -1216,7 +1216,7 @@ class _CanvasFitter extends ConsumerWidget {
         // mapping (cover-fit [renderSize] into [targetSize], centered
         // in [bodySize]).
         //
-        // [_HitTestExpander] wraps it so that taps in the scrim /
+        // [HitTestExpander] wraps it so that taps in the scrim /
         // letterbox zone (outside [targetSize]) are clamped to the
         // nearest point inside [targetSize] and re-dispatched into the
         // chain. Without this, `Center.hitTestChildren` drops every
@@ -1224,7 +1224,7 @@ class _CanvasFitter extends ConsumerWidget {
         // editor's top-level GestureDetector never opens an arena and
         // [onScaleStart] / [onScaleUpdate] never fire.
         return _OverlayCutArea(
-          child: _HitTestExpander(
+          child: HitTestExpander(
             visibleSize: targetSize,
             child: Center(
               child: SizedBox.fromSize(
@@ -1371,10 +1371,14 @@ class _OverlayCutArea extends ConsumerWidget {
 /// Subsequent move events flow through the gesture arena that the
 /// initial down opens, so [GestureDetector.onScaleUpdate] still
 /// receives real-pointer deltas.
-class _HitTestExpander extends SingleChildRenderObjectWidget {
-  const _HitTestExpander({
+@visibleForTesting
+class HitTestExpander extends SingleChildRenderObjectWidget {
+  /// Creates a [HitTestExpander].
+  @visibleForTesting
+  const HitTestExpander({
     required this.visibleSize,
     required Widget super.child,
+    super.key,
   });
 
   /// The size of the painted, hit-testable region inside the parent
@@ -1382,7 +1386,10 @@ class _HitTestExpander extends SingleChildRenderObjectWidget {
   /// onto its nearest edge before being forwarded.
   final Size visibleSize;
 
+  // The render object is a true implementation detail; the widget is
+  // only public for `@visibleForTesting`.
   @override
+  // ignore: library_private_types_in_public_api
   _RenderHitTestExpander createRenderObject(BuildContext context) {
     return _RenderHitTestExpander(visibleSize: visibleSize);
   }
@@ -1390,6 +1397,7 @@ class _HitTestExpander extends SingleChildRenderObjectWidget {
   @override
   void updateRenderObject(
     BuildContext context,
+    // ignore: library_private_types_in_public_api
     _RenderHitTestExpander renderObject,
   ) {
     renderObject.visibleSize = visibleSize;
