@@ -132,6 +132,44 @@ IOS_QA_DEFAULT_ENV=STAGING
 
 If there is not yet a QA tracking issue, create one titled `iOS QA PR Builds` and store its issue number in `IOS_QA_DIRECTORY_ISSUE_NUMBER`.
 
+- [ ] **Step 7: Bootstrap GitHub labels**
+
+Create or update the labels the allocator uses before enabling the workflow. The repo does not currently have `ios-qa*` labels, so this must be idempotent and part of rollout.
+
+Run:
+
+```bash
+for n in $(seq -w 1 15); do
+  gh label create "ios-qa-slot-$n" \
+    --color "0E8A16" \
+    --description "iOS QA build slot $n" \
+    --force
+done
+
+gh label create "ios-qa:building" \
+  --color "FBCA04" \
+  --description "iOS QA build is running" \
+  --force
+gh label create "ios-qa:ready" \
+  --color "0E8A16" \
+  --description "iOS QA build is ready for testing" \
+  --force
+gh label create "ios-qa:queued" \
+  --color "D4C5F9" \
+  --description "iOS QA build is waiting for a slot" \
+  --force
+gh label create "ios-qa:failed" \
+  --color "D93F0B" \
+  --description "iOS QA build failed" \
+  --force
+gh label create "needs-ios-qa" \
+  --color "5319E7" \
+  --description "Build this draft PR for iOS QA" \
+  --force
+```
+
+Expected: command exits 0 and `gh label list --limit 300 | rg '^ios-qa|^needs-ios-qa'` shows all 20 labels.
+
 ## Chunk 1: Build-Time App Identity
 
 ### Task 1: Add Identity Defaults And Tests
@@ -491,6 +529,8 @@ Cover:
 - Queued PRs are ordered by oldest `needs-ios-qa`/ready eligibility timestamp, then PR number for deterministic reconciliation.
 - Closed PR cleanup returns labels to remove and mirror branch to delete.
 - Sticky state marker round-trips JSON for slot, PR number, full commit SHA, status, Codemagic build ID/URL, Firebase `testing_uri`, and failure reason.
+- Required-label renderer returns all 15 slot labels plus `ios-qa:building`, `ios-qa:ready`, `ios-qa:queued`, `ios-qa:failed`, and `needs-ios-qa`.
+- Firebase distribution parser extracts `testing_uri` from known Firebase CLI JSON shapes: top-level, `result`, and `result.release`. It rejects JSON that only has `binary_download_uri`.
 - Comment renderer includes slot, PR, full SHA, Firebase testing URI, and Codemagic URL. Do not truncate Nostr IDs; commit SHAs may be shortened only for display if the full SHA remains in the hidden state marker and table.
 
 Run:
@@ -521,6 +561,8 @@ def current_slot(labels): ...
 def choose_slot(slots, open_prs): ...
 def render_state_marker(state): ...
 def parse_state_marker(comment_body): ...
+def required_labels(slots): ...
+def extract_firebase_testing_uri(firebase_distribution_json): ...
 def render_status_comment(...): ...
 def render_directory(...): ...
 ```
@@ -538,6 +580,8 @@ parse-comment-state
 render-codemagic-payload
 upsert-comment
 notify-github
+render-label-bootstrap
+parse-firebase-distribution
 ```
 
 The workflow can pass event JSON paths and write outputs to `$GITHUB_OUTPUT`. Use JSON files for PR metadata to avoid shell interpolation of untrusted PR titles, branch names, labels, or author names.
@@ -609,7 +653,22 @@ concurrency:
   cancel-in-progress: false
 ```
 
-- [ ] **Step 2: Add trust check**
+- [ ] **Step 2: Add idempotent label bootstrap**
+
+The workflow should ensure labels exist before it tries to apply them. Add a step that renders the required labels from `.github/scripts/ios_qa_slots.py render-label-bootstrap`, then creates/updates them through the GitHub API or `gh label create --force`.
+
+Expected labels:
+
+```text
+ios-qa-slot-01 through ios-qa-slot-15
+ios-qa:building
+ios-qa:ready
+ios-qa:queued
+ios-qa:failed
+needs-ios-qa
+```
+
+- [ ] **Step 3: Add trust check**
 
 The workflow should call the GitHub org membership API using `DIVINEVIDEO_ORG_READ_TOKEN` when `head.repo.owner.login != "divinevideo"`.
 
@@ -621,7 +680,7 @@ head repo owner is divinevideo OR author is active divinevideo org member/owner
 
 For `workflow_dispatch`, fetch the PR metadata with the GitHub API by `pr_number` and write it to a JSON file consumed by `.github/scripts/ios_qa_slots.py`.
 
-- [ ] **Step 3: Mirror trusted PR head to base repo**
+- [ ] **Step 4: Mirror trusted PR head to base repo**
 
 For trusted eligible PRs:
 
@@ -640,7 +699,7 @@ git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}
 
 The checkout step must use the base repository only, with `persist-credentials: false`. Fetching the PR head is allowed only after the trust check and only for mirroring; no step may run code from `FETCH_HEAD`.
 
-- [ ] **Step 4: Trigger Codemagic**
+- [ ] **Step 5: Trigger Codemagic**
 
 Use the Codemagic Builds API with `appId`, `workflowId`, `branch`, labels, and `environment.variables`:
 
@@ -682,7 +741,7 @@ CODEMAGIC_APP_ID
 
 Use `CODEMAGIC_APP_ID` and `CODEMAGIC_API_TOKEN` from GitHub secrets.
 
-- [ ] **Step 5: Update labels and comments**
+- [ ] **Step 6: Update labels and comments**
 
 The workflow should:
 
@@ -693,7 +752,7 @@ The workflow should:
 - Avoid duplicate comments.
 - Store the Codemagic `buildId` returned by `POST /builds` in the hidden state marker.
 
-- [ ] **Step 6: Validate workflow YAML**
+- [ ] **Step 7: Validate workflow YAML**
 
 Run:
 
@@ -704,7 +763,7 @@ python3 -m unittest .github/scripts/tests/test_ios_qa_slots.py
 
 Expected: both commands exit 0.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 Run:
 
@@ -836,16 +895,13 @@ Install Firebase CLI if needed, distribute the IPA, and capture JSON output:
       $firebase_token_args \
       > firebase-distribution.json
 
-    python3 - <<'PY'
-    import json
-    from pathlib import Path
-
-    path = Path("firebase-distribution.json")
-    data = json.loads(path.read_text())
-    if not data.get("testing_uri"):
-        raise SystemExit("Firebase distribution JSON did not include testing_uri")
-    PY
+    python3 ../.github/scripts/ios_qa_slots.py parse-firebase-distribution \
+      --json-file firebase-distribution.json \
+      --require-testing-uri \
+      > firebase-distribution-links.json
 ```
+
+`parse-firebase-distribution` must support the Firebase CLI JSON shapes observed in tests: top-level links, `result` links, and `result.release` links. It must fail when only `binary_download_uri` is present, because that link expires after one hour and is not acceptable for QA comments.
 
 - [ ] **Step 4: Add stale PR check before distribution**
 
@@ -900,6 +956,7 @@ The notification script should:
 - Keep the slot label on ready, stale, and failed states.
 - Preserve a hidden JSON state marker with full commit SHA, Codemagic build URL, Firebase `testing_uri`, and updated timestamp.
 - Use `IOS_QA_GITHUB_TOKEN`/`GH_TOKEN` from Codemagic, not a GitHub Actions token.
+- Tolerate early build failures before validation has run. If the minimum GitHub context (`IOS_QA_GITHUB_TOKEN`, `CM_REPO_SLUG`, `PR_NUMBER`) is missing, log the missing keys and exit 0 instead of masking the original build failure.
 
 Add a reusable script:
 
@@ -907,7 +964,19 @@ Add a reusable script:
 - &notify_ios_qa_github
   name: Notify GitHub about iOS QA build
   script: |
-    set -eu
+    set -u
+    missing_context=""
+    for name in IOS_QA_GITHUB_TOKEN CM_REPO_SLUG PR_NUMBER; do
+      eval "value=\${$name:-}"
+      if [ -z "$value" ]; then
+        missing_context="$missing_context $name"
+      fi
+    done
+    if [ -n "$missing_context" ]; then
+      echo "Cannot update GitHub for iOS QA build; missing:$missing_context"
+      exit 0
+    fi
+
     status="ready"
     firebase_json="firebase-distribution.json"
     if [ "${STALE_IOS_QA_BUILD:-}" = "true" ]; then
@@ -917,14 +986,20 @@ Add a reusable script:
       status="failed"
       firebase_json=""
     fi
-    codemagic_build_url="https://codemagic.io/app/$CODEMAGIC_APP_ID/build/$CM_BUILD_ID"
+    if [ -n "${CODEMAGIC_APP_ID:-}" ] && [ -n "${CM_BUILD_ID:-}" ]; then
+      codemagic_build_url="https://codemagic.io/app/$CODEMAGIC_APP_ID/build/$CM_BUILD_ID"
+    else
+      codemagic_build_url="Codemagic build URL unavailable"
+    fi
+    qa_slot="${QA_SLOT:-unknown}"
+    pr_head_sha="${PR_HEAD_SHA:-unknown}"
 
     if [ -n "$firebase_json" ]; then
       python3 ../.github/scripts/ios_qa_slots.py render-comment \
         --status "$status" \
         --pr-number "$PR_NUMBER" \
-        --slot "$QA_SLOT" \
-        --sha "$PR_HEAD_SHA" \
+        --slot "$qa_slot" \
+        --sha "$pr_head_sha" \
         --codemagic-build-url "$codemagic_build_url" \
         --firebase-json "$firebase_json" \
         > ios-qa-comment.md
@@ -932,8 +1007,8 @@ Add a reusable script:
       python3 ../.github/scripts/ios_qa_slots.py render-comment \
         --status "$status" \
         --pr-number "$PR_NUMBER" \
-        --slot "$QA_SLOT" \
-        --sha "$PR_HEAD_SHA" \
+        --slot "$qa_slot" \
+        --sha "$pr_head_sha" \
         --codemagic-build-url "$codemagic_build_url" \
         > ios-qa-comment.md
     fi
@@ -996,6 +1071,7 @@ ios-qa-pr-build:
     - build/ios/archive/Runner.xcarchive/dSYMs/**
     - /tmp/xcodebuild_logs/*.log
     - firebase-distribution.json
+    - firebase-distribution-links.json
     - pr-current.json
     - ios-qa-comment.md
   publishing:
@@ -1228,8 +1304,29 @@ python3 -m unittest .github/scripts/tests/test_ios_qa_slots.py
 python3 -m unittest mobile/scripts/ci/tests/test_configure_ios_qa_slot.py
 ruby -e "require 'yaml'; YAML.load_file('codemagic.yaml')"
 ruby -e "require 'yaml'; YAML.load_file('.github/workflows/mobile_ios_qa_allocate.yml')"
+python3 mobile/scripts/ci/configure_ios_qa_slot.py \
+  --project-root mobile \
+  --bundle-id co.openvine.app.qa01 \
+  --extension-bundle-id co.openvine.app.qa01.NotificationServiceExtension \
+  --app-group group.co.openvine.app.qa01 \
+  --display-name "Divine QA 01" \
+  --firebase-ios-app-id 1:972941478875:ios:qa01placeholder \
+  --dry-run >/tmp/ios-qa-slot-dry-run.diff
+git diff --exit-code -- mobile/ios/Runner.xcodeproj/project.pbxproj \
+  mobile/ios/Runner/Runner.entitlements \
+  mobile/ios/NotificationServiceExtension/NotificationServiceExtension.entitlements \
+  mobile/ios/Runner/GoogleService-Info.plist \
+  mobile/ios/firebase_app_id_file.json
 cd mobile
 flutter test test/config/build_identity_test.dart
+flutter test test/config/build_identity_test.dart \
+  --dart-define=IOS_BUNDLE_ID=co.openvine.app.qa01 \
+  --dart-define=PUSH_APP_IDENTIFIER=co.openvine.app.qa01 \
+  --dart-define=FIREBASE_IOS_APP_ID=1:972941478875:ios:qa01placeholder \
+  --dart-define=EXPECTED_IOS_BUNDLE_ID=co.openvine.app.qa01 \
+  --dart-define=EXPECTED_PUSH_APP_IDENTIFIER=co.openvine.app.qa01 \
+  --dart-define=EXPECTED_FIREBASE_IOS_APP_ID=1:972941478875:ios:qa01placeholder
+cd ..
 ```
 
 - [ ] **Review diff**
