@@ -92,3 +92,25 @@ final class FullscreenFeedSkipAcknowledged extends FullscreenFeedEvent {
   @override
   List<Object?> get props => [];
 }
+
+/// Dispatched when a video must be removed from the feed immediately,
+/// without any availability check — user-initiated deletion (and, soon,
+/// block / mute) propagates through this event.
+///
+/// Shares the removal tail with [FullscreenFeedVideoUnavailable]: the
+/// id is added to [FullscreenFeedState.removedVideoIds], the video is
+/// dropped from [FullscreenFeedState.videos], and the current index is
+/// clamped. When the last video is removed the BLoC transitions to
+/// [FullscreenFeedStatus.emptyAfterRemoval] so the screen can pop.
+///
+/// Dedupe is owned by the BLoC — repeated dispatches for the same
+/// [videoId] are no-ops after the first removal.
+final class FullscreenFeedVideoRemoved extends FullscreenFeedEvent {
+  const FullscreenFeedVideoRemoved(this.videoId);
+
+  /// Event ID of the video to remove.
+  final String videoId;
+
+  @override
+  List<Object?> get props => [videoId];
+}
