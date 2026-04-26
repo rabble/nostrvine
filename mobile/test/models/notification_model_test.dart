@@ -71,7 +71,15 @@ void main() {
         expect(notification.navigationAction, equals('open_profile'));
       });
 
-      test('returns open_profile for mention', () {
+      test('returns open_video for mention with targetEventId', () {
+        final notification = createNotification(
+          type: NotificationType.mention,
+          eventId: targetEventId,
+        );
+        expect(notification.navigationAction, equals('open_video'));
+      });
+
+      test('returns open_profile for mention without targetEventId', () {
         final notification = createNotification(type: NotificationType.mention);
         expect(notification.navigationAction, equals('open_profile'));
       });
@@ -127,7 +135,15 @@ void main() {
         expect(notification.navigationTarget, equals(actorPubkey));
       });
 
-      test('returns actorPubkey for mention', () {
+      test('returns targetEventId for mention with targetEventId', () {
+        final notification = createNotification(
+          type: NotificationType.mention,
+          eventId: targetEventId,
+        );
+        expect(notification.navigationTarget, equals(targetEventId));
+      });
+
+      test('returns actorPubkey for mention without targetEventId', () {
         final notification = createNotification(type: NotificationType.mention);
         expect(notification.navigationTarget, equals(actorPubkey));
       });
