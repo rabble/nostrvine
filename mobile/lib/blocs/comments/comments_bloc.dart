@@ -297,8 +297,52 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       }
     }
 
-    emit(state.copyWith(isPosting: true));
+    // Snapshot input fields for rollback if the publish fails.
+    final previousMain = state.mainInputText;
+    final previousReply = state.replyInputText;
+    final previousMentions = state.activeMentions;
 
+    final myPubkey = _authService.currentPublicKeyHex;
+    if (myPubkey == null) {
+      emit(state.copyWith(error: CommentsError.notAuthenticated));
+      return;
+    }
+
+    // 1. Optimistic placeholder — comment lands in the list and the input
+    // clears before the network call. Mirrors the Follow pattern used for
+    // likes (see LikesRepository.likeEvent), at the BLoC layer because the
+    // comment id only exists after the relay returns. We reconcile the
+    // placeholder with the real id either via the success branch below or
+    // via _onNewCommentReceived if the relay echoes faster than postComment.
+    final placeholderId =
+        'pending_comment_${DateTime.now().microsecondsSinceEpoch}';
+    final placeholder = Comment(
+      id: placeholderId,
+      content: text,
+      authorPubkey: myPubkey,
+      createdAt: DateTime.now(),
+      rootEventId: state.rootEventId,
+      rootAuthorPubkey: state.rootAuthorPubkey,
+      replyToEventId: event.parentCommentId,
+      replyToAuthorPubkey: event.parentAuthorPubkey,
+    );
+    final withPlaceholder = {
+      ...state.commentsById,
+      placeholderId: placeholder,
+    };
+    if (isReply) {
+      emit(state.clearActiveReply(commentsById: withPlaceholder));
+    } else {
+      emit(
+        state.copyWith(
+          commentsById: withPlaceholder,
+          mainInputText: '',
+          activeMentions: const {},
+        ),
+      );
+    }
+
+    // 2. Publish in background; reconcile on success, rollback on failure.
     try {
       final postedComment = await _commentsRepository.postComment(
         content: text,
@@ -310,29 +354,32 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         replyToAuthorPubkey: event.parentAuthorPubkey,
       );
 
-      // Add new comment to the Map
-      final updatedCommentsById = {
-        ...state.commentsById,
-        postedComment.id: postedComment,
-      };
-
-      if (isReply) {
-        emit(
-          state.clearActiveReply(
-            commentsById: updatedCommentsById,
-            isPosting: false,
-          ),
-        );
-      } else {
-        emit(
-          state.copyWith(
-            commentsById: updatedCommentsById,
-            mainInputText: '',
-            isPosting: false,
-            activeMentions: const {},
-          ),
-        );
+      // If _onNewCommentReceived has already swapped the placeholder for the
+      // confirmed id (relay echo arrived before this await returned), only
+      // clean up any leftover placeholder.
+      if (state.commentsById.containsKey(postedComment.id)) {
+        if (state.commentsById.containsKey(placeholderId)) {
+          final cleaned = Map<String, Comment>.from(state.commentsById)
+            ..remove(placeholderId);
+          emit(
+            state.copyWith(
+              commentsById: cleaned,
+              replyCountsByCommentId: _computeReplyCounts(cleaned),
+            ),
+          );
+        }
+        return;
       }
+
+      final reconciled = Map<String, Comment>.from(state.commentsById)
+        ..remove(placeholderId)
+        ..[postedComment.id] = postedComment;
+      emit(
+        state.copyWith(
+          commentsById: reconciled,
+          replyCountsByCommentId: _computeReplyCounts(reconciled),
+        ),
+      );
     } catch (e) {
       Log.error(
         'Error posting comment: $e',
@@ -340,9 +387,14 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         category: LogCategory.ui,
       );
 
+      final rolled = Map<String, Comment>.from(state.commentsById)
+        ..remove(placeholderId);
       emit(
         state.copyWith(
-          isPosting: false,
+          commentsById: rolled,
+          mainInputText: isReply ? state.mainInputText : previousMain,
+          replyInputText: isReply ? previousReply : state.replyInputText,
+          activeMentions: previousMentions,
           error: isReply
               ? CommentsError.postReplyFailed
               : CommentsError.postCommentFailed,
@@ -672,8 +724,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     final originalComment = state.commentsById[originalCommentId];
     if (originalComment == null) return;
 
-    emit(state.copyWith(isPosting: true));
-
     try {
       // Step 1: Delete the original comment
       await _commentsRepository.deleteComment(
@@ -700,7 +750,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       emit(
         state.clearEditMode(
           commentsById: updatedCommentsById,
-          isPosting: false,
           replyCountsByCommentId: _computeReplyCounts(updatedCommentsById),
         ),
       );
@@ -711,12 +760,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         category: LogCategory.ui,
       );
 
-      emit(
-        state.copyWith(
-          isPosting: false,
-          error: CommentsError.postCommentFailed,
-        ),
-      );
+      emit(state.copyWith(error: CommentsError.postCommentFailed));
     }
   }
 
@@ -849,19 +893,40 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   ) {
     final comment = event.comment;
 
-    // Skip if already in the map (dedup with optimistic posts).
+    // Skip if already in the map by id (relay echo of a confirmed comment).
     // Blocked/muted authors are already filtered by the repository's
     // watchComments stream, so no additional check is needed here.
     if (state.commentsById.containsKey(comment.id)) return;
 
-    final updatedCommentsById = {...state.commentsById, comment.id: comment};
+    // Optimistic-post reconciliation: if a pending placeholder matches this
+    // relay echo by author + content, swap it for the canonical comment so
+    // the user sees their own post settle into its real id without a
+    // duplicate row. Counter does not bump because the placeholder was
+    // already on screen.
+    String? placeholderToReplace;
+    for (final entry in state.commentsById.entries) {
+      final existing = entry.value;
+      if (existing.id.startsWith('pending_comment_') &&
+          existing.authorPubkey == comment.authorPubkey &&
+          existing.content == comment.content) {
+        placeholderToReplace = entry.key;
+        break;
+      }
+    }
+
+    final updatedCommentsById = Map<String, Comment>.from(state.commentsById);
+    if (placeholderToReplace != null) {
+      updatedCommentsById.remove(placeholderToReplace);
+    }
+    updatedCommentsById[comment.id] = comment;
+    final isReplacingPlaceholder = placeholderToReplace != null;
 
     emit(
       state.copyWith(
         status: CommentsStatus.success,
         commentsById: updatedCommentsById,
         replyCountsByCommentId: _computeReplyCounts(updatedCommentsById),
-        newCommentCount: _isInitialBackfillComplete
+        newCommentCount: _isInitialBackfillComplete && !isReplacingPlaceholder
             ? state.newCommentCount + 1
             : state.newCommentCount,
       ),

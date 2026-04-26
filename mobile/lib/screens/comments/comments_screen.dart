@@ -264,7 +264,6 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
           prev.activeReplyCommentId != next.activeReplyCommentId ||
           prev.activeEditCommentId != next.activeEditCommentId ||
           prev.editInputText != next.editInputText ||
-          prev.isPosting != next.isPosting ||
           prev.mentionSuggestions != next.mentionSuggestions,
       builder: (context, state) {
         final isReplyMode = state.activeReplyCommentId != null;
@@ -309,7 +308,6 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
         return CommentInput(
           controller: _controller,
           focusNode: _focusNode,
-          isPosting: state.isPosting,
           replyToDisplayName: replyToDisplayName,
           isEditing: isEditMode,
           mentionSuggestions: state.mentionSuggestions,

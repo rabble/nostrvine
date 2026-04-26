@@ -116,7 +116,6 @@ final class CommentsState extends Equatable {
     this.mainInputText = '',
     this.replyInputText = '',
     this.activeReplyCommentId,
-    this.isPosting = false,
     this.isLoadingMore = false,
     this.hasMoreContent = true,
     this.commentUpvoteCounts = const {},
@@ -290,18 +289,11 @@ final class CommentsState extends Equatable {
   /// ID of the comment currently being replied to (shows reply input)
   final String? activeReplyCommentId;
 
-  /// Whether a comment is currently being posted (main or reply)
-  final bool isPosting;
-
   /// Whether more comments are being loaded (pagination)
   final bool isLoadingMore;
 
   /// Whether there are more comments to load
   final bool hasMoreContent;
-
-  /// Check if we're posting a reply to a specific comment
-  bool isReplyPosting(String commentId) =>
-      isPosting && activeReplyCommentId == commentId;
 
   /// Create a copy with updated values.
   CommentsState copyWith({
@@ -315,7 +307,6 @@ final class CommentsState extends Equatable {
     String? mainInputText,
     String? replyInputText,
     String? activeReplyCommentId,
-    bool? isPosting,
     bool? isLoadingMore,
     bool? hasMoreContent,
     Map<String, int>? commentUpvoteCounts,
@@ -343,7 +334,6 @@ final class CommentsState extends Equatable {
       mainInputText: mainInputText ?? this.mainInputText,
       replyInputText: replyInputText ?? this.replyInputText,
       activeReplyCommentId: activeReplyCommentId ?? this.activeReplyCommentId,
-      isPosting: isPosting ?? this.isPosting,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
       commentUpvoteCounts: commentUpvoteCounts ?? this.commentUpvoteCounts,
@@ -369,7 +359,6 @@ final class CommentsState extends Equatable {
   CommentsState clearActiveReply({
     CommentsStatus? status,
     Map<String, Comment>? commentsById,
-    bool? isPosting,
   }) {
     return CommentsState(
       status: status ?? this.status,
@@ -379,7 +368,6 @@ final class CommentsState extends Equatable {
       rootAddressableId: rootAddressableId,
       commentsById: commentsById ?? this.commentsById,
       mainInputText: mainInputText,
-      isPosting: isPosting ?? this.isPosting,
       isLoadingMore: isLoadingMore,
       hasMoreContent: hasMoreContent,
       commentUpvoteCounts: commentUpvoteCounts,
@@ -399,7 +387,6 @@ final class CommentsState extends Equatable {
   CommentsState clearEditMode({
     CommentsStatus? status,
     Map<String, Comment>? commentsById,
-    bool? isPosting,
     Map<String, int>? replyCountsByCommentId,
   }) {
     return CommentsState(
@@ -412,7 +399,6 @@ final class CommentsState extends Equatable {
       mainInputText: mainInputText,
       replyInputText: replyInputText,
       activeReplyCommentId: activeReplyCommentId,
-      isPosting: isPosting ?? this.isPosting,
       isLoadingMore: isLoadingMore,
       hasMoreContent: hasMoreContent,
       commentUpvoteCounts: commentUpvoteCounts,
@@ -441,7 +427,6 @@ final class CommentsState extends Equatable {
     mainInputText,
     replyInputText,
     activeReplyCommentId,
-    isPosting,
     isLoadingMore,
     hasMoreContent,
     commentUpvoteCounts,

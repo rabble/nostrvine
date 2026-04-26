@@ -878,12 +878,14 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
         expect: () => [
-          // First: isPosting = true
-          isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
-          // Second: error emitted, no comments added
+          // First: optimistic placeholder inserted, input cleared.
           isA<CommentsState>()
-              .having((s) => s.comments.length, 'comments', 0)
-              .having((s) => s.isPosting, 'isPosting', false)
+              .having((s) => s.commentsById.length, 'commentsById', 1)
+              .having((s) => s.mainInputText, 'mainInputText', ''),
+          // Second: rollback — placeholder removed, input restored, error set.
+          isA<CommentsState>()
+              .having((s) => s.commentsById.length, 'commentsById', 0)
+              .having((s) => s.mainInputText, 'mainInputText', 'Test comment')
               .having((s) => s.error, 'error', CommentsError.postCommentFailed),
         ],
       );
@@ -930,16 +932,19 @@ void main() {
           ),
         ),
         expect: () => [
-          // First: isPosting = true
-          isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
-          // Second: error emitted, no reply added
+          // First: optimistic placeholder reply inserted; reply input cleared.
+          isA<CommentsState>().having(
+            (s) => s.comments.where((c) => c.replyToEventId != null).length,
+            'optimistic reply',
+            1,
+          ),
+          // Second: rollback — placeholder removed, error set.
           isA<CommentsState>()
               .having(
                 (s) => s.comments.where((c) => c.replyToEventId != null).length,
-                'replies',
+                'replies after rollback',
                 0,
               )
-              .having((s) => s.isPosting, 'isPosting', false)
               .having((s) => s.error, 'error', CommentsError.postReplyFailed),
         ],
       );
@@ -1095,11 +1100,9 @@ void main() {
         },
         act: (bloc) => bloc.add(const CommentEditSubmitted()),
         expect: () => [
-          // First emit: isPosting = true
-          isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
-          // Second emit: old comment removed, new comment added, edit mode cleared
+          // Single emit after edit succeeds: old removed, new added,
+          // edit mode cleared. No isPosting transition.
           isA<CommentsState>()
-              .having((s) => s.isPosting, 'isPosting', false)
               .having(
                 (s) => s.commentsById.containsKey(validId('editcomment')),
                 'old comment removed',
@@ -1233,12 +1236,12 @@ void main() {
         },
         act: (bloc) => bloc.add(const CommentEditSubmitted()),
         expect: () => [
-          // First emit: isPosting = true
-          isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
-          // Second emit: error
-          isA<CommentsState>()
-              .having((s) => s.isPosting, 'isPosting', false)
-              .having((s) => s.error, 'error', CommentsError.postCommentFailed),
+          // Single emit on edit failure: error surfaced.
+          isA<CommentsState>().having(
+            (s) => s.error,
+            'error',
+            CommentsError.postCommentFailed,
+          ),
         ],
       );
     });
@@ -2596,13 +2599,19 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
         expect: () => [
-          // isPosting = true
-          isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
-          // Success: mentions cleared, text cleared
+          // First: optimistic insert clears mentions + text immediately.
           isA<CommentsState>()
-              .having((s) => s.isPosting, 'isPosting', false)
+              .having((s) => s.commentsById.length, 'commentsById', 1)
               .having((s) => s.mainInputText, 'mainInputText', '')
               .having((s) => s.activeMentions, 'activeMentions', isEmpty),
+          // Second: reconciliation — placeholder swapped for confirmed id.
+          isA<CommentsState>()
+              .having((s) => s.commentsById.length, 'commentsById', 1)
+              .having(
+                (s) => s.commentsById.containsKey(validId('posted')),
+                'has posted comment',
+                true,
+              ),
         ],
       );
 
@@ -3208,22 +3217,6 @@ void main() {
       final updated = state.copyWith(mainInputText: 'test');
 
       expect(updated.activeReplyCommentId, 'comment1');
-    });
-
-    test('isReplyPosting returns true when posting reply to that comment', () {
-      const state = CommentsState(
-        isPosting: true,
-        activeReplyCommentId: 'comment1',
-      );
-
-      expect(state.isReplyPosting('comment1'), true);
-      expect(state.isReplyPosting('comment2'), false);
-    });
-
-    test('isReplyPosting returns false when not posting', () {
-      const state = CommentsState(activeReplyCommentId: 'comment1');
-
-      expect(state.isReplyPosting('comment1'), false);
     });
 
     test('comments sorts by engagement score correctly', () {

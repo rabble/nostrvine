@@ -17,7 +17,6 @@ import 'package:openvine/screens/comments/widgets/mention_overlay.dart';
 class CommentInput extends StatefulWidget {
   const CommentInput({
     required this.controller,
-    required this.isPosting,
     required this.onSubmit,
     this.onChanged,
     this.replyToDisplayName,
@@ -33,9 +32,6 @@ class CommentInput extends StatefulWidget {
 
   /// Text editing controller for the input field.
   final TextEditingController controller;
-
-  /// Whether a comment is currently being posted.
-  final bool isPosting;
 
   /// Callback when the send button is pressed.
   final VoidCallback onSubmit;
@@ -199,10 +195,7 @@ class _CommentInputState extends State<CommentInput> {
                 ),
                 if (_hasText) ...[
                   const SizedBox(width: 8),
-                  _SendButton(
-                    isPosting: widget.isPosting,
-                    onSubmit: widget.onSubmit,
-                  ),
+                  _SendButton(onSubmit: widget.onSubmit),
                 ],
               ],
             ),
@@ -278,10 +271,15 @@ class _CommentTextField extends StatelessWidget {
 }
 
 /// Send button that appears when text is entered.
+///
+/// Stays visually as a sendable up-arrow at all times. Comment posting is
+/// optimistic at the BLoC layer (see CommentsBloc._onSubmitted): the
+/// comment lands in the list before the network call, so this button has
+/// no in-flight state to surface — matching WhatsApp/Telegram-style
+/// instant-send affordance.
 class _SendButton extends StatelessWidget {
-  const _SendButton({required this.isPosting, required this.onSubmit});
+  const _SendButton({required this.onSubmit});
 
-  final bool isPosting;
   final VoidCallback onSubmit;
 
   @override
@@ -289,8 +287,7 @@ class _SendButton extends StatelessWidget {
     return Semantics(
       identifier: 'send_comment_button',
       button: true,
-      enabled: !isPosting,
-      label: isPosting ? 'Posting comment' : 'Send comment',
+      label: 'Send comment',
       child: Container(
         width: 40,
         height: 40,
@@ -307,22 +304,13 @@ class _SendButton extends StatelessWidget {
           ],
         ),
         child: IconButton(
-          onPressed: isPosting ? null : onSubmit,
+          onPressed: onSubmit,
           padding: EdgeInsets.zero,
-          icon: isPosting
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: VineTheme.whiteText,
-                  ),
-                )
-              : const Icon(
-                  Icons.arrow_upward,
-                  color: VineTheme.whiteText,
-                  size: 20,
-                ),
+          icon: const Icon(
+            Icons.arrow_upward,
+            color: VineTheme.whiteText,
+            size: 20,
+          ),
         ),
       ),
     );

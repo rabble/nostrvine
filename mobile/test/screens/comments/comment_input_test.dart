@@ -28,7 +28,6 @@ void main() {
           home: Scaffold(
             body: CommentInput(
               controller: controller,
-              isPosting: false,
               onSubmit: () {},
             ),
           ),
@@ -47,7 +46,6 @@ void main() {
           home: Scaffold(
             body: CommentInput(
               controller: controller,
-              isPosting: false,
               onSubmit: () {},
             ),
           ),
@@ -60,26 +58,30 @@ void main() {
       expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
     });
 
-    testWidgets('shows loading spinner when isPosting', (tester) async {
-      controller.text = 'Test comment';
+    testWidgets(
+      'never shows a CircularProgressIndicator on the send button',
+      (tester) async {
+        // Per Alex's WhatsApp/Telegram-style ask, posting is optimistic at
+        // the BLoC layer and the send button has no in-flight state.
+        controller.text = 'Test comment';
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: CommentInput(
-              controller: controller,
-              isPosting: true,
-              onSubmit: () {},
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: CommentInput(
+                controller: controller,
+                onSubmit: () {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_upward), findsNothing);
-    });
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+      },
+    );
 
     testWidgets('calls onSubmit when send tapped', (tester) async {
       var submitted = false;
@@ -91,7 +93,6 @@ void main() {
           home: Scaffold(
             body: CommentInput(
               controller: controller,
-              isPosting: false,
               onSubmit: () => submitted = true,
             ),
           ),
@@ -107,30 +108,6 @@ void main() {
       expect(submitted, isTrue);
     });
 
-    testWidgets('does not submit when isPosting', (tester) async {
-      var submitted = false;
-      controller.text = 'Test comment';
-
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: CommentInput(
-              controller: controller,
-              isPosting: true,
-              onSubmit: () => submitted = true,
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.byType(IconButton));
-      await tester.pump();
-
-      expect(submitted, isFalse);
-    });
-
     testWidgets('allows text input', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -139,7 +116,6 @@ void main() {
           home: Scaffold(
             body: CommentInput(
               controller: controller,
-              isPosting: false,
               onSubmit: () {},
             ),
           ),

@@ -518,8 +518,7 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
       buildWhen: (prev, next) =>
           prev.mainInputText != next.mainInputText ||
           prev.replyInputText != next.replyInputText ||
-          prev.activeReplyCommentId != next.activeReplyCommentId ||
-          prev.isPosting != next.isPosting,
+          prev.activeReplyCommentId != next.activeReplyCommentId,
       builder: (context, state) {
         final isReplyMode = state.activeReplyCommentId != null;
         final inputText = isReplyMode
@@ -550,7 +549,6 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
         return CommentInput(
           controller: _controller,
           focusNode: _focusNode,
-          isPosting: state.isPosting,
           replyToDisplayName: replyToDisplayName,
           onChanged: (text) {
             context.read<CommentsBloc>().add(
