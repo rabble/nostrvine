@@ -817,10 +817,14 @@ void main() {
         AudioEvent? pushedExtra;
         final mockGoRouter = MockGoRouter();
         when(
-          () => mockGoRouter.push(captureAny(), extra: captureAny(named: 'extra')),
+          () => mockGoRouter.push(
+            captureAny(),
+            extra: captureAny(named: 'extra'),
+          ),
         ).thenAnswer((invocation) async {
           pushedPath = invocation.positionalArguments.first as String;
           pushedExtra = invocation.namedArguments[#extra] as AudioEvent?;
+          return null;
         });
 
         await tester.pumpWidget(
@@ -851,7 +855,9 @@ void main() {
         await tester.enterText(find.byType(TextField), 'Cool Beat');
         await tester.pumpAndSettle();
 
-        final detailButtons = find.bySemanticsLabel('View details for Cool Beat');
+        final detailButtons = find.bySemanticsLabel(
+          'View details for Cool Beat',
+        );
         expect(detailButtons, findsOneWidget);
 
         await tester.tap(detailButtons);

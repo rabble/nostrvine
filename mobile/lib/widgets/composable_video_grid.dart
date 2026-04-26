@@ -117,10 +117,6 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
             .where((video) => !tracker.isVideoBroken(video.id))
             .toList();
 
-        if (filteredVideos.isEmpty && widget.emptyBuilder != null) {
-          return widget.emptyBuilder!();
-        }
-
         return _buildGrid(context, filteredVideos);
       },
     );
@@ -128,7 +124,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
 
   Widget _buildGrid(BuildContext context, List<VideoEvent> videosToShow) {
     if (videosToShow.isEmpty && widget.emptyBuilder != null) {
-      return widget.emptyBuilder!();
+      return _buildEmptyState(context);
     }
 
     // Get subscribed list cache to check if videos are in lists
@@ -191,19 +187,40 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
             itemBuilder: buildItem,
           );
 
-    // Wrap with RefreshIndicator if onRefresh is provided
-    if (widget.onRefresh != null) {
-      return RefreshIndicator(
-        semanticsLabel: context.l10n.videoGridRefreshLabel,
-        onRefresh: widget.onRefresh!,
-        displacement: 70,
-        color: VineTheme.onPrimary,
-        backgroundColor: VineTheme.vineGreen,
-        child: gridView,
-      );
+    return _wrapWithRefreshIndicator(context, gridView);
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final emptyState = widget.emptyBuilder!();
+
+    if (widget.onRefresh == null) {
+      return emptyState;
     }
 
-    return gridView;
+    return _wrapWithRefreshIndicator(
+      context,
+      CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverFillRemaining(hasScrollBody: false, child: emptyState),
+        ],
+      ),
+    );
+  }
+
+  Widget _wrapWithRefreshIndicator(BuildContext context, Widget child) {
+    if (widget.onRefresh == null) {
+      return child;
+    }
+
+    return RefreshIndicator(
+      semanticsLabel: context.l10n.videoGridRefreshLabel,
+      onRefresh: widget.onRefresh!,
+      displacement: 70,
+      color: VineTheme.onPrimary,
+      backgroundColor: VineTheme.vineGreen,
+      child: child,
+    );
   }
 
   /// Show context menu for long press on video tiles
