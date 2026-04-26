@@ -1,0 +1,208 @@
+# iOS QA PR Builds Design
+
+## Goal
+
+Give QA installable iOS builds for active mobile PRs without using TestFlight as the bottleneck. QA should be able to open a PR or a directory, see which build belongs to that PR, and install it on registered iOS devices.
+
+## Decision
+
+Use 15 reusable iOS QA slots. Each slot is a fixed Apple/Firebase app identity that can be installed side by side with the production app and with the other QA slots.
+
+Slots:
+
+- `qa01` through `qa15`
+- Main bundle IDs: `co.openvine.app.qa01` through `co.openvine.app.qa15`
+- Extension bundle IDs: `co.openvine.app.qa01.NotificationServiceExtension` through `co.openvine.app.qa15.NotificationServiceExtension`
+- Display names: `Divine QA 01` through `Divine QA 15`
+- App groups: `group.co.openvine.app.qa01` through `group.co.openvine.app.qa15`
+
+Avoid dynamic per-PR bundle IDs. The one-time setup for 15 identities is manageable; unbounded per-PR identities would create ongoing Apple, Firebase, provisioning, entitlement, and cleanup work.
+
+## Trust Model
+
+Native iOS PR builds require signing and Firebase distribution credentials, so they cannot follow the exact web-preview security model.
+
+Autobuild only when the PR is trusted:
+
+1. The PR head repository owner is `divinevideo`; or
+2. The PR author is an active member or owner of the `divinevideo` GitHub organization.
+
+For PRs outside that trust model:
+
+- Do not trigger Codemagic.
+- Do not expose signing, App Store Connect, or Firebase credentials.
+- Add or update a PR comment explaining that iOS QA build was skipped because the PR is outside the trusted build policy.
+- A maintainer can make the PR buildable by moving/mirroring the branch under `divinevideo`, or by using a future explicit trusted override if we choose to add one.
+
+Private org membership may not be visible to the default `GITHUB_TOKEN`, so the membership check needs a GitHub token with enough permission to read org membership.
+
+## Slot Lifecycle
+
+GitHub labels are the source of truth:
+
+- `ios-qa-slot-01` through `ios-qa-slot-15`
+- `ios-qa:building`
+- `ios-qa:ready`
+- `ios-qa:queued`
+- `ios-qa:failed`
+- `needs-ios-qa`
+
+Slot assignment:
+
+1. A ready-for-review PR becomes eligible automatically.
+2. A draft PR becomes eligible only when labeled `needs-ios-qa`.
+3. If the PR already has a slot label, keep that slot and rebuild it on new commits.
+4. If it has no slot label, find the first slot not currently used by an open PR.
+5. If a slot is available, add `ios-qa-slot-NN` and `ios-qa:building`.
+6. If no slot is available, add `ios-qa:queued` and comment with the active build directory.
+
+Cleanup:
+
+- On PR close, remove `ios-qa-slot-NN`, `ios-qa:building`, `ios-qa:ready`, `ios-qa:queued`, and `ios-qa:failed`.
+- Update the active build directory.
+- The installed app can remain on QA devices until that slot is reused.
+- A scheduled reconciliation workflow should run daily to repair missed label/comment/directory updates.
+
+## Concurrency
+
+The allocator workflow must use one global concurrency group, for example:
+
+```yaml
+concurrency:
+  group: ios-qa-slot-allocator
+  cancel-in-progress: false
+```
+
+This prevents two PR workflows from seeing the same free slot and assigning it twice.
+
+Codemagic builds should still be per-PR cancellable or replaceable. A newer commit for the same PR should supersede the older build before distribution.
+
+## Build Flow
+
+1. GitHub Actions receives a `pull_request` event, `workflow_dispatch`, or label event.
+2. The allocator checks trust, PR state, draft state, file relevance, and current labels.
+3. The allocator assigns or reuses a slot.
+4. The allocator triggers Codemagic through the Codemagic Builds API with explicit metadata:
+   - `PR_NUMBER`
+   - `PR_HEAD_SHA`
+   - `QA_SLOT`
+   - `QA_BUNDLE_ID`
+   - `QA_EXTENSION_BUNDLE_ID`
+   - `QA_APP_GROUP`
+   - `QA_DISPLAY_NAME`
+   - `QA_FIREBASE_APP_ID`
+   - `DEFAULT_ENV`
+5. Codemagic checks out the exact PR SHA, patches build settings for the slot, builds an Ad Hoc IPA, and runs a stale-SHA check before distribution.
+6. If the PR head SHA still matches `PR_HEAD_SHA`, Codemagic uploads the IPA to Firebase App Distribution.
+7. If the PR has moved on or closed, Codemagic skips Firebase distribution and reports a stale build.
+8. GitHub updates the sticky PR comment and the active QA directory.
+
+## iOS Identity Requirements
+
+Each slot needs Apple Developer setup:
+
+- App ID for the main app bundle ID.
+- App ID for the notification service extension bundle ID.
+- Ad Hoc provisioning profile for the main app.
+- Ad Hoc provisioning profile for the notification service extension.
+- App group matching the slot.
+- Push notification capability if QA builds need push behavior.
+- Associated domains if QA builds need universal links or password-manager flows.
+
+The current app has production identifiers hard-coded in places that must become slot-configurable:
+
+- Xcode main bundle ID.
+- Xcode notification extension bundle ID.
+- Main app entitlements.
+- Notification extension entitlements.
+- Firebase iOS app ID and bundle ID.
+- Push registration app identifier.
+
+## Firebase Requirements
+
+Each slot should have a Firebase iOS app record so Firebase App Distribution, Crashlytics, and app metadata line up with the slot bundle ID.
+
+Distribution should publish to a stable QA tester group, for example `ios-qa`.
+
+The PR comment should link to Firebase's tester install URI rather than a short-lived raw binary URL.
+
+If a QA device is not in the Ad Hoc provisioning profile, Firebase can help collect UDIDs, but the Apple profile still must be regenerated with that device before the build can install.
+
+## QA Directory
+
+Generate a single active-build directory from GitHub state. This can be a sticky GitHub issue, a markdown artifact committed only if needed, or a PR comment on an always-open tracking issue.
+
+Directory fields:
+
+- Slot
+- PR number and title
+- PR author
+- Draft/ready state
+- Latest built commit SHA
+- Build status
+- Firebase install link
+- Last updated time
+- Codemagic build URL
+- Notes for skipped, queued, stale, or failed builds
+
+The directory should be generated from labels and PR metadata, not manually edited.
+
+## Error Handling
+
+All slots full:
+
+- Label the PR `ios-qa:queued`.
+- Comment with the active directory and current slot occupants.
+- The daily reconciliation or close-event cleanup should assign queued PRs when slots free up.
+
+Codemagic build fails:
+
+- Replace `ios-qa:building` with `ios-qa:failed`.
+- Keep the slot assigned to the PR.
+- Update the PR comment with the Codemagic build URL and failure status.
+
+PR updates while build is running:
+
+- Keep the same slot.
+- Mark the old build stale.
+- Trigger a replacement build for the new head SHA.
+- Do not distribute the stale IPA.
+
+PR closes during build:
+
+- Release the slot labels.
+- Skip distribution if Codemagic reaches the stale/closed check.
+
+Device cannot install:
+
+- Comment should point QA to the Firebase device registration flow.
+- After UDIDs are added in Apple Developer, profiles must be regenerated and Codemagic signing assets refreshed.
+
+Trust check fails:
+
+- Do not trigger a signed build.
+- Comment with the trusted-build policy.
+
+## Rollout Plan
+
+Stage 1 proves one slot end to end:
+
+- Configure `qa01` Apple/Firebase identity.
+- Add the build-time configuration path.
+- Add the allocator in dry-run or one-slot mode.
+- Build and distribute one trusted PR through Firebase.
+
+Stage 2 expands to 15 slots:
+
+- Add the remaining 14 Apple/Firebase identities.
+- Add the full slot map.
+- Enable automatic assignment for ready PRs and `needs-ios-qa` draft PRs.
+- Add queued-state handling and daily reconciliation.
+
+## Open Decisions
+
+- Whether QA builds should use production, staging, or a selectable `DEFAULT_ENV` by default.
+- Whether universal links and web credentials should be enabled for QA slot app IDs.
+- Whether push notifications must work in QA builds from day one.
+- Whether to add a maintainer-only override for trusted builds from non-org forks.
+
