@@ -36,6 +36,8 @@ For PRs outside that trust model:
 
 Private org membership may not be visible to the default `GITHUB_TOKEN`, so the membership check needs a GitHub token with enough permission to read org membership.
 
+Codemagic API builds are started by branch or tag. To support trusted member PRs from personal forks, GitHub Actions should mirror every trusted PR head SHA to a temporary branch in `divinevideo/divine-mobile`, for example `ios-qa/pr-3407`, then ask Codemagic to build that mirror branch. This gives Codemagic a branch it can fetch from the configured repository while preserving the exact PR SHA in build metadata.
+
 ## Slot Lifecycle
 
 GitHub labels are the source of truth:
@@ -59,6 +61,7 @@ Slot assignment:
 Cleanup:
 
 - On PR close, remove `ios-qa-slot-NN`, `ios-qa:building`, `ios-qa:ready`, `ios-qa:queued`, and `ios-qa:failed`.
+- Delete the temporary mirror branch `ios-qa/pr-<number>`.
 - Update the active build directory.
 - The installed app can remain on QA devices until that slot is reused.
 - A scheduled reconciliation workflow should run daily to repair missed label/comment/directory updates.
@@ -82,9 +85,12 @@ Codemagic builds should still be per-PR cancellable or replaceable. A newer comm
 1. GitHub Actions receives a `pull_request` event, `workflow_dispatch`, or label event.
 2. The allocator checks trust, PR state, draft state, file relevance, and current labels.
 3. The allocator assigns or reuses a slot.
-4. The allocator triggers Codemagic through the Codemagic Builds API with explicit metadata:
+4. The allocator mirrors the trusted PR head SHA to `ios-qa/pr-<number>` in the base repository.
+5. The allocator triggers Codemagic through the Codemagic Builds API with branch `ios-qa/pr-<number>` and explicit metadata:
    - `PR_NUMBER`
    - `PR_HEAD_SHA`
+   - `PR_HEAD_REPO`
+   - `PR_HEAD_REF`
    - `QA_SLOT`
    - `QA_BUNDLE_ID`
    - `QA_EXTENSION_BUNDLE_ID`
@@ -92,10 +98,10 @@ Codemagic builds should still be per-PR cancellable or replaceable. A newer comm
    - `QA_DISPLAY_NAME`
    - `QA_FIREBASE_APP_ID`
    - `DEFAULT_ENV`
-5. Codemagic checks out the exact PR SHA, patches build settings for the slot, builds an Ad Hoc IPA, and runs a stale-SHA check before distribution.
-6. If the PR head SHA still matches `PR_HEAD_SHA`, Codemagic uploads the IPA to Firebase App Distribution.
-7. If the PR has moved on or closed, Codemagic skips Firebase distribution and reports a stale build.
-8. GitHub updates the sticky PR comment and the active QA directory.
+6. Codemagic checks out the mirror branch, verifies `git rev-parse HEAD` equals `PR_HEAD_SHA`, patches build settings for the slot, builds an Ad Hoc IPA, and runs another stale-SHA check before distribution.
+7. If the PR head SHA still matches `PR_HEAD_SHA`, Codemagic uploads the IPA to Firebase App Distribution.
+8. If the PR has moved on or closed, Codemagic skips Firebase distribution and reports a stale build.
+9. GitHub updates the sticky PR comment and the active QA directory.
 
 ## iOS Identity Requirements
 
@@ -205,4 +211,3 @@ Stage 2 expands to 15 slots:
 - Whether universal links and web credentials should be enabled for QA slot app IDs.
 - Whether push notifications must work in QA builds from day one.
 - Whether to add a maintainer-only override for trusted builds from non-org forks.
-
