@@ -14,65 +14,49 @@ void main() {
       mockService = _MockDirectoryService();
     });
 
-    test(
-      'initial state is loaded when initialEntry is '
-      'provided',
-      () {
-        final cubit = AppDetailCubit(
-          slug: 'primal',
-          directoryService: mockService,
-          initialEntry: _fixture(),
-        );
-        expect(cubit.state, isA<AppDetailLoaded>());
-        final loaded = cubit.state as AppDetailLoaded;
-        expect(loaded.app.slug, 'primal');
-      },
-    );
+    test('initial state is loaded when initialEntry is '
+        'provided', () {
+      final cubit = AppDetailCubit(
+        slug: 'primal',
+        directoryService: mockService,
+        initialEntry: _fixture(),
+      );
+      expect(cubit.state, isA<AppDetailLoaded>());
+      final loaded = cubit.state as AppDetailLoaded;
+      expect(loaded.app.slug, 'primal');
+    });
 
-    test(
-      'initial state is loading when initialEntry is '
-      'null',
-      () {
-        final cubit = AppDetailCubit(
-          slug: 'primal',
-          directoryService: mockService,
-        );
-        expect(cubit.state, isA<AppDetailLoading>());
-      },
-    );
+    test('initial state is loading when initialEntry is '
+        'null', () {
+      final cubit = AppDetailCubit(
+        slug: 'primal',
+        directoryService: mockService,
+      );
+      expect(cubit.state, isA<AppDetailLoading>());
+    });
 
     blocTest<AppDetailCubit, AppDetailState>(
       'emits [loaded] when load finds the app',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenAnswer(
-          (_) async => [_fixture()],
-        );
+        when(
+          mockService.fetchApprovedApps,
+        ).thenAnswer((_) async => [_fixture()]);
       },
-      build: () => AppDetailCubit(
-        slug: 'primal',
-        directoryService: mockService,
-      ),
+      build: () =>
+          AppDetailCubit(slug: 'primal', directoryService: mockService),
       act: (cubit) => cubit.load(),
       expect: () => [
-        isA<AppDetailLoaded>().having(
-          (s) => s.app.slug,
-          'slug',
-          'primal',
-        ),
+        isA<AppDetailLoaded>().having((s) => s.app.slug, 'slug', 'primal'),
       ],
     );
 
     blocTest<AppDetailCubit, AppDetailState>(
       'emits [notFound] when load does not find the app',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenAnswer(
-          (_) async => const [],
-        );
+        when(mockService.fetchApprovedApps).thenAnswer((_) async => const []);
       },
-      build: () => AppDetailCubit(
-        slug: 'missing',
-        directoryService: mockService,
-      ),
+      build: () =>
+          AppDetailCubit(slug: 'missing', directoryService: mockService),
       act: (cubit) => cubit.load(),
       expect: () => [isA<AppDetailNotFound>()],
     );
@@ -80,14 +64,12 @@ void main() {
     blocTest<AppDetailCubit, AppDetailState>(
       'emits [notFound] when load throws',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenThrow(
-          Exception('network error'),
-        );
+        when(
+          mockService.fetchApprovedApps,
+        ).thenThrow(Exception('network error'));
       },
-      build: () => AppDetailCubit(
-        slug: 'primal',
-        directoryService: mockService,
-      ),
+      build: () =>
+          AppDetailCubit(slug: 'primal', directoryService: mockService),
       act: (cubit) => cubit.load(),
       expect: () => [isA<AppDetailNotFound>()],
       errors: () => [isA<Exception>()],
@@ -96,9 +78,9 @@ void main() {
     blocTest<AppDetailCubit, AppDetailState>(
       'does not re-fetch when already loaded',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenAnswer(
-          (_) async => [_fixture()],
-        );
+        when(
+          mockService.fetchApprovedApps,
+        ).thenAnswer((_) async => [_fixture()]);
       },
       build: () => AppDetailCubit(
         slug: 'primal',

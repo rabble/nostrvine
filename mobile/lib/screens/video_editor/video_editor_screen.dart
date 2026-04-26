@@ -24,6 +24,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -39,11 +40,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// Manages the [VideoEditorMainBloc] and [VideoEditorStickerBloc] lifecycle,
 /// precaches sticker images, and coordinates the editor canvas with toolbars.
 class VideoEditorScreen extends ConsumerStatefulWidget {
-  const VideoEditorScreen({
-    super.key,
-    this.draftId,
-    this.fromLibrary = false,
-  });
+  const VideoEditorScreen({super.key, this.draftId, this.fromLibrary = false});
 
   /// Optional draft ID to load an existing draft.
   final String? draftId;
@@ -141,7 +138,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
       Log.debug(
         '🎬 Initializing video editor provider',
-        name: 'VideoClipEditorScreen',
+        name: 'VideoEditorScreen',
         category: LogCategory.video,
       );
 
@@ -151,7 +148,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
       Log.info(
         '🎬 Video editor initialized successfully',
-        name: 'VideoClipEditorScreen',
+        name: 'VideoEditorScreen',
         category: LogCategory.video,
       );
 
@@ -206,6 +203,47 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     }
   }
 
+  /// Opens the camera recorder as a modal overlay over the editor.
+  ///
+  /// Snapshots the current clip IDs before opening so that any newly recorded
+  /// clips can be rolled back if the user cancels (`result != true`).
+  /// On success or cancel, calls [_syncClipsToEditor] to keep the
+  /// [ClipEditorBloc] in sync.
+  Future<void> _openCamera({required ClipEditorBloc clipEditorBloc}) async {
+    final initialIds = ref
+        .read(clipManagerProvider)
+        .clips
+        .map((c) => c.id)
+        .toSet();
+
+    final result = await Navigator.push<bool>(
+      context,
+      PageRouteBuilder<bool>(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: VineTheme.transparent,
+        pageBuilder: (_, _, _) => const VideoRecorderScreen(fromEditor: true),
+        transitionsBuilder: (_, animation, _, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+
+    if (result != true) {
+      final notifier = ref.read(clipManagerProvider.notifier);
+      final newClips = ref
+          .read(clipManagerProvider)
+          .clips
+          .where((c) => !initialIds.contains(c.id))
+          .toList();
+      for (final clip in newClips) {
+        await notifier.removeClipById(clip.id);
+      }
+    }
+
+    _syncClipsToEditor(clipEditorBloc: clipEditorBloc);
+  }
+
   Future<void> _openClipsEditor({
     required VideoEditorMainBloc mainBloc,
     required ClipEditorBloc clipEditorBloc,
@@ -241,20 +279,26 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       final clipManager = ref.read(clipManagerProvider.notifier);
       clipManager.addMultipleClips(newClips);
 
-      // Sync the updated clip list into the editor BLoC.
-      final updatedClips = ref.read(clipManagerProvider).clips;
-      clipEditorBloc.add(ClipEditorInitialized(updatedClips));
+      _syncClipsToEditor(clipEditorBloc: clipEditorBloc);
+    }
+  }
 
-      if (_editor != null) {
-        _editor!.addHistory(
-          meta: {
-            ..._editor!.stateManager.activeMeta,
-            VideoEditorConstants.clipsStateHistoryKey: updatedClips
-                .map((e) => e.toJson())
-                .toList(),
-          },
-        );
-      }
+  /// Syncs the current clip list from [clipManagerProvider] into the
+  /// [ClipEditorBloc] and appends a history entry to the pro_image_editor.
+  void _syncClipsToEditor({required ClipEditorBloc clipEditorBloc}) {
+    // Sync the updated clip list into the editor BLoC.
+    final updatedClips = ref.read(clipManagerProvider).clips;
+    clipEditorBloc.add(ClipEditorInitialized(updatedClips));
+
+    if (_editor != null) {
+      _editor!.addHistory(
+        meta: {
+          ..._editor!.stateManager.activeMeta,
+          VideoEditorConstants.clipsStateHistoryKey: updatedClips
+              .map((e) => e.toJson())
+              .toList(),
+        },
+      );
     }
   }
 
@@ -383,14 +427,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 
   Future<void> _openMusicLibrary() async {
-    var result = await VineBottomSheet.show<AudioEvent>(
-      context: context,
-      maxChildSize: 1,
-      initialChildSize: 1,
-      minChildSize: 0.8,
-      buildScrollBody: (scrollController) =>
-          AudioSelectionBottomSheet(scrollController: scrollController),
-    );
+    var result = await AudioSelectionBottomSheet.show(context);
 
     final editor = _editorKey.currentState;
 
@@ -401,9 +438,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     );
     final clipDuration = _clipEditorBloc.state.totalDuration;
     const maxDuration = VideoEditorConstants.maxDuration;
-    final endTime = [audioDuration, clipDuration, maxDuration].reduce(
-      (a, b) => a < b ? a : b,
-    );
+    final endTime = [
+      audioDuration,
+      clipDuration,
+      maxDuration,
+    ].reduce((a, b) => a < b ? a : b);
 
     result = result.copyWith(
       id: '${result.id}-${DateTime.now().millisecondsSinceEpoch}',
@@ -481,9 +520,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         listenWhen: (previous, current) =>
             previous.audioTracks != current.audioTracks,
         listener: (context, state) {
-          final previousById = {
-            for (final a in _previousAudioTracks) a.id: a,
-          };
+          final previousById = {for (final a in _previousAudioTracks) a.id: a};
           _previousAudioTracks = state.audioTracks;
 
           final existingWaveformIds = state.items
@@ -513,6 +550,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
               originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
               bodySizeNotifier: _bodySizeNotifier,
               fromLibrary: widget.fromLibrary,
+              onOpenCamera: () =>
+                  _openCamera(clipEditorBloc: context.read<ClipEditorBloc>()),
               onOpenClipsEditor: () {
                 final mainBloc = context.read<VideoEditorMainBloc>();
                 final clipEditorBloc = context.read<ClipEditorBloc>();

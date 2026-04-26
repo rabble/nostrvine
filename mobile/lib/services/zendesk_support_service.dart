@@ -168,10 +168,7 @@ class ZendeskSupportService {
     _userName = effectiveName;
     _userEmail = effectiveEmail;
 
-    Log.info(
-      'Zendesk user info stored',
-      category: LogCategory.system,
-    );
+    Log.info('Zendesk user info stored', category: LogCategory.system);
 
     return true;
   }

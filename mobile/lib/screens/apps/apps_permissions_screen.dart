@@ -60,9 +60,7 @@ class _AppsPermissionsContent extends StatelessWidget {
           child: BlocBuilder<AppsPermissionsCubit, AppsPermissionsState>(
             builder: (context, state) {
               if (state.status != AppsPermissionsStatus.loaded) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return const Center(child: CircularProgressIndicator());
               }
 
               if (state.grants.isEmpty) {
@@ -115,17 +113,13 @@ class _AppsPermissionsEmptyState extends StatelessWidget {
             Text(
               'No saved integration permissions',
               textAlign: TextAlign.center,
-              style: VineTheme.headlineSmallFont(
-                color: VineTheme.onSurface,
-              ),
+              style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
             ),
             const SizedBox(height: 10),
             Text(
               'Approved integrations will appear here after you remember an access approval.',
               textAlign: TextAlign.center,
-              style: VineTheme.bodyLargeFont(
-                color: VineTheme.onSurfaceVariant,
-              ),
+              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -135,10 +129,7 @@ class _AppsPermissionsEmptyState extends StatelessWidget {
 }
 
 class _GrantCard extends StatelessWidget {
-  const _GrantCard({
-    required this.grant,
-    required this.onRevoke,
-  });
+  const _GrantCard({required this.grant, required this.onRevoke});
 
   final NostrAppGrant grant;
   final VoidCallback onRevoke;
@@ -157,31 +148,22 @@ class _GrantCard extends StatelessWidget {
         children: [
           Text(
             grant.appId,
-            style: VineTheme.headlineSmallFont(
-              color: VineTheme.onSurface,
-            ),
+            style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
             grant.origin,
-            style: VineTheme.bodyLargeFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
           Text(
             grant.capability,
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.vineGreen,
-            ),
+            style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
           ),
           const SizedBox(height: 16),
           Align(
             alignment: AlignmentDirectional.centerEnd,
-            child: DivineButton(
-              label: 'Revoke',
-              onPressed: onRevoke,
-            ),
+            child: DivineButton(label: 'Revoke', onPressed: onRevoke),
           ),
         ],
       ),

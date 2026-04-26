@@ -18,18 +18,15 @@ void main() {
       expect(result, isFalse);
     });
 
-    test(
-      'returns false when contentWarningLabels is non-empty '
-      'but warnLabels is empty',
-      () {
-        final result = shouldShowContentWarningOverlay(
-          contentWarningLabels: ['violence'],
-          warnLabels: [],
-        );
+    test('returns false when contentWarningLabels is non-empty '
+        'but warnLabels is empty', () {
+      final result = shouldShowContentWarningOverlay(
+        contentWarningLabels: ['violence'],
+        warnLabels: [],
+      );
 
-        expect(result, isFalse);
-      },
-    );
+      expect(result, isFalse);
+    });
 
     test('returns true when warnLabels is non-empty', () {
       final result = shouldShowContentWarningOverlay(
@@ -97,15 +94,10 @@ void main() {
       );
     }
 
-    testWidgets('maps known labels to human-readable strings', (
-      tester,
-    ) async {
+    testWidgets('maps known labels to human-readable strings', (tester) async {
       await pumpWithContext(tester);
 
-      expect(
-        humanizeContentLabel(capturedContext, 'nudity'),
-        equals('Nudity'),
-      );
+      expect(humanizeContentLabel(capturedContext, 'nudity'), equals('Nudity'));
       expect(
         humanizeContentLabel(capturedContext, 'violence'),
         equals('Violence'),
@@ -124,9 +116,7 @@ void main() {
       );
     });
 
-    testWidgets('returns generic fallback for unknown labels', (
-      tester,
-    ) async {
+    testWidgets('returns generic fallback for unknown labels', (tester) async {
       await pumpWithContext(tester);
 
       expect(

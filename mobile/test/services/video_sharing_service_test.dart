@@ -72,9 +72,7 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(
-        () => mockProfileRepository.fetchFreshProfile(
-          pubkey: _recipientPubkey,
-        ),
+        () => mockProfileRepository.fetchFreshProfile(pubkey: _recipientPubkey),
       ).thenAnswer(
         (_) async => UserProfile(
           pubkey: _recipientPubkey,
@@ -414,9 +412,7 @@ void main() {
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
         ),
-      ).thenAnswer(
-        (_) async => NIP17SendResult.failure('Relay rejected'),
-      );
+      ).thenAnswer((_) async => NIP17SendResult.failure('Relay rejected'));
 
       final now = DateTime.now();
       final result = await nip17Service.shareVideoWithUser(

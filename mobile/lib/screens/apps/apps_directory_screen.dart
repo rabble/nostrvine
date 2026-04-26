@@ -21,10 +21,7 @@ class AppsDirectoryScreen extends ConsumerWidget {
   static const path = '/apps';
 
   /// Creates an [AppsDirectoryScreen].
-  const AppsDirectoryScreen({
-    super.key,
-    this.embedded = false,
-  });
+  const AppsDirectoryScreen({super.key, this.embedded = false});
 
   /// When true the screen omits its own app bar.
   final bool embedded;
@@ -38,9 +35,7 @@ class AppsDirectoryScreen extends ConsumerWidget {
       );
     }
 
-    final service = ref.read(
-      nostrAppDirectoryServiceProvider,
-    );
+    final service = ref.read(nostrAppDirectoryServiceProvider);
     return BlocProvider(
       create: (_) => AppsDirectoryCubit(directoryService: service)..loadApps(),
       child: _AppsDirectoryFrame(
@@ -65,10 +60,8 @@ class _AppsDirectoryContent extends StatelessWidget {
           child: BlocBuilder<AppsDirectoryCubit, AppsDirectoryState>(
             builder: (context, state) {
               return switch (state.status) {
-                AppsDirectoryStatus.initial ||
-                AppsDirectoryStatus.loading => const Center(
-                  child: CircularProgressIndicator(),
-                ),
+                AppsDirectoryStatus.initial || AppsDirectoryStatus.loading =>
+                  const Center(child: CircularProgressIndicator()),
                 AppsDirectoryStatus.error => _AppsDirectoryMessage(
                   title: 'Could not load integrated apps',
                   subtitle: 'Pull to try the approved integrations again.',
@@ -116,10 +109,7 @@ class _AppsDirectoryContent extends StatelessWidget {
 }
 
 class _AppsDirectoryFrame extends StatelessWidget {
-  const _AppsDirectoryFrame({
-    required this.embedded,
-    required this.child,
-  });
+  const _AppsDirectoryFrame({required this.embedded, required this.child});
 
   final bool embedded;
   final Widget child;
@@ -143,10 +133,7 @@ class _AppsDirectoryFrame extends StatelessWidget {
 }
 
 class _AppsDirectoryRow extends StatelessWidget {
-  const _AppsDirectoryRow({
-    required this.app,
-    required this.onTap,
-  });
+  const _AppsDirectoryRow({required this.app, required this.onTap});
 
   final NostrAppDirectoryEntry app;
   final VoidCallback onTap;
@@ -165,9 +152,7 @@ class _AppsDirectoryRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: VineTheme.cardBackground,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: VineTheme.outlineMuted,
-              ),
+              border: Border.all(color: VineTheme.outlineMuted),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,10 +197,7 @@ class _AppsDirectoryRow extends StatelessWidget {
                 const SizedBox(width: 12),
                 const Padding(
                   padding: EdgeInsets.only(top: 6),
-                  child: Icon(
-                    Icons.chevron_right,
-                    color: VineTheme.lightText,
-                  ),
+                  child: Icon(Icons.chevron_right, color: VineTheme.lightText),
                 ),
               ],
             ),
@@ -240,10 +222,7 @@ class _AppsDirectoryIcon extends StatelessWidget {
         color: VineTheme.backgroundColor,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Icon(
-        Icons.apps,
-        color: VineTheme.vineGreen,
-      ),
+      child: const Icon(Icons.apps, color: VineTheme.vineGreen),
     );
 
     if (iconUrl.isEmpty) {
@@ -297,16 +276,10 @@ class _AppsDirectoryMessage extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: VineTheme.lightText,
-                fontSize: 15,
-              ),
+              style: const TextStyle(color: VineTheme.lightText, fontSize: 15),
             ),
             const SizedBox(height: 16),
-            DivineButton(
-              label: actionLabel,
-              onPressed: onAction,
-            ),
+            DivineButton(label: actionLabel, onPressed: onAction),
           ],
         ),
       ),
@@ -333,16 +306,12 @@ class _AppsDirectoryIntro extends StatelessWidget {
           children: [
             Text(
               'Approved third-party apps',
-              style: VineTheme.headlineSmallFont(
-                color: VineTheme.onSurface,
-              ),
+              style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
             ),
             const SizedBox(height: 8),
             Text(
               'Approved third-party apps that run inside Divine',
-              style: VineTheme.bodyLargeFont(
-                color: VineTheme.onSurfaceVariant,
-              ),
+              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -375,10 +344,7 @@ class _AppsDirectoryUnsupportedMessage extends StatelessWidget {
             Text(
               'Approved integrations are only available on mobile for now.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: VineTheme.lightText,
-                fontSize: 15,
-              ),
+              style: TextStyle(color: VineTheme.lightText, fontSize: 15),
             ),
           ],
         ),

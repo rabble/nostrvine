@@ -337,6 +337,10 @@ class CameraController: NSObject {
         if session.canAddOutput(videoOutput) {
             session.addOutput(videoOutput)
             self.videoOutput = videoOutput
+        } else {
+            session.commitConfiguration()
+            completion(nil, "Cannot add video output")
+            return
         }
 
         // Setup audio output for recording
@@ -345,6 +349,8 @@ class CameraController: NSObject {
         if session.canAddOutput(audioOutput) {
             session.addOutput(audioOutput)
             self.audioOutput = audioOutput
+        } else {
+            print("DivineCamera macOS: Cannot add audio output")
         }
 
         session.commitConfiguration()
@@ -355,6 +361,12 @@ class CameraController: NSObject {
         // Start session
         session.startRunning()
         self.captureSession = session
+
+        guard session.isRunning else {
+            self.captureSession = nil
+            completion(nil, "Camera session failed to start")
+            return
+        }
 
         // Register texture
         textureId = textureRegistry.register(self)
@@ -400,6 +412,13 @@ class CameraController: NSObject {
             state["textureId"] = self.textureId
             completion(state, nil)
         }
+    }
+
+    /// Whether preview frames have started flowing from AVFoundation.
+    func hasReceivedPreviewFrame() -> Bool {
+        pixelBufferLock.lock()
+        defer { pixelBufferLock.unlock() }
+        return latestSampleBuffer != nil
     }
 
     /// Updates camera properties from the device.

@@ -50,10 +50,7 @@ class MetadataVerificationSection extends StatelessWidget {
 
 /// A single check item showing pass/fail status.
 class _VerificationCheckItem extends StatelessWidget {
-  const _VerificationCheckItem({
-    required this.label,
-    required this.passed,
-  });
+  const _VerificationCheckItem({required this.label, required this.passed});
 
   final String label;
   final bool passed;

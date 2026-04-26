@@ -158,10 +158,7 @@ class _SliderBody extends StatelessWidget {
 
 /// The vertical track with gradient coloring.
 class _Track extends StatelessWidget {
-  const _Track({
-    required this.height,
-    required this.value,
-  });
+  const _Track({required this.height, required this.value});
 
   final double height;
   final double value;

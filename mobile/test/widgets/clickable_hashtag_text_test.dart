@@ -324,9 +324,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            userProfileReactiveProvider(_testHexPubkey).overrideWith(
-              (ref) => Stream.value(profile),
-            ),
+            userProfileReactiveProvider(
+              _testHexPubkey,
+            ).overrideWith((ref) => Stream.value(profile)),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

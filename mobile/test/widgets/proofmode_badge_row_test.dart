@@ -250,41 +250,40 @@ void main() {
       expect(find.text('Hosted on Divine'), findsNothing);
     });
 
-    testWidgets(
-      'does not capture badge decision logs during rebuilds',
-      (tester) async {
-        final hostKey = GlobalKey<_RebuildHostState>();
-        final video = VideoEvent(
-          id: 'proof_backed_rebuild_video',
-          pubkey: 'pubkey_rebuild',
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          content: 'proof backed video for rebuild logging',
-          timestamp: DateTime.now(),
-          videoUrl: 'https://media.divine.video/proof_backed_rebuild_video.mp4',
-          rawTags: const {
-            'verification': 'verified_mobile',
-            'proofmode': '{"proof":"present"}',
-          },
-        );
+    testWidgets('does not capture badge decision logs during rebuilds', (
+      tester,
+    ) async {
+      final hostKey = GlobalKey<_RebuildHostState>();
+      final video = VideoEvent(
+        id: 'proof_backed_rebuild_video',
+        pubkey: 'pubkey_rebuild',
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        content: 'proof backed video for rebuild logging',
+        timestamp: DateTime.now(),
+        videoUrl: 'https://media.divine.video/proof_backed_rebuild_video.mp4',
+        rawTags: const {
+          'verification': 'verified_mobile',
+          'proofmode': '{"proof":"present"}',
+        },
+      );
 
-        await tester.pumpWidget(
-          buildRebuildSubject(video: video, hostKey: hostKey),
-        );
-        await tester.pump();
+      await tester.pumpWidget(
+        buildRebuildSubject(video: video, hostKey: hostKey),
+      );
+      await tester.pump();
 
-        hostKey.currentState!.triggerRebuild();
-        await tester.pump();
+      hostKey.currentState!.triggerRebuild();
+      await tester.pump();
 
-        hostKey.currentState!.triggerRebuild();
-        await tester.pump();
+      hostKey.currentState!.triggerRebuild();
+      await tester.pump();
 
-        final proofModeLogs = LogCaptureService()
-            .getRecentLogs()
-            .where((entry) => entry.name == 'ProofModeBadgeRow')
-            .toList();
+      final proofModeLogs = LogCaptureService()
+          .getRecentLogs()
+          .where((entry) => entry.name == 'ProofModeBadgeRow')
+          .toList();
 
-        expect(proofModeLogs, isEmpty);
-      },
-    );
+      expect(proofModeLogs, isEmpty);
+    });
   });
 }

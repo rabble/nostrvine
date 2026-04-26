@@ -46,10 +46,7 @@ void main() {
           ..filterChanged(SearchResultsFilter.people)
           ..filterChanged(SearchResultsFilter.all);
       },
-      expect: () => const [
-        SearchResultsFilter.people,
-        SearchResultsFilter.all,
-      ],
+      expect: () => const [SearchResultsFilter.people, SearchResultsFilter.all],
     );
   });
 

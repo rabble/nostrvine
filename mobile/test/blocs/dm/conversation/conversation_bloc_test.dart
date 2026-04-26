@@ -178,11 +178,7 @@ void main() {
                 'status',
                 equals(ConversationStatus.loaded),
               )
-              .having(
-                (s) => s.messages.length,
-                'messages.length',
-                equals(2),
-              ),
+              .having((s) => s.messages.length, 'messages.length', equals(2)),
         ],
       );
     });
@@ -215,16 +211,8 @@ void main() {
           ),
           expect: () => [
             isA<ConversationState>()
-                .having(
-                  (s) => s.sendStatus,
-                  'sendStatus',
-                  SendStatus.sending,
-                )
-                .having(
-                  (s) => s.messages.length,
-                  'messages.length',
-                  1,
-                )
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 1)
                 .having(
                   (s) => s.messages.first.content,
                   'optimistic message content',
@@ -265,16 +253,8 @@ void main() {
           ),
           expect: () => [
             isA<ConversationState>()
-                .having(
-                  (s) => s.sendStatus,
-                  'sendStatus',
-                  SendStatus.sending,
-                )
-                .having(
-                  (s) => s.messages.length,
-                  'messages.length',
-                  1,
-                ),
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 1),
             isA<ConversationState>().having(
               (s) => s.sendStatus,
               'sendStatus',
@@ -315,11 +295,7 @@ void main() {
           ),
           expect: () => [
             isA<ConversationState>()
-                .having(
-                  (s) => s.sendStatus,
-                  'sendStatus',
-                  SendStatus.sending,
-                )
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
                   (s) => s.messages.first.content,
                   'optimistic message content',
@@ -358,16 +334,8 @@ void main() {
           ),
           expect: () => [
             isA<ConversationState>()
-                .having(
-                  (s) => s.sendStatus,
-                  'sendStatus',
-                  SendStatus.sending,
-                )
-                .having(
-                  (s) => s.messages.length,
-                  'messages.length',
-                  1,
-                ),
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 1),
             isA<ConversationState>().having(
               (s) => s.sendStatus,
               'sendStatus',
@@ -399,16 +367,8 @@ void main() {
           ),
           expect: () => [
             isA<ConversationState>()
-                .having(
-                  (s) => s.sendStatus,
-                  'sendStatus',
-                  SendStatus.sending,
-                )
-                .having(
-                  (s) => s.messages.length,
-                  'messages.length',
-                  1,
-                ),
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 1),
             isA<ConversationState>().having(
               (s) => s.sendStatus,
               'sendStatus',
@@ -438,16 +398,8 @@ void main() {
           ),
           expect: () => [
             isA<ConversationState>()
-                .having(
-                  (s) => s.sendStatus,
-                  'sendStatus',
-                  SendStatus.sending,
-                )
-                .having(
-                  (s) => s.messages.length,
-                  'messages.length',
-                  1,
-                ),
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 1),
             isA<ConversationState>().having(
               (s) => s.sendStatus,
               'sendStatus',
@@ -478,9 +430,7 @@ void main() {
               callCount++;
               if (callCount == 1) {
                 // Simulate slow first send
-                await Future<void>.delayed(
-                  const Duration(milliseconds: 50),
-                );
+                await Future<void>.delayed(const Duration(milliseconds: 50));
               }
               return NIP17SendResult.success(
                 rumorEventId: sentEventId,
@@ -509,11 +459,7 @@ void main() {
           expect: () => [
             // First send starts (with optimistic message)
             isA<ConversationState>()
-                .having(
-                  (s) => s.sendStatus,
-                  'sendStatus',
-                  SendStatus.sending,
-                )
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
                   (s) => s.messages.first.content,
                   'content',
@@ -527,11 +473,7 @@ void main() {
             ),
             // Second send starts (sequential: waited for first)
             isA<ConversationState>()
-                .having(
-                  (s) => s.sendStatus,
-                  'sendStatus',
-                  SendStatus.sending,
-                )
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
                   (s) => s.messages.first.content,
                   'content',
@@ -573,9 +515,7 @@ void main() {
 
             // Complete both after a short delay so sequential gets to
             // process them one-by-one.
-            Future<void>.delayed(
-              const Duration(milliseconds: 30),
-            ).then((_) {
+            Future<void>.delayed(const Duration(milliseconds: 30)).then((_) {
               completer1.complete(
                 NIP17SendResult.success(
                   rumorEventId: sentEventId,
@@ -584,9 +524,7 @@ void main() {
                 ),
               );
             });
-            Future<void>.delayed(
-              const Duration(milliseconds: 60),
-            ).then((_) {
+            Future<void>.delayed(const Duration(milliseconds: 60)).then((_) {
               completer2.complete(
                 NIP17SendResult.success(
                   rumorEventId: sentEventId,
@@ -728,11 +666,7 @@ void main() {
                   'status',
                   equals(ConversationStatus.loaded),
                 )
-                .having(
-                  (s) => s.messages.length,
-                  'messages.length',
-                  equals(1),
-                )
+                .having((s) => s.messages.length, 'messages.length', equals(1))
                 .having(
                   (s) => s.messages.first.content,
                   'messages.first.content',
@@ -763,9 +697,8 @@ void main() {
           ).thenAnswer((_) async {});
         },
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const ConversationMessageDeleted(rumorId: messageId),
-        ),
+        act: (bloc) =>
+            bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
         verify: (_) {
           verify(
             () => mockDmRepository.deleteMessageForEveryone(messageId),
@@ -781,9 +714,8 @@ void main() {
           ).thenThrow(ArgumentError('message not found'));
         },
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const ConversationMessageDeleted(rumorId: messageId),
-        ),
+        act: (bloc) =>
+            bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
         errors: () => [isA<ArgumentError>()],
       );
     });
@@ -791,20 +723,13 @@ void main() {
 
   group(ConversationState, () {
     test('supports value equality', () {
-      expect(
-        const ConversationState(),
-        equals(const ConversationState()),
-      );
+      expect(const ConversationState(), equals(const ConversationState()));
     });
 
     test('props are correct', () {
       expect(
         const ConversationState().props,
-        equals([
-          ConversationStatus.initial,
-          <DmMessage>[],
-          SendStatus.idle,
-        ]),
+        equals([ConversationStatus.initial, <DmMessage>[], SendStatus.idle]),
       );
     });
 
@@ -812,9 +737,7 @@ void main() {
       expect(
         const ConversationState(),
         isNot(
-          equals(
-            const ConversationState(status: ConversationStatus.loading),
-          ),
+          equals(const ConversationState(status: ConversationStatus.loading)),
         ),
       );
     });
@@ -838,11 +761,7 @@ void main() {
     test('states with different sendStatus are not equal', () {
       expect(
         const ConversationState(),
-        isNot(
-          equals(
-            const ConversationState(sendStatus: SendStatus.sending),
-          ),
-        ),
+        isNot(equals(const ConversationState(sendStatus: SendStatus.sending))),
       );
     });
 

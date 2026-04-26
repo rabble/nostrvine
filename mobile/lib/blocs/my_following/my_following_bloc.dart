@@ -28,9 +28,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
          MyFollowingState(
            status: MyFollowingStatus.success,
            followingPubkeys: followRepository.followingPubkeys
-               .where(
-                 (pk) => !contentBlocklistRepository.isBlocked(pk),
-               )
+               .where((pk) => !contentBlocklistRepository.isBlocked(pk))
                .toList(),
          ),
        ) {
@@ -121,9 +119,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
     if (state.status != MyFollowingStatus.success) return;
 
     emit(
-      state.copyWith(
-        followingPubkeys: _filterPubkeys(_rawFollowingPubkeys),
-      ),
+      state.copyWith(followingPubkeys: _filterPubkeys(_rawFollowingPubkeys)),
     );
   }
 }

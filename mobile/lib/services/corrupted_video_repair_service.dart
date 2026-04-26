@@ -82,15 +82,9 @@ class CorruptedVideoRepairService {
     }
 
     // Query all of the user's own kind 34236 events from relay
-    final filter = Filter(
-      kinds: [EventKind.videoVertical],
-      authors: [pubkey],
-    );
+    final filter = Filter(kinds: [EventKind.videoVertical], authors: [pubkey]);
 
-    final events = await _nostrClient.queryEvents(
-      [filter],
-      useCache: false,
-    );
+    final events = await _nostrClient.queryEvents([filter], useCache: false);
 
     Log.info(
       'Scanning ${events.length} video events for corrupted URLs',
@@ -134,9 +128,7 @@ class CorruptedVideoRepairService {
         );
 
         // Update local cache so the fix is visible immediately
-        _videoEventService?.updateVideoEvent(
-          VideoEvent.fromNostrEvent(sent),
-        );
+        _videoEventService?.updateVideoEvent(VideoEvent.fromNostrEvent(sent));
       } else {
         Log.warning(
           'Failed to publish repaired event for ${event.id}',

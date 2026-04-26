@@ -14,9 +14,8 @@ import 'package:unified_logger/unified_logger.dart';
 /// content language for NIP-32 tagging on video events.
 class LocalePreferenceService {
   /// Creates a [LocalePreferenceService] backed by [sharedPreferences].
-  const LocalePreferenceService({
-    required SharedPreferences sharedPreferences,
-  }) : _prefs = sharedPreferences;
+  const LocalePreferenceService({required SharedPreferences sharedPreferences})
+    : _prefs = sharedPreferences;
 
   final SharedPreferences _prefs;
 

@@ -58,9 +58,7 @@ void main() {
       expect(find.text('Post details'), findsOneWidget);
     });
 
-    testWidgets('renders back button with $DivineIconButton', (
-      tester,
-    ) async {
+    testWidgets('renders back button with $DivineIconButton', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
       expect(find.byType(DivineIconButton), findsOneWidget);

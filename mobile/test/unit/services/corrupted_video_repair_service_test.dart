@@ -98,9 +98,9 @@ void main() {
       return event;
     });
 
-    when(
-      () => mockNostrClient.publishEvent(any()),
-    ).thenAnswer((invocation) async {
+    when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+      invocation,
+    ) async {
       final event = invocation.positionalArguments[0] as Event;
       publishedEvents.add(event);
       return event;
@@ -133,10 +133,7 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            useCache: false,
-          ),
+          () => mockNostrClient.queryEvents(any(), useCache: false),
         ).thenAnswer((_) async => [corruptedEvent]);
 
         stubSignAndPublishSuccess();
@@ -152,9 +149,7 @@ void main() {
         final imetaTag = captured.tags.firstWhere(
           (t) => t.isNotEmpty && t[0] == 'imeta',
         );
-        final urlComponent = imetaTag.firstWhere(
-          (c) => c.startsWith('url '),
-        );
+        final urlComponent = imetaTag.firstWhere((c) => c.startsWith('url '));
         expect(urlComponent, equals('url $_blossomBaseUrl/$_testSha256'));
 
         // Verify d-tag preserved
@@ -191,10 +186,7 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            useCache: false,
-          ),
+          () => mockNostrClient.queryEvents(any(), useCache: false),
         ).thenAnswer((_) async => [validEvent]);
 
         final result = await repairService.repairIfNeeded();
@@ -218,10 +210,7 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            useCache: false,
-          ),
+          () => mockNostrClient.queryEvents(any(), useCache: false),
         ).thenAnswer((_) async => [corruptedNoHash]);
 
         final result = await repairService.repairIfNeeded();
@@ -246,10 +235,7 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            useCache: false,
-          ),
+          () => mockNostrClient.queryEvents(any(), useCache: false),
         ).thenAnswer((_) async => [corruptedEvent]);
 
         stubSignAndPublishSuccess();
@@ -261,27 +247,19 @@ void main() {
         final imetaTag = publishedEvents.first.tags.firstWhere(
           (t) => t.isNotEmpty && t[0] == 'imeta',
         );
-        final urlComponent = imetaTag.firstWhere(
-          (c) => c.startsWith('url '),
-        );
+        final urlComponent = imetaTag.firstWhere((c) => c.startsWith('url '));
         expect(urlComponent, equals('url $_blossomBaseUrl/$_testSha256'));
       });
 
       test('does not set completion flag on query failure', () async {
         when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            useCache: false,
-          ),
+          () => mockNostrClient.queryEvents(any(), useCache: false),
         ).thenThrow(Exception('Relay connection failed'));
 
         final result = await repairService.repairIfNeeded();
 
         expect(result, equals(0));
-        expect(
-          prefs.getBool('corrupted_video_repair_v1_completed'),
-          isNull,
-        );
+        expect(prefs.getBool('corrupted_video_repair_v1_completed'), isNull);
       });
 
       test('skips when not authenticated', () async {
@@ -317,10 +295,7 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            useCache: false,
-          ),
+          () => mockNostrClient.queryEvents(any(), useCache: false),
         ).thenAnswer((_) async => [corruptedEvent]);
 
         when(
@@ -354,10 +329,7 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            useCache: false,
-          ),
+          () => mockNostrClient.queryEvents(any(), useCache: false),
         ).thenAnswer((_) async => [corruptedEvent]);
 
         when(
@@ -399,10 +371,7 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.queryEvents(
-            any(),
-            useCache: false,
-          ),
+          () => mockNostrClient.queryEvents(any(), useCache: false),
         ).thenAnswer((_) async => [mixedEvent]);
 
         stubSignAndPublishSuccess();
@@ -418,10 +387,7 @@ void main() {
             .where((c) => c.startsWith('url '))
             .toList();
 
-        expect(
-          urlComponents[0],
-          equals('url $_blossomBaseUrl/$_testSha256'),
-        );
+        expect(urlComponents[0], equals('url $_blossomBaseUrl/$_testSha256'));
         expect(
           urlComponents[1],
           equals('url https://media.divine.video/existing_valid_url'),

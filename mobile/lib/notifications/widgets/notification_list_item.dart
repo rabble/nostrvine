@@ -284,10 +284,7 @@ class _StackWithIcon extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        NotificationAvatarStack(
-          actors: actors,
-          overflowCount: overflowCount,
-        ),
+        NotificationAvatarStack(actors: actors, overflowCount: overflowCount),
         const SizedBox(height: 4),
         _TypeIconBadge(type: type),
       ],
@@ -311,10 +308,7 @@ class _TypeIconBadge extends StatelessWidget {
         border: Border.all(width: 2),
       ),
       child: Center(
-        child: Text(
-          _typeEmoji,
-          style: const TextStyle(fontSize: 10),
-        ),
+        child: Text(_typeEmoji, style: const TextStyle(fontSize: 10)),
       ),
     );
   }
@@ -345,10 +339,7 @@ class _TypeIconBadge extends StatelessWidget {
 }
 
 class _MessageText extends StatelessWidget {
-  const _MessageText({
-    required this.message,
-    this.actorName,
-  });
+  const _MessageText({required this.message, this.actorName});
 
   final String message;
   final String? actorName;
@@ -365,9 +356,7 @@ class _MessageText extends StatelessWidget {
               text: actorName,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            TextSpan(
-              text: message.substring(actorName!.length),
-            ),
+            TextSpan(text: message.substring(actorName!.length)),
           ],
         ),
       );

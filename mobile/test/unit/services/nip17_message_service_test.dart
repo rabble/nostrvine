@@ -59,9 +59,9 @@ void main() {
 
       // At least the recipient gift wrap is published; self-wrap may
       // silently fail with synthetic test keys.
-      verify(() => mockNostrService.publishEvent(any())).called(
-        greaterThanOrEqualTo(1),
-      );
+      verify(
+        () => mockNostrService.publishEvent(any()),
+      ).called(greaterThanOrEqualTo(1));
     });
 
     test('should create gift wrap with kind 1059', () async {
@@ -130,10 +130,7 @@ void main() {
       // with synthetic test keys that aren't valid EC points).
       expect(capturedEvents.length, greaterThanOrEqualTo(2));
       // First two events are the recipient gift wraps for each message
-      expect(
-        capturedEvents[0].pubkey,
-        isNot(equals(capturedEvents[1].pubkey)),
-      );
+      expect(capturedEvents[0].pubkey, isNot(equals(capturedEvents[1].pubkey)));
       expect(capturedEvents[0].pubkey, isNot(equals(_testPublicKey)));
       expect(capturedEvents[1].pubkey, isNot(equals(_testPublicKey)));
     });

@@ -1142,188 +1142,179 @@ void main() {
         },
       );
 
-      test(
-        'insertFromWebSocket deduplicates follow by actor pubkey',
-        () async {
-          // Initial load has one follow notification
-          when(
-            () => mockApiService.getNotifications(
-              pubkey: any(named: 'pubkey'),
-              types: any(named: 'types'),
-              unreadOnly: any(named: 'unreadOnly'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => NotificationsResponse(
-              notifications: [
-                createMockRelayNotification(
-                  id: 'existing_follow',
-                  sourcePubkey: 'follower_abc',
-                  notificationType: 'follow',
-                  createdAtSeconds: 1700000100,
-                ),
-              ],
-              unreadCount: 1,
-            ),
-          );
+      test('insertFromWebSocket deduplicates follow by actor pubkey', () async {
+        // Initial load has one follow notification
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: [
+              createMockRelayNotification(
+                id: 'existing_follow',
+                sourcePubkey: 'follower_abc',
+                notificationType: 'follow',
+                createdAtSeconds: 1700000100,
+              ),
+            ],
+            unreadCount: 1,
+          ),
+        );
 
-          final container = createTestContainer();
-          await waitForLoadComplete(container);
+        final container = createTestContainer();
+        await waitForLoadComplete(container);
 
-          // WebSocket delivers a new Kind 3 event from the same actor
-          final duplicateFollow = NotificationModel(
-            id: 'new_kind3_event',
-            type: NotificationType.follow,
-            actorPubkey: 'follower_abc', // Same actor
-            actorName: 'Follower',
-            message: 'Follower started following you',
-            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
-          );
+        // WebSocket delivers a new Kind 3 event from the same actor
+        final duplicateFollow = NotificationModel(
+          id: 'new_kind3_event',
+          type: NotificationType.follow,
+          actorPubkey: 'follower_abc', // Same actor
+          actorName: 'Follower',
+          message: 'Follower started following you',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
+        );
 
-          await container
-              .read(relayNotificationsProvider.notifier)
-              .insertFromWebSocket(duplicateFollow);
+        await container
+            .read(relayNotificationsProvider.notifier)
+            .insertFromWebSocket(duplicateFollow);
 
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          final state = container.read(relayNotificationsProvider);
-          final result = state.value!;
+        final state = container.read(relayNotificationsProvider);
+        final result = state.value!;
 
-          // Should still have only one follow notification
-          final follows = result.notifications
-              .where((n) => n.type == NotificationType.follow)
-              .toList();
-          expect(
-            follows.length,
-            1,
-            reason:
-                'Duplicate follow from same actor via WebSocket should be '
-                'dropped',
-          );
-          expect(follows.first.id, 'existing_follow');
+        // Should still have only one follow notification
+        final follows = result.notifications
+            .where((n) => n.type == NotificationType.follow)
+            .toList();
+        expect(
+          follows.length,
+          1,
+          reason:
+              'Duplicate follow from same actor via WebSocket should be '
+              'dropped',
+        );
+        expect(follows.first.id, 'existing_follow');
 
-          container.dispose();
-        },
-      );
+        container.dispose();
+      });
 
-      test(
-        'insertFromWebSocket allows follow from different actor',
-        () async {
-          when(
-            () => mockApiService.getNotifications(
-              pubkey: any(named: 'pubkey'),
-              types: any(named: 'types'),
-              unreadOnly: any(named: 'unreadOnly'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => NotificationsResponse(
-              notifications: [
-                createMockRelayNotification(
-                  id: 'existing_follow',
-                  sourcePubkey: 'follower_abc',
-                  notificationType: 'follow',
-                  createdAtSeconds: 1700000100,
-                ),
-              ],
-              unreadCount: 1,
-            ),
-          );
+      test('insertFromWebSocket allows follow from different actor', () async {
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: [
+              createMockRelayNotification(
+                id: 'existing_follow',
+                sourcePubkey: 'follower_abc',
+                notificationType: 'follow',
+                createdAtSeconds: 1700000100,
+              ),
+            ],
+            unreadCount: 1,
+          ),
+        );
 
-          final container = createTestContainer();
-          await waitForLoadComplete(container);
+        final container = createTestContainer();
+        await waitForLoadComplete(container);
 
-          // WebSocket delivers a follow from a different actor
-          final newFollow = NotificationModel(
-            id: 'new_follow_event',
-            type: NotificationType.follow,
-            actorPubkey: 'follower_xyz', // Different actor
-            actorName: 'New Follower',
-            message: 'New Follower started following you',
-            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
-          );
+        // WebSocket delivers a follow from a different actor
+        final newFollow = NotificationModel(
+          id: 'new_follow_event',
+          type: NotificationType.follow,
+          actorPubkey: 'follower_xyz', // Different actor
+          actorName: 'New Follower',
+          message: 'New Follower started following you',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
+        );
 
-          await container
-              .read(relayNotificationsProvider.notifier)
-              .insertFromWebSocket(newFollow);
+        await container
+            .read(relayNotificationsProvider.notifier)
+            .insertFromWebSocket(newFollow);
 
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          final state = container.read(relayNotificationsProvider);
-          final result = state.value!;
+        final state = container.read(relayNotificationsProvider);
+        final result = state.value!;
 
-          // Should have both follows
-          final follows = result.notifications
-              .where((n) => n.type == NotificationType.follow)
-              .toList();
-          expect(
-            follows.length,
-            2,
-            reason: 'Follow from a different actor should be allowed',
-          );
+        // Should have both follows
+        final follows = result.notifications
+            .where((n) => n.type == NotificationType.follow)
+            .toList();
+        expect(
+          follows.length,
+          2,
+          reason: 'Follow from a different actor should be allowed',
+        );
 
-          container.dispose();
-        },
-      );
+        container.dispose();
+      });
 
-      test(
-        'insertFromWebSocket allows non-follow from same actor',
-        () async {
-          when(
-            () => mockApiService.getNotifications(
-              pubkey: any(named: 'pubkey'),
-              types: any(named: 'types'),
-              unreadOnly: any(named: 'unreadOnly'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => NotificationsResponse(
-              notifications: [
-                createMockRelayNotification(
-                  id: 'existing_follow',
-                  sourcePubkey: 'actor_abc',
-                  notificationType: 'follow',
-                  createdAtSeconds: 1700000100,
-                ),
-              ],
-              unreadCount: 1,
-            ),
-          );
+      test('insertFromWebSocket allows non-follow from same actor', () async {
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: [
+              createMockRelayNotification(
+                id: 'existing_follow',
+                sourcePubkey: 'actor_abc',
+                notificationType: 'follow',
+                createdAtSeconds: 1700000100,
+              ),
+            ],
+            unreadCount: 1,
+          ),
+        );
 
-          final container = createTestContainer();
-          await waitForLoadComplete(container);
+        final container = createTestContainer();
+        await waitForLoadComplete(container);
 
-          // Same actor sends a like (non-follow, should not be deduped)
-          final like = NotificationModel(
-            id: 'like_event',
-            type: NotificationType.like,
-            actorPubkey: 'actor_abc', // Same actor
-            actorName: 'Actor',
-            message: 'Actor liked your video',
-            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
-          );
+        // Same actor sends a like (non-follow, should not be deduped)
+        final like = NotificationModel(
+          id: 'like_event',
+          type: NotificationType.like,
+          actorPubkey: 'actor_abc', // Same actor
+          actorName: 'Actor',
+          message: 'Actor liked your video',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1700000200 * 1000),
+        );
 
-          await container
-              .read(relayNotificationsProvider.notifier)
-              .insertFromWebSocket(like);
+        await container
+            .read(relayNotificationsProvider.notifier)
+            .insertFromWebSocket(like);
 
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          final state = container.read(relayNotificationsProvider);
-          final result = state.value!;
+        final state = container.read(relayNotificationsProvider);
+        final result = state.value!;
 
-          expect(
-            result.notifications.length,
-            2,
-            reason: 'Non-follow notification from same actor should be allowed',
-          );
+        expect(
+          result.notifications.length,
+          2,
+          reason: 'Non-follow notification from same actor should be allowed',
+        );
 
-          container.dispose();
-        },
-      );
+        container.dispose();
+      });
     });
 
     group('Cross-batch follow consolidation (loadMore)', () {
@@ -1493,9 +1484,7 @@ void main() {
           eventId: 'event_profile_1',
         );
 
-        final mockNotifications = [
-          createMockRelayNotification(id: 'notif_1'),
-        ];
+        final mockNotifications = [createMockRelayNotification(id: 'notif_1')];
 
         when(
           () => mockApiService.getNotifications(
@@ -1604,9 +1593,7 @@ void main() {
           () => mockProfileRepository.fetchBatchProfiles(
             pubkeys: any(named: 'pubkeys'),
           ),
-        ).thenAnswer(
-          (_) async => {pubkey1: profileA, pubkey2: profileB},
-        );
+        ).thenAnswer((_) async => {pubkey1: profileA, pubkey2: profileB});
 
         final container = createTestContainer(
           profileRepository: mockProfileRepository,
@@ -1629,9 +1616,7 @@ void main() {
       });
 
       test('with null profileRepo does not crash', () async {
-        final mockNotifications = [
-          createMockRelayNotification(id: 'notif_1'),
-        ];
+        final mockNotifications = [createMockRelayNotification(id: 'notif_1')];
 
         when(
           () => mockApiService.getNotifications(
@@ -1732,9 +1717,7 @@ void main() {
             () => mockProfileRepository.fetchBatchProfiles(
               pubkeys: any(named: 'pubkeys'),
             ),
-          ).thenAnswer(
-            (_) async => {pubkey1: profileA, pubkey2: profileB},
-          );
+          ).thenAnswer((_) async => {pubkey1: profileA, pubkey2: profileB});
 
           final container = createTestContainer(
             profileRepository: mockProfileRepository,
@@ -1860,117 +1843,107 @@ void main() {
     });
 
     group('Cross-path dedup (REST vs WebSocket)', () {
-      test(
-        'insertFromWebSocket drops notification whose ID matches '
-        "an existing REST notification's sourceEventId",
-        () async {
-          // REST API returns a notification with server-assigned ID 'notif_1'
-          // and sourceEventId 'event_notif_1' (stored in metadata).
-          when(
-            () => mockApiService.getNotifications(
-              pubkey: any(named: 'pubkey'),
-              types: any(named: 'types'),
-              unreadOnly: any(named: 'unreadOnly'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => NotificationsResponse(
-              notifications: [
-                createMockRelayNotification(id: 'notif_1'),
-              ],
-              unreadCount: 1,
-            ),
-          );
+      test('insertFromWebSocket drops notification whose ID matches '
+          "an existing REST notification's sourceEventId", () async {
+        // REST API returns a notification with server-assigned ID 'notif_1'
+        // and sourceEventId 'event_notif_1' (stored in metadata).
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: [createMockRelayNotification(id: 'notif_1')],
+            unreadCount: 1,
+          ),
+        );
 
-          final container = createTestContainer();
-          await waitForLoadComplete(container);
+        final container = createTestContainer();
+        await waitForLoadComplete(container);
 
-          // WebSocket delivers the same logical notification but using the
-          // Nostr event ID as its model ID.
-          final wsNotification = NotificationModel(
-            id: 'event_notif_1', // matches REST metadata['sourceEventId']
-            type: NotificationType.like,
-            actorPubkey: 'source_pubkey_123',
-            actorName: 'Actor',
-            message: 'Actor liked your video',
-            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
-          );
+        // WebSocket delivers the same logical notification but using the
+        // Nostr event ID as its model ID.
+        final wsNotification = NotificationModel(
+          id: 'event_notif_1', // matches REST metadata['sourceEventId']
+          type: NotificationType.like,
+          actorPubkey: 'source_pubkey_123',
+          actorName: 'Actor',
+          message: 'Actor liked your video',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+        );
 
-          await container
-              .read(relayNotificationsProvider.notifier)
-              .insertFromWebSocket(wsNotification);
+        await container
+            .read(relayNotificationsProvider.notifier)
+            .insertFromWebSocket(wsNotification);
 
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          final state = container.read(relayNotificationsProvider);
-          final result = state.value!;
+        final state = container.read(relayNotificationsProvider);
+        final result = state.value!;
 
-          expect(
-            result.notifications.length,
-            1,
-            reason:
-                'WebSocket notification matching sourceEventId of existing '
-                'REST notification should be dropped',
-          );
-          expect(result.notifications.first.id, 'notif_1');
+        expect(
+          result.notifications.length,
+          1,
+          reason:
+              'WebSocket notification matching sourceEventId of existing '
+              'REST notification should be dropped',
+        );
+        expect(result.notifications.first.id, 'notif_1');
 
-          container.dispose();
-        },
-      );
+        container.dispose();
+      });
 
-      test(
-        'insertFromWebSocket allows notification with non-matching '
-        'sourceEventId',
-        () async {
-          when(
-            () => mockApiService.getNotifications(
-              pubkey: any(named: 'pubkey'),
-              types: any(named: 'types'),
-              unreadOnly: any(named: 'unreadOnly'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => NotificationsResponse(
-              notifications: [
-                createMockRelayNotification(id: 'notif_1'),
-              ],
-              unreadCount: 1,
-            ),
-          );
+      test('insertFromWebSocket allows notification with non-matching '
+          'sourceEventId', () async {
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => NotificationsResponse(
+            notifications: [createMockRelayNotification(id: 'notif_1')],
+            unreadCount: 1,
+          ),
+        );
 
-          final container = createTestContainer();
-          await waitForLoadComplete(container);
+        final container = createTestContainer();
+        await waitForLoadComplete(container);
 
-          // WebSocket delivers a genuinely new notification
-          final wsNotification = NotificationModel(
-            id: 'completely_new_event',
-            type: NotificationType.like,
-            actorPubkey: 'other_pubkey',
-            actorName: 'Bob',
-            message: 'Bob liked your video',
-            timestamp: DateTime.fromMillisecondsSinceEpoch(1700000500 * 1000),
-          );
+        // WebSocket delivers a genuinely new notification
+        final wsNotification = NotificationModel(
+          id: 'completely_new_event',
+          type: NotificationType.like,
+          actorPubkey: 'other_pubkey',
+          actorName: 'Bob',
+          message: 'Bob liked your video',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1700000500 * 1000),
+        );
 
-          await container
-              .read(relayNotificationsProvider.notifier)
-              .insertFromWebSocket(wsNotification);
+        await container
+            .read(relayNotificationsProvider.notifier)
+            .insertFromWebSocket(wsNotification);
 
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          final state = container.read(relayNotificationsProvider);
-          final result = state.value!;
+        final state = container.read(relayNotificationsProvider);
+        final result = state.value!;
 
-          expect(
-            result.notifications.length,
-            2,
-            reason: 'Genuinely new WebSocket notification should be inserted',
-          );
+        expect(
+          result.notifications.length,
+          2,
+          reason: 'Genuinely new WebSocket notification should be inserted',
+        );
 
-          container.dispose();
-        },
-      );
+        container.dispose();
+      });
     });
 
     group('Refresh preserves WebSocket notifications', () {
@@ -2086,9 +2059,7 @@ void main() {
             callCount++;
             if (callCount == 1) {
               return NotificationsResponse(
-                notifications: [
-                  createMockRelayNotification(id: 'api_1'),
-                ],
+                notifications: [createMockRelayNotification(id: 'api_1')],
                 unreadCount: 1,
               );
             }
@@ -2123,9 +2094,7 @@ void main() {
           // but sourceEventId = 'event_api_refresh_1'
           refreshCompleter.complete(
             NotificationsResponse(
-              notifications: [
-                createMockRelayNotification(id: 'api_refresh_1'),
-              ],
+              notifications: [createMockRelayNotification(id: 'api_refresh_1')],
               unreadCount: 1,
             ),
           );

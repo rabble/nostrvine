@@ -863,6 +863,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Silme isteği başarıyla gönderildi';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'İçerik silinemedi: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Klasikler';
 
   @override
@@ -1227,6 +1232,21 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionAutoLabel => 'Otomatik';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Otomatik ilerlemeyi etkinleştir';
 
   @override
@@ -1250,6 +1270,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => 'Altyazıları göster';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -2979,6 +3005,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Bu içeriği kalıcı olarak kaldır';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Bu işlem tüm rölelere bir silme isteği (NIP-09) gönderir. Bazı röleler içeriği saklamaya devam edebilir.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Video şu listelerde:';
 
   @override
@@ -3001,6 +3031,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'İçerik siliniyor...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'İçerik silinemedi: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'Silme isteği başarıyla gönderildi';
@@ -3084,6 +3119,11 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Video güncellenemedi: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Video silinemedi: $error';
   }
 
   @override
@@ -3608,6 +3648,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get navProfile => 'Profil';
+
+  @override
+  String get navSearch => 'Ara';
+
+  @override
+  String get navSearchTooltip => 'Ara';
 
   @override
   String get navMyProfile => 'Profilim';
@@ -4740,6 +4786,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'İlginç bir şey keşfet';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Listeler';
 
   @override
@@ -5074,7 +5138,13 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'Klipler';
+  String get videoEditorCameraLabel => 'Kamera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Kamerayı aç';
+
+  @override
+  String get videoEditorLibraryLabel => 'Kütüphane';
 
   @override
   String get videoEditorTextLabel => 'Metin';
@@ -5083,7 +5153,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorDrawLabel => 'Çiz';
 
   @override
-  String get videoEditorEffectsLabel => 'Efektler';
+  String get videoEditorFilterLabel => 'Filtre';
 
   @override
   String get videoEditorAudioLabel => 'Ses';
@@ -5095,7 +5165,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAddTitle => 'Ekle';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'Klip düzenleyiciyi aç';
+  String get videoEditorOpenLibrarySemanticLabel => 'Kütüphaneyi aç';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Ses düzenleyiciyi aç';
@@ -5107,7 +5177,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Çizim düzenleyiciyi aç';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'Efekt düzenleyiciyi aç';
+  String get videoEditorOpenFilterSemanticLabel => 'Filtre düzenleyiciyi aç';
 
   @override
   String get videoEditorSaveDraftTitle => 'Taslağınızı kaydedin?';
@@ -5254,20 +5324,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Zaman çizelgesi düzenlemeyi bitir';
 
   @override
-  String get videoEditorSortNewest => 'En yeni';
-
-  @override
-  String get videoEditorSortLongest => 'En uzun';
-
-  @override
-  String get videoEditorSortShortest => 'En kısa';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return '$option ile sırala. Sıralama düzenini değiştirmek için dokun';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'Önizlemeyi oynat';
 
   @override
@@ -5275,9 +5331,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Başlıksız ses';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Ses seç';
 
   @override
   String get videoEditorAudioUntitled => 'Başlıksız';
@@ -5293,14 +5346,17 @@ class AppLocalizationsTr extends AppLocalizations {
       'İçerik üreticileri ses paylaştığında burada görünür';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'Ses bulunamadı';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Farklı bir arama terimi deneyin';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'Sesler yüklenemedi';
+
+  @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Videon için ses bölümünü seç';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Topluluk';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Ok aracı';
@@ -5375,6 +5431,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Yeniden sıralamak için uzun basın';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Düzenlemek için dokun. Yeniden sıralamak için basılı tutup sürükle.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Sola taşı';

@@ -107,9 +107,9 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
     Locale('ar'),
     Locale('de'),
-    Locale('en'),
     Locale('es'),
     Locale('fr'),
     Locale('id'),
@@ -1612,6 +1612,12 @@ abstract class AppLocalizations {
   /// **'Delete request sent successfully'**
   String get videoGridDeleteSuccess;
 
+  /// No description provided for @videoGridDeleteFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete content: {error}'**
+  String videoGridDeleteFailure(Object error);
+
   /// No description provided for @exploreTabClassics.
   ///
   /// In en, this message translates to:
@@ -2242,6 +2248,36 @@ abstract class AppLocalizations {
   /// **'Auto'**
   String get videoActionAutoLabel;
 
+  /// No description provided for @videoActionLikeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Like'**
+  String get videoActionLikeLabel;
+
+  /// No description provided for @videoActionReplyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get videoActionReplyLabel;
+
+  /// No description provided for @videoActionRepostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repost'**
+  String get videoActionRepostLabel;
+
+  /// No description provided for @videoActionShareLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get videoActionShareLabel;
+
+  /// No description provided for @videoActionAboutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get videoActionAboutLabel;
+
   /// No description provided for @videoActionEnableAutoAdvance.
   ///
   /// In en, this message translates to:
@@ -2289,6 +2325,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show subtitles'**
   String get videoActionShowSubtitles;
+
+  /// Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video details'**
+  String get videoOverlayOpenMetadataFromTitle;
+
+  /// Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video details'**
+  String get videoOverlayOpenMetadataFromDescription;
 
   /// No description provided for @videoDescriptionLoops.
   ///
@@ -5276,6 +5324,12 @@ abstract class AppLocalizations {
   /// **'Remove this video from Divine. It may still appear on other Nostr clients.'**
   String get shareMenuDeleteVideoSubtitle;
 
+  /// No description provided for @shareMenuDeleteWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.'**
+  String get shareMenuDeleteWarning;
+
   /// No description provided for @shareMenuVideoInTheseLists.
   ///
   /// In en, this message translates to:
@@ -5317,6 +5371,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deleting content...'**
   String get shareMenuDeletingContent;
+
+  /// No description provided for @shareMenuFailedToDeleteContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete content: {error}'**
+  String shareMenuFailedToDeleteContent(String error);
 
   /// No description provided for @shareMenuDeleteRequestSent.
   ///
@@ -5462,6 +5522,12 @@ abstract class AppLocalizations {
   /// **'Failed to update video: {error}'**
   String shareMenuFailedToUpdateVideo(String error);
 
+  /// No description provided for @shareMenuFailedToDeleteVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete video: {error}'**
+  String shareMenuFailedToDeleteVideo(String error);
+
   /// No description provided for @shareMenuDeleteVideoQuestion.
   ///
   /// In en, this message translates to:
@@ -5507,13 +5573,13 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuAddCollaborator.
   ///
   /// In en, this message translates to:
-  /// **'Add collaborator'**
+  /// **'Invite collaborator'**
   String get shareMenuAddCollaborator;
 
   /// No description provided for @shareMenuMutualFollowRequired.
   ///
   /// In en, this message translates to:
-  /// **'You need to mutually follow {name} to add them as a collaborator.'**
+  /// **'You need to mutually follow {name} to invite them as a collaborator.'**
   String shareMenuMutualFollowRequired(String name);
 
   /// No description provided for @shareMenuLoading.
@@ -6391,6 +6457,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile'**
   String get navProfile;
+
+  /// No description provided for @navSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get navSearch;
+
+  /// No description provided for @navSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get navSearchTooltip;
 
   /// No description provided for @navMyProfile.
   ///
@@ -8444,6 +8522,42 @@ abstract class AppLocalizations {
   /// **'Discover something interesting'**
   String get searchDiscoverSomethingInteresting;
 
+  /// No description provided for @searchPeopleSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get searchPeopleSectionHeader;
+
+  /// No description provided for @searchPeopleLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading people results'**
+  String get searchPeopleLoadingLabel;
+
+  /// No description provided for @searchTagsSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get searchTagsSectionHeader;
+
+  /// No description provided for @searchTagsLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading tag results'**
+  String get searchTagsLoadingLabel;
+
+  /// No description provided for @searchVideosSectionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos'**
+  String get searchVideosSectionHeader;
+
+  /// No description provided for @searchVideosLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading video results'**
+  String get searchVideosLoadingLabel;
+
   /// No description provided for @searchListsSectionHeader.
   ///
   /// In en, this message translates to:
@@ -9008,11 +9122,23 @@ abstract class AppLocalizations {
   /// **'{clipCount, plural, one{Open clip library, 1 clip} other{Open clip library, {clipCount} clips}}'**
   String videoRecorderLibraryOpenLabel(int clipCount);
 
-  /// No description provided for @videoEditorClipsLabel.
+  /// No description provided for @videoEditorCameraLabel.
   ///
   /// In en, this message translates to:
-  /// **'Clips'**
-  String get videoEditorClipsLabel;
+  /// **'Camera'**
+  String get videoEditorCameraLabel;
+
+  /// No description provided for @videoEditorOpenCameraSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open camera'**
+  String get videoEditorOpenCameraSemanticLabel;
+
+  /// No description provided for @videoEditorLibraryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Library'**
+  String get videoEditorLibraryLabel;
 
   /// No description provided for @videoEditorTextLabel.
   ///
@@ -9026,11 +9152,11 @@ abstract class AppLocalizations {
   /// **'Draw'**
   String get videoEditorDrawLabel;
 
-  /// No description provided for @videoEditorEffectsLabel.
+  /// No description provided for @videoEditorFilterLabel.
   ///
   /// In en, this message translates to:
-  /// **'Effects'**
-  String get videoEditorEffectsLabel;
+  /// **'Filter'**
+  String get videoEditorFilterLabel;
 
   /// No description provided for @videoEditorAudioLabel.
   ///
@@ -9050,11 +9176,11 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get videoEditorAddTitle;
 
-  /// No description provided for @videoEditorOpenClipsSemanticLabel.
+  /// No description provided for @videoEditorOpenLibrarySemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Open clips editor'**
-  String get videoEditorOpenClipsSemanticLabel;
+  /// **'Open Library'**
+  String get videoEditorOpenLibrarySemanticLabel;
 
   /// No description provided for @videoEditorOpenAudioSemanticLabel.
   ///
@@ -9074,11 +9200,11 @@ abstract class AppLocalizations {
   /// **'Open draw editor'**
   String get videoEditorOpenDrawSemanticLabel;
 
-  /// No description provided for @videoEditorOpenEffectsSemanticLabel.
+  /// No description provided for @videoEditorOpenFilterSemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Open effects editor'**
-  String get videoEditorOpenEffectsSemanticLabel;
+  /// **'Open filter editor'**
+  String get videoEditorOpenFilterSemanticLabel;
 
   /// No description provided for @videoEditorSaveDraftTitle.
   ///
@@ -9356,30 +9482,6 @@ abstract class AppLocalizations {
   /// **'Finish timeline editing'**
   String get videoEditorFinishTimelineEditingSemanticLabel;
 
-  /// No description provided for @videoEditorSortNewest.
-  ///
-  /// In en, this message translates to:
-  /// **'Newest'**
-  String get videoEditorSortNewest;
-
-  /// No description provided for @videoEditorSortLongest.
-  ///
-  /// In en, this message translates to:
-  /// **'Longest'**
-  String get videoEditorSortLongest;
-
-  /// No description provided for @videoEditorSortShortest.
-  ///
-  /// In en, this message translates to:
-  /// **'Shortest'**
-  String get videoEditorSortShortest;
-
-  /// No description provided for @videoEditorSortBySemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Sort by {option}. Tap to change sort order'**
-  String videoEditorSortBySemanticLabel(String option);
-
   /// No description provided for @videoEditorAudioPlayPreviewSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -9397,12 +9499,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Untitled sound'**
   String get videoEditorAudioUntitledSound;
-
-  /// No description provided for @videoEditorAudioSelectSoundSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Select sound'**
-  String get videoEditorAudioSelectSoundSemanticLabel;
 
   /// No description provided for @videoEditorAudioUntitled.
   ///
@@ -9428,23 +9524,29 @@ abstract class AppLocalizations {
   /// **'Sounds will appear here when creators share audio'**
   String get videoEditorAudioNoSoundsAvailableSubtitle;
 
-  /// No description provided for @videoEditorAudioNoSoundsFoundTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No sounds found'**
-  String get videoEditorAudioNoSoundsFoundTitle;
-
-  /// No description provided for @videoEditorAudioNoSoundsFoundSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Try a different search term'**
-  String get videoEditorAudioNoSoundsFoundSubtitle;
-
   /// No description provided for @videoEditorAudioFailedToLoadTitle.
   ///
   /// In en, this message translates to:
   /// **'Failed to load sounds'**
   String get videoEditorAudioFailedToLoadTitle;
+
+  /// No description provided for @videoEditorAudioSegmentInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the audio segment for your video'**
+  String get videoEditorAudioSegmentInstruction;
+
+  /// No description provided for @videoEditorAudioCategoryDivine.
+  ///
+  /// In en, this message translates to:
+  /// **'diVine'**
+  String get videoEditorAudioCategoryDivine;
+
+  /// No description provided for @videoEditorAudioCategoryCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get videoEditorAudioCategoryCommunity;
 
   /// No description provided for @videoEditorDrawToolArrowSemanticLabel.
   ///
@@ -9569,6 +9671,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Long press to reorder'**
   String get videoEditorTimelineClipReorderHint;
+
+  /// No description provided for @videoEditorClipGalleryInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to edit. Hold and drag to reorder.'**
+  String get videoEditorClipGalleryInstruction;
 
   /// No description provided for @videoEditorTimelineClipMoveLeft.
   ///
@@ -9765,7 +9873,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataAddCollaboratorSemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Add collaborator'**
+  /// **'Invite collaborator'**
   String get videoMetadataAddCollaboratorSemanticLabel;
 
   /// No description provided for @videoMetadataCollaboratorsHelpTooltip.
@@ -9789,7 +9897,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataCollaboratorsHelpMessage.
   ///
   /// In en, this message translates to:
-  /// **'Collaborators are tagged as co-creators on this post. You can only add people you mutually follow, and they appear in the post metadata when published.'**
+  /// **'Collaborators are invited as co-creators on this post. You can only invite people you mutually follow, and they appear as collaborators after they confirm.'**
   String get videoMetadataCollaboratorsHelpMessage;
 
   /// No description provided for @videoMetadataMutualFollowersSearchText.
@@ -9801,7 +9909,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataMustMutuallyFollowSnackbar.
   ///
   /// In en, this message translates to:
-  /// **'You need to mutually follow {name} to add them as a collaborator.'**
+  /// **'You need to mutually follow {name} to invite them as a collaborator.'**
   String videoMetadataMustMutuallyFollowSnackbar(String name);
 
   /// No description provided for @videoMetadataInspiredByLabel.

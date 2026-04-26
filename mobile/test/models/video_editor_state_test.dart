@@ -35,9 +35,7 @@ void main() {
     });
 
     test('copyWith updates specified fields only', () {
-      final initial = VideoEditorProviderState(
-        title: 'Original Title',
-      );
+      final initial = VideoEditorProviderState(title: 'Original Title');
 
       final updated = initial.copyWith(
         isProcessing: true,

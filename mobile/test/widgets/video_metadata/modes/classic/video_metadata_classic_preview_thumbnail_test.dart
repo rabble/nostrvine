@@ -16,7 +16,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_preview_thumbnail.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -39,68 +39,62 @@ void main() {
     });
 
     group('renders', () {
-      testWidgets(
-        'renders warning icon when thumbnailPath is null',
-        (tester) async {
-          final clipNoThumbnail = DivineVideoClip(
-            id: 'test-clip',
-            video: EditorVideo.file('test.mp4'),
-            duration: const Duration(seconds: 10),
-            recordedAt: DateTime.now(),
-            targetAspectRatio: models.AspectRatio.square,
-            originalAspectRatio: 9 / 16,
-          );
+      testWidgets('renders warning icon when thumbnailPath is null', (
+        tester,
+      ) async {
+        final clipNoThumbnail = DivineVideoClip(
+          id: 'test-clip',
+          video: EditorVideo.file('test.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: models.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+        );
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                clipManagerProvider.overrideWith(
-                  () => _MockClipManagerNotifier([clipNoThumbnail]),
-                ),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: VideoMetadataClassicPreviewThumbnail(),
-                ),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([clipNoThumbnail]),
               ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoMetadataClassicPreviewThumbnail()),
             ),
-          );
+          ),
+        );
 
-          expect(
-            find.byWidgetPredicate(
-              (widget) =>
-                  widget is DivineIcon && widget.icon == DivineIconName.warning,
-            ),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is DivineIcon && widget.icon == DivineIconName.warning,
+          ),
+          findsOneWidget,
+        );
+      });
 
-      testWidgets(
-        'renders thumbnail image when thumbnailPath is set',
-        (tester) async {
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                clipManagerProvider.overrideWith(
-                  () => _MockClipManagerNotifier([testClip]),
-                ),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: VideoMetadataClassicPreviewThumbnail(),
-                ),
+      testWidgets('renders thumbnail image when thumbnailPath is set', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
               ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoMetadataClassicPreviewThumbnail()),
             ),
-          );
+          ),
+        );
 
-          expect(find.byType(Image), findsOneWidget);
-        },
-      );
+        expect(find.byType(Image), findsOneWidget);
+      });
 
       testWidgets(
         'shows processing overlay when isProcessing and no final clip',
@@ -120,17 +114,12 @@ void main() {
               child: const MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: VideoMetadataClassicPreviewThumbnail(),
-                ),
+                home: Scaffold(body: VideoMetadataClassicPreviewThumbnail()),
               ),
             ),
           );
 
-          expect(
-            find.byType(VideoClipEditorProcessingOverlay),
-            findsOneWidget,
-          );
+          expect(find.byType(VideoEditorProcessingOverlay), findsOneWidget);
         },
       );
 
@@ -147,9 +136,7 @@ void main() {
             child: const MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: VideoMetadataClassicPreviewThumbnail(),
-              ),
+              home: Scaffold(body: VideoMetadataClassicPreviewThumbnail()),
             ),
           ),
         );
@@ -179,9 +166,7 @@ void main() {
             originalAspectRatio: 9 / 16,
           );
 
-          final state = VideoEditorProviderState(
-            finalRenderedClip: finalClip,
-          );
+          final state = VideoEditorProviderState(finalRenderedClip: finalClip);
 
           await tester.pumpWidget(
             ProviderScope(
@@ -196,9 +181,7 @@ void main() {
               child: const MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: VideoMetadataClassicPreviewThumbnail(),
-                ),
+                home: Scaffold(body: VideoMetadataClassicPreviewThumbnail()),
               ),
             ),
           );
@@ -213,76 +196,71 @@ void main() {
     });
 
     group('dispose', () {
-      testWidgets(
-        'disposes controller, timer, and value notifier on unmount',
-        (tester) async {
-          final methodCalls = <String>[];
-          _registerMockPlayerChannel(methodCalls);
+      testWidgets('disposes controller, timer, and value notifier on unmount', (
+        tester,
+      ) async {
+        final methodCalls = <String>[];
+        _registerMockPlayerChannel(methodCalls);
 
-          final tmpDir = Directory.systemTemp.createTempSync('test_clip_');
-          final tmpFile = File('${tmpDir.path}/rendered.mp4')
-            ..writeAsBytesSync([0]);
-          addTearDown(() => tmpDir.deleteSync(recursive: true));
+        final tmpDir = Directory.systemTemp.createTempSync('test_clip_');
+        final tmpFile = File('${tmpDir.path}/rendered.mp4')
+          ..writeAsBytesSync([0]);
+        addTearDown(() => tmpDir.deleteSync(recursive: true));
 
-          final finalClip = DivineVideoClip(
-            id: 'final-clip',
-            video: EditorVideo.file(tmpFile.path),
-            duration: const Duration(seconds: 15),
-            recordedAt: DateTime.now(),
-            targetAspectRatio: models.AspectRatio.square,
-            originalAspectRatio: 9 / 16,
-          );
+        final finalClip = DivineVideoClip(
+          id: 'final-clip',
+          video: EditorVideo.file(tmpFile.path),
+          duration: const Duration(seconds: 15),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: models.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+        );
 
-          final state = VideoEditorProviderState(
-            finalRenderedClip: finalClip,
-          );
+        final state = VideoEditorProviderState(finalRenderedClip: finalClip);
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                clipManagerProvider.overrideWith(
-                  () => _MockClipManagerNotifier([testClip]),
-                ),
-                videoEditorProvider.overrideWith(
-                  () => _MockVideoEditorNotifier(state),
-                ),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: VideoMetadataClassicPreviewThumbnail(),
-                ),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
               ),
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(state),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoMetadataClassicPreviewThumbnail()),
             ),
-          );
-          await tester.pumpAndSettle();
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          // Unmount the widget — triggers dispose
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                clipManagerProvider.overrideWith(
-                  () => _MockClipManagerNotifier([testClip]),
-                ),
-                videoEditorProvider.overrideWith(
-                  () => _MockVideoEditorNotifier(state),
-                ),
-              ],
-              child: const MaterialApp(home: Scaffold(body: SizedBox())),
-            ),
-          );
-          await tester.pumpAndSettle();
+        // Unmount the widget — triggers dispose
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
+              ),
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(state),
+              ),
+            ],
+            child: const MaterialApp(home: Scaffold(body: SizedBox())),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          await _waitForMethodCall(
-            tester: tester,
-            methodCalls: methodCalls,
-            method: 'dispose',
-          );
+        await _waitForMethodCall(
+          tester: tester,
+          methodCalls: methodCalls,
+          method: 'dispose',
+        );
 
-          expect(methodCalls, contains('dispose'));
-        },
-      );
+        expect(methodCalls, contains('dispose'));
+      });
     });
   });
 }

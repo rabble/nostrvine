@@ -203,47 +203,44 @@ void main() {
         },
       );
 
-      test(
-        'fails with relayRejected and does NOT save locally when no relay '
-        'answers before timeout',
-        () async {
-          final video = createTestVideoEvent(testPublicKey);
-          final deleteEvent = createTestEvent(
-            pubkey: testPublicKey,
-            kind: 5,
-            tags: [
-              ['e', video.id],
-              ['k', '34236'],
-            ],
-            content: 'CONTENT DELETION',
-          );
+      test('fails with relayRejected and does NOT save locally when no relay '
+          'answers before timeout', () async {
+        final video = createTestVideoEvent(testPublicKey);
+        final deleteEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: [
+            ['e', video.id],
+            ['k', '34236'],
+          ],
+          content: 'CONTENT DELETION',
+        );
 
-          when(
-            () => mockAuthService.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer((_) async => deleteEvent);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => deleteEvent);
 
-          when(
-            () => mockNostrService.publishEventAwaitOk(
-              any(),
-              timeout: any(named: 'timeout'),
-            ),
-          ).thenAnswer((_) async => timedOut(deleteEvent.id));
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => timedOut(deleteEvent.id));
 
-          final result = await service.deleteContent(
-            video: video,
-            reason: 'Personal choice',
-          );
+        final result = await service.deleteContent(
+          video: video,
+          reason: 'Personal choice',
+        );
 
-          expect(result.success, isFalse);
-          expect(result.failureKind, equals(DeleteFailureKind.relayRejected));
-          expect(service.hasBeenDeleted(video.id), isFalse);
-          expect(service.deletionHistory, isEmpty);
-        },
-      );
+        expect(result.success, isFalse);
+        expect(result.failureKind, equals(DeleteFailureKind.relayRejected));
+        expect(service.hasBeenDeleted(video.id), isFalse);
+        expect(service.deletionHistory, isEmpty);
+      });
 
       test(
         'includes the k tag with the original video kind per NIP-09',
@@ -274,10 +271,7 @@ void main() {
             ),
           ).thenAnswer((_) async => accepted(deleteEvent.id));
 
-          await service.deleteContent(
-            video: video,
-            reason: 'Personal choice',
-          );
+          await service.deleteContent(video: video, reason: 'Personal choice');
 
           final captured = verify(
             () => mockAuthService.createAndSignEvent(
@@ -298,36 +292,33 @@ void main() {
         },
       );
 
-      test(
-        'refuses with notOwner when deleting another user content before '
-        'publishing',
-        () async {
-          final otherUserPubkey = getPublicKey(generatePrivateKey());
-          final video = createTestVideoEvent(otherUserPubkey);
+      test('refuses with notOwner when deleting another user content before '
+          'publishing', () async {
+        final otherUserPubkey = getPublicKey(generatePrivateKey());
+        final video = createTestVideoEvent(otherUserPubkey);
 
-          final result = await service.deleteContent(
-            video: video,
-            reason: 'Personal choice',
-          );
+        final result = await service.deleteContent(
+          video: video,
+          reason: 'Personal choice',
+        );
 
-          expect(result.success, isFalse);
-          expect(result.failureKind, equals(DeleteFailureKind.notOwner));
+        expect(result.success, isFalse);
+        expect(result.failureKind, equals(DeleteFailureKind.notOwner));
 
-          verifyNever(
-            () => mockAuthService.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
-          );
-          verifyNever(
-            () => mockNostrService.publishEventAwaitOk(
-              any(),
-              timeout: any(named: 'timeout'),
-            ),
-          );
-        },
-      );
+        verifyNever(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+        verifyNever(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        );
+      });
 
       test(
         'fails with notInitialized when the service has not been initialized',
@@ -346,10 +337,7 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(
-            result.failureKind,
-            equals(DeleteFailureKind.notInitialized),
-          );
+          expect(result.failureKind, equals(DeleteFailureKind.notInitialized));
         },
       );
     });

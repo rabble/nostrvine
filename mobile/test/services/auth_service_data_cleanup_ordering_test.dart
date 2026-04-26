@@ -191,12 +191,12 @@ void main() {
         // captured value will equal the NEW user's pubkey and the
         // identity-change branch is bypassed.
         String? capturedStoredPubkey;
-        when(
-          () => mockCleanupService.shouldClearDataForUser(any()),
-        ).thenAnswer((_) {
-          capturedStoredPubkey ??= prefs.getString('current_user_pubkey_hex');
-          return false;
-        });
+        when(() => mockCleanupService.shouldClearDataForUser(any())).thenAnswer(
+          (_) {
+            capturedStoredPubkey ??= prefs.getString('current_user_pubkey_hex');
+            return false;
+          },
+        );
 
         authService = createAuthService();
 

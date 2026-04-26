@@ -862,6 +862,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Permintaan hapus berhasil dikirim';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Gagal menghapus konten: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Klasik';
 
   @override
@@ -1221,6 +1226,21 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoActionAutoLabel => 'Otomatis';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Aktifkan lanjut otomatis';
 
   @override
@@ -1243,6 +1263,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => 'Tampilkan subtitle';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -2969,6 +2995,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'Hapus konten ini secara permanen';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Ini akan mengirim permintaan hapus (NIP-09) ke semua relay. Beberapa relay mungkin masih menyimpan kontennya.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Video ada di daftar ini:';
 
   @override
@@ -2990,6 +3020,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Menghapus konten...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Gagal menghapus konten: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'Permintaan hapus berhasil dikirim';
@@ -3073,6 +3108,11 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Gagal memperbarui video: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Gagal menghapus video: $error';
   }
 
   @override
@@ -3596,6 +3636,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get navProfile => 'Profil';
+
+  @override
+  String get navSearch => 'Cari';
+
+  @override
+  String get navSearchTooltip => 'Cari';
 
   @override
   String get navMyProfile => 'Profilku';
@@ -4732,6 +4778,24 @@ class AppLocalizationsId extends AppLocalizations {
       'Temukan sesuatu yang menarik';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Daftar';
 
   @override
@@ -5067,7 +5131,13 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'Klip';
+  String get videoEditorCameraLabel => 'Kamera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Buka kamera';
+
+  @override
+  String get videoEditorLibraryLabel => 'Perpustakaan';
 
   @override
   String get videoEditorTextLabel => 'Teks';
@@ -5076,7 +5146,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorDrawLabel => 'Gambar';
 
   @override
-  String get videoEditorEffectsLabel => 'Efek';
+  String get videoEditorFilterLabel => 'Filter';
 
   @override
   String get videoEditorAudioLabel => 'Audio';
@@ -5088,7 +5158,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorAddTitle => 'Tambah';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'Buka editor klip';
+  String get videoEditorOpenLibrarySemanticLabel => 'Buka perpustakaan';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Buka editor audio';
@@ -5100,7 +5170,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Buka editor gambar';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'Buka editor efek';
+  String get videoEditorOpenFilterSemanticLabel => 'Buka editor filter';
 
   @override
   String get videoEditorSaveDraftTitle => 'Simpan draf?';
@@ -5251,20 +5321,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Selesai mengedit timeline';
 
   @override
-  String get videoEditorSortNewest => 'Terbaru';
-
-  @override
-  String get videoEditorSortLongest => 'Terpanjang';
-
-  @override
-  String get videoEditorSortShortest => 'Terpendek';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Urutkan berdasarkan $option. Ketuk untuk mengubah urutan';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'Putar pratinjau';
 
   @override
@@ -5272,9 +5328,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Suara tanpa judul';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Pilih suara';
 
   @override
   String get videoEditorAudioUntitled => 'Tanpa judul';
@@ -5291,14 +5344,17 @@ class AppLocalizationsId extends AppLocalizations {
       'Suara akan muncul di sini saat kreator berbagi audio';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'Suara tidak ditemukan';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Coba kata kunci pencarian lain';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'Gagal memuat suara';
+
+  @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Pilih segmen audio untuk videomu';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Komunitas';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Alat panah';
@@ -5373,6 +5429,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Tekan lama untuk mengurutkan ulang';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Ketuk untuk mengedit. Tekan lama dan seret untuk mengurutkan ulang.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Geser ke kiri';

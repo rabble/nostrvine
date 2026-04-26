@@ -324,9 +324,7 @@ class _EmailVerificationScreenState
     final error = errorCode == null
         ? null
         : context.l10n.emailVerificationErrorMessage(errorCode);
-    context.go(
-      WelcomeScreen.inviteGatePathWithCode(inviteCode, error: error),
-    );
+    context.go(WelcomeScreen.inviteGatePathWithCode(inviteCode, error: error));
   }
 
   @override
@@ -621,9 +619,7 @@ class _PollingContent extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 32),
           child: Column(
             children: [
-              _StatusButton(
-                label: context.l10n.authWaitingForVerification,
-              ),
+              _StatusButton(label: context.l10n.authWaitingForVerification),
               if (isPollingMode) ...[
                 const SizedBox(height: 20),
                 DivineButton(
@@ -653,10 +649,7 @@ class _SuccessContent extends StatelessWidget {
         const Spacer(),
 
         // Shaka sticker (celebration)
-        const DivineSticker(
-          sticker: DivineStickerName.hangLoose,
-          size: 120,
-        ),
+        const DivineSticker(sticker: DivineStickerName.hangLoose, size: 120),
         const SizedBox(height: 32),
 
         Text(

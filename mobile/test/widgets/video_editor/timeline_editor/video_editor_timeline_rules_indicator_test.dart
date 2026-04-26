@@ -43,10 +43,7 @@ void main() {
       testWidgets('renders $VideoEditorTimelineRulesIndicator', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(
-          find.byType(VideoEditorTimelineRulesIndicator),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoEditorTimelineRulesIndicator), findsOneWidget);
       });
 
       testWidgets('renders with correct height', (tester) async {
@@ -68,10 +65,7 @@ void main() {
         const expectedWidth = 5.0 * pps;
 
         await tester.pumpWidget(
-          buildWidget(
-            totalDuration: duration,
-            pixelsPerSecond: pps,
-          ),
+          buildWidget(totalDuration: duration, pixelsPerSecond: pps),
         );
 
         final sizedBox = tester.widget<SizedBox>(
@@ -105,14 +99,10 @@ void main() {
 
     group('zero duration', () {
       testWidgets('renders with zero width for zero duration', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(totalDuration: Duration.zero),
-        );
+        await tester.pumpWidget(buildWidget(totalDuration: Duration.zero));
 
         final sizedBox = tester.widget<SizedBox>(
-          find.byWidgetPredicate(
-            (w) => w is SizedBox && w.width == 0.0,
-          ),
+          find.byWidgetPredicate((w) => w is SizedBox && w.width == 0.0),
         );
         expect(sizedBox.width, equals(0.0));
       });
@@ -121,32 +111,20 @@ void main() {
     group('zoom levels', () {
       testWidgets('scales width with pixelsPerSecond', (tester) async {
         // Low zoom
-        await tester.pumpWidget(
-          buildWidget(
-            pixelsPerSecond: 50,
-          ),
-        );
+        await tester.pumpWidget(buildWidget(pixelsPerSecond: 50));
 
         final lowZoomWidth = tester
             .widget<SizedBox>(
-              find.byWidgetPredicate(
-                (w) => w is SizedBox && w.width == 500.0,
-              ),
+              find.byWidgetPredicate((w) => w is SizedBox && w.width == 500.0),
             )
             .width;
 
         // High zoom
-        await tester.pumpWidget(
-          buildWidget(
-            pixelsPerSecond: 200,
-          ),
-        );
+        await tester.pumpWidget(buildWidget(pixelsPerSecond: 200));
 
         final highZoomWidth = tester
             .widget<SizedBox>(
-              find.byWidgetPredicate(
-                (w) => w is SizedBox && w.width == 2000.0,
-              ),
+              find.byWidgetPredicate((w) => w is SizedBox && w.width == 2000.0),
             )
             .width;
 

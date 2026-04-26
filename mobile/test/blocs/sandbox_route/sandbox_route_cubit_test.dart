@@ -14,41 +14,33 @@ void main() {
       mockService = _MockDirectoryService();
     });
 
-    test(
-      'initial state is resolved when initialApp is '
-      'provided',
-      () {
-        final cubit = SandboxRouteCubit(
-          appId: 'primal-app',
-          directoryService: mockService,
-          initialApp: _fixture(),
-        );
-        expect(cubit.state, isA<SandboxRouteResolved>());
-      },
-    );
+    test('initial state is resolved when initialApp is '
+        'provided', () {
+      final cubit = SandboxRouteCubit(
+        appId: 'primal-app',
+        directoryService: mockService,
+        initialApp: _fixture(),
+      );
+      expect(cubit.state, isA<SandboxRouteResolved>());
+    });
 
-    test(
-      'initial state is loading when initialApp is null',
-      () {
-        final cubit = SandboxRouteCubit(
-          appId: 'primal-app',
-          directoryService: mockService,
-        );
-        expect(cubit.state, isA<SandboxRouteLoading>());
-      },
-    );
+    test('initial state is loading when initialApp is null', () {
+      final cubit = SandboxRouteCubit(
+        appId: 'primal-app',
+        directoryService: mockService,
+      );
+      expect(cubit.state, isA<SandboxRouteLoading>());
+    });
 
     blocTest<SandboxRouteCubit, SandboxRouteState>(
       'emits [resolved] when load finds the app',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenAnswer(
-          (_) async => [_fixture()],
-        );
+        when(
+          mockService.fetchApprovedApps,
+        ).thenAnswer((_) async => [_fixture()]);
       },
-      build: () => SandboxRouteCubit(
-        appId: 'primal-app',
-        directoryService: mockService,
-      ),
+      build: () =>
+          SandboxRouteCubit(appId: 'primal-app', directoryService: mockService),
       act: (cubit) => cubit.load(),
       expect: () => [
         isA<SandboxRouteResolved>().having(
@@ -62,9 +54,7 @@ void main() {
     blocTest<SandboxRouteCubit, SandboxRouteState>(
       'emits [notFound] when load does not find the app',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenAnswer(
-          (_) async => const [],
-        );
+        when(mockService.fetchApprovedApps).thenAnswer((_) async => const []);
       },
       build: () => SandboxRouteCubit(
         appId: 'missing-app',
@@ -77,14 +67,12 @@ void main() {
     blocTest<SandboxRouteCubit, SandboxRouteState>(
       'emits [notFound] when load throws',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenThrow(
-          Exception('network error'),
-        );
+        when(
+          mockService.fetchApprovedApps,
+        ).thenThrow(Exception('network error'));
       },
-      build: () => SandboxRouteCubit(
-        appId: 'primal-app',
-        directoryService: mockService,
-      ),
+      build: () =>
+          SandboxRouteCubit(appId: 'primal-app', directoryService: mockService),
       act: (cubit) => cubit.load(),
       expect: () => [isA<SandboxRouteNotFound>()],
       errors: () => [isA<Exception>()],
@@ -93,9 +81,9 @@ void main() {
     blocTest<SandboxRouteCubit, SandboxRouteState>(
       'does not re-fetch when already resolved',
       setUp: () {
-        when(mockService.fetchApprovedApps).thenAnswer(
-          (_) async => [_fixture()],
-        );
+        when(
+          mockService.fetchApprovedApps,
+        ).thenAnswer((_) async => [_fixture()]);
       },
       build: () => SandboxRouteCubit(
         appId: 'primal-app',

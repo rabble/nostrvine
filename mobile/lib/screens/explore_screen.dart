@@ -39,6 +39,7 @@ import 'package:openvine/widgets/categories_tab.dart';
 import 'package:openvine/widgets/classic_vines_tab.dart';
 import 'package:openvine/widgets/for_you_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
+import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/new_videos_tab.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
@@ -439,10 +440,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       return _buildContent();
     }
 
-    // Show Column with search bar + TabBar + content in grid mode
-    // surfaceBackground (#00150D) fills behind the rounded top corners
-    return ColoredBox(
-      color: VineTheme.surfaceBackground,
+    return NavRoundedShell(
       child: Column(
         children: [
           // Top area: SafeArea + search bar on surfaceBackground
@@ -457,12 +455,13 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               ),
             ),
           ),
-          // Tab bar + content with rounded top corners
+          // Inner top radius is 2 px larger than the outer shell corners
+          // (30) so the tabs container visibly sits inside the
+          // nav-rounded shell.
           Expanded(
             child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(32),
-                topRight: Radius.circular(32),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(VineTheme.shellInnerCornerRadius),
               ),
               child: ColoredBox(
                 color: VineTheme.surfaceContainerHigh,

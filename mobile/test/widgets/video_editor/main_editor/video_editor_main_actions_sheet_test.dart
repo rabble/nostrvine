@@ -9,15 +9,18 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   group(VideoEditorMainActionsSheet, () {
     testWidgets('renders all action labels', (tester) async {
       await tester.pumpWidget(_buildWidget());
 
-      expect(find.text('Clips'), findsOneWidget);
-      expect(find.text('Audio'), findsOneWidget);
-      expect(find.text('Text'), findsOneWidget);
-      expect(find.text('Draw'), findsOneWidget);
-      expect(find.text('Effects'), findsOneWidget);
+      expect(find.text(l10n.videoEditorCameraLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorLibraryLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorAudioLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorTextLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorDrawLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorFilterLabel), findsOneWidget);
     });
 
     testWidgets('tap on Clips triggers onOpenClipsEditor', (tester) async {
@@ -27,7 +30,9 @@ void main() {
         _buildWidget(onOpenClipsEditor: () => openedClips = true),
       );
 
-      await tester.tap(find.bySemanticsLabel('Open clips editor'));
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorOpenLibrarySemanticLabel),
+      );
       await tester.pumpAndSettle();
 
       expect(openedClips, isTrue);
@@ -40,7 +45,9 @@ void main() {
         _buildWidget(onOpenMusicLibrary: () => openedMusic = true),
       );
 
-      await tester.tap(find.bySemanticsLabel('Open audio editor'));
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorOpenAudioSemanticLabel),
+      );
       await tester.pumpAndSettle();
 
       expect(openedMusic, isTrue);
@@ -58,6 +65,7 @@ Widget _buildWidget({
   final scope = VideoEditorScope(
     editorKey: editorKey,
     removeAreaKey: removeAreaKey,
+    onOpenCamera: () {},
     onAddStickers: () {},
     onAdjustVolume: () {},
     onOpenClipsEditor: onOpenClipsEditor ?? () {},
@@ -77,6 +85,7 @@ Widget _buildWidget({
           return VideoEditorScope(
             editorKey: scope.editorKey,
             removeAreaKey: scope.removeAreaKey,
+            onOpenCamera: () {},
             onAddStickers: scope.onAddStickers,
             onAdjustVolume: scope.onAdjustVolume,
             onOpenClipsEditor: scope.onOpenClipsEditor,

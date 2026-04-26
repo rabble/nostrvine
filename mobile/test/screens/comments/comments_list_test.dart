@@ -53,9 +53,7 @@ void main() {
       when(() => mockCommentsBloc.state).thenReturn(commentsState);
 
       return ProviderScope(
-        overrides: [
-          nostrServiceProvider.overrideWithValue(mockNostrClient),
-        ],
+        overrides: [nostrServiceProvider.overrideWithValue(mockNostrClient)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -113,9 +111,7 @@ void main() {
       expect(find.byType(CommentsEmptyState), findsOneWidget);
     });
 
-    testWidgets('shows Classic Vine notice when requested', (
-      tester,
-    ) async {
+    testWidgets('shows Classic Vine notice when requested', (tester) async {
       const state = CommentsState(
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,

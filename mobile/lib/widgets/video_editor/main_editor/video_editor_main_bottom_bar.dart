@@ -17,9 +17,9 @@ class VideoEditorMainBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = VideoEditorScope.of(context);
-    final textScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.25,
-    );
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.25);
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
@@ -40,7 +40,7 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     _ActionButton(
-                      label: context.l10n.videoEditorClipsLabel,
+                      label: context.l10n.videoEditorLibraryLabel,
                       icon: .images,
                       onTap: scope.onOpenClipsEditor,
                     ),
@@ -66,7 +66,7 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                       onTap: scope.onAdjustVolume,
                     ),
                     _ActionButton(
-                      label: context.l10n.videoEditorEffectsLabel,
+                      label: context.l10n.videoEditorFilterLabel,
                       icon: .fadersHorizontal,
                       onTap: () => scope.editor?.openFilterEditor(),
                     ),

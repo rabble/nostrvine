@@ -10,9 +10,12 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
+import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
+import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -31,6 +34,9 @@ class RequestPreviewView extends ConsumerWidget {
     );
     final messageCount = context.select(
       (RequestPreviewCubit cubit) => cubit.state.messageCount,
+    );
+    final messages = context.select(
+      (RequestPreviewCubit cubit) => cubit.state.messages,
     );
 
     final otherPubkey = participantPubkeys.isNotEmpty
@@ -52,7 +58,9 @@ class RequestPreviewView extends ConsumerWidget {
         onBackPressed: context.pop,
       ),
       body: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(VineTheme.bottomSheetBorderRadius),
+        ),
         child: ColoredBox(
           color: VineTheme.surfaceContainerHigh,
           child: Column(
@@ -63,11 +71,10 @@ class RequestPreviewView extends ConsumerWidget {
                   profile: profile,
                   otherPubkey: otherPubkey,
                   messageCount: messageCount,
+                  messages: messages,
                 ),
               ),
-              _ActionButtons(
-                participantPubkeys: participantPubkeys,
-              ),
+              _ActionButtons(participantPubkeys: participantPubkeys),
             ],
           ),
         ),
@@ -82,12 +89,14 @@ class _ProfileContent extends StatelessWidget {
     required this.profile,
     required this.otherPubkey,
     required this.messageCount,
+    required this.messages,
   });
 
   final String displayName;
   final UserProfile? profile;
   final String otherPubkey;
   final int messageCount;
+  final List<DmMessage> messages;
 
   @override
   Widget build(BuildContext context) {
@@ -100,18 +109,11 @@ class _ProfileContent extends StatelessWidget {
       color: VineTheme.scrim15,
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 64,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 64),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              UserAvatar(
-                imageUrl: imageUrl,
-                name: displayName,
-                size: 96,
-              ),
+              UserAvatar(imageUrl: imageUrl, name: displayName, size: 96),
               const SizedBox(height: 32),
               Text(
                 displayName,
@@ -152,9 +154,33 @@ class _ProfileContent extends StatelessWidget {
                 displayName: displayName,
                 messageCount: messageCount,
               ),
+              _InvitePreview(messages: messages),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _InvitePreview extends StatelessWidget {
+  const _InvitePreview({required this.messages});
+
+  final List<DmMessage> messages;
+
+  @override
+  Widget build(BuildContext context) {
+    final inviteMessages = messages
+        .map(CollaboratorInviteParser.parse)
+        .whereType<CollaboratorInvite>()
+        .toList();
+    if (inviteMessages.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: CollaboratorInviteCard(
+        invite: inviteMessages.first,
+        isSent: false,
       ),
     );
   }
@@ -209,9 +235,7 @@ class _MessageCountDescription extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({
-    required this.participantPubkeys,
-  });
+  const _ActionButtons({required this.participantPubkeys});
 
   final List<String> participantPubkeys;
 
@@ -254,10 +278,7 @@ class _ActionButtons extends StatelessWidget {
 }
 
 class _PrimaryActionButton extends StatelessWidget {
-  const _PrimaryActionButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _PrimaryActionButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -280,9 +301,7 @@ class _PrimaryActionButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               child: Text(
                 label,
-                style: VineTheme.titleMediumFont(
-                  color: VineTheme.onPrimary,
-                ),
+                style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -294,10 +313,7 @@ class _PrimaryActionButton extends StatelessWidget {
 }
 
 class _OutlinedActionButton extends StatelessWidget {
-  const _OutlinedActionButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _OutlinedActionButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -330,10 +346,7 @@ class _OutlinedActionButton extends StatelessWidget {
 }
 
 class _SecondaryActionButton extends StatelessWidget {
-  const _SecondaryActionButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _SecondaryActionButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;

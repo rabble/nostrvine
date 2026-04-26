@@ -117,9 +117,7 @@ class _VineArchiveExplanation extends StatelessWidget {
         const SizedBox(height: 12),
         if (video.originalLoops != null && video.originalLoops! > 0) ...[
           Text(
-            context.l10n.badgeExplanationOriginalStats(
-              video.originalLoops!,
-            ),
+            context.l10n.badgeExplanationOriginalStats(video.originalLoops!),
             style: const TextStyle(
               fontSize: 12,
               fontStyle: FontStyle.italic,
@@ -256,10 +254,7 @@ class _ProofModeExplanationState extends ConsumerState<_ProofModeExplanation> {
 
 /// Section showing ProofMode verification details
 class _ProofModeDetailsSection extends StatelessWidget {
-  const _ProofModeDetailsSection({
-    required this.video,
-    this.aiResult,
-  });
+  const _ProofModeDetailsSection({required this.video, this.aiResult});
 
   final VideoEvent video;
   final AIDetectionResult? aiResult;
@@ -633,10 +628,7 @@ class _SectionHeader extends StatelessWidget {
 
 /// Card showing verification level details with icon and description
 class _VerificationLevelCard extends StatelessWidget {
-  const _VerificationLevelCard({
-    required this.video,
-    this.aiResult,
-  });
+  const _VerificationLevelCard({required this.video, this.aiResult});
 
   final VideoEvent video;
   final AIDetectionResult? aiResult;

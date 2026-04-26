@@ -130,10 +130,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.ancestor(
-            of: emailField,
-            matching: find.byType(AutofillGroup),
-          ),
+          find.ancestor(of: emailField, matching: find.byType(AutofillGroup)),
           findsOneWidget,
         );
         expect(
@@ -178,10 +175,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.widgetWithText(
-            DivineButton,
-            'Connect with a signer app',
-          ),
+          find.widgetWithText(DivineButton, 'Connect with a signer app'),
           findsOneWidget,
         );
       });

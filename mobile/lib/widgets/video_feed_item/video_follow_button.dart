@@ -1,11 +1,12 @@
 // ABOUTME: Follow button widget for video overlay using BLoC pattern.
-// ABOUTME: Circular 20x20 button positioned near author avatar.
+// ABOUTME: Circular 20x20 button positioned near the author avatar.
+// ABOUTME: Only rendered when the viewer is NOT following the author; once
+// ABOUTME: following, the button disappears entirely (no "following" state).
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -17,20 +18,15 @@ import 'package:unified_logger/unified_logger.dart';
 /// Uses StatefulConsumerWidget to avoid unnecessary rebuilds - the follow
 /// repository and nostr client are read once during initState, not on every
 /// build. The BLoC is created once and reused.
+///
+/// The button is only shown for videos authored by someone the viewer does
+/// not yet follow. Once the viewer follows the author, the button hides for
+/// good.
 class VideoFollowButton extends ConsumerStatefulWidget {
-  const VideoFollowButton({
-    required this.pubkey,
-    super.key,
-    this.hideIfFollowing = false,
-  });
+  const VideoFollowButton({required this.pubkey, super.key});
 
-  /// The public key of the video author to follow/unfollow.
+  /// The public key of the video author to follow.
   final String pubkey;
-
-  /// When true, hides the button entirely if already following.
-  /// Useful for Home feed (all videos are from followed users) and
-  /// Profile views of followed users.
-  final bool hideIfFollowing;
 
   @override
   ConsumerState<VideoFollowButton> createState() => _VideoFollowButtonState();
@@ -56,16 +52,13 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
     // Check if this is the user's own video (read once, never changes)
     _isOwnVideo = nostrClient.publicKey == widget.pubkey;
 
-    // Only create BLoC if we actually need to show the button
-    if (!_isOwnVideo) {
-      // Check if already following and should hide
-      final isFollowing = followRepository.isFollowing(widget.pubkey);
-      if (!(widget.hideIfFollowing && isFollowing)) {
-        _bloc = MyFollowingBloc(
-          followRepository: followRepository,
-          contentBlocklistRepository: blocklistRepository,
-        )..add(const MyFollowingListLoadRequested());
-      }
+    // Only create the BLoC when we might need to show the button: neither
+    // the viewer's own video nor an author they already follow.
+    if (!_isOwnVideo && !followRepository.isFollowing(widget.pubkey)) {
+      _bloc = MyFollowingBloc(
+        followRepository: followRepository,
+        contentBlocklistRepository: blocklistRepository,
+      )..add(const MyFollowingListLoadRequested());
     }
 
     _isInitialized = true;
@@ -79,53 +72,26 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
 
   @override
   Widget build(BuildContext context) {
-    // Fast path: not initialized yet
-    if (!_isInitialized) {
-      return const SizedBox.shrink();
-    }
-
-    // Fast path: own video - never show follow button
-    if (_isOwnVideo) {
-      return const SizedBox.shrink();
-    }
-
-    // Check current follow state for hide logic
-    final followRepository = ref.read(followRepositoryProvider);
-    // Use read() since we only need the value, not reactivity here
-    // The BlocSelector below handles reactivity for the actual button
-    if (widget.hideIfFollowing) {
-      final isFollowing = followRepository.isFollowing(widget.pubkey);
-      if (isFollowing) {
-        return const SizedBox.shrink();
-      }
-    }
-
-    // No BLoC means we determined early we don't need to show
-    if (_bloc == null) {
+    // Fast path: not initialized yet, viewer's own video, or already
+    // following — never render the button.
+    if (!_isInitialized || _isOwnVideo || _bloc == null) {
       return const SizedBox.shrink();
     }
 
     return BlocProvider.value(
       value: _bloc!,
-      child: VideoFollowButtonView(
-        pubkey: widget.pubkey,
-        hideIfFollowing: widget.hideIfFollowing,
-      ),
+      child: VideoFollowButtonView(pubkey: widget.pubkey),
     );
   }
 }
 
-/// View widget that consumes [MyFollowingBloc] state and renders the follow button.
+/// View widget that consumes [MyFollowingBloc] state and renders the follow
+/// button. Hides itself entirely once the viewer is following the author.
 class VideoFollowButtonView extends StatelessWidget {
   @visibleForTesting
-  const VideoFollowButtonView({
-    required this.pubkey,
-    super.key,
-    this.hideIfFollowing = false,
-  });
+  const VideoFollowButtonView({required this.pubkey, super.key});
 
   final String pubkey;
-  final bool hideIfFollowing;
 
   @override
   Widget build(BuildContext context) {
@@ -141,22 +107,20 @@ class VideoFollowButtonView extends StatelessWidget {
             state.status == MyFollowingStatus.toggleFailure,
       ),
       builder: (context, data) {
-        // Don't show button until status is success to prevent flash on Home feed
+        // Do not render until the following list has loaded to avoid a
+        // flash of the button for authors the viewer already follows.
         if (!data.isReady) {
           return const SizedBox.shrink();
         }
 
-        final isFollowing = data.isFollowing;
-
-        // Hide button entirely if already following and hideIfFollowing is true
-        if (hideIfFollowing && isFollowing) {
+        // Hide permanently once following — no "following" affordance.
+        if (data.isFollowing) {
           return const SizedBox.shrink();
         }
+
         return Semantics(
           identifier: 'follow_button',
-          label: isFollowing
-              ? context.l10n.videoFollowButtonFollowing
-              : context.l10n.videoFollowButtonFollow,
+          label: context.l10n.videoFollowButtonFollow,
           button: true,
           child: GestureDetector(
             onTap: () {
@@ -172,25 +136,16 @@ class VideoFollowButtonView extends StatelessWidget {
             child: Container(
               width: 20,
               height: 20,
-              decoration: BoxDecoration(
-                color: isFollowing
-                    ? VineTheme.whiteText
-                    : VineTheme.cameraButtonGreen,
+              decoration: const BoxDecoration(
+                color: VineTheme.cameraButtonGreen,
                 shape: BoxShape.circle,
+                boxShadow: VineTheme.buttonBoxShadows,
               ),
-              child: Center(
-                child: SvgPicture.asset(
-                  isFollowing
-                      ? 'assets/icon/Icon-Following.svg'
-                      : 'assets/icon/Icon-Follow.svg',
-                  width: 13,
-                  height: 13,
-                  colorFilter: isFollowing
-                      ? null // Icon-Following.svg has its own green color
-                      : const ColorFilter.mode(
-                          VineTheme.whiteText,
-                          BlendMode.srcIn,
-                        ),
+              child: const Center(
+                child: DivineIcon(
+                  icon: DivineIconName.follow,
+                  size: 13,
+                  color: VineTheme.whiteText,
                 ),
               ),
             ),

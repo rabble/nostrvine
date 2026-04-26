@@ -103,10 +103,7 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(
-          find.textContaining('Original sound'),
-          findsNothing,
-        );
+        expect(find.textContaining('Original sound'), findsNothing);
       });
     });
 
@@ -191,34 +188,31 @@ void main() {
         expect(text.style?.color, equals(VineTheme.whiteText));
       });
 
-      testWidgets(
-        'renders nothing when audio event is null',
-        (tester) async {
-          final video = createVideoWithAudio();
+      testWidgets('renders nothing when audio event is null', (tester) async {
+        final video = createVideoWithAudio();
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                soundByIdProvider(testAudioEventId).overrideWith((ref) async {
-                  return null;
-                }),
-              ],
-              child: MaterialApp(
-                theme: VineTheme.theme,
-                home: Scaffold(
-                  backgroundColor: Colors.black,
-                  body: AudioAttributionRow(video: video),
-                ),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              soundByIdProvider(testAudioEventId).overrideWith((ref) async {
+                return null;
+              }),
+            ],
+            child: MaterialApp(
+              theme: VineTheme.theme,
+              home: Scaffold(
+                backgroundColor: Colors.black,
+                body: AudioAttributionRow(video: video),
               ),
             ),
-          );
+          ),
+        );
 
-          await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-          // Should render nothing when audio can't be found
-          expect(find.textContaining('Original sound'), findsNothing);
-        },
-      );
+        // Should render nothing when audio can't be found
+        expect(find.textContaining('Original sound'), findsNothing);
+      });
     });
 
     group('Loading state', () {
@@ -347,14 +341,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(
-          find.textContaining('Oh No No No Crowd'),
-          findsOneWidget,
-        );
-        expect(
-          find.textContaining('ThePauny via Freesound'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Oh No No No Crowd'), findsOneWidget);
+        expect(find.textContaining('ThePauny via Freesound'), findsOneWidget);
       });
 
       testWidgets('does not try to fetch profile for bundled sounds', (

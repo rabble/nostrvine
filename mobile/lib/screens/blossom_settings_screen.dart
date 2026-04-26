@@ -124,9 +124,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.blossomFailedToSaveSettings('$e'),
-            ),
+            content: Text(context.l10n.blossomFailedToSaveSettings('$e')),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -230,9 +228,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                         _isBlossomEnabled
                             ? 'Videos will be uploaded to your custom Blossom server'
                             : "Your videos are currently being uploaded to Divine's Blossom server",
-                        style: const TextStyle(
-                          color: VineTheme.onSurfaceMuted,
-                        ),
+                        style: const TextStyle(color: VineTheme.onSurfaceMuted),
                       ),
                       value: _isBlossomEnabled,
                       onChanged: (value) {
@@ -359,16 +355,10 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
       color: VineTheme.whiteText.withValues(alpha: 0.05),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text(
-          name,
-          style: const TextStyle(color: VineTheme.whiteText),
-        ),
+        title: Text(name, style: const TextStyle(color: VineTheme.whiteText)),
         subtitle: Text(
           url,
-          style: const TextStyle(
-            color: VineTheme.onSurfaceMuted,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: VineTheme.onSurfaceMuted, fontSize: 12),
         ),
         trailing: const Icon(Icons.arrow_forward, color: VineTheme.vineGreen),
         onTap: () {

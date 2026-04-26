@@ -153,9 +153,7 @@ class _GlobalErrorWidget extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: VineTheme.cardBackground,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: VineTheme.onSurfaceDisabled,
-                      ),
+                      border: Border.all(color: VineTheme.onSurfaceDisabled),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

@@ -57,9 +57,7 @@ void main() {
           limit: any(named: 'limit'),
           offset: any(named: 'offset'),
         ),
-      ).thenAnswer(
-        (_) async => (videos: <VideoEvent>[], totalCount: 0),
-      );
+      ).thenAnswer((_) async => (videos: <VideoEvent>[], totalCount: 0));
       when(
         () => mockVideosRepository.deduplicateAndSortVideos(any()),
       ).thenAnswer((inv) => inv.positionalArguments.first as List<VideoEvent>);

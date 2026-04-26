@@ -381,9 +381,7 @@ void main() {
       final container = createContainer();
       addTearDown(container.dispose);
 
-      when(
-        () => mockHttpClient.get(any()),
-      ).thenAnswer(
+      when(() => mockHttpClient.get(any())).thenAnswer(
         (_) async => http.Response(
           'WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nImmediate\n',
           200,

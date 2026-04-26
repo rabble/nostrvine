@@ -142,9 +142,9 @@ class _VinerAvatar extends ConsumerWidget {
     final profile = ref.watch(userProfileReactiveProvider(viner.pubkey)).value;
     final avatarUrl = viner.authorAvatar ?? profile?.picture;
 
-    final textScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.5,
-    );
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.5);
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: Semantics(

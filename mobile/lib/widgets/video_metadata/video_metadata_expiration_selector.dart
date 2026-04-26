@@ -98,10 +98,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const DivineIcon(
-                    icon: .caretRight,
-                    color: VineTheme.primary,
-                  ),
+                  const DivineIcon(icon: .caretRight, color: VineTheme.primary),
                 ],
               ),
             ],

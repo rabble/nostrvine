@@ -46,9 +46,12 @@ void main() {
       });
 
       test('creates all-enabled from full kinds list', () {
-        final prefs = NotificationPreferences.fromKindsList(
-          const [1, 3, 7, 16],
-        );
+        final prefs = NotificationPreferences.fromKindsList(const [
+          1,
+          3,
+          7,
+          16,
+        ]);
         expect(prefs.likesEnabled, isTrue);
         expect(prefs.commentsEnabled, isTrue);
         expect(prefs.followsEnabled, isTrue);

@@ -49,9 +49,7 @@ void main() {
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoRecorderCaptureStack(),
-          ),
+          home: Scaffold(body: VideoRecorderCaptureStack(fromEditor: false)),
         ),
       );
     }
@@ -122,35 +120,34 @@ void main() {
         expect(opacities.any((o) => o.opacity == 1), isTrue);
       });
 
-      testWidgets(
-        'undo button is hidden during recording even with clips',
-        (tester) async {
-          final clips = [
-            DivineVideoClip(
-              id: 'clip1',
-              video: EditorVideo.file('/test/clip1.mp4'),
-              duration: const Duration(seconds: 2),
-              recordedAt: DateTime.now(),
-              targetAspectRatio: .vertical,
-              originalAspectRatio: 9 / 16,
-            ),
-          ];
+      testWidgets('undo button is hidden during recording even with clips', (
+        tester,
+      ) async {
+        final clips = [
+          DivineVideoClip(
+            id: 'clip1',
+            video: EditorVideo.file('/test/clip1.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        ];
 
-          await tester.pumpWidget(
-            buildWidget(
-              recordingState: VideoRecorderState.recording,
-              clips: clips,
-            ),
-          );
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildWidget(
+            recordingState: VideoRecorderState.recording,
+            clips: clips,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          // Should have opacity 0 for the undo button
-          final opacities = tester
-              .widgetList<AnimatedOpacity>(find.byType(AnimatedOpacity))
-              .toList();
-          expect(opacities.any((o) => o.opacity == 0), isTrue);
-        },
-      );
+        // Should have opacity 0 for the undo button
+        final opacities = tester
+            .widgetList<AnimatedOpacity>(find.byType(AnimatedOpacity))
+            .toList();
+        expect(opacities.any((o) => o.opacity == 0), isTrue);
+      });
     });
 
     group('layout', () {
@@ -166,6 +163,18 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(Stack), findsWidgets);
+      });
+
+      testWidgets('$RecordButton is horizontally centered', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        final stackRect = tester.getRect(
+          find.byType(VideoRecorderCaptureStack),
+        );
+        final recordButtonRect = tester.getRect(find.byType(RecordButton));
+
+        expect(recordButtonRect.center.dx, closeTo(stackRect.center.dx, 2.0));
       });
     });
   });

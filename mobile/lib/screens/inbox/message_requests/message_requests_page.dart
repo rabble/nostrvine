@@ -36,9 +36,7 @@ class MessageRequestsPage extends ConsumerWidget {
           )..add(const ConversationListStarted()),
         ),
         BlocProvider(
-          create: (_) => MessageRequestActionsCubit(
-            dmRepository: dmRepository,
-          ),
+          create: (_) => MessageRequestActionsCubit(dmRepository: dmRepository),
         ),
       ],
       child: const MessageRequestsView(),

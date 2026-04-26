@@ -37,31 +37,22 @@ void main() {
               recordingState: recordingState,
             ),
           ),
-          clipManagerProvider.overrideWith(
-            _TestClipManagerNotifier.new,
-          ),
+          clipManagerProvider.overrideWith(_TestClipManagerNotifier.new),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoRecorderClassicActionsBottom(),
-          ),
+          home: Scaffold(body: VideoRecorderClassicActionsBottom()),
         ),
       );
     }
 
     group('renders', () {
-      testWidgets('renders $VideoRecorderClassicActionsBottom', (
-        tester,
-      ) async {
+      testWidgets('renders $VideoRecorderClassicActionsBottom', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        expect(
-          find.byType(VideoRecorderClassicActionsBottom),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoRecorderClassicActionsBottom), findsOneWidget);
       });
 
       testWidgets('renders three action buttons', (tester) async {
@@ -107,17 +98,13 @@ void main() {
     });
 
     group('interactions', () {
-      testWidgets('shows snackbar when ghost frame is toggled', (
-        tester,
-      ) async {
+      testWidgets('shows snackbar when ghost frame is toggled', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
         // The ghost button is the third DivineIconButton
         final ghostButtons = tester
-            .widgetList<DivineIconButton>(
-              find.byType(DivineIconButton),
-            )
+            .widgetList<DivineIconButton>(find.byType(DivineIconButton))
             .toList();
         expect(ghostButtons.length, equals(3));
 

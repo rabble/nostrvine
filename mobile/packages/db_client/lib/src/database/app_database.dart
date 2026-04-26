@@ -289,6 +289,7 @@ class AppDatabase extends _$AppDatabase {
           reply_to_id TEXT,
           gift_wrap_id TEXT NOT NULL,
           subject TEXT,
+          tags_json TEXT,
           message_kind INTEGER NOT NULL DEFAULT 14,
           file_type TEXT,
           encryption_algorithm TEXT,
@@ -340,6 +341,7 @@ class AppDatabase extends _$AppDatabase {
     await _addColumnIfMissing('direct_messages', 'dimensions', 'TEXT');
     await _addColumnIfMissing('direct_messages', 'blurhash', 'TEXT');
     await _addColumnIfMissing('direct_messages', 'thumbnail_url', 'TEXT');
+    await _addColumnIfMissing('direct_messages', 'tags_json', 'TEXT');
 
     // Check if conversations table exists, create if missing
     final convResult = await customSelect(

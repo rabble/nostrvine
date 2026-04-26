@@ -80,39 +80,36 @@ void main() {
   }
 
   group('pushNotificationSync', () {
-    test(
-      'skips requestPermission when status is already authorized',
-      () async {
-        when(
-          () => messaging.getNotificationSettings(),
-        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+    test('skips requestPermission when status is already authorized', () async {
+      when(
+        () => messaging.getNotificationSettings(),
+      ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
 
-        final container = buildContainer();
-        container.read(pushNotificationSyncProvider);
+      final container = buildContainer();
+      container.read(pushNotificationSyncProvider);
 
-        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
-        authStateController.add(AuthState.authenticated);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+      when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+      authStateController.add(AuthState.authenticated);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
-        verify(() => messaging.getNotificationSettings()).called(1);
-        verifyNever(
-          () => messaging.requestPermission(
-            alert: any(named: 'alert'),
-            announcement: any(named: 'announcement'),
-            badge: any(named: 'badge'),
-            carPlay: any(named: 'carPlay'),
-            criticalAlert: any(named: 'criticalAlert'),
-            provisional: any(named: 'provisional'),
-            sound: any(named: 'sound'),
-            providesAppNotificationSettings: any(
-              named: 'providesAppNotificationSettings',
-            ),
+      verify(() => messaging.getNotificationSettings()).called(1);
+      verifyNever(
+        () => messaging.requestPermission(
+          alert: any(named: 'alert'),
+          announcement: any(named: 'announcement'),
+          badge: any(named: 'badge'),
+          carPlay: any(named: 'carPlay'),
+          criticalAlert: any(named: 'criticalAlert'),
+          provisional: any(named: 'provisional'),
+          sound: any(named: 'sound'),
+          providesAppNotificationSettings: any(
+            named: 'providesAppNotificationSettings',
           ),
-        );
-        verify(() => pushService.register(pubkeyA)).called(1);
-      },
-    );
+        ),
+      );
+      verify(() => pushService.register(pubkeyA)).called(1);
+    });
 
     test('requests permission when status is notDetermined', () async {
       when(
@@ -161,9 +158,9 @@ void main() {
     test(
       'catches PlatformException from firebase_messaging permission race',
       () async {
-        when(() => messaging.getNotificationSettings()).thenAnswer(
-          (_) async => _settings(AuthorizationStatus.notDetermined),
-        );
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.notDetermined));
         when(
           () => messaging.requestPermission(
             alert: any(named: 'alert'),

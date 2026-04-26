@@ -106,9 +106,7 @@ VideoEvent _makeVideo() => VideoEvent(
 void main() {
   testWidgets(
     'renders the active subtitle cue from a video player controller',
-    (
-      tester,
-    ) async {
+    (tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final controller = _FakeVideoPlayerController()

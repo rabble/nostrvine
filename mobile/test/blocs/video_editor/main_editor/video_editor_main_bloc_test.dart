@@ -130,9 +130,8 @@ void main() {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
         'emits state with isLayerOverRemoveArea true',
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const VideoEditorLayerOverRemoveAreaChanged(isOver: true),
-        ),
+        act: (bloc) =>
+            bloc.add(const VideoEditorLayerOverRemoveAreaChanged(isOver: true)),
         expect: () => [
           isA<VideoEditorMainState>().having(
             (s) => s.isLayerOverRemoveArea,
@@ -146,9 +145,8 @@ void main() {
         'does not emit when value has not changed',
         build: buildBloc,
         seed: () => const VideoEditorMainState(isLayerOverRemoveArea: true),
-        act: (bloc) => bloc.add(
-          const VideoEditorLayerOverRemoveAreaChanged(isOver: true),
-        ),
+        act: (bloc) =>
+            bloc.add(const VideoEditorLayerOverRemoveAreaChanged(isOver: true)),
         expect: () => <VideoEditorMainState>[],
       );
 
@@ -188,9 +186,8 @@ void main() {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
         'emits state with openSubEditor cleared',
         build: buildBloc,
-        seed: () => const VideoEditorMainState(
-          openSubEditor: SubEditorType.text,
-        ),
+        seed: () =>
+            const VideoEditorMainState(openSubEditor: SubEditorType.text),
         act: (bloc) => bloc.add(const VideoEditorMainSubEditorClosed()),
         expect: () => [
           isA<VideoEditorMainState>()
@@ -204,9 +201,8 @@ void main() {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
         'emits state with isPlaying true',
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const VideoEditorPlaybackChanged(isPlaying: true),
-        ),
+        act: (bloc) =>
+            bloc.add(const VideoEditorPlaybackChanged(isPlaying: true)),
         expect: () => [
           isA<VideoEditorMainState>().having(
             (s) => s.isPlaying,
@@ -220,9 +216,8 @@ void main() {
         'emits state with isPlaying false',
         build: buildBloc,
         seed: () => const VideoEditorMainState(isPlaying: true),
-        act: (bloc) => bloc.add(
-          const VideoEditorPlaybackChanged(isPlaying: false),
-        ),
+        act: (bloc) =>
+            bloc.add(const VideoEditorPlaybackChanged(isPlaying: false)),
         expect: () => [
           isA<VideoEditorMainState>().having(
             (s) => s.isPlaying,
@@ -252,9 +247,8 @@ void main() {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
         'emits state with isExternalPauseRequested true',
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const VideoEditorExternalPauseRequested(isPaused: true),
-        ),
+        act: (bloc) =>
+            bloc.add(const VideoEditorExternalPauseRequested(isPaused: true)),
         expect: () => [
           isA<VideoEditorMainState>().having(
             (s) => s.isExternalPauseRequested,
@@ -267,12 +261,9 @@ void main() {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
         'emits state with isExternalPauseRequested false',
         build: buildBloc,
-        seed: () => const VideoEditorMainState(
-          isExternalPauseRequested: true,
-        ),
-        act: (bloc) => bloc.add(
-          const VideoEditorExternalPauseRequested(isPaused: false),
-        ),
+        seed: () => const VideoEditorMainState(isExternalPauseRequested: true),
+        act: (bloc) =>
+            bloc.add(const VideoEditorExternalPauseRequested(isPaused: false)),
         expect: () => [
           isA<VideoEditorMainState>().having(
             (s) => s.isExternalPauseRequested,
@@ -345,9 +336,8 @@ void main() {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
         'emits state with seekPosition and increments seekCounter',
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const VideoEditorSeekRequested(Duration(seconds: 5)),
-        ),
+        act: (bloc) =>
+            bloc.add(const VideoEditorSeekRequested(Duration(seconds: 5))),
         expect: () => [
           isA<VideoEditorMainState>()
               .having(
@@ -355,11 +345,7 @@ void main() {
                 'seekPosition',
                 equals(const Duration(seconds: 5)),
               )
-              .having(
-                (s) => s.seekCounter,
-                'seekCounter',
-                equals(1),
-              ),
+              .having((s) => s.seekCounter, 'seekCounter', equals(1)),
         ],
       );
 
@@ -370,9 +356,8 @@ void main() {
           seekPosition: Duration(seconds: 2),
           seekCounter: 5,
         ),
-        act: (bloc) => bloc.add(
-          const VideoEditorSeekRequested(Duration(seconds: 10)),
-        ),
+        act: (bloc) =>
+            bloc.add(const VideoEditorSeekRequested(Duration(seconds: 10))),
         expect: () => [
           isA<VideoEditorMainState>()
               .having(
@@ -380,11 +365,7 @@ void main() {
                 'seekPosition',
                 equals(const Duration(seconds: 10)),
               )
-              .having(
-                (s) => s.seekCounter,
-                'seekCounter',
-                equals(6),
-              ),
+              .having((s) => s.seekCounter, 'seekCounter', equals(6)),
         ],
       );
     });
@@ -408,12 +389,10 @@ void main() {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
         'updates currentPosition from existing value',
         build: buildBloc,
-        seed: () => const VideoEditorMainState(
-          currentPosition: Duration(seconds: 1),
-        ),
-        act: (bloc) => bloc.add(
-          const VideoEditorPositionChanged(Duration(seconds: 3)),
-        ),
+        seed: () =>
+            const VideoEditorMainState(currentPosition: Duration(seconds: 1)),
+        act: (bloc) =>
+            bloc.add(const VideoEditorPositionChanged(Duration(seconds: 3))),
         expect: () => [
           isA<VideoEditorMainState>().having(
             (s) => s.currentPosition,
@@ -428,9 +407,8 @@ void main() {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
         'emits state with updated totalDuration',
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const VideoEditorDurationChanged(Duration(seconds: 30)),
-        ),
+        act: (bloc) =>
+            bloc.add(const VideoEditorDurationChanged(Duration(seconds: 30))),
         expect: () => [
           isA<VideoEditorMainState>().having(
             (s) => s.totalDuration,
@@ -443,12 +421,10 @@ void main() {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
         'updates totalDuration from existing value',
         build: buildBloc,
-        seed: () => const VideoEditorMainState(
-          totalDuration: Duration(seconds: 10),
-        ),
-        act: (bloc) => bloc.add(
-          const VideoEditorDurationChanged(Duration(seconds: 60)),
-        ),
+        seed: () =>
+            const VideoEditorMainState(totalDuration: Duration(seconds: 10)),
+        act: (bloc) =>
+            bloc.add(const VideoEditorDurationChanged(Duration(seconds: 60))),
         expect: () => [
           isA<VideoEditorMainState>().having(
             (s) => s.totalDuration,
@@ -492,9 +468,8 @@ void main() {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
         'emits state with isReordering true',
         build: buildBloc,
-        act: (bloc) => bloc.add(
-          const VideoEditorReorderingChanged(isReordering: true),
-        ),
+        act: (bloc) =>
+            bloc.add(const VideoEditorReorderingChanged(isReordering: true)),
         expect: () => [
           isA<VideoEditorMainState>().having(
             (s) => s.isReordering,
@@ -508,9 +483,8 @@ void main() {
         'emits state with isReordering false',
         build: buildBloc,
         seed: () => const VideoEditorMainState(isReordering: true),
-        act: (bloc) => bloc.add(
-          const VideoEditorReorderingChanged(isReordering: false),
-        ),
+        act: (bloc) =>
+            bloc.add(const VideoEditorReorderingChanged(isReordering: false)),
         expect: () => [
           isA<VideoEditorMainState>().having(
             (s) => s.isReordering,
@@ -597,36 +571,30 @@ void main() {
   });
 
   group('$VideoEditorMainEvent equality', () {
-    test(
-      '$VideoEditorMainCapabilitiesChanged with same props are equal',
-      () {
-        const event1 = VideoEditorMainCapabilitiesChanged(
-          canUndo: true,
-          canRedo: false,
-        );
-        const event2 = VideoEditorMainCapabilitiesChanged(
-          canUndo: true,
-          canRedo: false,
-        );
-        expect(event1, equals(event2));
-      },
-    );
+    test('$VideoEditorMainCapabilitiesChanged with same props are equal', () {
+      const event1 = VideoEditorMainCapabilitiesChanged(
+        canUndo: true,
+        canRedo: false,
+      );
+      const event2 = VideoEditorMainCapabilitiesChanged(
+        canUndo: true,
+        canRedo: false,
+      );
+      expect(event1, equals(event2));
+    });
 
-    test(
-      '$VideoEditorMainCapabilitiesChanged with different props '
-      'are not equal',
-      () {
-        const event1 = VideoEditorMainCapabilitiesChanged(
-          canUndo: true,
-          canRedo: false,
-        );
-        const event2 = VideoEditorMainCapabilitiesChanged(
-          canUndo: false,
-          canRedo: true,
-        );
-        expect(event1, isNot(equals(event2)));
-      },
-    );
+    test('$VideoEditorMainCapabilitiesChanged with different props '
+        'are not equal', () {
+      const event1 = VideoEditorMainCapabilitiesChanged(
+        canUndo: true,
+        canRedo: false,
+      );
+      const event2 = VideoEditorMainCapabilitiesChanged(
+        canUndo: false,
+        canRedo: true,
+      );
+      expect(event1, isNot(equals(event2)));
+    });
 
     test('$VideoEditorLayerInteractionStarted events are equal', () {
       const event1 = VideoEditorLayerInteractionStarted();
@@ -649,15 +617,12 @@ void main() {
       },
     );
 
-    test(
-      '$VideoEditorLayerOverRemoveAreaChanged with different isOver '
-      'are not equal',
-      () {
-        const event1 = VideoEditorLayerOverRemoveAreaChanged(isOver: true);
-        const event2 = VideoEditorLayerOverRemoveAreaChanged(isOver: false);
-        expect(event1, isNot(equals(event2)));
-      },
-    );
+    test('$VideoEditorLayerOverRemoveAreaChanged with different isOver '
+        'are not equal', () {
+      const event1 = VideoEditorLayerOverRemoveAreaChanged(isOver: true);
+      const event2 = VideoEditorLayerOverRemoveAreaChanged(isOver: false);
+      expect(event1, isNot(equals(event2)));
+    });
 
     test('$VideoEditorMainOpenSubEditor with same type are equal', () {
       const event1 = VideoEditorMainOpenSubEditor(SubEditorType.text);
@@ -701,24 +666,18 @@ void main() {
       expect(event1, equals(event2));
     });
 
-    test(
-      '$VideoEditorExternalPauseRequested with same isPaused are equal',
-      () {
-        const event1 = VideoEditorExternalPauseRequested(isPaused: true);
-        const event2 = VideoEditorExternalPauseRequested(isPaused: true);
-        expect(event1, equals(event2));
-      },
-    );
+    test('$VideoEditorExternalPauseRequested with same isPaused are equal', () {
+      const event1 = VideoEditorExternalPauseRequested(isPaused: true);
+      const event2 = VideoEditorExternalPauseRequested(isPaused: true);
+      expect(event1, equals(event2));
+    });
 
-    test(
-      '$VideoEditorExternalPauseRequested with different isPaused '
-      'are not equal',
-      () {
-        const event1 = VideoEditorExternalPauseRequested(isPaused: true);
-        const event2 = VideoEditorExternalPauseRequested(isPaused: false);
-        expect(event1, isNot(equals(event2)));
-      },
-    );
+    test('$VideoEditorExternalPauseRequested with different isPaused '
+        'are not equal', () {
+      const event1 = VideoEditorExternalPauseRequested(isPaused: true);
+      const event2 = VideoEditorExternalPauseRequested(isPaused: false);
+      expect(event1, isNot(equals(event2)));
+    });
 
     test('$VideoEditorPlaybackRestartRequested events are equal', () {
       const event1 = VideoEditorPlaybackRestartRequested();
@@ -732,62 +691,44 @@ void main() {
       expect(event1, equals(event2));
     });
 
-    test(
-      '$VideoEditorSeekRequested with same position are equal',
-      () {
-        const event1 = VideoEditorSeekRequested(Duration(seconds: 5));
-        const event2 = VideoEditorSeekRequested(Duration(seconds: 5));
-        expect(event1, equals(event2));
-      },
-    );
+    test('$VideoEditorSeekRequested with same position are equal', () {
+      const event1 = VideoEditorSeekRequested(Duration(seconds: 5));
+      const event2 = VideoEditorSeekRequested(Duration(seconds: 5));
+      expect(event1, equals(event2));
+    });
 
-    test(
-      '$VideoEditorSeekRequested with different positions '
-      'are not equal',
-      () {
-        const event1 = VideoEditorSeekRequested(Duration(seconds: 5));
-        const event2 = VideoEditorSeekRequested(Duration(seconds: 10));
-        expect(event1, isNot(equals(event2)));
-      },
-    );
+    test('$VideoEditorSeekRequested with different positions '
+        'are not equal', () {
+      const event1 = VideoEditorSeekRequested(Duration(seconds: 5));
+      const event2 = VideoEditorSeekRequested(Duration(seconds: 10));
+      expect(event1, isNot(equals(event2)));
+    });
 
-    test(
-      '$VideoEditorPositionChanged with same position are equal',
-      () {
-        const event1 = VideoEditorPositionChanged(Duration(seconds: 3));
-        const event2 = VideoEditorPositionChanged(Duration(seconds: 3));
-        expect(event1, equals(event2));
-      },
-    );
+    test('$VideoEditorPositionChanged with same position are equal', () {
+      const event1 = VideoEditorPositionChanged(Duration(seconds: 3));
+      const event2 = VideoEditorPositionChanged(Duration(seconds: 3));
+      expect(event1, equals(event2));
+    });
 
-    test(
-      '$VideoEditorPositionChanged with different positions '
-      'are not equal',
-      () {
-        const event1 = VideoEditorPositionChanged(Duration(seconds: 3));
-        const event2 = VideoEditorPositionChanged(Duration(seconds: 7));
-        expect(event1, isNot(equals(event2)));
-      },
-    );
+    test('$VideoEditorPositionChanged with different positions '
+        'are not equal', () {
+      const event1 = VideoEditorPositionChanged(Duration(seconds: 3));
+      const event2 = VideoEditorPositionChanged(Duration(seconds: 7));
+      expect(event1, isNot(equals(event2)));
+    });
 
-    test(
-      '$VideoEditorDurationChanged with same duration are equal',
-      () {
-        const event1 = VideoEditorDurationChanged(Duration(seconds: 30));
-        const event2 = VideoEditorDurationChanged(Duration(seconds: 30));
-        expect(event1, equals(event2));
-      },
-    );
+    test('$VideoEditorDurationChanged with same duration are equal', () {
+      const event1 = VideoEditorDurationChanged(Duration(seconds: 30));
+      const event2 = VideoEditorDurationChanged(Duration(seconds: 30));
+      expect(event1, equals(event2));
+    });
 
-    test(
-      '$VideoEditorDurationChanged with different durations '
-      'are not equal',
-      () {
-        const event1 = VideoEditorDurationChanged(Duration(seconds: 30));
-        const event2 = VideoEditorDurationChanged(Duration(seconds: 60));
-        expect(event1, isNot(equals(event2)));
-      },
-    );
+    test('$VideoEditorDurationChanged with different durations '
+        'are not equal', () {
+      const event1 = VideoEditorDurationChanged(Duration(seconds: 30));
+      const event2 = VideoEditorDurationChanged(Duration(seconds: 60));
+      expect(event1, isNot(equals(event2)));
+    });
 
     test('$VideoEditorMuteToggled events are equal', () {
       const event1 = VideoEditorMuteToggled();
@@ -795,24 +736,18 @@ void main() {
       expect(event1, equals(event2));
     });
 
-    test(
-      '$VideoEditorReorderingChanged with same value are equal',
-      () {
-        const event1 = VideoEditorReorderingChanged(isReordering: true);
-        const event2 = VideoEditorReorderingChanged(isReordering: true);
-        expect(event1, equals(event2));
-      },
-    );
+    test('$VideoEditorReorderingChanged with same value are equal', () {
+      const event1 = VideoEditorReorderingChanged(isReordering: true);
+      const event2 = VideoEditorReorderingChanged(isReordering: true);
+      expect(event1, equals(event2));
+    });
 
-    test(
-      '$VideoEditorReorderingChanged with different values '
-      'are not equal',
-      () {
-        const event1 = VideoEditorReorderingChanged(isReordering: true);
-        const event2 = VideoEditorReorderingChanged(isReordering: false);
-        expect(event1, isNot(equals(event2)));
-      },
-    );
+    test('$VideoEditorReorderingChanged with different values '
+        'are not equal', () {
+      const event1 = VideoEditorReorderingChanged(isReordering: true);
+      const event2 = VideoEditorReorderingChanged(isReordering: false);
+      expect(event1, isNot(equals(event2)));
+    });
   });
 
   group(SubEditorType, () {

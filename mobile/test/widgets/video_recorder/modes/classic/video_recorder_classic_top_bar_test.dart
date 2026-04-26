@@ -52,10 +52,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: SizedBox(
-              height: 80,
-              child: VideoRecorderClassicTopBar(),
-            ),
+            body: SizedBox(height: 80, child: VideoRecorderClassicTopBar()),
           ),
         ),
       );
@@ -76,9 +73,7 @@ void main() {
         expect(find.byType(DivineIconButton), findsNWidgets(2));
       });
 
-      testWidgets('uses Stack for progress bar behind buttons', (
-        tester,
-      ) async {
+      testWidgets('uses Stack for progress bar behind buttons', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
@@ -99,9 +94,7 @@ void main() {
           ),
         ];
 
-        await tester.pumpWidget(
-          buildWidget(clips: clips),
-        );
+        await tester.pumpWidget(buildWidget(clips: clips));
         await tester.pumpAndSettle();
 
         // Progress bar uses Flexible widgets for primary/remaining

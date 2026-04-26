@@ -28,10 +28,7 @@ sealed class ShareSheetActionResult {
 }
 
 class ShareSheetSendSuccess extends ShareSheetActionResult {
-  ShareSheetSendSuccess(
-    this.recipientName, {
-    this.shouldDismiss = false,
-  });
+  ShareSheetSendSuccess(this.recipientName, {this.shouldDismiss = false});
 
   final String recipientName;
 
@@ -59,10 +56,7 @@ class ShareSheetActionFailure extends ShareSheetActionResult {
 }
 
 class ShareSheetCopiedToClipboard extends ShareSheetActionResult {
-  ShareSheetCopiedToClipboard({
-    required this.label,
-    required this.text,
-  });
+  ShareSheetCopiedToClipboard({required this.label, required this.text});
 
   /// Human-readable label for the snackbar message.
   final String label;

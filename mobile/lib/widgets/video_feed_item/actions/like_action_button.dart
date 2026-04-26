@@ -77,6 +77,7 @@ class _ActionButton extends StatelessWidget {
       iconColor: isLiked ? VineTheme.likeRed : VineTheme.whiteText,
       isLoading: isLikeInProgress,
       count: totalLikes,
+      labelWhenZero: context.l10n.videoActionLikeLabel,
       onPressed: () {
         onInteracted?.call();
         context.read<VideoInteractionsBloc>().add(

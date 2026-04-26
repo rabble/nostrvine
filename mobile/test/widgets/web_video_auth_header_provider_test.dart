@@ -14,36 +14,31 @@ void main() {
       service = _MockMediaViewerAuthService();
     });
 
-    test(
-      'extracts sha256 and origin from a Blossom URL and forwards to the '
-      'auth service',
-      () async {
-        const sha256 =
-            'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
-        const url = 'https://media.divine.video/$sha256';
-        when(
-          () => service.createAuthHeaders(
-            sha256Hash: sha256,
-            url: url,
-            serverUrl: 'https://media.divine.video',
-          ),
-        ).thenAnswer(
-          (_) async => const {'Authorization': 'Nostr signed-token'},
-        );
+    test('extracts sha256 and origin from a Blossom URL and forwards to the '
+        'auth service', () async {
+      const sha256 =
+          'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+      const url = 'https://media.divine.video/$sha256';
+      when(
+        () => service.createAuthHeaders(
+          sha256Hash: sha256,
+          url: url,
+          serverUrl: 'https://media.divine.video',
+        ),
+      ).thenAnswer((_) async => const {'Authorization': 'Nostr signed-token'});
 
-        final provider = buildWebVideoAuthHeaderProvider(service);
-        final header = await provider(url, 'GET');
+      final provider = buildWebVideoAuthHeaderProvider(service);
+      final header = await provider(url, 'GET');
 
-        expect(header, equals('Nostr signed-token'));
-        verify(
-          () => service.createAuthHeaders(
-            sha256Hash: sha256,
-            url: url,
-            serverUrl: 'https://media.divine.video',
-          ),
-        ).called(1);
-      },
-    );
+      expect(header, equals('Nostr signed-token'));
+      verify(
+        () => service.createAuthHeaders(
+          sha256Hash: sha256,
+          url: url,
+          serverUrl: 'https://media.divine.video',
+        ),
+      ).called(1);
+    });
 
     test('extracts sha256 from an hls manifest segment suffix', () async {
       const sha256 =
@@ -110,27 +105,24 @@ void main() {
       expect(header, isNull);
     });
 
-    test(
-      'passes null sha256 for URLs without a 64-char hex segment',
-      () async {
-        const url = 'https://example.com/video.mp4';
-        String? capturedSha256 = 'sentinel';
-        when(
-          () => service.createAuthHeaders(
-            sha256Hash: any(named: 'sha256Hash'),
-            url: url,
-            serverUrl: 'https://example.com',
-          ),
-        ).thenAnswer((invocation) async {
-          capturedSha256 = invocation.namedArguments[#sha256Hash] as String?;
-          return null;
-        });
+    test('passes null sha256 for URLs without a 64-char hex segment', () async {
+      const url = 'https://example.com/video.mp4';
+      String? capturedSha256 = 'sentinel';
+      when(
+        () => service.createAuthHeaders(
+          sha256Hash: any(named: 'sha256Hash'),
+          url: url,
+          serverUrl: 'https://example.com',
+        ),
+      ).thenAnswer((invocation) async {
+        capturedSha256 = invocation.namedArguments[#sha256Hash] as String?;
+        return null;
+      });
 
-        final provider = buildWebVideoAuthHeaderProvider(service);
-        await provider(url, 'GET');
+      final provider = buildWebVideoAuthHeaderProvider(service);
+      await provider(url, 'GET');
 
-        expect(capturedSha256, isNull);
-      },
-    );
+      expect(capturedSha256, isNull);
+    });
   });
 }

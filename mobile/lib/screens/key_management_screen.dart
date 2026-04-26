@@ -118,10 +118,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     );
   }
 
-  Widget _buildImportSection(
-    BuildContext context,
-    nostrService,
-  ) {
+  Widget _buildImportSection(BuildContext context, nostrService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -357,10 +354,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     );
   }
 
-  Future<void> _importKey(
-    BuildContext context,
-    nostrService,
-  ) async {
+  Future<void> _importKey(BuildContext context, nostrService) async {
     final nsec = _importController.text.trim();
 
     if (nsec.isEmpty) {
@@ -433,9 +427,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         try {
           await ref
               .read(profileRepositoryProvider)
-              ?.fetchFreshProfile(
-                pubkey: authService.currentPublicKeyHex!,
-              );
+              ?.fetchFreshProfile(pubkey: authService.currentPublicKeyHex!);
         } catch (e) {
           // Non-fatal - profile fetch failure shouldn't block import
         }

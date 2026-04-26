@@ -223,9 +223,7 @@ void main() {
     });
 
     group('onProfileTap callback', () {
-      testWidgets('fires when avatar is tapped', (
-        WidgetTester tester,
-      ) async {
+      testWidgets('fires when avatar is tapped', (WidgetTester tester) async {
         var profileTapped = false;
         final notification = makeNotification();
 
@@ -248,9 +246,7 @@ void main() {
       ) async {
         final notification = makeNotification();
 
-        await tester.pumpWidget(
-          buildTestWidget(notification: notification),
-        );
+        await tester.pumpWidget(buildTestWidget(notification: notification));
 
         // Tap avatar area - should not throw
         await tester.tap(find.bySemanticsLabel(RegExp('View .* profile')));
@@ -349,9 +345,7 @@ void main() {
 
       testWidgets(
         'renders l10n message with fallback name when actor name is null',
-        (
-          WidgetTester tester,
-        ) async {
+        (WidgetTester tester) async {
           final notification = makeNotification(
             actorName: null,
             message: 'Someone liked your video',
@@ -362,10 +356,7 @@ void main() {
           // When actorName is null, the code uses
           // UserProfile.defaultDisplayNameFor(actorPubkey) as fallback
           final fallbackName = UserProfile.defaultDisplayNameFor(testPubkey);
-          expect(
-            find.text('$fallbackName liked your video'),
-            findsOneWidget,
-          );
+          expect(find.text('$fallbackName liked your video'), findsOneWidget);
         },
       );
     });
@@ -417,9 +408,7 @@ void main() {
 
       testWidgets(
         'renders plain text when message does not start with actor name',
-        (
-          WidgetTester tester,
-        ) async {
+        (WidgetTester tester) async {
           final notification = NotificationModel(
             id: 'sys-2',
             type: NotificationType.system,

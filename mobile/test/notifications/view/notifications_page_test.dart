@@ -27,17 +27,11 @@ void main() {
       });
 
       test('pathForIndex with index returns indexed path', () {
-        expect(
-          NotificationsPage.pathForIndex(0),
-          equals('/notifications/0'),
-        );
+        expect(NotificationsPage.pathForIndex(0), equals('/notifications/0'));
       });
 
       test('pathForIndex with non-zero index returns correct path', () {
-        expect(
-          NotificationsPage.pathForIndex(42),
-          equals('/notifications/42'),
-        );
+        expect(NotificationsPage.pathForIndex(42), equals('/notifications/42'));
       });
     });
   });

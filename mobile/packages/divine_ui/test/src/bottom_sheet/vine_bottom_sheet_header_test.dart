@@ -36,5 +36,59 @@ void main() {
       expect(find.text('Test Title'), findsOneWidget);
       expect(find.byKey(const Key('trailing')), findsOneWidget);
     });
+
+    testWidgets('uses default padding when none is provided', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheetHeader(title: Text('Test Title')),
+          ),
+        ),
+      );
+
+      final padding = tester.widget<Padding>(
+        find
+            .descendant(
+              of: find.byType(VineBottomSheetHeader),
+              matching: find.byType(Padding),
+            )
+            .first,
+      );
+
+      expect(
+        padding.padding,
+        const EdgeInsetsDirectional.only(start: 24, end: 24, top: 8),
+      );
+    });
+
+    testWidgets('applies custom padding when provided', (tester) async {
+      const customPadding = EdgeInsetsDirectional.only(
+        start: 12,
+        end: 12,
+        top: 4,
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheetHeader(
+              title: Text('Test Title'),
+              padding: customPadding,
+            ),
+          ),
+        ),
+      );
+
+      final padding = tester.widget<Padding>(
+        find
+            .descendant(
+              of: find.byType(VineBottomSheetHeader),
+              matching: find.byType(Padding),
+            )
+            .first,
+      );
+
+      expect(padding.padding, customPadding);
+    });
   });
 }

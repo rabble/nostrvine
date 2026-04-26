@@ -817,6 +817,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoGridDeleteSuccess => '삭제 요청을 보냈어요';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return '콘텐츠를 삭제하지 못했어요: $error';
+  }
+
+  @override
   String get exploreTabClassics => '클래식';
 
   @override
@@ -1169,6 +1174,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionAutoLabel => '자동';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => '자동 넘기기 활성화';
 
   @override
@@ -1191,6 +1211,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => '자막 표시';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -2852,6 +2878,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => '이 콘텐츠를 완전히 지워요';
 
   @override
+  String get shareMenuDeleteWarning =>
+      '모든 릴레이에 삭제 요청(NIP-09)을 보내요. 일부 릴레이에는 콘텐츠가 남아 있을 수 있어요.';
+
+  @override
   String get shareMenuVideoInTheseLists => '영상이 다음 리스트에 있어요:';
 
   @override
@@ -2873,6 +2903,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => '콘텐츠 삭제 중...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return '콘텐츠 삭제에 실패했어요: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => '삭제 요청을 보냈어요';
@@ -2951,6 +2986,11 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return '영상 업데이트에 실패했어요: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return '영상 삭제에 실패했어요: $error';
   }
 
   @override
@@ -3457,6 +3497,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get navProfile => '프로필';
+
+  @override
+  String get navSearch => '검색';
+
+  @override
+  String get navSearchTooltip => '검색';
 
   @override
   String get navMyProfile => '내 프로필';
@@ -4574,6 +4620,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => '흥미로운 것을 발견해보세요';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => '목록';
 
   @override
@@ -4898,7 +4962,13 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => '클립';
+  String get videoEditorCameraLabel => '카메라';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => '카메라 열기';
+
+  @override
+  String get videoEditorLibraryLabel => '라이브러리';
 
   @override
   String get videoEditorTextLabel => '텍스트';
@@ -4907,7 +4977,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorDrawLabel => '그리기';
 
   @override
-  String get videoEditorEffectsLabel => '효과';
+  String get videoEditorFilterLabel => '필터';
 
   @override
   String get videoEditorAudioLabel => '오디오';
@@ -4919,7 +4989,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAddTitle => '추가';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => '클립 편집기 열기';
+  String get videoEditorOpenLibrarySemanticLabel => '라이브러리 열기';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => '오디오 편집기 열기';
@@ -4931,7 +5001,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => '그리기 편집기 열기';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => '효과 편집기 열기';
+  String get videoEditorOpenFilterSemanticLabel => '필터 편집기 열기';
 
   @override
   String get videoEditorSaveDraftTitle => '임시저장 하시겠어요?';
@@ -5075,20 +5145,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorFinishTimelineEditingSemanticLabel => '타임라인 편집 완료';
 
   @override
-  String get videoEditorSortNewest => '최신순';
-
-  @override
-  String get videoEditorSortLongest => '긴 순';
-
-  @override
-  String get videoEditorSortShortest => '짧은 순';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return '$option 기준 정렬. 탭하여 정렬 순서 변경';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => '미리보기 재생';
 
   @override
@@ -5096,9 +5152,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => '제목 없는 사운드';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => '사운드 선택';
 
   @override
   String get videoEditorAudioUntitled => '제목 없음';
@@ -5114,13 +5167,16 @@ class AppLocalizationsKo extends AppLocalizations {
       '크리에이터가 오디오를 공유하면 여기에 표시됩니다';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => '사운드를 찾을 수 없음';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle => '다른 검색어를 시도해 보세요';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => '사운드 로드 실패';
+
+  @override
+  String get videoEditorAudioSegmentInstruction => '동영상에 사용할 오디오 구간을 선택하세요';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => '커뮤니티';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => '화살표 도구';
@@ -5192,6 +5248,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => '길게 눌러 순서 변경';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      '탭해서 편집하세요. 길게 누르고 드래그해 순서를 바꾸세요.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => '왼쪽으로 이동';

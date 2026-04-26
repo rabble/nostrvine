@@ -22,9 +22,9 @@ class ClipboardUtils {
   }) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        DivineSnackbarContainer.snackBar(message),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(DivineSnackbarContainer.snackBar(message));
     }
   }
 

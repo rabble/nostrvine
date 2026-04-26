@@ -6,18 +6,12 @@ import 'package:openvine/services/nostr_identity.dart';
 
 @immutable
 class CreatorSocialHandle {
-  const CreatorSocialHandle({
-    required this.platform,
-    required this.handle,
-  });
+  const CreatorSocialHandle({required this.platform, required this.handle});
 
   final String platform;
   final String handle;
 
-  Map<String, String> toJson() => {
-    'platform': platform,
-    'handle': handle,
-  };
+  Map<String, String> toJson() => {'platform': platform, 'handle': handle};
 }
 
 @immutable
@@ -55,18 +49,12 @@ class CreatorBindingClaims {
 
 @immutable
 class CreatorBindingHardBinding {
-  const CreatorBindingHardBinding({
-    required this.alg,
-    required this.value,
-  });
+  const CreatorBindingHardBinding({required this.alg, required this.value});
 
   final String alg;
   final String value;
 
-  Map<String, String> toJson() => {
-    'alg': alg,
-    'value': value,
-  };
+  Map<String, String> toJson() => {'alg': alg, 'value': value};
 }
 
 @immutable

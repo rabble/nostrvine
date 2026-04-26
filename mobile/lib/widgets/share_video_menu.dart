@@ -16,6 +16,7 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/bookmark_service.dart';
+import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/social_service.dart';
@@ -30,6 +31,51 @@ import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+const _collaboratorInviteRelayHint = 'wss://relay.divine.video';
+
+@visibleForTesting
+Future<Map<String, CollaboratorInviteResult>>
+sendPostPublishCollaboratorInvites({
+  required CollaboratorInviteService inviteService,
+  required VideoEvent video,
+  required Iterable<String> previousCollaboratorPubkeys,
+  required Iterable<String> updatedCollaboratorPubkeys,
+  String relayHint = _collaboratorInviteRelayHint,
+}) async {
+  final previous = previousCollaboratorPubkeys.toSet();
+  final newCollaborators = updatedCollaboratorPubkeys
+      .where((pubkey) => !previous.contains(pubkey))
+      .toSet();
+  if (newCollaborators.isEmpty) return const {};
+
+  final videoAddress =
+      '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:${video.stableId}';
+  final results = <String, CollaboratorInviteResult>{};
+  for (final pubkey in newCollaborators) {
+    try {
+      results[pubkey] = await inviteService.sendInvite(
+        collaboratorPubkey: pubkey,
+        creatorPubkey: video.pubkey,
+        videoAddress: videoAddress,
+        title: video.title,
+        thumbnailUrl: video.thumbnailUrl,
+        relayHint: relayHint,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.warning(
+        'Failed to send post-publish collaborator invite: $e\n$stackTrace',
+        name: 'ShareVideoMenu',
+        category: LogCategory.video,
+      );
+      results[pubkey] = CollaboratorInviteResult(
+        success: false,
+        error: e.toString(),
+      );
+    }
+  }
+  return results;
+}
 
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator();
@@ -285,9 +331,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.shareMenuFailedToReportAiContent('$e'),
-            ),
+            content: Text(context.l10n.shareMenuFailedToReportAiContent('$e')),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -882,9 +926,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            context.l10n.shareMenuCreatedListAndAddedVideo(result),
-          ),
+          content: Text(context.l10n.shareMenuCreatedListAndAddedVideo(result)),
         ),
       );
     }
@@ -1001,9 +1043,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                       )
                     : null,
                 trailing: Text(
-                  context.l10n.shareMenuVideoCount(
-                    list.videoEventIds.length,
-                  ),
+                  context.l10n.shareMenuVideoCount(list.videoEventIds.length),
                   style: const TextStyle(
                     color: VineTheme.lightText,
                     fontSize: 12,
@@ -1158,9 +1198,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.shareMenuDeleteFailedGeneric,
-            ),
+            content: Text(context.l10n.shareMenuDeleteFailedGeneric),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -1382,6 +1420,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
   late TextEditingController _descriptionController;
   late TextEditingController _hashtagsController;
   late List<String> _collaboratorPubkeys;
+  late final Set<String> _initialCollaboratorPubkeys;
   Set<ContentLabel> _contentWarningLabels = {};
   InspiredByInfo? _inspiredByVideo;
   String? _inspiredByNpub;
@@ -1407,6 +1446,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
     // Initialize collaborators and inspired-by from existing video
     _collaboratorPubkeys = List<String>.from(widget.video.collaboratorPubkeys);
+    _initialCollaboratorPubkeys = _collaboratorPubkeys.toSet();
     _contentWarningLabels = widget.video.contentWarningLabels
         .map(ContentLabel.fromValue)
         .whereType<ContentLabel>()
@@ -1700,7 +1740,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
       // Add collaborator p-tags
       for (final pubkey in _collaboratorPubkeys) {
-        tags.add(['p', pubkey]);
+        tags.add(['p', pubkey, 'wss://relay.divine.video', 'Collaborator']);
       }
 
       // Add inspired-by a-tag (video reference)
@@ -1739,11 +1779,14 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
       // Publish the updated event
       final nostrService = ref.read(nostrServiceProvider);
-      await nostrService.publishEvent(event);
+      final publishedEvent = await nostrService.publishEvent(event);
+      if (publishedEvent == null) {
+        throw Exception('Failed to publish updated event');
+      }
 
       // Update local cache for immediate UI update
       final personalEventCache = ref.read(personalEventCacheServiceProvider);
-      personalEventCache.cacheUserEvent(event);
+      personalEventCache.cacheUserEvent(publishedEvent);
 
       // Update VideoEventService to replace old video in all feeds
       // This triggers callbacks that automatically refresh:
@@ -1751,16 +1794,35 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       // - homeFeedProvider (via addVideoUpdateListener)
       // - exploreTabVideosProvider (via exploreTabVideoUpdateListenerProvider)
       final videoEventService = ref.read(videoEventServiceProvider);
-      final updatedVideoEvent = VideoEvent.fromNostrEvent(event);
+      final updatedVideoEvent = VideoEvent.fromNostrEvent(publishedEvent);
       videoEventService.updateVideoEvent(updatedVideoEvent);
+
+      final inviteResults = await sendPostPublishCollaboratorInvites(
+        inviteService: CollaboratorInviteService(
+          dmRepository: ref.read(dmRepositoryProvider),
+        ),
+        video: updatedVideoEvent,
+        previousCollaboratorPubkeys: _initialCollaboratorPubkeys,
+        updatedCollaboratorPubkeys: _collaboratorPubkeys,
+      );
+      final inviteFailures = inviteResults.values
+          .where((result) => !result.success)
+          .length;
 
       if (mounted) {
         context.pop(); // Close edit dialog
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.shareMenuVideoUpdated),
-            backgroundColor: VineTheme.vineGreen,
+            content: Text(
+              inviteFailures == 0
+                  ? context.l10n.shareMenuVideoUpdated
+                  : 'Video updated, but $inviteFailures collaborator '
+                        'invite${inviteFailures == 1 ? '' : 's'} did not send.',
+            ),
+            backgroundColor: inviteFailures == 0
+                ? VineTheme.vineGreen
+                : VineTheme.warning,
           ),
         );
       }
@@ -1776,9 +1838,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.shareMenuFailedToUpdateVideo('$e'),
-            ),
+            content: Text(context.l10n.shareMenuFailedToUpdateVideo('$e')),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -1848,9 +1908,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                context.l10n.shareMenuVideoDeletionRequested,
-              ),
+              content: Text(context.l10n.shareMenuVideoDeletionRequested),
               backgroundColor: VineTheme.vineGreen,
             ),
           );
@@ -1861,9 +1919,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                localizedDeleteFailureMessage(context, result),
-              ),
+              content: Text(localizedDeleteFailureMessage(context, result)),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -1881,9 +1937,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.l10n.shareMenuDeleteFailedGeneric,
-            ),
+            content: Text(context.l10n.shareMenuDeleteFailedGeneric),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -1922,9 +1976,7 @@ class _EditContentLabelsSection extends StatelessWidget {
     final displayText = selectedLabels.isEmpty
         ? context.l10n.shareMenuAddContentLabels
         : selectedLabels
-              .map(
-                (label) => localizedContentLabelName(context.l10n, label),
-              )
+              .map((label) => localizedContentLabelName(context.l10n, label))
               .join(', ');
 
     return Column(
@@ -1932,9 +1984,7 @@ class _EditContentLabelsSection extends StatelessWidget {
       children: [
         Text(
           context.l10n.shareMenuContentLabels,
-          style: VineTheme.labelSmallFont(
-            color: VineTheme.onSurfaceVariant,
-          ),
+          style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
         ),
         const SizedBox(height: 8),
         InkWell(
@@ -2049,10 +2099,7 @@ class _EditContentLabelsPickerState extends State<_EditContentLabelsPicker> {
                       value: _selected.contains(label),
                       onChanged: (_) => _toggle(label),
                       title: Text(
-                        localizedContentLabelName(
-                          context.l10n,
-                          label,
-                        ),
+                        localizedContentLabelName(context.l10n, label),
                         style: const TextStyle(color: VineTheme.whiteText),
                       ),
                       activeColor: VineTheme.vineGreen,
@@ -2099,9 +2146,7 @@ class _EditCollaboratorsSection extends ConsumerWidget {
     children: [
       Text(
         context.l10n.shareMenuCollaborators,
-        style: VineTheme.labelSmallFont(
-          color: VineTheme.onSurfaceVariant,
-        ),
+        style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
       ),
       const SizedBox(height: 8),
       if (collaboratorPubkeys.isNotEmpty)
@@ -2170,9 +2215,7 @@ class _EditCollaboratorsSection extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.l10n.shareMenuMutualFollowRequired(
-              profile.bestDisplayName,
-            ),
+            context.l10n.shareMenuMutualFollowRequired(profile.bestDisplayName),
           ),
           backgroundColor: VineTheme.cardBackground,
         ),
@@ -2268,9 +2311,7 @@ class _EditInspiredBySection extends ConsumerWidget {
     children: [
       Text(
         context.l10n.shareMenuInspiredBy,
-        style: VineTheme.labelSmallFont(
-          color: VineTheme.onSurfaceVariant,
-        ),
+        style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
       ),
       const SizedBox(height: 8),
       if (_hasInspiredBy)
@@ -2327,9 +2368,7 @@ class _EditInspiredBySection extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            context.l10n.shareMenuCreatorCannotBeReferenced,
-          ),
+          content: Text(context.l10n.shareMenuCreatorCannotBeReferenced),
           backgroundColor: VineTheme.cardBackground,
         ),
       );
@@ -2450,9 +2489,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
                     ),
                     subtitle: Text(
                       context.l10n.shareMenuStartNewBookmarkCollection,
-                      style: const TextStyle(
-                        color: VineTheme.secondaryText,
-                      ),
+                      style: const TextStyle(color: VineTheme.secondaryText),
                     ),
                     onTap: () {
                       context.pop();
@@ -2473,9 +2510,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
                       padding: const EdgeInsets.all(16.0),
                       child: Text(
                         context.l10n.shareMenuNoBookmarkSets,
-                        style: const TextStyle(
-                          color: VineTheme.secondaryText,
-                        ),
+                        style: const TextStyle(color: VineTheme.secondaryText),
                         textAlign: TextAlign.center,
                       ),
                     )
@@ -2846,10 +2881,7 @@ class _UseThisSoundTile extends ConsumerWidget {
         ),
         subtitle: Text(
           context.l10n.shareMenuLoading,
-          style: const TextStyle(
-            color: VineTheme.secondaryText,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),

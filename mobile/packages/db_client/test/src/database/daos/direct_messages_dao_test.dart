@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for DirectMessagesDao with CRUD, deduplication,
 // ABOUTME: conversation-scoped queries, reactive watch streams, and counting.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:db_client/db_client.dart';
@@ -59,6 +60,32 @@ void main() {
         expect(results.first.giftWrapId, equals('gw_1'));
         expect(results.first.messageKind, equals(14));
         expect(results.first.replyToId, isNull);
+      });
+
+      test('round-trips decrypted rumor tags JSON', () async {
+        final tagsJson = jsonEncode([
+          ['divine', 'collab-invite'],
+          [
+            'a',
+            '34236:creator:dtag',
+            'wss://relay.divine.video',
+            'root',
+          ],
+        ]);
+
+        await dao.insertMessage(
+          id: 'msg_tags',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'Fallback invite copy',
+          createdAt: 1700000000,
+          giftWrapId: 'gw_tags',
+          tagsJson: tagsJson,
+        );
+
+        final results = await dao.getMessagesForConversation(conversationId1);
+        expect(results, hasLength(1));
+        expect(results.first.tagsJson, equals(tagsJson));
       });
 
       test('inserts file message (kind 15) with metadata', () async {

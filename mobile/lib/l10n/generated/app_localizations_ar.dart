@@ -854,6 +854,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoGridDeleteSuccess => 'تم إرسال طلب الحذف بنجاح';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'فشل حذف المحتوى: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'الكلاسيكيات';
 
   @override
@@ -1229,6 +1234,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionAutoLabel => 'تلقائي';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'تفعيل التشغيل التلقائي';
 
   @override
@@ -1251,6 +1271,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => 'عرض الترجمات';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -2963,6 +2989,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'إزالة هذا المحتوى نهائيًا';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'سيرسل هذا طلب حذف (NIP-09) إلى جميع المحولات. قد تحتفظ بعض المحولات بالمحتوى.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'الفيديو في هذه القوائم:';
 
   @override
@@ -2985,6 +3015,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'جاري حذف المحتوى...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'فشل حذف المحتوى: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'تم إرسال طلب الحذف بنجاح';
@@ -3067,6 +3102,11 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'فشل تحديث الفيديو: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'فشل حذف الفيديو: $error';
   }
 
   @override
@@ -3584,6 +3624,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get navProfile => 'الملف الشخصي';
+
+  @override
+  String get navSearch => 'بحث';
+
+  @override
+  String get navSearchTooltip => 'بحث';
 
   @override
   String get navMyProfile => 'ملفي الشخصي';
@@ -4712,6 +4758,24 @@ class AppLocalizationsAr extends AppLocalizations {
       'اكتشف شيئًا مثيرًا للاهتمام';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'القوائم';
 
   @override
@@ -5044,7 +5108,13 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'المقاطع';
+  String get videoEditorCameraLabel => 'الكاميرا';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'فتح الكاميرا';
+
+  @override
+  String get videoEditorLibraryLabel => 'المكتبة';
 
   @override
   String get videoEditorTextLabel => 'النص';
@@ -5053,7 +5123,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorDrawLabel => 'رسم';
 
   @override
-  String get videoEditorEffectsLabel => 'التأثيرات';
+  String get videoEditorFilterLabel => 'فلتر';
 
   @override
   String get videoEditorAudioLabel => 'الصوت';
@@ -5065,7 +5135,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAddTitle => 'إضافة';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'فتح محرر المقاطع';
+  String get videoEditorOpenLibrarySemanticLabel => 'فتح المكتبة';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'فتح محرر الصوت';
@@ -5077,7 +5147,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'فتح محرر الرسم';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'فتح محرر التأثيرات';
+  String get videoEditorOpenFilterSemanticLabel => 'فتح محرر الفلاتر';
 
   @override
   String get videoEditorSaveDraftTitle => 'حفظ المسودة؟';
@@ -5225,20 +5295,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'إنهاء تحرير الجدول الزمني';
 
   @override
-  String get videoEditorSortNewest => 'الأحدث';
-
-  @override
-  String get videoEditorSortLongest => 'الأطول';
-
-  @override
-  String get videoEditorSortShortest => 'الأقصر';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'ترتيب حسب $option. اضغط لتغيير ترتيب الفرز';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'تشغيل المعاينة';
 
   @override
@@ -5247,9 +5303,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'صوت بدون عنوان';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'اختيار صوت';
 
   @override
   String get videoEditorAudioUntitled => 'بدون عنوان';
@@ -5265,13 +5318,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'ستظهر الأصوات هنا عندما يشاركها المبدعون';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'لم يتم العثور على أصوات';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle => 'جرّب مصطلح بحث مختلف';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'فشل تحميل الأصوات';
+
+  @override
+  String get videoEditorAudioSegmentInstruction => 'حدّد مقطع الصوت لفيديوك';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'المجتمع';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'أداة السهم';
@@ -5344,6 +5400,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => 'اضغط مطولاً لإعادة الترتيب';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'تحريك لليسار';

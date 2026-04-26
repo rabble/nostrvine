@@ -25,9 +25,9 @@ void main() {
       mockNostrClient = _MockNostrClient();
       mockFunnelcakeClient = _MockFunnelcakeApiClient();
 
-      when(() => mockNostrClient.relayStatuses).thenReturn(
-        <String, RelayConnectionStatus>{},
-      );
+      when(
+        () => mockNostrClient.relayStatuses,
+      ).thenReturn(<String, RelayConnectionStatus>{});
     });
 
     ProviderContainer createContainer({
@@ -58,9 +58,9 @@ void main() {
       'returns true immediately for relay.divine.video without probing',
       () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-        when(() => mockNostrClient.configuredRelays).thenReturn(
-          <String>['wss://relay.divine.video'],
-        );
+        when(
+          () => mockNostrClient.configuredRelays,
+        ).thenReturn(<String>['wss://relay.divine.video']);
 
         final container = createContainer();
         addTearDown(container.dispose);
@@ -92,16 +92,14 @@ void main() {
       'probes API for non-divine relay and returns true on success',
       () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-        when(() => mockNostrClient.configuredRelays).thenReturn(
-          <String>['wss://relay.custom-server.com'],
-        );
+        when(
+          () => mockNostrClient.configuredRelays,
+        ).thenReturn(<String>['wss://relay.custom-server.com']);
         when(
           () => mockFunnelcakeClient.getRecentVideos(limit: 1),
         ).thenAnswer((_) async => <VideoStats>[]);
 
-        const customEnv = EnvironmentConfig(
-          environment: AppEnvironment.poc,
-        );
+        const customEnv = EnvironmentConfig(environment: AppEnvironment.poc);
 
         final container = createContainer(environment: customEnv);
         addTearDown(container.dispose);
@@ -117,16 +115,14 @@ void main() {
       'probes API for non-divine relay and returns false on failure',
       () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-        when(() => mockNostrClient.configuredRelays).thenReturn(
-          <String>['wss://relay.custom-server.com'],
-        );
+        when(
+          () => mockNostrClient.configuredRelays,
+        ).thenReturn(<String>['wss://relay.custom-server.com']);
         when(
           () => mockFunnelcakeClient.getRecentVideos(limit: 1),
         ).thenThrow(Exception('Connection refused'));
 
-        const customEnv = EnvironmentConfig(
-          environment: AppEnvironment.poc,
-        );
+        const customEnv = EnvironmentConfig(environment: AppEnvironment.poc);
 
         final container = createContainer(environment: customEnv);
         addTearDown(container.dispose);
@@ -140,9 +136,9 @@ void main() {
 
     test('refresh invalidates and re-evaluates', () async {
       when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-      when(() => mockNostrClient.configuredRelays).thenReturn(
-        <String>['wss://relay.divine.video'],
-      );
+      when(
+        () => mockNostrClient.configuredRelays,
+      ).thenReturn(<String>['wss://relay.divine.video']);
 
       final container = createContainer();
       addTearDown(container.dispose);

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 
@@ -131,14 +132,8 @@ void main() {
             : earlierToday;
         final ts = safeTime.millisecondsSinceEpoch ~/ 1000;
 
-        expect(
-          LocalizedTimeFormatter.formatDateLabel(en, ts),
-          equals('Today'),
-        );
-        expect(
-          LocalizedTimeFormatter.formatDateLabel(de, ts),
-          equals('Heute'),
-        );
+        expect(LocalizedTimeFormatter.formatDateLabel(en, ts), equals('Today'));
+        expect(LocalizedTimeFormatter.formatDateLabel(de, ts), equals('Heute'));
       });
 
       testWidgets('returns localized "Yesterday"', (tester) async {
@@ -263,10 +258,7 @@ void main() {
         final de = await _loadL10n(tester, const Locale('de'));
         final ts = _unixSecondsAgo(const Duration(seconds: 30));
 
-        expect(
-          LocalizedTimeFormatter.formatMessageTime(en, ts),
-          equals('Now'),
-        );
+        expect(LocalizedTimeFormatter.formatMessageTime(en, ts), equals('Now'));
         expect(
           LocalizedTimeFormatter.formatMessageTime(de, ts),
           equals('Jetzt'),
@@ -288,6 +280,44 @@ void main() {
         expect(result, matches(RegExp(r'^\d{1,2}:\d{2}\s?(AM|PM)?$')));
       });
 
+      testWidgets(
+        'use24Hour: true renders 24-hour clock regardless of locale',
+        (tester) async {
+          final en = await _loadL10n(tester, const Locale('en'));
+          final now = DateTime.now();
+          final earlierToday = now.subtract(const Duration(hours: 2));
+          if (earlierToday.day != now.day) return;
+          final ts = earlierToday.millisecondsSinceEpoch ~/ 1000;
+
+          final result = LocalizedTimeFormatter.formatMessageTime(
+            en,
+            ts,
+            locale: 'en',
+            use24Hour: true,
+          );
+          expect(result, matches(RegExp(r'^\d{1,2}:\d{2}$')));
+          expect(result, isNot(contains('AM')));
+          expect(result, isNot(contains('PM')));
+        },
+      );
+
+      testWidgets('use24Hour: false keeps locale-default 12h in en', (
+        tester,
+      ) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+        final now = DateTime.now();
+        final earlierToday = now.subtract(const Duration(hours: 2));
+        if (earlierToday.day != now.day) return;
+        final ts = earlierToday.millisecondsSinceEpoch ~/ 1000;
+
+        final result = LocalizedTimeFormatter.formatMessageTime(
+          en,
+          ts,
+          locale: 'en',
+        );
+        expect(result, anyOf(contains('AM'), contains('PM')));
+      });
+
       testWidgets('returns "Yesterday" for previous day', (tester) async {
         final en = await _loadL10n(tester, const Locale('en'));
         final de = await _loadL10n(tester, const Locale('de'));
@@ -304,6 +334,83 @@ void main() {
           equals('Gestern'),
         );
       });
+    });
+
+    group('formatNotificationTimestamp', () {
+      testWidgets('returns localized relative string for <7d', (tester) async {
+        final en = await _loadL10n(tester, const Locale('en'));
+        final de = await _loadL10n(tester, const Locale('de'));
+        final ts = DateTime.now().subtract(const Duration(hours: 3));
+
+        expect(
+          LocalizedTimeFormatter.formatNotificationTimestamp(en, ts),
+          equals('3h ago'),
+        );
+        expect(
+          LocalizedTimeFormatter.formatNotificationTimestamp(de, ts),
+          equals('vor 3 Std'),
+        );
+      });
+
+      testWidgets(
+        'uses MaterialLocalizations.formatCompactDate when context is '
+        'supplied and the timestamp is older than 7 days',
+        (tester) async {
+          late AppLocalizations l10n;
+          late BuildContext capturedContext;
+          final ts = DateTime.now().subtract(const Duration(days: 30));
+
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: const Locale('en'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) {
+                  l10n = context.l10n;
+                  capturedContext = context;
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          final result = LocalizedTimeFormatter.formatNotificationTimestamp(
+            l10n,
+            ts,
+            context: capturedContext,
+          );
+          final expected = MaterialLocalizations.of(
+            capturedContext,
+          ).formatCompactDate(ts.toLocal());
+          expect(result, equals(expected));
+        },
+      );
+
+      testWidgets(
+        'falls back to DateFormat.yMd(locale) when no context is supplied',
+        (tester) async {
+          final en = await _loadL10n(tester, const Locale('en'));
+          final ts = DateTime(2026, 3, 9, 12);
+
+          expect(
+            LocalizedTimeFormatter.formatNotificationTimestamp(
+              en,
+              ts,
+              locale: 'en',
+            ),
+            equals(DateFormat.yMd('en').format(ts.toLocal())),
+          );
+          expect(
+            LocalizedTimeFormatter.formatNotificationTimestamp(
+              en,
+              ts,
+              locale: 'de',
+            ),
+            equals(DateFormat.yMd('de').format(ts.toLocal())),
+          );
+        },
+      );
     });
 
     group('formatDurationAgo', () {
@@ -363,10 +470,7 @@ void main() {
         final en = await _loadL10n(tester, const Locale('en'));
 
         expect(
-          LocalizedTimeFormatter.formatDurationAgo(
-            en,
-            const Duration(days: 2),
-          ),
+          LocalizedTimeFormatter.formatDurationAgo(en, const Duration(days: 2)),
           equals('2d ago'),
         );
       });
@@ -397,10 +501,7 @@ void main() {
         final en = await _loadL10n(tester, const Locale('en'));
 
         expect(
-          LocalizedTimeFormatter.formatDraftAge(
-            en,
-            const Duration(minutes: 7),
-          ),
+          LocalizedTimeFormatter.formatDraftAge(en, const Duration(minutes: 7)),
           equals('7m ago'),
         );
       });
@@ -409,10 +510,7 @@ void main() {
         final en = await _loadL10n(tester, const Locale('en'));
 
         expect(
-          LocalizedTimeFormatter.formatDraftAge(
-            en,
-            const Duration(hours: 5),
-          ),
+          LocalizedTimeFormatter.formatDraftAge(en, const Duration(hours: 5)),
           equals('5h ago'),
         );
       });
@@ -421,10 +519,7 @@ void main() {
         final en = await _loadL10n(tester, const Locale('en'));
 
         expect(
-          LocalizedTimeFormatter.formatDraftAge(
-            en,
-            const Duration(days: 4),
-          ),
+          LocalizedTimeFormatter.formatDraftAge(en, const Duration(days: 4)),
           equals('4d ago'),
         );
       });

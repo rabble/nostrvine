@@ -16,11 +16,7 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class VideoClipPreview extends ConsumerStatefulWidget {
-  const VideoClipPreview({
-    required this.clip,
-    this.onDelete,
-    super.key,
-  });
+  const VideoClipPreview({required this.clip, this.onDelete, super.key});
 
   /// The clip to preview, containing file path, duration, and other metadata.
   final DivineVideoClip clip;
@@ -124,11 +120,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
 
       context.pop();
     } catch (e, s) {
-      Log.error(
-        'Failed to save clip to gallery',
-        error: e,
-        stackTrace: s,
-      );
+      Log.error('Failed to save clip to gallery', error: e, stackTrace: s);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

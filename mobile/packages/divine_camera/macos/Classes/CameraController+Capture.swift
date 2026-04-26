@@ -76,15 +76,25 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 if !isWriterSessionStarted && writer.status == .writing {
                     writer.startSession(atSourceTime: timestamp)
                     isWriterSessionStarted = true
+                    print(
+                        "DivineCamera macOS: Writer session started at "
+                            + "\(timestamp.seconds)"
+                    )
                 }
 
                 if writer.status == .writing
                     && videoInput.isReadyForMoreMediaData
                 {
-                    adaptor.append(
+                    let appended = adaptor.append(
                         pixelBuffer,
                         withPresentationTime: timestamp
                     )
+                    if !appended {
+                        print(
+                            "DivineCamera macOS: Failed to append video frame: "
+                                + "\(writer.error?.localizedDescription ?? "Unknown error")"
+                        )
+                    }
                 }
             }
         } else if output == audioOutput {
@@ -94,7 +104,13 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
                 if isWriterSessionStarted && writer.status == .writing
                     && audioInput.isReadyForMoreMediaData
                 {
-                    audioInput.append(sampleBuffer)
+                    let appended = audioInput.append(sampleBuffer)
+                    if !appended {
+                        print(
+                            "DivineCamera macOS: Failed to append audio frame: "
+                                + "\(writer.error?.localizedDescription ?? "Unknown error")"
+                        )
+                    }
                 }
             }
         }

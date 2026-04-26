@@ -14,9 +14,7 @@ class MessageRequestActionsState extends Equatable {
 
   final MessageRequestActionsStatus status;
 
-  MessageRequestActionsState copyWith({
-    MessageRequestActionsStatus? status,
-  }) {
+  MessageRequestActionsState copyWith({MessageRequestActionsStatus? status}) {
     return MessageRequestActionsState(status: status ?? this.status);
   }
 

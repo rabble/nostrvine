@@ -82,79 +82,59 @@ void main() {
         expect(a.deepEquals(b), isTrue);
       });
 
-      test(
-        'returns true when image bytes are equal '
-        'but different Uint8List instances',
-        () {
-          final a = _makeParams(
-            image: Uint8List.fromList([1, 2, 3]),
-          );
-          final b = _makeParams(
-            image: Uint8List.fromList([1, 2, 3]),
-          );
-          // Built-in == would fail here because Uint8List uses identity.
-          expect(a.deepEquals(b), isTrue);
-        },
-      );
+      test('returns true when image bytes are equal '
+          'but different Uint8List instances', () {
+        final a = _makeParams(image: Uint8List.fromList([1, 2, 3]));
+        final b = _makeParams(image: Uint8List.fromList([1, 2, 3]));
+        // Built-in == would fail here because Uint8List uses identity.
+        expect(a.deepEquals(b), isTrue);
+      });
 
       test('returns false when image bytes differ', () {
-        final a = _makeParams(
-          image: Uint8List.fromList([1, 2, 3]),
-        );
-        final b = _makeParams(
-          image: Uint8List.fromList([4, 5, 6]),
-        );
+        final a = _makeParams(image: Uint8List.fromList([1, 2, 3]));
+        final b = _makeParams(image: Uint8List.fromList([4, 5, 6]));
         expect(a.deepEquals(b), isFalse);
       });
 
       test('returns false when blur differs', () {
-        expect(
-          _makeParams(blur: 1).deepEquals(_makeParams(blur: 2)),
-          isFalse,
-        );
+        expect(_makeParams(blur: 1).deepEquals(_makeParams(blur: 2)), isFalse);
       });
 
       test('returns false when startTime differs', () {
         expect(
-          _makeParams(startTime: const Duration(seconds: 1)).deepEquals(
-            _makeParams(startTime: const Duration(seconds: 2)),
-          ),
+          _makeParams(
+            startTime: const Duration(seconds: 1),
+          ).deepEquals(_makeParams(startTime: const Duration(seconds: 2))),
           isFalse,
         );
       });
 
       test('returns false when endTime differs', () {
         expect(
-          _makeParams(endTime: const Duration(seconds: 5)).deepEquals(
-            _makeParams(endTime: const Duration(seconds: 10)),
-          ),
+          _makeParams(
+            endTime: const Duration(seconds: 5),
+          ).deepEquals(_makeParams(endTime: const Duration(seconds: 10))),
           isFalse,
         );
       });
 
       test('returns false when cropWidth differs', () {
         expect(
-          _makeParams(cropWidth: 100).deepEquals(
-            _makeParams(cropWidth: 200),
-          ),
+          _makeParams(cropWidth: 100).deepEquals(_makeParams(cropWidth: 200)),
           isFalse,
         );
       });
 
       test('returns false when cropHeight differs', () {
         expect(
-          _makeParams(cropHeight: 100).deepEquals(
-            _makeParams(cropHeight: 200),
-          ),
+          _makeParams(cropHeight: 100).deepEquals(_makeParams(cropHeight: 200)),
           isFalse,
         );
       });
 
       test('returns false when rotateTurns differs', () {
         expect(
-          _makeParams(rotateTurns: 1).deepEquals(
-            _makeParams(rotateTurns: 3),
-          ),
+          _makeParams(rotateTurns: 1).deepEquals(_makeParams(rotateTurns: 3)),
           isFalse,
         );
       });
@@ -174,17 +154,11 @@ void main() {
       });
 
       test('returns false when flipX differs', () {
-        expect(
-          _makeParams(flipX: true).deepEquals(_makeParams()),
-          isFalse,
-        );
+        expect(_makeParams(flipX: true).deepEquals(_makeParams()), isFalse);
       });
 
       test('returns false when flipY differs', () {
-        expect(
-          _makeParams(flipY: true).deepEquals(_makeParams()),
-          isFalse,
-        );
+        expect(_makeParams(flipY: true).deepEquals(_makeParams()), isFalse);
       });
 
       test('returns false when isTransformed differs', () {
@@ -196,18 +170,16 @@ void main() {
 
       test('returns false when audioTracks differ', () {
         expect(
-          _makeParams(audioTracks: [_makeAudioTrack()]).deepEquals(
-            _makeParams(),
-          ),
+          _makeParams(
+            audioTracks: [_makeAudioTrack()],
+          ).deepEquals(_makeParams()),
           isFalse,
         );
       });
 
       test('returns false when videoClips differ', () {
         expect(
-          _makeParams(videoClips: [_makeVideoClip()]).deepEquals(
-            _makeParams(),
-          ),
+          _makeParams(videoClips: [_makeVideoClip()]).deepEquals(_makeParams()),
           isFalse,
         );
       });
@@ -273,11 +245,7 @@ void main() {
 
       test('reports layers when lists differ', () {
         final a = _makeParams();
-        final b = _makeParams(
-          layers: [
-            TextLayer(text: 'hello'),
-          ],
-        );
+        final b = _makeParams(layers: [TextLayer(text: 'hello')]);
         expect(a.diff(b), contains('layers'));
       });
 
@@ -391,20 +359,17 @@ void main() {
         expect(logStr, contains('image'));
       });
 
-      test(
-        'truncated image shows total length',
-        () {
-          final largeImage = Uint8List.fromList(
-            List.generate(500, (i) => i % 256),
-          );
-          final params = _makeParams(image: largeImage);
-          final logStr = params.toLogString();
+      test('truncated image shows total length', () {
+        final largeImage = Uint8List.fromList(
+          List.generate(500, (i) => i % 256),
+        );
+        final params = _makeParams(image: largeImage);
+        final logStr = params.toLogString();
 
-          // Should include the total character count of the original
-          final fullLength = largeImage.toList().toString().length;
-          expect(logStr, contains('$fullLength chars'));
-        },
-      );
+        // Should include the total character count of the original
+        final fullLength = largeImage.toList().toString().length;
+        expect(logStr, contains('$fullLength chars'));
+      });
     });
   });
 }

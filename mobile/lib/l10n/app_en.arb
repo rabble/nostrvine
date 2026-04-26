@@ -425,6 +425,14 @@
   "videoGridDeleteConfirm": "Delete",
   "videoGridDeletingContent": "Deleting content...",
   "videoGridDeleteSuccess": "Delete request sent successfully",
+  "videoGridDeleteFailure": "Failed to delete content: {error}",
+  "@videoGridDeleteFailure": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
   "exploreTabClassics": "Classics",
   "exploreTabNew": "New",
   "exploreTabPopular": "Popular",
@@ -603,6 +611,11 @@
   "videoActionUnlike": "Unlike video",
   "videoActionLike": "Like video",
   "videoActionAutoLabel": "Auto",
+  "videoActionLikeLabel": "Like",
+  "videoActionReplyLabel": "Reply",
+  "videoActionRepostLabel": "Repost",
+  "videoActionShareLabel": "Share",
+  "videoActionAboutLabel": "About",
   "videoActionEnableAutoAdvance": "Enable auto advance",
   "videoActionDisableAutoAdvance": "Disable auto advance",
   "videoActionRemoveRepost": "Remove repost",
@@ -611,6 +624,14 @@
   "videoActionMoreOptions": "More options",
   "videoActionHideSubtitles": "Hide subtitles",
   "videoActionShowSubtitles": "Show subtitles",
+  "videoOverlayOpenMetadataFromTitle": "Open video details",
+  "@videoOverlayOpenMetadataFromTitle": {
+    "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+  },
+  "videoOverlayOpenMetadataFromDescription": "Open video details",
+  "@videoOverlayOpenMetadataFromDescription": {
+    "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+  },
   "videoDescriptionLoops": "{count} loops",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -1519,6 +1540,7 @@
   "shareMenuEditVideoSubtitle": "Update title, description, and hashtags",
   "shareMenuDeleteVideo": "Delete Video",
   "shareMenuDeleteVideoSubtitle": "Remove this video from Divine. It may still appear on other Nostr clients.",
+  "shareMenuDeleteWarning": "This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.",
   "shareMenuVideoInTheseLists": "Video is in these lists:",
   "shareMenuVideoCount": "{count} videos",
   "@shareMenuVideoCount": {
@@ -1533,6 +1555,14 @@
   "shareMenuCancel": "Cancel",
   "shareMenuDelete": "Delete",
   "shareMenuDeletingContent": "Deleting content...",
+  "shareMenuFailedToDeleteContent": "Failed to delete content: {error}",
+  "@shareMenuFailedToDeleteContent": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "shareMenuDeleteRequestSent": "Video deleted",
   "shareMenuDeleteFailedNotInitialized": "Deletion isn't ready yet. Try again in a moment.",
   "shareMenuDeleteFailedNotOwner": "You can only delete your own videos.",
@@ -1571,6 +1601,14 @@
       }
     }
   },
+  "shareMenuFailedToDeleteVideo": "Failed to delete video: {error}",
+  "@shareMenuFailedToDeleteVideo": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "shareMenuDeleteVideoQuestion": "Delete Video?",
   "shareMenuDeleteRelayWarning": "This will send a deletion request to relays. Note: Some relays may still have cached copies.",
   "shareMenuVideoDeletionRequested": "Video deleted",
@@ -1578,8 +1616,8 @@
   "shareMenuAddContentLabels": "Add content labels",
   "shareMenuClearAll": "Clear all",
   "shareMenuCollaborators": "Collaborators",
-  "shareMenuAddCollaborator": "Add collaborator",
-  "shareMenuMutualFollowRequired": "You need to mutually follow {name} to add them as a collaborator.",
+  "shareMenuAddCollaborator": "Invite collaborator",
+  "shareMenuMutualFollowRequired": "You need to mutually follow {name} to invite them as a collaborator.",
   "@shareMenuMutualFollowRequired": {
     "placeholders": {
       "name": {
@@ -1838,6 +1876,8 @@
   "navExplore": "Explore",
   "navInbox": "Inbox",
   "navProfile": "Profile",
+  "navSearch": "Search",
+  "navSearchTooltip": "Search",
   "navMyProfile": "My Profile",
   "navNotifications": "Notifications",
   "navOpenCamera": "Open camera",
@@ -2445,6 +2485,12 @@
   "@searchDiscoverSomethingInteresting": {
     "description": "Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query."
   },
+  "searchPeopleSectionHeader": "People",
+  "searchPeopleLoadingLabel": "Loading people results",
+  "searchTagsSectionHeader": "Tags",
+  "searchTagsLoadingLabel": "Loading tag results",
+  "searchVideosSectionHeader": "Videos",
+  "searchVideosLoadingLabel": "Loading video results",
   "searchListsSectionHeader": "Lists",
   "searchListsLoadingLabel": "Loading list results",
 
@@ -2667,18 +2713,20 @@
       }
     }
   },
-  "videoEditorClipsLabel": "Clips",
+  "videoEditorCameraLabel": "Camera",
+  "videoEditorOpenCameraSemanticLabel": "Open camera",
+  "videoEditorLibraryLabel": "Library",
   "videoEditorTextLabel": "Text",
   "videoEditorDrawLabel": "Draw",
-  "videoEditorEffectsLabel": "Effects",
+  "videoEditorFilterLabel": "Filter",
   "videoEditorAudioLabel": "Audio",
   "videoEditorVolumeLabel": "Volume",
   "videoEditorAddTitle": "Add",
-  "videoEditorOpenClipsSemanticLabel": "Open clips editor",
+  "videoEditorOpenLibrarySemanticLabel": "Open Library",
   "videoEditorOpenAudioSemanticLabel": "Open audio editor",
   "videoEditorOpenTextSemanticLabel": "Open text editor",
   "videoEditorOpenDrawSemanticLabel": "Open draw editor",
-  "videoEditorOpenEffectsSemanticLabel": "Open effects editor",
+  "videoEditorOpenFilterSemanticLabel": "Open filter editor",
   "videoEditorSaveDraftTitle": "Save your draft?",
   "videoEditorSaveDraftSubtitle": "Keep your edits for later, or discard them and leave the editor.",
   "videoEditorSaveDraftButton": "Save draft",
@@ -2732,28 +2780,17 @@
   "videoEditorSplitLabel": "Split",
   "videoEditorSplitSelectedClipSemanticLabel": "Split selected clip",
   "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
-  "videoEditorSortNewest": "Newest",
-  "videoEditorSortLongest": "Longest",
-  "videoEditorSortShortest": "Shortest",
-  "videoEditorSortBySemanticLabel": "Sort by {option}. Tap to change sort order",
-  "@videoEditorSortBySemanticLabel": {
-    "placeholders": {
-      "option": {
-        "type": "String"
-      }
-    }
-  },
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",
   "videoEditorAudioUntitledSound": "Untitled sound",
-  "videoEditorAudioSelectSoundSemanticLabel": "Select sound",
   "videoEditorAudioUntitled": "Untitled",
   "videoEditorAudioAddAudio": "Add audio",
   "videoEditorAudioNoSoundsAvailableTitle": "No sounds available",
   "videoEditorAudioNoSoundsAvailableSubtitle": "Sounds will appear here when creators share audio",
-  "videoEditorAudioNoSoundsFoundTitle": "No sounds found",
-  "videoEditorAudioNoSoundsFoundSubtitle": "Try a different search term",
   "videoEditorAudioFailedToLoadTitle": "Failed to load sounds",
+  "videoEditorAudioSegmentInstruction": "Select the audio segment for your video",
+  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryCommunity": "Community",
   "videoEditorDrawToolArrowSemanticLabel": "Arrow tool",
   "videoEditorDrawToolEraserSemanticLabel": "Eraser tool",
   "videoEditorDrawToolMarkerSemanticLabel": "Marker tool",
@@ -2809,6 +2846,7 @@
     }
   },
   "videoEditorTimelineClipReorderHint": "Long press to reorder",
+  "videoEditorClipGalleryInstruction": "Tap to edit. Hold and drag to reorder.",
   "videoEditorTimelineClipMoveLeft": "Move left",
   "videoEditorTimelineClipMoveRight": "Move right",
   "videoEditorTimelineLongPressToDragHint": "Long press to drag",
@@ -2867,7 +2905,7 @@
   "videoMetadataContentWarningSelectAllThatApply": "Select all that apply to your content",
   "videoMetadataContentWarningDoneButton": "Done",
   "videoMetadataCollaboratorsLabel": "Collaborators",
-  "videoMetadataAddCollaboratorSemanticLabel": "Add collaborator",
+  "videoMetadataAddCollaboratorSemanticLabel": "Invite collaborator",
   "videoMetadataCollaboratorsHelpTooltip": "How collaborators work",
   "videoMetadataCollaboratorsCount": "{count}/{max} Collaborators",
   "@videoMetadataCollaboratorsCount": {
@@ -2881,9 +2919,9 @@
     }
   },
   "videoMetadataRemoveCollaboratorSemanticLabel": "Remove collaborator",
-  "videoMetadataCollaboratorsHelpMessage": "Collaborators are tagged as co-creators on this post. You can only add people you mutually follow, and they appear in the post metadata when published.",
+  "videoMetadataCollaboratorsHelpMessage": "Collaborators are invited as co-creators on this post. You can only invite people you mutually follow, and they appear as collaborators after they confirm.",
   "videoMetadataMutualFollowersSearchText": "Mutual followers",
-  "videoMetadataMustMutuallyFollowSnackbar": "You need to mutually follow {name} to add them as a collaborator.",
+  "videoMetadataMustMutuallyFollowSnackbar": "You need to mutually follow {name} to invite them as a collaborator.",
   "@videoMetadataMustMutuallyFollowSnackbar": {
     "placeholders": {
       "name": {

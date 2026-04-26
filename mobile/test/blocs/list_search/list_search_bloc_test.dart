@@ -70,11 +70,7 @@ void main() {
           isA<ListSearchState>()
               .having((s) => s.status, 'status', ListSearchStatus.success)
               .having((s) => s.query, 'query', 'videos')
-              .having(
-                (s) => s.videoResults,
-                'videoResults',
-                [testCuratedList],
-              ),
+              .having((s) => s.videoResults, 'videoResults', [testCuratedList]),
         ],
       );
 
@@ -95,11 +91,7 @@ void main() {
           ),
           isA<ListSearchState>()
               .having((s) => s.status, 'status', ListSearchStatus.success)
-              .having(
-                (s) => s.peopleResults,
-                'peopleResults',
-                [testUserList],
-              ),
+              .having((s) => s.peopleResults, 'peopleResults', [testUserList]),
         ],
       );
 
@@ -114,9 +106,7 @@ void main() {
         act: (bloc) => bloc.add(const ListSearchQueryChanged('mixed')),
         wait: const Duration(milliseconds: 400),
         verify: (bloc) {
-          verifyNever(
-            () => curatedListRepository.searchAllPeopleLists(any()),
-          );
+          verifyNever(() => curatedListRepository.searchAllPeopleLists(any()));
           expect(bloc.state.peopleResults, isEmpty);
         },
       );
@@ -163,14 +153,8 @@ void main() {
         act: (bloc) => bloc.add(const ListSearchQueryChanged('xyz')),
         wait: const Duration(milliseconds: 400),
         expect: () => [
-          const ListSearchState(
-            status: ListSearchStatus.loading,
-            query: 'xyz',
-          ),
-          const ListSearchState(
-            status: ListSearchStatus.success,
-            query: 'xyz',
-          ),
+          const ListSearchState(status: ListSearchStatus.loading, query: 'xyz'),
+          const ListSearchState(status: ListSearchStatus.success, query: 'xyz'),
         ],
       );
 
@@ -266,11 +250,7 @@ void main() {
           ),
           isA<ListSearchState>()
               .having((s) => s.status, 'status', ListSearchStatus.success)
-              .having(
-                (s) => s.videoResults,
-                'videoResults',
-                [testCuratedList],
-              ),
+              .having((s) => s.videoResults, 'videoResults', [testCuratedList]),
         ],
       );
 
@@ -285,9 +265,7 @@ void main() {
             createdAt: now,
             updatedAt: now,
           );
-          when(
-            () => curatedListRepository.searchAllLists('vid'),
-          ).thenAnswer(
+          when(() => curatedListRepository.searchAllLists('vid')).thenAnswer(
             (_) => Stream.fromIterable([
               [testCuratedList],
               [testCuratedList, list2],
@@ -298,10 +276,7 @@ void main() {
         act: (bloc) => bloc.add(const ListSearchQueryChanged('vid')),
         wait: const Duration(milliseconds: 400),
         expect: () => [
-          const ListSearchState(
-            status: ListSearchStatus.loading,
-            query: 'vid',
-          ),
+          const ListSearchState(status: ListSearchStatus.loading, query: 'vid'),
           isA<ListSearchState>().having(
             (s) => s.videoResults.length,
             'videoResults.length',

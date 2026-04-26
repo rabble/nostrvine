@@ -2,7 +2,6 @@
 // ABOUTME: Covers share sheet rendering, contact row, more actions, feature
 // ABOUTME: flags, save/bookmark, copy link, share via, and error handling
 
-@Tags(['skip_very_good_optimization'])
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -58,14 +57,12 @@ void main() {
   setUp(() {
     mockProfileRepository = _MockProfileRepository();
     when(
-      () => mockProfileRepository.getCachedProfile(
-        pubkey: any(named: 'pubkey'),
-      ),
+      () =>
+          mockProfileRepository.getCachedProfile(pubkey: any(named: 'pubkey')),
     ).thenAnswer((_) async => null);
     when(
-      () => mockProfileRepository.fetchFreshProfile(
-        pubkey: any(named: 'pubkey'),
-      ),
+      () =>
+          mockProfileRepository.fetchFreshProfile(pubkey: any(named: 'pubkey')),
     ).thenAnswer((_) async => null);
 
     testVideo = VideoEvent(

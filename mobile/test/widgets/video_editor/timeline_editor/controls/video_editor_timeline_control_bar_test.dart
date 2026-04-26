@@ -34,9 +34,7 @@ void main() {
         () => clipBloc.stream,
       ).thenAnswer((_) => const Stream<ClipEditorState>.empty());
 
-      when(
-        () => overlayBloc.state,
-      ).thenReturn(const TimelineOverlayState());
+      when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
       when(
         () => overlayBloc.stream,
       ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());

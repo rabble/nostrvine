@@ -57,77 +57,61 @@ void main() {
       await stateController.close();
     });
 
-    testWidgets(
-      'renders social controls overlay for web video feed',
-      (tester) async {
-        final video = createTestVideoEvent(
-          id: _testVideoId,
-          pubkey: _testPubkey,
-        );
-        final state = FullscreenFeedState(
-          status: FullscreenFeedStatus.ready,
-          videos: [video],
-        );
-        when(() => mockBloc.state).thenReturn(state);
+    testWidgets('renders social controls overlay for web video feed', (
+      tester,
+    ) async {
+      final video = createTestVideoEvent(id: _testVideoId, pubkey: _testPubkey);
+      final state = FullscreenFeedState(
+        status: FullscreenFeedStatus.ready,
+        videos: [video],
+      );
+      when(() => mockBloc.state).thenReturn(state);
 
-        await tester.pumpWidget(
-          testMaterialApp(
-            mockAuthService: mockAuthService,
-            mockProfileRepository: mockProfileRepository,
-            home: BlocProvider<FullscreenFeedBloc>.value(
-              value: mockBloc,
-              child: FullscreenFeedContent(
-                webControllerFactory:
-                    ({
-                      required url,
-                      required headers,
-                    }) => webController,
-              ),
+      await tester.pumpWidget(
+        testMaterialApp(
+          mockAuthService: mockAuthService,
+          mockProfileRepository: mockProfileRepository,
+          home: BlocProvider<FullscreenFeedBloc>.value(
+            value: mockBloc,
+            child: FullscreenFeedContent(
+              webControllerFactory: ({required url, required headers}) =>
+                  webController,
             ),
           ),
-        );
-        await tester.pump();
+        ),
+      );
+      await tester.pump();
 
-        expect(find.byType(WebVideoFeed), findsOneWidget);
-        expect(find.byType(VideoOverlayActions), findsOneWidget);
-      },
-      skip: !kIsWeb,
-    );
+      expect(find.byType(WebVideoFeed), findsOneWidget);
+      expect(find.byType(VideoOverlayActions), findsOneWidget);
+    }, skip: !kIsWeb);
 
-    testWidgets(
-      'renders Auto action in the fullscreen web overlay',
-      (tester) async {
-        final video = createTestVideoEvent(
-          id: _testVideoId,
-          pubkey: _testPubkey,
-        );
-        final state = FullscreenFeedState(
-          status: FullscreenFeedStatus.ready,
-          videos: [video],
-        );
-        when(() => mockBloc.state).thenReturn(state);
+    testWidgets('renders Auto action in the fullscreen web overlay', (
+      tester,
+    ) async {
+      final video = createTestVideoEvent(id: _testVideoId, pubkey: _testPubkey);
+      final state = FullscreenFeedState(
+        status: FullscreenFeedStatus.ready,
+        videos: [video],
+      );
+      when(() => mockBloc.state).thenReturn(state);
 
-        await tester.pumpWidget(
-          testMaterialApp(
-            mockAuthService: mockAuthService,
-            mockProfileRepository: mockProfileRepository,
-            home: BlocProvider<FullscreenFeedBloc>.value(
-              value: mockBloc,
-              child: FullscreenFeedContent(
-                webControllerFactory:
-                    ({
-                      required url,
-                      required headers,
-                    }) => webController,
-              ),
+      await tester.pumpWidget(
+        testMaterialApp(
+          mockAuthService: mockAuthService,
+          mockProfileRepository: mockProfileRepository,
+          home: BlocProvider<FullscreenFeedBloc>.value(
+            value: mockBloc,
+            child: FullscreenFeedContent(
+              webControllerFactory: ({required url, required headers}) =>
+                  webController,
             ),
           ),
-        );
-        await tester.pump();
+        ),
+      );
+      await tester.pump();
 
-        expect(find.byType(AutoActionButton), findsOneWidget);
-      },
-      skip: !kIsWeb,
-    );
+      expect(find.byType(AutoActionButton), findsOneWidget);
+    }, skip: !kIsWeb);
   });
 }

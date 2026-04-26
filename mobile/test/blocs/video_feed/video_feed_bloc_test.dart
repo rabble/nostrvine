@@ -2026,9 +2026,7 @@ void main() {
             pubkey: '0' * 64,
             createdAt: 1704067200,
             content: '',
-            timestamp: DateTime.fromMillisecondsSinceEpoch(
-              1704067200 * 1000,
-            ),
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
             title: 'Hidden',
             videoUrl: 'https://example.com/hidden.mp4',
             moderationLabels: const ['nudity'],
@@ -2038,9 +2036,7 @@ void main() {
             pubkey: '0' * 64,
             createdAt: 1704067200,
             content: '',
-            timestamp: DateTime.fromMillisecondsSinceEpoch(
-              1704067200 * 1000,
-            ),
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
             title: 'Visible',
             videoUrl: 'https://example.com/visible.mp4',
           );

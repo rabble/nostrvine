@@ -154,7 +154,7 @@ void main() {
       expect(find.byType(SvgPicture), findsWidgets);
     });
 
-    testWidgets('has correct semantics for add collaborator action', (
+    testWidgets('has correct semantics for invite collaborator action', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -172,20 +172,20 @@ void main() {
         ),
       );
 
-      // Find the Semantics widget with button=true and 'Add collaborator' label
+      // Find the Semantics widget with button=true and invite label
       final semanticsWidgets = find.byType(Semantics);
       expect(semanticsWidgets, findsWidgets);
 
-      var foundAddCollaboratorSemantics = false;
+      var foundInviteCollaboratorSemantics = false;
       for (final element in semanticsWidgets.evaluate()) {
         final widget = element.widget as Semantics;
         if (widget.properties.button == true &&
-            widget.properties.label == 'Add collaborator') {
-          foundAddCollaboratorSemantics = true;
+            widget.properties.label == 'Invite collaborator') {
+          foundInviteCollaboratorSemantics = true;
           break;
         }
       }
-      expect(foundAddCollaboratorSemantics, isTrue);
+      expect(foundInviteCollaboratorSemantics, isTrue);
     });
 
     testWidgets('renders help button', (tester) async {

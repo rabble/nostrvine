@@ -140,9 +140,7 @@ void main() {
             providers: [
               BlocProvider<ConversationListBloc>.value(value: mockBloc),
               BlocProvider<MyFollowingBloc>.value(value: mockFollowingBloc),
-              BlocProvider<InviteStatusCubit>.value(
-                value: mockInviteCubit,
-              ),
+              BlocProvider<InviteStatusCubit>.value(value: mockInviteCubit),
             ],
             child: const InboxView(),
           ),
@@ -169,39 +167,37 @@ void main() {
         expect(find.byType(FollowingBar), findsOneWidget);
       });
 
-      testWidgets(
-        'renders $CircularProgressIndicator when status is initial',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
-          await tester.pump();
+      testWidgets('renders $CircularProgressIndicator when status is initial', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
 
-          // Switch to Messages tab (default is Notifications).
-          await tester.tap(find.text('Messages'));
-          await tester.pump();
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        },
-      );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
 
-      testWidgets(
-        'renders $InboxEmptyState when status is error',
-        (tester) async {
-          await tester.pumpWidget(
-            buildSubject(
-              state: const ConversationListState(
-                status: ConversationListStatus.error,
-              ),
+      testWidgets('renders $InboxEmptyState when status is error', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.error,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          // Switch to Messages tab (default is Notifications).
-          await tester.tap(find.text('Messages'));
-          await tester.pump();
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
 
-          expect(find.byType(InboxEmptyState), findsOneWidget);
-        },
-      );
+        expect(find.byType(InboxEmptyState), findsOneWidget);
+      });
 
       testWidgets(
         'renders $InboxEmptyState when loaded with no conversations',
@@ -223,36 +219,35 @@ void main() {
         },
       );
 
-      testWidgets(
-        'renders $ConversationTile when loaded with conversations',
-        (tester) async {
-          final conversation = DmConversation(
-            id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-            participantPubkeys: const [currentPubkey, otherPubkey],
-            isGroup: false,
-            createdAt: nowUnix,
-            lastMessageContent: 'Hello',
-            lastMessageTimestamp: nowUnix,
-          );
+      testWidgets('renders $ConversationTile when loaded with conversations', (
+        tester,
+      ) async {
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
 
-          await tester.pumpWidget(
-            buildSubject(
-              state: ConversationListState(
-                status: ConversationListStatus.loaded,
-                conversations: [conversation],
-                hasMore: false,
-              ),
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              hasMore: false,
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          // Switch to Messages tab (default is Notifications).
-          await tester.tap(find.text('Messages'));
-          await tester.pumpAndSettle();
+        // Switch to Messages tab (default is Notifications).
+        await tester.tap(find.text('Messages'));
+        await tester.pumpAndSettle();
 
-          expect(find.byType(ConversationTile), findsOneWidget);
-        },
-      );
+        expect(find.byType(ConversationTile), findsOneWidget);
+      });
 
       testWidgets(
         'renders $MessageRequestsBanner when request conversations exist',
@@ -366,9 +361,7 @@ void main() {
         ).called(greaterThanOrEqualTo(1));
       });
 
-      testWidgets('calls push when a conversation is tapped', (
-        tester,
-      ) async {
+      testWidgets('calls push when a conversation is tapped', (tester) async {
         final conversation = DmConversation(
           id: 'conv123',
           participantPubkeys: const [currentPubkey, otherPubkey],
@@ -394,10 +387,7 @@ void main() {
         await tester.pumpAndSettle();
 
         when(
-          () => mockGoRouter.push(
-            any(),
-            extra: any(named: 'extra'),
-          ),
+          () => mockGoRouter.push(any(), extra: any(named: 'extra')),
         ).thenAnswer((_) async => null);
 
         await tester.tap(find.byType(ConversationTile));
@@ -438,9 +428,7 @@ void main() {
         await tester.tap(find.text('Messages'));
         await tester.pump();
 
-        when(
-          () => mockGoRouter.pushNamed(any()),
-        ).thenAnswer((_) async => null);
+        when(() => mockGoRouter.pushNamed(any())).thenAnswer((_) async => null);
 
         await tester.tap(find.byType(MessageRequestsBanner));
         await tester.pump();

@@ -108,9 +108,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => VideosByAuthorResponse(
-          videos: [
-            _videoStats(id: 'a', pubkey: pubkey),
-          ],
+          videos: [_videoStats(id: 'a', pubkey: pubkey)],
         ),
       );
 
@@ -134,9 +132,9 @@ void main() {
         when(() => api.isAvailable).thenReturn(true);
         when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
 
-        when(() => api.getBulkVideoStats(any())).thenAnswer(
-          (_) async => const BulkVideoStatsResponse(stats: {}),
-        );
+        when(
+          () => api.getBulkVideoStats(any()),
+        ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
         when(() => api.getVideoViews(any())).thenAnswer((invocation) async {
           final eventId = invocation.positionalArguments[0] as String;
           return eventId == 'b' ? 21 : 0;
@@ -150,9 +148,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => VideosByAuthorResponse(
-            videos: [
-              _videoStats(id: 'b', pubkey: pubkey),
-            ],
+            videos: [_videoStats(id: 'b', pubkey: pubkey)],
           ),
         );
 
@@ -177,9 +173,9 @@ void main() {
         when(() => api.isAvailable).thenReturn(true);
         when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
 
-        when(() => api.getBulkVideoStats(any())).thenAnswer(
-          (_) async => const BulkVideoStatsResponse(stats: {}),
-        );
+        when(
+          () => api.getBulkVideoStats(any()),
+        ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
         when(() => api.getVideoViews(any())).thenAnswer((invocation) async {
           final eventId = invocation.positionalArguments[0] as String;
           return eventId == 'c' ? 0 : 0;
@@ -193,9 +189,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => VideosByAuthorResponse(
-            videos: [
-              _videoStats(id: 'c', pubkey: pubkey),
-            ],
+            videos: [_videoStats(id: 'c', pubkey: pubkey)],
           ),
         );
 

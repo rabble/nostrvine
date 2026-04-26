@@ -44,10 +44,7 @@ void main() {
       final identity = LocalNostrIdentity(keyContainer: mockKeyContainer);
 
       expect(identity.npub, startsWith('npub1'));
-      expect(
-        identity.npub,
-        equals(NostrKeyUtils.encodePubKey(testPublicKey)),
-      );
+      expect(identity.npub, equals(NostrKeyUtils.encodePubKey(testPublicKey)));
     });
 
     test('getPublicKey returns pubkey', () async {
@@ -288,75 +285,69 @@ void main() {
   });
 
   group('structural desync prevention', () {
-    test(
-      'pubkey used in event always matches signing key '
-      'because both come from the same identity instance',
-      () async {
-        // This test proves that the PRIMARY-slot desync bug (#2233) is
-        // structurally impossible with NostrIdentity: the pubkey embedded
-        // in the event and the key used for signing both originate from
-        // the same identity instance.
-        final mockKeyContainer = _MockSecureKeyContainer();
-        when(() => mockKeyContainer.publicKeyHex).thenReturn(testPublicKey);
-        when(() => mockKeyContainer.isDisposed).thenReturn(false);
-        when(() => mockKeyContainer.withPrivateKey<Event>(any())).thenAnswer((
-          invocation,
-        ) {
-          final callback =
-              invocation.positionalArguments[0] as Event Function(String);
-          return callback(testPrivateKey);
-        });
+    test('pubkey used in event always matches signing key '
+        'because both come from the same identity instance', () async {
+      // This test proves that the PRIMARY-slot desync bug (#2233) is
+      // structurally impossible with NostrIdentity: the pubkey embedded
+      // in the event and the key used for signing both originate from
+      // the same identity instance.
+      final mockKeyContainer = _MockSecureKeyContainer();
+      when(() => mockKeyContainer.publicKeyHex).thenReturn(testPublicKey);
+      when(() => mockKeyContainer.isDisposed).thenReturn(false);
+      when(() => mockKeyContainer.withPrivateKey<Event>(any())).thenAnswer((
+        invocation,
+      ) {
+        final callback =
+            invocation.positionalArguments[0] as Event Function(String);
+        return callback(testPrivateKey);
+      });
 
-        final identity = LocalNostrIdentity(keyContainer: mockKeyContainer);
+      final identity = LocalNostrIdentity(keyContainer: mockKeyContainer);
 
-        // Simulate what createAndSignEvent does: use identity.pubkey for
-        // the event, then identity.signEvent to sign it.
-        final event = Event(
-          identity.pubkey,
-          EventKind.textNote,
-          [],
-          'test content',
-        );
-        final signed = await identity.signEvent(event);
+      // Simulate what createAndSignEvent does: use identity.pubkey for
+      // the event, then identity.signEvent to sign it.
+      final event = Event(
+        identity.pubkey,
+        EventKind.textNote,
+        [],
+        'test content',
+      );
+      final signed = await identity.signEvent(event);
 
-        // The signed event's pubkey matches the identity's pubkey — they
-        // cannot disagree because they come from the same object.
-        expect(signed, isNotNull);
-        expect(signed!.pubkey, equals(identity.pubkey));
-        expect(signed.isSigned, isTrue);
-      },
-    );
+      // The signed event's pubkey matches the identity's pubkey — they
+      // cannot disagree because they come from the same object.
+      expect(signed, isNotNull);
+      expect(signed!.pubkey, equals(identity.pubkey));
+      expect(signed.isSigned, isTrue);
+    });
 
-    test(
-      'different identity types all bind pubkey at construction time',
-      () {
-        // Each variant stores pubkey as a final field — it cannot change
-        // after construction, so there is no window for desync.
-        final mockSigner = _MockNostrSigner();
-        final mockKeyContainer = _MockSecureKeyContainer();
-        when(() => mockKeyContainer.publicKeyHex).thenReturn(testPublicKey);
-        when(() => mockKeyContainer.isDisposed).thenReturn(false);
+    test('different identity types all bind pubkey at construction time', () {
+      // Each variant stores pubkey as a final field — it cannot change
+      // after construction, so there is no window for desync.
+      final mockSigner = _MockNostrSigner();
+      final mockKeyContainer = _MockSecureKeyContainer();
+      when(() => mockKeyContainer.publicKeyHex).thenReturn(testPublicKey);
+      when(() => mockKeyContainer.isDisposed).thenReturn(false);
 
-        final local = LocalNostrIdentity(keyContainer: mockKeyContainer);
-        final keycast = KeycastNostrIdentity(
-          pubkey: testPublicKey,
-          rpcSigner: mockSigner,
-        );
-        final bunker = BunkerNostrIdentity(
-          pubkey: testPublicKey,
-          remoteSigner: mockSigner,
-        );
-        final amber = AmberNostrIdentity(
-          pubkey: testPublicKey,
-          amberSigner: mockSigner,
-        );
+      final local = LocalNostrIdentity(keyContainer: mockKeyContainer);
+      final keycast = KeycastNostrIdentity(
+        pubkey: testPublicKey,
+        rpcSigner: mockSigner,
+      );
+      final bunker = BunkerNostrIdentity(
+        pubkey: testPublicKey,
+        remoteSigner: mockSigner,
+      );
+      final amber = AmberNostrIdentity(
+        pubkey: testPublicKey,
+        amberSigner: mockSigner,
+      );
 
-        // All four variants expose the same pubkey — it's a final field,
-        // not a getter that reads from a mutable slot.
-        for (final identity in <NostrIdentity>[local, keycast, bunker, amber]) {
-          expect(identity.pubkey, equals(testPublicKey));
-        }
-      },
-    );
+      // All four variants expose the same pubkey — it's a final field,
+      // not a getter that reads from a mutable slot.
+      for (final identity in <NostrIdentity>[local, keycast, bunker, amber]) {
+        expect(identity.pubkey, equals(testPublicKey));
+      }
+    });
   });
 }

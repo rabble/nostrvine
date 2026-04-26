@@ -53,9 +53,7 @@ void main() {
       });
 
       test('handles empty stored value gracefully', () {
-        when(
-          () => mockPrefs.getString('muted_conversations'),
-        ).thenReturn('');
+        when(() => mockPrefs.getString('muted_conversations')).thenReturn('');
 
         final cubit = buildCubit();
 
@@ -103,9 +101,7 @@ void main() {
       blocTest<ConversationMuteCubit, ConversationMuteState>(
         'unmutes a conversation when already muted',
         build: buildCubit,
-        seed: () => const ConversationMuteState(
-          mutedIds: {conversationId},
-        ),
+        seed: () => const ConversationMuteState(mutedIds: {conversationId}),
         act: (cubit) => cubit.toggleMute(conversationId),
         expect: () => [
           isA<ConversationMuteState>()
@@ -134,9 +130,7 @@ void main() {
       blocTest<ConversationMuteCubit, ConversationMuteState>(
         'returns false when unmuting',
         build: buildCubit,
-        seed: () => const ConversationMuteState(
-          mutedIds: {conversationId},
-        ),
+        seed: () => const ConversationMuteState(mutedIds: {conversationId}),
         act: (cubit) async {
           final result = await cubit.toggleMute(conversationId);
           expect(result, isFalse);
@@ -170,11 +164,7 @@ void main() {
                 'rolled back',
                 isFalse,
               )
-              .having(
-                (s) => s.status,
-                'status',
-                ConversationMuteStatus.error,
-              ),
+              .having((s) => s.status, 'status', ConversationMuteStatus.error),
         ],
         errors: () => [isA<Exception>()],
       );

@@ -105,10 +105,7 @@ class _VideoRecorderModeSelectorWheelState
   /// Measures the width the pill needs for the given label text.
   double _pillWidth(String label, TextScaler textScaler) {
     final painter = TextPainter(
-      text: TextSpan(
-        text: label,
-        style: VineTheme.titleSmallFont(),
-      ),
+      text: TextSpan(text: label, style: VineTheme.titleSmallFont()),
       textDirection: TextDirection.ltr,
       textScaler: textScaler,
     )..layout();
@@ -118,9 +115,9 @@ class _VideoRecorderModeSelectorWheelState
   @override
   Widget build(BuildContext context) {
     const modes = VideoRecorderMode.values;
-    final textScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.3,
-    );
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.3);
     return LayoutBuilder(
       builder: (context, constraints) {
         final sidePadding = (constraints.maxWidth - _itemExtent) / 2;

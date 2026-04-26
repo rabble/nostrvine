@@ -25,28 +25,15 @@ class ConversationListBloc
        _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
        super(const ConversationListState()) {
-    on<ConversationListStarted>(
-      _onStarted,
-      transformer: restartable(),
-    );
-    on<ConversationListLoadMore>(
-      _onLoadMore,
-      transformer: droppable(),
-    );
-    on<ConversationListMarkRead>(
-      _onMarkRead,
-      transformer: droppable(),
-    );
+    on<ConversationListStarted>(_onStarted, transformer: restartable());
+    on<ConversationListLoadMore>(_onLoadMore, transformer: droppable());
+    on<ConversationListMarkRead>(_onMarkRead, transformer: droppable());
     on<ConversationListNavigateToUser>(
       _onNavigateToUser,
       transformer: droppable(),
     );
-    on<ConversationListNavigationConsumed>(
-      _onNavigationConsumed,
-    );
-    on<ConversationListBlocklistChanged>(
-      _onBlocklistChanged,
-    );
+    on<ConversationListNavigationConsumed>(_onNavigationConsumed);
+    on<ConversationListBlocklistChanged>(_onBlocklistChanged);
   }
 
   final DmRepository _dmRepository;
@@ -78,15 +65,11 @@ class ConversationListBloc
     // and follow-list changes are handled automatically.
     await emit.forEach(
       Rx.combineLatest3(
-        _dmRepository.watchAcceptedConversations(
-          limit: state.currentLimit,
-        ),
+        _dmRepository.watchAcceptedConversations(limit: state.currentLimit),
         _dmRepository.watchPotentialRequests(),
         _followRepository.followingStream.startWith(const []),
-        (accepted, potentialRequests, _) => (
-          accepted: accepted,
-          potentialRequests: potentialRequests,
-        ),
+        (accepted, potentialRequests, _) =>
+            (accepted: accepted, potentialRequests: potentialRequests),
       ),
       onData: (data) {
         final split = DmRepository.classifyPotentialRequests(
@@ -94,10 +77,7 @@ class ConversationListBloc
           userPubkey: _dmRepository.userPubkey,
           isFollowing: _followRepository.isFollowing,
         );
-        final merged = DmRepository.mergeAndSort(
-          data.accepted,
-          split.followed,
-        );
+        final merged = DmRepository.mergeAndSort(data.accepted, split.followed);
         final userPubkey = _dmRepository.userPubkey;
         return state.copyWith(
           status: ConversationListStatus.loaded,
@@ -120,9 +100,7 @@ class ConversationListBloc
       },
       onError: (error, stackTrace) {
         addError(error, stackTrace);
-        return state.copyWith(
-          status: ConversationListStatus.error,
-        );
+        return state.copyWith(status: ConversationListStatus.error);
       },
     );
   }
@@ -163,9 +141,10 @@ class ConversationListBloc
     final currentPubkey = _dmRepository.userPubkey;
     if (currentPubkey.isEmpty) return;
 
-    final conversationId = DmRepository.computeConversationId(
-      [currentPubkey, event.participantPubkey],
-    );
+    final conversationId = DmRepository.computeConversationId([
+      currentPubkey,
+      event.participantPubkey,
+    ]);
     emit(
       state.copyWith(
         navigationTarget: ConversationNavigationTarget(

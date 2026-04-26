@@ -10,9 +10,9 @@ import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 
 /// Maps [CommentsError] to user-facing strings.
 /// TODO(l10n): Replace with context.l10n when localization is added.
@@ -88,30 +88,15 @@ class _CommentsTitle extends StatelessWidget {
   }
 }
 
-class CommentsScreen extends ConsumerWidget {
-  const CommentsScreen({
-    required this.videoEvent,
-    required this.sheetScrollController,
-    this.initialCommentCount,
-    this.onCommentCountChanged,
-    super.key,
-  });
-
-  final VideoEvent videoEvent;
-  final ScrollController sheetScrollController;
-
-  /// Optional live comment count from the caller (e.g. from
-  /// [VideoInteractionsBloc]).  When provided this value is shown in the
-  /// header while comments are still loading, avoiding the stale count
-  /// stored in the video event metadata.
-  final int? initialCommentCount;
-
-  /// Called whenever the total comment count changes (initial load or
-  /// real-time updates).  The caller can use this to keep external state
-  /// (e.g. the video feed sidebar count) in sync.
-  final ValueChanged<int>? onCommentCountChanged;
-
-  /// Shows comments as a modal bottom sheet overlay
+/// Container for the comments bottom sheet. Not instantiable — use
+/// [CommentsScreen.show] to present the sheet.
+abstract final class CommentsScreen {
+  /// Shows comments as a modal bottom sheet overlay.
+  ///
+  /// Flows through [VineBottomSheet.show] (via
+  /// `showVideoPausingVineBottomSheet`) so the sheet inherits the
+  /// tap-outside-to-dismiss behaviour, snap support, and
+  /// overlay-visibility integration shared with other Vine bottom sheets.
   static Future<void> show(
     BuildContext context,
     VideoEvent video, {
@@ -119,109 +104,83 @@ class CommentsScreen extends ConsumerWidget {
     ValueChanged<int>? onCommentCountChanged,
   }) {
     final container = ProviderScope.containerOf(context, listen: false);
-    final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
-    // Use setBottomSheetOpen to retain current player for instant resume.
-    overlayNotifier.setBottomSheetOpen(true);
 
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: VineTheme.transparent,
-      elevation: 0,
-      builder: (builderContext) {
-        final keyboardHeight = MediaQuery.of(builderContext).viewInsets.bottom;
-        final isKeyboardOpen = keyboardHeight > 0;
-
-        return DraggableScrollableSheet(
-          initialChildSize: isKeyboardOpen ? 0.93 : 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.93,
-          snap: true,
-          snapSizes: const [0.7, 0.93],
-          builder: (context, scrollController) => CommentsScreen(
-            videoEvent: video,
-            sheetScrollController: scrollController,
-            initialCommentCount: initialCommentCount,
-            onCommentCountChanged: onCommentCountChanged,
-          ),
-        );
-      },
-    ).whenComplete(() {
-      overlayNotifier.setBottomSheetOpen(false);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final commentsRepository = ref.watch(commentsRepositoryProvider);
-    final authService = ref.watch(authServiceProvider);
-
-    // Sync providers — watch normally
-    final likesRepository = ref.watch(likesRepositoryProvider);
-    final contentBlocklistRepository = ref.watch(
+    // Synchronously available repositories / services.
+    final commentsRepository = container.read(commentsRepositoryProvider);
+    final authService = container.read(authServiceProvider);
+    final likesRepository = container.read(likesRepositoryProvider);
+    final contentBlocklistRepository = container.read(
       contentBlocklistRepositoryProvider,
     );
-
-    // Async providers — pass as Future (per Critical Review Issue 1)
-    // Pattern from share_video_menu.dart:2065
-    final contentReportingServiceFuture = ref.read(
+    // Async provider — pass as Future per the established pattern.
+    final contentReportingServiceFuture = container.read(
       contentReportingServiceProvider.future,
     );
-    // Mention search dependencies
-    final profileRepository = ref.watch(profileRepositoryProvider);
-    final followRepository = ref.watch(followRepositoryProvider);
+    final profileRepository = container.read(profileRepositoryProvider);
+    final followRepository = container.read(followRepositoryProvider);
 
-    // Use original comments count for pagination hint
-    // This helps determine hasMoreContent more accurately than page size heuristic
-    final initialCount = videoEvent.originalComments;
+    // The draggable scroll controller is created inside buildScrollBody but
+    // is also needed by the title's "new comments" pill (which lives above
+    // the scrollable region). Share it through a closure-captured holder.
+    ScrollController? activeScrollController;
 
-    return BlocProvider<CommentsBloc>(
-      create: (_) => CommentsBloc(
-        commentsRepository: commentsRepository,
-        authService: authService,
-        likesRepository: likesRepository,
-        contentReportingServiceFuture: contentReportingServiceFuture,
-        contentBlocklistRepository: contentBlocklistRepository,
-        rootEventId: videoEvent.id,
-        rootEventKind: NIP71VideoKinds.addressableShortVideo,
-        rootAuthorPubkey: videoEvent.pubkey,
-        rootAddressableId: videoEvent.addressableId,
-        initialTotalCount: initialCount,
-        profileRepository: profileRepository,
-        followRepository: followRepository,
-      )..add(const CommentsLoadRequested()),
-      child: BlocListener<CommentsBloc, CommentsState>(
-        listenWhen: (prev, next) =>
-            prev.commentsById.length != next.commentsById.length,
-        listener: (context, state) {
-          onCommentCountChanged?.call(state.commentsById.length);
-        },
-        child: VineBottomSheet(
-          title: _CommentsTitle(
-            initialCount:
-                initialCommentCount ?? videoEvent.originalComments ?? 0,
-            onNewCommentsPillTap: () {
-              // Scroll to top and acknowledge new comments.
-              // The sheetScrollController drives the DraggableScrollableSheet's
-              // inner list, so animating to 0 scrolls the comments list to top.
-              if (sheetScrollController.hasClients) {
-                sheetScrollController.animateTo(
-                  0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                );
-              }
-            },
-          ),
-          trailing: const _CommentsSortToggle(),
-          body: _CommentsScreenBody(
-            videoEvent: videoEvent,
-            sheetScrollController: sheetScrollController,
-          ),
-          bottomInput: const _MainCommentInput(),
+    return context.showVideoPausingVineBottomSheet<void>(
+      snap: true,
+      snapSizes: const [0.7, 0.93],
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.93,
+      // Wrap the whole sheet subtree in a single BlocProvider so every
+      // slot (title, trailing, bottomInput, buildScrollBody) shares the
+      // same CommentsBloc. BlocProvider owns lifecycle — it closes the
+      // BLoC automatically when the sheet is disposed, so we don't need
+      // a manual try/finally around the await.
+      contentWrapper: (context, child) => BlocProvider<CommentsBloc>(
+        create: (_) => CommentsBloc(
+          commentsRepository: commentsRepository,
+          authService: authService,
+          likesRepository: likesRepository,
+          contentReportingServiceFuture: contentReportingServiceFuture,
+          contentBlocklistRepository: contentBlocklistRepository,
+          rootEventId: video.id,
+          rootEventKind: NIP71VideoKinds.addressableShortVideo,
+          rootAuthorPubkey: video.pubkey,
+          rootAddressableId: video.addressableId,
+          initialTotalCount: video.originalComments,
+          profileRepository: profileRepository,
+          followRepository: followRepository,
+        )..add(const CommentsLoadRequested()),
+        child: BlocListener<CommentsBloc, CommentsState>(
+          listenWhen: (prev, next) =>
+              prev.commentsById.length != next.commentsById.length,
+          listener: (_, state) {
+            onCommentCountChanged?.call(state.commentsById.length);
+          },
+          child: child,
         ),
       ),
+      title: _CommentsTitle(
+        initialCount: initialCommentCount ?? video.originalComments ?? 0,
+        onNewCommentsPillTap: () {
+          final controller = activeScrollController;
+          if (controller != null && controller.hasClients) {
+            controller.animateTo(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        },
+      ),
+      trailing: const _CommentsSortToggle(),
+      bottomInput: const _MainCommentInput(),
+      buildScrollBody: (scrollController) {
+        activeScrollController = scrollController;
+        return _CommentsScreenBody(
+          videoEvent: video,
+          sheetScrollController: scrollController,
+        );
+      },
     );
   }
 }

@@ -815,6 +815,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoGridDeleteSuccess => '削除リクエストを送ったよ';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'コンテンツの削除がうまくいかなかった: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'クラシック';
 
   @override
@@ -1162,6 +1167,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoActionAutoLabel => '自動';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => '自動送りを有効にする';
 
   @override
@@ -1184,6 +1204,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => '字幕を表示';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -2840,6 +2866,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuDeleteVideoSubtitle => 'このコンテンツを完全に削除';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'すべてのリレーに削除リクエスト (NIP-09) を送るよ。一部のリレーではキャッシュが残ることもあるよ。';
+
+  @override
   String get shareMenuVideoInTheseLists => 'この動画が入ってるリスト:';
 
   @override
@@ -2861,6 +2891,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'コンテンツを削除中...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'コンテンツの削除がうまくいかなかった: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => '削除リクエストを送ったよ';
@@ -2938,6 +2973,11 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return '動画の更新がうまくいかなかった: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return '動画の削除がうまくいかなかった: $error';
   }
 
   @override
@@ -3444,6 +3484,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get navProfile => 'プロフィール';
+
+  @override
+  String get navSearch => '検索';
+
+  @override
+  String get navSearchTooltip => '検索';
 
   @override
   String get navMyProfile => 'マイプロフィール';
@@ -4552,6 +4598,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => '面白いものを見つけよう';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'リスト';
 
   @override
@@ -4876,7 +4940,13 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'クリップ';
+  String get videoEditorCameraLabel => 'カメラ';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'カメラを開く';
+
+  @override
+  String get videoEditorLibraryLabel => 'ライブラリ';
 
   @override
   String get videoEditorTextLabel => 'テキスト';
@@ -4885,7 +4955,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorDrawLabel => '描画';
 
   @override
-  String get videoEditorEffectsLabel => 'エフェクト';
+  String get videoEditorFilterLabel => 'フィルター';
 
   @override
   String get videoEditorAudioLabel => 'オーディオ';
@@ -4897,7 +4967,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAddTitle => '追加';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'クリップエディタを開く';
+  String get videoEditorOpenLibrarySemanticLabel => 'ライブラリを開く';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'オーディオエディタを開く';
@@ -4909,7 +4979,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => '描画エディタを開く';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'エフェクトエディタを開く';
+  String get videoEditorOpenFilterSemanticLabel => 'フィルターエディタを開く';
 
   @override
   String get videoEditorSaveDraftTitle => '下書きを保存しますか？';
@@ -5053,20 +5123,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorFinishTimelineEditingSemanticLabel => 'タイムライン編集を終了';
 
   @override
-  String get videoEditorSortNewest => '新しい順';
-
-  @override
-  String get videoEditorSortLongest => '長い順';
-
-  @override
-  String get videoEditorSortShortest => '短い順';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return '$optionで並べ替え。タップして並べ替え順を変更';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'プレビューを再生';
 
   @override
@@ -5074,9 +5130,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'タイトルなしのサウンド';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'サウンドを選択';
 
   @override
   String get videoEditorAudioUntitled => 'タイトルなし';
@@ -5092,13 +5145,16 @@ class AppLocalizationsJa extends AppLocalizations {
       'クリエイターがオーディオを共有するとここに表示されます';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'サウンドが見つかりません';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle => '別の検索ワードをお試しください';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'サウンドの読み込みに失敗';
+
+  @override
+  String get videoEditorAudioSegmentInstruction => '動画に使うオーディオ範囲を選択';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'コミュニティ';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => '矢印ツール';
@@ -5170,6 +5226,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => '長押しして並べ替え';
+
+  @override
+  String get videoEditorClipGalleryInstruction => 'タップして編集。長押ししてドラッグで並べ替え。';
 
   @override
   String get videoEditorTimelineClipMoveLeft => '左に移動';

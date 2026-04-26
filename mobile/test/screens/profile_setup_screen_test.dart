@@ -93,43 +93,34 @@ void main() {
     testWidgets('shows reserved indicator when status is reserved', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildIndicatorWithBloc(UsernameStatus.reserved),
-      );
+      await tester.pumpWidget(buildIndicatorWithBloc(UsernameStatus.reserved));
 
       expect(find.text('Username is reserved'), findsOneWidget);
       expect(find.byIcon(Icons.lock), findsOneWidget);
     });
 
     testWidgets('shows Contact support link when reserved', (tester) async {
-      await tester.pumpWidget(
-        buildIndicatorWithBloc(UsernameStatus.reserved),
-      );
+      await tester.pumpWidget(buildIndicatorWithBloc(UsernameStatus.reserved));
 
       expect(find.text('Contact support'), findsOneWidget);
     });
 
     testWidgets('shows Check again link when reserved', (tester) async {
-      await tester.pumpWidget(
-        buildIndicatorWithBloc(UsernameStatus.reserved),
-      );
+      await tester.pumpWidget(buildIndicatorWithBloc(UsernameStatus.reserved));
 
       expect(find.text('Check again'), findsOneWidget);
     });
 
-    testWidgets(
-      'Check again link adds $UsernameRechecked event',
-      (tester) async {
-        await tester.pumpWidget(
-          buildIndicatorWithBloc(UsernameStatus.reserved),
-        );
+    testWidgets('Check again link adds $UsernameRechecked event', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildIndicatorWithBloc(UsernameStatus.reserved));
 
-        await tester.tap(find.text('Check again'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text('Check again'));
+      await tester.pumpAndSettle();
 
-        verify(() => mockBloc.add(const UsernameRechecked())).called(1);
-      },
-    );
+      verify(() => mockBloc.add(const UsernameRechecked())).called(1);
+    });
 
     testWidgets('shows error message when network error', (tester) async {
       await tester.pumpWidget(
@@ -244,10 +235,7 @@ void main() {
     testWidgets('has Send request button', (tester) async {
       await tester.pumpWidget(buildDialog('reservedname'));
 
-      expect(
-        find.widgetWithText(FilledButton, 'Send request'),
-        findsOneWidget,
-      );
+      expect(find.widgetWithText(FilledButton, 'Send request'), findsOneWidget);
     });
 
     testWidgets('has Check again button', (tester) async {

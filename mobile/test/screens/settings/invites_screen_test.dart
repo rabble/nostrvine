@@ -73,10 +73,7 @@ void main() {
         await tester.pumpWidget(buildSubject());
         expect(find.text('AB23-EF7K'), findsOneWidget);
         expect(find.text('HN4P-QR56'), findsOneWidget);
-        expect(
-          find.text('Share diVine with people you know'),
-          findsOneWidget,
-        );
+        expect(find.text('Share diVine with people you know'), findsOneWidget);
       });
 
       testWidgets('claimed codes section', (tester) async {

@@ -66,10 +66,7 @@ class VideoPlaybackStatusState extends Equatable {
     while (next.length > maxEntries) {
       next.remove(next.keys.first);
     }
-    return VideoPlaybackStatusState(
-      maxEntries: maxEntries,
-      statuses: next,
-    );
+    return VideoPlaybackStatusState(maxEntries: maxEntries, statuses: next);
   }
 
   /// Returns a cleared state (used when switching feed modes).

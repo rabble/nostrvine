@@ -10,10 +10,9 @@ part 'apps_directory_state.dart';
 /// Loads approved third-party apps from the directory service.
 class AppsDirectoryCubit extends Cubit<AppsDirectoryState> {
   /// Creates the cubit with the given [directoryService].
-  AppsDirectoryCubit({
-    required NostrAppDirectoryService directoryService,
-  }) : _directoryService = directoryService,
-       super(const AppsDirectoryState());
+  AppsDirectoryCubit({required NostrAppDirectoryService directoryService})
+    : _directoryService = directoryService,
+      super(const AppsDirectoryState());
 
   final NostrAppDirectoryService _directoryService;
 
@@ -22,17 +21,10 @@ class AppsDirectoryCubit extends Cubit<AppsDirectoryState> {
     emit(state.copyWith(status: AppsDirectoryStatus.loading));
     try {
       final apps = await _directoryService.fetchApprovedApps();
-      emit(
-        state.copyWith(
-          status: AppsDirectoryStatus.loaded,
-          apps: apps,
-        ),
-      );
+      emit(state.copyWith(status: AppsDirectoryStatus.loaded, apps: apps));
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      emit(
-        state.copyWith(status: AppsDirectoryStatus.error),
-      );
+      emit(state.copyWith(status: AppsDirectoryStatus.error));
     }
   }
 
@@ -40,17 +32,10 @@ class AppsDirectoryCubit extends Cubit<AppsDirectoryState> {
   Future<void> refreshApps() async {
     try {
       final apps = await _directoryService.fetchApprovedApps();
-      emit(
-        state.copyWith(
-          status: AppsDirectoryStatus.loaded,
-          apps: apps,
-        ),
-      );
+      emit(state.copyWith(status: AppsDirectoryStatus.loaded, apps: apps));
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      emit(
-        state.copyWith(status: AppsDirectoryStatus.error),
-      );
+      emit(state.copyWith(status: AppsDirectoryStatus.error));
     }
   }
 }

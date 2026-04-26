@@ -8,10 +8,9 @@ import 'package:invite_api_client/invite_api_client.dart';
 part 'invite_status_state.dart';
 
 class InviteStatusCubit extends Cubit<InviteStatusState> {
-  InviteStatusCubit({
-    required InviteApiClient inviteApiClient,
-  }) : _inviteApiClient = inviteApiClient,
-       super(const InviteStatusState());
+  InviteStatusCubit({required InviteApiClient inviteApiClient})
+    : _inviteApiClient = inviteApiClient,
+      super(const InviteStatusState());
 
   final InviteApiClient _inviteApiClient;
 

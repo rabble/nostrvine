@@ -252,159 +252,142 @@ void main() {
     });
 
     group('de-duplication', () {
-      testWidgets(
-        'filters relay video matching active upload title '
-        'on own profile',
-        (tester) async {
-          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+      testWidgets('filters relay video matching active upload title '
+          'on own profile', (tester) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
 
-          // Active upload with title "Test Draft"
-          final draft = _createTestDraft();
-          when(() => mockBloc.state).thenReturn(
-            BackgroundPublishState(
-              uploads: [
-                BackgroundUpload(
-                  draft: draft,
-                  result: null,
-                  progress: 0.5,
-                ),
-              ],
-            ),
-          );
+        // Active upload with title "Test Draft"
+        final draft = _createTestDraft();
+        when(() => mockBloc.state).thenReturn(
+          BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.5),
+            ],
+          ),
+        );
 
-          // Relay delivers a video with the same title (recent timestamp)
-          final now = DateTime.now();
-          final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
-          final videos = [
-            model.VideoEvent(
-              id: 'relay-duplicate',
-              pubkey: _ownPubkey,
-              createdAt: nowUnix,
-              content: '',
-              timestamp: now,
-              title: 'Test Draft',
-              videoUrl: 'https://example.com/v0.mp4',
-              thumbnailUrl: 'https://example.com/thumb0.jpg',
-            ),
-            model.VideoEvent(
-              id: 'relay-other',
-              pubkey: _ownPubkey,
-              createdAt: nowUnix - 1,
-              content: '',
-              timestamp: now.subtract(const Duration(seconds: 1)),
-              title: 'Other Video',
-              videoUrl: 'https://example.com/v1.mp4',
-              thumbnailUrl: 'https://example.com/thumb1.jpg',
-            ),
-          ];
+        // Relay delivers a video with the same title (recent timestamp)
+        final now = DateTime.now();
+        final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
+        final videos = [
+          model.VideoEvent(
+            id: 'relay-duplicate',
+            pubkey: _ownPubkey,
+            createdAt: nowUnix,
+            content: '',
+            timestamp: now,
+            title: 'Test Draft',
+            videoUrl: 'https://example.com/v0.mp4',
+            thumbnailUrl: 'https://example.com/thumb0.jpg',
+          ),
+          model.VideoEvent(
+            id: 'relay-other',
+            pubkey: _ownPubkey,
+            createdAt: nowUnix - 1,
+            content: '',
+            timestamp: now.subtract(const Duration(seconds: 1)),
+            title: 'Other Video',
+            videoUrl: 'https://example.com/v1.mp4',
+            thumbnailUrl: 'https://example.com/thumb1.jpg',
+          ),
+        ];
 
-          await tester.pumpWidget(
-            buildSubject(userIdHex: _ownPubkey, videos: videos),
-          );
+        await tester.pumpWidget(
+          buildSubject(userIdHex: _ownPubkey, videos: videos),
+        );
 
-          // 1 upload spinner + 1 published video tile (duplicate filtered)
-          expect(find.byType(PartialCircleSpinner), findsOneWidget);
-          expect(
-            find.bySemanticsLabel(RegExp('Video thumbnail')),
-            findsOneWidget,
-          );
-        },
-      );
+        // 1 upload spinner + 1 published video tile (duplicate filtered)
+        expect(find.byType(PartialCircleSpinner), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(RegExp('Video thumbnail')),
+          findsOneWidget,
+        );
+      });
 
-      testWidgets(
-        'does not filter videos older than 5 minutes',
-        (tester) async {
-          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+      testWidgets('does not filter videos older than 5 minutes', (
+        tester,
+      ) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
 
-          final draft = _createTestDraft(title: 'Old Video');
-          when(() => mockBloc.state).thenReturn(
-            BackgroundPublishState(
-              uploads: [
-                BackgroundUpload(
-                  draft: draft,
-                  result: null,
-                  progress: 0.3,
-                ),
-              ],
-            ),
-          );
+        final draft = _createTestDraft(title: 'Old Video');
+        when(() => mockBloc.state).thenReturn(
+          BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.3),
+            ],
+          ),
+        );
 
-          // Video with matching title but created 10 minutes ago
-          final now = DateTime.now();
-          final oldTimestamp = now.subtract(const Duration(minutes: 10));
-          final oldUnix = oldTimestamp.millisecondsSinceEpoch ~/ 1000;
-          final videos = [
-            model.VideoEvent(
-              id: 'old-video',
-              pubkey: _ownPubkey,
-              createdAt: oldUnix,
-              content: '',
-              timestamp: oldTimestamp,
-              title: 'Old Video',
-              videoUrl: 'https://example.com/v0.mp4',
-              thumbnailUrl: 'https://example.com/thumb0.jpg',
-            ),
-          ];
+        // Video with matching title but created 10 minutes ago
+        final now = DateTime.now();
+        final oldTimestamp = now.subtract(const Duration(minutes: 10));
+        final oldUnix = oldTimestamp.millisecondsSinceEpoch ~/ 1000;
+        final videos = [
+          model.VideoEvent(
+            id: 'old-video',
+            pubkey: _ownPubkey,
+            createdAt: oldUnix,
+            content: '',
+            timestamp: oldTimestamp,
+            title: 'Old Video',
+            videoUrl: 'https://example.com/v0.mp4',
+            thumbnailUrl: 'https://example.com/thumb0.jpg',
+          ),
+        ];
 
-          await tester.pumpWidget(
-            buildSubject(userIdHex: _ownPubkey, videos: videos),
-          );
+        await tester.pumpWidget(
+          buildSubject(userIdHex: _ownPubkey, videos: videos),
+        );
 
-          // Upload spinner + the old video tile (not filtered)
-          expect(find.byType(PartialCircleSpinner), findsOneWidget);
-          expect(
-            find.bySemanticsLabel(RegExp('Video thumbnail')),
-            findsOneWidget,
-          );
-        },
-      );
+        // Upload spinner + the old video tile (not filtered)
+        expect(find.byType(PartialCircleSpinner), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(RegExp('Video thumbnail')),
+          findsOneWidget,
+        );
+      });
 
-      testWidgets(
-        'does not filter videos on another user profile',
-        (tester) async {
-          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+      testWidgets('does not filter videos on another user profile', (
+        tester,
+      ) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
 
-          // Active upload with matching title
-          final draft = _createTestDraft();
-          when(() => mockBloc.state).thenReturn(
-            BackgroundPublishState(
-              uploads: [
-                BackgroundUpload(
-                  draft: draft,
-                  result: null,
-                  progress: 0.5,
-                ),
-              ],
-            ),
-          );
+        // Active upload with matching title
+        final draft = _createTestDraft();
+        when(() => mockBloc.state).thenReturn(
+          BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.5),
+            ],
+          ),
+        );
 
-          final now = DateTime.now();
-          final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
-          final videos = [
-            model.VideoEvent(
-              id: 'other-user-video',
-              pubkey: _otherPubkey,
-              createdAt: nowUnix,
-              content: '',
-              timestamp: now,
-              title: 'Test Draft',
-              videoUrl: 'https://example.com/v0.mp4',
-              thumbnailUrl: 'https://example.com/thumb0.jpg',
-            ),
-          ];
+        final now = DateTime.now();
+        final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
+        final videos = [
+          model.VideoEvent(
+            id: 'other-user-video',
+            pubkey: _otherPubkey,
+            createdAt: nowUnix,
+            content: '',
+            timestamp: now,
+            title: 'Test Draft',
+            videoUrl: 'https://example.com/v0.mp4',
+            thumbnailUrl: 'https://example.com/thumb0.jpg',
+          ),
+        ];
 
-          await tester.pumpWidget(
-            buildSubject(userIdHex: _otherPubkey, videos: videos),
-          );
+        await tester.pumpWidget(
+          buildSubject(userIdHex: _otherPubkey, videos: videos),
+        );
 
-          // No spinner (other user) and video tile is present (no filtering)
-          expect(find.byType(PartialCircleSpinner), findsNothing);
-          expect(
-            find.bySemanticsLabel(RegExp('Video thumbnail')),
-            findsOneWidget,
-          );
-        },
-      );
+        // No spinner (other user) and video tile is present (no filtering)
+        expect(find.byType(PartialCircleSpinner), findsNothing);
+        expect(
+          find.bySemanticsLabel(RegExp('Video thumbnail')),
+          findsOneWidget,
+        );
+      });
     });
 
     group('scroll coordination with NestedScrollView', () {
@@ -426,9 +409,7 @@ void main() {
                   home: Scaffold(
                     body: NestedScrollView(
                       headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                        const SliverToBoxAdapter(
-                          child: SizedBox(height: 200),
-                        ),
+                        const SliverToBoxAdapter(child: SizedBox(height: 200)),
                       ],
                       body: ProfileVideosGrid(
                         videos: videos,
@@ -451,57 +432,55 @@ void main() {
         },
       );
 
-      testWidgets(
-        'header scrolls away when scrolling inside the grid',
-        (tester) async {
-          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
-          final videos = _createTestVideos(pubkey: _ownPubkey, count: 30);
+      testWidgets('header scrolls away when scrolling inside the grid', (
+        tester,
+      ) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+        final videos = _createTestVideos(pubkey: _ownPubkey, count: 30);
 
-          await tester.pumpWidget(
-            testProviderScope(
-              mockAuthService: mockAuth,
-              child: BlocProvider<BackgroundPublishBloc>.value(
-                value: mockBloc,
-                child: MaterialApp(
-                  localizationsDelegates:
-                      AppLocalizations.localizationsDelegates,
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  home: Scaffold(
-                    body: NestedScrollView(
-                      headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                        const SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: 200,
-                            child: ColoredBox(
-                              color: Colors.red,
-                              child: Center(child: Text('Header')),
-                            ),
+        await tester.pumpWidget(
+          testProviderScope(
+            mockAuthService: mockAuth,
+            child: BlocProvider<BackgroundPublishBloc>.value(
+              value: mockBloc,
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                      const SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 200,
+                          child: ColoredBox(
+                            color: Colors.red,
+                            child: Center(child: Text('Header')),
                           ),
                         ),
-                      ],
-                      body: ProfileVideosGrid(
-                        videos: videos,
-                        userIdHex: _ownPubkey,
                       ),
+                    ],
+                    body: ProfileVideosGrid(
+                      videos: videos,
+                      userIdHex: _ownPubkey,
                     ),
                   ),
                 ),
               ),
             ),
-          );
+          ),
+        );
 
-          expect(find.text('Header'), findsOneWidget);
+        expect(find.text('Header'), findsOneWidget);
 
-          await tester.drag(
-            find.byType(CustomScrollView).last,
-            const Offset(0, -300),
-          );
-          await tester.pumpAndSettle();
+        await tester.drag(
+          find.byType(CustomScrollView).last,
+          const Offset(0, -300),
+        );
+        await tester.pumpAndSettle();
 
-          // Header should have scrolled off screen (clipped from tree)
-          expect(find.text('Header'), findsNothing);
-        },
-      );
+        // Header should have scrolled off screen (clipped from tree)
+        expect(find.text('Header'), findsNothing);
+      });
     });
   });
 }

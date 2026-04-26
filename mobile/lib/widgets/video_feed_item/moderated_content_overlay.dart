@@ -66,11 +66,7 @@ class ModeratedContentOverlay extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               spacing: 12,
               children: [
-                DivineIcon(
-                  icon: icon,
-                  color: VineTheme.whiteText,
-                  size: 64,
-                ),
+                DivineIcon(icon: icon, color: VineTheme.whiteText, size: 64),
                 Text(
                   title,
                   style: VineTheme.titleMediumFont(),

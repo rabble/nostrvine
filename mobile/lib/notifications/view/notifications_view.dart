@@ -117,10 +117,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                             _onItemTap(context, notification),
                         onProfileTap: (pubkey) =>
                             _navigateToProfile(context, pubkey),
-                        onFollowBack: (pubkey) =>
-                            context.read<NotificationFeedBloc>().add(
-                              NotificationFeedFollowBack(pubkey),
-                            ),
+                        onFollowBack: (pubkey) => context
+                            .read<NotificationFeedBloc>()
+                            .add(NotificationFeedFollowBack(pubkey)),
                       ),
                     ),
           };
@@ -211,9 +210,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     if (resolvedVideoEventId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.notificationsVideoNotFound),
-        ),
+        SnackBar(content: Text(context.l10n.notificationsVideoNotFound)),
       );
       return;
     }
@@ -319,11 +316,7 @@ class _FailureBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: VineTheme.lightText,
-          ),
+          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
           const SizedBox(height: 16),
           Text(
             context.l10n.notificationsFailedToLoad,
@@ -379,9 +372,7 @@ class _NotificationList extends StatelessWidget {
           return const Padding(
             padding: EdgeInsets.all(16),
             child: Center(
-              child: CircularProgressIndicator(
-                color: VineTheme.vineGreen,
-              ),
+              child: CircularProgressIndicator(color: VineTheme.vineGreen),
             ),
           );
         }

@@ -3,11 +3,7 @@ import 'package:models/models.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 
 void main() {
-  UserProfile buildProfile({
-    String? displayName,
-    String? name,
-    String? nip05,
-  }) {
+  UserProfile buildProfile({String? displayName, String? name, String? nip05}) {
     return UserProfile(
       pubkey: 'a' * 64,
       rawData: const {},

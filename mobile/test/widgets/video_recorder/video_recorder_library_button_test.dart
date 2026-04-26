@@ -22,29 +22,23 @@ void main() {
     setUp(() {
       mockClipLibraryService = _MockClipLibraryService();
 
-      when(() => mockClipLibraryService.getAllClips()).thenAnswer(
-        (_) async => [],
-      );
+      when(
+        () => mockClipLibraryService.getAllClips(),
+      ).thenAnswer((_) async => []);
     });
 
-    Widget buildWidget({
-      List<DivineVideoClip>? clips,
-    }) {
+    Widget buildWidget({List<DivineVideoClip>? clips}) {
       return ProviderScope(
         overrides: [
           clipManagerProvider.overrideWith(
             () => _TestClipManagerNotifier(clips: clips ?? []),
           ),
-          clipLibraryServiceProvider.overrideWithValue(
-            mockClipLibraryService,
-          ),
+          clipLibraryServiceProvider.overrideWithValue(mockClipLibraryService),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoRecorderLibraryButton(),
-          ),
+          home: Scaffold(body: VideoRecorderLibraryButton()),
         ),
       );
     }
@@ -131,15 +125,10 @@ void main() {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        expect(
-          find.bySemanticsLabel('Clip library, no clips'),
-          findsOneWidget,
-        );
+        expect(find.bySemanticsLabel('Clip library, no clips'), findsOneWidget);
       });
 
-      testWidgets('has clip count semantic label with clips', (
-        tester,
-      ) async {
+      testWidgets('has clip count semantic label with clips', (tester) async {
         final clips = [
           DivineVideoClip(
             id: 'clip1',
@@ -174,9 +163,7 @@ void main() {
         );
         expect(
           semantics.properties.label,
-          equals(
-            'Open clip library, 2 clips',
-          ),
+          equals('Open clip library, 2 clips'),
         );
       });
 
@@ -204,12 +191,7 @@ void main() {
               )
               .first,
         );
-        expect(
-          semantics.properties.label,
-          equals(
-            'Open clip library, 1 clip',
-          ),
-        );
+        expect(semantics.properties.label, equals('Open clip library, 1 clip'));
       });
 
       testWidgets('is marked as button in semantics', (tester) async {
@@ -243,90 +225,83 @@ void main() {
     });
 
     group('enabled/onTap consistency', () {
-      testWidgets(
-        'InkWell onTap is non-null when clips exist '
-        'but thumbnailPath is null',
-        (tester) async {
-          // Session clips without thumbnails — button should still be enabled
-          final clips = [
-            DivineVideoClip(
-              id: 'clip-no-thumb',
-              video: EditorVideo.file('/test/clip.mp4'),
-              duration: const Duration(seconds: 2),
-              recordedAt: DateTime.now(),
-              targetAspectRatio: .vertical,
-              originalAspectRatio: 9 / 16,
-              // thumbnailPath intentionally null
-            ),
-          ];
-
-          await tester.pumpWidget(buildWidget(clips: clips));
-          await tester.pumpAndSettle();
-
-          final inkWell = tester.widget<InkWell>(find.byType(InkWell));
-          expect(inkWell.onTap, isNotNull);
-        },
-      );
-
-      testWidgets(
-        'InkWell onTap is non-null when no session clips '
-        'but library has clips',
-        (tester) async {
-          // No session clips, but library service returns clips
-          final libraryClip = DivineVideoClip(
-            id: 'lib-clip',
-            video: EditorVideo.file('/lib/clip.mp4'),
-            duration: const Duration(seconds: 5),
+      testWidgets('InkWell onTap is non-null when clips exist '
+          'but thumbnailPath is null', (tester) async {
+        // Session clips without thumbnails — button should still be enabled
+        final clips = [
+          DivineVideoClip(
+            id: 'clip-no-thumb',
+            video: EditorVideo.file('/test/clip.mp4'),
+            duration: const Duration(seconds: 2),
             recordedAt: DateTime.now(),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
-            thumbnailPath: '/lib/thumb.jpg',
-          );
+            // thumbnailPath intentionally null
+          ),
+        ];
 
-          when(() => mockClipLibraryService.getAllClips()).thenAnswer(
-            (_) async => [libraryClip],
-          );
+        await tester.pumpWidget(buildWidget(clips: clips));
+        await tester.pumpAndSettle();
 
-          await tester.pumpWidget(buildWidget());
-          await tester.pumpAndSettle();
+        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+        expect(inkWell.onTap, isNotNull);
+      });
 
-          final inkWell = tester.widget<InkWell>(find.byType(InkWell));
-          expect(inkWell.onTap, isNotNull);
-        },
-      );
+      testWidgets('InkWell onTap is non-null when no session clips '
+          'but library has clips', (tester) async {
+        // No session clips, but library service returns clips
+        final libraryClip = DivineVideoClip(
+          id: 'lib-clip',
+          video: EditorVideo.file('/lib/clip.mp4'),
+          duration: const Duration(seconds: 5),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          thumbnailPath: '/lib/thumb.jpg',
+        );
 
-      testWidgets(
-        'Semantics.enabled matches InkWell.onTap presence',
-        (tester) async {
-          final clips = [
-            DivineVideoClip(
-              id: 'clip1',
-              video: EditorVideo.file('/test/clip1.mp4'),
-              duration: const Duration(seconds: 2),
-              recordedAt: DateTime.now(),
-              targetAspectRatio: .vertical,
-              originalAspectRatio: 9 / 16,
-            ),
-          ];
+        when(
+          () => mockClipLibraryService.getAllClips(),
+        ).thenAnswer((_) async => [libraryClip]);
 
-          await tester.pumpWidget(buildWidget(clips: clips));
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
 
-          final inkWell = tester.widget<InkWell>(find.byType(InkWell));
-          final semantics = tester.widget<Semantics>(
-            find
-                .descendant(
-                  of: find.byType(VideoRecorderLibraryButton),
-                  matching: find.byType(Semantics),
-                )
-                .first,
-          );
+        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+        expect(inkWell.onTap, isNotNull);
+      });
 
-          // Both should agree: button is enabled
-          expect(inkWell.onTap, isNotNull);
-          expect(semantics.properties.enabled, isTrue);
-        },
-      );
+      testWidgets('Semantics.enabled matches InkWell.onTap presence', (
+        tester,
+      ) async {
+        final clips = [
+          DivineVideoClip(
+            id: 'clip1',
+            video: EditorVideo.file('/test/clip1.mp4'),
+            duration: const Duration(seconds: 2),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        ];
+
+        await tester.pumpWidget(buildWidget(clips: clips));
+        await tester.pumpAndSettle();
+
+        final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+        final semantics = tester.widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(VideoRecorderLibraryButton),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        );
+
+        // Both should agree: button is enabled
+        expect(inkWell.onTap, isNotNull);
+        expect(semantics.properties.enabled, isTrue);
+      });
     });
 
     group('thumbnail', () {

@@ -136,9 +136,7 @@ void main() {
 
       testWidgets(
         'shows unfollow confirmation sheet when tapping follow button',
-        (
-          tester,
-        ) async {
+        (tester) async {
           final otherPubkey = validPubkey('other');
           when(() => mockMyFollowingBloc.state).thenReturn(
             MyFollowingState(

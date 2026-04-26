@@ -22,9 +22,9 @@ void main() {
 
     setUp(() {
       overlayBloc = _MockTimelineOverlayBloc();
-      when(() => overlayBloc.stream).thenAnswer(
-        (_) => const Stream<TimelineOverlayState>.empty(),
-      );
+      when(
+        () => overlayBloc.stream,
+      ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());
     });
 
     Widget build() {
@@ -49,9 +49,7 @@ void main() {
     testWidgets('renders no strip when overlay items are empty', (
       tester,
     ) async {
-      when(
-        () => overlayBloc.state,
-      ).thenReturn(const TimelineOverlayState());
+      when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
 
       await tester.pumpWidget(build());
 

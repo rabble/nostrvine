@@ -106,11 +106,16 @@ class ProfileRepository {
                 (profile.about?.toLowerCase().contains(queryLower) ?? false);
           }).toList();
 
-    if (limit != null && filtered.length > limit) {
-      return filtered.sublist(0, limit);
+    final blockFilter = _blockFilter;
+    final unblocked = blockFilter == null
+        ? filtered
+        : filtered.where((p) => !blockFilter(p.pubkey)).toList();
+
+    if (limit != null && unblocked.length > limit) {
+      return unblocked.sublist(0, limit);
     }
 
-    return filtered;
+    return unblocked;
   }
 
   /// Counts cached profiles matching [query] without performing remote search.
@@ -230,15 +235,20 @@ class ProfileRepository {
 
     if (social == null && stats == null && engagement == null) return;
 
+    int? publicViewCount;
+    if (engagement != null) {
+      publicViewCount = engagement.totalViews > 0
+          ? engagement.totalViews
+          : engagement.totalLoops.round();
+    }
+
     await dao.upsertStats(
       pubkey: pubkey,
       followerCount: social?.followerCount,
       followingCount: social?.followingCount,
       videoCount: stats?.videoCount,
       totalLikes: engagement?.totalReactions,
-      // total_loops can be fractional due to a backend aggregation issue;
-      // round to the nearest integer.
-      totalViews: engagement?.totalLoops.round(),
+      totalViews: publicViewCount,
     );
   }
 
@@ -274,6 +284,8 @@ class ProfileRepository {
   }
 
   Future<UserProfile?> _doFetchFreshProfile(String pubkey) async {
+    if (_blockFilter?.call(pubkey) ?? false) return null;
+
     // Step 1: Try Funnelcake REST API (fast, broad coverage).
     if (_funnelcakeApiClient?.isAvailable ?? false) {
       try {
@@ -487,10 +499,10 @@ class ProfileRepository {
     final profileContent = {
       if (currentProfile != null) ...currentProfile.rawData,
       'display_name': displayName,
-      'about': ?about,
+      'about': about,
       'nip05': ?resolvedNip05,
-      'picture': ?picture,
-      'banner': ?banner,
+      'picture': picture,
+      'banner': banner,
     };
 
     // When the user explicitly removes their NIP-05 (no username, no external
@@ -805,12 +817,21 @@ class ProfileRepository {
   ///
   /// Parameters match [searchUsers]. When [offset] > 0 the local and NIP-50
   /// phases are skipped (only the API phase runs).
+  ///
+  /// When [boostPubkeys] is non-empty, profiles whose pubkey is in the set
+  /// are promoted to the front of each emission while preserving the
+  /// server-relative order within both the boosted and non-boosted groups.
+  /// Typical use: pass the follow graph so followed users appear first on
+  /// the initial search page. Callers should omit [boostPubkeys] on
+  /// load-more requests so already-visible positions stay stable as the
+  /// user scrolls.
   Stream<List<UserProfile>> searchUsersProgressive({
     required String query,
     int limit = 200,
     int offset = 0,
     String? sortBy,
     bool hasVideos = false,
+    Set<String>? boostPubkeys,
   }) async* {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return;
@@ -825,7 +846,12 @@ class ProfileRepository {
         resultMap[profile.pubkey] = profile;
       }
       if (resultMap.isNotEmpty) {
-        yield _applyFilter(trimmed, resultMap.values.toList(), useServerSort);
+        yield _applyFilter(
+          trimmed,
+          resultMap.values.toList(),
+          useServerSort,
+          boostPubkeys,
+        );
       }
     }
 
@@ -855,7 +881,12 @@ class ProfileRepository {
     // Skips enrichment for faster progressive display; the final Phase 3
     // yield enriches all results from cache.
     if (resultMap.length > prevCount) {
-      yield _applyFilter(trimmed, resultMap.values.toList(), useServerSort);
+      yield _applyFilter(
+        trimmed,
+        resultMap.values.toList(),
+        useServerSort,
+        boostPubkeys,
+      );
     }
 
     // Phase 3: NIP-50 WebSocket (first page only)
@@ -882,7 +913,7 @@ class ProfileRepository {
       // Only enrich + yield again if WS added new profiles
       if (resultMap.length > preWsCount) {
         final enriched = await _enrichFromCache(resultMap.values.toList());
-        yield _applyFilter(trimmed, enriched, useServerSort);
+        yield _applyFilter(trimmed, enriched, useServerSort, boostPubkeys);
         return;
       }
     }
@@ -890,15 +921,17 @@ class ProfileRepository {
     // Final yield: enriched + filtered (when WS didn't add anything or
     // was skipped due to offset > 0)
     final enriched = await _enrichFromCache(resultMap.values.toList());
-    yield _applyFilter(trimmed, enriched, useServerSort);
+    yield _applyFilter(trimmed, enriched, useServerSort, boostPubkeys);
   }
 
   /// Applies the configured search filter or falls back to name matching,
-  /// then removes blocked/muted users.
+  /// removes blocked/muted users, and optionally promotes [boostPubkeys]
+  /// to the front while preserving relative order.
   List<UserProfile> _applyFilter(
     String query,
     List<UserProfile> profiles,
     bool useServerSort,
+    Set<String>? boostPubkeys,
   ) {
     List<UserProfile> filtered;
     if (useServerSort) {
@@ -913,8 +946,32 @@ class ProfileRepository {
     }
 
     final blockFilter = _blockFilter;
-    if (blockFilter == null) return filtered;
-    return filtered.where((p) => !blockFilter(p.pubkey)).toList();
+    if (blockFilter != null) {
+      filtered = filtered.where((p) => !blockFilter(p.pubkey)).toList();
+    }
+
+    return _boostProfiles(filtered, boostPubkeys);
+  }
+
+  /// Moves profiles whose pubkey is in [boostPubkeys] to the front of
+  /// [profiles] while preserving the server-relative order within each
+  /// group.
+  List<UserProfile> _boostProfiles(
+    List<UserProfile> profiles,
+    Set<String>? boostPubkeys,
+  ) {
+    if (boostPubkeys == null || boostPubkeys.isEmpty) return profiles;
+    final boosted = <UserProfile>[];
+    final rest = <UserProfile>[];
+    for (final profile in profiles) {
+      if (boostPubkeys.contains(profile.pubkey)) {
+        boosted.add(profile);
+      } else {
+        rest.add(profile);
+      }
+    }
+    if (boosted.isEmpty) return profiles;
+    return [...boosted, ...rest];
   }
 
   /// Fetches a user profile from the Funnelcake REST API.
@@ -1115,6 +1172,11 @@ class ProfileRepository {
     // single-profile fetches skip the relay/indexer cascade.
     if (remaining.isNotEmpty) {
       _confirmedMissing.addAll(remaining);
+    }
+
+    final blockFilter = _blockFilter;
+    if (blockFilter != null) {
+      results.removeWhere((pubkey, _) => blockFilter(pubkey));
     }
 
     developer.log(

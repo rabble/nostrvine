@@ -48,9 +48,9 @@ class _RecordingFactory {
     // hasKeys reflects whether we got a real signer or a null placeholder.
     final hasKeys = signer != null;
     when(() => client.hasKeys).thenReturn(hasKeys);
-    when(() => client.publicKey).thenReturn(
-      signer is NostrIdentity ? signer.pubkey : '',
-    );
+    when(
+      () => client.publicKey,
+    ).thenReturn(signer is NostrIdentity ? signer.pubkey : '');
     // ignore: unnecessary_lambdas
     when(() => client.initialize()).thenAnswer((_) => Future<void>.value());
     when(() => client.addRelays(any())).thenAnswer((_) => Future.value(0));
@@ -128,99 +128,93 @@ void main() {
   }
 
   group('NostrService uses NostrIdentity as source of truth', () {
-    test(
-      'does not recreate with null-signer placeholder when authenticating '
-      'emits while currentIdentity is still null',
-      () async {
-        // Simulate the auth-screen transient state described in PR #2833:
-        // the fallback-chain getter reports a pubkey (from _currentProfile or
-        // _currentKeyContainer) but the atomic NostrIdentity has not yet
-        // been assembled. NostrService must read the identity, not the
-        // fallback getter, so it derives newPubkey=null from a null
-        // identity and takes the NO-OP branch.
-        final container = createContainer();
-        addTearDown(container.dispose);
+    test('does not recreate with null-signer placeholder when authenticating '
+        'emits while currentIdentity is still null', () async {
+      // Simulate the auth-screen transient state described in PR #2833:
+      // the fallback-chain getter reports a pubkey (from _currentProfile or
+      // _currentKeyContainer) but the atomic NostrIdentity has not yet
+      // been assembled. NostrService must read the identity, not the
+      // fallback getter, so it derives newPubkey=null from a null
+      // identity and takes the NO-OP branch.
+      final container = createContainer();
+      addTearDown(container.dispose);
 
-        // Trigger NostrService.build() — initial state with no identity.
-        container.read(nostrServiceProvider);
-        expect(
-          factory.callCount,
-          equals(1),
-          reason: 'build() calls factory once for initial placeholder',
-        );
-        expect(factory.signers.single, isNull);
+      // Trigger NostrService.build() — initial state with no identity.
+      container.read(nostrServiceProvider);
+      expect(
+        factory.callCount,
+        equals(1),
+        reason: 'build() calls factory once for initial placeholder',
+      );
+      expect(factory.signers.single, isNull);
 
-        // Move AuthService into the 'authenticating' trap state:
-        // currentPublicKeyHex returns a real pubkey via the fallback chain
-        // but currentIdentity is still null.
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
-        when(() => mockAuth.currentNpub).thenReturn('npub1aaa');
-        // currentIdentity intentionally remains null.
+      // Move AuthService into the 'authenticating' trap state:
+      // currentPublicKeyHex returns a real pubkey via the fallback chain
+      // but currentIdentity is still null.
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
+      when(() => mockAuth.currentNpub).thenReturn('npub1aaa');
+      // currentIdentity intentionally remains null.
 
-        authStream.add(AuthState.authenticating);
-        // Let the async listener run.
-        await Future<void>.delayed(Duration.zero);
+      authStream.add(AuthState.authenticating);
+      // Let the async listener run.
+      await Future<void>.delayed(Duration.zero);
 
-        expect(
-          factory.callCount,
-          equals(1),
-          reason:
-              'Must NOT recreate with a null signer while currentIdentity '
-              'is null — the placeholder client would report hasKeys=false '
-              'permanently and trap downstream providers.',
-        );
+      expect(
+        factory.callCount,
+        equals(1),
+        reason:
+            'Must NOT recreate with a null signer while currentIdentity '
+            'is null — the placeholder client would report hasKeys=false '
+            'permanently and trap downstream providers.',
+      );
 
-        // Now the atomic identity finishes assembling. The authenticated
-        // emit should trigger a single recreation with the real signer.
-        when(() => mockAuth.currentIdentity).thenReturn(identityA);
+      // Now the atomic identity finishes assembling. The authenticated
+      // emit should trigger a single recreation with the real signer.
+      when(() => mockAuth.currentIdentity).thenReturn(identityA);
 
-        authStream.add(AuthState.authenticated);
-        await Future<void>.delayed(Duration.zero);
+      authStream.add(AuthState.authenticated);
+      await Future<void>.delayed(Duration.zero);
 
-        expect(
-          factory.callCount,
-          equals(2),
-          reason:
-              'authenticated emit with real identity must recreate the '
-              'client with a real signer',
-        );
-        expect(factory.signers.last, same(identityA));
-        expect(factory.clients.last.hasKeys, isTrue);
-        expect(factory.clients.last.publicKey, equals(pubkeyA));
-      },
-    );
+      expect(
+        factory.callCount,
+        equals(2),
+        reason:
+            'authenticated emit with real identity must recreate the '
+            'client with a real signer',
+      );
+      expect(factory.signers.last, same(identityA));
+      expect(factory.clients.last.hasKeys, isTrue);
+      expect(factory.clients.last.publicKey, equals(pubkeyA));
+    });
 
-    test(
-      'recreates with null-signer placeholder on signOut '
-      '(identity → null transition)',
-      () async {
-        // Start authenticated as A.
-        when(() => mockAuth.currentIdentity).thenReturn(identityA);
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
+    test('recreates with null-signer placeholder on signOut '
+        '(identity → null transition)', () async {
+      // Start authenticated as A.
+      when(() => mockAuth.currentIdentity).thenReturn(identityA);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkeyA);
 
-        final container = createContainer();
-        addTearDown(container.dispose);
+      final container = createContainer();
+      addTearDown(container.dispose);
 
-        container.read(nostrServiceProvider);
-        expect(factory.callCount, equals(1));
-        expect(factory.signers.single, same(identityA));
-        expect(factory.clients.single.hasKeys, isTrue);
+      container.read(nostrServiceProvider);
+      expect(factory.callCount, equals(1));
+      expect(factory.signers.single, same(identityA));
+      expect(factory.clients.single.hasKeys, isTrue);
 
-        // Sign out: clear identity and pubkey, emit unauthenticated.
-        when(() => mockAuth.currentIdentity).thenReturn(null);
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(null);
-        authStream.add(AuthState.unauthenticated);
-        await Future<void>.delayed(Duration.zero);
+      // Sign out: clear identity and pubkey, emit unauthenticated.
+      when(() => mockAuth.currentIdentity).thenReturn(null);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(null);
+      authStream.add(AuthState.unauthenticated);
+      await Future<void>.delayed(Duration.zero);
 
-        expect(
-          factory.callCount,
-          equals(2),
-          reason: 'signOut must dispose the A client and recreate a new one',
-        );
-        expect(factory.signers.last, isNull);
-        expect(factory.clients.last.hasKeys, isFalse);
-      },
-    );
+      expect(
+        factory.callCount,
+        equals(2),
+        reason: 'signOut must dispose the A client and recreate a new one',
+      );
+      expect(factory.signers.last, isNull);
+      expect(factory.clients.last.hasKeys, isFalse);
+    });
 
     test(
       'full account switch A → unauth → B installs real signer for B',

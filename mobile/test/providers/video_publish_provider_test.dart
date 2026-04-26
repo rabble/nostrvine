@@ -95,6 +95,20 @@ void main() {
       expect(state.errorMessage, 'Test error');
     });
 
+    test('collaborator invite warning message handles singular failure', () {
+      expect(
+        notifier.collaboratorInviteWarningMessage(1),
+        'Video posted, but 1 collaborator invite did not send.',
+      );
+    });
+
+    test('collaborator invite warning message handles plural failures', () {
+      expect(
+        notifier.collaboratorInviteWarningMessage(2),
+        'Video posted, but 2 collaborator invites did not send.',
+      );
+    });
+
     test(
       'preferredSocialVerificationMethods prefers oauth then public proof',
       () {

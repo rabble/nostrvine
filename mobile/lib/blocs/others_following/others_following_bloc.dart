@@ -104,9 +104,7 @@ class OthersFollowingBloc
     if (state.status != OthersFollowingStatus.success) return;
 
     emit(
-      state.copyWith(
-        followingPubkeys: _filterPubkeys(_rawFollowingPubkeys),
-      ),
+      state.copyWith(followingPubkeys: _filterPubkeys(_rawFollowingPubkeys)),
     );
   }
 

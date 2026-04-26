@@ -55,9 +55,7 @@ class MetadataExpandedSheet extends StatelessWidget {
       initialChildSize: 0.7,
       buildScrollBody: (scrollController) => MultiBlocProvider(
         providers: [
-          BlocProvider<VideoInteractionsBloc>.value(
-            value: interactionsBloc,
-          ),
+          BlocProvider<VideoInteractionsBloc>.value(value: interactionsBloc),
           BlocProvider<VideoRepostersCubit>(
             create: (_) => VideoRepostersCubit(
               videoEventService: videoEventService,
@@ -127,9 +125,7 @@ class _CaptionsSettingSection extends ConsumerWidget {
 
     return DecoratedBox(
       decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: VineTheme.outlineDisabled),
-        ),
+        border: Border(top: BorderSide(color: VineTheme.outlineDisabled)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -187,9 +183,7 @@ class _TitleSection extends StatelessWidget {
 
     return DecoratedBox(
       decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: VineTheme.outlineDisabled),
-        ),
+        border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),

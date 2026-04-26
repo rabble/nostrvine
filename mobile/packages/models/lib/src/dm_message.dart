@@ -22,6 +22,7 @@ class DmMessage extends Equatable {
     this.messageKind = 14,
     this.replyToId,
     this.subject,
+    this.tags = const [],
     this.fileMetadata,
   });
 
@@ -53,6 +54,9 @@ class DmMessage extends Equatable {
   /// Optional conversation subject/title.
   final String? subject;
 
+  /// Tags from the decrypted NIP-17 rumor event.
+  final List<List<String>> tags;
+
   /// File metadata for kind 15 messages. Null for kind 14.
   final DmFileMetadata? fileMetadata;
 
@@ -73,6 +77,7 @@ class DmMessage extends Equatable {
     messageKind,
     replyToId,
     subject,
+    tags,
     fileMetadata,
   ];
 }

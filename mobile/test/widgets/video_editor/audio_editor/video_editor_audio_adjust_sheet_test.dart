@@ -86,10 +86,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildSheet(
-            initialRecordedVolume: 0.5,
-            initialCustomVolume: 0.75,
-          ),
+          buildSheet(initialRecordedVolume: 0.5, initialCustomVolume: 0.75),
         );
 
         expect(find.text('50%'), findsOneWidget);
@@ -111,10 +108,7 @@ void main() {
 
       testWidgets('tapping confirm pops with result', (tester) async {
         await tester.pumpWidget(
-          buildSheet(
-            initialRecordedVolume: 0.8,
-            initialCustomVolume: 0.6,
-          ),
+          buildSheet(initialRecordedVolume: 0.8, initialCustomVolume: 0.6),
         );
 
         // Last DivineIconButton is the confirm (check) button
@@ -150,23 +144,20 @@ void main() {
         },
       );
 
-      testWidgets(
-        'dragging custom audio slider calls onCustomVolumeChanged',
-        (tester) async {
-          final values = <double>[];
+      testWidgets('dragging custom audio slider calls onCustomVolumeChanged', (
+        tester,
+      ) async {
+        final values = <double>[];
 
-          await tester.pumpWidget(
-            buildSheet(onCustomVolumeChanged: values.add),
-          );
+        await tester.pumpWidget(buildSheet(onCustomVolumeChanged: values.add));
 
-          // Second slider is the custom audio slider
-          final sliders = find.byType(Slider);
-          await tester.drag(sliders.last, const Offset(-50, 0));
-          await tester.pump();
+        // Second slider is the custom audio slider
+        final sliders = find.byType(Slider);
+        await tester.drag(sliders.last, const Offset(-50, 0));
+        await tester.pump();
 
-          expect(values, isNotEmpty);
-        },
-      );
+        expect(values, isNotEmpty);
+      });
 
       testWidgets('slider drag updates displayed percentage', (tester) async {
         await tester.pumpWidget(buildSheet());
@@ -179,10 +170,7 @@ void main() {
 
         // Tap at ~0% of the slider width
         await tester.tapAt(
-          Offset(
-            topLeft.dx + size.width * 0.01,
-            topLeft.dy + size.height / 2,
-          ),
+          Offset(topLeft.dx + size.width * 0.01, topLeft.dy + size.height / 2),
         );
         await tester.pump();
 

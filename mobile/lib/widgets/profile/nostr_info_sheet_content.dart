@@ -115,10 +115,7 @@ class NostrInfoSheetContent extends StatelessWidget {
                   vertical: 12,
                   horizontal: 16,
                 ),
-                side: const BorderSide(
-                  color: VineTheme.outlineMuted,
-                  width: 2,
-                ),
+                side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),

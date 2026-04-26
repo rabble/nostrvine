@@ -301,10 +301,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(
-          find.widgetWithText(DivineButton, 'Start over'),
-          findsOneWidget,
-        );
+        expect(find.widgetWithText(DivineButton, 'Start over'), findsOneWidget);
       });
 
       testWidgets('renders close button on failure', (tester) async {

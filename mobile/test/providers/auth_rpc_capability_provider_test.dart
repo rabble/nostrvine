@@ -35,9 +35,7 @@ void main() {
 
     test('returns unavailable by default', () {
       final container = ProviderContainer(
-        overrides: [
-          authServiceProvider.overrideWithValue(mockAuthService),
-        ],
+        overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
       );
       addTearDown(container.dispose);
 
@@ -53,9 +51,7 @@ void main() {
       ).thenReturn(AuthRpcCapability.rpcReady);
 
       final container = ProviderContainer(
-        overrides: [
-          authServiceProvider.overrideWithValue(mockAuthService),
-        ],
+        overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
       );
       addTearDown(container.dispose);
 
@@ -67,9 +63,7 @@ void main() {
 
     test('rebuilds when stream emits new capability', () async {
       final container = ProviderContainer(
-        overrides: [
-          authServiceProvider.overrideWithValue(mockAuthService),
-        ],
+        overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
       );
       addTearDown(container.dispose);
 

@@ -48,10 +48,7 @@ class CrosspostApiClient {
     final session = await _oauthClient.getSession();
     final token = session?.accessToken;
     if (token == null) {
-      throw const CrosspostApiException(
-        'Not authenticated',
-        statusCode: 401,
-      );
+      throw const CrosspostApiException('Not authenticated', statusCode: 401);
     }
     return {
       'Authorization': 'Bearer $token',

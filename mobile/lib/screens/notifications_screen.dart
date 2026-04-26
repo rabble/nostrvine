@@ -186,10 +186,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
 /// Content for a single notification tab. Each tab has its own scroll
 /// controller so scroll positions are preserved when switching tabs.
 class _NotificationTabContent extends ConsumerStatefulWidget {
-  const _NotificationTabContent({
-    required this.filter,
-    required this.isActive,
-  });
+  const _NotificationTabContent({required this.filter, required this.isActive});
 
   final NotificationType? filter;
   final bool isActive;
@@ -578,9 +575,7 @@ class _NotificationTabContentState
 
           if (resolvedVideoEventId == null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(context.l10n.notificationsVideoNotFound),
-              ),
+              SnackBar(content: Text(context.l10n.notificationsVideoNotFound)),
             );
             return;
           }
@@ -710,10 +705,7 @@ class _FilteredTabLoadingState extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           context.l10n.notificationsLoadingType(filterName),
-          style: const TextStyle(
-            fontSize: 18,
-            color: VineTheme.secondaryText,
-          ),
+          style: const TextStyle(fontSize: 18, color: VineTheme.secondaryText),
         ),
       ],
     );
@@ -751,12 +743,7 @@ class _InviteNotificationCard extends StatelessWidget {
                 color: VineTheme.backgroundColor,
               ),
             ),
-            Expanded(
-              child: Text(
-                label,
-                style: VineTheme.bodyMediumFont(),
-              ),
-            ),
+            Expanded(child: Text(label, style: VineTheme.bodyMediumFont())),
             const DivineIcon(
               icon: DivineIconName.caretRight,
               color: VineTheme.lightText,

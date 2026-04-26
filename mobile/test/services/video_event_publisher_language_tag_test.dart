@@ -127,9 +127,9 @@ void main() {
       return publishedEvent;
     });
 
-    when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-      (_) async => publishedEvent,
-    );
+    when(
+      () => mockNostrClient.publishEvent(any()),
+    ).thenAnswer((_) async => publishedEvent);
     when(
       () => mockNostrClient.queryEvents(
         any(),

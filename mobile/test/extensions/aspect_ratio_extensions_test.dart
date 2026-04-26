@@ -22,10 +22,7 @@ void main() {
           final result = quality.resolutionForAspectRatio(AspectRatio.vertical);
 
           expect(result.width, equals(width));
-          expect(
-            result.height,
-            closeTo(width / (9 / 16), 0.1),
-          );
+          expect(result.height, closeTo(width / (9 / 16), 0.1));
         });
       }
     });

@@ -17,14 +17,10 @@ part 'drafts_library_state.dart';
 /// Loads drafts from [DraftStorageService] and handles deletion.
 /// Filters out autosave and already published drafts.
 class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
-  DraftsLibraryBloc({
-    required DraftStorageService draftStorageService,
-  }) : _draftStorageService = draftStorageService,
-       super(const DraftsLibraryInitial()) {
-    on<DraftsLibraryLoadRequested>(
-      _onLoadRequested,
-      transformer: droppable(),
-    );
+  DraftsLibraryBloc({required DraftStorageService draftStorageService})
+    : _draftStorageService = draftStorageService,
+      super(const DraftsLibraryInitial()) {
+    on<DraftsLibraryLoadRequested>(_onLoadRequested, transformer: droppable());
     on<DraftsLibraryDeleteRequested>(
       _onDeleteRequested,
       transformer: sequential(),

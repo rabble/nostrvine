@@ -35,10 +35,7 @@ void main() {
       });
 
       test('props contains draftId', () {
-        expect(
-          const DraftsLibraryDeleteRequested('draft1').props,
-          ['draft1'],
-        );
+        expect(const DraftsLibraryDeleteRequested('draft1').props, ['draft1']);
       });
     });
   });

@@ -20,13 +20,19 @@ import 'package:openvine/widgets/rounded_icon_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class InviteGateScreen extends StatefulWidget {
-  const InviteGateScreen({super.key, this.initialCode, this.initialError});
+  const InviteGateScreen({
+    super.key,
+    this.initialCode,
+    this.initialError,
+    this.initialSourceSlug,
+  });
 
   static const String routeName = 'invite-gate';
   static const String path = '/invite';
 
   final String? initialCode;
   final String? initialError;
+  final String? initialSourceSlug;
 
   @override
   State<InviteGateScreen> createState() => _InviteGateScreenState();
@@ -70,6 +76,9 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
   }
 
   Future<void> _showWaitlistSheet(InviteClientConfig config) async {
+    final sourceSlug =
+        context.read<InviteGateBloc>().state.accessGrant?.creatorSlug ??
+        widget.initialSourceSlug;
     final joinedEmail = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -77,6 +86,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
       builder: (_) => _WaitlistEntrySheet(
         inviteApiClient: context.read<InviteApiClient>(),
         supportEmail: config.supportEmail,
+        sourceSlug: sourceSlug,
       ),
     );
 
@@ -91,22 +101,15 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     final uri = Uri(
       scheme: 'mailto',
       path: supportEmail,
-      queryParameters: {
-        'subject': context.l10n.authInviteAccessHelp,
-      },
+      queryParameters: {'subject': context.l10n.authInviteAccessHelp},
     );
 
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
 
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            context.l10n.authCouldNotOpenEmail(supportEmail),
-          ),
+          content: Text(context.l10n.authCouldNotOpenEmail(supportEmail)),
           backgroundColor: VineTheme.error,
         ),
       );
@@ -511,7 +514,9 @@ class _InviteSheetPage extends StatelessWidget {
               width: double.infinity,
               decoration: const BoxDecoration(
                 color: VineTheme.surfaceBackground,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(VineTheme.bottomSheetBorderRadius),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -522,9 +527,7 @@ class _InviteSheetPage extends StatelessWidget {
                     alignment: const Alignment(0, -0.2),
                     decoration: const BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(
-                          color: VineTheme.outlineDisabled,
-                        ),
+                        bottom: BorderSide(color: VineTheme.outlineDisabled),
                       ),
                     ),
                     child: Container(
@@ -537,12 +540,7 @@ class _InviteSheetPage extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      32,
-                      16,
-                      16 + safeBottom,
-                    ),
+                    padding: EdgeInsets.fromLTRB(16, 32, 16, 16 + safeBottom),
                     child: Column(
                       children: [
                         SvgPicture.asset(
@@ -587,10 +585,12 @@ class _WaitlistEntrySheet extends StatefulWidget {
   const _WaitlistEntrySheet({
     required this.inviteApiClient,
     required this.supportEmail,
+    this.sourceSlug,
   });
 
   final InviteApiClient inviteApiClient;
   final String supportEmail;
+  final String? sourceSlug;
 
   @override
   State<_WaitlistEntrySheet> createState() => _WaitlistEntrySheetState();
@@ -627,7 +627,10 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
     });
 
     try {
-      await widget.inviteApiClient.joinWaitlist(contact: email);
+      await widget.inviteApiClient.joinWaitlist(
+        contact: email,
+        sourceSlug: widget.sourceSlug,
+      );
       if (!mounted) return;
       Navigator.of(context).pop(email);
     } on InviteApiException catch (error) {
@@ -649,9 +652,7 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
       Uri(
         scheme: 'mailto',
         path: widget.supportEmail,
-        queryParameters: {
-          'subject': context.l10n.authInviteAccessHelp,
-        },
+        queryParameters: {'subject': context.l10n.authInviteAccessHelp},
       ),
       mode: LaunchMode.externalApplication,
     );
@@ -679,7 +680,7 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
       ),
       child: Material(
         color: VineTheme.surfaceBackground,
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(VineTheme.bottomSheetBorderRadius),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: Column(

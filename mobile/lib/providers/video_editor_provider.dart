@@ -121,10 +121,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// and metadata.
   Future<void> initialize({String? draftId}) async {
     // Reset old editing states but keep metadata
-    state = state.copyWith(
-      isProcessing: false,
-      isSavingDraft: false,
-    );
+    state = state.copyWith(isProcessing: false, isSavingDraft: false);
 
     // If the editor screen is opened from a draft, we initialize it here.
     if (draftId != null && draftId.isNotEmpty) {
@@ -461,10 +458,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// publisher to add an `["e", ..., "audio"]` tag. Also auto-populates
   /// [inspiredByVideo] from the sound's [sourceVideoReference] if not
   /// already set.
-  DivineVideoDraft getActiveDraft({
-    bool isAutosave = false,
-    String? draftId,
-  }) {
+  DivineVideoDraft getActiveDraft({bool isAutosave = false, String? draftId}) {
     // Read selected sound from local state
     final selectedSound = state.selectedSound;
 

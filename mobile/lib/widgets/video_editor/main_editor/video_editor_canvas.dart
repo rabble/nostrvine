@@ -6,7 +6,7 @@ import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show kReleaseMode, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -266,18 +266,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         .read<VideoEditorMainBloc>()
         .state
         .currentPosition;
-    _videoPlayer?.setClips(
-      [
-        for (final clip in clips)
-          if (clip.video.file?.path case final path?)
-            VideoClip(
-              uri: path,
-              start: clip.trimStart,
-              end: clip.duration - clip.trimEnd,
-            ),
-      ],
-      startPosition: currentPosition,
-    );
+    _videoPlayer?.setClips([
+      for (final clip in clips)
+        if (clip.video.file?.path case final path?)
+          VideoClip(
+            uri: path,
+            start: clip.trimStart,
+            end: clip.duration - clip.trimEnd,
+          ),
+    ], startPosition: currentPosition);
   }
 
   /// Creates the [ProVideoController] (only once, not tied to a file).
@@ -361,9 +358,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
     // Notify BLoC that player is ready
     if (mounted) {
-      context.read<VideoEditorMainBloc>().add(
-        const VideoEditorPlayerReady(),
-      );
+      context.read<VideoEditorMainBloc>().add(const VideoEditorPlayerReady());
     }
 
     // Setup state stream listener
@@ -407,9 +402,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
 
     // Index audio events by ID for fast lookup.
-    final audioById = {
-      for (final e in audioEvents) e.id: e,
-    };
+    final audioById = {for (final e in audioEvents) e.id: e};
 
     final customVolume = ref.read(videoEditorProvider).customAudioVolume;
 
@@ -684,23 +677,25 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         if (listEquals(previous, current)) return;
 
         final clips = ref.read(clipManagerProvider).clips;
+        // Skip when there are no clips left (e.g. clearAll during
+        // teardown). Sending `setClips([])` to the native player
+        // builds a composition with `renderSize == .zero` on iOS,
+        // which crashes `AVPlayerItem.setVideoComposition:`.
+        if (clips.isEmpty) return;
         final currentPosition = context
             .read<VideoEditorMainBloc>()
             .state
             .currentPosition;
 
-        _videoPlayer?.setClips(
-          [
-            for (final clip in clips)
-              if (clip.video.file?.path case final path?)
-                VideoClip(
-                  uri: path,
-                  start: clip.trimStart,
-                  end: clip.duration - clip.trimEnd,
-                ),
-          ],
-          startPosition: currentPosition,
-        );
+        _videoPlayer?.setClips([
+          for (final clip in clips)
+            if (clip.video.file?.path case final path?)
+              VideoClip(
+                uri: path,
+                start: clip.trimStart,
+                end: clip.duration - clip.trimEnd,
+              ),
+        ], startPosition: currentPosition);
       },
     );
 
@@ -764,22 +759,22 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               return false;
             },
             listener: (context, state) {
+              // See note on the trim-times listener above: skip empty
+              // clip lists to avoid crashing the iOS native player.
+              if (state.clips.isEmpty) return;
               final currentPosition = context
                   .read<VideoEditorMainBloc>()
                   .state
                   .currentPosition;
-              _videoPlayer?.setClips(
-                [
-                  for (final clip in state.clips)
-                    if (clip.video.file?.path case final path?)
-                      VideoClip(
-                        uri: path,
-                        start: clip.trimStart,
-                        end: clip.duration - clip.trimEnd,
-                      ),
-                ],
-                startPosition: currentPosition,
-              );
+              _videoPlayer?.setClips([
+                for (final clip in state.clips)
+                  if (clip.video.file?.path case final path?)
+                    VideoClip(
+                      uri: path,
+                      start: clip.trimStart,
+                      end: clip.duration - clip.trimEnd,
+                    ),
+              ], startPosition: currentPosition);
             },
           ),
           BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
@@ -787,9 +782,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 previous.isExternalPauseRequested !=
                 current.isExternalPauseRequested,
             listener: (context, state) {
-              _onExternalPauseChanged(
-                isPaused: state.isExternalPauseRequested,
-              );
+              _onExternalPauseChanged(isPaused: state.isExternalPauseRequested);
             },
           ),
           BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
@@ -838,8 +831,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               captureImageByteFormat: .rawStraightRgba,
               enableBackgroundGeneration: false,
               enableUseOriginalBytes: false,
+              // Disabled in debug mode: combined RAM usage from the editor
+              // and MediaKit (background) causes crashes on hot-reload.
+              // Release builds are unaffected.
+              enableIsolateGeneration: kReleaseMode,
               processorConfigs: const ProcessorConfigs(
-                numberOfBackgroundProcessors: 4,
+                numberOfBackgroundProcessors: 3,
                 processorMode: .limit,
                 initializationDelay:
                     VideoEditorConstants.isolatesInitialisationDelay,

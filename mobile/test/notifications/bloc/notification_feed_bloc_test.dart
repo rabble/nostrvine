@@ -17,10 +17,7 @@ class _MockNotificationRepository extends Mock
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
 /// Test actor helper.
-ActorInfo _actor({
-  String pubkey = 'abc123',
-  String displayName = 'Alice',
-}) {
+ActorInfo _actor({String pubkey = 'abc123', String displayName = 'Alice'}) {
   return ActorInfo(pubkey: pubkey, displayName: displayName);
 }
 
@@ -140,9 +137,7 @@ void main() {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
         'appends new items and deduplicates',
         setUp: () {
-          when(
-            () => mockNotificationRepo.getNotifications(),
-          ).thenAnswer(
+          when(() => mockNotificationRepo.getNotifications()).thenAnswer(
             (_) async => NotificationPage(
               items: [existingItem, newItem],
               unreadCount: 2,
@@ -262,9 +257,8 @@ void main() {
           notifications: [_single(id: 'existing')],
           unreadCount: 1,
         ),
-        act: (bloc) => bloc.add(
-          NotificationFeedRealtimeReceived(_single(id: 'realtime')),
-        ),
+        act: (bloc) =>
+            bloc.add(NotificationFeedRealtimeReceived(_single(id: 'realtime'))),
         expect: () => [
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
@@ -285,9 +279,8 @@ void main() {
           notifications: [_single(id: 'existing')],
           unreadCount: 1,
         ),
-        act: (bloc) => bloc.add(
-          NotificationFeedRealtimeReceived(_single(id: 'existing')),
-        ),
+        act: (bloc) =>
+            bloc.add(NotificationFeedRealtimeReceived(_single(id: 'existing'))),
         expect: () => <NotificationFeedState>[],
       );
 
@@ -368,9 +361,7 @@ void main() {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
         'updates isFollowingBack on matching follow notification',
         setUp: () {
-          when(
-            () => mockFollowRepo.follow('pub123'),
-          ).thenAnswer((_) async {});
+          when(() => mockFollowRepo.follow('pub123')).thenAnswer((_) async {});
         },
         build: createBloc,
         seed: () => NotificationFeedState(
@@ -419,9 +410,7 @@ void main() {
           unreadCount: 1,
         ),
         act: (bloc) => bloc.add(
-          NotificationFeedRealtimeReceived(
-            _single(id: 'blocked-notif'),
-          ),
+          NotificationFeedRealtimeReceived(_single(id: 'blocked-notif')),
         ),
         expect: () => <NotificationFeedState>[],
       );

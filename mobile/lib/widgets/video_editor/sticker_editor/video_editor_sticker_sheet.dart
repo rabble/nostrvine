@@ -164,9 +164,7 @@ class _SearchBarState extends State<_SearchBar> {
           onSubmitted: (_) => _focusNode.unfocus(),
           decoration: InputDecoration(
             hintText: context.l10n.videoEditorStickerSearchHint,
-            hintStyle: VineTheme.bodyLargeFont(
-              color: VineTheme.onSurfaceMuted,
-            ),
+            hintStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
             filled: true,
             fillColor: VineTheme.surfaceContainer,
             border: OutlineInputBorder(

@@ -67,9 +67,7 @@ void main() {
       final state = VideoEditorProviderState(finalRenderedClip: clip);
       return ProviderScope(
         overrides: [
-          gallerySaveServiceProvider.overrideWithValue(
-            mockGallerySaveService,
-          ),
+          gallerySaveServiceProvider.overrideWithValue(mockGallerySaveService),
           videoEditorProvider.overrideWith(
             () => _MockVideoEditorNotifier(state),
           ),
@@ -78,94 +76,79 @@ void main() {
       );
     }
 
-    testWidgets(
-      'returns early when gallery permission is dismissed forever',
-      (tester) async {
-        SharedPreferences.setMockInitialValues({
-          'gallery_permission_dismissed_forever': true,
-        });
+    testWidgets('returns early when gallery permission is dismissed forever', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        'gallery_permission_dismissed_forever': true,
+      });
 
-        await tester.pumpWidget(
-          buildSubject(clip: _createClip()),
-        );
-        await tester.tap(find.text('save'));
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildSubject(clip: _createClip()));
+      await tester.tap(find.text('save'));
+      await tester.pumpAndSettle();
 
-        verifyNever(
-          () => mockGallerySaveService.saveVideoToGallery(any()),
-        );
-      },
-    );
+      verifyNever(() => mockGallerySaveService.saveVideoToGallery(any()));
+    });
 
-    testWidgets(
-      'returns early when finalRenderedClip is null',
-      (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.tap(find.text('save'));
-        await tester.pumpAndSettle();
+    testWidgets('returns early when finalRenderedClip is null', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.tap(find.text('save'));
+      await tester.pumpAndSettle();
 
-        verifyNever(
-          () => mockGallerySaveService.saveVideoToGallery(any()),
-        );
-      },
-    );
+      verifyNever(() => mockGallerySaveService.saveVideoToGallery(any()));
+    });
 
-    testWidgets(
-      'calls saveVideoToGallery when clip is available',
-      (tester) async {
-        final clip = _createClip();
-        when(
-          () => mockGallerySaveService.saveVideoToGallery(clip.video),
-        ).thenAnswer((_) async => const GallerySaveSuccess());
+    testWidgets('calls saveVideoToGallery when clip is available', (
+      tester,
+    ) async {
+      final clip = _createClip();
+      when(
+        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+      ).thenAnswer((_) async => const GallerySaveSuccess());
 
-        await tester.pumpWidget(buildSubject(clip: clip));
-        await tester.tap(find.text('save'));
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildSubject(clip: clip));
+      await tester.tap(find.text('save'));
+      await tester.pumpAndSettle();
 
-        verify(
-          () => mockGallerySaveService.saveVideoToGallery(clip.video),
-        ).called(1);
-      },
-    );
+      verify(
+        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+      ).called(1);
+    });
 
-    testWidgets(
-      'does not show permission sheet on save success',
-      (tester) async {
-        final clip = _createClip();
-        when(
-          () => mockGallerySaveService.saveVideoToGallery(clip.video),
-        ).thenAnswer((_) async => const GallerySaveSuccess());
+    testWidgets('does not show permission sheet on save success', (
+      tester,
+    ) async {
+      final clip = _createClip();
+      when(
+        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+      ).thenAnswer((_) async => const GallerySaveSuccess());
 
-        await tester.pumpWidget(buildSubject(clip: clip));
-        await tester.tap(find.text('save'));
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildSubject(clip: clip));
+      await tester.tap(find.text('save'));
+      await tester.pumpAndSettle();
 
-        // Only one call — no retry.
-        verify(
-          () => mockGallerySaveService.saveVideoToGallery(clip.video),
-        ).called(1);
-      },
-    );
+      // Only one call — no retry.
+      verify(
+        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+      ).called(1);
+    });
 
-    testWidgets(
-      'does not show permission sheet on save failure',
-      (tester) async {
-        final clip = _createClip();
-        when(
-          () => mockGallerySaveService.saveVideoToGallery(clip.video),
-        ).thenAnswer(
-          (_) async => const GallerySaveFailure('disk full'),
-        );
+    testWidgets('does not show permission sheet on save failure', (
+      tester,
+    ) async {
+      final clip = _createClip();
+      when(
+        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+      ).thenAnswer((_) async => const GallerySaveFailure('disk full'));
 
-        await tester.pumpWidget(buildSubject(clip: clip));
-        await tester.tap(find.text('save'));
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildSubject(clip: clip));
+      await tester.tap(find.text('save'));
+      await tester.pumpAndSettle();
 
-        // Only one call — no retry for generic failures.
-        verify(
-          () => mockGallerySaveService.saveVideoToGallery(clip.video),
-        ).called(1);
-      },
-    );
+      // Only one call — no retry for generic failures.
+      verify(
+        () => mockGallerySaveService.saveVideoToGallery(clip.video),
+      ).called(1);
+    });
   });
 }

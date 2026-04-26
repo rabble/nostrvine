@@ -88,32 +88,26 @@ void main() {
       },
     );
 
-    test(
-      'connects to safeFallbackRelays when discovery throws',
-      () async {
-        // ARRANGE: indexer connection failure — relay discovery throws
-        // before any indexer responds.
-        final discovery = _ControllableRelayDiscoveryService(
-          outcome: () => throw Exception('connection refused'),
-        );
-        final authService = buildAuthService(discovery);
+    test('connects to safeFallbackRelays when discovery throws', () async {
+      // ARRANGE: indexer connection failure — relay discovery throws
+      // before any indexer responds.
+      final discovery = _ControllableRelayDiscoveryService(
+        outcome: () => throw Exception('connection refused'),
+      );
+      final authService = buildAuthService(discovery);
 
-        List<String>? capturedRelayUrls;
-        authService.registerUserRelaysDiscoveredCallback(
-          (urls) => capturedRelayUrls = urls,
-        );
+      List<String>? capturedRelayUrls;
+      authService.registerUserRelaysDiscoveredCallback(
+        (urls) => capturedRelayUrls = urls,
+      );
 
-        // ACT
-        await authService.debugDiscoverUserRelays(testNpub);
+      // ACT
+      await authService.debugDiscoverUserRelays(testNpub);
 
-        // ASSERT
-        expect(
-          capturedRelayUrls,
-          equals(IndexerRelayConfig.safeFallbackRelays),
-        );
-        expect(authService.userRelays, isEmpty);
-      },
-    );
+      // ASSERT
+      expect(capturedRelayUrls, equals(IndexerRelayConfig.safeFallbackRelays));
+      expect(authService.userRelays, isEmpty);
+    });
 
     test(
       'does NOT apply fallback when discovery returns the user relays',
@@ -125,10 +119,8 @@ void main() {
           const DiscoveredRelay(url: 'wss://relay.user-chosen.org'),
         ];
         final discovery = _ControllableRelayDiscoveryService(
-          outcome: () => RelayDiscoveryResult.success(
-            userRelays,
-            'wss://test-indexer',
-          ),
+          outcome: () =>
+              RelayDiscoveryResult.success(userRelays, 'wss://test-indexer'),
         );
         final authService = buildAuthService(discovery);
 

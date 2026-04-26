@@ -7,10 +7,7 @@ import 'package:openvine/services/video_event_service.dart';
 
 /// State for [VideoRepostersCubit].
 class VideoRepostersState extends Equatable {
-  const VideoRepostersState({
-    this.pubkeys = const [],
-    this.isLoading = true,
-  });
+  const VideoRepostersState({this.pubkeys = const [], this.isLoading = true});
 
   /// Pubkeys of users who reposted this video.
   final List<String> pubkeys;

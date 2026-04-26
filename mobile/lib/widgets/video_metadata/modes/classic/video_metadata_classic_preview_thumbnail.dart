@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
 
 class VideoMetadataClassicPreviewThumbnail extends ConsumerStatefulWidget {
   const VideoMetadataClassicPreviewThumbnail({super.key});
@@ -33,17 +33,16 @@ class _VideoMetadataClassicPreviewThumbnailState
   void initState() {
     super.initState();
     // Start playback once the rendered clip becomes available.
-    ref.listenManual(
-      videoEditorProvider.select((s) => s.finalRenderedClip),
-      (_, clip) {
-        if (clip != null && _controller == null) {
-          clip.video.safeFilePath().then((path) {
-            if (mounted) _initPlayer(path);
-          });
-        }
-      },
-      fireImmediately: true,
-    );
+    ref.listenManual(videoEditorProvider.select((s) => s.finalRenderedClip), (
+      _,
+      clip,
+    ) {
+      if (clip != null && _controller == null) {
+        clip.video.safeFilePath().then((path) {
+          if (mounted) _initPlayer(path);
+        });
+      }
+    }, fireImmediately: true);
   }
 
   @override
@@ -100,9 +99,7 @@ class _VideoMetadataClassicPreviewThumbnailState
     final clip = clips.first;
 
     final (finalRenderedClip, isProcessing) = ref.watch(
-      videoEditorProvider.select(
-        (s) => (s.finalRenderedClip, s.isProcessing),
-      ),
+      videoEditorProvider.select((s) => (s.finalRenderedClip, s.isProcessing)),
     );
 
     return AspectRatio(
@@ -130,11 +127,8 @@ class _VideoMetadataClassicPreviewThumbnailState
                           key: const ValueKey('thumbnail'),
                           fit: StackFit.expand,
                           children: [
-                            Image.file(
-                              File(clip.thumbnailPath!),
-                              fit: .cover,
-                            ),
-                            VideoClipEditorProcessingOverlay(
+                            Image.file(File(clip.thumbnailPath!), fit: .cover),
+                            VideoEditorProcessingOverlay(
                               clip: clip,
                               isProcessing:
                                   finalRenderedClip == null && isProcessing,

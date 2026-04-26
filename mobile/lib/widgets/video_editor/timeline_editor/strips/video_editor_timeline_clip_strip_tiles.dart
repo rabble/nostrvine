@@ -30,7 +30,6 @@ class _TrimmableClipTile extends StatefulWidget {
 }
 
 class _TrimmableClipTileState extends State<_TrimmableClipTile> {
-  bool _isDragStarted = false;
   bool _leftAtLimit = false;
   bool _rightAtLimit = false;
 
@@ -40,12 +39,10 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
   }
 
   void _onDragStart() {
-    _isDragStarted = false;
     widget.onTrimDragChanged?.call(true);
   }
 
   void _onDragEnd() {
-    _isDragStarted = false;
     widget.onTrimDragChanged?.call(false);
   }
 
@@ -76,9 +73,7 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
       clipId: clip.id,
       trimStart: newTrimStart,
       trimEnd: clip.trimEnd,
-      isStart: !_isDragStarted,
     );
-    _isDragStarted = true;
   }
 
   void _onRightDragUpdate(double dx) {
@@ -109,9 +104,7 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
       clipId: clip.id,
       trimStart: clip.trimStart,
       trimEnd: newTrimEnd,
-      isStart: !_isDragStarted,
     );
-    _isDragStarted = true;
   }
 
   @override
@@ -376,10 +369,7 @@ class _ClipContainer extends StatelessWidget {
     // and long clips keep thumbnailWidth fixed so each image represents the
     // correct time span instead of stretching to fill the whole tile.
     final slotWidth = contentWidth < displayWidth
-        ? math.max(
-            TimelineConstants.thumbnailWidth,
-            displayWidth / count,
-          )
+        ? math.max(TimelineConstants.thumbnailWidth, displayWidth / count)
         : TimelineConstants.thumbnailWidth;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -399,10 +389,7 @@ class _ClipContainer extends StatelessWidget {
 }
 
 class _ThumbnailImage extends StatelessWidget {
-  const _ThumbnailImage({
-    required this.thumbnailPath,
-    this.stripThumbnailPath,
-  });
+  const _ThumbnailImage({required this.thumbnailPath, this.stripThumbnailPath});
 
   final String? thumbnailPath;
   final String? stripThumbnailPath;

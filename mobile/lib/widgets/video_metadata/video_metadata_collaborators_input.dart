@@ -1,6 +1,6 @@
 // ABOUTME: Input widget for adding/managing video collaborators
 // ABOUTME: Shows collaborator chips with remove buttons, max 5 limit,
-// ABOUTME: and opens UserPickerSheet for adding via mutual-follow search
+// ABOUTME: and opens UserPickerSheet for inviting via mutual-follow search
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +17,7 @@ import 'package:openvine/widgets/video_metadata/video_metadata_user_chip.dart';
 /// Input widget for adding and managing collaborators on a video.
 ///
 /// Displays collaborator chips (avatar + name + remove) and an
-/// "Add collaborator" button. Limited to [VideoEditorNotifier.maxCollaborators].
+/// invite button. Limited to [VideoEditorNotifier.maxCollaborators].
 class VideoMetadataCollaboratorsInput extends ConsumerWidget {
   /// Creates a video metadata collaborators input widget.
   const VideoMetadataCollaboratorsInput({super.key});
@@ -62,8 +62,6 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                       ),
                       const SizedBox(width: 4),
                       VideoMetadataHelpButton(
-                        // TODO(l10n): Replace with context.l10n
-                        //   when localization is added.
                         onTap: () => _showHelpDialog(context),
                         tooltip:
                             context.l10n.videoMetadataCollaboratorsHelpTooltip,

@@ -107,9 +107,7 @@ void main() {
           () => mockProfileRepository.deleteCachedProfile(pubkey: testPubkey),
         ).thenAnswer((_) async => 1);
         when(
-          () => mockProfileRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-          ),
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
         ).thenAnswer((_) async => updatedProfile);
 
         // Execute
@@ -143,9 +141,7 @@ void main() {
           () => mockProfileRepository.deleteCachedProfile(pubkey: testPubkey),
         ).called(1);
         verify(
-          () => mockProfileRepository.fetchFreshProfile(
-            pubkey: testPubkey,
-          ),
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
         ).called(1);
       },
     );

@@ -1,6 +1,5 @@
 // ABOUTME: Tests for ProfileCollabVideosBloc - fetching and paginating collab
-// ABOUTME: videos. Tests funnelcake-primary fetch, client-side filtering, and
-// ABOUTME: state management.
+// ABOUTME: videos. Tests confirmed repository fetch and state management.
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -195,7 +194,7 @@ void main() {
       );
 
       blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(
-        'filters out videos where target user is the author',
+        'trusts repository results as confirmed collabs without p-tag filtering',
         build: () {
           when(
             () => mockVideosRepository.getCollabVideos(
@@ -204,17 +203,14 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => [
-              // Author is targetPubkey - should be filtered OUT
               createTestVideo(
                 id: 'v1',
                 pubkey: targetPubkey,
-                collaboratorPubkeys: [targetPubkey],
               ),
-              // Author is someone else, target is collab - should STAY
               createTestVideo(
                 id: 'v2',
                 pubkey: authorPubkey,
-                collaboratorPubkeys: [targetPubkey],
+                collaboratorPubkeys: ['someoneelse'],
               ),
             ],
           );
@@ -233,47 +229,9 @@ void main() {
                 'status',
                 ProfileCollabVideosStatus.success,
               )
-              .having((s) => s.videos, 'videos', hasLength(1))
-              .having((s) => s.videos.first.id, 'first video id', equals('v2')),
-        ],
-      );
-
-      blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(
-        'filters out videos where target is not in collaboratorPubkeys',
-        build: () {
-          when(
-            () => mockVideosRepository.getCollabVideos(
-              taggedPubkey: targetPubkey,
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              // Target NOT in collaborators - should be filtered OUT
-              createTestVideo(
-                id: 'v1',
-                pubkey: authorPubkey,
-                collaboratorPubkeys: ['someoneelse'],
-              ),
-              // Target IS in collaborators - should STAY
-              createTestVideo(
-                id: 'v2',
-                pubkey: authorPubkey,
-                collaboratorPubkeys: [targetPubkey],
-              ),
-            ],
-          );
-          return createBloc();
-        },
-        act: (bloc) => bloc.add(const ProfileCollabVideosFetchRequested()),
-        expect: () => [
-          isA<ProfileCollabVideosState>().having(
-            (s) => s.status,
-            'status',
-            ProfileCollabVideosStatus.loading,
-          ),
-          isA<ProfileCollabVideosState>()
-              .having((s) => s.videos, 'videos', hasLength(1))
-              .having((s) => s.videos.first.id, 'first video id', equals('v2')),
+              .having((s) => s.videos, 'videos', hasLength(2))
+              .having((s) => s.videos[0].id, 'first video id', equals('v1'))
+              .having((s) => s.videos[1].id, 'second video id', equals('v2')),
         ],
       );
 

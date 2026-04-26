@@ -119,9 +119,7 @@ class ClipLibraryService {
   /// Get all clips from the library, sorted by creation date (newest first)
   Future<List<DivineVideoClip>> getAllClips() async {
     try {
-      final rows = await _clipsDao.getLibraryClips(
-        ownerPubkey: ownerPubkey,
-      );
+      final rows = await _clipsDao.getLibraryClips(ownerPubkey: ownerPubkey);
       final documentsPath = await getDocumentsPath();
 
       return rows.map((row) {
@@ -200,9 +198,7 @@ class ClipLibraryService {
     List<DivineVideoClip> clips,
   ) async {
     final incomplete = clips
-        .where(
-          (c) => c.thumbnailPath == null || c.ghostFramePath == null,
-        )
+        .where((c) => c.thumbnailPath == null || c.ghostFramePath == null)
         .toList();
 
     if (incomplete.isEmpty) return clips;

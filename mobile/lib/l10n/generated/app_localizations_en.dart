@@ -881,6 +881,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Delete request sent successfully';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Failed to delete content: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Classics';
 
   @override
@@ -1246,6 +1251,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Enable auto advance';
 
   @override
@@ -1268,6 +1288,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => 'Show subtitles';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -2997,6 +3023,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove this video from Divine. It may still appear on other Nostr clients.';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'This sends a delete request (NIP-09) to all relays. Some relays may still keep the content.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Video is in these lists:';
 
   @override
@@ -3019,6 +3049,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Deleting content...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Failed to delete content: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'Video deleted';
@@ -3105,6 +3140,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Failed to delete video: $error';
+  }
+
+  @override
   String get shareMenuDeleteVideoQuestion => 'Delete Video?';
 
   @override
@@ -3127,11 +3167,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuCollaborators => 'Collaborators';
 
   @override
-  String get shareMenuAddCollaborator => 'Add collaborator';
+  String get shareMenuAddCollaborator => 'Invite collaborator';
 
   @override
   String shareMenuMutualFollowRequired(String name) {
-    return 'You need to mutually follow $name to add them as a collaborator.';
+    return 'You need to mutually follow $name to invite them as a collaborator.';
   }
 
   @override
@@ -3626,6 +3666,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navProfile => 'Profile';
+
+  @override
+  String get navSearch => 'Search';
+
+  @override
+  String get navSearchTooltip => 'Search';
 
   @override
   String get navMyProfile => 'My Profile';
@@ -4764,6 +4810,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Discover something interesting';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Lists';
 
   @override
@@ -5096,7 +5160,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'Clips';
+  String get videoEditorCameraLabel => 'Camera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Open camera';
+
+  @override
+  String get videoEditorLibraryLabel => 'Library';
 
   @override
   String get videoEditorTextLabel => 'Text';
@@ -5105,7 +5175,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorDrawLabel => 'Draw';
 
   @override
-  String get videoEditorEffectsLabel => 'Effects';
+  String get videoEditorFilterLabel => 'Filter';
 
   @override
   String get videoEditorAudioLabel => 'Audio';
@@ -5117,7 +5187,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorAddTitle => 'Add';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'Open clips editor';
+  String get videoEditorOpenLibrarySemanticLabel => 'Open Library';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Open audio editor';
@@ -5129,7 +5199,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Open draw editor';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'Open effects editor';
+  String get videoEditorOpenFilterSemanticLabel => 'Open filter editor';
 
   @override
   String get videoEditorSaveDraftTitle => 'Save your draft?';
@@ -5277,20 +5347,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Finish timeline editing';
 
   @override
-  String get videoEditorSortNewest => 'Newest';
-
-  @override
-  String get videoEditorSortLongest => 'Longest';
-
-  @override
-  String get videoEditorSortShortest => 'Shortest';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Sort by $option. Tap to change sort order';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'Play preview';
 
   @override
@@ -5298,9 +5354,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Untitled sound';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Select sound';
 
   @override
   String get videoEditorAudioUntitled => 'Untitled';
@@ -5316,14 +5369,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sounds will appear here when creators share audio';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'No sounds found';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Try a different search term';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'Failed to load sounds';
+
+  @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Select the audio segment for your video';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Community';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Arrow tool';
@@ -5397,6 +5453,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => 'Long press to reorder';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Tap to edit. Hold and drag to reorder.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Move left';
@@ -5509,7 +5569,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoMetadataCollaboratorsLabel => 'Collaborators';
 
   @override
-  String get videoMetadataAddCollaboratorSemanticLabel => 'Add collaborator';
+  String get videoMetadataAddCollaboratorSemanticLabel => 'Invite collaborator';
 
   @override
   String get videoMetadataCollaboratorsHelpTooltip => 'How collaborators work';
@@ -5525,14 +5585,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoMetadataCollaboratorsHelpMessage =>
-      'Collaborators are tagged as co-creators on this post. You can only add people you mutually follow, and they appear in the post metadata when published.';
+      'Collaborators are invited as co-creators on this post. You can only invite people you mutually follow, and they appear as collaborators after they confirm.';
 
   @override
   String get videoMetadataMutualFollowersSearchText => 'Mutual followers';
 
   @override
   String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return 'You need to mutually follow $name to add them as a collaborator.';
+    return 'You need to mutually follow $name to invite them as a collaborator.';
   }
 
   @override

@@ -183,7 +183,6 @@ class _VideoMetadataTagsInputState
                   DivineTextField(
                     controller: _controller,
                     focusNode: _focusNode,
-                    // TODO(l10n): Replace with context.l10n when localization is added.
                     labelText: tags.isEmpty
                         ? context.l10n.videoMetadataTagsLabel
                         : null,
@@ -242,10 +241,7 @@ class _TagChip extends ConsumerWidget {
         mainAxisSize: .min,
         children: [
           // Hashtag symbol
-          Text(
-            '#',
-            style: VineTheme.bodyLargeFont(color: VineTheme.primary),
-          ),
+          Text('#', style: VineTheme.bodyLargeFont(color: VineTheme.primary)),
           const SizedBox(width: 4),
           // Tag text
           Flexible(

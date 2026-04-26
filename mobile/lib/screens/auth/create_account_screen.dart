@@ -48,15 +48,18 @@ class CreateAccountScreen extends ConsumerWidget {
         pendingVerificationService: pendingVerificationService,
         inviteApiClient: inviteApiClient,
         inviteCode: inviteAccessGrant?.code,
+        inviteSourceSlug: inviteAccessGrant?.creatorSlug,
       )..initialize(),
-      child: const _CreateAccountView(),
+      child: _CreateAccountView(inviteAccessGrant: inviteAccessGrant),
     );
   }
 }
 
 /// Create account screen — View that consumes [DivineAuthCubit] state.
 class _CreateAccountView extends StatelessWidget {
-  const _CreateAccountView();
+  const _CreateAccountView({this.inviteAccessGrant});
+
+  final InviteAccessGrant? inviteAccessGrant;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +81,10 @@ class _CreateAccountView extends StatelessWidget {
       child: BlocBuilder<DivineAuthCubit, DivineAuthState>(
         builder: (context, state) {
           if (state is DivineAuthFormState) {
-            return _CreateAccountBody(state: state);
+            return _CreateAccountBody(
+              state: state,
+              inviteAccessGrant: inviteAccessGrant,
+            );
           }
           return const Scaffold(
             backgroundColor: VineTheme.backgroundColor,
@@ -94,9 +100,10 @@ class _CreateAccountView extends StatelessWidget {
 
 /// Body of the create account form with email and password.
 class _CreateAccountBody extends StatefulWidget {
-  const _CreateAccountBody({required this.state});
+  const _CreateAccountBody({required this.state, this.inviteAccessGrant});
 
   final DivineAuthFormState state;
+  final InviteAccessGrant? inviteAccessGrant;
 
   @override
   State<_CreateAccountBody> createState() => _CreateAccountBodyState();
@@ -162,6 +169,7 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
       WelcomeScreen.inviteGatePathWithCode(
         inviteCode,
         error: widget.state.generalError,
+        sourceSlug: widget.state.inviteRecoverySourceSlug,
       ),
     );
   }
@@ -171,9 +179,16 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
     final isSubmitting = widget.state.isSubmitting;
     final isSkipping = widget.state.isSkipping;
     final isDisabled = isSubmitting || isSkipping;
+    final inviteGrant = widget.inviteAccessGrant;
+    final hasCreatorContext =
+        (inviteGrant?.creatorDisplayName?.isNotEmpty ?? false) ||
+        inviteGrant?.remaining != null;
 
     return AuthFormScaffold(
       title: context.l10n.authCreateAccountTitle,
+      headerWidget: hasCreatorContext
+          ? _CreatorInviteContext(grant: inviteGrant)
+          : null,
       onBack: isDisabled ? null : () => context.pop(),
       emailController: _emailController,
       passwordController: _passwordController,
@@ -213,6 +228,37 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
         isSkipping: isSkipping,
         isDisabled: isDisabled,
         onPressed: _skip,
+      ),
+    );
+  }
+}
+
+class _CreatorInviteContext extends StatelessWidget {
+  const _CreatorInviteContext({this.grant});
+
+  final InviteAccessGrant? grant;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayName = grant?.creatorDisplayName;
+    final remaining = grant?.remaining;
+    if ((displayName == null || displayName.isEmpty) && remaining == null) {
+      return const SizedBox.shrink();
+    }
+
+    final lines = <String>[
+      if (displayName != null && displayName.isNotEmpty)
+        '$displayName invited you',
+      if (remaining != null) '$remaining invites left',
+    ];
+
+    return Text(
+      lines.join('\n'),
+      style: const TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 15,
+        height: 1.4,
+        color: VineTheme.lightText,
       ),
     );
   }

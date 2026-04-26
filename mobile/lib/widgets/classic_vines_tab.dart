@@ -304,7 +304,9 @@ class _ClassicVideosSliverGrid extends ConsumerWidget {
     final crossAxisCount = screenWidth >= 600 ? 3 : 2;
 
     return SliverPadding(
-      padding: const EdgeInsets.all(4),
+      // Explore grids are edge-to-edge; the 4px gap between columns comes
+      // from `crossAxisSpacing` below, not from outer side padding.
+      padding: const EdgeInsets.symmetric(vertical: 4),
       sliver: SliverMasonryGrid.count(
         crossAxisCount: crossAxisCount,
         mainAxisSpacing: 4,

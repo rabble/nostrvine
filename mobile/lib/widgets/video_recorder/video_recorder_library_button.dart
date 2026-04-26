@@ -50,12 +50,12 @@ class _VideoRecorderLibraryButtonState
     // (e.g. user reset or deleted clips).
     // Reload library thumbnail whenever a clip is removed, since
     // deleteLastRecordedClip also deletes from the clip library.
-    ref.listen(
-      clipManagerProvider.select((p) => p.clips.length),
-      (previous, next) {
-        if (next < (previous ?? next + 1)) _loadLibraryThumbnail();
-      },
-    );
+    ref.listen(clipManagerProvider.select((p) => p.clips.length), (
+      previous,
+      next,
+    ) {
+      if (next < (previous ?? next + 1)) _loadLibraryThumbnail();
+    });
 
     final currentPath = clips.lastOrNull?.thumbnailPath;
     if (currentPath != null) {
@@ -104,10 +104,8 @@ class _VideoRecorderLibraryButtonState
                   borderRadius: .circular(14),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    transitionBuilder: (child, animation) => FadeTransition(
-                      opacity: animation,
-                      child: child,
-                    ),
+                    transitionBuilder: (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
                     layoutBuilder: (currentChild, previousChildren) => Stack(
                       alignment: .center,
                       fit: .expand,
@@ -145,10 +143,8 @@ class _SelectionCountBadge extends StatelessWidget {
         translation: const Offset(0.5, -0.5),
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
-          transitionBuilder: (child, animation) => ScaleTransition(
-            scale: animation,
-            child: child,
-          ),
+          transitionBuilder: (child, animation) =>
+              ScaleTransition(scale: animation, child: child),
           child: count == 0
               ? const SizedBox.shrink()
               : Container(
@@ -171,9 +167,7 @@ class _SelectionCountBadge extends StatelessWidget {
                           count.toString(),
                           textAlign: .center,
                           style: VineTheme.labelSmallFont().copyWith(
-                            fontFeatures: [
-                              const .tabularFigures(),
-                            ],
+                            fontFeatures: [const .tabularFigures()],
                           ),
                         ),
                       ),

@@ -15,9 +15,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
     container = ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
     );
   });
 
@@ -35,9 +33,7 @@ void main() {
       await prefs.setBool('subtitle_visibility_enabled', false);
       container.dispose();
       container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
 
       final state = container.read(subtitleVisibilityProvider);
@@ -57,9 +53,7 @@ void main() {
       await prefs.setBool('subtitle_visibility_enabled', false);
       container.dispose();
       container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
 
       final notifier = container.read(subtitleVisibilityProvider.notifier);

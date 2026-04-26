@@ -13,6 +13,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_control_bar.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
@@ -162,9 +163,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
             Column(
               crossAxisAlignment: .stretch,
               children: [
-                VideoEditorTimelineHeader(
-                  playheadPosition: _playheadPosition,
-                ),
+                VideoEditorTimelineHeader(playheadPosition: _playheadPosition),
                 const Padding(
                   padding: .only(top: 12),
                   child: Divider(
@@ -260,9 +259,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   // -- Reorder callbacks ----------------------------------------------------
 
   void _onClipsReordered(List<DivineVideoClip> reorderedClips) {
-    context.read<ClipEditorBloc>().add(
-      ClipEditorInitialized(reorderedClips),
-    );
+    context.read<ClipEditorBloc>().add(ClipEditorInitialized(reorderedClips));
     context.read<VideoEditorMainBloc>().add(
       const VideoEditorExternalPauseRequested(isPaused: true),
     );
@@ -294,14 +291,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     required String clipId,
     required Duration trimStart,
     required Duration trimEnd,
-    required bool isStart,
   }) {
     context.read<ClipEditorBloc>().add(
       ClipEditorTrimUpdated(
         clipId: clipId,
         trimStart: trimStart,
         trimEnd: trimEnd,
-        isStart: isStart,
       ),
     );
   }
@@ -485,11 +480,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   ///
   /// [targetIdx] is the insertion position in the list *after* removing
   /// the dragged element (computed by [_targetListIndex]).
-  void _reorderEditorList<T>(
-    List<T> list,
-    int currentIdx,
-    int targetIdx,
-  ) {
+  void _reorderEditorList<T>(List<T> list, int currentIdx, int targetIdx) {
     if (currentIdx < 0) return;
 
     final element = list.removeAt(currentIdx);
@@ -635,26 +626,15 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   }
 
   void _onOverlayDragEnded() {
-    context.read<TimelineOverlayBloc>().add(
-      const TimelineOverlayDragEnded(),
-    );
+    context.read<TimelineOverlayBloc>().add(const TimelineOverlayDragEnded());
   }
 
   // -- Pointer tracking + manual pinch-to-zoom ------------------------------
 
-  void _stepPosition(
-    Duration current,
-    Duration total,
-    Duration step,
-  ) {
-    final ms = (current + step).inMilliseconds.clamp(
-      0,
-      total.inMilliseconds,
-    );
+  void _stepPosition(Duration current, Duration total, Duration step) {
+    final ms = (current + step).inMilliseconds.clamp(0, total.inMilliseconds);
     final position = Duration(milliseconds: ms);
-    context.read<VideoEditorMainBloc>().add(
-      VideoEditorSeekRequested(position),
-    );
+    context.read<VideoEditorMainBloc>().add(VideoEditorSeekRequested(position));
   }
 
   void _onPointerDown(PointerDownEvent event) {
@@ -722,10 +702,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   void _updatePlayheadTime() {
     if (!_scrollController.hasClients) return;
     final seconds = _scrollController.offset / _pixelsPerSecond;
-    final ms = (seconds * 1000).round().clamp(
-      0,
-      _totalDuration.inMilliseconds,
-    );
+    final ms = (seconds * 1000).round().clamp(0, _totalDuration.inMilliseconds);
     _playheadPosition.value = Duration(milliseconds: ms);
   }
 
@@ -757,14 +734,9 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     _lastSeekMs = now;
 
     final seconds = _scrollController.offset / _pixelsPerSecond;
-    final ms = (seconds * 1000).round().clamp(
-      0,
-      _totalDuration.inMilliseconds,
-    );
+    final ms = (seconds * 1000).round().clamp(0, _totalDuration.inMilliseconds);
     final position = Duration(milliseconds: ms);
-    context.read<VideoEditorMainBloc>().add(
-      VideoEditorSeekRequested(position),
-    );
+    context.read<VideoEditorMainBloc>().add(VideoEditorSeekRequested(position));
   }
 }
 
@@ -822,13 +794,7 @@ class _TimelineInteractiveBody extends StatelessWidget {
   final void Function(List<DivineVideoClip>) onReorder;
   final ValueChanged<bool> onReorderChanged;
   final String? trimmingClipId;
-  final void Function({
-    required String clipId,
-    required Duration trimStart,
-    required Duration trimEnd,
-    required bool isStart,
-  })
-  onTrimChanged;
+  final ClipTrimCallback onTrimChanged;
   final ValueChanged<bool> onTrimDragChanged;
   final ValueChanged<int> onClipTapped;
   final OverlayMoveCallback onOverlayItemMoved;

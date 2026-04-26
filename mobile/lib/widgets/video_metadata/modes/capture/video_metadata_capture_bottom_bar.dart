@@ -107,9 +107,9 @@ class VideoMetadataCaptureBottomBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final textScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.15,
-    );
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.15);
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: Padding(

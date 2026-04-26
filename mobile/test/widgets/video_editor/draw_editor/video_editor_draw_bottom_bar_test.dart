@@ -84,6 +84,7 @@ void main() {
                 originalClipAspectRatio: 9 / 16,
                 bodySizeNotifier: ValueNotifier(const Size(400, 600)),
                 fromLibrary: false,
+                onOpenCamera: () {},
                 onOpenClipsEditor: () {},
                 onAddStickers: () {},
                 onAdjustVolume: () {},

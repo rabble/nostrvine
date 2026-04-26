@@ -35,9 +35,9 @@ void main() {
         ..writeAsBytesSync([0, 1, 2, 3]);
 
       mockBlossomService = _MockBlossomUploadService();
-      when(() => mockBlossomService.isBlossomEnabled()).thenAnswer(
-        (_) async => false,
-      );
+      when(
+        () => mockBlossomService.isBlossomEnabled(),
+      ).thenAnswer((_) async => false);
       when(
         () => mockBlossomService.uploadVideo(
           videoFile: any(named: 'videoFile'),
@@ -167,10 +167,8 @@ void main() {
           onProgress: any(named: 'onProgress'),
         ),
       ).thenAnswer(
-        (_) async => const BlossomUploadResult(
-          success: true,
-          videoId: 'rendered-video',
-        ),
+        (_) async =>
+            const BlossomUploadResult(success: true, videoId: 'rendered-video'),
       );
 
       final draft = DivineVideoDraft.create(
@@ -253,9 +251,9 @@ void main() {
         final renderedFile = File('${tempDir.path}/failed_render.mp4')
           ..writeAsBytesSync([0, 1, 2, 3]);
 
-        when(() => mockBlossomService.isBlossomEnabled()).thenAnswer(
-          (_) async => false,
-        );
+        when(
+          () => mockBlossomService.isBlossomEnabled(),
+        ).thenAnswer((_) async => false);
         when(
           () => mockBlossomService.uploadVideo(
             videoFile: any(named: 'videoFile'),

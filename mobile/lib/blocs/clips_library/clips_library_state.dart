@@ -110,9 +110,7 @@ final class ClipsLibraryState extends Equatable {
   /// Returns the currently selected clips in selection order.
   List<DivineVideoClip> get selectedClips {
     final clipsById = {for (final c in clips) c.id: c};
-    return [
-      for (final id in selectedClipIds) ?clipsById[id],
-    ];
+    return [for (final id in selectedClipIds) ?clipsById[id]];
   }
 
   /// Creates a copy of this state with the given fields replaced.

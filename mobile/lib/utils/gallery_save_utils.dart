@@ -13,10 +13,7 @@ import 'package:openvine/widgets/gallery_permission_sheet.dart';
 /// opted out, a bottom sheet is shown offering to open Settings or
 /// dismiss forever. If the user opens Settings and comes back, the
 /// save is retried once.
-Future<void> saveToGallery(
-  BuildContext context,
-  WidgetRef ref,
-) async {
+Future<void> saveToGallery(BuildContext context, WidgetRef ref) async {
   // User opted out of gallery saves permanently.
   if (await isGalleryPermissionDismissedForever()) return;
 
@@ -42,8 +39,6 @@ Future<void> saveToGallery(
   if (choice == GalleryPermissionChoice.openedSettings ||
       choice == GalleryPermissionChoice.granted) {
     // Retry once — the user may have just granted access.
-    await gallerySaveService.saveVideoToGallery(
-      finalRenderedClip.video,
-    );
+    await gallerySaveService.saveVideoToGallery(finalRenderedClip.video);
   }
 }

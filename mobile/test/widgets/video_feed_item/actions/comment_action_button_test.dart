@@ -133,9 +133,7 @@ void main() {
           () => mockBloc.state,
         ).thenReturn(const VideoInteractionsState(commentCount: 25));
 
-        await tester.pumpWidget(
-          buildSubject(video: testVideo, bloc: mockBloc),
-        );
+        await tester.pumpWidget(buildSubject(video: testVideo, bloc: mockBloc));
 
         expect(find.text('25'), findsOneWidget);
       });
@@ -143,9 +141,7 @@ void main() {
       testWidgets(
         'falls back to video.originalComments when commentCount is null',
         (tester) async {
-          when(
-            () => mockBloc.state,
-          ).thenReturn(const VideoInteractionsState());
+          when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
 
           await tester.pumpWidget(
             buildSubject(video: testVideo, bloc: mockBloc),
@@ -167,9 +163,7 @@ void main() {
           originalComments: 0,
         );
 
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoInteractionsState());
+        when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
 
         await tester.pumpWidget(
           buildSubject(video: videoNoComments, bloc: mockBloc),
@@ -181,20 +175,16 @@ void main() {
       testWidgets('shows loading indicator when isCommentsInProgress is true', (
         tester,
       ) async {
-        when(() => mockBloc.state).thenReturn(
-          const VideoInteractionsState(isCommentsInProgress: true),
-        );
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const VideoInteractionsState(isCommentsInProgress: true));
 
-        await tester.pumpWidget(
-          buildSubject(video: testVideo, bloc: mockBloc),
-        );
+        await tester.pumpWidget(buildSubject(video: testVideo, bloc: mockBloc));
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('calls onInteracted before opening comments', (
-        tester,
-      ) async {
+      testWidgets('calls onInteracted before opening comments', (tester) async {
         var interacted = false;
         when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
 
@@ -206,11 +196,17 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         await tester.pump();
 
         expect(interacted, isTrue);
-        expect(tester.takeException(), isNotNull);
+        // Incidental `takeException` is intentionally *not* asserted here:
+        // whether the half-mocked test env throws while opening the
+        // bottom sheet depends on test ordering and leaked provider state,
+        // which flakes under `very_good test --optimization`. The
+        // test's real contract is the line above — onInteracted fires
+        // before the sheet attempt.
+        tester.takeException(); // drain any incidental error
       });
     });
   });

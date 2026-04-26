@@ -68,7 +68,7 @@ void main() {
       );
 
       expect(find.byType(ShareActionButton), findsOneWidget);
-      expect(find.byType(IconButton), findsOneWidget);
+      expect(find.byType(GestureDetector), findsOneWidget);
     });
 
     testWidgets('renders $DivineIcon with shareFatDuo icon', (tester) async {
@@ -125,7 +125,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(IconButton));
+      await tester.tap(find.byType(GestureDetector));
       await tester.pump();
 
       expect(interacted, isTrue);
@@ -148,7 +148,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         await tester.pumpAndSettle();
 
         expect(find.text('Share with'), findsOneWidget);
@@ -170,7 +170,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         await tester.pumpAndSettle();
 
         expect(find.text('Find\npeople'), findsOneWidget);
@@ -192,7 +192,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         await tester.pumpAndSettle();
 
         expect(find.text('More actions'), findsOneWidget);
@@ -214,7 +214,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         await tester.pumpAndSettle();
 
         expect(find.text('Save'), findsOneWidget);
@@ -246,7 +246,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byType(IconButton));
+        await tester.tap(find.byType(GestureDetector));
         await tester.pumpAndSettle();
 
         expect(find.text('Save to Gallery'), findsOneWidget);

@@ -137,9 +137,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
         bundledSoundsAsync.whenOrNull(
           data: (service) {
             return service.sounds.indexed
-                .map(
-                  (e) => AudioEvent.fromBundledSound(e.$2, index: e.$1),
-                )
+                .map((e) => AudioEvent.fromBundledSound(e.$2, index: e.$1))
                 .toList();
           },
         ) ??
@@ -151,16 +149,10 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
         nostrSounds: nostrSounds,
       ),
       loading: () => bundledSounds.isNotEmpty
-          ? _buildSoundsContent(
-              bundledSounds: bundledSounds,
-              nostrSounds: [],
-            )
+          ? _buildSoundsContent(bundledSounds: bundledSounds, nostrSounds: [])
           : const Center(child: BrandedLoadingIndicator()),
       error: (error, stack) => bundledSounds.isNotEmpty
-          ? _buildSoundsContent(
-              bundledSounds: bundledSounds,
-              nostrSounds: [],
-            )
+          ? _buildSoundsContent(bundledSounds: bundledSounds, nostrSounds: [])
           : _buildEmptyState(),
     );
   }
@@ -255,11 +247,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.search_off,
-            size: 64,
-            color: VineTheme.lightText,
-          ),
+          const Icon(Icons.search_off, size: 64, color: VineTheme.lightText),
           const SizedBox(height: 16),
           Text(
             context.l10n.soundsNoSoundsFound,
@@ -276,10 +264,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
 }
 
 class _SearchInput extends StatelessWidget {
-  const _SearchInput({
-    required this.controller,
-    required this.onChanged,
-  });
+  const _SearchInput({required this.controller, required this.onChanged});
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
@@ -295,13 +280,8 @@ class _SearchInput extends StatelessWidget {
         style: const TextStyle(color: VineTheme.whiteText),
         decoration: InputDecoration(
           hintText: context.l10n.soundsSearchHint,
-          hintStyle: const TextStyle(
-            color: VineTheme.onSurfaceMuted,
-          ),
-          prefixIcon: const Icon(
-            Icons.search,
-            color: VineTheme.onSurfaceMuted,
-          ),
+          hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
+          prefixIcon: const Icon(Icons.search, color: VineTheme.onSurfaceMuted),
           filled: true,
           fillColor: VineTheme.backgroundColor,
           border: OutlineInputBorder(
@@ -476,10 +456,7 @@ class _AllSoundsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               const Icon(

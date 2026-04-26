@@ -80,9 +80,7 @@ class _MuteActionTile extends StatelessWidget {
       label: context.l10n.inboxActionMute,
       child: DecoratedBox(
         decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: VineTheme.outlineDisabled),
-          ),
+          border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
         ),
         child: SwitchListTile(
           value: isMuted,

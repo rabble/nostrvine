@@ -12,23 +12,11 @@ void Function(String level, String message) pooledPlayerLogCallback() {
   return (String level, String message) {
     switch (level) {
       case 'error':
-        Log.error(
-          message,
-          name: 'PooledPlayer',
-          category: LogCategory.video,
-        );
+        Log.error(message, name: 'PooledPlayer', category: LogCategory.video);
       case 'warning':
-        Log.warning(
-          message,
-          name: 'PooledPlayer',
-          category: LogCategory.video,
-        );
+        Log.warning(message, name: 'PooledPlayer', category: LogCategory.video);
       default:
-        Log.debug(
-          message,
-          name: 'PooledPlayer',
-          category: LogCategory.video,
-        );
+        Log.debug(message, name: 'PooledPlayer', category: LogCategory.video);
     }
   };
 }

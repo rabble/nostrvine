@@ -37,41 +37,28 @@ void main() {
       );
     }
 
-    testWidgets(
-      'shows the empty-query idle placeholder in default mode',
-      (tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pump();
+    testWidgets('shows the empty-query idle placeholder in default mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pump();
 
-        // No query has been entered yet, so the page renders the shared
-        // idle placeholder instead of the individual result sections.
-        expect(find.byType(SearchSectionInitialState), findsOneWidget);
-        expect(
-          find.byType(PeopleSection, skipOffstage: false),
-          findsNothing,
-        );
-        expect(
-          find.byType(TagsSection, skipOffstage: false),
-          findsNothing,
-        );
-        expect(
-          find.byType(ListsSection, skipOffstage: false),
-          findsNothing,
-        );
-        expect(
-          find.byType(VideosSection, skipOffstage: false),
-          findsNothing,
-        );
+      // No query has been entered yet, so the page renders the shared
+      // idle placeholder instead of the individual result sections.
+      expect(find.byType(SearchSectionInitialState), findsOneWidget);
+      expect(find.byType(PeopleSection, skipOffstage: false), findsNothing);
+      expect(find.byType(TagsSection, skipOffstage: false), findsNothing);
+      expect(find.byType(ListsSection, skipOffstage: false), findsNothing);
+      expect(find.byType(VideosSection, skipOffstage: false), findsNothing);
 
-        // Filter pill defaults to "All".
-        expect(
-          find.descendant(
-            of: find.byType(SearchFilterPill),
-            matching: find.text('All'),
-          ),
-          findsOneWidget,
-        );
-      },
-    );
+      // Filter pill defaults to "All".
+      expect(
+        find.descendant(
+          of: find.byType(SearchFilterPill),
+          matching: find.text('All'),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 }

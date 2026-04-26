@@ -3,7 +3,6 @@
 // ABOUTME: notifications.
 
 import 'package:equatable/equatable.dart';
-import 'package:intl/intl.dart';
 
 enum NotificationType { like, comment, follow, mention, repost, system }
 
@@ -110,24 +109,6 @@ class NotificationModel extends Equatable {
         return '🔄';
       case NotificationType.system:
         return '📱';
-    }
-  }
-
-  String get formattedTimestamp {
-    final now = DateTime.now();
-    final localTimestamp = timestamp.toLocal();
-    final difference = now.difference(localTimestamp);
-
-    if (difference.inSeconds < 60) {
-      return 'just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return DateFormat.yMd().format(localTimestamp);
     }
   }
 

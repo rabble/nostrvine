@@ -116,10 +116,7 @@ class ListSearchBloc extends Bloc<ListSearchEvent, ListSearchState> {
     }
   }
 
-  void _onCleared(
-    ListSearchCleared event,
-    Emitter<ListSearchState> emit,
-  ) {
+  void _onCleared(ListSearchCleared event, Emitter<ListSearchState> emit) {
     emit(const ListSearchState());
   }
 }

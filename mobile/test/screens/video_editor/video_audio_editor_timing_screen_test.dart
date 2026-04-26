@@ -148,16 +148,13 @@ void main() {
       ProVideoEditor.instance = mockEditor;
     });
 
-    Widget buildWidget({AudioEvent? sound}) {
+    Widget buildWidget({AudioEvent? sound, Locale? locale}) {
       final testSound =
-          sound ??
-          _createTestAudioEvent(
-            title: 'Test Audio',
-            duration: 10.0,
-          );
+          sound ?? _createTestAudioEvent(title: 'Test Audio', duration: 10.0);
 
       return ProviderScope(
         child: MaterialApp(
+          locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: VideoAudioEditorTimingScreen(sound: testSound),
@@ -169,10 +166,7 @@ void main() {
       await tester.pumpWidget(buildWidget());
       await tester.pump();
 
-      expect(
-        find.byType(VideoAudioEditorTimingScreen),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoAudioEditorTimingScreen), findsOneWidget);
     });
 
     testWidgets('renders instruction text', (tester) async {
@@ -180,8 +174,34 @@ void main() {
       await tester.pump();
 
       expect(
-        find.text('Select the audio segment for your video'),
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).videoEditorAudioSegmentInstruction,
+        ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('renders localized instruction text', (tester) async {
+      await tester.pumpWidget(buildWidget(locale: const Locale('de')));
+      await tester.pump();
+
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('de'),
+          ).videoEditorAudioSegmentInstruction,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).videoEditorAudioSegmentInstruction,
+        ),
+        findsNothing,
       );
     });
 
@@ -205,10 +225,7 @@ void main() {
       await tester.pumpWidget(buildWidget(sound: bundledSound));
       await tester.pump();
 
-      expect(
-        find.byType(VideoAudioEditorTimingScreen),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoAudioEditorTimingScreen), findsOneWidget);
     });
 
     testWidgets('renders with short audio (< maxDuration)', (tester) async {
@@ -220,10 +237,7 @@ void main() {
       await tester.pumpWidget(buildWidget(sound: shortSound));
       await tester.pump();
 
-      expect(
-        find.byType(VideoAudioEditorTimingScreen),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoAudioEditorTimingScreen), findsOneWidget);
     });
 
     testWidgets('renders with long audio (> maxDuration)', (tester) async {
@@ -235,10 +249,7 @@ void main() {
       await tester.pumpWidget(buildWidget(sound: longSound));
       await tester.pump();
 
-      expect(
-        find.byType(VideoAudioEditorTimingScreen),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoAudioEditorTimingScreen), findsOneWidget);
     });
 
     testWidgets('has route name and path constants', (tester) async {
@@ -246,10 +257,7 @@ void main() {
         VideoAudioEditorTimingScreen.routeName,
         equals('video-audio-timing'),
       );
-      expect(
-        VideoAudioEditorTimingScreen.path,
-        equals('/video-audio-timing'),
-      );
+      expect(VideoAudioEditorTimingScreen.path, equals('/video-audio-timing'));
     });
   });
 }

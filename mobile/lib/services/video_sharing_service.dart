@@ -30,11 +30,7 @@ class ShareableUser {
 /// Structured share metadata for the platform share sheet.
 ///
 /// Contains all the information needed to build a rich [ShareParams].
-typedef ShareData = ({
-  String shareUrl,
-  String? title,
-  String? thumbnailUrl,
-});
+typedef ShareData = ({String shareUrl, String? title, String? thumbnailUrl});
 
 /// Result of sharing operation
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
@@ -165,9 +161,7 @@ class VideoSharingService {
       );
     }
 
-    return ShareResult.failure(
-      result.error ?? 'Failed to send NIP-17 message',
-    );
+    return ShareResult.failure(result.error ?? 'Failed to send NIP-17 message');
   }
 
   Future<ShareResult> _shareViaNip04({

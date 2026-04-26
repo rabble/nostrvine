@@ -895,6 +895,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Solicitação de exclusão enviada com sucesso';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Falha ao excluir conteúdo: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Clássicos';
 
   @override
@@ -1263,6 +1268,21 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Ativar avanço automático';
 
   @override
@@ -1285,6 +1305,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => 'Mostrar legendas';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -3018,6 +3044,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Remover este conteúdo permanentemente';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Isso vai enviar uma solicitação de exclusão (NIP-09) para todos os relays. Alguns relays podem manter o conteúdo mesmo assim.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'O vídeo está nestas listas:';
 
   @override
@@ -3040,6 +3070,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Excluindo conteúdo...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Falha ao excluir conteúdo: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent =>
@@ -3124,6 +3159,11 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Falha ao atualizar vídeo: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Falha ao excluir vídeo: $error';
   }
 
   @override
@@ -3646,6 +3686,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get navProfile => 'Perfil';
+
+  @override
+  String get navSearch => 'Pesquisar';
+
+  @override
+  String get navSearchTooltip => 'Pesquisar';
 
   @override
   String get navMyProfile => 'Meu perfil';
@@ -4790,6 +4836,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Descubra algo interessante';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Listas';
 
   @override
@@ -5126,7 +5190,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'Clipes';
+  String get videoEditorCameraLabel => 'Câmera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Abrir câmera';
+
+  @override
+  String get videoEditorLibraryLabel => 'Biblioteca';
 
   @override
   String get videoEditorTextLabel => 'Texto';
@@ -5135,7 +5205,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorDrawLabel => 'Desenhar';
 
   @override
-  String get videoEditorEffectsLabel => 'Efeitos';
+  String get videoEditorFilterLabel => 'Filtro';
 
   @override
   String get videoEditorAudioLabel => 'Áudio';
@@ -5147,7 +5217,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorAddTitle => 'Adicionar';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'Abrir editor de clipes';
+  String get videoEditorOpenLibrarySemanticLabel => 'Abrir biblioteca';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Abrir editor de áudio';
@@ -5159,7 +5229,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Abrir editor de desenho';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'Abrir editor de efeitos';
+  String get videoEditorOpenFilterSemanticLabel => 'Abrir editor de filtros';
 
   @override
   String get videoEditorSaveDraftTitle => 'Salvar seu rascunho?';
@@ -5310,20 +5380,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Finalizar edição da linha do tempo';
 
   @override
-  String get videoEditorSortNewest => 'Mais recentes';
-
-  @override
-  String get videoEditorSortLongest => 'Mais longos';
-
-  @override
-  String get videoEditorSortShortest => 'Mais curtos';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Ordenar por $option. Toque para alterar a ordem';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'Reproduzir prévia';
 
   @override
@@ -5331,9 +5387,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Som sem título';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Selecionar som';
 
   @override
   String get videoEditorAudioUntitled => 'Sem título';
@@ -5349,14 +5402,17 @@ class AppLocalizationsPt extends AppLocalizations {
       'Os sons aparecerão aqui quando criadores compartilharem áudio';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'Nenhum som encontrado';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Tente outro termo de busca';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'Falha ao carregar sons';
+
+  @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Selecione o trecho de áudio para seu vídeo';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Comunidade';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Ferramenta seta';
@@ -5431,6 +5487,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get videoEditorTimelineClipReorderHint =>
       'Pressione e segure para reordenar';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Toque para editar. Pressione e arraste para reordenar.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Mover para a esquerda';

@@ -22,18 +22,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
        _conversationId = conversationId,
        _currentUserPubkey = currentUserPubkey,
        super(const ConversationState()) {
-    on<ConversationStarted>(
-      _onStarted,
-      transformer: restartable(),
-    );
-    on<ConversationMessageSent>(
-      _onMessageSent,
-      transformer: sequential(),
-    );
-    on<ConversationMessageDeleted>(
-      _onMessageDeleted,
-      transformer: droppable(),
-    );
+    on<ConversationStarted>(_onStarted, transformer: restartable());
+    on<ConversationMessageSent>(_onMessageSent, transformer: sequential());
+    on<ConversationMessageDeleted>(_onMessageDeleted, transformer: droppable());
   }
 
   final DmRepository _dmRepository;
@@ -63,9 +54,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       },
       onError: (error, stackTrace) {
         addError(error, stackTrace);
-        return state.copyWith(
-          status: ConversationStatus.error,
-        );
+        return state.copyWith(status: ConversationStatus.error);
       },
     );
   }

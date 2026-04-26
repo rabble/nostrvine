@@ -21,10 +21,7 @@ class _MockNotificationFeedBloc
     implements NotificationFeedBloc {}
 
 /// Pumps [NotificationsView] inside the required providers.
-Future<void> _pumpView(
-  WidgetTester tester,
-  NotificationFeedBloc bloc,
-) async {
+Future<void> _pumpView(WidgetTester tester, NotificationFeedBloc bloc) async {
   await tester.pumpWidget(
     ProviderScope(
       child: MaterialApp(
@@ -91,9 +88,7 @@ void main() {
         await tester.tap(find.text('Retry'));
         await tester.pump();
 
-        verify(
-          () => mockBloc.add(NotificationFeedRefreshed()),
-        ).called(1);
+        verify(() => mockBloc.add(NotificationFeedRefreshed())).called(1);
       });
     });
 
@@ -114,19 +109,13 @@ void main() {
         SingleNotification(
           id: 'n1',
           type: NotificationKind.like,
-          actor: ActorInfo(
-            pubkey: 'abc123',
-            displayName: 'Alice',
-          ),
+          actor: ActorInfo(pubkey: 'abc123', displayName: 'Alice'),
           timestamp: DateTime(2026),
         ),
         SingleNotification(
           id: 'n2',
           type: NotificationKind.follow,
-          actor: ActorInfo(
-            pubkey: 'def456',
-            displayName: 'Bob',
-          ),
+          actor: ActorInfo(pubkey: 'def456', displayName: 'Bob'),
           timestamp: DateTime(2026),
         ),
       ];
@@ -175,9 +164,7 @@ void main() {
         // addPostFrameCallback fires after first frame.
         await tester.pump();
 
-        verify(
-          () => mockBloc.add(NotificationFeedMarkAllRead()),
-        ).called(1);
+        verify(() => mockBloc.add(NotificationFeedMarkAllRead())).called(1);
       });
 
       testWidgets('dispatches item tapped on notification tap', (tester) async {
@@ -193,9 +180,7 @@ void main() {
         await tester.tap(find.byType(NotificationListItem).first);
         await tester.pump();
 
-        verify(
-          () => mockBloc.add(NotificationFeedItemTapped('n1')),
-        ).called(1);
+        verify(() => mockBloc.add(NotificationFeedItemTapped('n1'))).called(1);
       });
     });
 

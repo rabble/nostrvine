@@ -297,10 +297,8 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       backgroundColor: VineTheme.backgroundColor,
       body: SafeArea(
         child: switch (_sessionState) {
-          NostrConnectState.idle ||
-          NostrConnectState.generating => _LoadingContent(
-            message: context.l10n.authGeneratingConnection,
-          ),
+          NostrConnectState.idle || NostrConnectState.generating =>
+            _LoadingContent(message: context.l10n.authGeneratingConnection),
           NostrConnectState.listening => _QrContent(
             connectUrl: _connectUrl ?? '',
             elapsedSeconds: _elapsedTimer.elapsed.inSeconds,

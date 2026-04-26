@@ -278,6 +278,15 @@ class VineTheme {
   /// Background color for surfaces like bottom sheets.
   static const Color surfaceBackground = Color(0xFF00150D);
 
+  /// Border radius for shell-level bottom corners (outer edge of the
+  /// rounded region painted over the nav).
+  static const double shellCornerRadius = 30;
+
+  /// Border radius for the top of a tab container nested inside a shell
+  /// — 2 px larger than [shellCornerRadius] so the inner surface
+  /// visibly sits within the nav-rounded outer shell.
+  static const double shellInnerCornerRadius = 32;
+
   /// Border radius for bottom sheets.
   static const double bottomSheetBorderRadius = 32;
 
@@ -468,6 +477,28 @@ class VineTheme {
 
   /// Pressed-state inner shadow for buttons (24% black).
   static const Color innerShadowPressed = Color(0x3D000000);
+
+  /// Figma `effects/shadow-10` drop-shadow pair, for use in
+  /// [TextStyle.shadows] on text overlaid on video content or other
+  /// bright surfaces (caption block, action-button labels, feed-mode
+  /// label, etc.). Paired with [buttonBoxShadows] for the BoxShadow
+  /// equivalent on Container/DecoratedBox surfaces.
+  static const List<Shadow> buttonShadows = [
+    Shadow(color: innerShadow, offset: Offset(0.4, 0.4), blurRadius: 0.6),
+    Shadow(color: innerShadow, offset: Offset(1, 1), blurRadius: 1),
+  ];
+
+  /// Figma `effects/shadow-10` drop-shadow pair, for use in
+  /// [BoxDecoration.boxShadow]. Same offsets/blur as [buttonShadows]
+  /// but as [BoxShadow] instead of [Shadow].
+  static const List<BoxShadow> buttonBoxShadows = [
+    BoxShadow(
+      color: innerShadow,
+      offset: Offset(0.4, 0.4),
+      blurRadius: 0.6,
+    ),
+    BoxShadow(color: innerShadow, offset: Offset(1, 1), blurRadius: 1),
+  ];
 
   // --------------------------------------------------------------------------
   // Additional scrims

@@ -74,24 +74,7 @@ void main() {
         expect(find.bySemanticsLabel('Follow'), findsOneWidget);
       });
 
-      testWidgets('shows following icon when following', (tester) async {
-        final otherPubkey = validPubkey('other');
-        when(() => mockMyFollowingBloc.state).thenReturn(
-          MyFollowingState(
-            status: MyFollowingStatus.success,
-            followingPubkeys: [otherPubkey],
-          ),
-        );
-
-        await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
-        await tester.pump();
-
-        // Button uses SVG icons now - find by SvgPicture widget
-        expect(find.byType(SvgPicture), findsOneWidget);
-        expect(find.byType(GestureDetector), findsOneWidget);
-      });
-
-      testWidgets('has Following semantic label when following', (
+      testWidgets('hides entirely when already following the author', (
         tester,
       ) async {
         final otherPubkey = validPubkey('other');
@@ -105,7 +88,11 @@ void main() {
         await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
         await tester.pump();
 
-        expect(find.bySemanticsLabel('Following'), findsOneWidget);
+        // No button at all when following — the affordance disappears.
+        expect(find.byType(SvgPicture), findsNothing);
+        expect(find.byType(GestureDetector), findsNothing);
+        expect(find.bySemanticsLabel('Follow'), findsNothing);
+        expect(find.bySemanticsLabel('Following'), findsNothing);
       });
     });
 
@@ -133,31 +120,6 @@ void main() {
             (captured.first as MyFollowingToggleRequested).pubkey,
             otherPubkey,
           );
-        },
-      );
-
-      testWidgets(
-        'dispatches MyFollowingToggleRequested on tap when following',
-        (tester) async {
-          final otherPubkey = validPubkey('other');
-          when(() => mockMyFollowingBloc.state).thenReturn(
-            MyFollowingState(
-              status: MyFollowingStatus.success,
-              followingPubkeys: [otherPubkey],
-            ),
-          );
-
-          await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
-          await tester.pump();
-
-          await tester.tap(find.byType(GestureDetector));
-          await tester.pump();
-
-          final captured = verify(
-            () => mockMyFollowingBloc.add(captureAny()),
-          ).captured;
-          expect(captured.length, 1);
-          expect(captured.first, isA<MyFollowingToggleRequested>());
         },
       );
     });

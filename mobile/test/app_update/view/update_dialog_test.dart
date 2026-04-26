@@ -31,34 +31,31 @@ void main() {
       );
     }
 
-    testWidgets(
-      'shows dialog when urgency transitions to moderate',
-      (tester) async {
-        whenListen(
-          bloc,
-          Stream.value(
-            const AppUpdateState(
-              status: AppUpdateStatus.resolved,
-              urgency: UpdateUrgency.moderate,
-              latestVersion: '1.0.8',
-              downloadUrl: DownloadUrls.github,
-              releaseHighlights: ['New feature'],
-            ),
-          ),
-          initialState: const AppUpdateState(
+    testWidgets('shows dialog when urgency transitions to moderate', (
+      tester,
+    ) async {
+      whenListen(
+        bloc,
+        Stream.value(
+          const AppUpdateState(
             status: AppUpdateStatus.resolved,
+            urgency: UpdateUrgency.moderate,
+            latestVersion: '1.0.8',
+            downloadUrl: DownloadUrls.github,
+            releaseHighlights: ['New feature'],
           ),
-        );
+        ),
+        initialState: const AppUpdateState(status: AppUpdateStatus.resolved),
+      );
 
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-        expect(find.text(UpdateCopy.moderateTitle), findsOneWidget);
-        expect(find.text('New feature'), findsOneWidget);
-        expect(find.text(UpdateCopy.update), findsOneWidget);
-        expect(find.text(UpdateCopy.notNow), findsOneWidget);
-      },
-    );
+      expect(find.text(UpdateCopy.moderateTitle), findsOneWidget);
+      expect(find.text('New feature'), findsOneWidget);
+      expect(find.text(UpdateCopy.update), findsOneWidget);
+      expect(find.text(UpdateCopy.notNow), findsOneWidget);
+    });
 
     testWidgets('shows urgent copy when urgency is urgent', (tester) async {
       whenListen(
@@ -72,9 +69,7 @@ void main() {
             releaseHighlights: ['Security fix'],
           ),
         ),
-        initialState: const AppUpdateState(
-          status: AppUpdateStatus.resolved,
-        ),
+        initialState: const AppUpdateState(status: AppUpdateStatus.resolved),
       );
 
       await tester.pumpWidget(buildSubject());
@@ -94,9 +89,7 @@ void main() {
             downloadUrl: DownloadUrls.github,
           ),
         ),
-        initialState: const AppUpdateState(
-          status: AppUpdateStatus.resolved,
-        ),
+        initialState: const AppUpdateState(status: AppUpdateStatus.resolved),
       );
 
       await tester.pumpWidget(buildSubject());

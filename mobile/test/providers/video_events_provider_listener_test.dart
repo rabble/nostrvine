@@ -101,9 +101,7 @@ ProviderContainer _createContainer({
 void _setupMockDefaults(_MockVideoEventService mock) {
   when(() => mock.discoveryVideos).thenReturn([]);
   when(() => mock.isSubscribed(any())).thenReturn(false);
-  when(
-    () => mock.filterVideoList(any()),
-  ).thenAnswer(
+  when(() => mock.filterVideoList(any())).thenAnswer(
     (invocation) => invocation.positionalArguments.first as List<VideoEvent>,
   );
 

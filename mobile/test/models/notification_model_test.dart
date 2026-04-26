@@ -157,19 +157,6 @@ void main() {
       });
     });
 
-    group('formattedTimestamp', () {
-      test('returns just now for recent timestamps', () {
-        final notification = NotificationModel(
-          id: 'test-id',
-          type: NotificationType.like,
-          actorPubkey: actorPubkey,
-          message: 'test',
-          timestamp: DateTime.now().subtract(const Duration(seconds: 30)),
-        );
-        expect(notification.formattedTimestamp, equals('just now'));
-      });
-    });
-
     group('copyWith', () {
       test('copies with updated fields', () {
         final original = createNotification(

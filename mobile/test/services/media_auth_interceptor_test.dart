@@ -94,9 +94,7 @@ void main() {
             url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
-        ).thenAnswer(
-          (_) async => {'Authorization': 'Nostr abc123token'},
-        );
+        ).thenAnswer((_) async => {'Authorization': 'Nostr abc123token'});
 
         // Act
         final result = await interceptor.handleUnauthorizedMedia(
@@ -132,9 +130,7 @@ void main() {
             url: any(named: 'url'),
             serverUrl: any(named: 'serverUrl'),
           ),
-        ).thenAnswer(
-          (_) async => {'Authorization': 'Nostr abc123token'},
-        );
+        ).thenAnswer((_) async => {'Authorization': 'Nostr abc123token'});
 
         // Act
         final result = await interceptor.handleUnauthorizedMedia(
@@ -167,9 +163,7 @@ void main() {
           url: any(named: 'url'),
           serverUrl: any(named: 'serverUrl'),
         ),
-      ).thenAnswer(
-        (_) async => {'Authorization': 'Nostr tokenWithServer'},
-      );
+      ).thenAnswer((_) async => {'Authorization': 'Nostr tokenWithServer'});
 
       // Act
       final result = await interceptor.handleUnauthorizedMedia(
@@ -211,9 +205,8 @@ void main() {
 
       // Assert - Should still work (currently only handles nudity/adult content)
       verify(
-        () => mockMediaViewerAuthService.createAuthHeaders(
-          sha256Hash: 'abc123',
-        ),
+        () =>
+            mockMediaViewerAuthService.createAuthHeaders(sha256Hash: 'abc123'),
       ).called(1);
     });
 

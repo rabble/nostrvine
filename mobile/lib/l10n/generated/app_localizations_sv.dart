@@ -869,6 +869,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoGridDeleteSuccess => 'Borttagningsbegäran skickad';
 
   @override
+  String videoGridDeleteFailure(Object error) {
+    return 'Kunde inte ta bort innehåll: $error';
+  }
+
+  @override
   String get exploreTabClassics => 'Klassiker';
 
   @override
@@ -1240,6 +1245,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
+  String get videoActionLikeLabel => 'Like';
+
+  @override
+  String get videoActionReplyLabel => 'Reply';
+
+  @override
+  String get videoActionRepostLabel => 'Repost';
+
+  @override
+  String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionAboutLabel => 'About';
+
+  @override
   String get videoActionEnableAutoAdvance => 'Aktivera automatisk fortsättning';
 
   @override
@@ -1263,6 +1283,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => 'Visa undertexter';
+
+  @override
+  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+
+  @override
+  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -2991,6 +3017,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ta bort det här innehållet permanent';
 
   @override
+  String get shareMenuDeleteWarning =>
+      'Detta skickar en borttagningsbegäran (NIP-09) till alla reler. Vissa reler kan fortfarande behålla innehållet.';
+
+  @override
   String get shareMenuVideoInTheseLists => 'Videon finns i de här listorna:';
 
   @override
@@ -3013,6 +3043,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get shareMenuDeletingContent => 'Tar bort innehåll...';
+
+  @override
+  String shareMenuFailedToDeleteContent(String error) {
+    return 'Kunde inte ta bort innehåll: $error';
+  }
 
   @override
   String get shareMenuDeleteRequestSent => 'Borttagningsbegäran skickad';
@@ -3095,6 +3130,11 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Kunde inte uppdatera videon: $error';
+  }
+
+  @override
+  String shareMenuFailedToDeleteVideo(String error) {
+    return 'Kunde inte ta bort videon: $error';
   }
 
   @override
@@ -3617,6 +3657,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get navProfile => 'Profil';
+
+  @override
+  String get navSearch => 'Sök';
+
+  @override
+  String get navSearchTooltip => 'Sök';
 
   @override
   String get navMyProfile => 'Min profil';
@@ -4750,6 +4796,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get searchDiscoverSomethingInteresting => 'Upptäck något intressant';
 
   @override
+  String get searchPeopleSectionHeader => 'People';
+
+  @override
+  String get searchPeopleLoadingLabel => 'Loading people results';
+
+  @override
+  String get searchTagsSectionHeader => 'Tags';
+
+  @override
+  String get searchTagsLoadingLabel => 'Loading tag results';
+
+  @override
+  String get searchVideosSectionHeader => 'Videos';
+
+  @override
+  String get searchVideosLoadingLabel => 'Loading video results';
+
+  @override
   String get searchListsSectionHeader => 'Listor';
 
   @override
@@ -5085,7 +5149,13 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get videoEditorClipsLabel => 'Klipp';
+  String get videoEditorCameraLabel => 'Kamera';
+
+  @override
+  String get videoEditorOpenCameraSemanticLabel => 'Öppna kamera';
+
+  @override
+  String get videoEditorLibraryLabel => 'Bibliotek';
 
   @override
   String get videoEditorTextLabel => 'Text';
@@ -5094,7 +5164,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorDrawLabel => 'Rita';
 
   @override
-  String get videoEditorEffectsLabel => 'Effekter';
+  String get videoEditorFilterLabel => 'Filter';
 
   @override
   String get videoEditorAudioLabel => 'Ljud';
@@ -5106,7 +5176,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorAddTitle => 'Lägg till';
 
   @override
-  String get videoEditorOpenClipsSemanticLabel => 'Öppna klippredigerare';
+  String get videoEditorOpenLibrarySemanticLabel => 'Öppna bibliotek';
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Öppna ljudredigerare';
@@ -5118,7 +5188,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorOpenDrawSemanticLabel => 'Öppna ritredigerare';
 
   @override
-  String get videoEditorOpenEffectsSemanticLabel => 'Öppna effektredigerare';
+  String get videoEditorOpenFilterSemanticLabel => 'Öppna filtereditor';
 
   @override
   String get videoEditorSaveDraftTitle => 'Spara ditt utkast?';
@@ -5267,20 +5337,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Avsluta redigering av tidslinje';
 
   @override
-  String get videoEditorSortNewest => 'Nyaste';
-
-  @override
-  String get videoEditorSortLongest => 'Längsta';
-
-  @override
-  String get videoEditorSortShortest => 'Kortaste';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Sortera efter $option. Tryck för att ändra sorteringsordning';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel =>
       'Spela förhandsvisning';
 
@@ -5290,9 +5346,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Namnlöst ljud';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Välj ljud';
 
   @override
   String get videoEditorAudioUntitled => 'Namnlös';
@@ -5308,14 +5361,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ljud visas här när skapare delar ljud';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'Inga ljud hittades';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle => 'Prova ett annat sökord';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle =>
       'Det gick inte att ladda ljud';
+
+  @override
+  String get videoEditorAudioSegmentInstruction =>
+      'Välj ljudsegmentet för din video';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Gemenskap';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pilverktyg';
@@ -5389,6 +5446,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorTimelineClipReorderHint => 'Håll ned för att ordna om';
+
+  @override
+  String get videoEditorClipGalleryInstruction =>
+      'Tryck för att redigera. Håll ned och dra för att ändra ordning.';
 
   @override
   String get videoEditorTimelineClipMoveLeft => 'Flytta vänster';

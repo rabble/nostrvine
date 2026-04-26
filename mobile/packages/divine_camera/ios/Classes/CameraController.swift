@@ -793,6 +793,27 @@ class CameraController: NSObject {
             print("DivineCamera: Returning state with textureId: \(self.textureId)")
             completion(state, nil)
         }
+        
+        // Pre-build the dedicated audio capture session 1s after the first
+        // frame. attachAudioToSessionIfNeeded() takes ~1.4s on older A9/A10
+        // iPads (AVAudioSession.setCategory + AudioToolbox dlopen + the
+        // synchronous startRunning() call); doing it lazily on the first
+        // record tap is what was causing the recording-start lag.
+        //
+        // Why DEFERRED 1s after first frame and not in setupCamera() or
+        // immediately on first frame: AudioToolbox dlopen + lazy symbol
+        // binds on a background queue while Main is wiring up the camera
+        // page reproduces the freeze fixed in PR #3219. By 1s after the
+        // first frame, Main has finished page setup, the page-transition
+        // animation is done, and the dyld notifications can no longer
+        // block visible UI.
+        //
+        // Side effect: iOS shows the orange microphone indicator dot in
+        // the status bar shortly after the camera page opens (TikTok,
+        // Instagram, and Snapchat all behave the same way).
+        sessionQueue.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            _ = self?.attachAudioToSessionIfNeeded()
+        }
     }
     
     /// Updates camera properties from the device.
@@ -1343,8 +1364,11 @@ class CameraController: NSObject {
         self.maxDurationMs = maxDurationMs
         
         // Build and start the dedicated audio capture session on first record.
-        // The AV frameworks were already dlopen'd at plugin registration via
-        // DivineCameraPlugin.preWarmFrameworks(), so this is fast.
+        // The audio session was pre-built in the background ~1s after the
+        // first preview frame (see completeInitializationIfNeeded), so this
+        // is normally a no-op. If the user taps record before the pre-build
+        // completes, the work happens here on sessionQueue and the call
+        // blocks for ~1.4s on older A9/A10 iPads — accepted as edge case.
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             _ = self.attachAudioToSessionIfNeeded()

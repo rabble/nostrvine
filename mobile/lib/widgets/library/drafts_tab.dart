@@ -99,9 +99,7 @@ class DraftsTab extends ConsumerWidget {
             final filtered = showAutosavedDraft
                 ? drafts
                 : drafts
-                      .where(
-                        (d) => d.id != VideoEditorConstants.autoSaveId,
-                      )
+                      .where((d) => d.id != VideoEditorConstants.autoSaveId)
                       .toList();
             if (filtered.isEmpty) {
               return EmptyLibraryState(
@@ -135,10 +133,7 @@ class DraftsTab extends ConsumerWidget {
   ) async {
     await VineBottomSheetActionMenu.show(
       context: context,
-      title: DraftListTile(
-        draft: draft,
-        enableShrink: true,
-      ),
+      title: DraftListTile(draft: draft, enableShrink: true),
       options: [
         VineBottomSheetActionData(
           iconPath: DivineIconName.paperPlaneTilt.assetPath,
@@ -174,9 +169,7 @@ class DraftsTab extends ConsumerWidget {
 
     // Reload drafts to reflect deletion (handled by publishVideo)
     if (context.mounted) {
-      context.read<DraftsLibraryBloc>().add(
-        const DraftsLibraryLoadRequested(),
-      );
+      context.read<DraftsLibraryBloc>().add(const DraftsLibraryLoadRequested());
     }
   }
 
@@ -236,9 +229,7 @@ class DraftsTab extends ConsumerWidget {
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               context.l10n.commonCancel,
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.secondaryText,
-              ),
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             ),
           ),
           ElevatedButton(
@@ -271,6 +262,16 @@ class DraftsTab extends ConsumerWidget {
       }
     }
   }
+}
+
+String _formatDraftSubtitle(BuildContext context, DateTime lastModified) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final date = DateFormat.yMMMEd(locale).format(lastModified);
+  final time = MaterialLocalizations.of(context).formatTimeOfDay(
+    TimeOfDay.fromDateTime(lastModified),
+    alwaysUse24HourFormat: MediaQuery.of(context).alwaysUse24HourFormat,
+  );
+  return '$date $time';
 }
 
 /// List tile widget displaying a single draft.
@@ -342,7 +343,7 @@ class DraftListTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        DateFormat.yMMMEd().add_jm().format(draft.lastModified),
+        _formatDraftSubtitle(context, draft.lastModified),
         style: VineTheme.bodySmallFont(),
       ),
       trailing: onOpenMore == null
