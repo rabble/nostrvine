@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyChiPGndRdZwsMoLqnel2WSocROmoKLdB4</string>
+	<key>GCM_SENDER_ID</key>
+	<string>972941478875</string>
+	<key>BUNDLE_ID</key>
+	<string>co.openvine.app</string>
+	<key>PROJECT_ID</key>
+	<string>openvine-co</string>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:972941478875:ios:f61272b3cf485df244b5fe</string>
+</dict>
+</plist>
