@@ -18,6 +18,15 @@ Slots:
 
 Avoid dynamic per-PR bundle IDs. The one-time setup for 15 identities is manageable; unbounded per-PR identities would create ongoing Apple, Firebase, provisioning, entitlement, and cleanup work.
 
+## Current External Constraints Checked
+
+- [Codemagic Builds API](https://docs.codemagic.io/rest-api/builds/) starts YAML workflows with `POST /builds`, `appId`, `workflowId`, `branch`, and optional `environment.variables`.
+- [Codemagic iOS signing](https://docs.codemagic.io/yaml-code-signing/signing-ios/) recommends `distribution_type: ad_hoc` when signed iOS artifacts are distributed through a third-party service such as Firebase App Distribution.
+- [Firebase App Distribution CLI](https://firebase.google.com/docs/app-distribution/ios/distribute-cli) supports iOS IPA upload, group distribution, and returns release links including `testing_uri`; direct binary links expire quickly and should not be used as the stable QA link.
+- [Codemagic Firebase distribution](https://docs.codemagic.io/yaml-distributing/firebase-app-distribution/) marks Firebase token auth deprecated; service-account auth with `GOOGLE_APPLICATION_CREDENTIALS` is the preferred CI path.
+- [Codemagic post-publish scripts](https://docs.codemagic.io/yaml-distributing/post-publish/) run even after build failure unless the build is canceled or times out, so GitHub status notification belongs there.
+- [GitHub Security Lab pwn request guidance](https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/) still treats `pull_request_target` plus checkout/execution of PR-controlled code as the dangerous pattern. The allocator may inspect PR metadata and push a trusted mirror ref, but it must not execute PR code.
+
 ## Trust Model
 
 Native iOS PR builds require signing and Firebase distribution credentials, so they cannot follow the exact web-preview security model.
@@ -38,6 +47,8 @@ Private org membership may not be visible to the default `GITHUB_TOKEN`, so the 
 
 Codemagic API builds are started by branch or tag. To support trusted member PRs from personal forks, GitHub Actions should mirror every trusted PR head SHA to a temporary branch in `divinevideo/divine-mobile`, for example `ios-qa/pr-3407`, then ask Codemagic to build that mirror branch. This gives Codemagic a branch it can fetch from the configured repository while preserving the exact PR SHA in build metadata.
 
+The allocator workflow uses `pull_request_target` for secrets and write permissions, but it must check out only the base repository workflow/scripts. It may fetch and push a trusted PR head as a passive git object after the trust check; it must not run Flutter, npm, shell scripts, hooks, or any executable content from the PR inside GitHub Actions. Treat PR titles, branch names, and labels as untrusted strings: pass them through environment variables or JSON files, never by direct shell interpolation.
+
 ## Slot Lifecycle
 
 GitHub labels are the source of truth:
@@ -49,14 +60,17 @@ GitHub labels are the source of truth:
 - `ios-qa:failed`
 - `needs-ios-qa`
 
+Slot labels are the source of truth for assignment. Build result metadata is stored in the sticky PR comment as a hidden JSON state marker so reconciliation and the active directory can recover the latest built SHA, Codemagic build ID/URL, Firebase `testing_uri`, stale status, and failure reason without committing generated state.
+
 Slot assignment:
 
 1. A ready-for-review PR becomes eligible automatically.
 2. A draft PR becomes eligible only when labeled `needs-ios-qa`.
 3. If the PR already has a slot label, keep that slot and rebuild it on new commits.
-4. If it has no slot label, find the first slot not currently used by an open PR.
-5. If a slot is available, add `ios-qa-slot-NN` and `ios-qa:building`.
-6. If no slot is available, add `ios-qa:queued` and comment with the active build directory.
+4. Only slots marked enabled in `.github/ios_qa_slots.json` are assignable. Stage 1 should enable only `qa01`.
+5. If it has no slot label, find the first enabled slot not currently used by an open PR.
+6. If a slot is available, add `ios-qa-slot-NN` and `ios-qa:building`.
+7. If no slot is available, add `ios-qa:queued` and comment with the active build directory.
 
 Cleanup:
 
@@ -82,11 +96,11 @@ Codemagic builds should still be per-PR cancellable or replaceable. A newer comm
 
 ## Build Flow
 
-1. GitHub Actions receives a `pull_request` event, `workflow_dispatch`, or label event.
-2. The allocator checks trust, PR state, draft state, file relevance, and current labels.
+1. GitHub Actions receives a `pull_request_target` event, `workflow_dispatch`, schedule event, or label event.
+2. The allocator checks trust, PR state, draft state, file relevance, enabled slots, and current labels. File relevance is checked in script, not with workflow `paths`, so cleanup and manual reconciliation still run.
 3. The allocator assigns or reuses a slot.
 4. The allocator mirrors the trusted PR head SHA to `ios-qa/pr-<number>` in the base repository.
-5. The allocator triggers Codemagic through the Codemagic Builds API with branch `ios-qa/pr-<number>` and explicit metadata:
+5. The allocator triggers Codemagic through `POST /builds` with branch `ios-qa/pr-<number>`, `workflowId=ios-qa-pr-build`, explicit labels, and explicit metadata:
    - `PR_NUMBER`
    - `PR_HEAD_SHA`
    - `PR_HEAD_REPO`
@@ -98,10 +112,11 @@ Codemagic builds should still be per-PR cancellable or replaceable. A newer comm
    - `QA_DISPLAY_NAME`
    - `QA_FIREBASE_APP_ID`
    - `DEFAULT_ENV`
-6. Codemagic checks out the mirror branch, verifies `git rev-parse HEAD` equals `PR_HEAD_SHA`, patches build settings for the slot, builds an Ad Hoc IPA, and runs another stale-SHA check before distribution.
-7. If the PR head SHA still matches `PR_HEAD_SHA`, Codemagic uploads the IPA to Firebase App Distribution.
-8. If the PR has moved on or closed, Codemagic skips Firebase distribution and reports a stale build.
-9. GitHub updates the sticky PR comment and the active QA directory.
+6. The allocator stores the returned Codemagic `buildId` in the sticky PR comment state marker and labels the PR `ios-qa:building`.
+7. Codemagic checks out the mirror branch, verifies `git rev-parse HEAD` equals `PR_HEAD_SHA`, patches build settings and Firebase metadata for the slot, applies Ad Hoc signing profiles, builds an IPA, and runs another stale-SHA check before distribution.
+8. If the PR head SHA still matches `PR_HEAD_SHA`, Codemagic uploads the IPA to Firebase App Distribution.
+9. If the PR has moved on or closed, Codemagic skips Firebase distribution and reports a stale build.
+10. Codemagic updates the sticky PR comment state marker. GitHub reconciliation uses that marker plus labels and PR metadata to regenerate the active QA directory.
 
 ## iOS Identity Requirements
 
@@ -121,6 +136,8 @@ The current app has production identifiers hard-coded in places that must become
 - Xcode notification extension bundle ID.
 - Main app entitlements.
 - Notification extension entitlements.
+- `mobile/ios/Runner/GoogleService-Info.plist`.
+- `mobile/ios/firebase_app_id_file.json`.
 - Firebase iOS app ID and bundle ID.
 - Push registration app identifier.
 
@@ -130,9 +147,11 @@ Each slot should have a Firebase iOS app record so Firebase App Distribution, Cr
 
 Distribution should publish to a stable QA tester group, for example `ios-qa`.
 
-The PR comment should link to Firebase's tester install URI rather than a short-lived raw binary URL.
+The PR comment should link to Firebase's `testing_uri` rather than a short-lived raw binary URL.
 
 If a QA device is not in the Ad Hoc provisioning profile, Firebase can help collect UDIDs, but the Apple profile still must be regenerated with that device before the build can install.
+
+Firebase releases are available in App Distribution for 150 days. That is enough for active PR review, but the active directory should show last-updated time and not imply that historical PR links are permanent.
 
 ## QA Directory
 
@@ -151,7 +170,7 @@ Directory fields:
 - Codemagic build URL
 - Notes for skipped, queued, stale, or failed builds
 
-The directory should be generated from labels and PR metadata, not manually edited.
+The directory should be generated from labels, PR metadata, and sticky comment state markers, not manually edited.
 
 ## Error Handling
 
@@ -196,7 +215,8 @@ Stage 1 proves one slot end to end:
 - Configure `qa01` Apple/Firebase identity.
 - Add the build-time configuration path.
 - Add the allocator in dry-run or one-slot mode.
-- Build and distribute one trusted PR through Firebase.
+- Merge the bootstrap workflow PR so `pull_request_target`/`workflow_dispatch` exists on `main`.
+- Build and distribute one trusted throwaway PR through Firebase.
 
 Stage 2 expands to 15 slots:
 
