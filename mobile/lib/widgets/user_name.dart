@@ -2,9 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
-import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
 
 class UserName extends ConsumerWidget {
   const UserName._({
@@ -78,13 +76,10 @@ class UserName extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     late String displayName;
-    late String effectivePubkey;
     if (userProfile case final userProfile?) {
       displayName = userProfile.betterDisplayName(anonymousName);
-      effectivePubkey = userProfile.pubkey;
     } else {
       final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
-      effectivePubkey = pubkey!;
 
       // Use embedded name from REST API as fallback, then generated name.
       final fallbackName =
@@ -98,15 +93,6 @@ class UserName extends ConsumerWidget {
         AsyncError() => fallbackName,
       };
     }
-
-    // Watch NIP-05 verification status using pattern matching
-    final verificationAsync = ref.watch(
-      nip05VerificationProvider(effectivePubkey),
-    );
-    final showCheckmark = switch (verificationAsync) {
-      AsyncData(:final value) => value == Nip05VerificationStatus.verified,
-      _ => false,
-    };
 
     // Note: Strikethrough for failed NIP-05 verification is now shown on the
     // NIP-05 identifier itself (in _UniqueIdentifier), not on the display name.
@@ -138,20 +124,6 @@ class UserName extends ConsumerWidget {
                   overflow: overflow ?? TextOverflow.ellipsis,
                 ),
         ),
-
-        if (showCheckmark)
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: const BoxDecoration(
-              color: VineTheme.info,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check,
-              color: VineTheme.whiteText,
-              size: 10,
-            ),
-          ),
       ],
     );
   }
