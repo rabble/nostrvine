@@ -171,6 +171,26 @@ class FullscreenFeedBloc
           category: LogCategory.video,
         );
 
+        // Divergence probe: the source-stream contract forbids pushing
+        // an id we have already swept via [removedVideoIds]. If this
+        // happens we have a regression in the upstream filter (or in
+        // a future caller bypassing the bus entirely). Log loudly so
+        // the local-observability log line surfaces in QA / CI.
+        if (state.removedVideoIds.isNotEmpty) {
+          final stale = videos
+              .where((v) => state.removedVideoIds.contains(v.id))
+              .map((v) => v.id)
+              .toList(growable: false);
+          if (stale.isNotEmpty) {
+            Log.warning(
+              'FullscreenFeedBloc: source pushed ${stale.length} '
+              'already-removed id(s) — upstream filter regression: $stale',
+              name: 'FullscreenFeedBloc',
+              category: LogCategory.video,
+            );
+          }
+        }
+
         // Clamp current index to valid range
         final clampedIndex = videos.isEmpty
             ? 0

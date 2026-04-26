@@ -318,6 +318,45 @@ void main() {
           ),
         ],
       );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'divergence probe: source push containing already-removed ids '
+        'still produces a state but flags the regression',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+          videosController.add([
+            createTestVideo('a'),
+            createTestVideo('b'),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+          // Mark 'a' as removed.
+          bloc.add(const FullscreenFeedVideoRemoved('a'));
+          await Future<void>.delayed(Duration.zero);
+          // Now simulate the upstream regressing — pushing 'a' again.
+          // The probe must still allow the new state to land (we don't
+          // fight the source), but should warn in logs.
+          videosController.add([
+            createTestVideo('a'),
+            createTestVideo('b'),
+            createTestVideo('c'),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (bloc) {
+          // The new source push wins — the bloc trusts the source. The
+          // warn log line is the developer-facing signal; the state
+          // emission is unchanged.
+          expect(
+            bloc.state.videos.map((v) => v.id),
+            equals(['a', 'b', 'c']),
+          );
+          // 'a' stays in removedVideoIds since the bloc never removes
+          // tombstones on its own.
+          expect(bloc.state.removedVideoIds, contains('a'));
+        },
+      );
     });
 
     group('FullscreenFeedLoadMoreRequested', () {

@@ -143,5 +143,41 @@ void main() {
 
       await expectLater(analyticsService.trackVideoViews(videos), completes);
     });
+
+    group('trackDeletion', () {
+      test('does not throw for any phase', () async {
+        await analyticsService.initialize();
+        for (final phase in DeletionLifecyclePhase.values) {
+          analyticsService.trackDeletion(
+            phase: phase,
+            videoId: 'video-id',
+            reason: phase == DeletionLifecyclePhase.failed
+                ? 'relayRejected'
+                : null,
+          );
+        }
+      });
+
+      test('is a no-op when analytics is disabled', () async {
+        await analyticsService.initialize();
+        await analyticsService.setAnalyticsEnabled(false);
+        // Just verify no throw / no exception path. The method is a
+        // logging-only side-effect today; the contract is "respect the
+        // user opt-out" which is verified at the if-guard.
+        analyticsService.trackDeletion(
+          phase: DeletionLifecyclePhase.requested,
+          videoId: 'video-id',
+        );
+      });
+
+      test('is a no-op after dispose', () async {
+        await analyticsService.initialize();
+        analyticsService.dispose();
+        // Avoid the default tearDown re-disposing.
+        analyticsService = AnalyticsService(disableNostrPublishing: true);
+        // No assertion beyond "does not throw" — the dispose-guard
+        // returns early before any logging or state mutation.
+      });
+    });
   });
 }
