@@ -176,25 +176,28 @@ class _FeedAspectRatioPreferenceTile extends ConsumerWidget {
               ),
             ),
             const Divider(color: VineTheme.lightText, height: 1),
-            _FeedAspectRatioOption(
-              title: 'Square and portrait',
-              subtitle: 'Show the full mix of Divine videos',
-              value: FeedAspectRatioPreference.squareAndPortrait,
+            RadioGroup<FeedAspectRatioPreference>(
               groupValue: service.preference,
               onChanged: (value) async {
+                if (value == null) return;
                 await service.setPreference(value);
                 if (context.mounted) Navigator.pop(context);
               },
-            ),
-            _FeedAspectRatioOption(
-              title: 'Square videos only',
-              subtitle: 'Keep feeds in the classic square format',
-              value: FeedAspectRatioPreference.squareOnly,
-              groupValue: service.preference,
-              onChanged: (value) async {
-                await service.setPreference(value);
-                if (context.mounted) Navigator.pop(context);
-              },
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _FeedAspectRatioOption(
+                    title: 'Square and portrait',
+                    subtitle: 'Show the full mix of Divine videos',
+                    value: FeedAspectRatioPreference.squareAndPortrait,
+                  ),
+                  _FeedAspectRatioOption(
+                    title: 'Square videos only',
+                    subtitle: 'Keep feeds in the classic square format',
+                    value: FeedAspectRatioPreference.squareOnly,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -208,24 +211,16 @@ class _FeedAspectRatioOption extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.value,
-    required this.groupValue,
-    required this.onChanged,
   });
 
   final String title;
   final String subtitle;
   final FeedAspectRatioPreference value;
-  final FeedAspectRatioPreference groupValue;
-  final ValueChanged<FeedAspectRatioPreference> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return RadioListTile<FeedAspectRatioPreference>(
       value: value,
-      groupValue: groupValue,
-      onChanged: (selected) {
-        if (selected != null) onChanged(selected);
-      },
       title: Text(title, style: _titleStyle),
       subtitle: Text(subtitle, style: _subtitleStyle),
       activeColor: VineTheme.vineGreen,

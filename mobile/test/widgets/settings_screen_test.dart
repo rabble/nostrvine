@@ -209,8 +209,8 @@ void main() {
       // Tiles below the centered header may need scrolling
       for (final title in [
         'Notifications',
-        'Content Preferences',
-        'Moderation Controls',
+        'General Settings',
+        'Content & Safety',
         'Nostr Settings',
       ]) {
         await tester.scrollUntilVisible(
@@ -426,54 +426,52 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('shows Bluesky Publishing tile when feature flag is on', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            draftStorageServiceProvider.overrideWithValue(
-              mockDraftStorageService,
-            ),
-            currentAuthStateProvider.overrideWith(
-              (ref) => AuthState.authenticated,
-            ),
-            userProfileReactiveProvider.overrideWith(
-              (ref, pubkey) => Stream.value(null),
-            ),
-            isFeatureEnabledProvider(
-              FeatureFlag.blueskyPublishing,
-            ).overrideWith((ref) => true),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: MultiBlocProvider(
-              providers: [
-                BlocProvider<InviteStatusCubit>.value(
-                  value: _createMockInviteCubit(),
-                ),
-                BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
-              ],
-              child: const SettingsScreen(),
+    testWidgets(
+      'keeps Bluesky Publishing off the hub when feature flag is on',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              draftStorageServiceProvider.overrideWithValue(
+                mockDraftStorageService,
+              ),
+              currentAuthStateProvider.overrideWith(
+                (ref) => AuthState.authenticated,
+              ),
+              userProfileReactiveProvider.overrideWith(
+                (ref, pubkey) => Stream.value(null),
+              ),
+              isFeatureEnabledProvider(
+                FeatureFlag.blueskyPublishing,
+              ).overrideWith((ref) => true),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<InviteStatusCubit>.value(
+                    value: _createMockInviteCubit(),
+                  ),
+                  BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
+                ],
+                child: const SettingsScreen(),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final scrollable = find.byType(Scrollable);
-      await tester.scrollUntilVisible(
-        find.text('Bluesky Publishing'),
-        100,
-        scrollable: scrollable,
-      );
-      expect(find.text('Bluesky Publishing'), findsOneWidget);
+        expect(find.text('General Settings'), findsOneWidget);
+        expect(find.text('Bluesky Publishing'), findsNothing);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
   });
 }
