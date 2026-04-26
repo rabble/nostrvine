@@ -536,7 +536,7 @@ Cover:
 Run:
 
 ```bash
-python3 -m unittest .github/scripts/tests/test_ios_qa_slots.py
+PYTHONPATH=.github/scripts python3 -m unittest discover -s .github/scripts/tests -p 'test_*.py'
 ```
 
 Expected: FAIL because `ios_qa_slots.py` does not exist.
@@ -591,7 +591,7 @@ The workflow can pass event JSON paths and write outputs to `$GITHUB_OUTPUT`. Us
 Run:
 
 ```bash
-python3 -m unittest .github/scripts/tests/test_ios_qa_slots.py
+PYTHONPATH=.github/scripts python3 -m unittest discover -s .github/scripts/tests -p 'test_*.py'
 ```
 
 Expected: PASS.
@@ -758,7 +758,7 @@ Run:
 
 ```bash
 ruby -e "require 'yaml'; YAML.load_file('.github/workflows/mobile_ios_qa_allocate.yml')"
-python3 -m unittest .github/scripts/tests/test_ios_qa_slots.py
+PYTHONPATH=.github/scripts python3 -m unittest discover -s .github/scripts/tests -p 'test_*.py'
 ```
 
 Expected: both commands exit 0.
@@ -1163,7 +1163,7 @@ IOS_QA_DIRECTORY_ISSUE_NUMBER
 Run:
 
 ```bash
-python3 -m unittest .github/scripts/tests/test_ios_qa_slots.py
+PYTHONPATH=.github/scripts python3 -m unittest discover -s .github/scripts/tests -p 'test_*.py'
 ruby -e "require 'yaml'; YAML.load_file('.github/workflows/mobile_ios_qa_allocate.yml')"
 ```
 
@@ -1195,7 +1195,7 @@ GitHub only runs `pull_request_target` and `workflow_dispatch` workflows that ex
 Run:
 
 ```bash
-python3 -m unittest .github/scripts/tests/test_ios_qa_slots.py
+PYTHONPATH=.github/scripts python3 -m unittest discover -s .github/scripts/tests -p 'test_*.py'
 python3 -m unittest mobile/scripts/ci/tests/test_configure_ios_qa_slot.py
 ruby -e "require 'yaml'; YAML.load_file('codemagic.yaml')"
 ruby -e "require 'yaml'; YAML.load_file('.github/workflows/mobile_ios_qa_allocate.yml')"
@@ -1280,7 +1280,7 @@ Update `.github/ios_qa_slots.json` with each real Firebase app ID and set `enabl
 Run:
 
 ```bash
-python3 -m unittest .github/scripts/tests/test_ios_qa_slots.py
+PYTHONPATH=.github/scripts python3 -m unittest discover -s .github/scripts/tests -p 'test_*.py'
 python3 -m json.tool .github/ios_qa_slots.json >/tmp/ios_qa_slots.json
 ```
 
@@ -1300,7 +1300,7 @@ git commit -m "ci(ios): enable all qa slots"
 - [ ] **Run all local non-signing verification**
 
 ```bash
-python3 -m unittest .github/scripts/tests/test_ios_qa_slots.py
+PYTHONPATH=.github/scripts python3 -m unittest discover -s .github/scripts/tests -p 'test_*.py'
 python3 -m unittest mobile/scripts/ci/tests/test_configure_ios_qa_slot.py
 ruby -e "require 'yaml'; YAML.load_file('codemagic.yaml')"
 ruby -e "require 'yaml'; YAML.load_file('.github/workflows/mobile_ios_qa_allocate.yml')"
