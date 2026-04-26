@@ -201,7 +201,28 @@ class LikesRepository {
       throw AlreadyLikedException(eventId);
     }
 
-    // Check if offline and queue if needed
+    // Snapshot for rollback if the network publish fails
+    final previousCount = _likeCountCache[eventId];
+
+    // 1. Optimistic-first: write to memory + local storage and tick the
+    // watchLikedEventIds stream BEFORE any network I/O. The UI flips here.
+    // Mirrors FollowRepository.follow's order-of-operations so likes match
+    // the design rabble described — local DB first, network confirms.
+    // Storage write is awaited so the placeholder survives an app crash
+    // before sync; PendingActionService (offline) and executeLikeAction
+    // (sync) reconcile the placeholder ID with the real reaction event ID.
+    final placeholderId = 'pending_like_$eventId';
+    final placeholder = LikeRecord(
+      targetEventId: eventId,
+      reactionEventId: placeholderId,
+      createdAt: DateTime.now(),
+    );
+    _likeRecords[eventId] = placeholder;
+    await _localStorage?.saveLikeRecord(placeholder);
+    if (previousCount != null) _likeCountCache[eventId] = previousCount + 1;
+    _emitLikedIds();
+
+    // 2. Offline → leave the optimistic state in place; queue replays later
     if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
       await _queueOfflineAction(
         isLike: true,
@@ -210,53 +231,40 @@ class LikesRepository {
         addressableId: addressableId,
         targetKind: targetKind,
       );
-
-      // Create optimistic local record with placeholder ID
-      final placeholderId = 'pending_like_$eventId';
-      final record = LikeRecord(
-        targetEventId: eventId,
-        reactionEventId: placeholderId,
-        createdAt: DateTime.now(),
-      );
-
-      _likeRecords[eventId] = record;
-      await _localStorage?.saveLikeRecord(record);
-      _emitLikedIds();
-
-      final cached = _likeCountCache[eventId];
-      if (cached != null) _likeCountCache[eventId] = cached + 1;
-
       return placeholderId;
     }
 
-    // Publish Kind 7 reaction event via NostrClient
-    final reactionEvent = await _nostrClient.sendLike(
-      eventId,
-      content: _likeContent,
-      addressableId: addressableId,
-      targetAuthorPubkey: authorPubkey,
-      targetKind: targetKind,
-    );
+    // 3. Online → publish kind 7; on success swap placeholder for real id,
+    // on failure roll back memory + DB + count + stream.
+    try {
+      final reactionEvent = await _nostrClient.sendLike(
+        eventId,
+        content: _likeContent,
+        addressableId: addressableId,
+        targetAuthorPubkey: authorPubkey,
+        targetKind: targetKind,
+      );
 
-    if (reactionEvent == null) {
-      throw const LikeFailedException('Failed to publish like reaction');
+      if (reactionEvent == null) {
+        throw const LikeFailedException('Failed to publish like reaction');
+      }
+
+      final confirmed = LikeRecord(
+        targetEventId: eventId,
+        reactionEventId: reactionEvent.id,
+        createdAt: placeholder.createdAt,
+      );
+      _likeRecords[eventId] = confirmed;
+      await _localStorage?.saveLikeRecord(confirmed);
+
+      return reactionEvent.id;
+    } catch (_) {
+      _likeRecords.remove(eventId);
+      await _localStorage?.deleteLikeRecord(eventId);
+      if (previousCount != null) _likeCountCache[eventId] = previousCount;
+      _emitLikedIds();
+      rethrow;
     }
-
-    // Create and store the like record
-    final record = LikeRecord(
-      targetEventId: eventId,
-      reactionEventId: reactionEvent.id,
-      createdAt: DateTime.now(),
-    );
-
-    _likeRecords[eventId] = record;
-    await _localStorage?.saveLikeRecord(record);
-    _emitLikedIds();
-
-    final cached = _likeCountCache[eventId];
-    if (cached != null) _likeCountCache[eventId] = cached + 1;
-
-    return reactionEvent.id;
   }
 
   /// Execute a like action directly (for use by sync service).
@@ -322,40 +330,48 @@ class LikesRepository {
       throw NotLikedException(eventId);
     }
 
-    // Check if offline and queue if needed
+    // Snapshot for rollback if the network publish fails
+    final snapshotRecord = record;
+    final previousCount = _likeCountCache[eventId];
+
+    // 1. Optimistic-first: remove from memory + local storage and tick the
+    // watchLikedEventIds stream BEFORE any network I/O (mirror of likeEvent).
+    _likeRecords.remove(eventId);
+    await _localStorage?.deleteLikeRecord(eventId);
+    _decrementLikeCountCache(eventId);
+    _emitLikedIds();
+
+    // 2. Offline → leave the optimistic state in place; queue replays later
     if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
       await _queueOfflineAction(
         isLike: false,
         eventId: eventId,
         authorPubkey: '', // Not needed for unlike
       );
-
-      // Remove from cache and storage optimistically
-      _likeRecords.remove(eventId);
-      await _localStorage?.deleteLikeRecord(eventId);
-      _emitLikedIds();
-      _decrementLikeCountCache(eventId);
-
       return;
     }
 
-    // Skip publishing deletion if this was a pending like that never synced
-    if (!record.reactionEventId.startsWith('pending_')) {
-      // Publish Kind 5 deletion event via NostrClient
-      final deletionEvent = await _nostrClient.deleteEvent(
-        record.reactionEventId,
-      );
+    // 3. Online → publish kind 5 (skipped for never-synced placeholders);
+    // on failure roll back memory + DB + count + stream.
+    if (snapshotRecord.reactionEventId.startsWith('pending_')) {
+      // Pending like never reached the relay; nothing to delete on the wire.
+      return;
+    }
 
+    try {
+      final deletionEvent = await _nostrClient.deleteEvent(
+        snapshotRecord.reactionEventId,
+      );
       if (deletionEvent == null) {
         throw const UnlikeFailedException('Failed to publish unlike deletion');
       }
+    } catch (_) {
+      _likeRecords[eventId] = snapshotRecord;
+      await _localStorage?.saveLikeRecord(snapshotRecord);
+      if (previousCount != null) _likeCountCache[eventId] = previousCount;
+      _emitLikedIds();
+      rethrow;
     }
-
-    // Remove from cache and storage
-    _likeRecords.remove(eventId);
-    await _localStorage?.deleteLikeRecord(eventId);
-    _emitLikedIds();
-    _decrementLikeCountCache(eventId);
   }
 
   /// Execute an unlike action directly (for use by sync service).

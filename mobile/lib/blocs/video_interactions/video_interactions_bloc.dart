@@ -170,15 +170,17 @@ class VideoInteractionsBloc
   }
 
   /// Handle like toggle request.
+  ///
+  /// The repository writes the optimistic record and ticks the
+  /// watchLikedEventIds stream before the network call, so the heart flips
+  /// via the subscription in [_onSubscriptionRequested] before the await
+  /// here returns. This handler updates only [VideoInteractionsState.likeCount]
+  /// (which the subscription deliberately does not touch — see the comment
+  /// on [_onSubscriptionRequested]) and reconciles after publish.
   Future<void> _onLikeToggled(
     VideoInteractionsLikeToggled event,
     Emitter<VideoInteractionsState> emit,
   ) async {
-    // Prevent double-taps
-    if (state.isLikeInProgress) return;
-
-    emit(state.copyWith(isLikeInProgress: true, clearError: true));
-
     try {
       // Pass addressable ID and target kind for proper a-tag tagging
       final isNowLiked = await _likesRepository.toggleLike(
@@ -190,7 +192,6 @@ class VideoInteractionsBloc
             : null,
       );
 
-      // Update local state with new like status and adjusted count
       final currentCount = state.likeCount ?? 0;
       final newCount = isNowLiked ? currentCount + 1 : currentCount - 1;
 
@@ -198,15 +199,13 @@ class VideoInteractionsBloc
         state.copyWith(
           isLiked: isNowLiked,
           likeCount: newCount < 0 ? 0 : newCount,
-          isLikeInProgress: false,
+          clearError: true,
         ),
       );
     } on AlreadyLikedException {
-      // Already liked - just update state to reflect reality
-      emit(state.copyWith(isLiked: true, isLikeInProgress: false));
+      emit(state.copyWith(isLiked: true, clearError: true));
     } on NotLikedException {
-      // Not liked - just update state to reflect reality
-      emit(state.copyWith(isLiked: false, isLikeInProgress: false));
+      emit(state.copyWith(isLiked: false, clearError: true));
     } catch (e) {
       Log.error(
         'VideoInteractionsBloc: Like toggle failed for $_eventId - $e',
@@ -214,12 +213,7 @@ class VideoInteractionsBloc
         category: LogCategory.system,
       );
 
-      emit(
-        state.copyWith(
-          isLikeInProgress: false,
-          error: VideoInteractionsError.likeFailed,
-        ),
-      );
+      emit(state.copyWith(error: VideoInteractionsError.likeFailed));
     }
   }
 

@@ -26,9 +26,12 @@ enum VideoInteractionsStatus {
 /// - [isReposted]: Whether the current user has reposted this video
 /// - [repostCount]: Total number of reposts on this video
 /// - [commentCount]: Total number of comments on this video
-/// - [isLikeInProgress]: Whether a like/unlike operation is in progress
 /// - [isRepostInProgress]: Whether a repost/unrepost operation is in progress
 /// - [isCommentsInProgress]: Whether a comments operation is in progress
+///
+/// Like-toggle no longer carries an in-progress flag: the repository writes
+/// the optimistic record + emits before the network call, so the heart flips
+/// immediately and rolls back on failure. See LikesRepository.likeEvent.
 class VideoInteractionsState extends Equatable {
   const VideoInteractionsState({
     this.status = VideoInteractionsStatus.initial,
@@ -37,7 +40,6 @@ class VideoInteractionsState extends Equatable {
     this.isReposted = false,
     this.repostCount,
     this.commentCount,
-    this.isLikeInProgress = false,
     this.isRepostInProgress = false,
     this.isCommentsInProgress = false,
     this.error,
@@ -64,9 +66,6 @@ class VideoInteractionsState extends Equatable {
   /// Null if not yet fetched.
   final int? commentCount;
 
-  /// Whether a like/unlike operation is currently in progress.
-  final bool isLikeInProgress;
-
   /// Whether a repost/unrepost operation is currently in progress.
   final bool isRepostInProgress;
 
@@ -92,7 +91,6 @@ class VideoInteractionsState extends Equatable {
     bool? isReposted,
     int? repostCount,
     int? commentCount,
-    bool? isLikeInProgress,
     bool? isRepostInProgress,
     bool? isCommentsInProgress,
     VideoInteractionsError? error,
@@ -105,7 +103,6 @@ class VideoInteractionsState extends Equatable {
       isReposted: isReposted ?? this.isReposted,
       repostCount: repostCount ?? this.repostCount,
       commentCount: commentCount ?? this.commentCount,
-      isLikeInProgress: isLikeInProgress ?? this.isLikeInProgress,
       isRepostInProgress: isRepostInProgress ?? this.isRepostInProgress,
       isCommentsInProgress: isCommentsInProgress ?? this.isCommentsInProgress,
       error: clearError ? null : (error ?? this.error),
@@ -120,7 +117,6 @@ class VideoInteractionsState extends Equatable {
     isReposted,
     repostCount,
     commentCount,
-    isLikeInProgress,
     isRepostInProgress,
     isCommentsInProgress,
     error,

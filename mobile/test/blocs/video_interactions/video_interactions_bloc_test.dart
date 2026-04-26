@@ -78,7 +78,6 @@ void main() {
       expect(bloc.state.isReposted, isFalse);
       expect(bloc.state.repostCount, isNull);
       expect(bloc.state.commentCount, isNull);
-      expect(bloc.state.isLikeInProgress, isFalse);
       expect(bloc.state.isRepostInProgress, isFalse);
       expect(bloc.state.error, isNull);
       bloc.close();
@@ -370,11 +369,6 @@ void main() {
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            likeCount: 10,
-            isLikeInProgress: true,
-          ),
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
             isLiked: true,
             likeCount: 11,
           ),
@@ -401,11 +395,6 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
         expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            likeCount: 10,
-            isLikeInProgress: true,
-          ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isLiked: true,
@@ -444,12 +433,6 @@ void main() {
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: true,
-            likeCount: 10,
-            isLikeInProgress: true,
-          ),
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
             likeCount: 9,
           ),
         ],
@@ -475,26 +458,9 @@ void main() {
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: true,
-            likeCount: 0,
-            isLikeInProgress: true,
-          ),
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
             likeCount: 0,
           ),
         ],
-      );
-
-      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'does not toggle when operation already in progress',
-        build: createBloc,
-        seed: () => const VideoInteractionsState(
-          status: VideoInteractionsStatus.success,
-          isLikeInProgress: true,
-        ),
-        act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
-        expect: () => <VideoInteractionsState>[],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -513,10 +479,6 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
         expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            isLikeInProgress: true,
-          ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isLiked: true,
@@ -541,11 +503,6 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
         expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            isLiked: true,
-            isLikeInProgress: true,
-          ),
           const VideoInteractionsState(status: VideoInteractionsStatus.success),
         ],
       );
@@ -566,10 +523,6 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
         expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            isLikeInProgress: true,
-          ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             error: VideoInteractionsError.likeFailed,

@@ -197,8 +197,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
     final state = _interactionsBloc.state;
 
-    // Only trigger like if not already liked and not in progress
-    if (!state.isLiked && !state.isLikeInProgress) {
+    // Only trigger like if not already liked. Repeat double-taps while a
+    // publish is still in flight no-op via AlreadyLikedException in the
+    // repository — no in-progress flag needed.
+    if (!state.isLiked) {
       _interactionsBloc.add(const VideoInteractionsLikeToggled());
     }
 

@@ -34,17 +34,15 @@ class LikeActionButton extends StatelessWidget {
     return BlocSelector<
       VideoInteractionsBloc,
       VideoInteractionsState,
-      ({bool isLiked, bool isInProgress, int count})
+      ({bool isLiked, int count})
     >(
       selector: (state) => (
         isLiked: state.isLiked,
-        isInProgress: state.isLikeInProgress,
         count: state.likeCount ?? 0,
       ),
       builder: (context, data) {
         return _ActionButton(
           isLiked: data.isLiked,
-          isLikeInProgress: data.isInProgress,
           totalLikes: data.count,
           onInteracted: onInteracted,
         );
@@ -56,13 +54,11 @@ class LikeActionButton extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     this.isLiked = false,
-    this.isLikeInProgress = false,
     this.totalLikes = 1,
     this.onInteracted,
   });
 
   final bool isLiked;
-  final bool isLikeInProgress;
   final int totalLikes;
   final VoidCallback? onInteracted;
 
@@ -75,7 +71,6 @@ class _ActionButton extends StatelessWidget {
           ? context.l10n.videoActionUnlike
           : context.l10n.videoActionLike,
       iconColor: isLiked ? VineTheme.likeRed : VineTheme.whiteText,
-      isLoading: isLikeInProgress,
       count: totalLikes,
       labelWhenZero: context.l10n.videoActionLikeLabel,
       onPressed: () {

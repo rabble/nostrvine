@@ -239,7 +239,18 @@ void main() {
             targetAuthorPubkey: testAuthorPubkey,
           ),
         ).called(1);
-        verify(() => mockLocalStorage.saveLikeRecord(any())).called(1);
+        // Optimistic-first: storage is written twice — once for the
+        // pending placeholder before sendLike, once for the confirmed
+        // record after sendLike returns.
+        final saved = verify(
+          () => mockLocalStorage.saveLikeRecord(captureAny()),
+        ).captured.cast<LikeRecord>();
+        expect(saved, hasLength(2));
+        expect(
+          saved.first.reactionEventId,
+          startsWith('pending_like_'),
+        );
+        expect(saved.last.reactionEventId, equals(testReactionEventId));
       });
 
       test('publishes like with addressable ID when provided', () async {
@@ -289,11 +300,19 @@ void main() {
             targetKind: any(named: 'targetKind'),
           ),
         ).thenAnswer((_) async => null);
+        // Optimistic-first writes the placeholder then rolls back on failure;
+        // both storage methods need stubs so the rollback path resolves.
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
 
         repository = createRepository();
 
-        expect(
-          () => repository.likeEvent(
+        await expectLater(
+          repository.likeEvent(
             eventId: testEventId,
             authorPubkey: testAuthorPubkey,
           ),
@@ -316,6 +335,125 @@ void main() {
           ),
           throwsA(isA<AlreadyLikedException>()),
         );
+      });
+
+      test(
+        'writes optimistic placeholder to storage before sendLike resolves',
+        () async {
+          // Suspend sendLike with a Completer so we can observe the local
+          // state mid-call. This is the heart of the Follow-pattern fix:
+          // the local DB update + stream emit must happen before the
+          // network round-trip returns.
+          final sendLikeCompleter = Completer<Event?>();
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) => sendLikeCompleter.future);
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+
+          repository = createRepository();
+
+          final likeFuture = repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+
+          // Yield so the optimistic phase of likeEvent runs.
+          await Future<void>.delayed(Duration.zero);
+
+          final saved = verify(
+            () => mockLocalStorage.saveLikeRecord(captureAny()),
+          ).captured.cast<LikeRecord>();
+          expect(saved, hasLength(1));
+          expect(saved.first.targetEventId, equals(testEventId));
+          expect(
+            saved.first.reactionEventId,
+            startsWith('pending_like_'),
+            reason: 'optimistic record should use a placeholder ID',
+          );
+          expect(
+            await repository.isLiked(testEventId),
+            isTrue,
+            reason: 'isLiked must reflect the optimistic state pre-network',
+          );
+
+          // Resolve the network call with the real reaction event.
+          final mockEvent = MockEvent();
+          when(() => mockEvent.id).thenReturn(testReactionEventId);
+          sendLikeCompleter.complete(mockEvent);
+          final result = await likeFuture;
+
+          expect(result, equals(testReactionEventId));
+        },
+      );
+
+      test('rolls back optimistic record when sendLike returns null', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
+
+        repository = createRepository();
+
+        await expectLater(
+          repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          ),
+          throwsA(isA<LikeFailedException>()),
+        );
+
+        verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
+        expect(await repository.isLiked(testEventId), isFalse);
+      });
+
+      test('rolls back optimistic record when sendLike throws', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenThrow(Exception('relay closed'));
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
+
+        repository = createRepository();
+
+        await expectLater(
+          repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
+        expect(await repository.isLiked(testEventId), isFalse);
       });
     });
 
@@ -356,12 +494,20 @@ void main() {
         when(
           () => mockNostrClient.deleteEvent(testReactionEventId),
         ).thenAnswer((_) async => null);
+        // Optimistic-first removes then rolls back on failure; storage
+        // methods need stubs so the rollback path resolves.
+        when(
+          () => mockLocalStorage.deleteLikeRecord(testEventId),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
 
         repository = createRepository();
         await repository.isLiked(testEventId); // Initialize
 
-        expect(
-          () => repository.unlikeEvent(testEventId),
+        await expectLater(
+          repository.unlikeEvent(testEventId),
           throwsA(isA<UnlikeFailedException>()),
         );
       });
@@ -384,6 +530,100 @@ void main() {
         verify(
           () => mockNostrClient.deleteEvent(testReactionEventId),
         ).called(1);
+      });
+
+      test(
+        'removes optimistic record from storage before deleteEvent resolves',
+        () async {
+          when(
+            () => mockLocalStorage.getAllLikeRecords(),
+          ).thenAnswer((_) async => [createLikeRecord()]);
+          when(
+            () => mockLocalStorage.deleteLikeRecord(testEventId),
+          ).thenAnswer((_) async => true);
+
+          // Suspend deleteEvent so we can observe the optimistic phase.
+          final deleteCompleter = Completer<Event?>();
+          when(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).thenAnswer((_) => deleteCompleter.future);
+
+          repository = createRepository();
+          await repository.isLiked(testEventId); // Initialize cache
+
+          final unlikeFuture = repository.unlikeEvent(testEventId);
+
+          // Yield so the optimistic phase runs.
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockLocalStorage.deleteLikeRecord(testEventId),
+          ).called(1);
+          expect(
+            await repository.isLiked(testEventId),
+            isFalse,
+            reason: 'isLiked must reflect optimistic removal pre-network',
+          );
+
+          deleteCompleter.complete(MockEvent());
+          await unlikeFuture;
+        },
+      );
+
+      test(
+        'restores optimistic removal when deleteEvent returns null',
+        () async {
+          when(
+            () => mockLocalStorage.getAllLikeRecords(),
+          ).thenAnswer((_) async => [createLikeRecord()]);
+          when(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockLocalStorage.deleteLikeRecord(testEventId),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+
+          repository = createRepository();
+          await repository.isLiked(testEventId); // Initialize cache
+
+          await expectLater(
+            repository.unlikeEvent(testEventId),
+            throwsA(isA<UnlikeFailedException>()),
+          );
+
+          // The original record should be saved back during rollback.
+          verify(() => mockLocalStorage.saveLikeRecord(any())).called(1);
+          expect(await repository.isLiked(testEventId), isTrue);
+        },
+      );
+
+      test('restores optimistic removal when deleteEvent throws', () async {
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => [createLikeRecord()]);
+        when(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).thenThrow(Exception('relay closed'));
+        when(
+          () => mockLocalStorage.deleteLikeRecord(testEventId),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+
+        repository = createRepository();
+        await repository.isLiked(testEventId); // Initialize cache
+
+        await expectLater(
+          repository.unlikeEvent(testEventId),
+          throwsA(isA<Exception>()),
+        );
+
+        verify(() => mockLocalStorage.saveLikeRecord(any())).called(1);
+        expect(await repository.isLiked(testEventId), isTrue);
       });
     });
 

@@ -1046,7 +1046,7 @@ class _PooledFullscreenItemContentState
 
     final bloc = context.read<VideoInteractionsBloc>();
     final state = bloc.state;
-    if (!state.isLiked && !state.isLikeInProgress) {
+    if (!state.isLiked) {
       bloc.add(const VideoInteractionsLikeToggled());
     }
 
