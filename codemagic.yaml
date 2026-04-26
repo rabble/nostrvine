@@ -466,15 +466,23 @@ definitions:
           echo "Cannot update GitHub for iOS QA build; missing:$missing_context"
           exit 0
         fi
-        status="ready"
-        firebase_json="firebase-distribution.json"
-        if [ "${STALE_IOS_QA_BUILD:-}" = "true" ]; then
-          status="stale"
-          firebase_json=""
-        elif [ ! -s "$firebase_json" ]; then
-          status="failed"
-          firebase_json=""
-        fi
+        python3 ../.github/scripts/ios_qa_slots.py resolve-notify-status \
+          --firebase-json firebase-distribution.json \
+          --firebase-links-json firebase-distribution-links.json \
+          --stale-env STALE_IOS_QA_BUILD \
+          > ios-qa-notify-state.json
+        status="$(python3 - <<'PY'
+        import json
+        with open("ios-qa-notify-state.json", encoding="utf-8") as fp:
+            print(json.load(fp)["status"])
+        PY
+        )"
+        firebase_json="$(python3 - <<'PY'
+        import json
+        with open("ios-qa-notify-state.json", encoding="utf-8") as fp:
+            print(json.load(fp).get("firebase_json") or "")
+        PY
+        )"
         if [ -n "${CODEMAGIC_APP_ID:-}" ] && [ -n "${CM_BUILD_ID:-}" ]; then
           codemagic_build_url="https://codemagic.io/app/$CODEMAGIC_APP_ID/build/$CM_BUILD_ID"
         else
@@ -843,6 +851,7 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
       - firebase-distribution.json
       - firebase-distribution-links.json
+      - ios-qa-notify-state.json
       - pr-current.json
       - ios-qa-comment.md
     publishing:

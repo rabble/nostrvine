@@ -73,6 +73,18 @@ def current_slot(labels: Iterable[str]) -> Optional[str]:
     return None
 
 
+def slot_labels_to_remove(
+    labels: Iterable[str],
+    *,
+    keep_label: Optional[str] = None,
+) -> list[str]:
+    return [
+        label
+        for label in labels
+        if _SLOT_LABEL_RE.match(label) and label != keep_label
+    ]
+
+
 def relevant_changes(changed_files: Iterable[str]) -> bool:
     for path in changed_files:
         if path in _RELEVANT_EXACT_PATHS:
@@ -281,6 +293,40 @@ def render_directory(
     return "\n".join(lines) + "\n"
 
 
+def directory_rows_from_reconcile(
+    reconcile: dict[Any, dict],
+    prs: dict[int, dict],
+) -> list[dict]:
+    rows: list[dict] = []
+    for number_key, decision in reconcile.items():
+        if decision.get("action") != "allocate":
+            continue
+        number = int(number_key)
+        pr = prs.get(number) or {}
+        slot = decision.get("slot") or {}
+        slot_id = slot.get("slot")
+        head_sha = pr.get("head_sha", "")
+        row = {
+            "slot": slot_id,
+            "status": decision.get("status"),
+            "pr_number": number,
+            "sha": head_sha,
+            "firebase_testing_uri": None,
+            "codemagic_build_url": None,
+        }
+
+        state = pr.get("qa_comment_state") or {}
+        if isinstance(state, dict):
+            state_sha = state.get("sha")
+            state_slot = state.get("slot")
+            if state_sha == head_sha and (slot_id is None or state_slot == slot_id):
+                row["status"] = state.get("status") or row["status"]
+                row["firebase_testing_uri"] = state.get("firebase_testing_uri")
+                row["codemagic_build_url"] = state.get("codemagic_build_url")
+        rows.append(row)
+    return rows
+
+
 def render_codemagic_payload(
     *,
     app_id: str,
@@ -382,6 +428,24 @@ def label_bootstrap(slots: Sequence[dict]) -> list[dict]:
         },
     )
     return items
+
+
+def resolve_notify_status(
+    *,
+    stale: bool,
+    firebase_distribution_json_exists: bool,
+    firebase_links_json: Optional[dict[str, Any]],
+) -> dict[str, Optional[str]]:
+    if stale:
+        return {"status": "stale", "firebase_json": None}
+    testing_uri = (
+        extract_firebase_testing_uri(firebase_links_json)
+        if isinstance(firebase_links_json, dict)
+        else None
+    )
+    if firebase_distribution_json_exists and testing_uri:
+        return {"status": "ready", "firebase_json": "firebase-distribution.json"}
+    return {"status": "failed", "firebase_json": None}
 
 
 # --------------------------------------------------------------------------
@@ -552,6 +616,17 @@ def cli_render_directory(args: argparse.Namespace) -> int:
     return 0
 
 
+def cli_render_directory_rows(args: argparse.Namespace) -> int:
+    reconcile = _read_json_file(args.reconcile_file)
+    prs_payload = _read_json_file(args.prs_file)
+    prs = {
+        int(pr["number"]): pr
+        for pr in prs_payload
+    }
+    _write_json(directory_rows_from_reconcile(reconcile, prs))
+    return 0
+
+
 def cli_cleanup(args: argparse.Namespace) -> int:
     labels = _read_json_file(args.labels_json) if args.labels_json else []
     payload = cleanup_for_closed_pr(pr_number=args.pr_number, labels=labels)
@@ -566,9 +641,14 @@ def cli_parse_comment_state(args: argparse.Namespace) -> int:
     return 0
 
 
-def _eligible_for_slot(pr: dict) -> bool:
+def _eligible_for_slot(
+    pr: dict,
+    *,
+    preserve_labeled_occupants: bool = False,
+) -> bool:
     if pr.get("is_closed"):
         return False
+    labels = pr.get("labels", [])
     if not is_trusted_pr(
         pr.get("head_repo_owner", ""),
         author_is_org_member=bool(pr.get("author_is_org_member")),
@@ -576,12 +656,12 @@ def _eligible_for_slot(pr: dict) -> bool:
         return False
     if not is_eligible_pr(
         is_draft=bool(pr.get("is_draft")),
-        labels=pr.get("labels", []),
+        labels=labels,
     ):
         return False
-    if not relevant_changes(pr.get("changed_files", [])):
-        return False
-    return True
+    if relevant_changes(pr.get("changed_files", [])):
+        return True
+    return preserve_labeled_occupants and current_slot(labels) is not None
 
 
 def allocate_for_target(
@@ -645,14 +725,27 @@ def allocate_for_target(
             "eligibility_at": p.get("eligibility_at", ""),
         }
         for p in prs
-        if _eligible_for_slot(p)
+        if _eligible_for_slot(p, preserve_labeled_occupants=True)
     ]
     assignments = choose_slot(slots, candidates)
     slot_id = assignments.get(target_number, "queued")
     if slot_id == "queued":
-        return {"action": "allocate", "status": "queued", "slot": None}
+        return {
+            "action": "allocate",
+            "status": "queued",
+            "slot": None,
+            "labels_to_remove": slot_labels_to_remove(labels),
+        }
     slot = next(s for s in slots if s["slot"] == slot_id)
-    return {"action": "allocate", "status": "building", "slot": slot}
+    return {
+        "action": "allocate",
+        "status": "building",
+        "slot": slot,
+        "labels_to_remove": slot_labels_to_remove(
+            labels,
+            keep_label=slot["label"],
+        ),
+    }
 
 
 def cli_allocate(args: argparse.Namespace) -> int:
@@ -671,10 +764,12 @@ def cli_allocate(args: argparse.Namespace) -> int:
     return 0
 
 
-def cli_reconcile(args: argparse.Namespace) -> int:
+def reconcile_assignments(
+    *,
+    slots: Sequence[dict],
+    prs: Sequence[dict],
+) -> dict[int, dict]:
     """Compute slot assignments across all open PRs."""
-    slots = load_slots(args.slots_file)
-    prs = _read_json_file(args.prs_file)
     candidates = [
         {
             "number": p["number"],
@@ -703,15 +798,54 @@ def cli_reconcile(args: argparse.Namespace) -> int:
             else:
                 enriched[n] = {"action": "skip"}
         elif slot_id == "queued":
-            enriched[n] = {"action": "allocate", "status": "queued", "slot": None}
+            enriched[n] = {
+                "action": "allocate",
+                "status": "queued",
+                "slot": None,
+                "labels_to_remove": slot_labels_to_remove(pr.get("labels", [])),
+            }
         else:
             slot = next(s for s in slots if s["slot"] == slot_id)
             enriched[n] = {
                 "action": "allocate",
                 "status": "building",
                 "slot": slot,
+                "labels_to_remove": slot_labels_to_remove(
+                    pr.get("labels", []),
+                    keep_label=slot["label"],
+                ),
             }
+    return enriched
+
+
+def cli_reconcile(args: argparse.Namespace) -> int:
+    slots = load_slots(args.slots_file)
+    prs = _read_json_file(args.prs_file)
+    enriched = reconcile_assignments(slots=slots, prs=prs)
     _write_json({str(k): v for k, v in enriched.items()})
+    return 0
+
+
+def cli_resolve_notify_status(args: argparse.Namespace) -> int:
+    stale = args.stale or (
+        bool(args.stale_env)
+        and os.environ.get(args.stale_env, "").lower() == "true"
+    )
+    firebase_path = Path(args.firebase_json)
+    links_path = Path(args.firebase_links_json)
+    links_json: Optional[dict[str, Any]] = None
+    if links_path.exists() and links_path.stat().st_size > 0:
+        payload = _read_json_file(str(links_path))
+        if isinstance(payload, dict):
+            links_json = payload
+    payload = resolve_notify_status(
+        stale=stale,
+        firebase_distribution_json_exists=(
+            firebase_path.exists() and firebase_path.stat().st_size > 0
+        ),
+        firebase_links_json=links_json,
+    )
+    _write_json(payload)
     return 0
 
 
@@ -809,6 +943,11 @@ def main(argv: list[str] | None = None) -> int:
     p_dir.add_argument("--updated-at", required=True)
     p_dir.set_defaults(func=cli_render_directory)
 
+    p_dir_rows = sub.add_parser("render-directory-rows")
+    p_dir_rows.add_argument("--reconcile-file", required=True)
+    p_dir_rows.add_argument("--prs-file", required=True)
+    p_dir_rows.set_defaults(func=cli_render_directory_rows)
+
     p_clean = sub.add_parser("cleanup")
     p_clean.add_argument("--pr-number", required=True, type=int)
     p_clean.add_argument("--labels-json")
@@ -832,6 +971,19 @@ def main(argv: list[str] | None = None) -> int:
     p_recon.add_argument("--prs-file", required=True)
     p_recon.add_argument("--slots-file", required=True)
     p_recon.set_defaults(func=cli_reconcile)
+
+    p_notify_status = sub.add_parser("resolve-notify-status")
+    p_notify_status.add_argument(
+        "--firebase-json",
+        default="firebase-distribution.json",
+    )
+    p_notify_status.add_argument(
+        "--firebase-links-json",
+        default="firebase-distribution-links.json",
+    )
+    p_notify_status.add_argument("--stale", action="store_true")
+    p_notify_status.add_argument("--stale-env")
+    p_notify_status.set_defaults(func=cli_resolve_notify_status)
 
     p_upsert = sub.add_parser("upsert-comment")
     p_upsert.add_argument("--repo", required=True)

@@ -304,6 +304,10 @@ jobs:
             gh issue edit "${TARGET_NUMBER}" --repo "${repo}" \
               --remove-label "${stale}" || true
           done
+          for stale_slot in $(python3 -c "import json; print(' '.join(json.load(open('${RUNNER_TEMP}/allocation.json')).get('labels_to_remove', [])))"); do
+            gh issue edit "${TARGET_NUMBER}" --repo "${repo}" \
+              --remove-label "${stale_slot}" || true
+          done
           if [ -n "${SLOT_LABEL}" ]; then
             gh issue edit "${TARGET_NUMBER}" --repo "${repo}" \
               --add-label "${SLOT_LABEL}"
@@ -384,11 +388,22 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
             > "${RUNNER_TEMP}/open-prs.json"
           python3 - <<'PY'
-          import json, os, subprocess, urllib.error, urllib.request
+          import importlib.util
+          import json
+          import os
+          import subprocess
+          import urllib.error
+          import urllib.request
 
           tmp = os.environ["RUNNER_TEMP"]
           gh_token = os.environ["GH_TOKEN"]
           org_token = os.environ.get("ORG_TOKEN", "")
+          repo_slug = os.environ["GITHUB_REPOSITORY"]
+          script_path = os.environ["ALLOCATOR_SCRIPT"]
+          spec = importlib.util.spec_from_file_location("ios_qa_slots", script_path)
+          slot_lib = importlib.util.module_from_spec(spec)
+          assert spec.loader is not None
+          spec.loader.exec_module(slot_lib)
 
           def is_org_member(login: str) -> bool:
               if not org_token or not login:
@@ -409,11 +424,25 @@ jobs:
               out = subprocess.check_output(
                   [
                       "gh", "api", "--paginate",
-                      f"repos/{os.environ['GITHUB_REPOSITORY']}/pulls/{number}/files?per_page=300",
+                      f"repos/{repo_slug}/pulls/{number}/files?per_page=300",
                   ],
                   text=True,
               )
               return [f["filename"] for f in json.loads(out)]
+
+          def fetch_qa_comment_state(number: int):
+              out = subprocess.check_output(
+                  [
+                      "gh", "api",
+                      f"repos/{repo_slug}/issues/{number}/comments?per_page=100",
+                  ],
+                  text=True,
+              )
+              for comment in json.loads(out):
+                  state = slot_lib.parse_state_marker(comment.get("body") or "")
+                  if state:
+                      return state
+              return None
 
           open_prs = json.load(open(f"{tmp}/open-prs.json", encoding="utf-8"))
           records = []
@@ -437,6 +466,7 @@ jobs:
                       owner == "divinevideo" or is_org_member(author)
                   ),
                   "changed_files": fetch_files(raw["number"]),
+                  "qa_comment_state": fetch_qa_comment_state(raw["number"]),
                   "eligibility_at": raw.get("created_at", ""),
               })
           json.dump(records, open(f"{tmp}/all-prs.json", "w", encoding="utf-8"))
@@ -509,6 +539,9 @@ jobs:
                   status = decision.get("status")
                   slot = decision.get("slot") or {}
                   slot_label = slot.get("label")
+                  for stale_slot in decision.get("labels_to_remove", []):
+                      if has_label(pr, stale_slot):
+                          gh_label("remove", number, stale_slot)
                   # Drop competing state labels.
                   for sl in state_labels:
                       if has_label(pr, sl) and sl != f"ios-qa:{status}":
@@ -588,28 +621,10 @@ jobs:
           DIRECTORY_ISSUE: ${{ vars.IOS_QA_DIRECTORY_ISSUE_NUMBER }}
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import json, os, subprocess
-          tmp = os.environ["RUNNER_TEMP"]
-          recon = json.load(open(f"{tmp}/reconcile.json", encoding="utf-8"))
-          prs = {p["number"]: p for p in json.load(open(f"{tmp}/all-prs.json", encoding="utf-8"))}
-          rows = []
-          for number_str, decision in recon.items():
-              number = int(number_str)
-              pr = prs.get(number) or {}
-              if decision.get("action") != "allocate":
-                  continue
-              slot = decision.get("slot") or {}
-              rows.append({
-                  "slot": slot.get("slot"),
-                  "status": decision.get("status"),
-                  "pr_number": number,
-                  "sha": pr.get("head_sha", ""),
-                  "firebase_testing_uri": None,
-                  "codemagic_build_url": None,
-              })
-          json.dump(rows, open(f"{tmp}/rows.json", "w", encoding="utf-8"))
-          PY
+          python3 "${ALLOCATOR_SCRIPT}" render-directory-rows \
+            --reconcile-file "${RUNNER_TEMP}/reconcile.json" \
+            --prs-file "${RUNNER_TEMP}/all-prs.json" \
+            > "${RUNNER_TEMP}/rows.json"
           updated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           python3 "${ALLOCATOR_SCRIPT}" render-directory \
             --rows-file "${RUNNER_TEMP}/rows.json" \

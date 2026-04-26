@@ -626,6 +626,58 @@ class AllocateForTarget(unittest.TestCase):
         self.assertEqual(result["status"], "queued")
         self.assertIsNone(result["slot"])
 
+    def test_existing_slot_label_occupies_slot_even_when_non_target_files_unknown(self):
+        prs = [
+            self._trusted_open_pr(
+                number=1,
+                labels=["ios-qa-slot-01", "ios-qa:building"],
+                changed_files=[],
+                eligibility_at="2026-01-01T00:00:00Z",
+            ),
+            self._trusted_open_pr(
+                number=2,
+                labels=[],
+                changed_files=["mobile/lib/main.dart"],
+                eligibility_at="2026-01-02T00:00:00Z",
+            ),
+        ]
+        result = lib.allocate_for_target(
+            slots=self.SLOTS,
+            prs=prs,
+            target_number=2,
+        )
+        self.assertEqual(result["action"], "allocate")
+        self.assertEqual(result["status"], "building")
+        self.assertEqual(result["slot"]["slot"], "qa02")
+
+    def test_reassignment_reports_stale_slot_labels_to_remove(self):
+        prs = [
+            self._trusted_open_pr(
+                number=42,
+                labels=["ios-qa-slot-10", "ios-qa:failed"],
+            ),
+        ]
+        result = lib.allocate_for_target(
+            slots=self.SLOTS,
+            prs=prs,
+            target_number=42,
+        )
+        self.assertEqual(result["action"], "allocate")
+        self.assertEqual(result["slot"]["slot"], "qa01")
+        self.assertEqual(result["labels_to_remove"], ["ios-qa-slot-10"])
+
+    def test_reconcile_cleans_up_labeled_pr_without_relevant_changes(self):
+        prs = [
+            self._trusted_open_pr(
+                number=42,
+                labels=["ios-qa-slot-01", "ios-qa:ready"],
+                changed_files=["docs/foo.md"],
+            ),
+        ]
+        result = lib.reconcile_assignments(slots=self.SLOTS, prs=prs)
+        self.assertEqual(result[42]["action"], "cleanup")
+        self.assertIn("ios-qa-slot-01", result[42]["labels_to_remove"])
+
     def test_draft_without_needs_label_skipped(self):
         prs = [
             self._trusted_open_pr(number=42, is_draft=True),
@@ -636,6 +688,91 @@ class AllocateForTarget(unittest.TestCase):
             target_number=42,
         )
         self.assertEqual(result["action"], "skip")
+
+
+class NotifyStatus(unittest.TestCase):
+    def test_stale_status_ignores_firebase_files(self):
+        result = lib.resolve_notify_status(
+            stale=True,
+            firebase_distribution_json_exists=True,
+            firebase_links_json={"testing_uri": "https://appdist.firebase/x"},
+        )
+        self.assertEqual(result, {"status": "stale", "firebase_json": None})
+
+    def test_missing_parsed_testing_uri_reports_failed_even_with_distribution_json(self):
+        result = lib.resolve_notify_status(
+            stale=False,
+            firebase_distribution_json_exists=True,
+            firebase_links_json=None,
+        )
+        self.assertEqual(result, {"status": "failed", "firebase_json": None})
+
+    def test_valid_parsed_testing_uri_reports_ready(self):
+        result = lib.resolve_notify_status(
+            stale=False,
+            firebase_distribution_json_exists=True,
+            firebase_links_json={"testing_uri": "https://appdist.firebase/x"},
+        )
+        self.assertEqual(
+            result,
+            {"status": "ready", "firebase_json": "firebase-distribution.json"},
+        )
+
+
+class DirectoryRows(unittest.TestCase):
+    SHA = "abcdef0123456789abcdef0123456789abcdef01"
+
+    def test_uses_matching_sticky_comment_state_for_ready_links(self):
+        reconcile = {
+            42: {
+                "action": "allocate",
+                "status": "building",
+                "slot": {"slot": "qa01"},
+            },
+        }
+        prs = {
+            42: {
+                "head_sha": self.SHA,
+                "qa_comment_state": {
+                    "slot": "qa01",
+                    "sha": self.SHA,
+                    "status": "ready",
+                    "firebase_testing_uri": "https://appdist.firebase/x",
+                    "codemagic_build_url": "https://codemagic.io/app/a/build/b",
+                },
+            },
+        }
+        rows = lib.directory_rows_from_reconcile(reconcile, prs)
+        self.assertEqual(rows[0]["status"], "ready")
+        self.assertEqual(rows[0]["firebase_testing_uri"], "https://appdist.firebase/x")
+        self.assertEqual(
+            rows[0]["codemagic_build_url"],
+            "https://codemagic.io/app/a/build/b",
+        )
+
+    def test_ignores_sticky_comment_state_for_old_sha(self):
+        reconcile = {
+            42: {
+                "action": "allocate",
+                "status": "building",
+                "slot": {"slot": "qa01"},
+            },
+        }
+        prs = {
+            42: {
+                "head_sha": self.SHA,
+                "qa_comment_state": {
+                    "slot": "qa01",
+                    "sha": "1111111111111111111111111111111111111111",
+                    "status": "ready",
+                    "firebase_testing_uri": "https://appdist.firebase/old",
+                    "codemagic_build_url": "https://codemagic.io/app/a/build/old",
+                },
+            },
+        }
+        rows = lib.directory_rows_from_reconcile(reconcile, prs)
+        self.assertEqual(rows[0]["status"], "building")
+        self.assertIsNone(rows[0]["firebase_testing_uri"])
 
 
 if __name__ == "__main__":
