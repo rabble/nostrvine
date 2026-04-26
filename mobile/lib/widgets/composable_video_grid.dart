@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -71,7 +72,13 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
 
 class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     with ScrollPaginationMixin {
+  static const double _pointerRefreshTriggerDistance = 80;
+
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+      GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
+  double _pointerRefreshPullDistance = 0;
+  bool _isPointerRefreshRunning = false;
 
   @override
   ScrollController get paginationScrollController => _scrollController;
@@ -200,6 +207,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     return _wrapWithRefreshIndicator(
       context,
       CustomScrollView(
+        controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverFillRemaining(hasScrollBody: false, child: emptyState),
@@ -213,14 +221,61 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
       return child;
     }
 
-    return RefreshIndicator(
-      semanticsLabel: context.l10n.videoGridRefreshLabel,
-      onRefresh: widget.onRefresh!,
-      displacement: 70,
-      color: VineTheme.onPrimary,
-      backgroundColor: VineTheme.vineGreen,
-      child: child,
+    return Listener(
+      onPointerSignal: _handlePointerSignal,
+      child: RefreshIndicator(
+        key: _refreshIndicatorKey,
+        semanticsLabel: context.l10n.videoGridRefreshLabel,
+        onRefresh: widget.onRefresh!,
+        displacement: 70,
+        color: VineTheme.onPrimary,
+        backgroundColor: VineTheme.vineGreen,
+        child: child,
+      ),
     );
+  }
+
+  void _handlePointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent ||
+        !_scrollController.hasClients ||
+        widget.onRefresh == null) {
+      return;
+    }
+
+    final position = _scrollController.position;
+    final isAtTop = position.pixels <= position.minScrollExtent + 0.5;
+    final isPullingDown = event.scrollDelta.dy < 0;
+
+    if (!isAtTop || !isPullingDown) {
+      _pointerRefreshPullDistance = 0;
+      return;
+    }
+
+    _pointerRefreshPullDistance += -event.scrollDelta.dy;
+    if (_pointerRefreshPullDistance < _pointerRefreshTriggerDistance) {
+      return;
+    }
+
+    _pointerRefreshPullDistance = 0;
+    unawaited(_showRefreshFromPointerSignal());
+  }
+
+  Future<void> _showRefreshFromPointerSignal() async {
+    if (_isPointerRefreshRunning) {
+      return;
+    }
+
+    final refreshIndicator = _refreshIndicatorKey.currentState;
+    if (refreshIndicator == null) {
+      return;
+    }
+
+    _isPointerRefreshRunning = true;
+    try {
+      await refreshIndicator.show();
+    } finally {
+      _isPointerRefreshRunning = false;
+    }
   }
 
   /// Show context menu for long press on video tiles
