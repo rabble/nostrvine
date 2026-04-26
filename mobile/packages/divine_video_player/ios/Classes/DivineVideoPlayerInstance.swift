@@ -132,24 +132,16 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     from: clipsRaw)
                 self.clipOffsets = offsets
                 self.clipDurations = durations
-                self.clipCount = clipsRaw.count
+                self.clipCount = offsets.count
                 self.totalDuration = offsets.last.map { $0 + (durations.last ?? 0) } ?? 0
                 self.firstFrameRendered = false
 
                 let playerItem = AVPlayerItem(asset: composition)
-                // `AVVideoComposition(propertiesOf:)` derives `renderSize`
-                // from the composition's video tracks. If the composition
-                // has no video segments (e.g. caller passed an empty
-                // clip list during teardown), `renderSize` is `.zero` and
-                // the setter throws `NSInvalidArgumentException`
-                // ("video composition must have a positive renderSize"),
-                // which terminates the app from a Swift Task.
                 let avComposition = AVVideoComposition(propertiesOf: composition)
-                if avComposition.renderSize.width > 0,
-                    avComposition.renderSize.height > 0
-                {
-                    playerItem.videoComposition = avComposition
+                guard avComposition.renderSize.isPositive else {
+                    throw CompositionError.invalidRenderSize
                 }
+                playerItem.videoComposition = avComposition
                 self.textureOutput?.attach(to: playerItem)
 
                 let startPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value ?? 0
@@ -235,6 +227,11 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let assetAudioTracks = try await asset.loadTracks(withMediaType: .audio)
 
             guard let sourceVideoTrack = assetVideoTracks.first else { continue }
+            let (naturalSize, transform) = try await sourceVideoTrack.load(
+                .naturalSize, .preferredTransform
+            )
+            let displaySize = naturalSize.applying(transform).absoluteSize
+            guard displaySize.isPositive else { continue }
 
             let startTime = CMTime(value: startMs, timescale: 1000)
             let endTime: CMTime
@@ -244,6 +241,13 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 endTime = assetDuration
             }
             let timeRange = CMTimeRange(start: startTime, end: endTime)
+            let clipDuration = CMTimeSubtract(endTime, startTime)
+            guard CMTimeCompare(clipDuration, .zero) > 0 else { continue }
+
+            if offsets.isEmpty {
+                composition.naturalSize = displaySize
+                videoTrack.preferredTransform = transform
+            }
 
             try videoTrack.insertTimeRange(timeRange, of: sourceVideoTrack, at: insertTime)
 
@@ -251,25 +255,13 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 try audioTrack?.insertTimeRange(timeRange, of: sourceAudioTrack, at: insertTime)
             }
 
-            let clipDuration = CMTimeSubtract(endTime, startTime)
             offsets.append(CMTimeGetSeconds(insertTime))
             durations.append(CMTimeGetSeconds(clipDuration))
             insertTime = CMTimeAdd(insertTime, clipDuration)
         }
 
-        // Apply the preferred transform from the first video track.
-        if let firstClipUri = clipsRaw.first?["uri"] as? String {
-            let firstURL: URL
-            if firstClipUri.hasPrefix("/") {
-                firstURL = URL(fileURLWithPath: firstClipUri)
-            } else {
-                firstURL = URL(string: firstClipUri)!
-            }
-            let firstAsset = AVURLAsset(url: firstURL)
-            if let firstTrack = try? await firstAsset.loadTracks(withMediaType: .video).first {
-                let transform = try await firstTrack.load(.preferredTransform)
-                videoTrack.preferredTransform = transform
-            }
+        guard !offsets.isEmpty else {
+            throw CompositionError.noPlayableVideoTracks
         }
 
         return (composition, offsets, durations)
@@ -630,11 +622,27 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
 private enum CompositionError: Error, LocalizedError {
     case cannotCreateTrack
+    case noPlayableVideoTracks
+    case invalidRenderSize
 
     var errorDescription: String? {
         switch self {
         case .cannotCreateTrack:
             return "Failed to create composition track."
+        case .noPlayableVideoTracks:
+            return "No playable video tracks found."
+        case .invalidRenderSize:
+            return "Video composition has an invalid render size."
         }
+    }
+}
+
+private extension CGSize {
+    var absoluteSize: CGSize {
+        CGSize(width: abs(width), height: abs(height))
+    }
+
+    var isPositive: Bool {
+        width.isFinite && height.isFinite && width > 0 && height > 0
     }
 }

@@ -349,6 +349,14 @@ void main() {
         expect(sent, hasLength(2));
       });
 
+      test('setClips rejects an empty clip list', () async {
+        expect(
+          () => controller.setClips(const []),
+          throwsArgumentError,
+        );
+        expect(playerCalls, isEmpty);
+      });
+
       test(
         'setClips includes startPositionMs when startPosition > zero',
         () async {

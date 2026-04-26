@@ -218,6 +218,9 @@ class DivineVideoPlayerController {
     Duration? startPosition,
   }) async {
     _ensureInitialized();
+    if (clips.isEmpty) {
+      throw ArgumentError.value(clips, 'clips', 'must not be empty');
+    }
     if (_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter = Completer<bool>();
     }
